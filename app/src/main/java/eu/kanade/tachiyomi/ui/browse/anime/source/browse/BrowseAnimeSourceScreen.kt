@@ -380,7 +380,6 @@ data class BrowseAnimeSourceScreen(
                     },
                 )
             }
-
             is BrowseAnimeSourceScreenModel.Dialog.CreateSavedSearch -> SavedSearchCreateDialog(
                 onDismissRequest = onDismissRequest,
                 currentSavedSearches = dialog.currentSavedSearches,
@@ -394,7 +393,6 @@ data class BrowseAnimeSourceScreen(
                     screenModel.deleteSearch(dialog.idToDelete)
                 },
             )
-
             else -> {}
         }
 

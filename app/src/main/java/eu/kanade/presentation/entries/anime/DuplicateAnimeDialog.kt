@@ -28,7 +28,6 @@ import eu.kanade.presentation.components.TabbedDialogPaddings
 import eu.kanade.presentation.more.settings.LocalPreferenceMinHeight
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
@@ -67,7 +66,7 @@ fun DuplicateAnimeDialog(
             Spacer(Modifier.height(PaddingSize))
 
             TextPreferenceWidget(
-                title = stringResource(AYMR.strings.action_show_anime),
+                title = stringResource(MR.strings.action_show_anime),
                 icon = Icons.Outlined.Book,
                 onPreferenceClick = {
                     onDismissRequest()

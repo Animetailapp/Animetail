@@ -315,7 +315,6 @@ data class BrowseMangaSourceScreen(
                     },
                 )
             }
-
             else -> {}
         }
 
