@@ -384,7 +384,6 @@ class CastManager(
                     .addControlCategory(androidx.mediarouter.media.MediaControlIntent.CATEGORY_REMOTE_PLAYBACK)
                     .build()
 
-                // Limpiar callback anterior
                 mediaRouterCallback?.let {
                     mediaRouter.removeCallback(it)
                     mediaRouterCallback = null
@@ -430,7 +429,6 @@ class CastManager(
                     )
                 }
 
-                // Una sola actualización inicial
                 updateDevicesList(currentSession)
             }
         } catch (e: Exception) {
@@ -444,7 +442,6 @@ class CastManager(
     private fun updateDevicesList(currentSession: CastSession?) {
         val connectedDeviceId = currentSession?.castDevice?.deviceId
 
-        // Filtrar y mapear las rutas en un solo paso
         val newDevices = mediaRouter.routes
             .filter { !it.isDefault }
             .map { route ->
@@ -455,9 +452,8 @@ class CastManager(
                     isSelected = route.id == connectedDeviceId,
                 )
             }
-            .distinctBy { it.id } // Asegurarse de que no hay duplicados por ID
+            .distinctBy { it.id }
 
-        // Solo actualizar si realmente hay cambios
         if (_availableDevices.value != newDevices) {
             _availableDevices.value = newDevices
 
@@ -705,13 +701,5 @@ class CastManager(
             fontFamily = subtitlePreferences.getFontFamily(),
             borderStyle = subtitlePreferences.getBorderStyle(),
         )
-    }
-
-    fun setPlaybackSpeed(speed: Float) {
-        try {
-            castSession?.remoteMediaClient?.setPlaybackRate(speed.toDouble())
-        } catch (e: Exception) {
-            logcat(LogPriority.ERROR) { "Error setting playback speed: ${e.message}" }
-        }
     }
 }

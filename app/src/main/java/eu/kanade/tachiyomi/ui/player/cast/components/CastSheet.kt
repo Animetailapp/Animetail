@@ -56,7 +56,6 @@ fun CastSheet(
     LaunchedEffect(castState) {
         if (castState == CastManager.CastState.CONNECTING) {
             delay(2000)
-            // No volver a buscar dispositivos si ya estamos conectados
             if (castState != CastManager.CastState.CONNECTED) {
                 castManager.startDeviceDiscovery()
             }

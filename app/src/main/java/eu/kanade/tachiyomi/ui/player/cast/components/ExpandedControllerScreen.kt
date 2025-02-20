@@ -510,7 +510,6 @@ fun ExpandedControllerScreen(
         )
     }
 
-    // Diálogo de velocidad de reproducción
     if (showSpeedDialog) {
         AlertDialog(
             onDismissRequest = { showSpeedDialog = false },
