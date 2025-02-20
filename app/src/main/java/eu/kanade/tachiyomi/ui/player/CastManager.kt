@@ -385,29 +385,38 @@ class CastManager(
                     .build()
 
                 // Limpiar callback anterior
-                mediaRouterCallback?.let { 
+                mediaRouterCallback?.let {
                     mediaRouter.removeCallback(it)
                     mediaRouterCallback = null
                 }
 
                 mediaRouterCallback = object : androidx.mediarouter.media.MediaRouter.Callback() {
                     private var lastUpdate = 0L
-                    
-                    override fun onRouteAdded(router: androidx.mediarouter.media.MediaRouter, route: androidx.mediarouter.media.MediaRouter.RouteInfo) {
+
+                    override fun onRouteAdded(
+                        router: androidx.mediarouter.media.MediaRouter,
+                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
+                    ) {
                         if (System.currentTimeMillis() - lastUpdate > 1000) {
                             lastUpdate = System.currentTimeMillis()
                             updateDevicesList(currentSession)
                         }
                     }
 
-                    override fun onRouteRemoved(router: androidx.mediarouter.media.MediaRouter, route: androidx.mediarouter.media.MediaRouter.RouteInfo) {
+                    override fun onRouteRemoved(
+                        router: androidx.mediarouter.media.MediaRouter,
+                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
+                    ) {
                         if (System.currentTimeMillis() - lastUpdate > 1000) {
                             lastUpdate = System.currentTimeMillis()
                             updateDevicesList(currentSession)
                         }
                     }
 
-                    override fun onRouteChanged(router: androidx.mediarouter.media.MediaRouter, route: androidx.mediarouter.media.MediaRouter.RouteInfo) {
+                    override fun onRouteChanged(
+                        router: androidx.mediarouter.media.MediaRouter,
+                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
+                    ) {
                         if (System.currentTimeMillis() - lastUpdate > 1000) {
                             lastUpdate = System.currentTimeMillis()
                             updateDevicesList(currentSession)
@@ -417,7 +426,7 @@ class CastManager(
                     mediaRouter.addCallback(
                         selector,
                         callback,
-                        androidx.mediarouter.media.MediaRouter.CALLBACK_FLAG_PERFORM_ACTIVE_SCAN
+                        androidx.mediarouter.media.MediaRouter.CALLBACK_FLAG_PERFORM_ACTIVE_SCAN,
                     )
                 }
 
@@ -434,7 +443,7 @@ class CastManager(
 
     private fun updateDevicesList(currentSession: CastSession?) {
         val connectedDeviceId = currentSession?.castDevice?.deviceId
-        
+
         // Filtrar y mapear las rutas en un solo paso
         val newDevices = mediaRouter.routes
             .filter { !it.isDefault }
@@ -443,7 +452,7 @@ class CastManager(
                     id = route.id,
                     name = route.name,
                     isConnected = route.id == connectedDeviceId,
-                    isSelected = route.id == connectedDeviceId
+                    isSelected = route.id == connectedDeviceId,
                 )
             }
             .distinctBy { it.id } // Asegurarse de que no hay duplicados por ID
@@ -451,10 +460,10 @@ class CastManager(
         // Solo actualizar si realmente hay cambios
         if (_availableDevices.value != newDevices) {
             _availableDevices.value = newDevices
-            
+
             when {
                 newDevices.any { it.isConnected } -> _castState.value = CastState.CONNECTED
-                newDevices.isEmpty() && _castState.value != CastState.DISCONNECTED -> 
+                newDevices.isEmpty() && _castState.value != CastState.DISCONNECTED ->
                     _castState.value = CastState.DISCONNECTED
             }
         }
@@ -696,5 +705,13 @@ class CastManager(
             fontFamily = subtitlePreferences.getFontFamily(),
             borderStyle = subtitlePreferences.getBorderStyle(),
         )
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        try {
+            castSession?.remoteMediaClient?.setPlaybackRate(speed.toDouble())
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR) { "Error setting playback speed: ${e.message}" }
+        }
     }
 }

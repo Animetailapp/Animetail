@@ -103,6 +103,8 @@ fun ExpandedControllerScreen(
     var showDisconnectDialog by remember { mutableStateOf(false) }
     var showSubtitleSettings by remember { mutableStateOf(false) }
     var subtitleSettings by remember { mutableStateOf(SubtitleSettings()) }
+    var showSpeedDialog by remember { mutableStateOf(false) }
+    var currentSpeed by remember { mutableFloatStateOf(1f) }
 
     val mediaCallback = remember {
         object : RemoteMediaClient.Callback() {
@@ -319,7 +321,6 @@ fun ExpandedControllerScreen(
                             )
                         }
                     }
-
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -354,8 +355,6 @@ fun ExpandedControllerScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-
-                        // Rewind
                         FilledIconButton(
                             onClick = { client?.seek(currentPosition - 30000) },
                             colors = IconButtonDefaults.filledIconButtonColors(
@@ -434,18 +433,32 @@ fun ExpandedControllerScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        FilledTonalIconButton(
+                        FilledIconButton(
+                            onClick = { showSpeedDialog = true },
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            ),
+                        ) {
+                            Text(
+                                text = "${currentSpeed}x",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        FilledIconButton(
                             onClick = { showTracksDialog = true },
-                            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
                             ),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Subtitles,
                                 contentDescription = stringResource(TLMR.strings.cast_tracks),
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
 
@@ -493,6 +506,49 @@ fun ExpandedControllerScreen(
             onSettingsChanged = { newSettings ->
                 subtitleSettings = newSettings
                 castManager.applySubtitleSettings(newSettings)
+            },
+        )
+    }
+
+    // Diálogo de velocidad de reproducción
+    if (showSpeedDialog) {
+        AlertDialog(
+            onDismissRequest = { showSpeedDialog = false },
+            title = { Text(stringResource(TLMR.strings.playback_speed)) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f).forEach { speed ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    currentSpeed = speed
+                                    client?.setPlaybackRate(speed.toDouble())
+                                    showSpeedDialog = false
+                                }
+                                .padding(vertical = 12.dp, horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("${speed}x")
+                            if (speed == currentSpeed) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSpeedDialog = false }) {
+                    Text(stringResource(TLMR.strings.cast_close))
+                }
             },
         )
     }
