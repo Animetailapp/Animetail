@@ -46,6 +46,25 @@ class CastManager(
     private val activity: ComponentActivity,
     private val preferenceStore: PreferenceStore,
 ) {
+    enum class CastState {
+        CONNECTED,
+        DISCONNECTED,
+        CONNECTING,
+    }
+
+    data class CastDevice(
+        val id: String,
+        val name: String,
+        val isConnected: Boolean = false,
+        val isSelected: Boolean = false,
+    )
+
+    data class CastMedia(
+        val title: String,
+        val subtitle: String,
+        val thumbnail: String?,
+    )
+
     private val context = activity.applicationContext
     private val viewModel by lazy {
         when (activity) {
@@ -56,9 +75,7 @@ class CastManager(
             else -> null
         }
     }
-    private val player by lazy {
-        (activity as? PlayerActivity)?.player
-    }
+    private val player by lazy { (activity as? PlayerActivity)?.player }
     private val playerPreferences: PlayerPreferences by lazy {
         viewModel?.playerPreferences ?: PlayerPreferences(preferenceStore)
     }
@@ -66,6 +83,9 @@ class CastManager(
     private val subtitlePreferences = CastSubtitlePreferences(preferenceStore)
     private val mediaBuilder by lazy {
         viewModel?.let { CastMediaBuilder(it, activity as PlayerActivity) }
+    }
+    private val mediaRouter by lazy {
+        androidx.mediarouter.media.MediaRouter.getInstance(context)
     }
 
     private val _castState = MutableStateFlow(CastState.DISCONNECTED)
@@ -76,6 +96,8 @@ class CastManager(
     private var castSession: CastSession? = null
     private var sessionListener: CastSessionListener? = null
     private var castProgressJob: Job? = null
+    private var discoveryRetryJob: Job? = null
+    private var mediaRouterCallback: androidx.mediarouter.media.MediaRouter.Callback? = null
 
     private val isCastApiAvailable: Boolean
         get() = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS
@@ -100,12 +122,6 @@ class CastManager(
 
     private val _volume = MutableStateFlow(1f)
     val volume: StateFlow<Float> = _volume.asStateFlow()
-
-    data class CastMedia(
-        val title: String,
-        val subtitle: String,
-        val thumbnail: String?,
-    )
 
     init {
         initializeCast()
@@ -136,6 +152,9 @@ class CastManager(
     }
 
     fun cleanup() {
+        discoveryRetryJob?.cancel()
+        mediaRouterCallback?.let { mediaRouter.removeCallback(it) }
+        mediaRouterCallback = null
         unregisterSessionListener()
         castSession = null
     }
@@ -153,7 +172,6 @@ class CastManager(
                 override fun onStatusUpdated() {
                     updateCurrentMedia()
                     updateQueueItems()
-                    // Aplicar configuración de subtítulos cuando cambia el estado
                     if (session.remoteMediaClient?.hasMediaSession() == true) {
                         applySubtitleSettings(getDefaultSubtitleSettings())
                     }
@@ -350,12 +368,9 @@ class CastManager(
         }
     }
 
-    private val mediaRouter by lazy {
-        androidx.mediarouter.media.MediaRouter.getInstance(context)
-    }
-
     fun startDeviceDiscovery() {
         if (!isCastApiAvailable) return
+        discoveryRetryJob?.cancel()
 
         try {
             castContext?.let { castContext ->
@@ -363,40 +378,54 @@ class CastManager(
                     _castState.value = CastState.CONNECTING
                 }
 
-                val currentSession = castContext.sessionManager?.currentCastSession
+                val currentSession = castContext.sessionManager.currentCastSession
                 val selector = androidx.mediarouter.media.MediaRouteSelector.Builder()
                     .addControlCategory(androidx.mediarouter.media.MediaControlIntent.CATEGORY_LIVE_VIDEO)
                     .addControlCategory(androidx.mediarouter.media.MediaControlIntent.CATEGORY_REMOTE_PLAYBACK)
                     .build()
 
-                val callback = object : androidx.mediarouter.media.MediaRouter.Callback() {
-                    override fun onRouteAdded(
-                        router: androidx.mediarouter.media.MediaRouter,
-                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
-                    ) {
-                        updateDevicesList(currentSession)
-                    }
-
-                    override fun onRouteRemoved(
-                        router: androidx.mediarouter.media.MediaRouter,
-                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
-                    ) {
-                        updateDevicesList(currentSession)
-                    }
-
-                    override fun onRouteChanged(
-                        router: androidx.mediarouter.media.MediaRouter,
-                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
-                    ) {
-                        updateDevicesList(currentSession)
-                    }
+                // Limpiar callback anterior
+                mediaRouterCallback?.let { 
+                    mediaRouter.removeCallback(it)
+                    mediaRouterCallback = null
                 }
 
-                mediaRouter.addCallback(selector, callback)
+                mediaRouterCallback = object : androidx.mediarouter.media.MediaRouter.Callback() {
+                    private var lastUpdate = 0L
+                    
+                    override fun onRouteAdded(router: androidx.mediarouter.media.MediaRouter, route: androidx.mediarouter.media.MediaRouter.RouteInfo) {
+                        if (System.currentTimeMillis() - lastUpdate > 1000) {
+                            lastUpdate = System.currentTimeMillis()
+                            updateDevicesList(currentSession)
+                        }
+                    }
+
+                    override fun onRouteRemoved(router: androidx.mediarouter.media.MediaRouter, route: androidx.mediarouter.media.MediaRouter.RouteInfo) {
+                        if (System.currentTimeMillis() - lastUpdate > 1000) {
+                            lastUpdate = System.currentTimeMillis()
+                            updateDevicesList(currentSession)
+                        }
+                    }
+
+                    override fun onRouteChanged(router: androidx.mediarouter.media.MediaRouter, route: androidx.mediarouter.media.MediaRouter.RouteInfo) {
+                        if (System.currentTimeMillis() - lastUpdate > 1000) {
+                            lastUpdate = System.currentTimeMillis()
+                            updateDevicesList(currentSession)
+                        }
+                    }
+                }.also { callback ->
+                    mediaRouter.addCallback(
+                        selector,
+                        callback,
+                        androidx.mediarouter.media.MediaRouter.CALLBACK_FLAG_PERFORM_ACTIVE_SCAN
+                    )
+                }
+
+                // Una sola actualización inicial
                 updateDevicesList(currentSession)
             }
         } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e)
+            logcat(LogPriority.ERROR) { "Error in startDeviceDiscovery: ${e.message}" }
             if (_castState.value != CastState.CONNECTED) {
                 _castState.value = CastState.DISCONNECTED
             }
@@ -404,48 +433,89 @@ class CastManager(
     }
 
     private fun updateDevicesList(currentSession: CastSession?) {
-        val devices = mediaRouter.routes.mapNotNull { route ->
-            if (!route.isDefault) {
+        val connectedDeviceId = currentSession?.castDevice?.deviceId
+        
+        // Filtrar y mapear las rutas en un solo paso
+        val newDevices = mediaRouter.routes
+            .filter { !it.isDefault }
+            .map { route ->
                 CastDevice(
                     id = route.id,
                     name = route.name,
-                    isConnected = route.id == currentSession?.castDevice?.deviceId,
+                    isConnected = route.id == connectedDeviceId,
+                    isSelected = route.id == connectedDeviceId
                 )
-            } else {
-                null
             }
-        }
+            .distinctBy { it.id } // Asegurarse de que no hay duplicados por ID
 
-        _availableDevices.value = devices
-
-        if (devices.any { it.isConnected }) {
-            if (_castState.value != CastState.CONNECTED) {
-                _castState.value = CastState.CONNECTED
+        // Solo actualizar si realmente hay cambios
+        if (_availableDevices.value != newDevices) {
+            _availableDevices.value = newDevices
+            
+            when {
+                newDevices.any { it.isConnected } -> _castState.value = CastState.CONNECTED
+                newDevices.isEmpty() && _castState.value != CastState.DISCONNECTED -> 
+                    _castState.value = CastState.DISCONNECTED
             }
-        } else if (devices.isEmpty() && _castState.value != CastState.DISCONNECTED) {
-            _castState.value = CastState.DISCONNECTED
         }
     }
 
     fun connectToDevice(deviceId: String) {
         try {
-            val route = mediaRouter.routes.find { it.id == deviceId }
-            if (route != null) {
-                if (route.id == castSession?.castDevice?.deviceId) {
-                    return
+            val route = mediaRouter.routes.find { it.id == deviceId } ?: return
+            if (route.id == castSession?.castDevice?.deviceId) return
+
+            _availableDevices.value = _availableDevices.value.map { device ->
+                device.copy(isSelected = device.id == deviceId)
+            }
+
+            activity.lifecycleScope.launch {
+                try {
+                    _castState.value = CastState.CONNECTING
+                    mediaRouter.selectRoute(route)
+
+                    var attempts = 0
+                    while (attempts < 5) {
+                        if (castSession?.isConnected == true) {
+                            _castState.value = CastState.CONNECTED
+                            return@launch
+                        }
+                        delay(15000)
+                        attempts++
+                    }
+
+                    if (castSession?.isConnected != true) {
+                        _castState.value = CastState.DISCONNECTED
+                        showConnectionErrorToast()
+                    }
+                } catch (e: Exception) {
+                    _availableDevices.value = _availableDevices.value.map { device ->
+                        device.copy(isSelected = device.isConnected)
+                    }
+                    logcat(LogPriority.ERROR) { "Error connecting to device: ${e.message}" }
+                    _castState.value = CastState.DISCONNECTED
+                    showConnectionErrorToast()
                 }
-                mediaRouter.selectRoute(route)
             }
         } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e)
+            _availableDevices.value = _availableDevices.value.map { device ->
+                device.copy(isSelected = device.isConnected)
+            }
+            logcat(LogPriority.ERROR) { "Error in connectToDevice: ${e.message}" }
+            _castState.value = CastState.DISCONNECTED
+            showConnectionErrorToast()
         }
     }
 
-    data class CastDevice(
-        val id: String,
-        val name: String,
-        val isConnected: Boolean = false,
-    )
+    private fun showConnectionErrorToast() {
+        activity.runOnUiThread {
+            Toast.makeText(
+                context,
+                context.stringResource(TLMR.strings.cast_connection_error),
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
 
     fun playPause() {
         castSession?.remoteMediaClient?.let { client ->
@@ -531,12 +601,6 @@ class CastManager(
         _castState.value = CastState.DISCONNECTED
     }
 
-    enum class CastState {
-        CONNECTED,
-        DISCONNECTED,
-        CONNECTING,
-    }
-
     fun applySubtitleSettings(settings: SubtitleSettings) {
         try {
             val session = castSession ?: run {
@@ -575,7 +639,6 @@ class CastManager(
                             edgeType = TextTrackStyle.EDGE_TYPE_NONE
                         }
 
-                        // Aplicar la familia de fuente seleccionada
                         when (settings.fontFamily) {
                             FontFamily.Default -> setFontFamily("SANS_SERIF")
                             FontFamily.SansSerif -> setFontFamily("SANS_SERIF")
@@ -594,7 +657,6 @@ class CastManager(
                             else -> TextTrackStyle.FONT_FAMILY_SANS_SERIF
                         }
 
-                        // Aplicar estilo de borde
                         edgeType = when (settings.borderStyle) {
                             BorderStyle.NONE -> TextTrackStyle.EDGE_TYPE_NONE
                             BorderStyle.OUTLINE -> TextTrackStyle.EDGE_TYPE_OUTLINE

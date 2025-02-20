@@ -302,4 +302,5 @@
     <string name="cast_subtitle_border_drop_shadow_soft">Soft Drop Shadow</string>
     <string name="cast_subtitle_border_raised">Raised</string>
     <string name="cast_subtitle_border_depressed">Depressed</string>
+    <string name="cast_connection_error">Connection Error</string>
 </resources>
