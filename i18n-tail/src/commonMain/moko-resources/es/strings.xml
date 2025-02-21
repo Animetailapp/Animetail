@@ -229,4 +229,40 @@
   <string name="cast_forward_30s">Avanzar 30s</string>
   <string name="cast_volume">Volumen</string>
   <string name="cast_end_session">Finalizar Sesión Cast</string>
+  <string name="empty_queue">Queue is empty</string>
+  <string name="cast_end_session_message">Are you sure you want to end the current cast session?</string>
+  <string name="cast_end_session_confirm">End Session</string>
+  <string name="cast_end_session_cancel">Cancel</string>
+  <string name="playback_speed">Playback Speed</string>
+  <string-array name="cast_subtitle_settings">
+    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Subtitle Settings</item>
+    <item>Subtitle Settings</item>
+  </string-array>
+  <string name="cast_subtitle_font_size">Font Size</string>
+  <string name="cast_subtitle_text_color">Text Color</string>
+  <string name="cast_subtitle_background">Background</string>
+  <string name="cast_subtitle_shadow">Shadow</string>
+  <string name="cast_subtitle_apply">Apply</string>
+  <string name="cast_subtitle_reset">Reset to Default</string>
+  <string name="cast_subtitle_shadow_None">None</string>
+  <string name="cast_subtitle_shadow_Light">Light</string>
+  <string name="cast_subtitle_shadow_Medium">Medium</string>
+  <string name="cast_subtitle_shadow_Strong">Negrita</string>
+  <string name="cast_subtitle_preview">Vista previa del texto あ漢</string>
+  <string name="cast_tracks">Seleccionar Subtítulo/Audio</string>
+  <string name="cast_volume_down">Bajar Volumen</string>
+  <string name="cast_volume_up">Subir Volumen</string>
+  <string name="cast_subtitles">Subtítulos</string>
+  <string name="cast_audio_tracks">Audio</string>
+  <string name="cast_no_subtitles">Sin subtítulos</string>
+  <string name="cast_close">Cerrar</string>
+  <string name="cast_subtitle_font_family">Familia de la fuente</string>
+  <string name="cast_subtitle_border_style">Estilo del borde</string>
+  <string name="cast_subtitle_border_none">Nada</string>
+  <string name="cast_subtitle_border_outline">Contorno</string>
+  <string name="cast_subtitle_border_drop_shadow">Sombra paralela</string>
+  <string name="cast_subtitle_border_drop_shadow_soft">Sombra Suave</string>
+  <string name="cast_subtitle_border_raised">Elevado</string>
+  <string name="cast_subtitle_border_depressed">Depressed</string>
+  <string name="cast_connection_error">Connection Error</string>
 </resources>
