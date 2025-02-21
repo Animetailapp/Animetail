@@ -16,11 +16,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Forward30
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -29,9 +37,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Subtitles
-import androidx.compose.material.icons.filled.VolumeDown
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -49,6 +54,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -69,6 +75,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil3.compose.AsyncImage
 import com.google.android.gms.cast.MediaMetadata
+import com.google.android.gms.cast.MediaQueueItem
 import com.google.android.gms.cast.MediaStatus
 import com.google.android.gms.cast.MediaTrack
 import com.google.android.gms.cast.framework.CastContext
@@ -105,6 +112,7 @@ fun ExpandedControllerScreen(
     var subtitleSettings by remember { mutableStateOf(SubtitleSettings()) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var currentSpeed by remember { mutableFloatStateOf(1f) }
+    var showQueueDialog by remember { mutableStateOf(false) }
 
     val mediaCallback = remember {
         object : RemoteMediaClient.Callback() {
@@ -462,6 +470,19 @@ fun ExpandedControllerScreen(
                             )
                         }
 
+                        FilledIconButton(
+                            onClick = { showQueueDialog = true },
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.QueueMusic,
+                                contentDescription = stringResource(TLMR.strings.queue),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
                         VolumeControl(castContext = castContext)
                     }
                 }
@@ -551,6 +572,14 @@ fun ExpandedControllerScreen(
             },
         )
     }
+
+    if (showQueueDialog) {
+        QueueDialog(
+            client = client,
+            castManager = castManager,
+            onDismiss = { showQueueDialog = false },
+        )
+    }
 }
 
 @Composable
@@ -577,9 +606,9 @@ private fun VolumeControl(
             ) {
                 Icon(
                     imageVector = when {
-                        volume == 0f -> Icons.Default.VolumeOff
-                        volume < 0.5f -> Icons.Default.VolumeDown
-                        else -> Icons.Default.VolumeUp
+                        volume == 0f -> Icons.AutoMirrored.Filled.VolumeOff
+                        volume < 0.5f -> Icons.AutoMirrored.Filled.VolumeDown
+                        else -> Icons.AutoMirrored.Filled.VolumeUp
                     },
                     contentDescription = stringResource(TLMR.strings.cast_volume),
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -615,7 +644,7 @@ private fun VolumeControl(
                                 modifier = Modifier.size(32.dp),
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.VolumeDown,
+                                    imageVector = Icons.AutoMirrored.Filled.VolumeDown,
                                     contentDescription = stringResource(TLMR.strings.cast_volume_down),
                                     modifier = Modifier.size(20.dp),
                                 )
@@ -650,7 +679,7 @@ private fun VolumeControl(
                                 modifier = Modifier.size(32.dp),
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.VolumeUp,
+                                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                                     contentDescription = stringResource(TLMR.strings.cast_volume_up),
                                     modifier = Modifier.size(20.dp),
                                 )
@@ -664,6 +693,198 @@ private fun VolumeControl(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QueueDialog(
+    client: RemoteMediaClient?,
+    castManager: CastManager,
+    onDismiss: () -> Unit,
+) {
+    val queueItems by castManager.queueItems.collectAsState()
+    LaunchedEffect(client) {
+        client?.registerCallback(object : RemoteMediaClient.Callback() {
+            override fun onStatusUpdated() {
+                castManager.updateQueueItems()
+            }
+
+            override fun onMetadataUpdated() {
+                castManager.updateQueueItems()
+            }
+
+            override fun onQueueStatusUpdated() {
+                castManager.updateQueueItems()
+            }
+
+            override fun onPreloadStatusUpdated() {
+                castManager.updateQueueItems()
+            }
+        })
+        client?.requestStatus()
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            castManager.updateQueueItems()
+            delay(1000)
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(TLMR.strings.queue)) },
+        text = {
+            if (queueItems.isEmpty() && client?.hasMediaSession() != true) {
+                Text(
+                    text = stringResource(TLMR.strings.empty_queue),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.height(200.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    client?.mediaInfo?.let { currentMediaInfo ->
+                        item {
+                            ExpandedControllerQueueItem(
+                                item = MediaQueueItem.Builder(currentMediaInfo).build(),
+                                castManager = castManager,
+                                currentIndex = -1,
+                                totalItems = queueItems.size,
+                                isCurrentItem = true,
+                                onMoveUp = { },
+                                onMoveDown = { },
+                            )
+                        }
+                    }
+
+                    itemsIndexed(queueItems.filter { it.itemId != client?.currentItem?.itemId }) { index, item ->
+                        ExpandedControllerQueueItem(
+                            item = item,
+                            castManager = castManager,
+                            currentIndex = index,
+                            totalItems = queueItems.size - 1,
+                            isCurrentItem = false,
+                            onMoveUp = { castManager.moveQueueItem(item.itemId, index - 1) },
+                            onMoveDown = { castManager.moveQueueItem(item.itemId, index + 1) },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(TLMR.strings.cast_close))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ExpandedControllerQueueItem(
+    item: MediaQueueItem,
+    castManager: CastManager,
+    currentIndex: Int,
+    totalItems: Int,
+    isCurrentItem: Boolean = false,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (isCurrentItem) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surface
+                },
+                shape = MaterialTheme.shapes.small,
+            )
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (!isCurrentItem) {
+            Column {
+                IconButton(
+                    onClick = onMoveUp,
+                    enabled = currentIndex > 0,
+                    modifier = Modifier.size(24.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowUpward,
+                        contentDescription = "",
+                        tint = if (currentIndex > 0) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        },
+                    )
+                }
+                IconButton(
+                    onClick = onMoveDown,
+                    enabled = currentIndex < totalItems - 1,
+                    modifier = Modifier.size(24.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDownward,
+                        contentDescription = "",
+                        tint = if (currentIndex < totalItems - 1) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        },
+                    )
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = item.media?.metadata?.getString(MediaMetadata.KEY_TITLE) ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isCurrentItem) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = item.media?.metadata?.getString(MediaMetadata.KEY_SUBTITLE) ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isCurrentItem) {
+                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        if (!isCurrentItem) {
+            IconButton(
+                onClick = {
+                    castManager.removeQueueItem(item.itemId)
+                    castManager.updateQueueItems()
+                },
+                modifier = Modifier.size(32.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Clear,
+                    contentDescription = stringResource(TLMR.strings.cast_remove_from_queue),
+                    tint = MaterialTheme.colorScheme.error,
+                )
             }
         }
     }

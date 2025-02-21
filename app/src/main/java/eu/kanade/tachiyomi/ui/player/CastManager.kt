@@ -167,25 +167,28 @@ class CastManager(
         updateCurrentMedia()
         updateQueueItems()
 
-        session.remoteMediaClient?.registerCallback(
-            object : RemoteMediaClient.Callback() {
-                override fun onStatusUpdated() {
-                    updateCurrentMedia()
-                    updateQueueItems()
-                    if (session.remoteMediaClient?.hasMediaSession() == true) {
-                        applySubtitleSettings(getDefaultSubtitleSettings())
-                    }
+        session.remoteMediaClient?.registerCallback(object : RemoteMediaClient.Callback() {
+            override fun onStatusUpdated() {
+                updateCurrentMedia()
+                updateQueueItems()
+                if (session.remoteMediaClient?.hasMediaSession() == true) {
+                    applySubtitleSettings(getDefaultSubtitleSettings())
                 }
+            }
 
-                override fun onQueueStatusUpdated() {
-                    updateQueueItems()
-                }
+            override fun onMetadataUpdated() {
+                updateCurrentMedia()
+                updateQueueItems()
+            }
 
-                override fun onPreloadStatusUpdated() {
-                    updateQueueItems()
-                }
-            },
-        )
+            override fun onQueueStatusUpdated() {
+                updateQueueItems()
+            }
+
+            override fun onPreloadStatusUpdated() {
+                updateQueueItems()
+            }
+        })
     }
 
     fun onSessionEnded() {
@@ -218,13 +221,19 @@ class CastManager(
     }
 
     fun removeQueueItem(itemId: Int) {
-        castSession?.remoteMediaClient?.queueRemoveItem(itemId, null)
-        updateQueueItems()
+        castSession?.remoteMediaClient?.queueRemoveItem(itemId, null)?.setResultCallback { result ->
+            if (result.status.isSuccess) {
+                updateQueueItems()
+            }
+        }
     }
 
     fun moveQueueItem(itemId: Int, newIndex: Int) {
-        castSession?.remoteMediaClient?.queueMoveItemToNewIndex(itemId, newIndex, null)
-        updateQueueItems()
+        castSession?.remoteMediaClient?.queueMoveItemToNewIndex(itemId, newIndex, null)?.setResultCallback { result ->
+            if (result.status.isSuccess) {
+                updateQueueItems()
+            }
+        }
     }
 
     // Media Loading & Progress Tracking
@@ -250,6 +259,7 @@ class CastManager(
 
                     mediaQueue.add(queueItem)
                     remoteMediaClient.queueAppendItem(queueItem, null)
+                    updateQueueItems()
                     showAddedToQueueToast()
                 } else {
                     remoteMediaClient.load(
@@ -259,11 +269,9 @@ class CastManager(
                             .setCurrentTime(currentLocalPosition * 1000)
                             .build(),
                     )
+                    updateQueueItems()
                 }
-                updateQueueItems()
                 _castState.value = CastState.CONNECTED
-                delay(500)
-                applySubtitleSettings(getDefaultSubtitleSettings())
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR) { "Error loading media: ${e.message}" }
                 showLoadErrorToast()
@@ -318,8 +326,8 @@ class CastManager(
         }
     }
 
-    private fun updateQueueItems() {
-        _queueItems.value = castSession?.remoteMediaClient?.mediaQueue?.let { queue ->
+    fun updateQueueItems(items: List<MediaQueueItem>? = null) {
+        _queueItems.value = items ?: castSession?.remoteMediaClient?.mediaQueue?.let { queue ->
             (0 until queue.itemCount).mapNotNull { index ->
                 queue.getItemAtIndex(index)
             }
