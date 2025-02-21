@@ -229,24 +229,24 @@
   <string name="cast_forward_30s">Avanzar 30s</string>
   <string name="cast_volume">Volumen</string>
   <string name="cast_end_session">Finalizar Sesión Cast</string>
-  <string name="empty_queue">Queue is empty</string>
-  <string name="cast_end_session_message">Are you sure you want to end the current cast session?</string>
-  <string name="cast_end_session_confirm">End Session</string>
-  <string name="cast_end_session_cancel">Cancel</string>
-  <string name="playback_speed">Playback Speed</string>
+  <string name="empty_queue">La cola está vacía</string>
+  <string name="cast_end_session_message">¿Seguro que quieres finalizar la transmisión actual?</string>
+  <string name="cast_end_session_confirm">Terminar sesión</string>
+  <string name="cast_end_session_cancel">Cancelar</string>
+  <string name="playback_speed">Velocidad de reproducción</string>
   <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Subtitle Settings</item>
-    <item>Subtitle Settings</item>
+    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Configuración de subtítulos</item>
+    <item>Configuración de subtítulos</item>
   </string-array>
-  <string name="cast_subtitle_font_size">Font Size</string>
-  <string name="cast_subtitle_text_color">Text Color</string>
-  <string name="cast_subtitle_background">Background</string>
-  <string name="cast_subtitle_shadow">Shadow</string>
-  <string name="cast_subtitle_apply">Apply</string>
-  <string name="cast_subtitle_reset">Reset to Default</string>
-  <string name="cast_subtitle_shadow_None">None</string>
-  <string name="cast_subtitle_shadow_Light">Light</string>
-  <string name="cast_subtitle_shadow_Medium">Medium</string>
+  <string name="cast_subtitle_font_size">Tamaño de fuente</string>
+  <string name="cast_subtitle_text_color">Color del texto</string>
+  <string name="cast_subtitle_background">Fondo</string>
+  <string name="cast_subtitle_shadow">Sombras</string>
+  <string name="cast_subtitle_apply">Aplicar</string>
+  <string name="cast_subtitle_reset">Restablecer valores predeterminados</string>
+  <string name="cast_subtitle_shadow_None">Nada</string>
+  <string name="cast_subtitle_shadow_Light">Claro</string>
+  <string name="cast_subtitle_shadow_Medium">Mediano</string>
   <string name="cast_subtitle_shadow_Strong">Negrita</string>
   <string name="cast_subtitle_preview">Vista previa del texto あ漢</string>
   <string name="cast_tracks">Seleccionar Subtítulo/Audio</string>
@@ -263,6 +263,6 @@
   <string name="cast_subtitle_border_drop_shadow">Sombra paralela</string>
   <string name="cast_subtitle_border_drop_shadow_soft">Sombra Suave</string>
   <string name="cast_subtitle_border_raised">Elevado</string>
-  <string name="cast_subtitle_border_depressed">Depressed</string>
-  <string name="cast_connection_error">Connection Error</string>
+  <string name="cast_subtitle_border_depressed">Melancólico</string>
+  <string name="cast_connection_error">Error de Conexión</string>
 </resources>
