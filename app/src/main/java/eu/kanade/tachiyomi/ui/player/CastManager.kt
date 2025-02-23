@@ -26,6 +26,7 @@ import eu.kanade.tachiyomi.ui.player.cast.components.BorderStyle
 import eu.kanade.tachiyomi.ui.player.cast.components.SubtitleSettings
 import eu.kanade.tachiyomi.ui.player.settings.CastSubtitlePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.PreferenceStore
@@ -93,7 +95,7 @@ class CastManager(
 
     var castContext: CastContext? = null
         private set
-    private var castSession: CastSession? = null
+    var castSession: CastSession? = null
     private var sessionListener: CastSessionListener? = null
     private var castProgressJob: Job? = null
     private var discoveryRetryJob: Job? = null
@@ -615,88 +617,92 @@ class CastManager(
     }
 
     fun applySubtitleSettings(settings: SubtitleSettings) {
-        try {
-            val session = castSession ?: run {
-                castContext?.sessionManager?.currentCastSession?.let { currentSession ->
-                    castSession = currentSession
-                    currentSession
-                } ?: run {
-                    logcat(LogPriority.ERROR) { "No active cast session found, trying to reconnect..." }
-                    reconnect()
-                    castSession
-                }
-            } ?: run {
-                logcat(LogPriority.ERROR) { "Failed to get cast session" }
-                return
-            }
-            val client = session.remoteMediaClient ?: run {
-                logcat(LogPriority.ERROR) { "No remote media client available" }
-                return
-            }
-            subtitlePreferences.saveTextTrackStyle(settings)
-            activity.lifecycleScope.launch {
+        activity.lifecycleScope.launchWhenStarted {
+            withContext(Dispatchers.IO) {
                 try {
-                    val textTrackStyle = TextTrackStyle().apply {
-                        fontScale = settings.fontSize.value / 20f
-                        foregroundColor = settings.textColor.toArgb()
-                        backgroundColor = settings.backgroundColor.toArgb()
-                        windowColor = android.graphics.Color.TRANSPARENT
-                        if (settings.shadowRadius.value > 0) {
-                            edgeColor = android.graphics.Color.BLACK
-                            edgeType = when {
-                                settings.shadowRadius.value <= 3 -> TextTrackStyle.EDGE_TYPE_DEPRESSED
-                                settings.shadowRadius.value <= 6 -> TextTrackStyle.EDGE_TYPE_DROP_SHADOW
-                                else -> TextTrackStyle.EDGE_TYPE_OUTLINE
+                    val session = castSession ?: run {
+                        castContext?.sessionManager?.currentCastSession?.let { currentSession ->
+                            castSession = currentSession
+                            currentSession
+                        } ?: run {
+                            logcat(LogPriority.ERROR) { "No active cast session found, trying to reconnect..." }
+                            reconnect()
+                            castSession
+                        }
+                    } ?: run {
+                        logcat(LogPriority.ERROR) { "Failed to get cast session" }
+                        return@withContext
+                    }
+                    val client = session.remoteMediaClient ?: run {
+                        logcat(LogPriority.ERROR) { "No remote media client available" }
+                        return@withContext
+                    }
+                    subtitlePreferences.saveTextTrackStyle(settings)
+                    activity.lifecycleScope.launch {
+                        try {
+                            val textTrackStyle = TextTrackStyle().apply {
+                                fontScale = settings.fontSize.value / 20f
+                                foregroundColor = settings.textColor.toArgb()
+                                backgroundColor = settings.backgroundColor.toArgb()
+                                windowColor = android.graphics.Color.TRANSPARENT
+                                if (settings.shadowRadius.value > 0) {
+                                    edgeColor = android.graphics.Color.BLACK
+                                    edgeType = when {
+                                        settings.shadowRadius.value <= 3 -> TextTrackStyle.EDGE_TYPE_DEPRESSED
+                                        settings.shadowRadius.value <= 6 -> TextTrackStyle.EDGE_TYPE_DROP_SHADOW
+                                        else -> TextTrackStyle.EDGE_TYPE_OUTLINE
+                                    }
+                                } else {
+                                    edgeType = TextTrackStyle.EDGE_TYPE_NONE
+                                }
+
+                                when (settings.fontFamily) {
+                                    FontFamily.Default -> setFontFamily("SANS_SERIF")
+                                    FontFamily.SansSerif -> setFontFamily("SANS_SERIF")
+                                    FontFamily.Serif -> setFontFamily("SERIF")
+                                    FontFamily.Monospace -> setFontFamily("MONOSPACE")
+                                    FontFamily.Cursive -> setFontFamily("CURSIVE")
+                                    else -> setFontFamily("SANS_SERIF")
+                                }
+
+                                fontStyle = TextTrackStyle.FONT_STYLE_NORMAL
+                                fontGenericFamily = when (settings.fontFamily) {
+                                    FontFamily.SansSerif -> TextTrackStyle.FONT_FAMILY_SANS_SERIF
+                                    FontFamily.Serif -> TextTrackStyle.FONT_FAMILY_SERIF
+                                    FontFamily.Monospace -> TextTrackStyle.FONT_FAMILY_MONOSPACED_SANS_SERIF
+                                    FontFamily.Cursive -> TextTrackStyle.FONT_FAMILY_CURSIVE
+                                    else -> TextTrackStyle.FONT_FAMILY_SANS_SERIF
+                                }
+
+                                edgeType = when (settings.borderStyle) {
+                                    BorderStyle.NONE -> TextTrackStyle.EDGE_TYPE_NONE
+                                    BorderStyle.OUTLINE -> TextTrackStyle.EDGE_TYPE_OUTLINE
+                                    BorderStyle.DROP_SHADOW -> TextTrackStyle.EDGE_TYPE_DROP_SHADOW
+                                    BorderStyle.RAISED -> TextTrackStyle.EDGE_TYPE_RAISED
+                                    BorderStyle.DEPRESSED -> TextTrackStyle.EDGE_TYPE_DEPRESSED
+                                }
                             }
-                        } else {
-                            edgeType = TextTrackStyle.EDGE_TYPE_NONE
-                        }
 
-                        when (settings.fontFamily) {
-                            FontFamily.Default -> setFontFamily("SANS_SERIF")
-                            FontFamily.SansSerif -> setFontFamily("SANS_SERIF")
-                            FontFamily.Serif -> setFontFamily("SERIF")
-                            FontFamily.Monospace -> setFontFamily("MONOSPACE")
-                            FontFamily.Cursive -> setFontFamily("CURSIVE")
-                            else -> setFontFamily("SANS_SERIF")
-                        }
+                            val wasPlaying = client.isPlaying
+                            val activeTrackIds = client.mediaStatus?.activeTrackIds ?: longArrayOf()
+                            client.setTextTrackStyle(textTrackStyle).await()
+                            delay(100)
 
-                        fontStyle = TextTrackStyle.FONT_STYLE_NORMAL
-                        fontGenericFamily = when (settings.fontFamily) {
-                            FontFamily.SansSerif -> TextTrackStyle.FONT_FAMILY_SANS_SERIF
-                            FontFamily.Serif -> TextTrackStyle.FONT_FAMILY_SERIF
-                            FontFamily.Monospace -> TextTrackStyle.FONT_FAMILY_MONOSPACED_SANS_SERIF
-                            FontFamily.Cursive -> TextTrackStyle.FONT_FAMILY_CURSIVE
-                            else -> TextTrackStyle.FONT_FAMILY_SANS_SERIF
-                        }
-
-                        edgeType = when (settings.borderStyle) {
-                            BorderStyle.NONE -> TextTrackStyle.EDGE_TYPE_NONE
-                            BorderStyle.OUTLINE -> TextTrackStyle.EDGE_TYPE_OUTLINE
-                            BorderStyle.DROP_SHADOW -> TextTrackStyle.EDGE_TYPE_DROP_SHADOW
-                            BorderStyle.RAISED -> TextTrackStyle.EDGE_TYPE_RAISED
-                            BorderStyle.DEPRESSED -> TextTrackStyle.EDGE_TYPE_DEPRESSED
+                            if (activeTrackIds.isNotEmpty()) {
+                                client.setActiveMediaTracks(longArrayOf()).await()
+                                if (wasPlaying) {
+                                    client.play().await()
+                                }
+                            }
+                            logcat(LogPriority.INFO) { "Successfully applied subtitle settings" }
+                        } catch (e: Exception) {
+                            logcat(LogPriority.ERROR) { "Error applying subtitle settings: ${e.message}" }
                         }
                     }
-
-                    val wasPlaying = client.isPlaying
-                    val activeTrackIds = client.mediaStatus?.activeTrackIds ?: longArrayOf()
-                    client.setTextTrackStyle(textTrackStyle).await()
-                    delay(100)
-
-                    if (activeTrackIds.isNotEmpty()) {
-                        client.setActiveMediaTracks(longArrayOf()).await()
-                        if (wasPlaying) {
-                            client.play().await()
-                        }
-                    }
-                    logcat(LogPriority.INFO) { "Successfully applied subtitle settings" }
                 } catch (e: Exception) {
-                    logcat(LogPriority.ERROR) { "Error applying subtitle settings: ${e.message}" }
+                    logcat(LogPriority.ERROR) { "Error in applySubtitleSettings: ${e.message}" }
                 }
             }
-        } catch (e: Exception) {
-            logcat(LogPriority.ERROR) { "Error in applySubtitleSettings: ${e.message}" }
         }
     }
 
