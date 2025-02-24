@@ -57,8 +57,10 @@ fun CastMiniController(
     onControllerClick: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
+
     val currentMedia by castManager.currentMedia.collectAsState()
     val isPlaying by castManager.isPlaying.collectAsState()
+
     var client by remember { mutableStateOf<RemoteMediaClient?>(null) }
     var currentPosition by remember { mutableLongStateOf(0L) }
     var duration by remember { mutableLongStateOf(0L) }
@@ -153,24 +155,8 @@ fun CastMiniController(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (!currentMedia?.thumbnail.isNullOrEmpty()) {
-                    Surface(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .padding(end = 8.dp),
-                        shape = RoundedCornerShape(4.dp),
-                    ) {
-                        AsyncImage(
-                            model = currentMedia?.thumbnail,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
                 }
+
                 // Control buttons
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
