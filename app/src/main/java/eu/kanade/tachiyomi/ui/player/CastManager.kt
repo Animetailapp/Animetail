@@ -688,7 +688,7 @@ class CastManager(
                 }
 
                 val wasPlaying = client.isPlaying
-val activeTrackIds = client.mediaStatus?.activeTrackIds ?: longArrayOf()
+                val activeTrackIds = client.mediaStatus?.activeTrackIds ?: longArrayOf()
 
                 val styleApplied = suspendCancellableCoroutine { continuation ->
                     val task = client.setTextTrackStyle(textTrackStyle)
