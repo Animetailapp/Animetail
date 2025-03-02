@@ -607,7 +607,7 @@ class CastManager(
 
     private var lastAppliedSettings: SubtitleSettings? = null
     private var subtitleSettingsJob: Job? = null
-    
+
     fun applySubtitleSettings(settings: SubtitleSettings) {
         subtitleSettingsJob?.cancel()
         if (lastAppliedSettings == settings) {
@@ -615,12 +615,12 @@ class CastManager(
             return
         }
         lastAppliedSettings = settings
-        
+
         subtitleSettingsJob = activity.lifecycleScope.launch {
             try {
                 val session = castSession ?: run {
-                    castContext?.sessionManager?.currentCastSession?.also { 
-                        castSession = it 
+                    castContext?.sessionManager?.currentCastSession?.also {
+                        castSession = it
                     } ?: run {
                         logcat(LogPriority.ERROR) { "No active cast session found" }
                         null
@@ -646,7 +646,7 @@ class CastManager(
                     foregroundColor = settings.textColor.toArgb()
                     backgroundColor = settings.backgroundColor.toArgb()
                     windowColor = android.graphics.Color.TRANSPARENT
-                    
+
                     if (settings.shadowRadius.value > 0) {
                         edgeColor = android.graphics.Color.BLACK
                         edgeType = when {
@@ -702,14 +702,13 @@ class CastManager(
                         task.cancel()
                     }
                 }
-                
+
                 if (!styleApplied) {
                     logcat(LogPriority.ERROR) { "Failed to apply text track style" }
                     return@launch
                 }
 
                 if (activeTrackIds.isNotEmpty()) {
-
                     val tracksDisabled = suspendCancellableCoroutine { continuation ->
                         val task = client.setActiveMediaTracks(longArrayOf())
                         task.setResultCallback { result ->
@@ -722,7 +721,7 @@ class CastManager(
                             task.cancel()
                         }
                     }
-                    
+
                     if (!tracksDisabled) {
                         logcat(LogPriority.ERROR) { "Failed to disable tracks" }
                     } else {
@@ -739,7 +738,7 @@ class CastManager(
                                 task.cancel()
                             }
                         }
-                        
+
                         if (!tracksEnabled) {
                             logcat(LogPriority.ERROR) { "Failed to re-enable tracks" }
                         } else if (wasPlaying) {
@@ -751,7 +750,6 @@ class CastManager(
                 } else {
                     logcat(LogPriority.INFO) { "No active tracks found, skipping refresh" }
                 }
-
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR) { "Error applying subtitle settings: ${e.message}" }
                 e.printStackTrace()

@@ -915,14 +915,14 @@ private fun TracksSelectionDialog(
                     val hasSubtitleTracks = currentActiveTrackIds.any { id ->
                         tracks.find { it.id == id }?.type == MediaTrack.TYPE_TEXT
                     }
-                    
+
                     if (hasSubtitleTracks) {
                         castManager.applySubtitleSettings(castManager.getDefaultSubtitleSettings())
                     }
                 }
             }
         }
-        
+
         client?.registerCallback(callback)
         onDispose {
             client?.unregisterCallback(callback)
@@ -944,7 +944,7 @@ private fun TracksSelectionDialog(
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(vertical = 8.dp),
                         )
-                        
+
                         TrackItem(
                             track = null,
                             name = stringResource(TLMR.strings.cast_no_subtitles),
@@ -962,7 +962,7 @@ private fun TracksSelectionDialog(
                             },
                         )
                     }
-                    
+
                     items(subtitleTracks) { track ->
                         TrackItem(
                             track = track,
@@ -992,7 +992,7 @@ private fun TracksSelectionDialog(
                             modifier = Modifier.padding(vertical = 8.dp),
                         )
                     }
-                    
+
                     items(audioTracks) { track ->
                         TrackItem(
                             track = track,
