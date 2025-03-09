@@ -39,6 +39,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
+import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.connections.discord.DiscordAccount
@@ -154,9 +155,14 @@ private fun DiscordAccountsScreenContent() {
 
 class DiscordAccountsScreenModel : StateScreenModel<DiscordAccountsScreenState>(DiscordAccountsScreenState()) {
     private val discord = Injekt.get<ConnectionsManager>().discord
+    private val connectionsPreferences = Injekt.get<ConnectionsPreferences>()
     private var noAccountsFoundString: String = ""
 
     init {
+        scope.launch {
+            connectionsPreferences.discordAccounts().changes()
+                .collect { loadAccounts() }
+        }
         loadAccounts()
     }
 
@@ -214,6 +220,7 @@ class DiscordAccountsScreenModel : StateScreenModel<DiscordAccountsScreenState>(
             mutableState.update { it.copy(isLoading = true, error = null) }
             runCatching {
                 discord.setActiveAccount(accountId)
+                discord.restartRichPresence()
                 loadAccounts()
             }.onFailure { e ->
                 mutableState.update { it.copy(isLoading = false, error = e.message ?: "Unknown error") }
@@ -222,7 +229,6 @@ class DiscordAccountsScreenModel : StateScreenModel<DiscordAccountsScreenState>(
     }
 
     fun refreshAccounts() {
-        logcat(logcat.LogPriority.DEBUG) { "Debug: Refreshing accounts" } // Debug log
         loadAccounts()
     }
 }
