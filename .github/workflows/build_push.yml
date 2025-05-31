@@ -40,7 +40,7 @@ jobs:
 
       - name: Install Android SDK
         if: steps.filter.outputs.gofiles == 'true'
-        uses: android-actions/setup-android@v2
+        uses: android-actions/setup-android@v3
         with:
           sdk-version: '30'
 
@@ -83,7 +83,7 @@ jobs:
 
       - name: Install Android SDK
         if: steps.gofiles-filter.outputs.gofiles == 'true'
-        uses: android-actions/setup-android@v2
+        uses: android-actions/setup-android@v3
         with:
           sdk-version: '30'
 
