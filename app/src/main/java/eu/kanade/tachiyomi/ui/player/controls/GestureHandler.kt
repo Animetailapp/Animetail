@@ -172,7 +172,8 @@ fun GestureHandler(
                         if (!isLongPressing) {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             isLongPressing = true
-                            MPVLib.setPropertyDouble("speed", 2.0)
+private const val LONG_PRESS_SPEED_FACTOR = 2.0
+MPVLib.setPropertyDouble("speed", LONG_PRESS_SPEED_FACTOR)
                             viewModel.playerUpdate.update { PlayerUpdates.None }
                         }
                     },
