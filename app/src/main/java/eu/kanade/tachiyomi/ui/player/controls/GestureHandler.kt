@@ -172,10 +172,12 @@ fun GestureHandler(
                         if (!isLongPressing) {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             isLongPressing = true
-                            viewModel.pause()
-                            viewModel.sheetShown.update { Sheets.Screenshot }
+private const val LONG_PRESS_SPEED_FACTOR = 2.0
+MPVLib.setPropertyDouble("speed", LONG_PRESS_SPEED_FACTOR)
+                            viewModel.playerUpdate.update { PlayerUpdates.None }
                         }
                     },
+
                 )
             }
             .pointerInput(areControlsLocked) {
