@@ -17,6 +17,7 @@ import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
 import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
+import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadProvider
@@ -24,6 +25,7 @@ import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadProvider
 import eu.kanade.tachiyomi.data.saver.ImageSaver
+import eu.kanade.tachiyomi.data.sync.service.GoogleDriveService
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
@@ -227,6 +229,10 @@ class AppModule(val app: Application) : InjektModule {
 
         addSingletonFactory { ExternalIntents() }
 
+        // AM (CONNECTIONS) -->
+        addSingletonFactory { ConnectionsManager() }
+        // <-- AM (CONNECTIONS)
+
         // Asynchronously init expensive components for a faster cold start
         ContextCompat.getMainExecutor(app).execute {
             get<NetworkHelper>()
@@ -239,6 +245,11 @@ class AppModule(val app: Application) : InjektModule {
 
             get<MangaDownloadManager>()
             get<AnimeDownloadManager>()
+
+            // get<GetCustomAnimeInfo>()
+            // get<GetCustomAnimeInfo>()
         }
+
+        addSingletonFactory { GoogleDriveService(app) }
     }
 }

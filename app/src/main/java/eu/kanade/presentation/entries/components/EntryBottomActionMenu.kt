@@ -22,8 +22,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Input
 import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.automirrored.outlined.LabelOff
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.BookmarkRemove
 import androidx.compose.material.icons.outlined.Delete
@@ -63,6 +65,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -222,7 +225,7 @@ fun EntryBottomActionMenu(
                 if (!isManga && onExternalClicked != null && !playerPreferences.alwaysUseExternalPlayer().get()) {
                     Button(
                         title = stringResource(AYMR.strings.action_play_externally),
-                        icon = Icons.Outlined.OpenInNew,
+                        icon = Icons.AutoMirrored.Outlined.OpenInNew,
                         toConfirm = confirm[9],
                         onLongClick = { onLongClickItem(9) },
                         onClick = onExternalClicked,
@@ -231,7 +234,7 @@ fun EntryBottomActionMenu(
                 if (!isManga && onInternalClicked != null && playerPreferences.alwaysUseExternalPlayer().get()) {
                     Button(
                         title = stringResource(AYMR.strings.action_play_internally),
-                        icon = Icons.Outlined.Input,
+                        icon = Icons.AutoMirrored.Outlined.Input,
                         toConfirm = confirm[10],
                         onLongClick = { onLongClickItem(10) },
                         onClick = onInternalClicked,
@@ -296,6 +299,9 @@ fun LibraryBottomActionMenu(
     onMarkAsUnviewedClicked: () -> Unit,
     onDownloadClicked: ((DownloadAction) -> Unit)?,
     onDeleteClicked: () -> Unit,
+    // SY -->
+    onClickResetInfo: (() -> Unit)?,
+    // SY <--
     isManga: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -325,6 +331,7 @@ fun LibraryBottomActionMenu(
                     if (isActive) confirm[toConfirmIndex] = false
                 }
             }
+            val showOverflow = onClickResetInfo != null
             Row(
                 modifier = Modifier
                     .windowInsetsPadding(
@@ -381,6 +388,17 @@ fun LibraryBottomActionMenu(
                     onLongClick = { onLongClickItem(4) },
                     onClick = onDeleteClicked,
                 )
+                // SY -->
+                if (showOverflow) {
+                    Button(
+                        title = stringResource(TLMR.strings.reset_info),
+                        icon = Icons.Outlined.Delete,
+                        toConfirm = confirm[5],
+                        onLongClick = { onLongClickItem(5) },
+                        onClick = onClickResetInfo!!,
+                    )
+                }
+                // SY <--
             }
         }
     }
