@@ -119,6 +119,7 @@ fun MangaScreen(
     onEditCategoryClicked: (() -> Unit)?,
     onEditFetchIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     // SY -->
     onEditInfoClicked: () -> Unit,
     // SY <--
@@ -175,6 +176,7 @@ fun MangaScreen(
             onEditCategoryClicked = onEditCategoryClicked,
             onEditIntervalClicked = onEditFetchIntervalClicked,
             onMigrateClicked = onMigrateClicked,
+            onEditNotesClicked = onEditNotesClicked,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
             // SY <--
@@ -214,6 +216,7 @@ fun MangaScreen(
             onEditCategoryClicked = onEditCategoryClicked,
             onEditIntervalClicked = onEditFetchIntervalClicked,
             onMigrateClicked = onMigrateClicked,
+            onEditNotesClicked = onEditNotesClicked,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
             // SY <--
@@ -264,6 +267,7 @@ private fun MangaScreenSmallImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     onSettingsClicked: (() -> Unit)?,
 
     // SY -->
@@ -332,9 +336,11 @@ private fun MangaScreenSmallImpl(
                 onClickEditCategory = onEditCategoryClicked,
                 onClickRefresh = onRefresh,
                 onClickMigrate = onMigrateClicked,
+                onClickEditNotes = onEditNotesClicked,
                 // SY -->
                 onClickEditInfo = onEditInfoClicked.takeIf { state.manga.favorite },
                 // SY <--
+                onClickEditNotes = onEditNotesClicked,
                 onClickSettings = onSettingsClicked,
                 changeAnimeSkipIntro = null,
                 actionModeCounter = selectedChapterCount,
@@ -449,8 +455,10 @@ private fun MangaScreenSmallImpl(
                             defaultExpandState = state.isFromSource,
                             description = state.manga.description,
                             tagsProvider = { state.manga.genre },
+                            notes = state.manga.notes,
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                            onEditNotes = onEditNotesClicked,
                         )
                     }
 
@@ -522,6 +530,7 @@ fun MangaScreenLargeImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     onSettingsClicked: (() -> Unit)?,
 
     // SY -->
@@ -583,6 +592,7 @@ fun MangaScreenLargeImpl(
                 onClickEditCategory = onEditCategoryClicked,
                 onClickRefresh = onRefresh,
                 onClickMigrate = onMigrateClicked,
+                onClickEditNotes = onEditNotesClicked,
                 onCancelActionMode = { onAllChapterSelected(false) },
                 // SY -->
                 onClickEditInfo = onEditInfoClicked.takeIf { state.manga.favorite },
@@ -689,8 +699,10 @@ fun MangaScreenLargeImpl(
                             defaultExpandState = true,
                             description = state.manga.description,
                             tagsProvider = { state.manga.genre },
+                            notes = state.manga.notes,
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                            onEditNotes = onEditNotesClicked,
                         )
                     }
                 },

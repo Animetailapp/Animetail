@@ -163,6 +163,7 @@ fun AnimeScreen(
     onEditCategoryClicked: (() -> Unit)?,
     onEditFetchIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     // SY -->
     onEditInfoClicked: () -> Unit,
     // SY <--
@@ -237,6 +238,7 @@ fun AnimeScreen(
             onEditCategoryClicked = onEditCategoryClicked,
             onEditIntervalClicked = onEditFetchIntervalClicked,
             onMigrateClicked = onMigrateClicked,
+            onEditNotesClicked = onEditNotesClicked,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
             // SY <--
@@ -292,6 +294,7 @@ fun AnimeScreen(
             onEditIntervalClicked = onEditFetchIntervalClicked,
             changeAnimeSkipIntro = changeAnimeSkipIntro,
             onMigrateClicked = onMigrateClicked,
+            onEditNotesClicked = onEditNotesClicked,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
             // SY <--
@@ -357,6 +360,7 @@ private fun AnimeScreenSmallImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     // SY -->
     onEditInfoClicked: () -> Unit,
     // SY <--
@@ -458,15 +462,17 @@ private fun AnimeScreenSmallImpl(
                     onClickEditCategory = onEditCategoryClicked,
                     onClickRefresh = onRefresh,
                     onClickMigrate = onMigrateClicked,
+                    onClickEditNotes = onEditNotesClicked,
                     // SY -->
                     onClickEditInfo = onEditInfoClicked.takeIf { state.anime.favorite },
+                    // SY <--
+                    onClickEditNotes = onEditNotesClicked,
                     // KMK -->
                     onClickRelatedAnimes = onRelatedAnimesScreenClick.takeIf {
                         !expandRelatedAnimes &&
                             showRelatedAnimesInOverflow
                     },
                     // KMK <--
-                    // SY <--
                     onClickSettings = onSettingsClicked,
                     changeAnimeSkipIntro = changeAnimeSkipIntro,
                     actionModeCounter = selectedEpisodeCount,
@@ -595,8 +601,10 @@ private fun AnimeScreenSmallImpl(
                             defaultExpandState = state.isFromSource,
                             description = state.anime.description,
                             tagsProvider = { state.anime.genre },
+                            notes = state.anime.notes,
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                            onEditNotes = onEditNotesClicked,
                             modifier = Modifier.ignorePadding(offsetGridPaddingPx),
                         )
                     }
@@ -809,6 +817,7 @@ fun AnimeScreenLargeImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     // SY -->
     onEditInfoClicked: () -> Unit,
     // SY <--
@@ -897,6 +906,7 @@ fun AnimeScreenLargeImpl(
                     onClickEditCategory = onEditCategoryClicked,
                     onClickRefresh = onRefresh,
                     onClickMigrate = onMigrateClicked,
+                    onClickEditNotes = onEditNotesClicked,
                     onCancelActionMode = { onAllEpisodeSelected(false) },
                     // SY -->
                     onClickEditInfo = onEditInfoClicked.takeIf { state.anime.favorite },
@@ -1013,8 +1023,10 @@ fun AnimeScreenLargeImpl(
                                 defaultExpandState = true,
                                 description = state.anime.description,
                                 tagsProvider = { state.anime.genre },
+                                notes = state.anime.notes,
                                 onTagSearch = onTagSearch,
                                 onCopyTagToClipboard = onCopyTagToClipboard,
+                                onEditNotes = onEditNotesClicked,
                             )
                             // Cast is shown below the genres/tags on large layout as well,
                             // but only when trackers are in use and there is cast data.
