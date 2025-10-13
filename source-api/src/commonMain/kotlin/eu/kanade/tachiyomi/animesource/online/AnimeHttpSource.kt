@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.animesource.online
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
+import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
@@ -15,9 +16,16 @@ import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.newCachelessCallWithProgress
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Headers
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import rx.Observable
 import tachiyomi.core.common.util.lang.awaitSingle
@@ -220,7 +228,23 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      */
     @Suppress("DEPRECATION")
     override suspend fun getAnimeDetails(anime: SAnime): SAnime {
-        return fetchAnimeDetails(anime).awaitSingle()
+        // First, let the source parse its own details
+        val updated = try {
+            fetchAnimeDetails(anime).awaitSingle()
+        } catch (t: Throwable) {
+            throw t
+        }
+
+        // If cast is missing, try AniList as a fallback
+        try {
+            if (updated.cast.isNullOrEmpty()) {
+                fetchCastFromAniList(updated.title)?.let { updated.cast = it }
+            }
+        } catch (e: Throwable) {
+            // Ignore AniList failures, keep original details
+        }
+
+        return updated
     }
 
     @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getAnimeDetails"))
@@ -667,6 +691,126 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     fun SAnime.setUrlWithoutDomain(url: String) {
         this.url = getUrlWithoutDomain(url)
     }
+
+        /**
+         * Try to fetch cast/credits from AniList GraphQL API using the anime title.
+         * Returns a list of Credit or null on failure/empty.
+         */
+        protected suspend fun fetchCastFromAniList(title: String?): List<Credit>? {
+                if (title.isNullOrBlank()) return null
+
+                val query = """
+                        query(${ '$' }search: String) {
+                            Media(search: ${ '$' }search, type: ANIME) {
+                                characters(sort: [ROLE, RELEVANCE], page: 1) {
+                                    edges {
+                                        node { name { full } }
+                                        voiceActors { name { full } language image { large medium } }
+                                    }
+                                }
+                                staff(page: 1) {
+                                    edges { node { name { full } image { large medium } } role }
+                                }
+                            }
+                        }
+                """.trimIndent()
+
+                val variables = "{\"search\":\"${title.replace("\"", "\\\"")}\"}"
+                val payload = "{\"query\":\"${query.replace("\n", "\\n").replace("\"", "\\\"")}\",\"variables\":$variables}"
+
+                val mediaType = "application/json; charset=utf-8".toMediaType()
+                val requestBody = payload.toRequestBody(mediaType)
+                val request = Request.Builder().url("https://graphql.anilist.co").post(requestBody).build()
+
+                val response = client.newCall(request).awaitSuccess()
+                val body = response.body?.string() ?: return null
+
+                val json = Json { ignoreUnknownKeys = true }
+                val root = json.parseToJsonElement(body).jsonObject
+                val media = root["data"]?.jsonObject?.get("Media")?.jsonObject ?: return null
+
+                val credits = mutableListOf<Credit>()
+
+                // Parse characters into one Credit per character (include VAs in the role)
+                media["characters"]?.jsonObject?.get("edges")?.jsonArray?.forEach { edge ->
+                        val edgeObj = edge.jsonObject
+                        val charNode = edgeObj["node"]?.jsonObject
+                        val charName = charNode?.get("name")?.jsonObject?.get("full")?.jsonPrimitive?.contentOrNull
+                        var charImage = charNode?.get("image")?.jsonObject?.get("large")?.jsonPrimitive?.contentOrNull
+                            ?: charNode?.get("image")?.jsonObject?.get("medium")?.jsonPrimitive?.contentOrNull
+
+                        val vaList = mutableListOf<Pair<String, String?>>()
+                        var firstVaImage: String? = null
+
+                        edgeObj["voiceActors"]?.jsonArray?.forEach { va ->
+                                val vaObj = va.jsonObject
+                                val vaName = vaObj["name"]?.jsonObject?.get("full")?.jsonPrimitive?.contentOrNull
+                                val vaLang = vaObj["language"]?.jsonPrimitive?.contentOrNull
+                                var vaImage = vaObj["image"]?.jsonObject?.get("large")?.jsonPrimitive?.contentOrNull
+                                    ?: vaObj["image"]?.jsonObject?.get("medium")?.jsonPrimitive?.contentOrNull
+                                vaImage = vaImage?.trim()?.let { img ->
+                                    when {
+                                        img.startsWith("//") -> "https:$img"
+                                        img.startsWith("http://") || img.startsWith("https://") -> img
+                                        else -> img
+                                    }
+                                }
+                                if (!vaName.isNullOrBlank()) {
+                                        vaList.add(Pair(vaName, vaLang))
+                                        if (firstVaImage == null && !vaImage.isNullOrBlank()) {
+                                            firstVaImage = vaImage
+                                        }
+                                }
+                        }
+
+                        val roleString = when {
+                            vaList.isEmpty() -> null
+                            vaList.size == 1 -> {
+                                val (n, l) = vaList[0]
+                                if (l != null) "Voice Actor ($l): $n" else "Voice Actor: $n"
+                            }
+                            else -> {
+                                val joined = vaList.joinToString(", ") { (n, l) -> if (l != null) "$n ($l)" else n }
+                                "Voice Actors: $joined"
+                            }
+                        }
+
+                        var imageUrl = charImage ?: firstVaImage
+                        imageUrl = imageUrl?.trim()?.let { img ->
+                            when {
+                                img.startsWith("//") -> "https:$img"
+                                img.startsWith("http://") || img.startsWith("https://") -> img
+                                else -> img
+                            }
+                        }
+
+                        if (!charName.isNullOrBlank() || roleString != null) {
+                                credits.add(Credit(name = charName ?: roleString ?: "", role = roleString, character = charName, image_url = imageUrl))
+                        }
+                }
+
+                // Parse staff
+                media["staff"]?.jsonObject?.get("edges")?.jsonArray?.forEach { edge ->
+                        val edgeObj = edge.jsonObject
+            val staffNode = edgeObj["node"]?.jsonObject
+            val staffName = staffNode?.get("name")?.jsonObject?.get("full")?.jsonPrimitive?.contentOrNull
+            val staffRole = edgeObj["role"]?.jsonPrimitive?.contentOrNull
+                        var staffImage = staffNode?.get("image")?.jsonObject?.get("large")?.jsonPrimitive?.contentOrNull
+                            ?: staffNode?.get("image")?.jsonObject?.get("medium")?.jsonPrimitive?.contentOrNull
+                        staffImage = staffImage?.trim()?.let { img ->
+                            when {
+                                img.startsWith("//") -> "https:$img"
+                                img.startsWith("http://") || img.startsWith("https://") -> img
+                                else -> img
+                            }
+                        }
+            if (!staffName.isNullOrBlank()) {
+                credits.add(Credit(name = staffName, role = staffRole ?: "Staff", image_url = staffImage))
+            }
+                }
+
+                return if (credits.isNotEmpty()) credits else null
+        }
 
     /**
      * Returns the url of the given string without the scheme and domain.

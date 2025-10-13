@@ -3,6 +3,7 @@
 package eu.kanade.tachiyomi.source.model
 
 import java.io.Serializable
+import eu.kanade.tachiyomi.animesource.model.Credit as AnimeSourceCredit
 
 interface SManga : Serializable {
 
@@ -25,6 +26,8 @@ interface SManga : Serializable {
     var update_strategy: UpdateStrategy
 
     var initialized: Boolean
+    
+    var cast: List<AnimeSourceCredit>?
 
     fun getGenres(): List<String>? {
         if (genre.isNullOrBlank()) return null

@@ -53,6 +53,7 @@ object AnimeMapper {
         coverLastModified = coverLastModified,
         backgroundLastModified = backgroundLastModified,
         url = url,
+        cast = null,
         // SY -->
         ogTitle = title,
         ogArtist = artist,
