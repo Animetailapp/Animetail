@@ -2,8 +2,11 @@ package tachiyomi.data
 
 import app.cash.sqldelight.ColumnAdapter
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
+import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 import java.util.Date
 
 object DateColumnAdapter : ColumnAdapter<Date, Long> {
@@ -43,4 +46,25 @@ object FetchTypeColumnAdapter : ColumnAdapter<FetchType, Long> {
         FetchType.entries.getOrElse(databaseValue.toInt()) { FetchType.Episodes }
 
     override fun encode(value: FetchType): Long = value.ordinal.toLong()
+}
+
+object CastColumnAdapter : ColumnAdapter<List<Credit>, String> {
+    override fun decode(databaseValue: String): List<Credit> = try {
+        if (databaseValue.isEmpty()) {
+            emptyList()
+        } else {
+            Json.decodeFromString(
+                ListSerializer(Credit.serializer()),
+                databaseValue,
+            )
+        }
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    override fun encode(value: List<Credit>): String = try {
+        Json.encodeToString(value)
+    } catch (e: Exception) {
+        ""
+    }
 }

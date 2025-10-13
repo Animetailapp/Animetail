@@ -5,6 +5,7 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.track.anime.model.toDbTrack
 import eu.kanade.domain.track.manga.model.toDbTrack
 import eu.kanade.tachiyomi.R
+import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.AnimeTracker
@@ -380,5 +381,9 @@ class Anilist(id: Long) :
         } catch (e: Exception) {
             null
         }
+    }
+
+    suspend fun fetchCastByTitle(title: String?): List<Credit>? {
+        return api.fetchCastByTitle(title)
     }
 }

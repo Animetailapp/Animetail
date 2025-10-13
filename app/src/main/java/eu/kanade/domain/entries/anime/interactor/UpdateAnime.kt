@@ -83,6 +83,7 @@ class UpdateAnime(
         return animeRepository.updateAnime(
             AnimeUpdate(
                 id = localAnime.id,
+                cast = remoteAnime.cast,
                 title = title,
                 coverLastModified = coverLastModified,
                 backgroundLastModified = backgroundLastModified,

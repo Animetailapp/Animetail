@@ -598,18 +598,20 @@ private fun AnimeScreenSmallImpl(
                             modifier = Modifier.ignorePadding(offsetGridPaddingPx),
                         )
                     }
-                    // Cast row should appear below the genres/tags
-                    item(
-                        key = "cast_row",
-                        contentType = "cast_row",
-                        span = { GridItemSpan(maxLineSpan) },
-                    ) {
-                        state.anime.cast?.let { castList ->
-                            if (castList.isNotEmpty()) {
-                                CastRow(
-                                    cast = castList,
-                                    modifier = Modifier.ignorePadding(offsetGridPaddingPx),
-                                )
+                    // Cast row should appear below the genres/tags, but only when trackers are in use
+                    if (state.hasLoggedInTrackers) {
+                        item(
+                            key = "cast_row",
+                            contentType = "cast_row",
+                            span = { GridItemSpan(maxLineSpan) },
+                        ) {
+                            state.anime.cast?.let { castList ->
+                                if (castList.isNotEmpty()) {
+                                    CastRow(
+                                        cast = castList,
+                                        modifier = Modifier.ignorePadding(offsetGridPaddingPx),
+                                    )
+                                }
                             }
                         }
                     }
@@ -1009,6 +1011,18 @@ fun AnimeScreenLargeImpl(
                                 onTagSearch = onTagSearch,
                                 onCopyTagToClipboard = onCopyTagToClipboard,
                             )
+                            // Cast is shown below the genres/tags on large layout as well,
+                            // but only when trackers are in use and there is cast data.
+                            if (state.hasLoggedInTrackers) {
+                                state.anime.cast?.let { castList ->
+                                    if (castList.isNotEmpty()) {
+                                        CastRow(
+                                            cast = castList,
+                                            modifier = Modifier.ignorePadding(offsetGridPaddingPx),
+                                        )
+                                    }
+                                }
+                            }
                         }
                     },
                     endContent = {

@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.animesource.model.FetchType
 
 data class AnimeUpdate(
     val id: Long,
+    val cast: List<eu.kanade.tachiyomi.animesource.model.Credit>? = null,
     val source: Long? = null,
     val favorite: Boolean? = null,
     val lastUpdate: Long? = null,
@@ -37,6 +38,7 @@ data class AnimeUpdate(
 fun Anime.toAnimeUpdate(): AnimeUpdate {
     return AnimeUpdate(
         id = id,
+        cast = cast,
         source = source,
         favorite = favorite,
         lastUpdate = lastUpdate,

@@ -245,7 +245,7 @@ class AnimeScreenModel(
                     // Preserve any cast we previously fetched and cached in memory so the UI
                     // doesn't flash when the DB flow emits an anime without cast.
                     val animeWithCast = anime.copy(
-                        cast = castCache[anime.id] ?: anime.cast,
+                        cast = anime.cast ?: castCache[anime.id],
                     )
                     updateSuccessState {
                         it.copy(
@@ -308,7 +308,7 @@ class AnimeScreenModel(
 
             // Show what we have earlier. Inject cast from in-memory cache if available.
             val animeWithCast = anime.copy(
-                cast = castCache[anime.id] ?: anime.cast,
+                cast = anime.cast ?: castCache[anime.id],
             )
             // Show what we have earlier
             mutableState.update {
@@ -589,7 +589,7 @@ class AnimeScreenModel(
                 )
             ) {
                 val updatedAnime = animeRepository.getAnimeById(anime.id)
-                val updatedWithCast = updatedAnime.copy(cast = castCache[updatedAnime.id] ?: updatedAnime.cast)
+                val updatedWithCast = updatedAnime.copy(cast = updatedAnime.cast ?: castCache[updatedAnime.id])
                 updateSuccessState { it.copy(anime = updatedWithCast) }
             }
         }
@@ -773,7 +773,7 @@ class AnimeScreenModel(
                 snackbarHostState.showSnackbar(message = message)
             }
             val newAnime = animeRepository.getAnimeById(animeId)
-            val newWithCast = newAnime.copy(cast = castCache[newAnime.id] ?: newAnime.cast)
+            val newWithCast = newAnime.copy(cast = newAnime.cast ?: castCache[newAnime.id])
             updateSuccessState { it.copy(anime = newWithCast, isRefreshingData = false) }
         }
     }
@@ -825,7 +825,7 @@ class AnimeScreenModel(
                 snackbarHostState.showSnackbar(message = message)
             }
             val newAnime = animeRepository.getAnimeById(animeId)
-            val newWithCast = newAnime.copy(cast = castCache[newAnime.id] ?: newAnime.cast)
+            val newWithCast = newAnime.copy(cast = newAnime.cast ?: castCache[newAnime.id])
             updateSuccessState { it.copy(anime = newWithCast, isRefreshingData = false) }
         }
     }

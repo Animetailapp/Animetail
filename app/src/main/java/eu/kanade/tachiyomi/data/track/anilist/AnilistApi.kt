@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.data.track.anilist
 
 import android.net.Uri
 import androidx.core.net.toUri
+import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALAddEntryResult
@@ -25,6 +26,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import okhttp3.OkHttpClient
@@ -685,6 +688,142 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                                 .ifEmpty { null },
                         )
                     }
+            }
+        }
+    }
+
+    /**
+     * Fetch cast (characters with voice actors and staff) from AniList by title search.
+     * Returns null on error or empty results.
+     */
+    suspend fun fetchCastByTitle(title: String?): List<Credit>? {
+        if (title.isNullOrBlank()) return null
+
+        return withIOContext {
+            try {
+                val query = """
+                |query SearchCast(${'$'}query: String) {
+                    |Page (perPage: 10) {
+                        |media(search: ${'$'}query, type: ANIME) {
+                            |id
+                            |characters {
+                                |edges {
+                                    |role
+                                    |node {
+                                        |name { userPreferred }
+                                        |image { large medium }
+                                    |}
+                                    |voiceActors {
+                                        |name { userPreferred }
+                                        |language
+                                        |image { large medium }
+                                    |}
+                                |}
+                            |}
+                            |staff {
+                                |edges {
+                                    |role
+                                    |node { name { userPreferred } image { large medium } }
+                                |}
+                            |}
+                        |}
+                    |}
+                |}
+                |
+                """.trimMargin()
+
+                val payload = buildJsonObject {
+                    put("query", query)
+                    putJsonObject("variables") {
+                        put("query", title)
+                    }
+                }
+
+                with(json) {
+                    authClient.newCall(
+                        POST(
+                            API_URL,
+                            body = payload.toString().toRequestBody(jsonMime),
+                        ),
+                    )
+                        .awaitSuccess()
+                        .parseAs<JsonObject>()
+                        .let { root ->
+
+                            val credits = mutableListOf<Credit>()
+                            try {
+                                val search = this@AnilistApi.client.newCall(
+                                    POST(API_URL, body = payload.toString().toRequestBody(jsonMime)),
+                                ).execute()
+                                val bodyStr = search.body.string()
+                                // Use kotlinx.serialization Json object parsing
+                                val parsed = json.parseToJsonElement(bodyStr).jsonObject
+                                val page = parsed["data"]?.jsonObject?.get("Page")?.jsonObject
+                                val mediaArr = page?.get("media")?.jsonArray ?: return@withIOContext null
+                                if (mediaArr.isEmpty()) return@withIOContext null
+                                val first = mediaArr[0].jsonObject
+
+                                // Parse characters
+                                val characters = first["characters"]?.jsonObject
+                                    ?.get("edges")?.jsonArray
+                                characters?.forEach { edgeEl ->
+                                    val edge = edgeEl.jsonObject
+                                    val node = edge["node"]?.jsonObject
+                                    val charName = node?.get("name")?.jsonObject
+                                        ?.get("userPreferred")?.toString()?.trim('"')
+                                    val charImage = node?.get("image")?.jsonObject
+                                        ?.get("large")?.toString()?.trim('"')
+                                    val vas = edge["voiceActors"]?.jsonArray
+                                    val vaNames = mutableListOf<String>()
+                                    var vaImage: String? = null
+                                    vas?.forEach { vaEl ->
+                                        val va = vaEl.jsonObject
+                                        val vaName = va["name"]?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
+                                        val vaLang = va["language"]?.toString()?.trim('"')
+                                        if (!vaName.isNullOrBlank()) {
+                                            vaNames.add(if (!vaLang.isNullOrBlank()) "$vaName ($vaLang)" else vaName)
+                                        }
+                                        if (vaImage == null) {
+                                            vaImage = va["image"]?.jsonObject?.get("large")?.toString()?.trim('"')
+                                        }
+                                    }
+                                    val roleText = vaNames.joinToString(", ")
+                                    var finalImage: String? = charImage ?: vaImage
+                                    if (!finalImage.isNullOrBlank() && finalImage.startsWith("//")) {
+                                        finalImage = "https:$finalImage"
+                                    }
+                                    if (!charName.isNullOrBlank()) {
+                                        credits.add(Credit(
+                                            name = charName,
+                                            role = roleText.ifBlank { null },
+                                            character = charName,
+                                            image_url = finalImage,
+                                        ))
+                                    }
+                                }
+
+                                // Parse staff
+                                val staff = first["staff"]?.jsonObject?.get("edges")?.jsonArray
+                                staff?.forEach { stEl ->
+                                    val sedge = stEl.jsonObject
+                                    val srole = sedge["role"]?.toString()?.trim('"')
+                                    val snode = sedge["node"]?.jsonObject
+                                    val sname = snode?.get("name")?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
+                                    var sImage = snode?.get("image")?.jsonObject?.get("large")?.toString()?.trim('"')
+                                    if (!sImage.isNullOrBlank() && sImage.startsWith("//")) sImage = "https:$sImage"
+                                    if (!sname.isNullOrBlank()) {
+                                        credits.add(Credit(name = sname, role = srole, image_url = sImage))
+                                    }
+                                }
+
+                                credits.ifEmpty { null }
+                            } catch (_: Exception) {
+                                null
+                            }
+                        }
+                }
+            } catch (_: Exception) {
+                null
             }
         }
     }

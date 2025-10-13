@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.AnimeUpdateStrategyColumnAdapter
+import tachiyomi.data.CastColumnAdapter
 import tachiyomi.data.FetchTypeColumnAdapter
 import tachiyomi.data.StringListColumnAdapter
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
@@ -130,6 +131,7 @@ class AnimeRepositoryImpl(
                 seasonFlags = anime.seasonFlags,
                 seasonNumber = anime.seasonNumber,
                 seasonSourceOrder = anime.seasonSourceOrder,
+                cast = anime.cast,
             )
             animesQueries.selectLastInsertedRowId()
         }
@@ -207,6 +209,7 @@ class AnimeRepositoryImpl(
                     coverLastModified = value.coverLastModified,
                     backgroundLastModified = value.backgroundLastModified,
                     dateAdded = value.dateAdded,
+                    cast = value.cast?.let(CastColumnAdapter::encode),
                     animeId = value.id,
                     updateStrategy = value.updateStrategy?.let(AnimeUpdateStrategyColumnAdapter::encode),
                     version = value.version,
