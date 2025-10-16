@@ -75,7 +75,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                 if (track.last_episode_seen.toLong() == track.total_episodes && track.total_episodes > 0) {
                     track.status = COMPLETED
                 } else {
-                    track.status = WATCHING
+                    track.status = PLAN_TO_WATCH
                 }
             }
         }
@@ -83,16 +83,17 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
         // Sync rating if session exists
         if (sessionId.isNotBlank()) {
             try {
-                val mediaType = try {
-                    api.getMovie(track.remote_id)
-                    "movie"
-                } catch (_: Exception) {
-                    "tv"
-                }
+                val mediaType = if (track.tracking_url.contains("/tv/")) "tv" else "movie"
                 updateRating(track, mediaType)
 
-            } catch (_: Exception) {
-                // ignore
+                // Sync watchlist based on status
+                val shouldWatchlist = track.status == PLAN_TO_WATCH
+                api.addToWatchlist(mediaType, track.remote_id, shouldWatchlist)
+                logcat(LogPriority.INFO) {
+                    "TMDB update: synced watchlist for status ${track.status}, shouldWatchlist=$shouldWatchlist"
+                }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR) { "TMDB update: failed to sync watchlist. Error: ${e.message}" }
             }
         }
 
@@ -152,7 +153,12 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                     status = if (accountJson.optBoolean("watchlist", false)) PLAN_TO_WATCH else WATCHING
                     total_episodes = detail.additional.optLong("number_of_episodes", 1)
                 }.also {
-                    logcat(LogPriority.INFO) { "TMDB findLibAnime: watchlist=${accountJson.optBoolean("watchlist", false)}, status=${it.status}" }
+                    logcat(LogPriority.INFO) {
+                        "TMDB findLibAnime: watchlist=${accountJson.optBoolean(
+                            "watchlist",
+                            false,
+                        )}, status=${it.status}"
+                    }
                 }
             } catch (_: Exception) { }
         }
@@ -166,7 +172,8 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
             AnimeTrackSearch.create(this@Tmdb.id).apply {
                 remote_id = r.id
                 title = r.title
-                tracking_url = if (isTv) "https://www.themoviedb.org/tv/${r.id}" else "https://www.themoviedb.org/movie/${r.id}"
+                tracking_url =
+                    if (isTv) "https://www.themoviedb.org/tv/${r.id}" else "https://www.themoviedb.org/movie/${r.id}"
                 summary = r.overview
                 cover_url = r.posterPath?.let { TmdbApi.IMAGE_BASE + it } ?: ""
                 publishing_type = if (isTv) "TV" else "Movie"
@@ -176,7 +183,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
 
     override suspend fun refresh(track: AnimeTrack): AnimeTrack {
         findLibAnime(track)?.let { remoteTrack ->
-            track.copyPersonalFrom(remoteTrack)
+            track.score = remoteTrack.score
             track.total_episodes = remoteTrack.total_episodes
         }
         return track
@@ -187,16 +194,13 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
     override fun getLogoColor() = Color.rgb(13, 37, 63)
 
     override fun getStatusListAnime(): List<Long> {
-        return listOf(WATCHING, PLAN_TO_WATCH, COMPLETED, REWATCHING, ON_HOLD, DROPPED)
+        return listOf(WATCHING, PLAN_TO_WATCH, COMPLETED)
     }
 
     override fun getStatusForAnime(status: Long): StringResource? = when (status) {
         WATCHING -> AYMR.strings.watching
         PLAN_TO_WATCH -> AYMR.strings.plan_to_watch
         COMPLETED -> MR.strings.completed
-        REWATCHING -> AYMR.strings.repeating_anime
-        ON_HOLD -> MR.strings.on_hold
-        DROPPED -> MR.strings.dropped
         else -> null
     }
 

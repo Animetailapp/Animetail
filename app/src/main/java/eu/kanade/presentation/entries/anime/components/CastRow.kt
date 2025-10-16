@@ -84,7 +84,7 @@ fun CastRow(
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = null,
-                            modifier = imageModifier
+                            modifier = imageModifier,
                         )
                     }
 

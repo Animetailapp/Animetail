@@ -136,11 +136,15 @@ class AddAnimeTracks(
                                             )
                                         }
                                     } catch (e: Exception) {
-                                        logcat(LogPriority.WARN, e) { "Could not fetch/persist cast from enhanced tracker" }
+                                        logcat(LogPriority.WARN, e) {
+                                            "Could not fetch/persist cast from enhanced tracker"
+                                        }
                                     }
                                 }
                             } catch (e: Exception) {
-                                logcat(LogPriority.WARN, e) { "Could not fetch/persist cast after enhanced tracker bind" }
+                                logcat(LogPriority.WARN, e) {
+                                    "Could not fetch/persist cast after enhanced tracker bind"
+                                }
                             }
 
                             syncChapterProgressWithTrack.await(

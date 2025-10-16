@@ -26,7 +26,7 @@ interface SManga : Serializable {
     var update_strategy: UpdateStrategy
 
     var initialized: Boolean
-    
+
     var cast: List<AnimeSourceCredit>?
 
     fun getGenres(): List<String>? {

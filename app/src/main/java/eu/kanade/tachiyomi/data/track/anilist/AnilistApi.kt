@@ -793,12 +793,14 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                                         finalImage = "https:$finalImage"
                                     }
                                     if (!charName.isNullOrBlank()) {
-                                        credits.add(Credit(
-                                            name = charName,
-                                            role = roleText.ifBlank { null },
-                                            character = charName,
-                                            image_url = finalImage,
-                                        ))
+                                        credits.add(
+                                            Credit(
+                                                name = charName,
+                                                role = roleText.ifBlank { null },
+                                                character = charName,
+                                                image_url = finalImage,
+                                            ),
+                                        )
                                     }
                                 }
 
@@ -808,7 +810,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                                     val sedge = stEl.jsonObject
                                     val srole = sedge["role"]?.toString()?.trim('"')
                                     val snode = sedge["node"]?.jsonObject
-                                    val sname = snode?.get("name")?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
+                                    val sname = snode?.get(
+                                        "name",
+                                    )?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
                                     var sImage = snode?.get("image")?.jsonObject?.get("large")?.toString()?.trim('"')
                                     if (!sImage.isNullOrBlank() && sImage.startsWith("//")) sImage = "https:$sImage"
                                     if (!sname.isNullOrBlank()) {

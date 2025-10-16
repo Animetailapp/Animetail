@@ -42,73 +42,7 @@ import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import kotlin.Boolean
-import kotlin.Deprecated
-import kotlin.Exception
-import kotlin.Float
-import kotlin.Int
-import kotlin.Long
-import kotlin.ReplaceWith
-import kotlin.String
-import kotlin.Suppress
-import kotlin.Unit
-import kotlin.UnsupportedOperationException
-import kotlin.also
-import kotlin.apply
-import kotlin.collections.List
-import kotlin.collections.distinctBy
-import kotlin.collections.filter
-import kotlin.collections.filterNot
-import kotlin.collections.find
-import kotlin.collections.firstOrNull
-import kotlin.collections.forEach
-import kotlin.collections.joinToString
-import kotlin.collections.last
-import kotlin.collections.lastOrNull
-import kotlin.collections.map
-import kotlin.collections.sortedBy
-import kotlin.collections.sortedByDescending
-import kotlin.collections.sortedWith
-import kotlin.collections.toList
-import kotlin.compareTo
-import kotlin.context
-import kotlin.getValue
-import kotlin.io.inputStream
-import kotlin.io.outputStream
-import kotlin.io.use
-import kotlin.let
-import kotlin.map
 import kotlin.math.abs
-import kotlin.ranges.lastOrNull
-import kotlin.run
-import kotlin.sequences.distinctBy
-import kotlin.sequences.filter
-import kotlin.sequences.filterNot
-import kotlin.sequences.find
-import kotlin.sequences.firstOrNull
-import kotlin.sequences.lastOrNull
-import kotlin.sequences.map
-import kotlin.sequences.sortedBy
-import kotlin.sequences.sortedByDescending
-import kotlin.sequences.sortedWith
-import kotlin.text.CASE_INSENSITIVE_ORDER
-import kotlin.text.buildString
-import kotlin.text.compareTo
-import kotlin.text.contains
-import kotlin.text.filter
-import kotlin.text.filterNot
-import kotlin.text.find
-import kotlin.text.firstOrNull
-import kotlin.text.isBlank
-import kotlin.text.lastOrNull
-import kotlin.text.map
-import kotlin.text.orEmpty
-import kotlin.text.split
-import kotlin.text.startsWith
-import kotlin.text.substringAfterLast
-import kotlin.text.toFloat
-import kotlin.text.trim
-import kotlin.toString
 import eu.kanade.tachiyomi.animesource.model.Credit as SourceCredit
 
 actual class LocalAnimeSource(
@@ -260,7 +194,9 @@ actual class LocalAnimeSource(
             description = description,
             genre = genre?.split(", "),
             status = status,
-            cast = cast?.map { SourceCredit(name = it.name, role = it.role, character = it.character, image_url = it.image_url) },
+            cast = cast?.map {
+                SourceCredit(name = it.name, role = it.role, character = it.character, image_url = it.image_url)
+            },
         )
     }
     // SY <--
@@ -287,9 +223,17 @@ actual class LocalAnimeSource(
                     description?.let { anime.description = it }
                     genre?.let { anime.genre = it.joinToString() }
                     status?.let { anime.status = it }
-                        cast?.let { coreCastList ->
-                            anime.cast = coreCastList.map { core -> SourceCredit(name = core.name, role = core.role, character = core.character, image_url = core.image_url) }
-                        }
+                    cast?.let { coreCastList ->
+                        anime.cast =
+                            coreCastList.map { core ->
+                                SourceCredit(
+                                    name = core.name,
+                                    role = core.role,
+                                    character = core.character,
+                                    image_url = core.image_url,
+                                )
+                            }
+                    }
                 }
             }
 

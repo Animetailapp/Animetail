@@ -62,7 +62,6 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
         return executeUrl(url)
     }
 
-
     suspend fun searchMulti(query: String, language: String? = null): List<TmdbSearchResult> {
         val params = mutableMapOf<String, String>("query" to query)
         if (!language.isNullOrBlank()) params["language"] = language
@@ -148,7 +147,9 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
     }
 
     suspend fun addToWatchlist(mediaType: String, mediaId: Long, watchlist: Boolean): JSONObject {
-        logcat(LogPriority.INFO) { "TMDB addToWatchlist: starting for mediaType=$mediaType, mediaId=$mediaId, watchlist=$watchlist" }
+        logcat(LogPriority.INFO) {
+            "TMDB addToWatchlist: starting for mediaType=$mediaType, mediaId=$mediaId, watchlist=$watchlist"
+        }
         val account = getAccount()
         val accountId = account.optLong("id")
         logcat(LogPriority.INFO) { "TMDB addToWatchlist: accountId=$accountId" }
@@ -164,7 +165,9 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
         }
         response.use { resp ->
             if (!resp.isSuccessful) {
-                logcat(LogPriority.ERROR) { "TMDB addToWatchlist: request failed with code ${resp.code}, body: ${resp.body?.string()}" }
+                logcat(LogPriority.ERROR) {
+                    "TMDB addToWatchlist: request failed with code ${resp.code}, body: ${resp.body?.string()}"
+                }
                 throw Exception("TMDB watchlist update failed: ${resp.code}")
             }
             val body = resp.body?.string().orEmpty()
@@ -230,8 +233,6 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
             return JSONObject(body)
         }
     }
-
-
 }
 
 data class TmdbSearchResult(

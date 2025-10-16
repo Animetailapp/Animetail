@@ -433,87 +433,87 @@ object SettingsTrackingScreen : SearchableSettings {
     }
 }
 
-    @Composable
-    private fun TrackingApiKeyDialog(
-        tracker: Tracker,
-        onDismissRequest: () -> Unit,
-    ) {
-        val context = LocalContext.current
-        val trackPreferences = remember { Injekt.get<TrackPreferences>() }
-        val networkHelper = remember { Injekt.get<eu.kanade.tachiyomi.network.NetworkHelper>() }
-        val scope = rememberCoroutineScope()
+@Composable
+private fun TrackingApiKeyDialog(
+    tracker: Tracker,
+    onDismissRequest: () -> Unit,
+) {
+    val context = LocalContext.current
+    val trackPreferences = remember { Injekt.get<TrackPreferences>() }
+    val networkHelper = remember { Injekt.get<eu.kanade.tachiyomi.network.NetworkHelper>() }
+    val scope = rememberCoroutineScope()
 
-        var apiKey by remember { mutableStateOf(TextFieldValue(trackPreferences.trackApiKey(tracker).get())) }
-        var processing by remember { mutableStateOf(false) }
-        AlertDialog(
-            onDismissRequest = onDismissRequest,
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = stringResource(TLMR.strings.pref_sync_api_key),
-                        modifier = Modifier.weight(1f),
-                    )
-                    IconButton(onClick = onDismissRequest) {
-                        Icon(
-                            imageVector = Icons.Outlined.Close,
-                            contentDescription = stringResource(MR.strings.action_close),
-                        )
-                    }
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        value = apiKey,
-                        onValueChange = { apiKey = it },
-                            label = { Text(text = stringResource(TLMR.strings.pref_sync_api_key)) },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        singleLine = true,
+    var apiKey by remember { mutableStateOf(TextFieldValue(trackPreferences.trackApiKey(tracker).get())) }
+    var processing by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(TLMR.strings.pref_sync_api_key),
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onDismissRequest) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = stringResource(MR.strings.action_close),
                     )
                 }
-            },
-            confirmButton = {
-                Button(
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !processing && apiKey.text.isNotBlank(),
-                    onClick = {
-                        scope.launchIO {
-                            processing = true
-                            try {
-                                // Validate API key by requesting /3/configuration
-                                val url = "https://api.themoviedb.org/3/configuration?api_key=${apiKey.text}"
-                                val req = okhttp3.Request.Builder().url(url).get().build()
-                                val resp = networkHelper.client.newCall(req).execute()
-                                val ok = try {
-                                    resp.use { r -> r.isSuccessful && r.body.string().contains("images") }
-                                } catch (_: Exception) {
-                                    false
-                                }
-
-                                if (ok) {
-                                    trackPreferences.setApiKey(tracker, apiKey.text)
-                                    withUIContext {
-                                        onDismissRequest()
-                                        context.toast(MR.strings.login_success)
-                                    }
-                                } else {
-                                    withUIContext { context.toast(TLMR.strings.login_error) }
-                                }
+                    value = apiKey,
+                    onValueChange = { apiKey = it },
+                    label = { Text(text = stringResource(TLMR.strings.pref_sync_api_key)) },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !processing && apiKey.text.isNotBlank(),
+                onClick = {
+                    scope.launchIO {
+                        processing = true
+                        try {
+                            // Validate API key by requesting /3/configuration
+                            val url = "https://api.themoviedb.org/3/configuration?api_key=${apiKey.text}"
+                            val req = okhttp3.Request.Builder().url(url).get().build()
+                            val resp = networkHelper.client.newCall(req).execute()
+                            val ok = try {
+                                resp.use { r -> r.isSuccessful && r.body.string().contains("images") }
                             } catch (_: Exception) {
-                                withUIContext { context.toast(TLMR.strings.login_error) }
-                            } finally {
-                                processing = false
+                                false
                             }
+
+                            if (ok) {
+                                trackPreferences.setApiKey(tracker, apiKey.text)
+                                withUIContext {
+                                    onDismissRequest()
+                                    context.toast(MR.strings.login_success)
+                                }
+                            } else {
+                                withUIContext { context.toast(TLMR.strings.login_error) }
+                            }
+                        } catch (_: Exception) {
+                            withUIContext { context.toast(TLMR.strings.login_error) }
+                        } finally {
+                            processing = false
                         }
-                    },
-                ) {
-                    val id = if (processing) MR.strings.loading else TLMR.strings.save
-                    Text(text = stringResource(id))
-                }
-            },
-        )
-    }
+                    }
+                },
+            ) {
+                val id = if (processing) MR.strings.loading else TLMR.strings.save
+                Text(text = stringResource(id))
+            }
+        },
+    )
+}
 
 private data class LoginDialog(
     val tracker: Tracker,

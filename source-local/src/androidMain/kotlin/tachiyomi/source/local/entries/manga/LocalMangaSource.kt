@@ -165,7 +165,9 @@ actual class LocalMangaSource(
             description = description,
             genre = genre?.split(", "),
             status = status,
-            cast = cast?.map { SourceCredit(name = it.name, role = it.role, character = it.character, image_url = it.image_url) },
+            cast = cast?.map {
+                SourceCredit(name = it.name, role = it.role, character = it.character, image_url = it.image_url)
+            },
         )
     }
     // SY <--
@@ -206,7 +208,15 @@ actual class LocalMangaSource(
                         genre?.let { manga.genre = it.joinToString() }
                         status?.let { manga.status = it }
                         cast?.let { coreCastList ->
-                            manga.cast = coreCastList.map { core -> SourceCredit(name = core.name, role = core.role, character = core.character, image_url = core.image_url) }
+                            manga.cast =
+                                coreCastList.map { core ->
+                                    SourceCredit(
+                                        name = core.name,
+                                        role = core.role,
+                                        character = core.character,
+                                        image_url = core.image_url,
+                                    )
+                                }
                         }
                     }
                     // Replace with ComicInfo.xml file
