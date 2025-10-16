@@ -13,6 +13,7 @@ class TrackLoginActivity : BaseOAuthLoginActivity() {
             "myanimelist-auth" -> handleMyAnimeList(data)
             "shikimori-auth" -> handleShikimori(data)
             "simkl-auth" -> handleSimkl(data)
+            "tmdb-auth" -> handleTmdb(data)
         }
     }
 
@@ -78,6 +79,19 @@ class TrackLoginActivity : BaseOAuthLoginActivity() {
             }
         } else {
             trackerManager.simkl.logout()
+            returnToSettings()
+        }
+    }
+
+    private fun handleTmdb(data: Uri) {
+        val requestToken = data.getQueryParameter("request_token")
+        if (requestToken != null) {
+            lifecycleScope.launchIO {
+                trackerManager.tmdb.login(requestToken, "")
+                returnToSettings()
+            }
+        } else {
+            trackerManager.tmdb.logout()
             returnToSettings()
         }
     }

@@ -266,9 +266,13 @@ data class AnimeTrackInfoDialogHomeScreen(
         }
 
         private fun List<AnimeTrack>.mapToTrackItem(): List<AnimeTrackItem> {
-            val loggedInTrackers = Injekt.get<TrackerManager>().loggedInTrackers().filter {
-                it is AnimeTracker
-            }
+            // Include trackers that are either logged in or explicitly available for metadata use
+            val trackerManager: TrackerManager = Injekt.get()
+            val loggedInTrackers = trackerManager.trackers
+                .filter { (it as? Tracker)?.isAvailableForUse() == true }
+                .filter {
+                    it is AnimeTracker
+                }
             val source = Injekt.get<AnimeSourceManager>().getOrStub(sourceId)
             return loggedInTrackers
                 // Map to TrackItem

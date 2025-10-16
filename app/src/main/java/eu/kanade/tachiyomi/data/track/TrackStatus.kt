@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.data.track.mangaupdates.MangaUpdates
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
 import eu.kanade.tachiyomi.data.track.shikimori.Shikimori
 import eu.kanade.tachiyomi.data.track.simkl.Simkl
+import eu.kanade.tachiyomi.data.track.tmdb.Tmdb
 
 @Suppress("MagicNumber")
 enum class TrackStatus(val int: Long, @StringRes val res: Int) {
@@ -115,6 +116,16 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         Simkl.ON_HOLD -> PAUSED
                         Simkl.PLAN_TO_WATCH -> PLAN_TO_WATCH
                         Simkl.NOT_INTERESTING -> DROPPED
+                        else -> null
+                    }
+                }
+                200L -> {
+                    when (statusLong) {
+                        Tmdb.WATCHING -> WATCHING
+                        Tmdb.COMPLETED -> COMPLETED
+                        Tmdb.PLAN_TO_WATCH -> PLAN_TO_WATCH
+                        Tmdb.DROPPED -> DROPPED
+                        Tmdb.ON_HOLD -> PAUSED
                         else -> null
                     }
                 }

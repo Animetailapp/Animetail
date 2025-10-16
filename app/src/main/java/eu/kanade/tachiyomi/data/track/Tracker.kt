@@ -57,4 +57,10 @@ interface Tracker {
 
     suspend fun getMangaMetadata(track: DomainMangaTrack): TrackMangaMetadata?
     suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata?
+
+    /**
+     * Indicates whether this tracker can be used to fetch metadata/credits even if not "logged in".
+     * Default implementation requires being logged in, implementations may override (e.g. TMDB uses API key).
+     */
+    fun isAvailableForUse(): Boolean = isLoggedIn
 }

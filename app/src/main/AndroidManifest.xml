@@ -273,6 +273,7 @@
                 <data android:host="myanimelist-auth" />
                 <data android:host="shikimori-auth" />
                 <data android:host="simkl-auth"/>
+                <data android:host="tmdb-auth"/>
             </intent-filter>
         </activity>
         <activity

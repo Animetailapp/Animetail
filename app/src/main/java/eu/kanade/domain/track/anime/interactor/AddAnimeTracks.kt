@@ -41,14 +41,14 @@ class AddAnimeTracks(
 
             insertTrack.await(track)
 
-            // After successfully inserting the track, if it's AniList, try to fetch cast and persist it
+            // After successfully inserting the track, try to fetch cast from the tracker if available and persist it
             try {
                 val updateAnime: UpdateAnime = Injekt.get()
                 val getAnime: GetAnime = Injekt.get()
                 val localAnime = getAnime.await(animeId)
                 val titleForLookup = localAnime?.title
 
-                if (tracker is eu.kanade.tachiyomi.data.track.anilist.Anilist) {
+                try {
                     val cast = tracker.fetchCastByTitle(titleForLookup)
                     if (!cast.isNullOrEmpty()) {
                         updateAnime.await(
@@ -58,6 +58,9 @@ class AddAnimeTracks(
                             ),
                         )
                     }
+                } catch (e: Exception) {
+                    // swallow individual tracker failures; do not fail the bind process
+                    logcat(LogPriority.WARN, e) { "Could not fetch/persist cast from tracker after binding" }
                 }
             } catch (e: Exception) {
                 logcat(LogPriority.WARN, e) { "Could not fetch/persist cast after binding tracker" }
@@ -104,27 +107,36 @@ class AddAnimeTracks(
 
     suspend fun bindEnhancedTrackers(anime: Anime, source: AnimeSource) = withNonCancellableContext {
         withIOContext {
-            trackerManager.loggedInTrackers()
+            trackerManager.trackers
+                .filter { (it as? eu.kanade.tachiyomi.data.track.Tracker)?.isAvailableForUse() == true }
                 .filterIsInstance<EnhancedAnimeTracker>()
                 .filter { it.accept(source) }
                 .forEach { service ->
                     try {
                         service.match(anime)?.let { track ->
                             track.anime_id = anime.id
-                            (service as Tracker).animeService.bind(track)
-                            insertTrack.await(track.toDomainTrack(idRequired = false)!!)
-
-                            // If the matched service is AniList, try fetching cast for this anime and persist it
                             try {
-                                if (service is eu.kanade.tachiyomi.data.track.anilist.Anilist) {
-                                    val cast = (service as eu.kanade.tachiyomi.data.track.anilist.Anilist).fetchCastByTitle(anime.title)
-                                    if (!cast.isNullOrEmpty()) {
-                                        Injekt.get<UpdateAnime>().await(
-                                            tachiyomi.domain.entries.anime.model.AnimeUpdate(
-                                                id = anime.id,
-                                                cast = cast,
-                                            ),
-                                        )
+                                (service as Tracker).animeService.register(track, anime.id)
+                            } catch (_: Exception) {
+                                // Fallback to previous behavior if register fails for some reason
+                                (service as Tracker).animeService.bind(track)
+                                insertTrack.await(track.toDomainTrack(idRequired = false)!!)
+                            }
+
+                            try {
+                                if (service is AnimeTracker) {
+                                    try {
+                                        val cast = (service as AnimeTracker).fetchCastByTitle(anime.title)
+                                        if (!cast.isNullOrEmpty()) {
+                                            Injekt.get<UpdateAnime>().await(
+                                                tachiyomi.domain.entries.anime.model.AnimeUpdate(
+                                                    id = anime.id,
+                                                    cast = cast,
+                                                ),
+                                            )
+                                        }
+                                    } catch (e: Exception) {
+                                        logcat(LogPriority.WARN, e) { "Could not fetch/persist cast from enhanced tracker" }
                                     }
                                 }
                             } catch (e: Exception) {
