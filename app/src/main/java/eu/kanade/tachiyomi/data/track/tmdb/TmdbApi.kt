@@ -12,6 +12,7 @@ import org.json.JSONObject
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 
+@Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
 class TmdbApi(private val client: OkHttpClient, private val apiKey: String, private val sessionId: String = "") {
 
     companion object {
@@ -25,7 +26,9 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
             .scheme("https")
             .host(HOST)
             .addPathSegments(path)
-            .addQueryParameter("api_key", apiKey)
+
+        // Add API key in query for v3 endpoints
+        urlBuilder.addQueryParameter("api_key", apiKey)
 
         if (sessionId.isNotBlank()) {
             urlBuilder.addQueryParameter("session_id", sessionId)
@@ -43,27 +46,39 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
         }
         response.use { resp ->
             if (!resp.isSuccessful) throw Exception("TMDB request failed: ${resp.code}")
-            val body = resp.body?.string().orEmpty()
+            val body = resp.body.string()
             return JSONObject(body)
         }
     }
 
     suspend fun getRequestToken(language: String? = null): JSONObject {
-        val params = mutableMapOf<String, String>("redirect_to" to "animetail://tmdb-auth")
+        val params = mutableMapOf("redirect_to" to "animetail://tmdb-auth")
         if (!language.isNullOrBlank()) params["language"] = language
         val url = buildUrl("3/authentication/token/new", params)
         return executeUrl(url)
     }
 
-    suspend fun createSession(requestToken: String, language: String? = null): JSONObject {
-        val params = mutableMapOf<String, String>("request_token" to requestToken)
-        if (!language.isNullOrBlank()) params["language"] = language
-        val url = buildUrl("3/authentication/session/new", params)
-        return executeUrl(url)
+    suspend fun createSession(requestToken: String): JSONObject {
+
+        val url = buildUrl("3/authentication/session/new")
+        val payload = buildJsonObject {
+            put("request_token", requestToken)
+        }.toString().toRequestBody(jsonMime)
+        val request = Request.Builder().url(url).post(payload).build()
+        val response = withIOContext {
+            client.newCall(request).execute()
+        }
+        response.use { resp ->
+            if (!resp.isSuccessful) {
+                throw Exception("TMDB session creation failed: ${resp.code}")
+            }
+            val body = resp.body.string()
+            return JSONObject(body)
+        }
     }
 
     suspend fun searchMulti(query: String, language: String? = null): List<TmdbSearchResult> {
-        val params = mutableMapOf<String, String>("query" to query)
+        val params = mutableMapOf("query" to query)
         if (!language.isNullOrBlank()) params["language"] = language
         val url = buildUrl("3/search/multi", params)
         val json = executeUrl(url)
@@ -153,7 +168,7 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
         val account = getAccount()
         val accountId = account.optLong("id")
         logcat(LogPriority.INFO) { "TMDB addToWatchlist: accountId=$accountId" }
-        val url = buildUrl("3/account/$accountId/watchlist")
+    val url = buildUrl("3/account/$accountId/watchlist")
         val payload = buildJsonObject {
             put("media_type", mediaType)
             put("media_id", mediaId)
@@ -165,13 +180,9 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
         }
         response.use { resp ->
             if (!resp.isSuccessful) {
-                logcat(LogPriority.ERROR) {
-                    "TMDB addToWatchlist: request failed with code ${resp.code}, body: ${resp.body?.string()}"
-                }
                 throw Exception("TMDB watchlist update failed: ${resp.code}")
             }
-            val body = resp.body?.string().orEmpty()
-            logcat(LogPriority.INFO) { "TMDB addToWatchlist: success, response: $body" }
+            val body = resp.body.string()
             return JSONObject(body)
         }
     }
@@ -187,7 +198,7 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
         }
         response.use { resp ->
             if (!resp.isSuccessful) throw Exception("TMDB add movie rating failed: ${resp.code}")
-            val body = resp.body?.string().orEmpty()
+            val body = resp.body.string()
             return JSONObject(body)
         }
     }
@@ -216,7 +227,7 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
         }
         response.use { resp ->
             if (!resp.isSuccessful) throw Exception("TMDB delete movie rating failed: ${resp.code}")
-            val body = resp.body?.string().orEmpty()
+            val body = resp.body.string()
             return JSONObject(body)
         }
     }
@@ -229,7 +240,7 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
         }
         response.use { resp ->
             if (!resp.isSuccessful) throw Exception("TMDB delete TV rating failed: ${resp.code}")
-            val body = resp.body?.string().orEmpty()
+            val body = resp.body.string()
             return JSONObject(body)
         }
     }

@@ -136,10 +136,14 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                 }
 
                 val detail = try {
-                    api.getMovie(track.remote_id, lang)
+                    api.getMovie(track.remote_id, null)
                 } catch (_: Exception) {
-                    api.getTv(track.remote_id, lang)
+                    api.getTv(track.remote_id, null)
                 }
+
+                val isMovie = detail.additional.optString("media_type", "") == "movie" || detail.additional.has("runtime")
+                val defaultEpisodes: Long = if (isMovie) 1 else 100
+                val totalEpisodes = detail.additional.optLong("number_of_episodes", defaultEpisodes)
 
                 return AnimeTrack.create(this@Tmdb.id).apply {
                     remote_id = track.remote_id
@@ -151,13 +155,13 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                         else -> 0.0
                     }
                     status = if (accountJson.optBoolean("watchlist", false)) PLAN_TO_WATCH else WATCHING
-                    total_episodes = detail.additional.optLong("number_of_episodes", 1)
+                    total_episodes = totalEpisodes
                 }.also {
                     logcat(LogPriority.INFO) {
                         "TMDB findLibAnime: watchlist=${accountJson.optBoolean(
                             "watchlist",
                             false,
-                        )}, status=${it.status}"
+                        )}, status=${it.status}, total_episodes=${it.total_episodes}"
                     }
                 }
             } catch (_: Exception) { }
@@ -210,14 +214,23 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
 
     override fun getCompletionStatus(): Long = COMPLETED
 
-    override suspend fun login(username: String, password: String) = login(password)
+    override suspend fun login(username: String, password: String) = login(username)
 
     suspend fun login(code: String) {
         try {
             val oauth = api.createSession(code)
-            trackPreferences.trackToken(this).set(oauth.optString("session_id"))
-            saveCredentials("tmdb", "tmdb")
-        } catch (_: Throwable) {
+            val sessionId = oauth.optString("session_id")
+            // persist session id so other calls that require a session can run
+            trackPreferences.trackToken(this).set(sessionId)
+            try {
+                val account = api.getAccount()
+                val username = account.optString("username").ifEmpty { account.optString("name", "tmdb") }
+                saveCredentials(username, sessionId)
+            } catch (e: Exception) {
+                saveCredentials("tmdb", sessionId)
+            }
+        } catch (e: Throwable) {
+            logcat(LogPriority.ERROR) { "TMDB login: failed with error ${e.message}" }
             logout()
         }
     }
