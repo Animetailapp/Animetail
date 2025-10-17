@@ -141,7 +141,8 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                     api.getTv(track.remote_id, null)
                 }
 
-                val isMovie = detail.additional.optString("media_type", "") == "movie" || detail.additional.has("runtime")
+                val isMovie =
+                    detail.additional.optString("media_type", "") == "movie" || detail.additional.has("runtime")
                 val defaultEpisodes: Long = if (isMovie) 1 else 100
                 val totalEpisodes = detail.additional.optLong("number_of_episodes", defaultEpisodes)
 

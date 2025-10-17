@@ -59,7 +59,6 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
     }
 
     suspend fun createSession(requestToken: String): JSONObject {
-
         val url = buildUrl("3/authentication/session/new")
         val payload = buildJsonObject {
             put("request_token", requestToken)
@@ -168,7 +167,7 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
         val account = getAccount()
         val accountId = account.optLong("id")
         logcat(LogPriority.INFO) { "TMDB addToWatchlist: accountId=$accountId" }
-    val url = buildUrl("3/account/$accountId/watchlist")
+        val url = buildUrl("3/account/$accountId/watchlist")
         val payload = buildJsonObject {
             put("media_type", mediaType)
             put("media_id", mediaId)
