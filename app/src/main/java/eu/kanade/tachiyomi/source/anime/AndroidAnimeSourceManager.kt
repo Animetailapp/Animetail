@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
+import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -114,6 +115,15 @@ class AndroidAnimeSourceManager(
             }
         }
     }
+
+    // SY -->
+    override fun getVisibleOnlineSources() = sourcesMapFlow.value.values
+        .filterIsInstance<HttpSource>()
+
+    override fun getVisibleCatalogueSources() = sourcesMapFlow.value.values
+        .filterIsInstance<AnimeCatalogueSource>()
+
+    // SY <--
 
     private suspend fun createStubSource(id: Long): StubAnimeSource {
         sourceRepository.getStubAnimeSource(id)?.let {

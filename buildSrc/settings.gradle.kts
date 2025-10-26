@@ -18,4 +18,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Aniyomi"
+rootProject.name = "Animetail"
