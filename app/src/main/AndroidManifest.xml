@@ -274,6 +274,7 @@
                 <data android:host="shikimori-auth" />
                 <data android:host="simkl-auth"/>
                 <data android:host="tmdb-auth"/>
+                <data android:host="trakt-auth"/>
             </intent-filter>
         </activity>
         <activity
