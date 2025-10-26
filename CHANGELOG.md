@@ -10,18 +10,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
-## [v0.18.1.1] - 2025-10-26
-### Fixed
-
-- Fix source Seasons/Hosters feature detection ([@hollowshiroyuki](https://github.com/hollowshiroyuki)) ([#2195](https://github.com/aniyomiorg/aniyomi/pull/2195))
-- Fix shared download cache messing up downloaded episodes detection ([@choppeh](https://github.com/choppeh)) ([#2184](https://github.com/aniyomiorg/aniyomi/pull/2184))
-- Fix Shikimori anime tracking ([@danya140](https://github.com/danya140)) ([#2205](https://github.com/aniyomiorg/aniyomi/pull/2205))
-
-### Improved
-
-- Make volume gesture the same sensitivity as brightness ([@jmir1](https://github.com/jmir1))
-
-## [v0.18.1.0] - 2025-10-02
+## [v0.18.1.3] - 2025-10-02
 ### Fixed
 
 - Fix list view resetting scroll upon exiting child ([@quickdesh](https://github.com/quickdesh)) ([#1982](https://github.com/aniyomiorg/aniyomi/pull/1982))
@@ -61,11 +50,15 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Use timestamps provided by extensions ([@Secozzi](https://github.com/Secozzi)) ([#1983](https://github.com/aniyomiorg/aniyomi/pull/1983))
 - Add titles to player sheets + consistency with More sheet ([@quickdesh](https://github.com/quickdesh)) ([#2015](https://github.com/aniyomiorg/aniyomi/pull/2015))
 - Add script & script-opts editor to player settings ([@Secozzi](https://github.com/Secozzi)) ([#2019](https://github.com/aniyomiorg/aniyomi/pull/2019))
+- feat: Get manga and Anime info from tracker ([#188](https://github.com/aniyomiorg/aniyomi/pull/1674))
 
 ### Improved
 
 - Show "Now" instead of "0 minutes ago" ([@Secozzi](https://github.com/Secozzi)) ([#1715](https://github.com/aniyomiorg/aniyomi/pull/1715))
 - Add headers when using 1dm as external player ([@Secozzi](https://github.com/Secozzi)) ([#2032](https://github.com/aniyomiorg/aniyomi/pull/2032))
+- feat: add navbar preferences for updates, history, and label visibility ([#189](https://github.com/aniyomiorg/aniyomi/pull/1674))
+- feat: implement repository hide/show functionality
+- feat: add support for repository icon extensions
 
 ### Fixed
 

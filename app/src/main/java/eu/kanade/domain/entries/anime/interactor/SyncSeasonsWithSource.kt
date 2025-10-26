@@ -68,7 +68,7 @@ class SyncSeasonsWithSource(
             } else {
                 if (shouldUpdateDbSeason.await(dbSeason, season)) {
                     val toChangeSeason = dbSeason.copy(
-                        title = season.title,
+                        ogTitle = season.ogTitle,
                         seasonNumber = season.seasonNumber,
                         seasonSourceOrder = season.seasonSourceOrder,
                     )
