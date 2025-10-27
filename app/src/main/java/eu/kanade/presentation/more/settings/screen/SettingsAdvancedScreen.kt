@@ -47,6 +47,7 @@ import eu.kanade.tachiyomi.network.PREF_DOH_ADGUARD
 import eu.kanade.tachiyomi.network.PREF_DOH_ALIDNS
 import eu.kanade.tachiyomi.network.PREF_DOH_CLOUDFLARE
 import eu.kanade.tachiyomi.network.PREF_DOH_CONTROLD
+import eu.kanade.tachiyomi.network.PREF_DOH_CUSTOM
 import eu.kanade.tachiyomi.network.PREF_DOH_DNSPOD
 import eu.kanade.tachiyomi.network.PREF_DOH_GOOGLE
 import eu.kanade.tachiyomi.network.PREF_DOH_LIBREDNS
@@ -77,6 +78,7 @@ import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import mihon.core.migration.Migrator.scope
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -94,6 +96,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 import java.io.File
+import java.net.InetAddress
 import tachiyomi.core.common.preference.Preference as BasePreference
 
 object SettingsAdvancedScreen : SearchableSettings {
@@ -238,6 +241,11 @@ object SettingsAdvancedScreen : SearchableSettings {
 
         val userAgentPref = networkPreferences.defaultUserAgent()
         val userAgent by userAgentPref.collectAsState()
+        val dohProviderPref = networkPreferences.dohProvider()
+        val dohProvider by dohProviderPref.collectAsState()
+        val dohCustomUrlPref = networkPreferences.dohCustomUrl()
+        val dohCustomBootstrapPref = networkPreferences.dohCustomBootstrap()
+        val errorDohCustomBootstrapInvalid = stringResource(TLMR.strings.error_doh_custom_bootstrap_invalid)
 
         // TLMR -->
         val flareSolverrUrlPref = networkPreferences.flareSolverrUrl()
@@ -292,9 +300,56 @@ object SettingsAdvancedScreen : SearchableSettings {
                         PREF_DOH_NJALLA to "Njalla",
                         PREF_DOH_SHECAN to "Shecan",
                         PREF_DOH_LIBREDNS to "LibreDNS",
+                        PREF_DOH_CUSTOM to "Custom",
                     ),
                     title = stringResource(MR.strings.pref_dns_over_https),
                     onValueChanged = {
+                        context.toast(MR.strings.requires_app_restart)
+                        true
+                    },
+                ),
+                Preference.PreferenceItem.EditTextPreference(
+                    preference = dohCustomUrlPref,
+                    title = stringResource(TLMR.strings.pref_doh_custom_url),
+                    subtitle = stringResource(TLMR.strings.pref_doh_custom_url_summary),
+                    enabled = dohProvider == PREF_DOH_CUSTOM,
+                    onValueChanged = {
+                        val value = it.trim()
+                        try {
+                            val parsed = value.toHttpUrl()
+                            if (!parsed.scheme.equals("https", ignoreCase = true)) {
+                                context.toast(TLMR.strings.error_doh_custom_must_use_https)
+                                return@EditTextPreference false
+                            }
+                        } catch (e: Exception) {
+                            context.toast(TLMR.strings.error_doh_custom_invalid)
+                            return@EditTextPreference false
+                        }
+                        context.toast(MR.strings.requires_app_restart)
+                        true
+                    },
+                ),
+                Preference.PreferenceItem.EditTextPreference(
+                    preference = dohCustomBootstrapPref,
+                    title = stringResource(TLMR.strings.pref_doh_custom_bootstrap),
+                    subtitle = stringResource(TLMR.strings.pref_doh_custom_bootstrap_summary),
+                    enabled = dohProvider == PREF_DOH_CUSTOM,
+                    onValueChanged = {
+                        // Validate comma separated hosts by attempting to resolve them
+                        val raw = it.trim()
+                        if (raw.isEmpty()) {
+                            context.toast(MR.strings.requires_app_restart)
+                            return@EditTextPreference true
+                        }
+                        val parts = raw.split(',').map { p -> p.trim() }.filter { p -> p.isNotEmpty() }
+                        for (p in parts) {
+                            try {
+                                InetAddress.getByName(p)
+                            } catch (e: Exception) {
+                                context.toast(errorDohCustomBootstrapInvalid.format(p))
+                                return@EditTextPreference false
+                            }
+                        }
                         context.toast(MR.strings.requires_app_restart)
                         true
                     },
