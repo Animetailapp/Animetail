@@ -29,16 +29,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,6 +65,8 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.entries.anime.model.episodesFiltered
 import eu.kanade.domain.entries.anime.model.seasonsFiltered
+import eu.kanade.domain.source.service.SourcePreferences
+import eu.kanade.presentation.browse.anime.RelatedAnimeTitle
 import eu.kanade.presentation.components.relativeDateTimeText
 import eu.kanade.presentation.entries.DownloadAction
 import eu.kanade.presentation.entries.EntryScreenItem
@@ -71,22 +77,28 @@ import eu.kanade.presentation.entries.anime.components.AnimeSeasonListItem
 import eu.kanade.presentation.entries.anime.components.EpisodeDownloadAction
 import eu.kanade.presentation.entries.anime.components.ExpandableAnimeDescription
 import eu.kanade.presentation.entries.anime.components.NextEpisodeAiringListItem
+import eu.kanade.presentation.entries.anime.components.OutlinedButtonWithArrow
+import eu.kanade.presentation.entries.anime.components.RelatedAnimesRow
 import eu.kanade.presentation.entries.components.EntryBottomActionMenu
 import eu.kanade.presentation.entries.components.EntryToolbar
 import eu.kanade.presentation.entries.components.ItemHeader
 import eu.kanade.presentation.entries.components.MissingItemCountListItem
 import eu.kanade.presentation.util.formatEpisodeNumber
+import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.animesource.model.SAnime
+import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadProvider
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.source.anime.getNameForAnimeInfo
 import eu.kanade.tachiyomi.ui.browse.anime.extension.details.AnimeSourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreenModel
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeSeasonItem
 import eu.kanade.tachiyomi.ui.entries.anime.EpisodeList
+import eu.kanade.tachiyomi.ui.home.HomeScreen.uiPreferences
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.coroutines.delay
+import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.items.episode.service.missingEntriesCount
@@ -94,18 +106,25 @@ import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.model.StubAnimeSource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.FastScrollLazyVerticalGrid
 import tachiyomi.presentation.core.components.TwoPanelBox
 import tachiyomi.presentation.core.components.material.ExtendedFloatingActionButton
 import tachiyomi.presentation.core.components.material.PullRefresh
 import tachiyomi.presentation.core.components.material.Scaffold
+import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.shouldExpandFAB
 import tachiyomi.source.local.entries.anime.isLocal
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 @Composable
+@Suppress("ParameterNaming", "LongMethod")
 fun AnimeScreen(
     state: AnimeScreenModel.State.Success,
     snackbarHostState: SnackbarHostState,
@@ -115,6 +134,9 @@ fun AnimeScreen(
     episodeSwipeEndAction: LibraryPreferences.EpisodeSwipeAction,
     showNextEpisodeAirTime: Boolean,
     alwaysUseExternalPlayer: Boolean,
+    // AM (FILE_SIZE) -->
+    showFileSize: Boolean,
+    // <-- AM (FILE_SIZE)
     navigateUp: () -> Unit,
     onEpisodeClicked: (episode: Episode, alt: Boolean) -> Unit,
     onDownloadEpisode: ((List<EpisodeList.Item>, EpisodeDownloadAction) -> Unit)?,
@@ -140,6 +162,9 @@ fun AnimeScreen(
     onEditCategoryClicked: (() -> Unit)?,
     onEditFetchIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    // SY -->
+    onEditInfoClicked: () -> Unit,
+    // SY <--
     changeAnimeSkipIntro: (() -> Unit)?,
 
     // For bottom action menu
@@ -160,6 +185,13 @@ fun AnimeScreen(
     // Season clicked
     onSeasonClicked: (SeasonAnime) -> Unit,
     onContinueWatchingClicked: ((SeasonAnime) -> Unit)?,
+    // KMK -->
+    getAnimeState: @Composable (Anime) -> State<Anime>,
+    onRelatedAnimesScreenClick: () -> Unit,
+    onRelatedAnimeClick: (Anime) -> Unit,
+    onRelatedAnimeLongClick: (Anime) -> Unit,
+    // KMK <--
+
 ) {
     val context = LocalContext.current
     val onCopyTagToClipboard: (tag: String) -> Unit = {
@@ -182,6 +214,9 @@ fun AnimeScreen(
             episodeSwipeEndAction = episodeSwipeEndAction,
             showNextEpisodeAirTime = showNextEpisodeAirTime,
             alwaysUseExternalPlayer = alwaysUseExternalPlayer,
+            // AM (FILE_SIZE) -->
+            showFileSize = showFileSize,
+            // <-- AM (FILE_SIZE)
             navigateUp = navigateUp,
             onEpisodeClicked = onEpisodeClicked,
             onDownloadEpisode = onDownloadEpisode,
@@ -201,6 +236,9 @@ fun AnimeScreen(
             onEditCategoryClicked = onEditCategoryClicked,
             onEditIntervalClicked = onEditFetchIntervalClicked,
             onMigrateClicked = onMigrateClicked,
+            // SY -->
+            onEditInfoClicked = onEditInfoClicked,
+            // SY <--
             changeAnimeSkipIntro = changeAnimeSkipIntro,
             onMultiBookmarkClicked = onMultiBookmarkClicked,
             onMultiFillermarkClicked = onMultiFillermarkClicked,
@@ -214,6 +252,12 @@ fun AnimeScreen(
             onSettingsClicked = onSettingsClicked,
             onSeasonClicked = onSeasonClicked,
             onClickContinueWatching = onContinueWatchingClicked,
+            // KMK -->
+            getAnimeState = getAnimeState,
+            onRelatedAnimesScreenClick = onRelatedAnimesScreenClick,
+            onRelatedAnimeClick = onRelatedAnimeClick,
+            onRelatedAnimeLongClick = onRelatedAnimeLongClick,
+            // KMK <--
         )
     } else {
         AnimeScreenLargeImpl(
@@ -224,6 +268,9 @@ fun AnimeScreen(
             episodeSwipeEndAction = episodeSwipeEndAction,
             showNextEpisodeAirTime = showNextEpisodeAirTime,
             alwaysUseExternalPlayer = alwaysUseExternalPlayer,
+            // AM (FILE_SIZE) -->
+            showFileSize = showFileSize,
+            // <-- AM (FILE_SIZE)
             navigateUp = navigateUp,
             onEpisodeClicked = onEpisodeClicked,
             onDownloadEpisode = onDownloadEpisode,
@@ -244,6 +291,9 @@ fun AnimeScreen(
             onEditIntervalClicked = onEditFetchIntervalClicked,
             changeAnimeSkipIntro = changeAnimeSkipIntro,
             onMigrateClicked = onMigrateClicked,
+            // SY -->
+            onEditInfoClicked = onEditInfoClicked,
+            // SY <--
             onMultiBookmarkClicked = onMultiBookmarkClicked,
             onMultiFillermarkClicked = onMultiFillermarkClicked,
             onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
@@ -256,12 +306,19 @@ fun AnimeScreen(
             onSettingsClicked = onSettingsClicked,
             onSeasonClicked = onSeasonClicked,
             onClickContinueWatching = onContinueWatchingClicked,
+            // KMK -->
+            getAnimeState = getAnimeState,
+            onRelatedAnimesScreenClick = onRelatedAnimesScreenClick,
+            onRelatedAnimeClick = onRelatedAnimeClick,
+            onRelatedAnimeLongClick = onRelatedAnimeLongClick,
+            // KMK <--
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("ParameterNaming", "LongMethod")
 private fun AnimeScreenSmallImpl(
     state: AnimeScreenModel.State.Success,
     snackbarHostState: SnackbarHostState,
@@ -270,6 +327,9 @@ private fun AnimeScreenSmallImpl(
     episodeSwipeEndAction: LibraryPreferences.EpisodeSwipeAction,
     showNextEpisodeAirTime: Boolean,
     alwaysUseExternalPlayer: Boolean,
+    // AM (FILE_SIZE) -->
+    showFileSize: Boolean,
+    // <-- AM (FILE_SIZE)
     navigateUp: () -> Unit,
     onEpisodeClicked: (Episode, Boolean) -> Unit,
     onDownloadEpisode: ((List<EpisodeList.Item>, EpisodeDownloadAction) -> Unit)?,
@@ -296,6 +356,9 @@ private fun AnimeScreenSmallImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    // SY -->
+    onEditInfoClicked: () -> Unit,
+    // SY <--
     changeAnimeSkipIntro: (() -> Unit)?,
     onSettingsClicked: (() -> Unit)?,
 
@@ -317,6 +380,12 @@ private fun AnimeScreenSmallImpl(
     // Season clicked
     onSeasonClicked: (SeasonAnime) -> Unit,
     onClickContinueWatching: ((SeasonAnime) -> Unit)?,
+    // KMK -->
+    getAnimeState: @Composable ((Anime) -> State<Anime>),
+    onRelatedAnimesScreenClick: () -> Unit,
+    onRelatedAnimeClick: (Anime) -> Unit,
+    onRelatedAnimeLongClick: (Anime) -> Unit,
+    // KMK <--
 ) {
     val density = LocalDensity.current
     val offsetGridPaddingPx = with(density) { GRID_PADDING.roundToPx() }
@@ -350,6 +419,10 @@ private fun AnimeScreenSmallImpl(
         }
     })
 
+    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes().collectAsState()
+    val expandRelatedAnimes by uiPreferences.expandRelatedAnimes().collectAsState()
+    val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow().collectAsState()
+
     BoxWithConstraints {
         val density = LocalDensity.current
         val containerHeightPx = with(density) { this@BoxWithConstraints.maxHeight.roundToPx() }
@@ -382,6 +455,15 @@ private fun AnimeScreenSmallImpl(
                     onClickEditCategory = onEditCategoryClicked,
                     onClickRefresh = onRefresh,
                     onClickMigrate = onMigrateClicked,
+                    // SY -->
+                    onClickEditInfo = onEditInfoClicked.takeIf { state.anime.favorite },
+                    // KMK -->
+                    onClickRelatedAnimes = onRelatedAnimesScreenClick.takeIf {
+                        !expandRelatedAnimes &&
+                            showRelatedAnimesInOverflow
+                    },
+                    // KMK <--
+                    // SY <--
                     onClickSettings = onSettingsClicked,
                     changeAnimeSkipIntro = changeAnimeSkipIntro,
                     actionModeCounter = selectedEpisodeCount,
@@ -514,6 +596,62 @@ private fun AnimeScreenSmallImpl(
                             modifier = Modifier.ignorePadding(offsetGridPaddingPx),
                         )
                     }
+                    // KMK -->
+                    if (state.source !is StubAnimeSource &&
+                        relatedAnimesEnabled
+                    ) {
+                        if (expandRelatedAnimes) {
+                            if (state.relatedAnimesSorted?.isNotEmpty() != false) {
+                                item(
+                                    key = "divider_related_animes_top",
+                                    span = { GridItemSpan(maxLineSpan) },
+                                ) { HorizontalDivider() }
+                                item(
+                                    key = EntryScreenItem.RELATED_ANIMES,
+                                    contentType = EntryScreenItem.RELATED_ANIMES,
+                                    span = { GridItemSpan(maxLineSpan) },
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .ignorePadding(offsetGridPaddingPx),
+                                    ) {
+                                        RelatedAnimeTitle(
+                                            title = stringResource(TLMR.strings.pref_source_related_mangas),
+                                            subtitle = null,
+                                            onClick = onRelatedAnimesScreenClick,
+                                            onLongClick = null,
+                                            modifier = Modifier
+                                                .padding(horizontal = MaterialTheme.padding.medium),
+                                        )
+                                        RelatedAnimesRow(
+                                            relatedAnimes = state.relatedAnimesSorted,
+                                            getAnimeState = getAnimeState,
+                                            onAnimeClick = onRelatedAnimeClick,
+                                            onAnimeLongClick = onRelatedAnimeLongClick,
+                                        )
+                                    }
+                                }
+                                item(
+                                    key = "divider_related_animes_bottom",
+                                    span = { GridItemSpan(maxLineSpan) },
+                                ) { HorizontalDivider() }
+                            }
+                        } else if (!showRelatedAnimesInOverflow) {
+                            item(
+                                key = EntryScreenItem.RELATED_ANIMES,
+                                contentType = EntryScreenItem.RELATED_ANIMES,
+                                span = { GridItemSpan(maxLineSpan) },
+                            ) {
+                                OutlinedButtonWithArrow(
+                                    text = stringResource(TLMR.strings.pref_source_related_mangas)
+                                        .uppercase(),
+                                    onClick = onRelatedAnimesScreenClick,
+                                    modifier = Modifier.ignorePadding(offsetGridPaddingPx),
+                                )
+                            }
+                        }
+                    }
+                    // KMK <--
 
                     item(
                         key = EntryScreenItem.ITEM_HEADER,
@@ -585,6 +723,10 @@ private fun AnimeScreenSmallImpl(
 
                             sharedEpisodeItems(
                                 anime = state.anime,
+                                // AM (FILE_SIZE) -->
+                                source = state.source,
+                                showFileSize = showFileSize,
+                                // <-- AM (FILE_SIZE)
                                 episodes = listItem,
                                 isAnyEpisodeSelected = episodes.fastAny { it.selected },
                                 showSummaries = state.showSummaries,
@@ -607,6 +749,7 @@ private fun AnimeScreenSmallImpl(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("ParameterNaming", "LongMethod")
 fun AnimeScreenLargeImpl(
     state: AnimeScreenModel.State.Success,
     snackbarHostState: SnackbarHostState,
@@ -615,6 +758,9 @@ fun AnimeScreenLargeImpl(
     episodeSwipeEndAction: LibraryPreferences.EpisodeSwipeAction,
     showNextEpisodeAirTime: Boolean,
     alwaysUseExternalPlayer: Boolean,
+    // AM (FILE_SIZE) -->
+    showFileSize: Boolean,
+    // <-- AM (FILE_SIZE)
     navigateUp: () -> Unit,
     onEpisodeClicked: (Episode, Boolean) -> Unit,
     onDownloadEpisode: ((List<EpisodeList.Item>, EpisodeDownloadAction) -> Unit)?,
@@ -641,6 +787,9 @@ fun AnimeScreenLargeImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    // SY -->
+    onEditInfoClicked: () -> Unit,
+    // SY <--
     changeAnimeSkipIntro: (() -> Unit)?,
     onSettingsClicked: (() -> Unit)?,
 
@@ -662,6 +811,11 @@ fun AnimeScreenLargeImpl(
     // Season clicked
     onSeasonClicked: (SeasonAnime) -> Unit,
     onClickContinueWatching: ((SeasonAnime) -> Unit)?,
+    // KMK -->
+    getAnimeState: @Composable ((Anime) -> State<Anime>),
+    onRelatedAnimesScreenClick: () -> Unit,
+    onRelatedAnimeClick: (Anime) -> Unit,
+    onRelatedAnimeLongClick: (Anime) -> Unit,
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
@@ -696,6 +850,9 @@ fun AnimeScreenLargeImpl(
             navigateUp()
         }
     })
+    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes().collectAsState()
+    val expandRelatedAnimes by uiPreferences.expandRelatedAnimes().collectAsState()
+    val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow().collectAsState()
 
     BoxWithConstraints {
         val density = LocalDensity.current
@@ -717,6 +874,15 @@ fun AnimeScreenLargeImpl(
                     onClickRefresh = onRefresh,
                     onClickMigrate = onMigrateClicked,
                     onCancelActionMode = { onAllEpisodeSelected(false) },
+                    // SY -->
+                    onClickEditInfo = onEditInfoClicked.takeIf { state.anime.favorite },
+                    // SY <--
+                    // KMK -->
+                    onClickRelatedAnimes = onRelatedAnimesScreenClick.takeIf {
+                        !expandRelatedAnimes &&
+                            showRelatedAnimesInOverflow
+                    },
+                    // KMK <--
                     onClickSettings = onSettingsClicked,
                     changeAnimeSkipIntro = changeAnimeSkipIntro,
                     actionModeCounter = selectedChapterCount,
@@ -840,6 +1006,58 @@ fun AnimeScreenLargeImpl(
                                 bottom = contentPadding.calculateBottomPadding(),
                             ),
                         ) {
+                            // KMK -->
+                            if (state.source !is StubAnimeSource &&
+                                relatedAnimesEnabled
+                            ) {
+                                if (expandRelatedAnimes) {
+                                    if (state.relatedAnimesSorted?.isNotEmpty() != false) {
+                                        item(
+                                            key = EntryScreenItem.RELATED_ANIMES,
+                                            contentType = EntryScreenItem.RELATED_ANIMES,
+                                            span = { GridItemSpan(maxLineSpan) },
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.ignorePadding(offsetGridPaddingPx),
+                                            ) {
+                                                RelatedAnimeTitle(
+                                                    title = stringResource(TLMR.strings.pref_source_related_mangas)
+                                                        .uppercase(),
+                                                    subtitle = null,
+                                                    onClick = onRelatedAnimesScreenClick,
+                                                    onLongClick = null,
+                                                    modifier = Modifier
+                                                        .padding(horizontal = MaterialTheme.padding.medium),
+                                                )
+                                                RelatedAnimesRow(
+                                                    relatedAnimes = state.relatedAnimesSorted,
+                                                    getAnimeState = getAnimeState,
+                                                    onAnimeClick = onRelatedAnimeClick,
+                                                    onAnimeLongClick = onRelatedAnimeLongClick,
+                                                )
+                                            }
+                                        }
+                                        item(
+                                            key = "divider_related_animes_large",
+                                            span = { GridItemSpan(maxLineSpan) },
+                                        ) { HorizontalDivider() }
+                                    }
+                                } else if (!showRelatedAnimesInOverflow) {
+                                    item(
+                                        key = EntryScreenItem.RELATED_ANIMES,
+                                        contentType = EntryScreenItem.RELATED_ANIMES,
+                                        span = { GridItemSpan(maxLineSpan) },
+                                    ) {
+                                        OutlinedButtonWithArrow(
+                                            text = stringResource(TLMR.strings.pref_source_related_mangas),
+                                            onClick = onRelatedAnimesScreenClick,
+                                            modifier = Modifier.ignorePadding(offsetGridPaddingPx),
+                                        )
+                                    }
+                                }
+                            }
+                            // KMK <--
+
                             item(
                                 key = EntryScreenItem.ITEM_HEADER,
                                 contentType = EntryScreenItem.ITEM_HEADER,
@@ -909,6 +1127,10 @@ fun AnimeScreenLargeImpl(
 
                                     sharedEpisodeItems(
                                         anime = state.anime,
+                                        // AM (FILE_SIZE) -->
+                                        source = state.source,
+                                        showFileSize = showFileSize,
+                                        // <-- AM (FILE_SIZE)
                                         episodes = listItem,
                                         isAnyEpisodeSelected = episodes.fastAny { it.selected },
                                         showSummaries = state.showSummaries,
@@ -1015,6 +1237,10 @@ private fun LazyGridScope.sharedSeasons(
 
 private fun LazyGridScope.sharedEpisodeItems(
     anime: Anime,
+    // AM (FILE_SIZE) -->
+    source: AnimeSource,
+    showFileSize: Boolean,
+    // <-- AM (FILE_SIZE)
     episodes: List<EpisodeList>,
     isAnyEpisodeSelected: Boolean,
     showSummaries: Boolean,
@@ -1048,6 +1274,26 @@ private fun LazyGridScope.sharedEpisodeItems(
                 )
             }
             is EpisodeList.Item -> {
+                // AM (FILE_SIZE) -->
+                var fileSizeAsync: Long? by remember { mutableStateOf(episodeItem.fileSize) }
+                val isEpisodeDownloaded = episodeItem.downloadState == AnimeDownload.State.DOWNLOADED
+                if (isEpisodeDownloaded && showFileSize && fileSizeAsync == null) {
+                    LaunchedEffect(episodeItem, Unit) {
+                        fileSizeAsync = withIOContext {
+                            animeDownloadProvider.getEpisodeFileSize(
+                                episodeItem.episode.name,
+                                episodeItem.episode.url,
+                                episodeItem.episode.scanlator,
+                                // AM (CUSTOM_INFORMATION) -->
+                                anime.ogTitle,
+                                // <-- AM (CUSTOM_INFORMATION)
+                                source,
+                            )
+                        }
+                        episodeItem.fileSize = fileSizeAsync
+                    }
+                }
+                // <-- AM (FILE_SIZE)
                 AnimeEpisodeListItem(
                     title = if (anime.displayMode == Anime.EPISODE_DISPLAY_NUMBER) {
                         stringResource(
@@ -1101,6 +1347,9 @@ private fun LazyGridScope.sharedEpisodeItems(
                         onEpisodeSwipe(episodeItem, it)
                     },
                     modifier = itemModifier,
+                    // AM (FILE_SIZE) -->
+                    fileSize = fileSizeAsync,
+                    // <-- AM (FILE_SIZE)
                 )
             }
         }
@@ -1160,3 +1409,7 @@ private fun Modifier.ignorePadding(gridPadding: Int) = layout { measurable, cons
         placeable.placeRelative(0, 0)
     }
 }
+
+// AM (FILE_SIZE) -->
+private val animeDownloadProvider: AnimeDownloadProvider by injectLazy()
+// <-- AM (FILE_SIZE)
