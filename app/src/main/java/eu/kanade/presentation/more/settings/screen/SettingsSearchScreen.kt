@@ -254,7 +254,9 @@ private fun SearchResult(
                 ) {
                     items(
                         items = it,
-                        key = { i -> "${i.route::class.java.name}-${i.title.ifEmpty { "_" }}-${i.breadcrumbs.ifEmpty { "_" }}" },
+                        key = { i ->
+                            "${i.route::class.java.name}-${i.title.ifEmpty { "_" }}-${i.breadcrumbs.ifEmpty { "_" }}"
+                        },
                     ) { item ->
                         Column(
                             modifier = Modifier
