@@ -153,7 +153,14 @@ fun PlayerControls(
         viewModel = viewModel,
         interactionSource = interactionSource,
     )
-    DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekIcon, showSeekTime, interactionSource)
+    DoubleTapToSeekOvals(
+        doubleTapSeekAmount,
+        seekText,
+        showDoubleTapOvals,
+        showSeekIcon,
+        showSeekTime,
+        interactionSource,
+    )
     CompositionLocalProvider(
         LocalRippleConfiguration provides playerRippleConfiguration,
         LocalPlayerButtonsClickEvent provides { resetControls = !resetControls },
