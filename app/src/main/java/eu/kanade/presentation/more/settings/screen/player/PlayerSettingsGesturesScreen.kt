@@ -20,12 +20,14 @@ import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
 import eu.kanade.tachiyomi.ui.player.SingleActionGesture
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
+import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentMap
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.WheelTextPicker
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
@@ -130,9 +132,13 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
 
     @Composable
     private fun getDoubleTapGroup(gesturePreferences: GesturePreferences): Preference.PreferenceGroup {
+        val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
         val leftDoubleTap = gesturePreferences.leftDoubleTapGesture()
         val centerDoubleTap = gesturePreferences.centerDoubleTapGesture()
         val rightDoubleTap = gesturePreferences.rightDoubleTapGesture()
+        val showDoubleTapOvals = playerPreferences.showDoubleTapOvals()
+        val showSeekIcon = playerPreferences.showSeekIcon()
+        val showSeekTimeWhileSeeking = playerPreferences.showSeekTimeWhileSeeking()
 
         return Preference.PreferenceGroup(
             title = stringResource(AYMR.strings.pref_category_double_tap),
@@ -167,6 +173,18 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                         SingleActionGesture.Custom,
                     ).associateWith { stringResource(it.stringRes) }.toPersistentMap(),
                     title = stringResource(AYMR.strings.pref_right_double_tap),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = showDoubleTapOvals,
+                    title = stringResource(TLMR.strings.show_splash_ovals_on_double_tap_to_seek),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = showSeekIcon,
+                    title = stringResource(TLMR.strings.show_seek_icon),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = showSeekTimeWhileSeeking,
+                    title = stringResource(TLMR.strings.show_seek_time),
                 ),
                 Preference.PreferenceItem.InfoPreference(
                     title = stringResource(AYMR.strings.pref_double_tap_info),

@@ -28,6 +28,10 @@ class PlayerPreferences(
     fun rememberPlayerVolume() = preferenceStore.getBoolean("pref_remember_volume", false)
     fun playerVolumeValue() = preferenceStore.getFloat("player_volume_value", -1.0F)
 
+    fun showDoubleTapOvals() = preferenceStore.getBoolean("show_double_tap_ovals", true)
+    fun showSeekIcon() = preferenceStore.getBoolean("show_seek_icons", true)
+    fun showSeekTimeWhileSeeking() = preferenceStore.getBoolean("show_seek_time_while_seeking", true)
+
     // Hoster
 
     fun showFailedHosters() = preferenceStore.getBoolean("pref_show_failed_hosters", false)

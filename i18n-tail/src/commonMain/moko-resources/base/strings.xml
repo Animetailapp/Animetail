@@ -367,12 +367,18 @@
     <string name="pref_source_related_animes_summary">Show source-website's Suggestions while viewing entry</string>
     <string name="pref_source_navigation">Replace latest button</string>
     <string name="pref_source_navigation_summery">Replace latest button with a custom browse view that includes both latest and browse</string>
+
     <!-- Doh Custom -->
-   <string name="pref_doh_custom_url">Custom DoH URL</string>
-   <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
-   <string name="error_doh_custom_invalid">Invalid DoH URL</string>
-   <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
-   <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
-   <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
-   <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
-</resources>
+    <string name="pref_doh_custom_url">Custom DoH URL</string>
+    <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
+    <string name="error_doh_custom_invalid">Invalid DoH URL</string>
+    <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
+    <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
+    <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
+    <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
+
+    <!-- Video Player -->
+    <string name="show_splash_ovals_on_double_tap_to_seek">Show ripple when double tap seeking</string>
+    <string name="show_seek_icon">Show seek icon</string>
+    <string name="show_seek_time">Show seek time</string>
+   </resources>
