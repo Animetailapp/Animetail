@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.network.interceptor.IgnoreGzipInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UncaughtExceptionInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UserAgentInterceptor
 import okhttp3.Cache
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.brotli.BrotliInterceptor
 import okhttp3.logging.HttpLoggingInterceptor
@@ -67,6 +68,38 @@ class NetworkHelper(
             PREF_DOH_NJALLA -> builder.dohNajalla()
             PREF_DOH_SHECAN -> builder.dohShecan()
             PREF_DOH_LIBREDNS -> builder.dohLibreDNS()
+            PREF_DOH_CUSTOM -> {
+                val custom = preferences.dohCustomUrl().get().trim()
+                if (custom.isNotEmpty()) {
+                    try {
+                        // Validate URL early
+                        custom.toHttpUrl()
+
+                        // Parse optional bootstrap hosts from comma-separated preference
+                        val bootstrapPref = preferences.dohCustomBootstrap().get().trim()
+                        val bootstrapHosts = if (bootstrapPref.isNotEmpty()) {
+                            bootstrapPref.split(',')
+                                .mapNotNull { it.trim().takeIf { t -> t.isNotEmpty() } }
+                                .mapNotNull { host ->
+                                    try {
+                                        java.net.InetAddress.getByName(host)
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }
+                        } else {
+                            emptyList()
+                        }
+
+                        builder.dohCustom(custom, bootstrapHosts)
+                    } catch (e: Exception) {
+                        // Invalid URL: fall back to no DoH
+                        builder
+                    }
+                } else {
+                    builder
+                }
+            }
             else -> builder
         }
     }

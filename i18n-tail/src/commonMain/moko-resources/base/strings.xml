@@ -371,4 +371,12 @@
     <string name="pref_sync_api_key_summ">Enter the API key to synchronize your library</string>
     <string name="login_error">Login error</string>
     <string name="save">Save</string>
+    <!-- Doh Custom -->
+   <string name="pref_doh_custom_url">Custom DoH URL</string>
+   <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
+   <string name="error_doh_custom_invalid">Invalid DoH URL</string>
+   <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
+   <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
+   <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
+   <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
 </resources>

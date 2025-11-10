@@ -260,19 +260,8 @@ class AnimeScreenModel(
         observeDownloads()
 
         screenModelScope.launchIO {
-            val oldAnime = getAnimeAndEpisodesAndSeasons.awaitAnime(animeId)
-
-            // TODO(16): Remove checks
-            val source = sourceManager.getOrStub(oldAnime.source)
-            val anime = if (source.javaClass.declaredMethods.any {
-                    it.name in
-                        listOf("getSeasonList", "seasonListRequest", "seasonListParse")
-                }
-            ) {
-                oldAnime
-            } else {
-                oldAnime.copy(fetchType = FetchType.Episodes)
-            }
+            val anime = getAnimeAndEpisodesAndSeasons.awaitAnime(animeId)
+            val source = sourceManager.getOrStub(anime.source)
 
             val episodes = if (anime.fetchType == FetchType.Seasons) {
                 emptyList()

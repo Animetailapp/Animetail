@@ -315,4 +315,11 @@
   <string name="pref_sync_api_key_summ">Introduzca la clave API para sincronizar su biblioteca</string>
   <string name="login_error">Error de inicio de sesión</string>
   <string name="save">Guardar</string>
+    <string name="pref_doh_custom_url">URL de DoH personalizada</string>
+    <string name="pref_doh_custom_url_summary">Ejemplo: https://dns.example/dns-query</string>
+    <string name="error_doh_custom_invalid">URL de DoH no válida</string>
+    <string name="error_doh_custom_must_use_https">El DoH personalizado debe usar https</string>
+    <string name="pref_doh_custom_bootstrap">Hosts de arranque de DoH personalizados</string>
+    <string name="pref_doh_custom_bootstrap_summary">IP separadas por comas (opcional). Ejemplo: 1.1.1.1,8.8.8.8</string>
+    <string name="error_doh_custom_bootstrap_invalid">Host de arranque no válido: %1$s</string>
 </resources>
