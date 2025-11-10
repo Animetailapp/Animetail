@@ -26,6 +26,14 @@ class NetworkPreferences(
         return preferenceStore.getInt("doh_provider", -1)
     }
 
+    fun dohCustomUrl(): Preference<String> {
+        return preferenceStore.getString("doh_custom_url", "")
+    }
+
+    fun dohCustomBootstrap(): Preference<String> {
+        return preferenceStore.getString("doh_custom_bootstrap", "")
+    }
+
     fun defaultUserAgent(): Preference<String> {
         return preferenceStore.getString(
             "default_user_agent",
