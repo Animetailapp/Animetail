@@ -303,6 +303,9 @@ fun GestureHandler(
 fun DoubleTapToSeekOvals(
     amount: Int,
     text: String?,
+    showOvals: Boolean,
+    showSeekIcon: Boolean,
+    showSeekTime: Boolean,
     interactionSource: MutableInteractionSource,
     modifier: Modifier = Modifier,
 ) {
@@ -321,21 +324,29 @@ fun DoubleTapToSeekOvals(
                         .fillMaxWidth(0.4f), // 2 fifths
                     contentAlignment = Alignment.Center,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(if (amount > 0) RightSideOvalShape else LeftSideOvalShape)
-                            .background(Color.White.copy(alpha))
-                            .indication(interactionSource, ripple()),
-                    )
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        DoubleTapSeekTriangles(isForward = amount > 0)
-                        Text(
-                            text = text ?: pluralStringResource(AYMR.plurals.seconds, amount, amount),
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center,
-                            color = Color.White,
+                    if (showOvals) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(if (amount > 0) RightSideOvalShape else LeftSideOvalShape)
+                                .background(Color.White.copy(alpha))
+                                .indication(interactionSource, ripple()),
                         )
+                    }
+                    if (showSeekIcon || showSeekTime) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            if (showSeekIcon) {
+                                DoubleTapSeekTriangles(isForward = amount > 0)
+                            }
+                            if (showSeekTime) {
+                                Text(
+                                    text = text ?: pluralStringResource(AYMR.plurals.seconds, amount, amount),
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center,
+                                    color = Color.White,
+                                )
+                            }
+                        }
                     }
                 }
             }
