@@ -1146,7 +1146,6 @@ fun AnimeScreenLargeImpl(
                                         onEpisodeSwipe = onEpisodeSwipe,
                                         itemModifier = Modifier.ignorePadding(offsetGridPaddingPx),
                                         showEpisodeTimestamps = showEpisodeTimestamps,
-
                                     )
                                 }
                             }
