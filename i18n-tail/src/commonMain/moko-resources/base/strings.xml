@@ -375,4 +375,21 @@
    <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
    <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
    <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
+    <!-- Network Stream -->
+    <string name="network_stream">Network stream</string>
+    <string name="network_stream_summary">Play a direct link inside the built-in player</string>
+    <string name="network_stream_url_label">Stream URL</string>
+    <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
+    <string name="network_stream_invalid_url">Enter a valid URL</string>
+    <string name="network_stream_title_label">Title (optional)</string>
+    <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
+    <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
+    <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
+    <string name="network_stream_referer_label">Referer header</string>
+    <string name="network_stream_user_agent_label">User-Agent header</string>
+    <string name="network_stream_headers_label">Additional headers</string>
+    <string name="network_stream_headers_hint">Header-Name: Header value</string>
+    <string name="network_stream_header_error">Header on line %1$d must use the format "Name: Value"</string>
+    <string name="network_stream_play">Play stream</string>
+    <string name="network_stream_reset">Clear fields</string>
 </resources>

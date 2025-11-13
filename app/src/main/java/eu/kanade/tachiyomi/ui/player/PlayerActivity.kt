@@ -77,6 +77,7 @@ import eu.kanade.tachiyomi.torrentServer.TorrentServerApi
 import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.ui.player.controls.PlayerControls
+import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
@@ -175,6 +176,16 @@ class PlayerActivity : BaseActivity() {
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         }
+
+        fun newStreamIntent(
+            context: Context,
+            request: NetworkStreamRequest,
+        ): Intent {
+            return Intent(context, PlayerActivity::class.java).apply {
+                putExtra(NetworkStreamRequest.EXTRA_KEY, Json.encodeToString(request))
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+        }
         internal const val MPV_DIR = "mpv"
         private const val MPV_FONTS_DIR = "fonts"
         private const val MPV_SCRIPTS_DIR = "scripts"
@@ -189,6 +200,25 @@ class PlayerActivity : BaseActivity() {
     @SuppressLint("MissingSuperCall")
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+
+        val networkStreamPayload = intent.getStringExtra(NetworkStreamRequest.EXTRA_KEY)
+        if (networkStreamPayload != null) {
+            val request = runCatching {
+                Json.decodeFromString<NetworkStreamRequest>(networkStreamPayload)
+            }.getOrElse { error ->
+                logcat(LogPriority.ERROR, error) { "Failed to parse network stream payload" }
+                toast(MR.strings.internal_error)
+                null
+            }
+
+            intent.removeExtra(NetworkStreamRequest.EXTRA_KEY)
+            setIntent(intent)
+
+            if (request != null) {
+                handleNetworkStreamIntent(request)
+            }
+            return
+        }
 
         val animeId = intent.extras?.getLong("animeId") ?: -1
         val episodeId = intent.extras?.getLong("episodeId") ?: -1
@@ -1205,23 +1235,35 @@ class PlayerActivity : BaseActivity() {
         finish()
     }
 
+    private fun handleNetworkStreamIntent(request: NetworkStreamRequest) {
+        viewModel.saveCurrentEpisodeWatchingProgress()
+        lifecycleScope.launchNonCancellable {
+            viewModel.prepareNetworkStream(request)
+        }
+    }
+
     private fun parseVideoUrl(videoUrl: String?): String? {
         return videoUrl?.toUri()?.resolveUri(this)
             ?: videoUrl
     }
 
     private fun setHttpOptions(video: Video) {
-        if (viewModel.isEpisodeOnline() != true) return
-        val source = viewModel.currentSource.value as? AnimeHttpSource ?: return
+        val resolvedHeaders = video.headers
+            ?: if (viewModel.isEpisodeOnline() == true) {
+                viewModel.currentSource.value as? AnimeHttpSource
+            } else {
+                null
+            }?.headers
+            ?: return
 
-        val headers = (video.headers ?: source.headers)
+        val headers = resolvedHeaders
             .toMultimap()
             .mapValues { it.value.firstOrNull() ?: "" }
             .toMutableMap()
 
-        val httpHeaderString = headers.map {
-            it.key + ": " + it.value.replace(",", "\\,")
-        }.joinToString(",")
+        val httpHeaderString = headers.entries.joinToString(",") { entry ->
+            entry.key + ": " + entry.value.replace(",", "\\,")
+        }
 
         MPVLib.setOptionString("http-header-fields", httpHeaderString)
 
