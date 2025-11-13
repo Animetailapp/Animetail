@@ -321,6 +321,6 @@
     <string name="pref_show_episode_timestamp">Mostrar marcas de tiempo de los episodios</string>
     <string name="pref_show_episode_timestamp_summary">Muestra la fecha y hora de lanzamiento en la lista de episodios, a menos que una extensión informe datos no confiables</string>
     <string name="pref_show_chapter_timestamp">Mostrar marcas de tiempo de los capítulos</string>
-    <string name="pref_show_chapter_timestamp_summary">Ocultar la fecha y hora de lanzamiento en la lista de capítulos cuando una extensión informa datos no confiables</string>
+    <string name="pref_show_chapter_timestamp_summary">Muestra la fecha y hora de lanzamiento en la lista de capítulos, a menos que una extensión informe datos no confiables</string>
 
 </resources>
