@@ -379,5 +379,5 @@
     <string name="pref_show_episode_timestamp">Show episode timestamps</string>
     <string name="pref_show_episode_timestamp_summary">Hide the release date/time on the episode list when an extension reports unreliable data</string>
     <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
-    <string name="pref_show_chapter_timestamp_summary">Hide the release date/time on the chapter list when an extension reports unreliable data</string>
+    <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
 </resources>
