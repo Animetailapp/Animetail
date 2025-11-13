@@ -740,7 +740,7 @@ fun MangaScreenLargeImpl(
                                 onChapterSelected = onChapterSelected,
                                 onChapterSwipe = onChapterSwipe,
                                 showChapterTimestamps = showChapterTimestamps,
-                                )
+                            )
                         }
                     }
                 },
