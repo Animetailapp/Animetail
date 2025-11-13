@@ -26,6 +26,7 @@ import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.ui.more.DownloadQueueState
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.pluralStringResource
@@ -142,8 +143,8 @@ fun MoreScreen(
             }
             item {
                 TextPreferenceWidget(
-                    title = stringResource(AYMR.strings.network_stream),
-                    subtitle = stringResource(AYMR.strings.network_stream_summary),
+                    title = stringResource(TLMR.strings.network_stream),
+                    subtitle = stringResource(TLMR.strings.network_stream_summary),
                     icon = Icons.Outlined.Link,
                     onPreferenceClick = onClickNetworkStream,
                 )

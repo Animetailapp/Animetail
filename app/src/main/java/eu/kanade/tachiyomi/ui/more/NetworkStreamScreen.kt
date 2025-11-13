@@ -47,7 +47,7 @@ import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest.NetworkHeader
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -88,7 +88,7 @@ object NetworkStreamScreen : Screen() {
             topBarScrollBehavior = scrollBehavior,
             topBar = { behavior ->
                 AppBar(
-                    title = stringResource(AYMR.strings.network_stream),
+                    title = stringResource(TLMR.strings.network_stream),
                     navigateUp = navigator::pop,
                     scrollBehavior = behavior,
                 )
@@ -104,8 +104,8 @@ object NetworkStreamScreen : Screen() {
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = { Text(stringResource(AYMR.strings.network_stream_url_label)) },
-                    placeholder = { Text(stringResource(AYMR.strings.network_stream_url_placeholder)) },
+                    label = { Text(stringResource(TLMR.strings.network_stream_url_label)) },
+                    placeholder = { Text(stringResource(TLMR.strings.network_stream_url_placeholder)) },
                     isError = url.isNotBlank() && !isUrlValid,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Uri),
@@ -114,7 +114,7 @@ object NetworkStreamScreen : Screen() {
                 )
                 if (url.isNotBlank() && !isUrlValid) {
                     Text(
-                        text = stringResource(AYMR.strings.network_stream_invalid_url),
+                        text = stringResource(TLMR.strings.network_stream_invalid_url),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = MaterialTheme.padding.extraSmall),
@@ -126,7 +126,7 @@ object NetworkStreamScreen : Screen() {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text(stringResource(AYMR.strings.network_stream_title_label)) },
+                    label = { Text(stringResource(TLMR.strings.network_stream_title_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
@@ -138,7 +138,7 @@ object NetworkStreamScreen : Screen() {
                 OutlinedTextField(
                     value = subtitleUrl,
                     onValueChange = { subtitleUrl = it },
-                    label = { Text(stringResource(AYMR.strings.network_stream_subtitle_label)) },
+                    label = { Text(stringResource(TLMR.strings.network_stream_subtitle_label)) },
                     singleLine = true,
                     isError = subtitleUrl.isNotBlank() && !isSubtitleValid,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Uri),
@@ -147,7 +147,7 @@ object NetworkStreamScreen : Screen() {
                 )
                 if (subtitleUrl.isNotBlank() && !isSubtitleValid) {
                     Text(
-                        text = stringResource(AYMR.strings.network_stream_invalid_subtitle),
+                        text = stringResource(TLMR.strings.network_stream_invalid_subtitle),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = MaterialTheme.padding.extraSmall),
@@ -159,7 +159,7 @@ object NetworkStreamScreen : Screen() {
                 OutlinedTextField(
                     value = subtitleLabel,
                     onValueChange = { subtitleLabel = it },
-                    label = { Text(stringResource(AYMR.strings.network_stream_subtitle_language_label)) },
+                    label = { Text(stringResource(TLMR.strings.network_stream_subtitle_language_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
@@ -171,7 +171,7 @@ object NetworkStreamScreen : Screen() {
                 OutlinedTextField(
                     value = referer,
                     onValueChange = { referer = it },
-                    label = { Text(stringResource(AYMR.strings.network_stream_referer_label)) },
+                    label = { Text(stringResource(TLMR.strings.network_stream_referer_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Uri),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
@@ -183,7 +183,7 @@ object NetworkStreamScreen : Screen() {
                 OutlinedTextField(
                     value = userAgent,
                     onValueChange = { userAgent = it },
-                    label = { Text(stringResource(AYMR.strings.network_stream_user_agent_label)) },
+                    label = { Text(stringResource(TLMR.strings.network_stream_user_agent_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
@@ -195,8 +195,8 @@ object NetworkStreamScreen : Screen() {
                 OutlinedTextField(
                     value = headersRaw,
                     onValueChange = { headersRaw = it },
-                    label = { Text(stringResource(AYMR.strings.network_stream_headers_label)) },
-                    placeholder = { Text(stringResource(AYMR.strings.network_stream_headers_hint)) },
+                    label = { Text(stringResource(TLMR.strings.network_stream_headers_label)) },
+                    placeholder = { Text(stringResource(TLMR.strings.network_stream_headers_hint)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(160.dp),
@@ -216,7 +216,7 @@ object NetworkStreamScreen : Screen() {
                             onFailure = { error ->
                                 val message = if (error is HeaderFormatException) {
                                     context.coreStringResource(
-                                        AYMR.strings.network_stream_header_error,
+                                        TLMR.strings.network_stream_header_error,
                                         error.lineIndex + 1,
                                     )
                                 } else {
@@ -246,11 +246,11 @@ object NetworkStreamScreen : Screen() {
                     enabled = canPlay,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(text = stringResource(AYMR.strings.network_stream_play))
+                    Text(text = stringResource(TLMR.strings.network_stream_play))
                 }
 
                 Text(
-                    text = stringResource(AYMR.strings.network_stream_summary),
+                    text = stringResource(TLMR.strings.network_stream_summary),
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
@@ -275,7 +275,7 @@ object NetworkStreamScreen : Screen() {
                             headersRaw = ""
                         },
                     ) {
-                        Text(text = stringResource(AYMR.strings.network_stream_reset))
+                        Text(text = stringResource(TLMR.strings.network_stream_reset))
                     }
                 }
             }
