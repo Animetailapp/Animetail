@@ -368,11 +368,16 @@
     <string name="pref_source_navigation">Replace latest button</string>
     <string name="pref_source_navigation_summery">Replace latest button with a custom browse view that includes both latest and browse</string>
     <!-- Doh Custom -->
-   <string name="pref_doh_custom_url">Custom DoH URL</string>
-   <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
-   <string name="error_doh_custom_invalid">Invalid DoH URL</string>
-   <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
-   <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
-   <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
-   <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
+    <string name="pref_doh_custom_url">Custom DoH URL</string>
+    <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
+    <string name="error_doh_custom_invalid">Invalid DoH URL</string>
+    <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
+    <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
+    <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
+    <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
+    <!-- Episode/Chapter Timestamps -->
+    <string name="pref_show_episode_timestamp">Show episode timestamps</string>
+    <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
+    <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
+    <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
 </resources>

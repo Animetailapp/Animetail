@@ -36,6 +36,12 @@ class UiPreferences(
 
     fun dateFormat() = preferenceStore.getString("app_date_format", "")
 
+    fun showEpisodeTimestamps() =
+        preferenceStore.getBoolean("pref_show_episode_release_timestamp", true)
+
+    fun showChapterTimestamps() =
+        preferenceStore.getBoolean("pref_show_chapter_release_timestamp", true)
+
     fun tabletUiMode() = preferenceStore.getEnum("tablet_ui_mode", TabletUiMode.AUTOMATIC)
 
     fun startScreen() = preferenceStore.getEnum("start_screen", StartScreen.ANIME)

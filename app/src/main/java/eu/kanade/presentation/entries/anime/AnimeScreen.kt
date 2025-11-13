@@ -422,6 +422,7 @@ private fun AnimeScreenSmallImpl(
     val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes().collectAsState()
     val expandRelatedAnimes by uiPreferences.expandRelatedAnimes().collectAsState()
     val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow().collectAsState()
+    val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps().collectAsState()
 
     BoxWithConstraints {
         val density = LocalDensity.current
@@ -731,6 +732,7 @@ private fun AnimeScreenSmallImpl(
                                 isAnyEpisodeSelected = episodes.fastAny { it.selected },
                                 showSummaries = state.showSummaries,
                                 showPreviews = state.showPreviews,
+                                showEpisodeTimestamps = showEpisodeTimestamps,
                                 episodeSwipeStartAction = episodeSwipeStartAction,
                                 episodeSwipeEndAction = episodeSwipeEndAction,
                                 onEpisodeClicked = onEpisodeClicked,
@@ -834,6 +836,7 @@ fun AnimeScreenLargeImpl(
     var topBarHeight by remember { mutableIntStateOf(0) }
     val offsetGridPaddingPx = with(density) { GRID_PADDING.roundToPx() }
     val gridSize = remember(state.anime) { state.anime.seasonDisplayGridSize }
+    val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps().collectAsState()
 
     val itemListState = rememberLazyGridState()
     val hasFilters = remember(state) {
@@ -1142,6 +1145,7 @@ fun AnimeScreenLargeImpl(
                                         onEpisodeSelected = onEpisodeSelected,
                                         onEpisodeSwipe = onEpisodeSwipe,
                                         itemModifier = Modifier.ignorePadding(offsetGridPaddingPx),
+                                        showEpisodeTimestamps = showEpisodeTimestamps,
                                     )
                                 }
                             }
@@ -1245,6 +1249,7 @@ private fun LazyGridScope.sharedEpisodeItems(
     isAnyEpisodeSelected: Boolean,
     showSummaries: Boolean,
     showPreviews: Boolean,
+    showEpisodeTimestamps: Boolean,
     episodeSwipeStartAction: LibraryPreferences.EpisodeSwipeAction,
     episodeSwipeEndAction: LibraryPreferences.EpisodeSwipeAction,
     onEpisodeClicked: (Episode, Boolean) -> Unit,
@@ -1303,7 +1308,11 @@ private fun LazyGridScope.sharedEpisodeItems(
                     } else {
                         episodeItem.episode.name
                     },
-                    date = relativeDateTimeText(episodeItem.episode.dateUpload),
+                    date = if (showEpisodeTimestamps) {
+                        relativeDateTimeText(episodeItem.episode.dateUpload)
+                    } else {
+                        null
+                    },
                     watchProgress = episodeItem.episode.lastSecondSeen
                         .takeIf { !episodeItem.episode.seen && it > 0L }
                         ?.let {
