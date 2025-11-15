@@ -1,27 +1,27 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <!-- Only Stuff in Animetail -->
-    <!-- unpublished -> 4C1B4D71 / published -> F033F567 -->
+    
+    
     <string name="app_cast_id" translatable="false">F033F567</string>
     <string name="media_route_menu_title">EXTEND</string>
 
-    <!-- Library Grouping -->
+    
     <string name="tracking_status">Tracking status</string>
     <string name="tag">Tags</string>
     <string name="ungrouped">Ungrouped</string>
     <string name="not_tracked">Not tracked</string>
 
-    <!-- More Info Menu -->
+    
     <string name="group">Group</string>
 
-    <!-- Library settings -->
+    
     <string name="anime_library_group_updates">Anime Library dynamic category updates</string>
     <string name="manga_library_group_updates">Manga Library dynamic category updates</string>
     <string name="library_group_updates_global">Always launch global updates</string>
     <string name="library_group_updates_all_but_ungrouped">Launch global updates only for ungrouped, category updates for others</string>
     <string name="library_group_updates_all">Launch category updates all the time</string>
 
-    <!-- Entry Info Edit -->
+    
     <string name="reset_tags">Reset Tags</string>
     <string name="add_tag">Add Tag</string>
     <string name="title_hint">Title: %1$s</string>
@@ -30,17 +30,17 @@
     <string name="artist_hint">Artist: %1$s</string>
     <string name="custom_entry_info">Custom entry info</string>
     <string name="reset_info">Reset Info</string>
-    <!-- Preferences -->
+    
     <string name="pref_show_downloaded_episode_file_size">Show downloaded episode file size</string>
-    <!-- Subsections -->
+    
     <string name="pref_category_fork">Fork Settings</string>
 
-    <!-- Actions -->
+    
     <string name="action_edit_info">Edit info</string>
     <string name="action_display_comfortable_grid_panorama">Panorama comfortable grid</string>
     <string name="action_bulk_select">Bulk selection mode</string>
 
-    <!-- Connections section -->
+    
     <string name="special_services">Special Services</string>
     <string name="pref_category_connections">Connections</string>
     <string name="pref_connections_summary">Discord, more to come..</string>
@@ -63,30 +63,30 @@
     <string name="active_account">Active Account</string>
     <string name="no_accounts_found">No accounts found</string>
 
-    <!-- Discord section -->
+    
     <string name="browsing">Browsing</string>
     <string name="scrolling">Scrolling through</string>
     <string name="messing">Messing around with</string>
     <string name="video">Video</string>
     <string name="comic">Comic</string>
 
-    <!-- Torrent -->
+    
     <string name="install_amnis">Amnis Player needs to be installed</string>
     <string name="pref_category_torrentserver">TorrentServer Preferences</string>
     <string name="pref_torrentserver_port">TorrentServer Port</string>
     <string name="torrentserver_is_running">Torrent Server is running</string>
     <string name="pref_torrent_trackers">Torrent Trackers</string>
     <string name="pref_reset_torrent_trackers_string">Reset default torrent trackers string</string>
-    <!-- Prefs -->
+    
     <string name="pref_page_preload_amount">Page preload amount</string>
 
-    <!-- Reader -->
-    <!-- Reader Settings -->
+    
+    
     <string name="preserve_reading_position">Preserve reading position on read entries</string>
     <string name="reader_bottom_buttons">Reader Bottom Buttons</string>
     <string name="reader_bottom_buttons_summary">Customize what buttons appear at the bottom of the reader</string>
 
-    <!-- Reader Actions -->
+    
     <string name="action_set_first_page_cover">Set first page as cover</string>
     <string name="action_set_second_page_cover">Set second page as cover</string>
     <string name="action_save_first_page">Save first page</string>
@@ -96,10 +96,10 @@
     <string name="action_save_combined_page">Save combined page</string>
     <string name="action_share_combined_page">Share combined page</string>
 
-    <!-- Reader Sharing -->
+    
     <string name="share_pages_info">%1$s: %2$s, pages %3$s</string>
 
-    <!-- Double page spread -->
+    
     <string name="page_layout">Page layout</string>
     <string name="shift_double_pages">Shift one page over</string>
     <string name="double_pages">Double pages</string>
@@ -108,7 +108,7 @@
     <string name="automatic_can_still_switch">While using automatic page layout, you can still switch between layouts while reading without overriding this setting</string>
     <string name="invert_double_pages">Invert double pages </string>
 
-    <!-- Center margin -->
+    
     <string name="center_margin">Center Margin</string>
     <string name="center_margin_none">None</string>
     <string name="center_margin_double_page">Add to double Page</string>
@@ -117,13 +117,12 @@
     <string name="pref_center_margin">Center margin type</string>
     <string name="pref_center_margin_summary">Insert spacer to accommodate deadspace on foldable devices.</string>
 
-    <!-- Custom Color Picker -->
+    
     <string name="pref_custom_color">Custom Color Picker</string>
     <string name="custom_color_description">Pick a color for the custom Theme</string>
     <string name="theme_custom">Custom Theme</string>
 
-    <!-- Cross Device Sync -->
-    <string name="label_backup">Backup</string>
+    
     <string name="label_sync">Sync</string>
     <string name="label_triggers">Triggers</string>
     <string name="pref_backup_and_sync_summary">Manual &amp; automatic backups and sync</string>
@@ -179,24 +178,24 @@
     <string name="sync_on_app_resume">Sync on App Resume</string>
     <string name="sync_library">Sync library</string>
 
-    <!-- repo management -->
+    
     <string name="extensions_page_need_refresh">Refresh extension page to update list.</string>
 
-    <!-- navigation -->
+    
     <string name="pref_category_navbar">Navbar</string>
     <string name="pref_hide_updates_button">Show updates in the nav</string>
     <string name="pref_hide_history_button">Show history in the nav</string>
     <string name="pref_show_bottom_bar_labels">Always show nav labels</string>
 
-    <!-- tracker anime e manga details -->
+    
     <string name="select_tracker">Select a tracker</string>
     <string name="entry_not_tracked">Entry is not tracked.</string>
     <string name="fill_from_tracker">Fill from tracker</string>
 
-    <!-- FlareSolverr -->
+    
     <string name="flare_solver_user_agent_update_success">FlareSolverr is working. User agent updated. Please restart the app</string>
     <string name="flare_solver_update_user_agent_failed">FlareSolverr is not working. User agent not updated. Please check your settings</string>
-    <string name= "flare_solver_error">Error contacting FlareSolverr</string>
+    <string name="flare_solver_error">Error contacting FlareSolverr</string>
     <string name="flare_solver_error_webview">Error resolving with WebView</string>
     <string name="pref_enable_flare_solverr">Enable FlareSolverr</string>
     <string name="pref_enable_flare_solverr_summary">Use FlareSolverr to bypass Cloudflare\'s anti-bot protection</string>
@@ -204,7 +203,7 @@
     <string name="pref_flare_solverr_url_summary">URL of the FlareSolverr instance to use for example http://192.168.1.202:8191/v1</string>
     <string name="pref_test_flare_solverr_and_update_user_agent">Test FlareSolverr and update user agent</string>
     <string name="pref_test_flare_solverr_and_update_user_agent_summary">Test FlareSolverr to update the user agent. Only required once; then toggle as needed.</string>
-    <!-- Cast -->
+    
     <string name="pref_category_cast">Cast Settings</string>
     <string name="pref_enable_cast">Enable or disable Cast</string>
     <string name="action_cast">Send to Cast</string>
@@ -217,7 +216,7 @@
     <string name="pref_category_castserver">Cast Server</string>
     <string name="pref_cast_server_port">Cast Server Port</string>
 
-    <!-- Auto scroll -->
+    
     <string name="eh_autoscroll">Autoscroll</string>
     <string name="eh_retry_all">Retry all</string>
     <string name="eh_boost_page">Boost page</string>
@@ -235,7 +234,7 @@
     <string name="eh_boost_boosted">Boosted current page!</string>
     <string name="eh_boost_invalid_loader">This page cannot be boosted (invalid page loader)!</string>
 
-    <!-- Discord RPC Customization -->
+    
     <string name="pref_category_discord_customization">Discord Customization</string>
     <string name="pref_discord_custom_message">Custom Message</string>
     <string name="pref_discord_custom_message_summary">Custom message that will be displayed on Discord</string>
@@ -249,7 +248,7 @@
     <string name="pref_discord_show_download_button_summary">Displays a button to download the app</string>
     <string name="pref_discord_show_discord_button">Show Discord Button</string>
     <string name="pref_discord_show_discord_button_summary">Displays a button to join the Discord server</string>
-    <!-- Cast Queue Management -->
+    
     <string name="cast_queue_title">Playback Queue</string>
     <string name="action_clear_queue">Clear Queue</string>
     <string name="cast_video_added_to_queue">Video added to queue</string>
@@ -270,7 +269,7 @@
     <string name="cast_end_session_message">Are you sure you want to end the current cast session?</string>
     <string name="cast_end_session_confirm">End Session</string>
     <string name="cast_end_session_cancel">Cancel</string>
-    <!-- Cast device picker -->
+    
     <string name="cast_available_devices">Available Devices</string>
     <string name="cast_media_info">Media Info</string>
     <string name="cast_previous_video">Previous Video</string>
@@ -283,7 +282,7 @@
     <string name="cast_volume">Volume</string>
     <string name="cast_end_session">End Cast Session</string>
 
-    <!-- Cast Subtitle Settings -->
+    
     <string name="cast_subtitle_settings">Subtitle Settings</string>
     <string name="cast_subtitle_font_size">Font Size</string>
     <string name="cast_subtitle_text_color">Text Color</string>
@@ -316,7 +315,7 @@
     <string name="login_failed">Failed to login</string>
     <string name="action_move_up">Move Up</string>
     <string name="action_move_down">Move Down</string>
-    <!-- Feed Tab -->
+    
     <string name="too_many_in_feed">Too many sources in your feed, cannot add more than 20</string>
     <string name="action_sort_feed">Sort feeds</string>
     <string name="sort_feed_confirmation">Would you like to sort the feeds alphabetically?</string>
@@ -329,7 +328,7 @@
     <string name="feed_delete">Delete feed item?</string>
     <string name="feed_tab_empty">You don\'t have any sources in your feed, navigate to the top right to add one</string>
     <string name="feed_add">Add %1$s to feed?</string>
-    <!-- Saved Searches -->
+    
     <string name="saved_searches">Saved Searches</string>
     <string name="save_search">Save current search query?</string>
     <string name="save_search_hint">My search name</string>
@@ -339,17 +338,17 @@
     <string name="save_search_delete_message">Are you sure you wish to delete your saved search query: \'%1$s\'?</string>
     <string name="save_search_invalid">Saved search invalid, filters have changed</string>
     <string name="save_search_invalid_name">Invalid saved search name</string>
-    <!-- Source Categories -->
+    
     <string name="no_source_categories">No source categories available</string>
     <string name="invalid_category_name">Invalid category name</string>
 
-    <!-- Feed Tab -->
+    
     <string name="feed">Feed</string>
     <string name="feed_delete">Delete feed item?</string>
     <string name="feed_tab_empty">You don\'t have any sources in your feed, navigate to the top right to add one</string>
     <string name="feed_add">Add %1$s to feed?</string>
 
-    <!-- Browse settings -->
+    
     <string name="pref_source_related_mangas">Suggestions</string>
     <string name="pref_source_related_mangas_summary">Show source-website's Suggestions while viewing entry</string>
     <string name="related_mangas_website_suggestions">Website Suggestions</string>
@@ -367,7 +366,7 @@
     <string name="pref_source_related_animes_summary">Show source-website's Suggestions while viewing entry</string>
     <string name="pref_source_navigation">Replace latest button</string>
     <string name="pref_source_navigation_summery">Replace latest button with a custom browse view that includes both latest and browse</string>
-    <!-- Doh Custom -->
+    
    <string name="pref_doh_custom_url">Custom DoH URL</string>
    <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
    <string name="error_doh_custom_invalid">Invalid DoH URL</string>

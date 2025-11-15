@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
   <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Stare urmărire</string>
   <string name="tag">Etichete</string>
@@ -83,7 +83,6 @@
   <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">Selector de culori personalizat</string>
   <string name="custom_color_description">Alege o culoare pentru tema personalizată</string>
   <string name="theme_custom">Temă personalizată</string>
-  <string name="label_backup" comment="label_backup Cross Device Sync">Backup</string>
   <string name="label_sync">Sincronizare</string>
   <string name="label_triggers">Declanșatori</string>
   <string name="pref_backup_and_sync_summary">Manual &amp; Copii de rezervă automate şi sincronizare</string>
