@@ -86,7 +86,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                 .appendQueryParameter("client_id", Trakt.CLIENT_ID)
                 .appendQueryParameter("redirect_uri", Trakt.REDIRECT_URI)
                 // Request sync scope so obtained token has permissions to write ratings/history.
-                .appendQueryParameter("scope", "sync")
+                .appendQueryParameter("scope", Trakt.SCOPES)
                 .build()
     }
 

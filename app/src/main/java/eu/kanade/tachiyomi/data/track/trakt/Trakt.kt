@@ -45,6 +45,7 @@ class Trakt(
         const val CLIENT_ID = "8c0053aa008708d212e8d6651194866455110802f33c8ba82c5e7ee5f15d3a16"
         private const val CLIENT_SECRET = "24b1314e8a6f0176eb6c4249c72381e7aa1ef91f64743293676476a461fb20d4"
         const val REDIRECT_URI = "animetail://trakt-auth"
+        const val SCOPES = "public"
     }
 
     private val json: Json by injectLazy()
@@ -119,6 +120,30 @@ class Trakt(
         } catch (_: Exception) {
             null
         }
+    }
+
+    private fun ensureTotalEpisodes(track: AnimeTrack) {
+        if (track.total_episodes > 0 || track.remote_id == 0L) return
+        if (isMovieTrack(track)) {
+            // Some older movie entries might have been stored without explicitly setting episode count.
+            track.total_episodes = 1L
+            return
+        }
+
+        try {
+            val total = api.getShowEpisodeCount(track.remote_id)
+            if (total > 0) {
+                track.total_episodes = total
+            }
+        } catch (_: Exception) {
+            // Network/parse errors shouldn't block the rest of the sync flow.
+        }
+    }
+
+    private fun isMovieTrack(track: AnimeTrack): Boolean {
+        if (track.total_episodes == 1L) return true
+        val url = track.tracking_url
+        return url.contains("/movies/", ignoreCase = true)
     }
 
     override suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
@@ -199,6 +224,7 @@ class Trakt(
 
     override suspend fun update(track: AnimeTrack, didWatchEpisode: Boolean): AnimeTrack {
         if (track.remote_id == 0L) return track
+        ensureTotalEpisodes(track)
         // Update local state similar to other trackers
         if (track.status != COMPLETED) {
             if (didWatchEpisode) {
@@ -327,6 +353,7 @@ class Trakt(
         try {
             val remoteId = track.remote_id
             if (remoteId == 0L) return update(track, didWatchEpisode = hasSeenEpisodes)
+            ensureTotalEpisodes(track)
             val traktId = remoteId
             val items = if (track.total_episodes == 1L) {
                 api.getUserMovies()
@@ -349,6 +376,7 @@ class Trakt(
         try {
             val remoteId = track.remote_id
             if (remoteId == 0L) return track
+            ensureTotalEpisodes(track)
             val traktId = remoteId
             val items = if (track.total_episodes == 1L) {
                 api.getUserMovies()
