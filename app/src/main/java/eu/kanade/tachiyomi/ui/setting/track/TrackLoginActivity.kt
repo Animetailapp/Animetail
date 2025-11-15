@@ -13,6 +13,7 @@ class TrackLoginActivity : BaseOAuthLoginActivity() {
             "myanimelist-auth" -> handleMyAnimeList(data)
             "shikimori-auth" -> handleShikimori(data)
             "simkl-auth" -> handleSimkl(data)
+            "trakt-auth" -> handleTrakt(data)
             "tmdb-auth" -> handleTmdb(data)
         }
     }
@@ -79,6 +80,26 @@ class TrackLoginActivity : BaseOAuthLoginActivity() {
             }
         } else {
             trackerManager.simkl.logout()
+            returnToSettings()
+        }
+    }
+
+    private fun handleTrakt(data: Uri) {
+        val code = data.getQueryParameter("code") ?: data.fragment?.let { frag ->
+            val regex = "(?:code=)([^&]+)".toRegex()
+            regex.find(frag)?.groups?.get(1)?.value
+        }
+
+        if (code != null) {
+            lifecycleScope.launchIO {
+                try {
+                    trackerManager.trakt.login(code)
+                } finally {
+                    returnToSettings()
+                }
+            }
+        } else {
+            trackerManager.trakt.logout()
             returnToSettings()
         }
     }

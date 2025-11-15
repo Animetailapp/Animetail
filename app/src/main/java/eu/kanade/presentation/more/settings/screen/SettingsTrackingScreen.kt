@@ -52,6 +52,7 @@ import eu.kanade.tachiyomi.data.track.bangumi.BangumiApi
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeListApi
 import eu.kanade.tachiyomi.data.track.shikimori.ShikimoriApi
 import eu.kanade.tachiyomi.data.track.simkl.SimklApi
+import eu.kanade.tachiyomi.data.track.trakt.TraktApi
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
@@ -245,6 +246,16 @@ object SettingsTrackingScreen : SearchableSettings {
                             }
                         },
                         logout = { dialog = LogoutDialog(trackerManager.tmdb) },
+                    ),
+                    Preference.PreferenceItem.TrackerPreference(
+                        tracker = trackerManager.trakt,
+                        login = {
+                            context.openInBrowser(
+                                TraktApi.authUrl(),
+                                forceDefaultBrowser = true,
+                            )
+                        },
+                        logout = { dialog = LogoutDialog(trackerManager.trakt) },
                     ),
                     Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.tracking_info)),
                 ),
