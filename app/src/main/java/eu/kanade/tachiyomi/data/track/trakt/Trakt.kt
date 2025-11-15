@@ -390,7 +390,9 @@ class Trakt(
         val ids = idsFromRemoteId(track.remote_id)
         runCatching {
             if (track.last_episode_seen.toLong() >= 1L) {
-                val alreadyWatched = runCatching { api.getUserMovies().any { it.traktId == ids.trakt } }.getOrDefault(false)
+                val alreadyWatched = runCatching {
+                    api.getUserMovies().any { it.traktId == ids.trakt }
+                }.getOrDefault(false)
                 if (!alreadyWatched) {
                     val syncMovie = TraktSyncMovie(ids = ids, watched = true)
                     api.updateMovieWatched(syncMovie)
@@ -438,6 +440,4 @@ class Trakt(
             }
         }
     }
-
 }
-

@@ -170,7 +170,6 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                     seasonNumber = seasonMatchByNumber
                     episodeNumberInSeason = episode
                 } else {
-
                     var cumulative = 0
                     var foundSeasonLocal: Int? = null
                     var epInSeasonLocal = episode
@@ -278,7 +277,6 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
      * Check if a movie already has history entries for the authenticated user.
      * Uses GET /sync/history/movies/{id} which returns an array of history entries when present.
      */
-
 
     fun loginOAuth(code: String, clientId: String, clientSecret: String, redirectUri: String): TraktOAuth? {
         val bodyJson = """
