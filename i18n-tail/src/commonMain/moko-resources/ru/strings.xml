@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
   <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Статус отслеживания</string>
   <string name="tag">Теги</string>
@@ -83,7 +83,6 @@
   <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">Пользовательский выбор цветов</string>
   <string name="custom_color_description">Выберите цвет для пользовательской темы</string>
   <string name="theme_custom">Пользовательская тема</string>
-  <string name="label_backup" comment="label_backup Cross Device Sync">Резервное копирование</string>
   <string name="label_sync">Синхр.</string>
   <string name="label_triggers">Триггеры</string>
   <string name="pref_backup_and_sync_summary">Ручное &amp; автоматическое резервное копирование и синхронизация</string>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
   <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Stato tracciamento</string>
   <string name="tag">Etichette</string>
@@ -83,7 +83,6 @@
   <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">Selettore Colore Personalizzato</string>
   <string name="custom_color_description">Scegli un colore per il tema personalizzato</string>
   <string name="theme_custom">Tema Personalizzato</string>
-  <string name="label_backup" comment="label_backup Cross Device Sync">Backup</string>
   <string name="label_sync">Sincronizza</string>
   <string name="label_triggers">Trigger</string>
   <string name="pref_backup_and_sync_summary">Manuale &amp; backup e sincronizzazione automatici</string>
