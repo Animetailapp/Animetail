@@ -39,11 +39,17 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                 is JsonObject -> {
                     // Try preferred keys first.
                     val full = el["full"]?.jsonPrimitive?.contentOrNull
-                    if (!full.isNullOrBlank()) full else {
+                    if (!full.isNullOrBlank()) {
+                        full
+                    } else {
                         val medium = el["medium"]?.jsonPrimitive?.contentOrNull
-                        if (!medium.isNullOrBlank()) medium else {
+                        if (!medium.isNullOrBlank()) {
+                            medium
+                        } else {
                             val thumb = el["thumb"]?.jsonPrimitive?.contentOrNull
-                            if (!thumb.isNullOrBlank()) thumb else {
+                            if (!thumb.isNullOrBlank()) {
+                                thumb
+                            } else {
                                 // Try nested entries (e.g., localized objects)
                                 val first = el.entries.firstOrNull()?.value
                                 first?.let { extractImageUrl(it) }
@@ -62,7 +68,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
             // - host/...  -> https://host/...
             // - /path/... -> leave as-is (relative to API, don't assume)
             return when {
-                raw.startsWith("//") -> "https:${raw}"
+                raw.startsWith("//") -> "https:$raw"
                 raw.startsWith("http://") || raw.startsWith("https://") -> raw
                 // If it looks like host-only (contains a dot and no leading slash), add https://
                 raw.matches(Regex("^[A-Za-z0-9.-]+/.*")) || raw.contains('.') && !raw.startsWith('/') -> "https://$raw"
@@ -93,7 +99,12 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun buildSearchRequest(query: String): Request {
         // Request extended data so overview and images are included in search results.
         return Request.Builder()
-            .url("$baseUrl/search/movie,show?extended=full,images&limit=20&query=${java.net.URLEncoder.encode(query, "utf-8")}")
+            .url(
+                "$baseUrl/search/movie,show?extended=full,images&limit=20&query=${java.net.URLEncoder.encode(
+                    query,
+                    "utf-8",
+                )}",
+            )
             .addHeader("Content-Type", "application/json")
             .addHeader("Accept", "application/json")
             .addHeader("trakt-api-version", "2")
@@ -118,7 +129,10 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun updateShowProgress(syncShow: eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncShow): Boolean {
         // Backwards-compatible method that sends a show-level progress/status sync.
         val syncRequest = eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncRequest(shows = listOf(syncShow))
-        val requestBody = json.encodeToString(eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncRequest.serializer(), syncRequest)
+        val requestBody = json.encodeToString(
+            eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncRequest.serializer(),
+            syncRequest,
+        )
             .toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url("$baseUrl/sync/history")
@@ -138,10 +152,13 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
      * Uses the /sync/history endpoint with a "shows" payload containing seasons/episodes.
      * season fallback: 1 when caller doesn't provide season info.
      */
-fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int): Boolean {
+    fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int): Boolean {
         // Log incoming params to help debug "only sending ep 1" issues.
         try {
-            Log.d("TraktApi", "updateShowEpisodeProgress called: traktId=$traktId seasonParam=${season?.toString() ?: "null"} episodeParam=$episode")
+            Log.d(
+                "TraktApi",
+                "updateShowEpisodeProgress called: traktId=$traktId seasonParam=${season?.toString() ?: "null"} episodeParam=$episode",
+            )
         } catch (_: Exception) {}
         // If caller provides a season, send it directly. Otherwise attempt to determine the season
         // by fetching the show's seasons (with episodes) and mapping the episode index to the
@@ -251,7 +268,10 @@ fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int):
 
         // Debug log: record resolved season and episode-in-season to help diagnose incorrect payloads.
         try {
-            Log.d("TraktApi", "updateShowEpisodeProgress: traktId=$traktId resolvedSeason=$seasonNumber episodeInSeason=$episodeNumberInSeason")
+            Log.d(
+                "TraktApi",
+                "updateShowEpisodeProgress: traktId=$traktId resolvedSeason=$seasonNumber episodeInSeason=$episodeNumberInSeason",
+            )
         } catch (_: Exception) {}
 
         val payload = """
@@ -292,7 +312,10 @@ fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int):
 
     fun updateMovieWatched(syncMovie: eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncMovie): Boolean {
         val syncRequest = eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncRequest(movies = listOf(syncMovie))
-        val requestBody = json.encodeToString(eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncRequest.serializer(), syncRequest)
+        val requestBody = json.encodeToString(
+            eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncRequest.serializer(),
+            syncRequest,
+        )
             .toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url("$baseUrl/sync/history")
@@ -307,7 +330,10 @@ fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int):
      * Accepts optional lists of shows and movies with rating (1-10).
      * Uses POST /sync/ratings with body: { "movies":[{ "ids":{...}, "rating": n }], "shows":[...] }
      */
-    fun sendRatings(movieRatings: List<Pair<Long, Int>> = emptyList(), showRatings: List<Pair<Long, Int>> = emptyList()): Boolean {
+    fun sendRatings(
+        movieRatings: List<Pair<Long, Int>> = emptyList(),
+        showRatings: List<Pair<Long, Int>> = emptyList(),
+    ): Boolean {
         // Build JSON payload manually to avoid changing DTOs.
         if (movieRatings.isEmpty() && showRatings.isEmpty()) return true
         val moviesJson = movieRatings.joinToString(separator = ",") { (id, rating) ->
@@ -345,7 +371,11 @@ fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int):
                 .build()
             val response = authClient.newCall(request).execute()
             val body = response.body?.string() ?: return false
-            val root = try { json.parseToJsonElement(body).jsonArray } catch (_: Exception) { return false }
+            val root = try {
+                json.parseToJsonElement(body).jsonArray
+            } catch (_: Exception) {
+                return false
+            }
             root.isNotEmpty()
         } catch (_: Exception) {
             false
@@ -434,7 +464,7 @@ fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int):
                     eu.kanade.tachiyomi.data.track.trakt.dto.TraktLibraryItem(
                         traktId = traktId,
                         title = title,
-                        progress = 0
+                        progress = 0,
                     )
                 } catch (e: Exception) {
                     null
@@ -466,7 +496,7 @@ fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int):
                     eu.kanade.tachiyomi.data.track.trakt.dto.TraktLibraryItem(
                         traktId = traktId,
                         title = title,
-                        progress = 0
+                        progress = 0,
                     )
                 } catch (e: Exception) {
                     null
@@ -547,7 +577,7 @@ fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int):
                 thumbnailUrl = poster,
                 description = overview,
                 authors = null,
-                artists = null
+                artists = null,
             )
         } catch (e: Exception) {
             null
@@ -586,7 +616,7 @@ fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int):
                 thumbnailUrl = poster,
                 description = overview,
                 authors = null,
-                artists = null
+                artists = null,
             )
         } catch (e: Exception) {
             null
@@ -613,7 +643,7 @@ fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int):
         return try {
             val root = json.parseToJsonElement(body).jsonArray
             var total = 0L
-root.forEach { seasonEl ->
+            root.forEach { seasonEl ->
                 try {
                     val seasonObj = seasonEl.jsonObject
                     val seasonNum = seasonObj["number"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 1
@@ -663,7 +693,7 @@ root.forEach { seasonEl ->
                 thumbnailUrl = poster,
                 description = overview,
                 authors = null,
-                artists = null
+                artists = null,
             )
         } catch (e: Exception) {
             null
@@ -702,7 +732,7 @@ root.forEach { seasonEl ->
                 thumbnailUrl = poster,
                 description = overview,
                 authors = null,
-                artists = null
+                artists = null,
             )
         } catch (e: Exception) {
             null
@@ -753,7 +783,7 @@ root.forEach { seasonEl ->
                         name = name,
                         role = character,
                         character = character,
-                        image_url = imageUrl
+                        image_url = imageUrl,
                     )
                 } catch (e: Exception) {
                     null

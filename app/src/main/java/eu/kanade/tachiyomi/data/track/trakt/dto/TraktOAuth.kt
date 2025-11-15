@@ -8,5 +8,5 @@ data class TraktOAuth(
     val refresh_token: String,
     val expires_in: Long,
     val created_at: Long,
-    val token_type: String
+    val token_type: String,
 )

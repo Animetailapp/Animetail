@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 data class TraktLibraryItem(
     val traktId: Long,
     val title: String? = null,
-    val progress: Int = 0
+    val progress: Int = 0,
 )

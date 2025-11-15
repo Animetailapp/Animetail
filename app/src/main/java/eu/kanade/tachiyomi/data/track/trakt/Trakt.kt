@@ -16,6 +16,8 @@ import eu.kanade.tachiyomi.data.track.trakt.dto.TraktOAuth
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import tachiyomi.domain.track.manga.model.MangaTrack
@@ -29,7 +31,7 @@ import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
  * Trakt.tv tracker implementation (anime / shows / movies).
  */
 class Trakt(
-    id: Long
+    id: Long,
 ) : BaseTracker(id, "Trakt"), AnimeTracker, DeletableAnimeTracker {
 
     companion object {
@@ -133,8 +135,8 @@ class Trakt(
                             val posterUrl = posterEl?.let { el ->
                                 try {
                                     when (el) {
-                                        is kotlinx.serialization.json.JsonArray -> el.firstOrNull()?.jsonPrimitive?.contentOrNull
-                                        is kotlinx.serialization.json.JsonObject -> {
+                                        is JsonArray -> el.firstOrNull()?.jsonPrimitive?.contentOrNull
+                                        is JsonObject -> {
                                             el["full"]?.jsonPrimitive?.contentOrNull
                                                 ?: el["medium"]?.jsonPrimitive?.contentOrNull
                                                 ?: el["thumb"]?.jsonPrimitive?.contentOrNull
@@ -163,8 +165,8 @@ class Trakt(
                             val posterUrl = posterEl?.let { el ->
                                 try {
                                     when (el) {
-                                        is kotlinx.serialization.json.JsonArray -> el.firstOrNull()?.jsonPrimitive?.contentOrNull
-                                        is kotlinx.serialization.json.JsonObject -> {
+                                        is JsonArray -> el.firstOrNull()?.jsonPrimitive?.contentOrNull
+                                        is JsonObject -> {
                                             el["full"]?.jsonPrimitive?.contentOrNull
                                                 ?: el["medium"]?.jsonPrimitive?.contentOrNull
                                                 ?: el["thumb"]?.jsonPrimitive?.contentOrNull
@@ -214,7 +216,7 @@ class Trakt(
         if (track.total_episodes == 1L) {
             val syncMovie = eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncMovie(
                 ids = ids,
-                watched = true
+                watched = true,
             )
             try {
                 // Avoid creating duplicate watched entries on Trakt:
@@ -273,7 +275,17 @@ class Trakt(
 
         try {
             try {
-                Log.d("Trakt", "update() -> track.id=${track.id} remote_id=${track.remote_id} last_episode_seen=${track.last_episode_seen} total_episodes=${track.total_episodes} didWatchEpisode=$didWatchEpisode seasonParam=${seasonParam ?: "null"} episodeParam=$episodeParam")
+                // Keep the log line under ktlint's max length by joining parts.
+                val logParts = listOf(
+                    "update() -> track.id=${track.id}",
+                    "remote_id=${track.remote_id}",
+                    "last_episode_seen=${track.last_episode_seen}",
+                    "total_episodes=${track.total_episodes}",
+                    "didWatchEpisode=$didWatchEpisode",
+                    "seasonParam=${seasonParam ?: "null"}",
+                    "episodeParam=$episodeParam",
+                )
+                Log.d("Trakt", logParts.joinToString(" "))
             } catch (_: Exception) {}
             // Send resolved season/episode to Trakt (seasonParam may be null to trigger API heuristics).
             api.updateShowEpisodeProgress(traktId, seasonParam, episodeParam)
@@ -299,8 +311,12 @@ class Trakt(
             val rid = track.remoteId
             if (rid == 0L) return
             // Try both removals; one will be a no-op server-side if not applicable.
-            try { api.removeShowHistory(rid) } catch (_: Exception) {}
-            try { api.removeMovieHistory(rid) } catch (_: Exception) {}
+            try {
+                api.removeShowHistory(rid)
+            } catch (_: Exception) {}
+            try {
+                api.removeMovieHistory(rid)
+            } catch (_: Exception) {}
         } catch (_: Exception) {
             // ignore failures for best-effort removal
         }
@@ -367,7 +383,12 @@ class Trakt(
                 android.util.Log.e("Trakt", "Failed to obtain token from Trakt (null response)")
                 throw Exception("Failed to get token from Trakt")
             }
-            android.util.Log.d("Trakt", "Obtained access_token (masked): ${token.access_token.take(8)}... refresh_token present=${!token.refresh_token.isNullOrBlank()}")
+            android.util.Log.d(
+                "Trakt",
+                "Obtained access_token (masked): ${token.access_token.take(
+                    8,
+                )}... refresh_token present=${!token.refresh_token.isNullOrBlank()}",
+            )
             oauth = token
             // Set interceptor auth immediately so subsequent calls include Authorization header.
             interceptor.setAuth(token.access_token)
