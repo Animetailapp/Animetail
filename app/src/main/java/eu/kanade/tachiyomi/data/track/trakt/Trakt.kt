@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.data.track.trakt
 
 import android.graphics.Color
-import android.util.Log
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
@@ -12,11 +11,15 @@ import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.trakt.dto.TraktIds
+import eu.kanade.tachiyomi.data.track.trakt.dto.TraktMovie
 import eu.kanade.tachiyomi.data.track.trakt.dto.TraktOAuth
+import eu.kanade.tachiyomi.data.track.trakt.dto.TraktShow
+import eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncMovie
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -149,186 +152,26 @@ class Trakt(
     override suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
         return api.search(query).mapNotNull { result ->
             when (result.type) {
-                "show" -> result.show?.let {
-                    AnimeTrackSearch.create(this@Trakt.id).apply {
-                        remote_id = it.ids.trakt
-                        title = it.title
-                        summary = it.overview ?: ""
-                        cover_url = run {
-                            // Lightweight poster extraction from search result only — avoid extra network calls here to keep search fast.
-                            val posterEl = it.images?.poster
-                            val posterUrl = posterEl?.let { el ->
-                                try {
-                                    when (el) {
-                                        is JsonArray -> el.firstOrNull()?.jsonPrimitive?.contentOrNull
-                                        is JsonObject -> {
-                                            el["full"]?.jsonPrimitive?.contentOrNull
-                                                ?: el["medium"]?.jsonPrimitive?.contentOrNull
-                                                ?: el["thumb"]?.jsonPrimitive?.contentOrNull
-                                        }
-                                        else -> el.jsonPrimitive?.contentOrNull
-                                    }
-                                } catch (_: Exception) {
-                                    null
-                                }
-                            }
-                            posterUrl?.let { u -> if (u.startsWith("http")) u else "https://$u" } ?: ""
-                        }
-                        // Defer episode count lookup to metadata call (avoid blocking search). Use 0 as placeholder.
-                        total_episodes = 0L
-                        tracking_url = "https://trakt.tv/shows/${it.ids.slug}"
-                    }
-                }
-                "movie" -> result.movie?.let {
-                    AnimeTrackSearch.create(this@Trakt.id).apply {
-                        remote_id = it.ids.trakt
-                        title = it.title
-                        summary = it.overview ?: ""
-                        cover_url = run {
-                            // Keep search fast — only use poster data present in the search result.
-                            val posterEl = it.images?.poster
-                            val posterUrl = posterEl?.let { el ->
-                                try {
-                                    when (el) {
-                                        is JsonArray -> el.firstOrNull()?.jsonPrimitive?.contentOrNull
-                                        is JsonObject -> {
-                                            el["full"]?.jsonPrimitive?.contentOrNull
-                                                ?: el["medium"]?.jsonPrimitive?.contentOrNull
-                                                ?: el["thumb"]?.jsonPrimitive?.contentOrNull
-                                        }
-                                        else -> el.jsonPrimitive?.contentOrNull
-                                    }
-                                } catch (_: Exception) {
-                                    null
-                                }
-                            }
-                            posterUrl?.let { u -> if (u.startsWith("http")) u else "https://$u" } ?: ""
-                        }
-                        total_episodes = 1L
-                        tracking_url = "https://trakt.tv/movies/${it.ids.slug}"
-                    }
-                }
+                "show" -> result.show?.toTrackSearch()
+                "movie" -> result.movie?.toTrackSearch()
                 else -> null
             }
         }
     }
 
-    private fun idsFromRemoteId(remoteId: String): TraktIds {
-        val traktId = try {
-            remoteId.toLong()
-        } catch (_: Exception) {
-            0L
-        }
-        return TraktIds(trakt = traktId, slug = "", imdb = null, tmdb = null)
+    private fun idsFromRemoteId(remoteId: Long): TraktIds {
+        return TraktIds(trakt = remoteId, slug = "", imdb = null, tmdb = null)
     }
 
     override suspend fun update(track: AnimeTrack, didWatchEpisode: Boolean): AnimeTrack {
         if (track.remote_id == 0L) return track
         ensureTotalEpisodes(track)
-        // Update local state similar to other trackers
-        if (track.status != COMPLETED) {
-            if (didWatchEpisode) {
-                if (track.last_episode_seen.toLong() == track.total_episodes && track.total_episodes > 0) {
-                    track.status = COMPLETED
-                } else {
-                    track.status = WATCHING
-                }
-            }
-        }
-
-        // Push to Trakt
-        val ids = idsFromRemoteId(track.remote_id.toString())
-        // If this is a movie (single-episode), use movie-watched sync.
-        if (track.total_episodes == 1L) {
-            val syncMovie = eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncMovie(
-                ids = ids,
-                watched = true,
-            )
-            try {
-                // Avoid creating duplicate watched entries on Trakt:
-                // - Only send when the local track indicates the movie was watched (last_episode_seen >= 1)
-                // - And only if the movie isn't already present in the user's watched movies list.
-                if (track.last_episode_seen.toLong() >= 1L) {
-                    val alreadyWatched = try {
-                        api.getUserMovies().any { it.traktId == ids.trakt }
-                    } catch (_: Exception) {
-                        false
-                    }
-                    if (!alreadyWatched) {
-                        api.updateMovieWatched(syncMovie)
-                    }
-                }
-
-                // Sync rating for movies if present (Trakt expects 1-10 integers).
-                if (track.score > 0.0) {
-                    try {
-                        val rating = track.score.toInt().coerceIn(1, 10)
-                        api.sendRatings(movieRatings = listOf(Pair(ids.trakt, rating)))
-                    } catch (_: Exception) {
-                        // ignore rating failures
-                    }
-                }
-            } catch (_: Exception) {
-            }
-            return track
-        }
-
-        // For shows, sync the single episode watched (avoid marking entire show as watched).
-        val traktId = ids.trakt
-
-        // Interpret fractional last_episode_seen as season.episode when present.
-        // Example: 2.05 or 2.5 stored as 2.05/2.5 -> season 2, episode 5 (fractional digits represent episode).
-        val lastSeen = track.last_episode_seen
-        val seasonParam: Int?
-        val episodeParam: Int
-        val lastSeenStr = try {
-            java.math.BigDecimal.valueOf(lastSeen).stripTrailingZeros().toPlainString()
-        } catch (_: Exception) {
-            null
-        }
-
-        if (!lastSeenStr.isNullOrBlank() && lastSeenStr.contains('.')) {
-            val parts = lastSeenStr.split('.', limit = 2)
-            seasonParam = parts.getOrNull(0)?.toIntOrNull() ?: 1
-            // Parse fractional part as episode (handles "1.2" -> episode 2, "1.02" -> episode 2)
-            episodeParam = parts.getOrNull(1)?.replace("^0+".toRegex(), "")?.toIntOrNull()?.takeIf { it != 0 }
-                ?: parts.getOrNull(1)?.toIntOrNull()
-                ?: lastSeen.roundToInt().coerceAtLeast(1)
+        applyLocalStatus(track, didWatchEpisode)
+        return if (isMovieTrack(track)) {
+            updateMovieTrack(track)
         } else {
-            seasonParam = null
-            episodeParam = lastSeen.roundToInt().coerceAtLeast(1)
+            updateShowTrack(track)
         }
-
-        try {
-            try {
-                // Keep the log line under ktlint's max length by joining parts.
-                val logParts = listOf(
-                    "update() -> track.id=${track.id}",
-                    "remote_id=${track.remote_id}",
-                    "last_episode_seen=${track.last_episode_seen}",
-                    "total_episodes=${track.total_episodes}",
-                    "didWatchEpisode=$didWatchEpisode",
-                    "seasonParam=${seasonParam ?: "null"}",
-                    "episodeParam=$episodeParam",
-                )
-                Log.d("Trakt", logParts.joinToString(" "))
-            } catch (_: Exception) {}
-            // Send resolved season/episode to Trakt (seasonParam may be null to trigger API heuristics).
-            api.updateShowEpisodeProgress(traktId, seasonParam, episodeParam)
-
-            // Sync rating for shows if present (Trakt expects 1-10 integers).
-            if (track.score > 0.0) {
-                try {
-                    val rating = track.score.toInt().coerceIn(1, 10)
-                    api.sendRatings(showRatings = listOf(Pair(traktId, rating)))
-                } catch (_: Exception) {
-                    // ignore rating failures
-                }
-            }
-        } catch (_: Exception) {
-        }
-
-        return track
     }
 
     override suspend fun delete(track: DomainAnimeTrack) {
@@ -397,43 +240,28 @@ class Trakt(
     // The app's TrackLoginActivity should provide the authorization code to this login(code) method.
     override suspend fun login(username: String, password: String) = login(password)
 
-    suspend fun login(code: String) {
-        // Make the login function suspending and add diagnostics logging to help identify why no access token is present.
+    fun login(code: String) {
         try {
-            android.util.Log.d("Trakt", "Exchanging code for token (code length=${code.length})")
             val token = try {
                 api.loginOAuth(code, CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
-            } catch (e: Exception) {
-                android.util.Log.e("Trakt", "loginOAuth request failed", e)
+            } catch (_: Exception) {
                 null
             }
             if (token == null) {
-                android.util.Log.e("Trakt", "Failed to obtain token from Trakt (null response)")
                 throw Exception("Failed to get token from Trakt")
             }
-            android.util.Log.d(
-                "Trakt",
-                "Obtained access_token (masked): ${token.access_token.take(
-                    8,
-                )}... refresh_token present=${!token.refresh_token.isNullOrBlank()}",
-            )
             oauth = token
-            // Set interceptor auth immediately so subsequent calls include Authorization header.
             interceptor.setAuth(token.access_token)
-            // Persist token
             saveToken(token)
 
             // fetch username and save as credentials (password stores access token per BaseTracker convention)
             val username = try {
                 api.getCurrentUser() ?: ""
-            } catch (e: Exception) {
-                android.util.Log.e("Trakt", "getCurrentUser failed", e)
+            } catch (_: Exception) {
                 ""
             }
             saveCredentials(username, token.access_token)
-            android.util.Log.d("Trakt", "Login completed and credentials saved for user='$username'")
         } catch (e: Throwable) {
-            android.util.Log.e("Trakt", "Login failed, performing logout", e)
             logout()
             throw e
         }
@@ -503,4 +331,113 @@ class Trakt(
             null
         }
     }
+
+    private fun TraktShow.toTrackSearch(): AnimeTrackSearch =
+        createTrackSearch(ids.trakt, title, overview, images?.poster, ids.slug, isMovie = false)
+
+    private fun TraktMovie.toTrackSearch(): AnimeTrackSearch =
+        createTrackSearch(ids.trakt, title, overview, images?.poster, ids.slug, isMovie = true)
+
+    private fun createTrackSearch(
+        remoteId: Long,
+        title: String,
+        overview: String?,
+        posterEl: JsonElement?,
+        slug: String,
+        isMovie: Boolean,
+    ): AnimeTrackSearch {
+        val path = if (isMovie) "movies" else "shows"
+        val slugOrId = slug.takeIf { it.isNotBlank() } ?: remoteId.toString()
+        return AnimeTrackSearch.create(this@Trakt.id).apply {
+            this.remote_id = remoteId
+            this.title = title
+            summary = overview ?: ""
+            cover_url = extractPosterUrl(posterEl)
+            total_episodes = if (isMovie) 1L else 0L
+            tracking_url = "https://trakt.tv/$path/$slugOrId"
+        }
+    }
+
+    private fun extractPosterUrl(posterEl: JsonElement?): String {
+        val raw = when (posterEl) {
+            null -> null
+            is JsonObject -> posterEl["full"]?.jsonPrimitive?.contentOrNull
+                ?: posterEl["medium"]?.jsonPrimitive?.contentOrNull
+                ?: posterEl["thumb"]?.jsonPrimitive?.contentOrNull
+                ?: posterEl.entries.firstOrNull()?.value?.let { extractPosterUrl(it) }
+            is JsonArray -> posterEl.firstOrNull()?.jsonPrimitive?.contentOrNull
+            else -> posterEl.jsonPrimitive.contentOrNull
+        }?.trim().takeUnless { it.isNullOrBlank() } ?: return ""
+
+        return when {
+            raw.startsWith("//") -> "https:$raw"
+            raw.startsWith("http://") || raw.startsWith("https://") -> raw
+            raw.startsWith("/") -> raw
+            else -> "https://$raw"
+        }
+    }
+
+    private fun applyLocalStatus(track: AnimeTrack, didWatchEpisode: Boolean) {
+        if (!didWatchEpisode || track.status == COMPLETED) return
+        track.status = if (track.total_episodes > 0 && track.last_episode_seen.toLong() == track.total_episodes) {
+            COMPLETED
+        } else {
+            WATCHING
+        }
+    }
+
+    private fun updateMovieTrack(track: AnimeTrack): AnimeTrack {
+        val ids = idsFromRemoteId(track.remote_id)
+        runCatching {
+            if (track.last_episode_seen.toLong() >= 1L) {
+                val alreadyWatched = runCatching { api.getUserMovies().any { it.traktId == ids.trakt } }.getOrDefault(false)
+                if (!alreadyWatched) {
+                    val syncMovie = TraktSyncMovie(ids = ids, watched = true)
+                    api.updateMovieWatched(syncMovie)
+                }
+            }
+            syncRating(ids.trakt, track.score, isMovie = true)
+        }
+        return track
+    }
+
+    private fun updateShowTrack(track: AnimeTrack): AnimeTrack {
+        val traktId = track.remote_id
+        val (seasonParam, episodeParam) = resolveSeasonEpisode(track.last_episode_seen)
+        runCatching {
+            api.updateShowEpisodeProgress(traktId, seasonParam, episodeParam)
+        }
+        syncRating(traktId, track.score, isMovie = false)
+        return track
+    }
+
+    private fun resolveSeasonEpisode(lastSeen: Double): Pair<Int?, Int> {
+        val lastSeenStr = runCatching {
+            java.math.BigDecimal.valueOf(lastSeen).stripTrailingZeros().toPlainString()
+        }.getOrNull()
+        if (!lastSeenStr.isNullOrBlank() && lastSeenStr.contains('.')) {
+            val parts = lastSeenStr.split('.', limit = 2)
+            val season = parts.getOrNull(0)?.toIntOrNull()?.takeIf { it > 0 } ?: 1
+            val fraction = parts.getOrNull(1).orEmpty()
+            val episode = fraction.trimStart('0').toIntOrNull()
+                ?: fraction.toIntOrNull()
+                ?: lastSeen.roundToInt().coerceAtLeast(1)
+            return season to episode
+        }
+        return null to lastSeen.roundToInt().coerceAtLeast(1)
+    }
+
+    private fun syncRating(traktId: Long, score: Double, isMovie: Boolean) {
+        if (score <= 0.0) return
+        val rating = score.toInt().coerceIn(1, 10)
+        runCatching {
+            if (isMovie) {
+                api.sendRatings(movieRatings = listOf(traktId to rating))
+            } else {
+                api.sendRatings(showRatings = listOf(traktId to rating))
+            }
+        }
+    }
+
 }
+

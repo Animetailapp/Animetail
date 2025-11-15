@@ -21,34 +21,19 @@ class TraktInterceptor(
         tokenRef.set(token)
     }
 
-    /**
-     * Attempt a blocking refresh via the tracker instance. Returns true on success.
-     */
-    fun attemptRefresh(): Boolean {
-        return try {
-            trakt.refreshAuthBlocking()
-        } catch (_: Exception) {
-            false
-        }
-    }
-
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
 
-        // Ensure we have a token, try to load if necessary
         if (tokenRef.get().isNullOrEmpty()) {
-            // Try to restore token from preferences
             trakt.restoreToken()?.let { saved ->
                 tokenRef.set(saved.access_token)
             }
         }
 
-        // If still no token, throw to indicate unauthenticated state
         if (tokenRef.get().isNullOrEmpty()) {
             throw IOException("Not authenticated with Trakt")
         }
 
-        // If token exists, check expiry and attempt refresh (blocking)
         try {
             val saved = trakt.restoreToken()
             if (saved != null) {
@@ -65,12 +50,10 @@ class TraktInterceptor(
                 }
             }
         } catch (e: Exception) {
-            // If refresh fails, ensure logout and surface error
             trakt.logout()
             throw IOException("Failed to refresh Trakt token", e)
         }
 
-        // Build request with current token. Use header(...) to replace any existing values
         // and avoid duplicate headers (which can cause Trakt to reject the request).
         val requestBuilder = originalRequest.newBuilder()
             .header("Content-Type", "application/json")

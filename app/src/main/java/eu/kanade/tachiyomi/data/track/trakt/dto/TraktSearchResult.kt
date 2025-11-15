@@ -39,7 +39,5 @@ data class TraktIds(
 
 @Serializable
 data class TraktImages(
-    // Trakt returns poster either as an array of URLs or as an object with sized keys (full, medium, thumb).
-    // Keep as JsonElement and normalize at usage sites.
     val poster: JsonElement? = null,
 )

@@ -1,10 +1,11 @@
 package eu.kanade.tachiyomi.data.track.trakt
 
-import android.util.Log
 import androidx.core.net.toUri
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.data.track.trakt.dto.TraktOAuth
 import eu.kanade.tachiyomi.data.track.trakt.dto.TraktSearchResult
+import eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncMovie
+import eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncRequest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -15,6 +16,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
+import okhttp3.CookieJar
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -24,6 +26,11 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
 
     private val baseUrl = "https://api.trakt.tv"
     private val json = Json { ignoreUnknownKeys = true }
+    private val userAgent = "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})"
+
+    private val publicClient by lazy {
+        client.newBuilder().cookieJar(CookieJar.NO_COOKIES).build()
+    }
 
     /**
      * Normalize Trakt image fields into a single URL string.
@@ -33,49 +40,22 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
      * - Primitive string
      */
     private fun extractImageUrl(el: JsonElement?): String? {
-        if (el == null) return null
-        return try {
-            val raw = when (el) {
-                is JsonObject -> {
-                    // Try preferred keys first.
-                    val full = el["full"]?.jsonPrimitive?.contentOrNull
-                    if (!full.isNullOrBlank()) {
-                        full
-                    } else {
-                        val medium = el["medium"]?.jsonPrimitive?.contentOrNull
-                        if (!medium.isNullOrBlank()) {
-                            medium
-                        } else {
-                            val thumb = el["thumb"]?.jsonPrimitive?.contentOrNull
-                            if (!thumb.isNullOrBlank()) {
-                                thumb
-                            } else {
-                                // Try nested entries (e.g., localized objects)
-                                val first = el.entries.firstOrNull()?.value
-                                first?.let { extractImageUrl(it) }
-                            }
-                        }
-                    }
-                }
-                is JsonArray -> el.firstOrNull()?.jsonPrimitive?.contentOrNull
-                else -> el.jsonPrimitive?.contentOrNull
-            }?.toString()?.trim()
+        val raw = when (el) {
+            null -> null
+            is JsonObject -> el["full"]?.jsonPrimitive?.contentOrNull
+                ?: el["medium"]?.jsonPrimitive?.contentOrNull
+                ?: el["thumb"]?.jsonPrimitive?.contentOrNull
+                ?: el.entries.firstOrNull()?.value?.let { extractImageUrl(it) }
+            is JsonArray -> el.firstOrNull()?.jsonPrimitive?.contentOrNull
+            else -> el.jsonPrimitive.contentOrNull
+        }?.trim().takeUnless { it.isNullOrBlank() } ?: return null
 
-            if (raw.isNullOrBlank()) return null
-
-            // Normalize protocol-relative and host-only URLs:
-            // - //host/..  -> https://host/..
-            // - host/...  -> https://host/...
-            // - /path/... -> leave as-is (relative to API, don't assume)
-            return when {
-                raw.startsWith("//") -> "https:$raw"
-                raw.startsWith("http://") || raw.startsWith("https://") -> raw
-                // If it looks like host-only (contains a dot and no leading slash), add https://
-                raw.matches(Regex("^[A-Za-z0-9.-]+/.*")) || raw.contains('.') && !raw.startsWith('/') -> "https://$raw"
-                else -> raw
-            }
-        } catch (_: Exception) {
-            null
+        return when {
+            raw.startsWith("//") -> "https:$raw"
+            raw.startsWith("http://") || raw.startsWith("https://") -> raw
+            raw.startsWith("/") -> raw
+            raw.contains('.') -> "https://$raw"
+            else -> raw
         }
     }
 
@@ -96,6 +76,16 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
             .build()
     }
 
+    private fun Request.Builder.applyTraktHeaders(includeContentType: Boolean = true): Request.Builder {
+        if (includeContentType) {
+            header("Content-Type", "application/json")
+        }
+        return header("Accept", "application/json")
+            .header("trakt-api-version", "2")
+            .header("trakt-api-key", Trakt.CLIENT_ID)
+            .header("User-Agent", userAgent)
+    }
+
     fun buildSearchRequest(query: String): Request {
         // Request extended data so overview and images are included in search results.
         return Request.Builder()
@@ -105,11 +95,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                     "utf-8",
                 )}",
             )
-            .addHeader("Content-Type", "application/json")
-            .addHeader("Accept", "application/json")
-            .addHeader("trakt-api-version", "2")
-            .addHeader("trakt-api-key", Trakt.CLIENT_ID)
-            .header("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
+            .applyTraktHeaders(includeContentType = false)
             .get()
             .build()
     }
@@ -117,34 +103,9 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun search(query: String): List<TraktSearchResult> {
         val request = buildSearchRequest(query)
         // Use a client without cookies for public search requests to avoid Cloudflare/session cookie issues.
-        val noCookieClient = client.newBuilder().cookieJar(okhttp3.CookieJar.NO_COOKIES).build()
-        val response = noCookieClient.newCall(request).execute()
-        val body = response.body?.string() ?: return emptyList()
-        try {
-            Log.d("TraktApi", "search response for query='$query': $body")
-        } catch (_: Exception) {}
+        val response = publicClient.newCall(request).execute()
+        val body = response.body.string()
         return json.decodeFromString(body)
-    }
-
-    fun updateShowProgress(syncShow: eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncShow): Boolean {
-        // Backwards-compatible method that sends a show-level progress/status sync.
-        val syncRequest = eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncRequest(shows = listOf(syncShow))
-        val requestBody = json.encodeToString(
-            eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncRequest.serializer(),
-            syncRequest,
-        )
-            .toRequestBody("application/json".toMediaType())
-        val request = Request.Builder()
-            .url("$baseUrl/sync/history")
-            .addHeader("Content-Type", "application/json")
-            .addHeader("Accept", "application/json")
-            .addHeader("trakt-api-version", "2")
-            .addHeader("trakt-api-key", Trakt.CLIENT_ID)
-            .header("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
-            .post(requestBody)
-            .build()
-        val response = authClient.newCall(request).execute()
-        return response.isSuccessful
     }
 
     /**
@@ -153,13 +114,6 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
      * season fallback: 1 when caller doesn't provide season info.
      */
     fun updateShowEpisodeProgress(traktId: Long, season: Int? = null, episode: Int): Boolean {
-        // Log incoming params to help debug "only sending ep 1" issues.
-        try {
-            Log.d(
-                "TraktApi",
-                "updateShowEpisodeProgress called: traktId=$traktId seasonParam=${season?.toString() ?: "null"} episodeParam=$episode",
-            )
-        } catch (_: Exception) {}
         // If caller provides a season, send it directly. Otherwise attempt to determine the season
         // by fetching the show's seasons (with episodes) and mapping the episode index to the
         // correct season based on cumulative episode counts.
@@ -173,29 +127,15 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
             try {
                 val seasonsReq = Request.Builder()
                     .url("$baseUrl/shows/$traktId/seasons?extended=episodes")
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("Accept", "application/json")
-                    .addHeader("trakt-api-version", "2")
-                    .addHeader("trakt-api-key", Trakt.CLIENT_ID)
-                    .header("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
+                    .applyTraktHeaders(includeContentType = false)
                     .get()
                     .build()
                 val seasonsResp = authClient.newCall(seasonsReq).execute()
-                val seasonsBodyRaw = seasonsResp.body?.string()
-                // If we couldn't read a response body, fall back to defaults but provide an empty array
-                // so subsequent parsing/iteration is safe.
-                val root = if (seasonsBodyRaw == null) {
-                    seasonNumber = 1
-                    episodeNumberInSeason = episode
-                    kotlinx.serialization.json.JsonArray(emptyList())
-                } else {
+                val seasonsBodyRaw = seasonsResp.body.string()
+
+                val root = run {
                     // Ensure we work with a String for logging/parsing to avoid platform-type issues.
-                    val seasonsBody = seasonsBodyRaw.toString()
-                    try {
-                        // Log a truncated seasons response for debugging (limit to 2000 chars).
-                        val snippet = if (seasonsBody.length > 2000) seasonsBody.substring(0, 2000) else seasonsBody
-                        Log.d("TraktApi", "seasons response (traktId=$traktId): $snippet")
-                    } catch (_: Exception) {}
+                    val seasonsBody = seasonsBodyRaw
                     try {
                         json.parseToJsonElement(seasonsBody).jsonArray
                     } catch (_: Exception) {
@@ -203,8 +143,6 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                     }
                 }
 
-                // First attempt: find a season that contains an episode with "number" == episode
-                // (handles cases where last_episode_seen is per-season, e.g. S3E5 -> episode = 5).
                 var seasonMatchByNumber: Int? = null
                 root.forEach { seasonEl ->
                     try {
@@ -221,7 +159,6 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                                 }
                             }
                             if (hasMatch) {
-                                // prefer the highest season number when multiple seasons report the same episode number
                                 seasonMatchByNumber = seasonNum
                             }
                         }
@@ -233,8 +170,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                     seasonNumber = seasonMatchByNumber
                     episodeNumberInSeason = episode
                 } else {
-                    // Fallback: map episode as a global index across seasons (existing behavior),
-                    // prefer explicit "episode_count" when available and skip specials (season 0).
+
                     var cumulative = 0
                     var foundSeasonLocal: Int? = null
                     var epInSeasonLocal = episode
@@ -266,14 +202,6 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
             }
         }
 
-        // Debug log: record resolved season and episode-in-season to help diagnose incorrect payloads.
-        try {
-            Log.d(
-                "TraktApi",
-                "updateShowEpisodeProgress: traktId=$traktId resolvedSeason=$seasonNumber episodeInSeason=$episodeNumberInSeason",
-            )
-        } catch (_: Exception) {}
-
         val payload = """
             {
                 "shows": [
@@ -291,34 +219,25 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                 ]
             }
         """.trimIndent()
-        try {
-            val payloadStr = payload.toString()
-            val payloadSnippet = payloadStr.replace("\n", "\\n")
-            val shortPayload = if (payloadSnippet.length > 4000) payloadSnippet.substring(0, 4000) else payloadSnippet
-            Log.d("TraktApi", "updateShowEpisodeProgress payload: " + shortPayload)
-        } catch (_: Exception) {}
         val request = Request.Builder()
             .url("$baseUrl/sync/history")
-            .addHeader("Content-Type", "application/json")
-            .addHeader("Accept", "application/json")
-            .addHeader("trakt-api-version", "2")
-            .addHeader("trakt-api-key", Trakt.CLIENT_ID)
-            .header("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
+            .applyTraktHeaders()
             .post(payload.toRequestBody("application/json".toMediaType()))
             .build()
         val response = authClient.newCall(request).execute()
         return response.isSuccessful
     }
 
-    fun updateMovieWatched(syncMovie: eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncMovie): Boolean {
-        val syncRequest = eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncRequest(movies = listOf(syncMovie))
+    fun updateMovieWatched(syncMovie: TraktSyncMovie): Boolean {
+        val syncRequest = TraktSyncRequest(movies = listOf(syncMovie))
         val requestBody = json.encodeToString(
-            eu.kanade.tachiyomi.data.track.trakt.dto.TraktSyncRequest.serializer(),
+            TraktSyncRequest.serializer(),
             syncRequest,
         )
             .toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url("$baseUrl/sync/history")
+            .applyTraktHeaders()
             .post(requestBody)
             .build()
         val response = authClient.newCall(request).execute()
@@ -348,11 +267,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
         val payload = "{ ${parts.joinToString(", ")} }"
         val request = Request.Builder()
             .url("$baseUrl/sync/ratings")
-            .addHeader("Content-Type", "application/json")
-            .addHeader("Accept", "application/json")
-            .addHeader("trakt-api-version", "2")
-            .addHeader("trakt-api-key", Trakt.CLIENT_ID)
-            .header("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
+            .applyTraktHeaders()
             .post(payload.toRequestBody("application/json".toMediaType()))
             .build()
         val response = authClient.newCall(request).execute()
@@ -363,24 +278,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
      * Check if a movie already has history entries for the authenticated user.
      * Uses GET /sync/history/movies/{id} which returns an array of history entries when present.
      */
-    fun hasMovieHistory(traktId: Long): Boolean {
-        return try {
-            val request = Request.Builder()
-                .url("$baseUrl/sync/history/movies/$traktId")
-                .get()
-                .build()
-            val response = authClient.newCall(request).execute()
-            val body = response.body?.string() ?: return false
-            val root = try {
-                json.parseToJsonElement(body).jsonArray
-            } catch (_: Exception) {
-                return false
-            }
-            root.isNotEmpty()
-        } catch (_: Exception) {
-            false
-        }
-    }
+
 
     fun loginOAuth(code: String, clientId: String, clientSecret: String, redirectUri: String): TraktOAuth? {
         val bodyJson = """
@@ -394,13 +292,14 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
         """.trimIndent()
         val request = Request.Builder()
             .url("$baseUrl/oauth/token")
+            .applyTraktHeaders()
             .post(bodyJson.toRequestBody("application/json".toMediaType()))
             .build()
         val response = client.newCall(request).execute()
-        val body = response.body?.string() ?: return null
+        val body = response.body.string()
         return try {
             json.decodeFromString<TraktOAuth>(body)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -416,13 +315,14 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
         """.trimIndent()
         val request = Request.Builder()
             .url("$baseUrl/oauth/token")
+            .applyTraktHeaders()
             .post(bodyJson.toRequestBody("application/json".toMediaType()))
             .build()
         val response = client.newCall(request).execute()
-        val body = response.body?.string() ?: return null
+        val body = response.body.string()
         return try {
             json.decodeFromString<TraktOAuth>(body)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -430,14 +330,15 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun getCurrentUser(): String? {
         val request = Request.Builder()
             .url("$baseUrl/users/me")
+            .applyTraktHeaders(includeContentType = false)
             .get()
             .build()
         val response = authClient.newCall(request).execute()
-        val body = response.body?.string() ?: return null
+        val body = response.body.string()
         return try {
             val parsed = json.parseToJsonElement(body).jsonObject
             parsed["username"]?.jsonPrimitive?.content
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -449,10 +350,11 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun getUserShows(): List<eu.kanade.tachiyomi.data.track.trakt.dto.TraktLibraryItem> {
         val request = Request.Builder()
             .url("$baseUrl/sync/watched/shows")
+            .applyTraktHeaders(includeContentType = false)
             .get()
             .build()
         val response = authClient.newCall(request).execute()
-        val body = response.body?.string() ?: return emptyList()
+        val body = response.body.string()
         return try {
             val root = json.parseToJsonElement(body).jsonArray
             root.mapNotNull { elem ->
@@ -466,11 +368,11 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                         title = title,
                         progress = 0,
                     )
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
     }
@@ -481,10 +383,11 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun getUserMovies(): List<eu.kanade.tachiyomi.data.track.trakt.dto.TraktLibraryItem> {
         val request = Request.Builder()
             .url("$baseUrl/sync/watched/movies")
+            .applyTraktHeaders(includeContentType = false)
             .get()
             .build()
         val response = authClient.newCall(request).execute()
-        val body = response.body?.string() ?: return emptyList()
+        val body = response.body.string()
         return try {
             val root = json.parseToJsonElement(body).jsonArray
             root.mapNotNull { elem ->
@@ -498,11 +401,11 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                         title = title,
                         progress = 0,
                     )
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
     }
@@ -523,6 +426,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
         """.trimIndent()
         val request = Request.Builder()
             .url("$baseUrl/sync/history/remove")
+            .applyTraktHeaders()
             .post(payload.toRequestBody("application/json".toMediaType()))
             .build()
         val response = authClient.newCall(request).execute()
@@ -544,6 +448,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
         """.trimIndent()
         val request = Request.Builder()
             .url("$baseUrl/sync/history/remove")
+            .applyTraktHeaders()
             .post(payload.toRequestBody("application/json".toMediaType()))
             .build()
         val response = authClient.newCall(request).execute()
@@ -556,15 +461,11 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun getShowMetadata(traktId: Long): eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata? {
         val request = Request.Builder()
             .url("$baseUrl/shows/$traktId?extended=full,images")
-            .addHeader("Content-Type", "application/json")
-            .addHeader("Accept", "application/json")
-            .addHeader("trakt-api-version", "2")
-            .addHeader("trakt-api-key", Trakt.CLIENT_ID)
-            .header("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
+            .applyTraktHeaders(includeContentType = false)
             .get()
             .build()
         val response = authClient.newCall(request).execute()
-        val body = response.body?.string() ?: return null
+        val body = response.body.string()
         return try {
             val obj = json.parseToJsonElement(body).jsonObject
             val title = obj["title"]?.jsonPrimitive?.contentOrNull
@@ -579,7 +480,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                 authors = null,
                 artists = null,
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -591,19 +492,11 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun getShowMetadataPublic(traktId: Long): eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata? {
         val request = Request.Builder()
             .url("$baseUrl/shows/$traktId?extended=full,images")
-            .addHeader("Content-Type", "application/json")
-            .addHeader("Accept", "application/json")
-            .addHeader("trakt-api-version", "2")
-            .addHeader("trakt-api-key", Trakt.CLIENT_ID)
-            .header("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
+            .applyTraktHeaders(includeContentType = false)
             .get()
             .build()
-        val noCookieClient = client.newBuilder().cookieJar(okhttp3.CookieJar.NO_COOKIES).build()
-        val response = noCookieClient.newCall(request).execute()
-        val body = response.body?.string() ?: return null
-        try {
-            Log.d("TraktApi", "getShowMetadataPublic response for id=$traktId: $body")
-        } catch (_: Exception) {}
+        val response = publicClient.newCall(request).execute()
+        val body = response.body.string()
         return try {
             val obj = json.parseToJsonElement(body).jsonObject
             val title = obj["title"]?.jsonPrimitive?.contentOrNull
@@ -618,7 +511,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                 authors = null,
                 artists = null,
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -630,16 +523,11 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun getShowEpisodeCount(traktId: Long): Long {
         val request = Request.Builder()
             .url("$baseUrl/shows/$traktId/seasons?extended=episodes")
-            .addHeader("Content-Type", "application/json")
-            .addHeader("Accept", "application/json")
-            .addHeader("trakt-api-version", "2")
-            .addHeader("trakt-api-key", Trakt.CLIENT_ID)
-            .header("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
+            .applyTraktHeaders(includeContentType = false)
             .get()
             .build()
-        val noCookieClient = client.newBuilder().cookieJar(okhttp3.CookieJar.NO_COOKIES).build()
-        val response = noCookieClient.newCall(request).execute()
-        val body = response.body?.string() ?: return 0L
+        val response = publicClient.newCall(request).execute()
+        val body = response.body.string()
         return try {
             val root = json.parseToJsonElement(body).jsonArray
             var total = 0L
@@ -661,7 +549,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                 }
             }
             total
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             0L
         }
     }
@@ -672,15 +560,11 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun getMovieMetadata(traktId: Long): eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata? {
         val request = Request.Builder()
             .url("$baseUrl/movies/$traktId?extended=full,images")
-            .addHeader("Content-Type", "application/json")
-            .addHeader("Accept", "application/json")
-            .addHeader("trakt-api-version", "2")
-            .addHeader("trakt-api-key", Trakt.CLIENT_ID)
-            .header("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
+            .applyTraktHeaders(includeContentType = false)
             .get()
             .build()
         val response = authClient.newCall(request).execute()
-        val body = response.body?.string() ?: return null
+        val body = response.body.string()
         return try {
             val obj = json.parseToJsonElement(body).jsonObject
             val title = obj["title"]?.jsonPrimitive?.contentOrNull
@@ -695,7 +579,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                 authors = null,
                 artists = null,
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -707,19 +591,11 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun getMovieMetadataPublic(traktId: Long): eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata? {
         val request = Request.Builder()
             .url("$baseUrl/movies/$traktId?extended=full,images")
-            .addHeader("Content-Type", "application/json")
-            .addHeader("Accept", "application/json")
-            .addHeader("trakt-api-version", "2")
-            .addHeader("trakt-api-key", Trakt.CLIENT_ID)
-            .header("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
+            .applyTraktHeaders(includeContentType = false)
             .get()
             .build()
-        val noCookieClient = client.newBuilder().cookieJar(okhttp3.CookieJar.NO_COOKIES).build()
-        val response = noCookieClient.newCall(request).execute()
-        val body = response.body?.string() ?: return null
-        try {
-            Log.d("TraktApi", "getMovieMetadataPublic response for id=$traktId: $body")
-        } catch (_: Exception) {}
+        val response = publicClient.newCall(request).execute()
+        val body = response.body.string()
         return try {
             val obj = json.parseToJsonElement(body).jsonObject
             val title = obj["title"]?.jsonPrimitive?.contentOrNull
@@ -734,7 +610,7 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                 authors = null,
                 artists = null,
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -745,20 +621,12 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     fun getShowCast(traktId: Long): List<eu.kanade.tachiyomi.animesource.model.Credit>? {
         val request = Request.Builder()
             .url("$baseUrl/shows/$traktId/people?extended=images")
-            .addHeader("Content-Type", "application/json")
-            .addHeader("Accept", "application/json")
-            .addHeader("trakt-api-version", "2")
-            .addHeader("trakt-api-key", Trakt.CLIENT_ID)
-            .header("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
+            .applyTraktHeaders(includeContentType = false)
             .get()
             .build()
         // Use no-cookie client for public people/cast endpoint to avoid auth/cookie-related 403s.
-        val noCookieClient = client.newBuilder().cookieJar(okhttp3.CookieJar.NO_COOKIES).build()
-        val response = noCookieClient.newCall(request).execute()
-        val body = response.body?.string() ?: return null
-        try {
-            Log.d("TraktApi", "getShowCast response for id=$traktId: $body")
-        } catch (_: Exception) {}
+        val response = publicClient.newCall(request).execute()
+        val body = response.body.string()
         return try {
             val root = json.parseToJsonElement(body).jsonObject
             val castArr = root["cast"]?.jsonArray ?: return null
@@ -785,11 +653,11 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
                         character = character,
                         image_url = imageUrl,
                     )
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

@@ -12,7 +12,6 @@ data class TraktSyncRequest(
 data class TraktSyncShow(
     val ids: TraktIds,
     val progress: Int,
-    // Possible values: "watching", "completed", etc.
     val status: String,
 )
 
