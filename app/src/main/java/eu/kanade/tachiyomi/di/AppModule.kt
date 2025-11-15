@@ -42,6 +42,7 @@ import nl.adaptivity.xmlutil.core.XmlVersion
 import nl.adaptivity.xmlutil.serialization.XML
 import tachiyomi.core.common.storage.AndroidStorageFolderProvider
 import tachiyomi.data.AnimeUpdateStrategyColumnAdapter
+import tachiyomi.data.CastColumnAdapter
 import tachiyomi.data.Database
 import tachiyomi.data.DateColumnAdapter
 import tachiyomi.data.FetchTypeColumnAdapter
@@ -146,6 +147,7 @@ class AppModule(val app: Application) : InjektModule {
                     genreAdapter = StringListColumnAdapter,
                     update_strategyAdapter = AnimeUpdateStrategyColumnAdapter,
                     fetch_typeAdapter = FetchTypeColumnAdapter,
+                    castAdapter = CastColumnAdapter,
                 ),
             )
         }

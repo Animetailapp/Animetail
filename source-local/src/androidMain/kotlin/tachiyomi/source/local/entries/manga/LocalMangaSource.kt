@@ -51,6 +51,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import eu.kanade.tachiyomi.animesource.model.Credit as SourceCredit
 
 actual class LocalMangaSource(
     private val context: Context,
@@ -157,7 +158,17 @@ actual class LocalMangaSource(
     }
 
     private fun SManga.toJson(): MangaDetails {
-        return MangaDetails(title, author, artist, description, genre?.split(", "), status)
+        return MangaDetails(
+            title = title,
+            author = author,
+            artist = artist,
+            description = description,
+            genre = genre?.split(", "),
+            status = status,
+            cast = cast?.map {
+                SourceCredit(name = it.name, role = it.role, character = it.character, image_url = it.image_url)
+            },
+        )
     }
     // SY <--
 
@@ -196,6 +207,17 @@ actual class LocalMangaSource(
                         description?.let { manga.description = it }
                         genre?.let { manga.genre = it.joinToString() }
                         status?.let { manga.status = it }
+                        cast?.let { coreCastList ->
+                            manga.cast =
+                                coreCastList.map { core ->
+                                    SourceCredit(
+                                        name = core.name,
+                                        role = core.role,
+                                        character = core.character,
+                                        image_url = core.image_url,
+                                    )
+                                }
+                        }
                     }
                     // Replace with ComicInfo.xml file
                     val comicInfo = manga.getComicInfo()

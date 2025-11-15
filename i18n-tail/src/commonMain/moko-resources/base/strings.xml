@@ -366,6 +366,11 @@
     <string name="pref_source_related_animes_summary">Show source-website's Suggestions while viewing entry</string>
     <string name="pref_source_navigation">Replace latest button</string>
     <string name="pref_source_navigation_summery">Replace latest button with a custom browse view that includes both latest and browse</string>
+    <string name="pref_sync_api_key">API key</string>
+    <string name="pref_sync_api_key_summ">Enter the API key to synchronize your library</string>
+    <string name="login_error">Login error</string>
+    <string name="save">Save</string>
+    <!-- Doh Custom -->
 
    <string name="pref_doh_custom_url">Custom DoH URL</string>
    <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>

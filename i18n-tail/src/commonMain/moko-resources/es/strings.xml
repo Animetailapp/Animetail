@@ -310,6 +310,10 @@
   <string name="pref_source_related_animes_summary">Mostrar sugerencias del sitio de origen mientras se ve la entrada</string>
   <string name="pref_source_navigation">Reemplazar el último botón</string>
   <string name="pref_source_navigation_summery">Reemplaza el último botón con una vista de navegación personalizada que incluye tanto la última como la última navegación</string>
+  <string name="pref_sync_api_key">Clave API</string>
+  <string name="pref_sync_api_key_summ">Introduzca la clave API para sincronizar su biblioteca</string>
+  <string name="login_error">Error de inicio de sesión</string>
+  <string name="save">Guardar</string>
     <string name="pref_doh_custom_url">URL de DoH personalizada</string>
     <string name="pref_doh_custom_url_summary">Ejemplo: https://dns.example/dns-query</string>
     <string name="error_doh_custom_invalid">URL de DoH no válida</string>
