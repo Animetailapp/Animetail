@@ -423,6 +423,7 @@ private fun AnimeScreenSmallImpl(
     val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes().collectAsState()
     val expandRelatedAnimes by uiPreferences.expandRelatedAnimes().collectAsState()
     val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow().collectAsState()
+    val showCast by uiPreferences.showCast().collectAsState()
 
     BoxWithConstraints {
         val density = LocalDensity.current
@@ -599,7 +600,7 @@ private fun AnimeScreenSmallImpl(
                         )
                     }
                     // Cast row should appear below the genres/tags, but only when trackers are in use
-                    if (state.hasLoggedInTrackers) {
+                    if (state.hasLoggedInTrackers && showCast) {
                         item(
                             key = "cast_row",
                             contentType = "cast_row",
@@ -872,6 +873,7 @@ fun AnimeScreenLargeImpl(
     val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes().collectAsState()
     val expandRelatedAnimes by uiPreferences.expandRelatedAnimes().collectAsState()
     val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow().collectAsState()
+    val showCast by uiPreferences.showCast().collectAsState()
 
     BoxWithConstraints {
         val density = LocalDensity.current
@@ -1013,7 +1015,7 @@ fun AnimeScreenLargeImpl(
                             )
                             // Cast is shown below the genres/tags on large layout as well,
                             // but only when trackers are in use and there is cast data.
-                            if (state.hasLoggedInTrackers) {
+                            if (state.hasLoggedInTrackers && showCast) {
                                 state.anime.cast?.let { castList ->
                                     if (castList.isNotEmpty()) {
                                         CastRow(

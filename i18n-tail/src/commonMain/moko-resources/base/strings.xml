@@ -362,6 +362,8 @@
     <string name="put_related_animes_in_overflow_summary">Put the Suggestions button in the overflow menu instead of on the entry page</string>
     <string name="pref_show_home_on_related_animes">Home from Suggestions</string>
     <string name="pref_show_home_on_related_animes_summary">Show an icon while browsing Suggestions to navigate directly back to Home</string>
+    <string name="pref_show_cast">Show Cast</string>
+    <string name="pref_show_cast_summary">Show cast information on anime details page</string>
     <string name="pref_source_related_animes">Suggestions</string>
     <string name="pref_source_related_animes_summary">Show source-website's Suggestions while viewing entry</string>
     <string name="pref_source_navigation">Replace latest button</string>

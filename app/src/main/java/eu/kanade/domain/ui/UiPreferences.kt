@@ -59,6 +59,8 @@ class UiPreferences(
 
     fun showHomeOnRelatedAnimes() = preferenceStore.getBoolean("show_home_on_related_animes", true)
 
+    fun showCast() = preferenceStore.getBoolean("show_cast", true)
+
     companion object {
         fun dateFormat(format: String): DateTimeFormatter = when (format) {
             "" -> DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)

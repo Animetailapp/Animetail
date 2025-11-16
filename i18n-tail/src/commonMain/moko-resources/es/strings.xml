@@ -306,7 +306,9 @@
   <string name="put_related_animes_in_overflow_summary">Ponga el botón Sugerencias en el menú de desbordamiento en lugar de en la página de entrada</string>
   <string name="pref_show_home_on_related_animes">Inicio desde sugerencias</string>
   <string name="pref_show_home_on_related_animes_summary">Muestra un icono mientras se navega por las Sugerencias para volver directamente a Inicio</string>
-  <string name="pref_source_related_animes">Sugerencias</string>
+    <string name="pref_show_cast">Show Cast</string>
+    <string name="pref_show_cast_summary">Show cast information on anime details page</string>
+    <string name="pref_source_related_animes">Sugerencias</string>
   <string name="pref_source_related_animes_summary">Mostrar sugerencias del sitio de origen mientras se ve la entrada</string>
   <string name="pref_source_navigation">Reemplazar el último botón</string>
   <string name="pref_source_navigation_summery">Reemplaza el último botón con una vista de navegación personalizada que incluye tanto la última como la última navegación</string>

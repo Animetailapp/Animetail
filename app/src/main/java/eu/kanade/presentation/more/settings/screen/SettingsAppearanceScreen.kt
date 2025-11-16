@@ -201,6 +201,7 @@ object SettingsAppearanceScreen : SearchableSettings {
         // KMK -->
         val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
         val relatedMangasInOverflow by uiPreferences.expandRelatedAnimes().collectAsState()
+        val showCast by uiPreferences.showCast().collectAsState()
         // KMK <--
 
         return Preference.PreferenceGroup(
@@ -235,6 +236,11 @@ object SettingsAppearanceScreen : SearchableSettings {
                     title = stringResource(TLMR.strings.pref_show_home_on_related_animes),
                     subtitle = stringResource(TLMR.strings.pref_show_home_on_related_animes_summary),
                     enabled = sourcePreferences.relatedAnimes().get(),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.showCast(),
+                    title = stringResource(TLMR.strings.pref_show_cast),
+                    subtitle = stringResource(TLMR.strings.pref_show_cast_summary),
                 ),
                 // KMK <--
 //                Preference.PreferenceItem.SwitchPreference(
