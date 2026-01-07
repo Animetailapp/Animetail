@@ -448,6 +448,13 @@ class MyAnimeListApi(
             publishing_status = searchItem.status.replace("_", " ")
             publishing_type = searchItem.mediaType.replace("_", " ")
             start_date = searchItem.startDate ?: ""
+            artists = searchItem.authors
+                .filter { authorNode -> authorNode.role == "Art" }
+                .mapNotNull { authorNode -> authorNode.node.getFullName() }
+            authors = searchItem.authors
+                // count all with "Story" or "Story & Art" as authors, like is done for library entries
+                .filter { authorNode -> authorNode.role.contains("Story") }
+                .mapNotNull { authorNode -> authorNode.node.getFullName() }
         }
     }
 
@@ -474,7 +481,7 @@ class MyAnimeListApi(
         private const val BASE_API_URL = "https://api.myanimelist.net/v2"
 
         private const val SEARCH_FIELDS =
-            "id,title,synopsis,num_chapters,mean,main_picture,status,media_type,start_date"
+            "id,title,synopsis,num_chapters,mean,main_picture,status,media_type,start_date,authors{first_name,last_name}"
         private const val SEARCH_FIELDS_ANIME =
             "id,title,synopsis,num_episodes,mean,main_picture,status,media_type,start_date,studios"
 
