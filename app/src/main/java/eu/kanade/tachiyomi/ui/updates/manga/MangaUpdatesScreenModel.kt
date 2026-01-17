@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.util.fastFilter
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.core.preference.asState
@@ -27,14 +28,20 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.entries.applyFilter
 import tachiyomi.domain.entries.manga.interactor.GetManga
 import tachiyomi.domain.items.chapter.interactor.GetChapter
 import tachiyomi.domain.items.chapter.interactor.UpdateChapter
@@ -43,6 +50,7 @@ import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.updates.manga.interactor.GetMangaUpdates
 import tachiyomi.domain.updates.manga.model.MangaUpdatesWithRelations
+import tachiyomi.domain.updates.service.UpdatesPreferences
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.time.ZonedDateTime
@@ -57,6 +65,7 @@ class MangaUpdatesScreenModel(
     private val getManga: GetManga = Injekt.get(),
     private val getChapter: GetChapter = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
+    private val updatesPreferences: UpdatesPreferences = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
 ) : StateScreenModel<MangaUpdatesScreenModel.State>(State()) {
 
@@ -75,19 +84,35 @@ class MangaUpdatesScreenModel(
             val limit = ZonedDateTime.now().minusMonths(3).toInstant()
 
             combine(
-                getUpdates.subscribe(limit).distinctUntilChanged(),
+                // needed for SQL filters (unread, started, bookmarked, etc)
+                getUpdatesItemPreferenceFlow()
+                    .distinctUntilChanged()
+                    .flatMapLatest {
+                        getUpdates.subscribe(
+                            limit,
+                            unread = it.filterUnread.toBooleanOrNull(),
+                            started = it.filterStarted.toBooleanOrNull(),
+                            bookmarked = it.filterBookmarked.toBooleanOrNull(),
+                            hideExcludedScanlators = it.filterExcludedScanlators,
+                        ).distinctUntilChanged()
+                    },
                 downloadCache.changes,
                 downloadManager.queueState,
-            ) { updates, _, _ -> updates }
-                .catch {
-                    logcat(LogPriority.ERROR, it)
-                    _events.send(Event.InternalError)
-                }
-                .collectLatest { updates ->
+                // needed for Kotlin filters (downloaded)
+                getUpdatesItemPreferenceFlow().distinctUntilChanged { old, new ->
+                    old.filterDownloaded == new.filterDownloaded
+                },
+            ) { updates, _, _, itemPreferences ->
+                updates
+                    .toUpdateItems()
+                    .applyFilters(itemPreferences)
+                    .toPersistentList()
+            }
+                .collectLatest { updateItems ->
                     mutableState.update {
                         it.copy(
                             isLoading = false,
-                            items = updates.toUpdateItems(),
+                            items = updateItems,
                         )
                     }
                 }
@@ -98,9 +123,43 @@ class MangaUpdatesScreenModel(
                 .catch { logcat(LogPriority.ERROR, it) }
                 .collect(this@MangaUpdatesScreenModel::updateDownloadState)
         }
+
+        getUpdatesItemPreferenceFlow()
+            .map { prefs ->
+                listOf(
+                    prefs.filterUnread,
+                    prefs.filterDownloaded,
+                    prefs.filterStarted,
+                    prefs.filterBookmarked,
+                )
+                    .any { it != TriState.DISABLED }
+            }
+            .distinctUntilChanged()
+            .onEach {
+                mutableState.update { state ->
+                    state.copy(hasActiveFilters = it)
+                }
+            }
+            .launchIn(screenModelScope)
     }
 
-    private fun List<MangaUpdatesWithRelations>.toUpdateItems(): PersistentList<MangaUpdatesItem> {
+    private fun List<MangaUpdatesItem>.applyFilters(
+        preferences: ItemPreferences,
+    ): List<MangaUpdatesItem> {
+        val filterDownloaded = preferences.filterDownloaded
+
+        val filterFnDownloaded: (MangaUpdatesItem) -> Boolean = {
+            applyFilter(filterDownloaded) {
+                it.downloadStateProvider() == MangaDownload.State.DOWNLOADED
+            }
+        }
+
+        return fastFilter {
+            filterFnDownloaded(it)
+        }
+    }
+
+    private fun List<MangaUpdatesWithRelations>.toUpdateItems(): List<MangaUpdatesItem> {
         return this
             .map { update ->
                 val activeDownload = downloadManager.getQueuedDownloadOrNull(update.chapterId)
@@ -122,7 +181,6 @@ class MangaUpdatesScreenModel(
                     selected = update.chapterId in selectedChapterIds,
                 )
             }
-            .toPersistentList()
     }
 
     fun updateLibrary(): Boolean {
@@ -360,9 +418,41 @@ class MangaUpdatesScreenModel(
         libraryPreferences.newMangaUpdatesCount().set(0)
     }
 
+    private fun getUpdatesItemPreferenceFlow(): Flow<ItemPreferences> {
+        return combine(
+            updatesPreferences.filterDownloaded().changes(),
+            updatesPreferences.filterUnread().changes(),
+            updatesPreferences.filterStarted().changes(),
+            updatesPreferences.filterBookmarked().changes(),
+            updatesPreferences.filterExcludedScanlators().changes(),
+        ) { downloaded, unread, started, bookmarked, excludedScanlators ->
+            ItemPreferences(
+                filterDownloaded = downloaded,
+                filterUnread = unread,
+                filterStarted = started,
+                filterBookmarked = bookmarked,
+                filterExcludedScanlators = excludedScanlators,
+            )
+        }
+    }
+
+    fun showFilterDialog() {
+        mutableState.update { it.copy(dialog = Dialog.FilterSheet) }
+    }
+
+    @Immutable
+    private data class ItemPreferences(
+        val filterDownloaded: TriState,
+        val filterUnread: TriState,
+        val filterStarted: TriState,
+        val filterBookmarked: TriState,
+        val filterExcludedScanlators: Boolean,
+    )
+
     @Immutable
     data class State(
         val isLoading: Boolean = true,
+        val hasActiveFilters: Boolean = false,
         val items: PersistentList<MangaUpdatesItem> = persistentListOf(),
         val dialog: Dialog? = null,
     ) {
@@ -386,11 +476,20 @@ class MangaUpdatesScreenModel(
 
     sealed interface Dialog {
         data class DeleteConfirmation(val toDelete: List<MangaUpdatesItem>) : Dialog
+        data object FilterSheet : Dialog
     }
 
     sealed interface Event {
         data object InternalError : Event
         data class LibraryUpdateTriggered(val started: Boolean) : Event
+    }
+}
+
+private fun TriState.toBooleanOrNull(): Boolean? {
+    return when (this) {
+        TriState.DISABLED -> null
+        TriState.ENABLED_IS -> true
+        TriState.ENABLED_NOT -> false
     }
 }
 
