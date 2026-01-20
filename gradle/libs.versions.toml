@@ -96,9 +96,10 @@ sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions-jv
 sqldelight-android-paging = { module = "app.cash.sqldelight:androidx-paging3-extensions", version.ref = "sqldelight" }
 sqldelight-dialects-sql = { module = "app.cash.sqldelight:sqlite-3-38-dialect", version.ref = "sqldelight" }
 
-junit = "org.junit.jupiter:junit-jupiter:5.11.4"
-kotest-assertions = "io.kotest:kotest-assertions-core:5.9.1"
-mockk = "io.mockk:mockk:1.13.17"
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+kotest-assertions = "io.kotest:kotest-assertions-core:6.1.0"
+mockk = "io.mockk:mockk:1.14.7"
 
 voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }
 voyager-screenmodel = { module = "cafe.adriel.voyager:voyager-screenmodel", version.ref = "voyager" }
