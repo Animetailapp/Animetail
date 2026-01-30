@@ -28,11 +28,13 @@ class DiscordLoginActivity : BaseActivity() {
 
     private val connectionsManager: ConnectionsManager by injectLazy()
     private val connectionsPreferences: ConnectionsPreferences by injectLazy()
+    private var tokenExtracted = false
 
     companion object {
         private const val TAG = "DiscordLogin"
-        private const val TOKEN_EXTRACTION_DELAY = 3000L
-        private const val MIN_TOKEN_LENGTH = 20
+        private const val TOKEN_EXTRACTION_DELAY = 2000L
+        private const val MAX_RETRY_ATTEMPTS = 5
+        private const val MIN_TOKEN_LENGTH = 50
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
@@ -70,88 +72,145 @@ class DiscordLoginActivity : BaseActivity() {
      * Handles page load completion and initiates token extraction if appropriate.
      */
     private fun handlePageFinished(webView: WebView, url: String?) {
-        if (url == null) return
-
-        // Inject LOCAL_STORAGE reference on any Discord page
-        if (url.contains("discord.com")) {
-            injectLocalStorageReference(webView)
-        }
+        if (url == null || tokenExtracted) return
 
         // Attempt token extraction on Discord app pages
         if (url.endsWith("/app") || url.contains("/channels/")) {
             Log.i(TAG, "Discord app page detected, attempting token extraction...")
-            webView.postDelayed({
-                extractToken(webView)
-            }, TOKEN_EXTRACTION_DELAY)
+            startTokenExtractionWithRetry(webView, 0)
         }
     }
 
     /**
-     * Injects LOCAL_STORAGE reference into the page for reliable localStorage access.
+     * Starts token extraction with retry mechanism.
      */
-    private fun injectLocalStorageReference(webView: WebView) {
-        webView.evaluateJavascript(
-            """
-            try {
-                window.LOCAL_STORAGE = localStorage;
-                console.log('LOCAL_STORAGE injected successfully');
-            } catch (e) {
-                console.log('Failed to inject LOCAL_STORAGE:', e);
+    private fun startTokenExtractionWithRetry(webView: WebView, attempt: Int) {
+        if (tokenExtracted || attempt >= MAX_RETRY_ATTEMPTS) {
+            if (!tokenExtracted && attempt >= MAX_RETRY_ATTEMPTS) {
+                Log.e(TAG, "Max retry attempts reached, token extraction failed")
+                handleLoginError("No se pudo extraer el token después de varios intentos")
             }
-            """.trimIndent(),
-        ) { }
+            return
+        }
+
+        webView.postDelayed({
+            extractToken(webView, attempt)
+        }, TOKEN_EXTRACTION_DELAY)
     }
 
     /**
-     * Extracts Discord token using the injected LOCAL_STORAGE reference.
+     * Extracts Discord token using webpack chunks method.
      */
-    private fun extractToken(webView: WebView) {
-        Log.i(TAG, "Attempting token extraction using Flutter method")
+    private fun extractToken(webView: WebView, attempt: Int) {
+        Log.i(TAG, "Token extraction attempt ${attempt + 1}/$MAX_RETRY_ATTEMPTS")
 
         webView.evaluateJavascript(getTokenExtractionScript()) { result ->
-            val token = result?.trim('"') ?: ""
-            Log.i(TAG, "Token extraction result: ${if (token.length > 10) "${token.substring(0, 10)}..." else token}")
+            val token = result?.trim('"')?.replace("\\\"", "") ?: ""
+            Log.i(TAG, "Extraction result length: ${token.length}")
 
             if (isValidToken(token)) {
-                Log.i(TAG, "Valid token found, proceeding with verification")
+                Log.i(TAG, "Valid token found on attempt ${attempt + 1}")
+                tokenExtracted = true
                 verifyAndSaveToken(token)
             } else {
-                Log.e(TAG, "Token extraction failed")
+                Log.w(TAG, "Invalid token on attempt ${attempt + 1}, retrying...")
+                startTokenExtractionWithRetry(webView, attempt + 1)
             }
         }
     }
 
     /**
-     * Returns the JavaScript code for token extraction.
+     * Returns the JavaScript code for token extraction using multiple methods.
      */
     private fun getTokenExtractionScript(): String {
         return """
             (function() {
-                let token = null;
+                // Method 1: Webpack chunks (most reliable for modern Discord)
                 try {
-                    if (window.LOCAL_STORAGE) {
-                        const storageToken = window.LOCAL_STORAGE.getItem('token');
-                        if (storageToken && storageToken.length > 10) {
-                            token = storageToken.replace(/['"]/g, '');
-                            console.log('Token found in injected localStorage');
+                    const wreq = (webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m)
+                        .find(m => m?.exports?.default?.getToken !== void 0)?.exports?.default;
+                    if (wreq) {
+                        const token = wreq.getToken();
+                        if (token && token.length > 50) {
+                            console.log('Token found via webpack');
+                            return token;
                         }
                     }
                 } catch (e) {
-                    console.log('Token extraction failed:', e);
+                    console.log('Webpack method 1 failed:', e);
                 }
-                return token || 'NO_TOKEN';
+
+                // Method 2: Alternative webpack approach
+                try {
+                    let token = null;
+                    webpackChunkdiscord_app.push([
+                        [Math.random()], {},
+                        (req) => {
+                            for (const m of Object.keys(req.c).map((x) => req.c[x].exports).filter((x) => x)) {
+                                if (m.default && m.default.getToken !== undefined) {
+                                    token = m.default.getToken();
+                                }
+                                if (m.getToken !== undefined) {
+                                    token = m.getToken();
+                                }
+                            }
+                        }
+                    ]);
+                    if (token && token.length > 50) {
+                        console.log('Token found via alternative webpack');
+                        return token;
+                    }
+                } catch (e) {
+                    console.log('Webpack method 2 failed:', e);
+                }
+
+                // Method 3: Search in localStorage for token pattern
+                try {
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        const value = localStorage.getItem(key);
+                        if (value && value.length > 50) {
+                            const cleaned = value.replace(/['"]/g, '');
+                            if (cleaned.match(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)) {
+                                console.log('Token found via pattern match in key:', key);
+                                return cleaned;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('LocalStorage scan failed:', e);
+                }
+
+                // Method 4: Direct localStorage token (legacy)
+                try {
+                    const storageToken = localStorage.getItem('token');
+                    if (storageToken) {
+                        const cleaned = storageToken.replace(/['"]/g, '');
+                        if (cleaned.length > 50) {
+                            console.log('Token found in localStorage directly');
+                            return cleaned;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Direct localStorage failed:', e);
+                }
+
+                return 'NO_TOKEN';
             })()
         """.trimIndent()
     }
 
     /**
-     * Validates if the extracted token meets minimum requirements.
+     * Validates if the extracted token meets Discord token format requirements.
      */
     private fun isValidToken(token: String): Boolean {
         return token.isNotEmpty() &&
             token != "NO_TOKEN" &&
             token != "null" &&
-            token.length > MIN_TOKEN_LENGTH
+            token != "undefined" &&
+            token.length > MIN_TOKEN_LENGTH &&
+            // Discord token format: XXX.YYY.ZZZ (Base64-like segments)
+            token.matches(Regex("^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"))
     }
 
     /**
