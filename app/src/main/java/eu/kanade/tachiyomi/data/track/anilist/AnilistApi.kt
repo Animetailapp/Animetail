@@ -52,9 +52,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     suspend fun addLibManga(track: MangaTrack): MangaTrack {
         return withIOContext {
-            val query = """
-            |mutation AddManga(${'$'}mangaId: Int, ${'$'}progress: Int, ${'$'}status: MediaListStatus, ${'$'}private: Boolean) {
-                |SaveMediaListEntry (mediaId: ${'$'}mangaId, progress: ${'$'}progress, status: ${'$'}status, private: ${'$'}private) {
+            val query = $$"""
+            |mutation AddManga($mangaId: Int, $progress: Int, $status: MediaListStatus, $private: Boolean) {
+                |SaveMediaListEntry (mediaId: $mangaId, progress: $progress, status: $status, private: $private) {
                 |   id
                 |   status
                 |}
@@ -88,14 +88,14 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     suspend fun updateLibManga(track: MangaTrack): MangaTrack {
         return withIOContext {
-            val query = """
+            val query = $$"""
             |mutation UpdateManga(
-                |${'$'}listId: Int, ${'$'}progress: Int, ${'$'}status: MediaListStatus, ${'$'}private: Boolean,
-                |${'$'}score: Int, ${'$'}startedAt: FuzzyDateInput, ${'$'}completedAt: FuzzyDateInput
+                |$listId: Int, $progress: Int, $status: MediaListStatus, $private: Boolean,
+                |$score: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput
             |) {
                 |SaveMediaListEntry(
-                    |id: ${'$'}listId, progress: ${'$'}progress, status: ${'$'}status, private: ${'$'}private,
-                    |scoreRaw: ${'$'}score, startedAt: ${'$'}startedAt, completedAt: ${'$'}completedAt
+                    |id: $listId, progress: $progress, status: $status, private: $private,
+                    |scoreRaw: $score, startedAt: $startedAt, completedAt: $completedAt
                 |) {
                     |id
                     |status
@@ -124,9 +124,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     suspend fun deleteLibManga(track: DomainMangaTrack) {
         withIOContext {
-            val query = """
-            |mutation DeleteManga(${'$'}listId: Int) {
-                |DeleteMediaListEntry(id: ${'$'}listId) {
+            val query = $$"""
+            |mutation DeleteManga($listId: Int) {
+                |DeleteMediaListEntry(id: $listId) {
                     |deleted
                 |}
             |}
@@ -238,10 +238,10 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     suspend fun search(search: String): List<MangaTrackSearch> {
         return withIOContext {
-            val query = """
-            |query Search(${'$'}query: String) {
+            val query = $$"""
+            |query Search($query: String) {
                 |Page (perPage: 50) {
-                    |media(search: ${'$'}query, type: MANGA, format_not_in: [NOVEL]) {
+                    |media(search: $query, type: MANGA, format_not_in: [NOVEL]) {
                         |id
                         |staff {
                             |edges {
@@ -357,10 +357,10 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     suspend fun findLibManga(track: MangaTrack, userid: Int): MangaTrack? {
         return withIOContext {
-            val query = """
-            |query (${'$'}id: Int!, ${'$'}manga_id: Int!) {
+            val query = $$"""
+            |query ($id: Int!, $manga_id: Int!) {
                 |Page {
-                    |mediaList(userId: ${'$'}id, type: MANGA, mediaId: ${'$'}manga_id) {
+                    |mediaList(userId: $id, type: MANGA, mediaId: $manga_id) {
                         |id
                         |status
                         |scoreRaw: score(format: POINT_100)
