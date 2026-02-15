@@ -1,26 +1,25 @@
-package eu.kanade.tachiyomi.data.download.manga
+package eu.kanade.tachiyomi.data.download
 
 import android.content.Context
 import androidx.core.content.edit
-import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
+import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.source.online.HttpSource
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import tachiyomi.domain.entries.manga.interactor.GetManga
-import tachiyomi.domain.entries.manga.model.Manga
-import tachiyomi.domain.items.chapter.interactor.GetChapter
-import tachiyomi.domain.source.manga.service.MangaSourceManager
+import tachiyomi.domain.chapter.interactor.GetChapter
+import tachiyomi.domain.manga.interactor.GetManga
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 /**
  * This class is used to persist active downloads across application restarts.
  */
-class MangaDownloadStore(
+class DownloadStore(
     context: Context,
-    private val sourceManager: MangaSourceManager = Injekt.get(),
+    private val sourceManager: SourceManager = Injekt.get(),
     private val json: Json = Injekt.get(),
     private val getManga: GetManga = Injekt.get(),
     private val getChapter: GetChapter = Injekt.get(),
@@ -41,7 +40,7 @@ class MangaDownloadStore(
      *
      * @param downloads the list of downloads to add.
      */
-    fun addAll(downloads: List<MangaDownload>) {
+    fun addAll(downloads: List<Download>) {
         preferences.edit {
             downloads.forEach { putString(getKey(it), serialize(it)) }
         }
@@ -52,7 +51,7 @@ class MangaDownloadStore(
      *
      * @param download the download to remove.
      */
-    fun remove(download: MangaDownload) {
+    fun remove(download: Download) {
         preferences.edit {
             remove(getKey(download))
         }
@@ -63,7 +62,7 @@ class MangaDownloadStore(
      *
      * @param downloads the download to remove.
      */
-    fun removeAll(downloads: List<MangaDownload>) {
+    fun removeAll(downloads: List<Download>) {
         preferences.edit {
             downloads.forEach { remove(getKey(it)) }
         }
@@ -83,29 +82,29 @@ class MangaDownloadStore(
      *
      * @param download the download.
      */
-    private fun getKey(download: MangaDownload): String {
+    private fun getKey(download: Download): String {
         return download.chapter.id.toString()
     }
 
     /**
      * Returns the list of downloads to restore. It should be called in a background thread.
      */
-    fun restore(): List<MangaDownload> {
+    suspend fun restore(): List<Download> {
         val objs = preferences.all
             .mapNotNull { it.value as? String }
             .mapNotNull { deserialize(it) }
             .sortedBy { it.order }
 
-        val downloads = mutableListOf<MangaDownload>()
+        val downloads = mutableListOf<Download>()
         if (objs.isNotEmpty()) {
             val cachedManga = mutableMapOf<Long, Manga?>()
             for ((mangaId, chapterId) in objs) {
                 val manga = cachedManga.getOrPut(mangaId) {
-                    runBlocking { getManga.await(mangaId) }
+                    getManga.await(mangaId)
                 } ?: continue
                 val source = sourceManager.get(manga.source) as? HttpSource ?: continue
-                val chapter = runBlocking { getChapter.await(chapterId) } ?: continue
-                downloads.add(MangaDownload(source, manga, chapter))
+                val chapter = getChapter.await(chapterId) ?: continue
+                downloads.add(Download(source, manga, chapter))
             }
         }
 
@@ -119,7 +118,7 @@ class MangaDownloadStore(
      *
      * @param download the download to serialize.
      */
-    private fun serialize(download: MangaDownload): String {
+    private fun serialize(download: Download): String {
         val obj = DownloadObject(download.manga.id, download.chapter.id, counter++)
         return json.encodeToString(obj)
     }

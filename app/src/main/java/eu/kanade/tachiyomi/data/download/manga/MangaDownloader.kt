@@ -129,9 +129,9 @@ class MangaDownloader(
     var isPaused: Boolean = false
 
     init {
-        launchNow {
-            val chapters = async { store.restore() }
-            addAllToQueue(chapters.await())
+        scope.launch {
+            val chapters = store.restore()
+            addAllToQueue(chapters)
         }
     }
 
