@@ -13,14 +13,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -110,13 +113,19 @@ class MangaDownloadCache(
                             ProtoBuf.decodeFromByteArray<RootDirectory>(it.readBytes())
                         }
                         rootDownloadsDir = diskCache
-                        lastRenew = System.currentTimeMillis()
                     }
                 } catch (e: Throwable) {
                     logcat(LogPriority.ERROR, e) { "Failed to initialize from disk cache" }
                     diskCacheFile.delete()
                 }
             }
+
+            sourceManager.catalogueSources
+                .map { sources -> sources.map { it.id }.toSet() }
+                .distinctUntilChanged()
+                .collect {
+                    restartRenewal()
+                }
         }
 
         storageManager.changes
@@ -320,19 +329,34 @@ class MangaDownloadCache(
         notifyChanges()
     }
 
-    fun invalidateCache() {
-        lastRenew = 0L
-        renewalJob?.cancel()
+    suspend fun invalidateCache() {
+        renewalJob?.cancelAndJoin()
         diskCacheFile.delete()
-        renewCache()
+        lastRenew = 0L
+        renewCache(forceRenew = true)
+    }
+
+    /**
+     * Safely cancels any in-progress renewal job, resets the last-renew timestamp, and
+     * immediately starts a new renewal, bypassing the time-based throttle.
+     */
+    private fun restartRenewal() {
+        renewalJob?.cancel()
+        lastRenew = 0L
+        renewCache(forceRenew = true)
     }
 
     /**
      * Renews the downloads cache.
+     *
+     * @param forceRenew when `true`, the time-based throttle is bypassed. Use this after
+     * explicitly cancelling the previous job to avoid a race where the cancelled job's
+     * [invokeOnCompletion] handler sets [lastRenew] after the reset but before the new
+     * job's guard check.
      */
-    private fun renewCache() {
+    private fun renewCache(forceRenew: Boolean = false) {
         // Avoid renewing cache if in the process nor too often
-        if (lastRenew + renewInterval >= System.currentTimeMillis() || renewalJob?.isActive == true) {
+        if ((!forceRenew && lastRenew + renewInterval >= System.currentTimeMillis()) || renewalJob?.isActive == true) {
             return
         }
 
@@ -342,14 +366,13 @@ class MangaDownloadCache(
             }
 
             // Try to wait until extensions and sources have loaded
-            var sources = emptyList<MangaSource>()
             withTimeoutOrNull(30.seconds) {
                 extensionManager.isInitialized.first { it }
-                sourceManager.isInitialized.first { it }
-
-                sources = getSources()
+                // Wait until sources are loaded.
+                sourceManager.catalogueSources.first { it.isNotEmpty() }
             }
 
+            val sources = getSources()
             val sourceMap = sources.associate { provider.getSourceDirName(it).lowercase() to it.id }
 
             rootDownloadsDirMutex.withLock {
@@ -421,8 +444,9 @@ class MangaDownloadCache(
 
     private var updateDiskCacheJob: Job? = null
     private fun updateDiskCache() {
-        updateDiskCacheJob?.cancel()
+        val previousJob = updateDiskCacheJob
         updateDiskCacheJob = scope.launchIO {
+            previousJob?.cancelAndJoin()
             delay(1000)
             ensureActive()
             val bytes = ProtoBuf.encodeToByteArray(rootDownloadsDir)
