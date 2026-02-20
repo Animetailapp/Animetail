@@ -831,7 +831,7 @@ class ReaderActivity : BaseActivity() {
     private fun shareChapter() {
         assistUrl?.let {
             val intent = it.toUri().toShareIntent(this, type = "text/plain")
-            startActivity(Intent.createChooser(intent, stringResource(MR.strings.action_share)))
+            startActivity(intent)
         }
     }
 
@@ -1050,7 +1050,7 @@ class ReaderActivity : BaseActivity() {
             context = applicationContext,
             message = text,
         )
-        startActivity(Intent.createChooser(intent, stringResource(MR.strings.action_share)))
+        startActivity(intent)
     }
 
     private fun onCopyImageResult(uri: Uri) {

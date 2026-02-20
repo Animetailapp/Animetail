@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.ui.entries.manga
 
 import android.content.Context
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -60,12 +59,10 @@ import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.launch
 import logcat.LogPriority
-import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
-import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 class MangaScreen(
@@ -351,12 +348,7 @@ class MangaScreen(
         try {
             getMangaUrl(manga_, source_)?.let { url ->
                 val intent = url.toUri().toShareIntent(context, type = "text/plain")
-                context.startActivity(
-                    Intent.createChooser(
-                        intent,
-                        context.stringResource(MR.strings.action_share),
-                    ),
-                )
+                context.startActivity(intent)
             }
         } catch (e: Exception) {
             context.toast(e.message)
