@@ -32,6 +32,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Rework internals for better performance ([@Lolle2000la](https://github.com/Lolle2000la)) ([#2955](https://github.com/mihonapp/mihon/pull/2955))
 - Optimize tracked library filter ([@NarwhalHorns](https://github.com/NarwhalHorns)) ([#2977](https://github.com/mihonapp/mihon/pull/2977))
 - Make volume gesture the same sensitivity as brightness ([@jmir1](https://github.com/jmir1))
+- Utilize tracker for library duplicate detection ([@NarwhalHorns](https://github.com/NarwhalHorns)) ([#2977](https://github.com/mihonapp/mihon/pull/2978))
 ### Fixed
 
 - Swapped keyEvent listeners for left and right keyboard arrow keys as they were swapped in the code causing the opposite of the desired behavior([@alphastark](https://github.com/alphastark)) ([#2219](https://github.com/aniyomiorg/aniyomi/pull/2219))
