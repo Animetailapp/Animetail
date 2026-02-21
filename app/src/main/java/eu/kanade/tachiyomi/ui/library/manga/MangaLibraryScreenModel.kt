@@ -529,6 +529,7 @@ class MangaLibraryScreenModel(
             DownloadAction.NEXT_10_ITEMS -> downloadUnreadChapters(mangas, 10)
             DownloadAction.NEXT_25_ITEMS -> downloadUnreadChapters(mangas, 25)
             DownloadAction.UNVIEWED_ITEMS -> downloadUnreadChapters(mangas, null)
+            DownloadAction.BOOKMARKED_ITEMS -> Unit
         }
         clearSelection()
     }

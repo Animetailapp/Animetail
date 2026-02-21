@@ -1067,6 +1067,7 @@ class AnimeScreenModel(
             DownloadAction.NEXT_25_ITEMS -> getUnseenEpisodesSorted().take(25)
 
             DownloadAction.UNVIEWED_ITEMS -> getUnseenEpisodes()
+            DownloadAction.BOOKMARKED_ITEMS -> emptyList()
         }
         if (episodesToDownload.isNotEmpty()) {
             startDownload(episodesToDownload, false)

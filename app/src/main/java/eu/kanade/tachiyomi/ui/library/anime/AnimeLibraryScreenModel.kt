@@ -545,6 +545,7 @@ class AnimeLibraryScreenModel(
             DownloadAction.NEXT_10_ITEMS -> downloadUnseenEpisodes(animes, 10)
             DownloadAction.NEXT_25_ITEMS -> downloadUnseenEpisodes(animes, 25)
             DownloadAction.UNVIEWED_ITEMS -> downloadUnseenEpisodes(animes, null)
+            DownloadAction.BOOKMARKED_ITEMS -> Unit
         }
         clearSelection()
     }

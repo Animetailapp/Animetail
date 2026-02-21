@@ -746,6 +746,13 @@ class MangaScreenModel(
         return if (manga.sortDescending()) chaptersSorted.reversed() else chaptersSorted
     }
 
+    private fun getBookmarkedChapters(): List<Chapter> {
+        val chapterItems = if (skipFiltered) filteredChapters.orEmpty() else allChapters.orEmpty()
+        return chapterItems
+            .filter { (chapter, dlStatus) -> chapter.bookmark && dlStatus == MangaDownload.State.NOT_DOWNLOADED }
+            .map { it.chapter }
+    }
+
     private fun startDownload(
         chapters: List<Chapter>,
         startNow: Boolean,
@@ -810,8 +817,8 @@ class MangaScreenModel(
             DownloadAction.NEXT_5_ITEMS -> getUnreadChaptersSorted().take(5)
             DownloadAction.NEXT_10_ITEMS -> getUnreadChaptersSorted().take(10)
             DownloadAction.NEXT_25_ITEMS -> getUnreadChaptersSorted().take(25)
-
             DownloadAction.UNVIEWED_ITEMS -> getUnreadChapters()
+            DownloadAction.BOOKMARKED_ITEMS -> getBookmarkedChapters()
         }
         if (chaptersToDownload.isNotEmpty()) {
             startDownload(chaptersToDownload, false)
