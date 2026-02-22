@@ -4,7 +4,6 @@ import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
 import android.os.Message
 import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -50,7 +49,6 @@ import eu.kanade.tachiyomi.util.system.getHtml
 import eu.kanade.tachiyomi.util.system.setDefaultSettings
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
-import okhttp3.Request
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
@@ -263,12 +261,14 @@ fun WebViewScreenContent(
                             .fillMaxWidth()
                             .align(Alignment.BottomCenter),
                     )
+
                     is LoadingState.Loading -> LinearProgressIndicator(
                         progress = { (loadingState as? LoadingState.Loading)?.progress ?: 1f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .align(Alignment.BottomCenter),
                     )
+
                     else -> {}
                 }
             }
