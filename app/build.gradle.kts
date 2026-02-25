@@ -26,7 +26,6 @@ android {
     namespace = "eu.kanade.tachiyomi"
 
     defaultConfig {
-
         applicationId = "com.dark.animetailv2"
 
         versionCode = 131
