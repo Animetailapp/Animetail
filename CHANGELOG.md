@@ -42,6 +42,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Fix crash when trying to install/update extensions while shizuku is not running ([@NGB-Was-Taken](https://github.com/NGB-Was-Taken)) ([#2837](https://github.com/mihonapp/mihon/pull/2837))
 - Fix Add Repo input not taking up the full dialog width ([@cuong-tran](https://github.com/cuong-tran)) ([#2816](https://github.com/mihonapp/mihon/pull/2816))
 - Fix migration's selected sources order not preserved ([@AntsyLich](https://github.com/AntsyLich)) ([#2773](https://github.com/mihonapp/mihon/pull/2993))
+- Fix migration dialog not showing for consecutive prompts from the same screen ([@AntsyLich](https://github.com/AntsyLich)) ([#2773](https://github.com/mihonapp/mihon/pull/2994))
 - Swapped keyEvent listeners for left and right keyboard arrow keys as they were swapped in the code causing the opposite of the desired behavior([@alphastark](https://github.com/alphastark)) ([#2219](https://github.com/aniyomiorg/aniyomi/pull/2219))
 - Fix some malformed translated strings that made the player quit when Aniskip was enabled ([@686udjie](https://github.com/686udjie)) ([#2217](https://github.com/aniyomiorg/aniyomi/pull/2217))
 
