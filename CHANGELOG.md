@@ -34,7 +34,14 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Make volume gesture the same sensitivity as brightness ([@jmir1](https://github.com/jmir1))
 - Utilize tracker for library duplicate detection ([@NarwhalHorns](https://github.com/NarwhalHorns)) ([#2977](https://github.com/mihonapp/mihon/pull/2978))
 ### Fixed
-
+- Fix reader tap zones triggering after scrolling is stopped by tapping ([@NGB-Was-Taken](https://github.com/NGB-Was-Taken)) ([#2680](https://github.com/mihonapp/mihon/pull/2680))
+- Fix shizuku installer not updating installed extensions ([@NGB-Was-Taken](https://github.com/NGB-Was-Taken)) ([#2697](https://github.com/mihonapp/mihon/pull/2697))
+- Fix mass migration not using the same search queries as individual migration ([@AntsyLich](https://github.com/AntsyLich)) ([#2736](https://github.com/mihonapp/mihon/pull/2736))
+- Fix reader not saving read duration when changing chapter ([@AntsyLich](https://github.com/AntsyLich), [@KotlinHero](https://github.com/KotlinHero)) ([#2784](https://github.com/mihonapp/mihon/pull/2784))
+- Fix pre-1970 upload date display in chapter list ([@MajorTanya](https://github.com/MajorTanya)) ([#2779](https://github.com/mihonapp/mihon/pull/2779))
+- Fix crash when trying to install/update extensions while shizuku is not running ([@NGB-Was-Taken](https://github.com/NGB-Was-Taken)) ([#2837](https://github.com/mihonapp/mihon/pull/2837))
+- Fix Add Repo input not taking up the full dialog width ([@cuong-tran](https://github.com/cuong-tran)) ([#2816](https://github.com/mihonapp/mihon/pull/2816))
+- Fix migration's selected sources order not preserved ([@AntsyLich](https://github.com/AntsyLich)) ([#2773](https://github.com/mihonapp/mihon/pull/2993))
 - Swapped keyEvent listeners for left and right keyboard arrow keys as they were swapped in the code causing the opposite of the desired behavior([@alphastark](https://github.com/alphastark)) ([#2219](https://github.com/aniyomiorg/aniyomi/pull/2219))
 - Fix some malformed translated strings that made the player quit when Aniskip was enabled ([@686udjie](https://github.com/686udjie)) ([#2217](https://github.com/aniyomiorg/aniyomi/pull/2217))
 
