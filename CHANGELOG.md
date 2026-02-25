@@ -24,6 +24,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 ### Changed
 - Update tracker icons ([@AntsyLich](https://github.com/AntsyLich)) ([#2773](https://github.com/mihonapp/mihon/pull/2773))
 - Add a small increment to chapter number before comparison to fix progress sync issues for Suwayomi ([@cpiber](https://github.com/cpiber)) ([#2657](https://github.com/mihonapp/mihon/pull/2675))
+- Add all pages of adjacent chapters in the UI instead of only the first or last three ([@AntsyLich](https://github.com/AntsyLich)) ([#2995](https://github.com/mihonapp/mihon/pull/2995))
 
 ### Improved
 - Minimize memory usage by reducing in-memory cover cache size ([@Lolle2000la](https://github.com/Lolle2000la)) ([#2266](https://github.com/mihonapp/mihon/pull/2266))
