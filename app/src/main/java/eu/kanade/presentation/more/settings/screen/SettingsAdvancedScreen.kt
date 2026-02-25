@@ -205,7 +205,6 @@ object SettingsAdvancedScreen : SearchableSettings {
     private fun getDataGroup(): Preference.PreferenceGroup {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val scope = rememberCoroutineScope()
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_data),
