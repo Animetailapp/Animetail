@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
@@ -108,10 +107,10 @@ class AnimeDownloadManager(
         return queueState.value.find { it.episode.id == episodeId }
     }
 
-    fun startDownloadNow(episodeId: Long) {
+    suspend fun startDownloadNow(episodeId: Long) {
         val existingDownload = getQueuedDownloadOrNull(episodeId)
         // If not in queue try to start a new download
-        val toAdd = existingDownload ?: runBlocking { AnimeDownload.fromEpisodeId(episodeId) } ?: return
+        val toAdd = existingDownload ?: AnimeDownload.fromEpisodeId(episodeId) ?: return
         queueState.value.toMutableList().apply {
             existingDownload?.let { remove(it) }
             add(0, toAdd)
