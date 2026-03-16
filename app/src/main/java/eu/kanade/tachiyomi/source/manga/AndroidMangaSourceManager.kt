@@ -9,17 +9,20 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import eu.kanade.domain.source.service.SourcePreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.domain.source.manga.repository.MangaStubSourceRepository
 import tachiyomi.domain.source.manga.service.MangaSourceManager
+import eu.kanade.tachiyomi.source.manga.builtin.ehentai.EHentaiSource
 import tachiyomi.source.local.entries.manga.LocalMangaSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -36,6 +39,9 @@ class AndroidMangaSourceManager(
     override val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
 
     private val downloadManager: MangaDownloadManager by injectLazy()
+    // TLMR -->
+    private val sourcePreferences: SourcePreferences by injectLazy()
+    // TLMR <--
 
     private val scope = CoroutineScope(Job() + Dispatchers.IO)
 
@@ -49,8 +55,13 @@ class AndroidMangaSourceManager(
 
     init {
         scope.launch {
+            // TLMR --> Combine with hentai toggle so the source appears/disappears reactively
             extensionManager.installedExtensionsFlow
-                .collectLatest { extensions ->
+                .combine(sourcePreferences.enableIntegratedHentaiFeatures().changes()) { extensions, enableHentai ->
+                    extensions to enableHentai
+                }
+                // TLMR <--
+                .collectLatest { (extensions, enableHentai) ->
                     val mutableMap = ConcurrentHashMap<Long, MangaSource>(
                         mapOf(
                             LocalMangaSource.ID to LocalMangaSource(
@@ -66,6 +77,11 @@ class AndroidMangaSourceManager(
                             registerStubSource(StubMangaSource.from(it))
                         }
                     }
+                    // TLMR --> Built-in E-Hentai: only register when feature is enabled (1:1 with Komikku isHentaiEnabled)
+                    if (enableHentai) {
+                        mutableMap[EHentaiSource.ID] = EHentaiSource()
+                    }
+                    // TLMR <--
                     sourcesMapFlow.value = mutableMap
                     _isInitialized.value = true
                 }

@@ -381,4 +381,100 @@
    <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
    <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
    <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
+    <!-- Developer tools -->
+    <string name="pref_category_developer_tools">Developer tools</string>
+    <string name="pref_enable_integrated_hentai">Enable integrated hentai features</string>
+    <string name="pref_enable_integrated_hentai_summary">This is a experimental feature that will disable all hentai features if toggled off</string>
+
+    <!-- E-Hentai source settings -->
+    <string name="pref_eh_settings_title">E-Hentai</string>
+    <string name="pref_eh_settings_summary">E-Hentai / ExHentai source settings</string>
+
+    <!-- Account section -->
+    <string name="pref_eh_category_account">Account</string>
+    <string name="pref_eh_login">Log in</string>
+    <string name="pref_eh_logout">Log out</string>
+    <string name="pref_eh_logout_confirm">Are you sure you want to log out of E-Hentai?</string>
+    <string name="pref_eh_account_logged_in">Logged in as %1$s</string>
+    <string name="pref_eh_account_not_logged_in">Not logged in</string>
+    <!-- Login result feedback -->
+    <string name="eh_login_success_exhentai">Logged in with ExHentai access ✓</string>
+    <string name="eh_login_success_ehentai_only">Logged in — E-Hentai only (your account does not have ExHentai access)</string>
+
+    <!-- Browsing section -->
+    <string name="pref_eh_category_browsing">Browsing</string>
+    <string name="pref_eh_use_exhentai">Use ExHentai</string>
+    <string name="pref_eh_use_exhentai_summary">Use ExHentai instead of E-Hentai (requires login)</string>
+    <string name="pref_eh_improved_browsing">Improved browsing</string>
+    <string name="pref_eh_improved_browsing_summary">Show extended gallery info in browse results</string>
+    <string name="pref_eh_settings_profile">Settings profile</string>
+    <string name="pref_eh_settings_profile_summary">E-Hentai display settings profile saved on the server (0 = default)</string>
+    <string name="pref_eh_settings_profile_default">Default (0)</string>
+
+    <!-- Categories section -->
+    <string name="pref_eh_category_categories">Default categories</string>
+    <string name="pref_eh_default_categories">Active categories</string>
+    <string name="pref_eh_default_categories_hint">Select which categories to show when browsing</string>
+
+    <!-- Display section -->
+    <string name="pref_eh_category_display">Display</string>
+    <string name="pref_eh_title_display_mode">Gallery title language</string>
+    <string name="pref_eh_title_english">English title</string>
+    <string name="pref_eh_title_japanese">Japanese title</string>
+
+    <!-- Image quality section -->
+    <string name="pref_eh_category_image_quality">Image quality</string>
+    <string name="pref_eh_original_images">Original images</string>
+    <string name="pref_eh_original_images_summary">Download full-resolution original images (uses more bandwidth and may require GP)</string>
+
+    <!-- Tag monitoring section -->
+    <string name="pref_eh_category_tag_monitoring">Tag monitoring</string>
+    <string name="pref_eh_watched_tags">Watched tags</string>
+    <string name="pref_eh_watched_tags_summary">Galleries with these tags will be highlighted in browse results</string>
+    <string name="pref_eh_ignored_tags">Ignored tags</string>
+    <string name="pref_eh_ignored_tags_summary">Galleries with these tags will be hidden from browse results</string>
+    <string name="pref_eh_add_tag_hint">Add tag…</string>
+
+    <!-- Favorites section -->
+    <string name="pref_eh_category_favorites">Favorites</string>
+    <string name="pref_eh_favorites_sync">Sync favorites on startup</string>
+    <string name="pref_eh_favorites_sync_summary">Automatically import E-Hentai favorites into the library on launch</string>
+
+    <!-- Gallery checker section -->
+    <string name="pref_eh_category_gallery_checker">Gallery checker</string>
+    <string name="pref_eh_gallery_checker">Enable gallery checker</string>
+    <string name="pref_eh_gallery_checker_summary">Periodically check for updates to favorited galleries</string>
+    <string name="pref_eh_gallery_checker_interval">Check interval</string>
+    <string name="pref_eh_interval_6h">6 hours</string>
+    <string name="pref_eh_interval_12h">12 hours</string>
+    <string name="pref_eh_interval_24h">24 hours</string>
+    <string name="pref_eh_interval_48h">48 hours</string>
+
+    <!-- E-Hentai metadata detail screen -->
+    <string name="eh_metadata_title">More information</string>
+    <string name="eh_metadata_gallery_id">Id</string>
+    <string name="eh_metadata_gallery_token">Token</string>
+    <string name="eh_metadata_exhentai_gallery">ExHentai gallery</string>
+    <string name="eh_metadata_thumbnail_url">Thumbnail URL</string>
+    <string name="eh_metadata_gallery_title">Title</string>
+    <string name="eh_metadata_alt_title">Alternative title</string>
+    <string name="eh_metadata_genre">Genre</string>
+    <string name="eh_metadata_uploader">Uploader</string>
+    <string name="eh_metadata_date_posted">Date posted</string>
+    <string name="eh_metadata_parent">Parent gallery</string>
+    <string name="eh_metadata_visible">Visible</string>
+    <string name="eh_metadata_language">Language</string>
+    <string name="eh_metadata_translated">Translated</string>
+    <string name="eh_metadata_file_size">Gallery size</string>
+    <string name="eh_metadata_page_count">Page count</string>
+    <string name="eh_metadata_favorites">Favorited</string>
+    <string name="eh_metadata_rating">Rating</string>
+    <string name="eh_metadata_rating_count">Ratings</string>
+    <string name="eh_metadata_last_update_check">Last update check</string>
+    <string name="eh_metadata_yes">Yes</string>
+    <string name="eh_metadata_no">No</string>
+    <string name="eh_metadata_none">None</string>
+    <string name="eh_metadata_unknown">Unknown</string>
+    <string name="eh_metadata_favorites_count">%1$d times</string>
+    <string name="eh_metadata_pages_count">%1$d pages</string>
 </resources>

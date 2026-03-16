@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VideoSettings
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -28,24 +29,28 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.icerock.moko.resources.StringResource
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.more.settings.screen.about.AboutScreen
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import eu.kanade.presentation.util.LocalBackPress
 import eu.kanade.presentation.util.Screen
+import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.setting.PlayerSettingsScreen
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
@@ -53,6 +58,9 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.util.collectAsState
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import cafe.adriel.voyager.core.screen.Screen as VoyagerScreen
 
 object SettingsMainScreen : Screen() {
@@ -83,6 +91,7 @@ object SettingsMainScreen : Screen() {
         val backPress = LocalBackPress.currentOrThrow
         val containerColor = if (twoPane) getPalerSurface() else MaterialTheme.colorScheme.surface
         val topBarState = rememberTopAppBarState()
+        val items = getItems()
 
         Scaffold(
             topBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(topBarState),
@@ -177,84 +186,102 @@ object SettingsMainScreen : Screen() {
         val screen: VoyagerScreen,
     )
 
-    private val items = listOf(
-        Item(
-            titleRes = MR.strings.pref_category_appearance,
-            subtitleRes = MR.strings.pref_appearance_summary,
-            icon = Icons.Outlined.Palette,
-            screen = SettingsAppearanceScreen,
-        ),
-        Item(
-            titleRes = MR.strings.pref_category_library,
-            subtitleRes = AYMR.strings.pref_library_summary,
-            icon = Icons.Outlined.CollectionsBookmark,
-            screen = SettingsLibraryScreen,
-        ),
-        Item(
-            titleRes = MR.strings.pref_category_reader,
-            subtitleRes = MR.strings.pref_reader_summary,
-            icon = Icons.AutoMirrored.Outlined.ChromeReaderMode,
-            screen = SettingsReaderScreen,
-        ),
-        Item(
-            titleRes = AYMR.strings.label_player,
-            subtitleRes = AYMR.strings.pref_player_settings_summary,
-            icon = Icons.Outlined.VideoSettings,
-            screen = PlayerSettingsScreen(mainSettings = true),
-        ),
-        Item(
-            titleRes = MR.strings.pref_category_downloads,
-            subtitleRes = MR.strings.pref_downloads_summary,
-            icon = Icons.Outlined.GetApp,
-            screen = SettingsDownloadScreen,
-        ),
-        Item(
-            titleRes = MR.strings.pref_category_tracking,
-            subtitleRes = MR.strings.pref_tracking_summary,
-            icon = Icons.Outlined.Sync,
-            screen = SettingsTrackingScreen,
-        ),
-        // AM (CONNECTIONS) -->
-        Item(
-            titleRes = TLMR.strings.pref_category_connections,
-            subtitleRes = TLMR.strings.pref_connections_summary,
-            icon = Icons.Outlined.Link,
-            screen = SettingsConnectionsScreen,
-        ),
-        // <-- AM (CONNECTIONS)
-        Item(
-            titleRes = MR.strings.browse,
-            subtitleRes = MR.strings.pref_browse_summary,
-            icon = Icons.Outlined.Explore,
-            screen = SettingsBrowseScreen,
-        ),
-        Item(
-            titleRes = MR.strings.label_data_storage,
-            subtitleRes = MR.strings.pref_backup_summary,
-            icon = Icons.Outlined.Storage,
-            screen = SettingsDataScreen,
-        ),
-        Item(
-            titleRes = MR.strings.pref_category_security,
-            subtitleRes = MR.strings.pref_security_summary,
-            icon = Icons.Outlined.Security,
-            screen = SettingsSecurityScreen,
-        ),
-        Item(
-            titleRes = MR.strings.pref_category_advanced,
-            subtitleRes = MR.strings.pref_advanced_summary,
-            icon = Icons.Outlined.Code,
-            screen = SettingsAdvancedScreen,
-        ),
-        Item(
-            titleRes = MR.strings.pref_category_about,
-            formatSubtitle = {
-                "${stringResource(MR.strings.app_name)} ${AboutScreen.getVersionName(
-                    withBuildDate = false,
-                )}"
-            },
-            icon = Icons.Outlined.Info,
-            screen = AboutScreen,
-        ),
-    )
+    @Composable
+    private fun getItems(): List<Item> {
+        // TLMR -->
+        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
+        val integratedHentaiEnabled by sourcePreferences.enableIntegratedHentaiFeatures().collectAsState()
+        // TLMR <--
+
+        return buildList {
+            add(Item(
+                titleRes = MR.strings.pref_category_appearance,
+                subtitleRes = MR.strings.pref_appearance_summary,
+                icon = Icons.Outlined.Palette,
+                screen = SettingsAppearanceScreen,
+            ))
+            add(Item(
+                titleRes = MR.strings.pref_category_library,
+                subtitleRes = AYMR.strings.pref_library_summary,
+                icon = Icons.Outlined.CollectionsBookmark,
+                screen = SettingsLibraryScreen,
+            ))
+            add(Item(
+                titleRes = MR.strings.pref_category_reader,
+                subtitleRes = MR.strings.pref_reader_summary,
+                icon = Icons.AutoMirrored.Outlined.ChromeReaderMode,
+                screen = SettingsReaderScreen,
+            ))
+            add(Item(
+                titleRes = AYMR.strings.label_player,
+                subtitleRes = AYMR.strings.pref_player_settings_summary,
+                icon = Icons.Outlined.VideoSettings,
+                screen = PlayerSettingsScreen(mainSettings = true),
+            ))
+            add(Item(
+                titleRes = MR.strings.pref_category_downloads,
+                subtitleRes = MR.strings.pref_downloads_summary,
+                icon = Icons.Outlined.GetApp,
+                screen = SettingsDownloadScreen,
+            ))
+            add(Item(
+                titleRes = MR.strings.pref_category_tracking,
+                subtitleRes = MR.strings.pref_tracking_summary,
+                icon = Icons.Outlined.Sync,
+                screen = SettingsTrackingScreen,
+            ))
+            // AM (CONNECTIONS) -->
+            add(Item(
+                titleRes = TLMR.strings.pref_category_connections,
+                subtitleRes = TLMR.strings.pref_connections_summary,
+                icon = Icons.Outlined.Link,
+                screen = SettingsConnectionsScreen,
+            ))
+            // <-- AM (CONNECTIONS)
+            add(Item(
+                titleRes = MR.strings.browse,
+                subtitleRes = MR.strings.pref_browse_summary,
+                icon = Icons.Outlined.Explore,
+                screen = SettingsBrowseScreen,
+            ))
+            add(Item(
+                titleRes = MR.strings.label_data_storage,
+                subtitleRes = MR.strings.pref_backup_summary,
+                icon = Icons.Outlined.Storage,
+                screen = SettingsDataScreen,
+            ))
+            add(Item(
+                titleRes = MR.strings.pref_category_security,
+                subtitleRes = MR.strings.pref_security_summary,
+                icon = Icons.Outlined.Security,
+                screen = SettingsSecurityScreen,
+            ))
+            add(Item(
+                titleRes = MR.strings.pref_category_advanced,
+                subtitleRes = MR.strings.pref_advanced_summary,
+                icon = Icons.Outlined.Code,
+                screen = SettingsAdvancedScreen,
+            ))
+            add(Item(
+                titleRes = MR.strings.pref_category_about,
+                formatSubtitle = {
+                    "${stringResource(MR.strings.app_name)} ${AboutScreen.getVersionName(
+                        withBuildDate = false,
+                    )}"
+                },
+                icon = Icons.Outlined.Info,
+                screen = AboutScreen,
+            ))
+            // TLMR -->
+            if (integratedHentaiEnabled) {
+                add(Item(
+                    titleRes = TLMR.strings.pref_eh_settings_title,
+                    subtitleRes = TLMR.strings.pref_eh_settings_summary,
+                    icon = ImageVector.vectorResource(R.drawable.ic_tracker_ehentai),
+                    screen = SettingsEHentaiScreen,
+                ))
+            }
+            // TLMR <--
+        }
+    }
 }

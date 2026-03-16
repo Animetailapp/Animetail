@@ -56,14 +56,18 @@ import eu.kanade.presentation.entries.components.EntryBottomActionMenu
 import eu.kanade.presentation.entries.components.EntryToolbar
 import eu.kanade.presentation.entries.components.ItemHeader
 import eu.kanade.presentation.entries.components.MissingItemCountListItem
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.entries.manga.components.ChapterDownloadAction
+import eu.kanade.presentation.entries.manga.components.EHentaiMetadataScreen
 import eu.kanade.presentation.entries.manga.components.ExpandableMangaDescription
+import eu.kanade.presentation.entries.manga.components.SearchMetadataChips
 import eu.kanade.presentation.entries.manga.components.MangaActionRow
 import eu.kanade.presentation.entries.manga.components.MangaChapterListItem
 import eu.kanade.presentation.entries.manga.components.MangaInfoBox
 import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.source.ConfigurableSource
+import eu.kanade.tachiyomi.source.manga.builtin.ehentai.EHentaiGalleryMetadata
 import eu.kanade.tachiyomi.source.manga.getNameForMangaInfo
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaSourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.entries.manga.ChapterList
@@ -75,6 +79,9 @@ import tachiyomi.domain.items.chapter.service.missingChaptersCount
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.util.collectAsState
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import tachiyomi.presentation.core.components.TwoPanelBox
 import tachiyomi.presentation.core.components.VerticalFastScroller
 import tachiyomi.presentation.core.components.material.ExtendedFloatingActionButton
@@ -149,6 +156,11 @@ fun MangaScreen(
         navigator.push(MangaSourcePreferencesScreen(state.source.id))
     }.takeIf { state.source is ConfigurableSource }
 
+    // TLMR -->
+    val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
+    val integratedHentaiEnabled by sourcePreferences.enableIntegratedHentaiFeatures().collectAsState()
+    // TLMR <--
+
     if (!isTabletUi) {
         MangaScreenSmallImpl(
             state = state,
@@ -187,6 +199,9 @@ fun MangaScreen(
             onAllChapterSelected = onAllChapterSelected,
             onInvertSelection = onInvertSelection,
             onSettingsClicked = onSettingsClicked,
+            // TLMR -->
+            integratedHentaiEnabled = integratedHentaiEnabled,
+            // TLMR <--
         )
     } else {
         MangaScreenLargeImpl(
@@ -226,6 +241,9 @@ fun MangaScreen(
             onAllChapterSelected = onAllChapterSelected,
             onInvertSelection = onInvertSelection,
             onSettingsClicked = onSettingsClicked,
+            // TLMR -->
+            integratedHentaiEnabled = integratedHentaiEnabled,
+            // TLMR <--
         )
     }
 }
@@ -283,6 +301,9 @@ private fun MangaScreenSmallImpl(
     onChapterSelected: (ChapterList.Item, Boolean, Boolean, Boolean) -> Unit,
     onAllChapterSelected: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
+    // TLMR -->
+    integratedHentaiEnabled: Boolean,
+    // TLMR <--
 ) {
     val chapterListState = rememberLazyListState()
 
@@ -446,12 +467,34 @@ private fun MangaScreenSmallImpl(
                         key = EntryScreenItem.DESCRIPTION_WITH_TAG,
                         contentType = EntryScreenItem.DESCRIPTION_WITH_TAG,
                     ) {
+                        // TLMR -->
+                        val strippedDescription = remember(state.manga.description) {
+                            EHentaiGalleryMetadata.stripMarker(state.manga.description)
+                        }
+                        val ehMetadataJson = remember(state.manga.description) {
+                            val desc = state.manga.description
+                            if (desc != null && desc.startsWith(EHentaiGalleryMetadata.MARKER)) {
+                                val newlineIdx = desc.indexOf('\n')
+                                if (newlineIdx >= 0) desc.substring(EHentaiGalleryMetadata.MARKER.length, newlineIdx)
+                                else desc.substring(EHentaiGalleryMetadata.MARKER.length)
+                            } else null
+                        }
+                        val navigator = LocalNavigator.currentOrThrow
+                        // TLMR <--
                         ExpandableMangaDescription(
                             defaultExpandState = state.isFromSource,
-                            description = state.manga.description,
+                            description = strippedDescription, // TLMR: stripped
                             tagsProvider = { state.manga.genre },
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                            // TLMR -->
+                            searchMetadataChips = if (integratedHentaiEnabled) {
+                                remember(state.manga.genre) { SearchMetadataChips(state.manga.genre) }
+                            } else null,
+                            onMoreInfoClicked = if (ehMetadataJson != null) {
+                                { navigator.push(EHentaiMetadataScreen(ehMetadataJson)) }
+                            } else null,
+                            // TLMR <--
                         )
                     }
 
@@ -541,6 +584,9 @@ fun MangaScreenLargeImpl(
     onChapterSelected: (ChapterList.Item, Boolean, Boolean, Boolean) -> Unit,
     onAllChapterSelected: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
+    // TLMR -->
+    integratedHentaiEnabled: Boolean,
+    // TLMR <--
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
@@ -686,12 +732,34 @@ fun MangaScreenLargeImpl(
                             onEditIntervalClicked = onEditIntervalClicked,
                             onEditCategory = onEditCategoryClicked,
                         )
+                        // TLMR -->
+                        val strippedDescriptionLarge = remember(state.manga.description) {
+                            EHentaiGalleryMetadata.stripMarker(state.manga.description)
+                        }
+                        val ehMetadataJsonLarge = remember(state.manga.description) {
+                            val desc = state.manga.description
+                            if (desc != null && desc.startsWith(EHentaiGalleryMetadata.MARKER)) {
+                                val newlineIdx = desc.indexOf('\n')
+                                if (newlineIdx >= 0) desc.substring(EHentaiGalleryMetadata.MARKER.length, newlineIdx)
+                                else desc.substring(EHentaiGalleryMetadata.MARKER.length)
+                            } else null
+                        }
+                        val navigatorLarge = LocalNavigator.currentOrThrow
+                        // TLMR <--
                         ExpandableMangaDescription(
                             defaultExpandState = true,
-                            description = state.manga.description,
+                            description = strippedDescriptionLarge, // TLMR: stripped
                             tagsProvider = { state.manga.genre },
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                            // TLMR -->
+                            searchMetadataChips = if (integratedHentaiEnabled) {
+                                remember(state.manga.genre) { SearchMetadataChips(state.manga.genre) }
+                            } else null,
+                            onMoreInfoClicked = if (ehMetadataJsonLarge != null) {
+                                { navigatorLarge.push(EHentaiMetadataScreen(ehMetadataJsonLarge)) }
+                            } else null,
+                            // TLMR <--
                         )
                     }
                 },

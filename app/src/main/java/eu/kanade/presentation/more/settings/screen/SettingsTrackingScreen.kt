@@ -58,13 +58,13 @@ import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentMap
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt

@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.data.track
 import android.content.Context
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.bangumi.Bangumi
+import eu.kanade.tachiyomi.data.track.ehentai.EHentai
 import eu.kanade.tachiyomi.data.track.jellyfin.Jellyfin
 import eu.kanade.tachiyomi.data.track.kavita.Kavita
 import eu.kanade.tachiyomi.data.track.kitsu.Kitsu
@@ -25,6 +26,9 @@ class TrackerManager(context: Context) {
         const val SIMKL = 101L
         const val JELLYFIN = 102L
         const val TRAKT = 201L
+        // TLMR -->
+        const val EHENTAI = 10L
+        // TLMR <--
     }
 
     val myAnimeList = MyAnimeList(1L)
@@ -40,6 +44,11 @@ class TrackerManager(context: Context) {
     val jellyfin = Jellyfin(JELLYFIN)
     val tmdb = Tmdb(200L)
     val trakt = Trakt(TRAKT)
+
+    // TLMR -->
+    /** E-Hentai/ExHentai login service. Not included in [trackers] — not a progress tracker. */
+    val eHentai = EHentai(EHENTAI)
+    // TLMR <--
 
     val trackers = listOf(
         myAnimeList, aniList, kitsu, shikimori, bangumi,

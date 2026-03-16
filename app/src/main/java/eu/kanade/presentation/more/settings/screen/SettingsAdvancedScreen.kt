@@ -159,6 +159,9 @@ object SettingsAdvancedScreen : SearchableSettings {
             // SY -->
             getDataSaverGroup(),
             // SY <--
+            // TLMR -->
+            getDeveloperToolsGroup(),
+            // TLMR <--
         )
     }
 
@@ -652,7 +655,23 @@ object SettingsAdvancedScreen : SearchableSettings {
     }
 
     // SY <--
+
     // TLMR -->
+    @Composable
+    private fun getDeveloperToolsGroup(): Preference.PreferenceGroup {
+        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
+        return Preference.PreferenceGroup(
+            title = stringResource(TLMR.strings.pref_category_developer_tools),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = sourcePreferences.enableIntegratedHentaiFeatures(),
+                    title = stringResource(TLMR.strings.pref_enable_integrated_hentai),
+                    subtitle = stringResource(TLMR.strings.pref_enable_integrated_hentai_summary),
+                ),
+            ),
+        )
+    }
+
     private suspend fun testFlareSolverrAndUpdateUserAgent(
         flareSolverrUrlPref: BasePreference<String>,
         userAgentPref: BasePreference<String>,

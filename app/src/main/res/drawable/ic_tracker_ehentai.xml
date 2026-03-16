@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+
+    <!-- Purple/lavender background with rounded corners -->
+    <path
+        android:fillColor="#7C6FA5"
+        android:pathData="M8,0 L56,0 Q64,0 64,8 L64,56 Q64,64 56,64 L8,64 Q0,64 0,56 L0,8 Q0,0 8,0 Z" />
+
+    <!-- Letter E: left vertical bar -->
+    <path android:fillColor="#FFFFFF" android:pathData="M9,16 L14,16 L14,48 L9,48 Z" />
+    <!-- Letter E: top bar -->
+    <path android:fillColor="#FFFFFF" android:pathData="M9,16 L27,16 L27,21 L9,21 Z" />
+    <!-- Letter E: middle bar (shorter) -->
+    <path android:fillColor="#FFFFFF" android:pathData="M9,29 L24,29 L24,34 L9,34 Z" />
+    <!-- Letter E: bottom bar -->
+    <path android:fillColor="#FFFFFF" android:pathData="M9,43 L27,43 L27,48 L9,48 Z" />
+
+    <!-- Middle dot (·) -->
+    <path android:fillColor="#FFFFFF" android:pathData="M30,29 L34,29 L34,34 L30,34 Z" />
+
+    <!-- Letter H: left vertical bar -->
+    <path android:fillColor="#FFFFFF" android:pathData="M37,16 L42,16 L42,48 L37,48 Z" />
+    <!-- Letter H: right vertical bar -->
+    <path android:fillColor="#FFFFFF" android:pathData="M50,16 L55,16 L55,48 L50,48 Z" />
+    <!-- Letter H: horizontal bar -->
+    <path android:fillColor="#FFFFFF" android:pathData="M37,29 L55,29 L55,34 L37,34 Z" />
+
+</vector>

@@ -28,6 +28,7 @@ fun BrowseMangaSourceList(
     contentPadding: PaddingValues,
     onMangaClick: (Manga) -> Unit,
     onMangaLongClick: (Manga) -> Unit,
+    itemContent: (@Composable (Manga, () -> Unit, () -> Unit) -> Unit)? = null,
 ) {
     val sourceListState = rememberLazyListState()
     BoxWithConstraints {
@@ -46,13 +47,17 @@ fun BrowseMangaSourceList(
 
             items(count = mangaList.itemCount) { index ->
                 val manga by mangaList[index]?.collectAsState() ?: return@items
-                BrowseMangaSourceListItem(
-                    manga = manga,
-                    onClick = { onMangaClick(manga) },
-                    onLongClick = { onMangaLongClick(manga) },
-                    entries = entries,
-                    containerHeight = containerHeightPx - topBarHeight,
-                )
+                if (itemContent != null) {
+                    itemContent(manga, { onMangaClick(manga) }, { onMangaLongClick(manga) })
+                } else {
+                    BrowseMangaSourceListItem(
+                        manga = manga,
+                        onClick = { onMangaClick(manga) },
+                        onLongClick = { onMangaLongClick(manga) },
+                        entries = entries,
+                        containerHeight = containerHeightPx - topBarHeight,
+                    )
+                }
             }
 
             item {

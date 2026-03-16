@@ -34,6 +34,7 @@ import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionLoader
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.source.manga.model.Source
 import tachiyomi.source.local.entries.manga.LocalMangaSource
+import eu.kanade.tachiyomi.source.manga.builtin.ehentai.EHentaiSource
 
 private val defaultModifier = Modifier
     .height(40.dp)
@@ -52,6 +53,13 @@ fun MangaSourceIcon(
                 imageVector = Icons.Filled.Warning,
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.error),
+                modifier = modifier.then(defaultModifier),
+            )
+        }
+        source.id == EHentaiSource.ID -> {
+            Image(
+                painter = painterResource(R.drawable.ic_tracker_ehentai),
+                contentDescription = null,
                 modifier = modifier.then(defaultModifier),
             )
         }

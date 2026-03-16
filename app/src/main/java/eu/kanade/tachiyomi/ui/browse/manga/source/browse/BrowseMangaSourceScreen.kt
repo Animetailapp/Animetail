@@ -49,6 +49,8 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.source.manga.builtin.ehentai.EHentaiSource
+import eu.kanade.presentation.browse.manga.components.EHentaiBrowseListItem
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaSourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.browse.manga.migration.search.MigrateMangaDialog
 import eu.kanade.tachiyomi.ui.browse.manga.migration.search.MigrateMangaDialogScreenModel
@@ -246,6 +248,11 @@ data class BrowseMangaSourceScreen(
                         }
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
+                },
+                itemContent = if (screenModel.source?.id == EHentaiSource.ID) {
+                    { manga, onClick, onLongClick -> EHentaiBrowseListItem(manga, onClick, onLongClick) }
+                } else {
+                    null
                 },
             )
         }

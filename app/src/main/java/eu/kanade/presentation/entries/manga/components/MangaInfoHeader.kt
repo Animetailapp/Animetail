@@ -7,6 +7,7 @@ import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,6 +86,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.TextButton
 import tachiyomi.presentation.core.components.material.padding
@@ -240,6 +242,8 @@ fun ExpandableMangaDescription(
     tagsProvider: () -> List<String>?,
     onTagSearch: (String) -> Unit,
     onCopyTagToClipboard: (tag: String) -> Unit,
+    searchMetadataChips: SearchMetadataChips? = null,
+    onMoreInfoClicked: (() -> Unit)? = null, // TLMR
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -264,6 +268,18 @@ fun ExpandableMangaDescription(
                 .padding(horizontal = 16.dp)
                 .clickableNoIndication { onExpanded(!expanded) },
         )
+        // TLMR -->
+        if (onMoreInfoClicked != null) {
+            Text(
+                text = stringResource(TLMR.strings.eh_metadata_title),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clickable(onClick = onMoreInfoClicked),
+            )
+        }
+        // TLMR <--
         val tags = tagsProvider()
         if (!tags.isNullOrEmpty()) {
             Box(
@@ -295,19 +311,29 @@ fun ExpandableMangaDescription(
                     )
                 }
                 if (expanded) {
-                    FlowRow(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
-                    ) {
-                        tags.forEach {
-                            TagsChip(
-                                modifier = DefaultTagChipModifier,
-                                text = it,
-                                onClick = {
-                                    tagSelected = it
-                                    showMenu = true
-                                },
-                            )
+                    if (searchMetadataChips != null) {
+                        NamespacedTags(
+                            tags = searchMetadataChips,
+                            onClick = {
+                                tagSelected = it
+                                showMenu = true
+                            },
+                        )
+                    } else {
+                        FlowRow(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
+                        ) {
+                            tags.forEach {
+                                TagsChip(
+                                    modifier = DefaultTagChipModifier,
+                                    text = it,
+                                    onClick = {
+                                        tagSelected = it
+                                        showMenu = true
+                                    },
+                                )
+                            }
                         }
                     }
                 } else {

@@ -51,6 +51,7 @@ fun BrowseSourceContent(
     onLocalSourceHelpClick: () -> Unit,
     onMangaClick: (Manga) -> Unit,
     onMangaLongClick: (Manga) -> Unit,
+    itemContent: (@Composable (Manga, () -> Unit, () -> Unit) -> Unit)? = null,
 ) {
     val context = LocalContext.current
 
@@ -147,6 +148,7 @@ fun BrowseSourceContent(
                 contentPadding = contentPadding,
                 onMangaClick = onMangaClick,
                 onMangaLongClick = onMangaLongClick,
+                itemContent = itemContent,
             )
         }
         LibraryDisplayMode.CompactGrid, LibraryDisplayMode.CoverOnlyGrid -> {
