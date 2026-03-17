@@ -312,6 +312,22 @@ class MangaDownloadCache(
         notifyChanges()
     }
 
+    suspend fun renameManga(manga: Manga, oldDir: UniFile, newTitle: String) {
+        rootDownloadsDirMutex.withLock {
+            val sourceDir = rootDownloadsDir.sourceDirs[manga.source] ?: return
+            val oldName = oldDir.name ?: provider.getMangaDirName(manga.title)
+            val mangaDir = sourceDir.mangaDirs[oldName] ?: return
+            val newName = provider.getMangaDirName(newTitle)
+
+            if (oldName == newName) return
+
+            sourceDir.mangaDirs -= oldName
+            sourceDir.mangaDirs += newName to mangaDir
+        }
+
+        notifyChanges()
+    }
+
     suspend fun removeSource(source: MangaSource) {
         rootDownloadsDirMutex.withLock {
             rootDownloadsDir.sourceDirs -= source.id

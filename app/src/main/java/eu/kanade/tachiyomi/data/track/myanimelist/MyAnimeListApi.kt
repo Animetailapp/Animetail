@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALAnime
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALAnimeMetadata
+import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALAnimeSearchResult
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALListAnimeItem
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALListAnimeItemStatus
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALListMangaItem
@@ -17,7 +18,6 @@ import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALListMangaItemStatus
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALManga
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALMangaMetadata
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALOAuth
-import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALAnimeSearchResult
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALSearchResult
 import eu.kanade.tachiyomi.data.track.myanimelist.dto.MALUser
 import eu.kanade.tachiyomi.network.DELETE
@@ -448,13 +448,8 @@ class MyAnimeListApi(
             publishing_status = searchItem.status.replace("_", " ")
             publishing_type = searchItem.mediaType.replace("_", " ")
             start_date = searchItem.startDate ?: ""
-            artists = searchItem.authors
-                .filter { authorNode -> authorNode.role == "Art" }
-                .mapNotNull { authorNode -> authorNode.node.getFullName() }
-            authors = searchItem.authors
-                // count all with "Story" or "Story & Art" as authors, like is done for library entries
-                .filter { authorNode -> authorNode.role.contains("Story") }
-                .mapNotNull { authorNode -> authorNode.node.getFullName() }
+            authors = searchItem.authors.mapNotNull { it.getFullName() }
+            artists = authors
         }
     }
 

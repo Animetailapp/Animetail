@@ -275,9 +275,6 @@ class ReaderActivity : BaseActivity() {
                     is ReaderViewModel.Event.CopyImage -> {
                         onCopyImageResult(event.uri)
                     }
-                    is ReaderViewModel.Event.CopyImage -> {
-                        onCopyImageResult(event.uri)
-                    }
                     is ReaderViewModel.Event.SetCoverResult -> {
                         onSetAsCoverResult(event.result)
                     }
@@ -1323,7 +1320,7 @@ class ReaderActivity : BaseActivity() {
                     DiscordRPCService.setReaderActivity(
                         context = this@ReaderActivity,
                         ReaderData(
-                            incognitoMode = viewModel.currentSource.isNsfw() || viewModel.incognitoMode,
+                            incognitoMode = viewModel.currentSource?.isNsfw() == true || viewModel.incognitoMode,
                             mangaId = viewModel.manga?.id,
                             // AM (CU)>
                             mangaTitle = viewModel.manga?.ogTitle,

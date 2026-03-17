@@ -1,6 +1,7 @@
 package tachiyomi.domain.storage.service
 
 import android.content.Context
+import android.os.Build
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.util.storage.DiskUtil
@@ -14,22 +15,25 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.shareIn
+import tachiyomi.core.common.storage.FolderProvider
 
 class StorageManager(
     private val context: Context,
     storagePreferences: StoragePreferences,
+    private val folderProvider: FolderProvider,
 ) {
 
     private val scope = CoroutineScope(Dispatchers.IO)
 
-    private var baseDir: UniFile? = getBaseDir(storagePreferences.baseStorageDirectory().get())
+    private val storageDirPreference = storagePreferences.baseStorageDirectory()
+    private var baseDir: UniFile? = getBaseDir(storageDirPreference.get())
 
     private val _changes: Channel<Unit> = Channel(Channel.UNLIMITED)
     val changes = _changes.receiveAsFlow()
         .shareIn(scope, SharingStarted.Lazily, 1)
 
     init {
-        storagePreferences.baseStorageDirectory().changes()
+        storageDirPreference.changes()
             .drop(1)
             .distinctUntilChanged()
             .onEach { uri ->
@@ -54,8 +58,29 @@ class StorageManager(
     }
 
     private fun getBaseDir(uri: String): UniFile? {
+        migrateLegacyFileUriIfNeeded(uri)?.let { return it }
         return UniFile.fromUri(context, uri.toUri())
             .takeIf { it?.exists() == true }
+    }
+
+    private fun migrateLegacyFileUriIfNeeded(uri: String): UniFile? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            return null
+        }
+
+        val parsedUri = uri.toUri()
+        if (parsedUri.scheme != "file") {
+            return null
+        }
+
+        val fallbackDir = folderProvider.directory().apply { mkdirs() }
+        val fallbackUri = folderProvider.path()
+        if (fallbackUri != uri) {
+            storageDirPreference.set(fallbackUri)
+        }
+
+        return UniFile.fromFile(fallbackDir)
+            ?.takeIf { it.exists() || fallbackDir.exists() }
     }
 
     fun getAutomaticBackupsDirectory(): UniFile? {

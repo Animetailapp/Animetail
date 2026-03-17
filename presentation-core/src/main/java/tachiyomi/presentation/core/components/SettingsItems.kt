@@ -334,7 +334,7 @@ fun SelectItem(
         )
 
         ExposedDropdownMenu(
-            modifier = Modifier.exposedDropdownSize(matchTextFieldWidth = true),
+            modifier = Modifier.exposedDropdownSize(),
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
@@ -423,7 +423,7 @@ fun <T> SelectItem(
     ) {
         OutlinedTextField(
             modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
                 .padding(
                     horizontal = SettingsItemsPaddings.Horizontal,

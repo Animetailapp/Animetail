@@ -23,14 +23,14 @@ val Throwable.formattedMessage: String
                     context.stringResource(MR.strings.exception_unknown_host, message ?: "")
                 }
             }
-<<<<<<< HEAD
-            is NoChaptersException, is NoEpisodesException -> return context.stringResource(
-                MR.strings.no_results_found,
-            )
-            is SourceNotInstalledException, is AnimeSourceNotInstalledException -> return context.stringResource(
-                MR.strings.loader_not_implemented_error,
-            )
+            is NoChaptersException, is NoEpisodesException -> {
+                return context.stringResource(MR.strings.no_results_found)
+            }
+            is SourceNotInstalledException, is AnimeSourceNotInstalledException -> {
+                return context.stringResource(MR.strings.loader_not_implemented_error)
+            }
         }
+
         return when (val className = this::class.simpleName) {
             "Exception", "IOException" -> message ?: className
             else -> "$className: $message"

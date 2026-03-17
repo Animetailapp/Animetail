@@ -308,6 +308,22 @@ class AnimeDownloadCache(
         notifyChanges()
     }
 
+    suspend fun renameAnime(anime: Anime, oldDir: UniFile, newTitle: String) {
+        rootDownloadsDirMutex.withLock {
+            val sourceDir = rootDownloadsDir.sourceDirs[anime.source] ?: return
+            val oldName = oldDir.name ?: provider.getAnimeDirName(anime.title)
+            val animeDir = sourceDir.animeDirs[oldName] ?: return
+            val newName = provider.getAnimeDirName(newTitle)
+
+            if (oldName == newName) return
+
+            sourceDir.animeDirs -= oldName
+            sourceDir.animeDirs += newName to animeDir
+        }
+
+        notifyChanges()
+    }
+
     suspend fun removeSource(source: AnimeSource) {
         rootDownloadsDirMutex.withLock {
             rootDownloadsDir.sourceDirs -= source.id

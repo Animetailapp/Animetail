@@ -100,7 +100,7 @@ fun CastRow(
                     .width(100.dp)
                     .height(160.dp)
                     .scale(scale)
-                    .animateItemPlacement()
+                    .animateItem()
                     .border(
                         width = 1.5.dp,
                         brush = Brush.sweepGradient(

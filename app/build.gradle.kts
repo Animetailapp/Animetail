@@ -28,8 +28,8 @@ android {
     defaultConfig {
         applicationId = "com.dark.animetailv2"
 
-        versionCode = 131
-        versionName = "0.18.1.5"
+        versionCode = 132
+        versionName = "0.19.1"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
@@ -134,6 +134,7 @@ android {
                 "META-INF/LICENSE",
                 "META-INF/NOTICE",
                 "META-INF/README.md",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
             )
         }
     }
@@ -344,6 +345,7 @@ androidComponents {
         // Only excluding in standard flavor because this breaks
         // Layout Inspector's Compose tree
         it.packaging.resources.excludes.add("META-INF/*.version")
+        it.packaging.resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
     }
 }
 
