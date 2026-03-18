@@ -1,18 +1,17 @@
 package eu.kanade.tachiyomi.di
 
 import android.app.Application
-import android.os.Build
 import androidx.core.content.ContextCompat
-import androidx.sqlite.db.SupportSQLiteDatabase
-import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
-import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import data.History
 import data.Mangas
 import dataanime.Animehistory
 import dataanime.Animes
+import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConfiguration
+import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDatabaseType
+import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDriver
 import eu.kanade.domain.track.anime.store.DelayedAnimeTrackingStore
 import eu.kanade.domain.track.manga.store.DelayedMangaTrackingStore
-import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
 import eu.kanade.tachiyomi.data.cache.ChapterCache
@@ -34,7 +33,6 @@ import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.anime.AndroidAnimeSourceManager
 import eu.kanade.tachiyomi.source.manga.AndroidMangaSourceManager
 import eu.kanade.tachiyomi.ui.player.ExternalIntents
-import io.requery.android.database.sqlite.RequerySQLiteOpenHelperFactory
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import nl.adaptivity.xmlutil.XmlDeclMode.Charset
@@ -74,56 +72,23 @@ class AppModule(val app: Application) : InjektModule {
     override fun InjektRegistrar.registerInjectables() {
         addSingleton(app)
 
-        val sqlDriverManga = AndroidSqliteDriver(
+        val sqlDriverManga = AndroidxSqliteDriver(
+            driver = BundledSQLiteDriver(),
+            databaseType = AndroidxSqliteDatabaseType.FileProvider(app, "tachiyomi.db"),
             schema = Database.Schema,
-            context = app,
-            name = "tachiyomi.db",
-            factory = if (BuildConfig.DEBUG && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                // Support database inspector in Android Studio
-                FrameworkSQLiteOpenHelperFactory()
-            } else {
-                RequerySQLiteOpenHelperFactory()
-            },
-            callback = object : AndroidSqliteDriver.Callback(Database.Schema) {
-                override fun onOpen(db: SupportSQLiteDatabase) {
-                    super.onOpen(db)
-                    setPragma(db, "foreign_keys = ON")
-                    setPragma(db, "journal_mode = WAL")
-                    setPragma(db, "synchronous = NORMAL")
-                }
-                private fun setPragma(db: SupportSQLiteDatabase, pragma: String) {
-                    val cursor = db.query("PRAGMA $pragma")
-                    cursor.moveToFirst()
-                    cursor.close()
-                }
-            },
+            configuration = AndroidxSqliteConfiguration(
+                isForeignKeyConstraintsEnabled = true,
+            ),
         )
 
-        val sqlDriverAnime = AndroidSqliteDriver(
+        val sqlDriverAnime = AndroidxSqliteDriver(
+            driver = BundledSQLiteDriver(),
+            databaseType = AndroidxSqliteDatabaseType.FileProvider(app, "tachiyomi.animedb"),
             schema = AnimeDatabase.Schema,
-            context = app,
-            name = "tachiyomi.animedb",
-            factory = if (BuildConfig.DEBUG && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                // Support database inspector in Android Studio
-                FrameworkSQLiteOpenHelperFactory()
-            } else {
-                RequerySQLiteOpenHelperFactory()
-            },
-            callback = object : AndroidSqliteDriver.Callback(AnimeDatabase.Schema) {
-                override fun onOpen(db: SupportSQLiteDatabase) {
-                    super.onOpen(db)
-                    setPragma(db, "foreign_keys = ON")
-                    setPragma(db, "journal_mode = WAL")
-                    setPragma(db, "synchronous = NORMAL")
-                }
-                private fun setPragma(db: SupportSQLiteDatabase, pragma: String) {
-                    val cursor = db.query("PRAGMA $pragma")
-                    cursor.moveToFirst()
-                    cursor.close()
-                }
-            },
+            configuration = AndroidxSqliteConfiguration(
+                isForeignKeyConstraintsEnabled = true,
+            ),
         )
-
         addSingletonFactory {
             Database(
                 driver = sqlDriverManga,
