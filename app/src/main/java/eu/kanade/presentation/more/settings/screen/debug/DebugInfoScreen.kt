@@ -92,7 +92,7 @@ class DebugInfoScreen : Screen() {
                             Icon(
                                 imageVector = Icons.Outlined.Autorenew,
                                 tint = MaterialTheme.colorScheme.primary,
-                                contentDescription = null,
+                                contentDescription = "Regenerate installation ID",
                             )
                         }
                     },
