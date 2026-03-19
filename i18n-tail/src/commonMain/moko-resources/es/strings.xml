@@ -323,4 +323,21 @@
     <string name="pref_doh_custom_bootstrap">Hosts de arranque de DoH personalizados</string>
     <string name="pref_doh_custom_bootstrap_summary">IP separadas por comas (opcional). Ejemplo: 1.1.1.1,8.8.8.8</string>
     <string name="error_doh_custom_bootstrap_invalid">Host de arranque no válido: %1$s</string>
+    <string name="network_stream">Transmisión por red</string>
+    <string name="network_stream_summary">Reproducir un enlace directo dentro del reproductor integrado</string>
+    <string name="network_stream_url_label">URL de la transmisión</string>
+    <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
+    <string name="network_stream_invalid_url">Ingresa una URL válida</string>
+    <string name="network_stream_title_label">Título (opcional)</string>
+    <string name="network_stream_subtitle_label">URL de subtítulos (opcional)</string>
+    <string name="network_stream_invalid_subtitle">Ingresa una URL de subtítulos válida</string>
+    <string name="network_stream_subtitle_language_label">Etiqueta de subtítulo (opcional)</string>
+    <string name="network_stream_referer_label">Encabezado Referer</string>
+    <string name="network_stream_user_agent_label">Encabezado User-Agent</string>
+    <string name="network_stream_headers_label">Encabezados adicionales</string>
+    <string name="network_stream_headers_hint">Nombre-del-Encabezado: Valor del encabezado</string>
+    <string name="network_stream_header_error">El encabezado en la línea %1$d debe usar el formato "Nombre: Valor"</string>
+    <string name="network_stream_play">Reproducir transmisión</string>
+    <string name="network_stream_reset">Limpiar campos</string>
+
 </resources>

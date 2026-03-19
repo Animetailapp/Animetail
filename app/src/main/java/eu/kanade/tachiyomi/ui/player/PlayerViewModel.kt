@@ -55,6 +55,7 @@ import eu.kanade.tachiyomi.animesource.model.TimeStamp
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.database.models.anime.Episode
+import eu.kanade.tachiyomi.data.database.models.anime.EpisodeImpl
 import eu.kanade.tachiyomi.data.database.models.anime.isRecognizedNumber
 import eu.kanade.tachiyomi.data.database.models.anime.toDomainEpisode
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
@@ -70,6 +71,8 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.getChangedAt
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
+import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
+import eu.kanade.tachiyomi.ui.player.network.NetworkStreamSource
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.utils.AniSkipApi
@@ -134,6 +137,9 @@ import java.io.InputStream
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
+
+private const val NETWORK_STREAM_ANIME_ID = Long.MIN_VALUE + 101
+private const val NETWORK_STREAM_EPISODE_ID = Long.MIN_VALUE + 102
 
 class PlayerViewModelProviderFactory(
     private val activity: PlayerActivity,
@@ -1209,6 +1215,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * to persist the current progress of the active episode.
      */
     fun onSaveInstanceStateNonConfigurationChange() {
+        if (isNetworkStreamSession) return
         val currentEpisode = currentEpisode.value ?: return
         viewModelScope.launchNonCancellable {
             saveEpisodeProgress(currentEpisode)
@@ -1235,6 +1242,7 @@ class PlayerViewModel @JvmOverloads constructor(
     )
 
     private var currentHosterList: List<Hoster>? = null
+    private var isNetworkStreamSession: Boolean = false
 
     class ExceptionWithStringResource(
         message: String,
@@ -1249,6 +1257,7 @@ class PlayerViewModel @JvmOverloads constructor(
         vidIndex: Int,
     ): Pair<InitResult, Result<Boolean>> {
         val defaultResult = InitResult(currentHosterList, qualityIndex, null)
+        isNetworkStreamSession = false
         if (!needsInit(animeId, initialEpisodeId)) return Pair(defaultResult, Result.success(true))
         return try {
             val anime = getAnime.await(animeId)
@@ -1316,6 +1325,69 @@ class PlayerViewModel @JvmOverloads constructor(
             }
         } catch (e: Throwable) {
             Pair(defaultResult, Result.failure(e))
+        }
+    }
+
+    suspend fun prepareNetworkStream(request: NetworkStreamRequest) {
+        cancelHosterVideoLinksJob()
+        isNetworkStreamSession = true
+        isLoading.update { false }
+        updateIsLoadingEpisode(false)
+        updateIsLoadingHosters(false)
+
+        val fallbackTitle = request.title.ifBlank { request.url }
+        val anime = Anime.create().copy(
+            id = NETWORK_STREAM_ANIME_ID,
+            source = NetworkStreamSource.id,
+            ogTitle = fallbackTitle,
+        )
+        val episode = EpisodeImpl().apply {
+            id = NETWORK_STREAM_EPISODE_ID
+            anime_id = NETWORK_STREAM_ANIME_ID
+            url = request.url
+            name = fallbackTitle
+            episode_number = 1f
+            date_upload = System.currentTimeMillis()
+        }
+
+        val video = request.toVideo()
+        val hoster = Hoster(
+            hosterUrl = request.url,
+            hosterName = Hoster.NO_HOSTER_LIST,
+            videoList = listOf(video),
+        )
+
+        currentHosterList = listOf(hoster)
+        qualityIndex = Pair(0, 0)
+        episodeId = -1L
+        episodePosition = 0L
+
+        animeTitle.update { fallbackTitle }
+        mediaTitle.update { fallbackTitle }
+        _currentAnime.update { anime }
+        _currentEpisode.update { episode }
+        _currentPlaylist.update { listOf(episode) }
+        _currentSource.update { NetworkStreamSource }
+        _isEpisodeOnline.update { true }
+        updateHasNextEpisode(false)
+        updateHasPreviousEpisode(false)
+
+        _hosterList.update { currentHosterList ?: emptyList() }
+        _hosterExpandedList.update { listOf(true) }
+        _hosterState.update {
+            listOf(
+                HosterState.Ready(
+                    name = hoster.hosterName,
+                    videoList = listOf(video),
+                    videoState = listOf(Video.State.READY),
+                ),
+            )
+        }
+        _selectedHosterVideoIndex.update { Pair(0, 0) }
+        _currentVideo.update { video }
+
+        withUIContext {
+            activity.setVideo(video)
         }
     }
 
@@ -1640,6 +1712,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     private suspend fun updateEpisodeProgressOnComplete(currentEp: Episode) {
+        if (isNetworkStreamSession) return
         currentEp.seen = true
         updateTrackEpisodeSeen(currentEp)
         deleteEpisodeIfNeeded(currentEp)
@@ -1664,7 +1737,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     private fun downloadNextEpisodes() {
-        if (downloadAheadAmount == 0) return
+        if (isNetworkStreamSession || downloadAheadAmount == 0) return
         val anime = currentAnime.value ?: return
 
         // Only download ahead if current + next episode is already downloaded too to avoid jank
@@ -1692,6 +1765,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * @param chosenEpisode current episode, which is going to be marked as seen.
      */
     private fun deleteEpisodeIfNeeded(chosenEpisode: Episode) {
+        if (isNetworkStreamSession) return
         // Determine which episode should be deleted and enqueue
         val currentEpisodePosition = currentPlaylist.value.indexOf(chosenEpisode)
         val removeAfterSeenSlots = downloadPreferences.removeAfterReadSlots().get()
@@ -1726,6 +1800,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * If incognito mode isn't on or has at least 1 tracker
      */
     private suspend fun saveEpisodeProgress(episode: Episode) {
+        if (isNetworkStreamSession) return
         if (!incognitoMode || hasTrackers) {
             updateEpisode.await(
                 EpisodeUpdate(
@@ -1744,6 +1819,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * Saves this [episode] last seen history if incognito mode isn't on.
      */
     private suspend fun saveEpisodeHistory(episode: Episode) {
+        if (isNetworkStreamSession) return
         if (!incognitoMode) {
             val episodeId = episode.id!!
             val seenAt = Date()
@@ -1757,6 +1833,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * Bookmarks the currently active episode.
      */
     fun bookmarkEpisode(episodeId: Long?, bookmarked: Boolean) {
+        if (isNetworkStreamSession) return
         viewModelScope.launchNonCancellable {
             updateEpisode.await(
                 EpisodeUpdate(
@@ -1771,6 +1848,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * Fillermarks the currently active episode.
      */
     fun fillermarkEpisode(episodeId: Long?, fillermarked: Boolean) {
+        if (isNetworkStreamSession) return
         viewModelScope.launchNonCancellable {
             updateEpisode.await(
                 EpisodeUpdate(
