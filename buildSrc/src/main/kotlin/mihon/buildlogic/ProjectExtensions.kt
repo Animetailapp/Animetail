@@ -93,6 +93,10 @@ internal fun Project.configureCompose(commonExtension: CommonExtension<*, *, *, 
 }
 
 internal fun Project.configureTest() {
+    dependencies {
+        "testRuntimeOnly"(libs.junit.platform.launcher)
+    }
+
     tasks.withType<Test> {
         useJUnitPlatform()
         testLogging {
