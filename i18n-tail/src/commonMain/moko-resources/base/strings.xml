@@ -402,4 +402,8 @@
     <string name="network_stream_header_error">Header on line %1$d must use the format "Name: Value"</string>
     <string name="network_stream_play">Play stream</string>
     <string name="network_stream_reset">Clear fields</string>
+   <!-- Video Player -->
+    <string name="show_splash_ovals_on_double_tap_to_seek">Show ripple when double tap seeking</string>
+    <string name="show_seek_icon">Show seek icon</string>
+    <string name="show_seek_time">Show seek time</string>
 </resources>
