@@ -3,13 +3,13 @@ package eu.kanade.tachiyomi.di
 import android.app.Application
 import androidx.core.content.ContextCompat
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConfiguration
+import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDatabaseType
+import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDriver
 import data.History
 import data.Mangas
 import dataanime.Animehistory
 import dataanime.Animes
-import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConfiguration
-import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDatabaseType
-import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDriver
 import eu.kanade.domain.track.anime.store.DelayedAnimeTrackingStore
 import eu.kanade.domain.track.manga.store.DelayedMangaTrackingStore
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
