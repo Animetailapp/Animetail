@@ -72,10 +72,13 @@ class AnimeExtensionReposScreenModel(
         screenModelScope.launchIO {
             when (val result = createExtensionRepo.await(baseUrl)) {
                 CreateAnimeExtensionRepo.Result.InvalidUrl -> _events.send(RepoEvent.InvalidUrl)
+
                 CreateAnimeExtensionRepo.Result.RepoAlreadyExists -> _events.send(RepoEvent.RepoAlreadyExists)
+
                 is CreateAnimeExtensionRepo.Result.DuplicateFingerprint -> {
                     showDialog(RepoDialog.Conflict(result.oldRepo, result.newRepo))
                 }
+
                 else -> {}
             }
         }

@@ -31,10 +31,13 @@ class BackupDecoder(
             }
             val id1id2 = peeked.readShort()
             val backupString = when (id1id2.toInt()) {
-                0x1f8b -> source.gzip().buffer() // 0x1f8b is gzip magic bytes
+                0x1f8b -> source.gzip().buffer()
+
+                // 0x1f8b is gzip magic bytes
                 MAGIC_JSON_SIGNATURE1, MAGIC_JSON_SIGNATURE2, MAGIC_JSON_SIGNATURE3 -> {
                     throw IOException(context.stringResource(MR.strings.invalid_backup_file_json))
                 }
+
                 else -> source
             }.use { it.readByteArray() }
 

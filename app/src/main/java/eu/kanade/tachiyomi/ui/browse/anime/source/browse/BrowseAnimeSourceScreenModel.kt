@@ -46,7 +46,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import tachiyomi.core.common.preference.CheckboxState
@@ -377,6 +376,7 @@ class BrowseAnimeSourceScreenModel(
 
                     changeAnimeFavorite(anime)
                 }
+
                 // Automatic 'Default' or no categories
                 defaultCategoryId == 0 || categories.isEmpty() -> {
                     moveAnimeToCategories(anime)
@@ -513,6 +513,7 @@ class BrowseAnimeSourceScreenModel(
     // KMK <--
 
     // EXH -->
+
     /** Show a dialog to enter name for new saved search */
     fun onSaveSearch() {
         screenModelScope.launchIO {

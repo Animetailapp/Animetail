@@ -73,6 +73,7 @@ fun EditorScreen(
             EditorScreenState.Loading -> {
                 LoadingScreen(modifier = Modifier.padding(paddingValues))
             }
+
             is EditorScreenState.Success -> {
                 if (state.isEmpty) {
                     EmptyScreen(

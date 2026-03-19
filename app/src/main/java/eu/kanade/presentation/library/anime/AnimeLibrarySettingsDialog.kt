@@ -77,13 +77,16 @@ fun AnimeLibrarySettingsDialog(
                 0 -> FilterPage(
                     screenModel = screenModel,
                 )
+
                 1 -> SortPage(
                     category = category,
                     screenModel = screenModel,
                 )
+
                 2 -> DisplayPage(
                     screenModel = screenModel,
                 )
+
                 // SY -->
                 3 -> GroupPage(
                     screenModel = screenModel,
@@ -152,6 +155,7 @@ private fun ColumnScope.FilterPage(
         0 -> {
             // No trackers
         }
+
         1 -> {
             val service = trackers[0]
             val filterTracker by screenModel.libraryPreferences.filterTrackedAnime(
@@ -163,6 +167,7 @@ private fun ColumnScope.FilterPage(
                 onClick = { screenModel.toggleTracker(service.id.toInt()) },
             )
         }
+
         else -> {
             HeadingItem(MR.strings.action_filter_tracked)
             trackers.map { service ->
@@ -243,6 +248,7 @@ private fun ColumnScope.SortPage(
                     } else {
                         AnimeLibrarySort.Direction.Descending
                     }
+
                     else -> if (sortDescending) {
                         AnimeLibrarySort.Direction.Descending
                     } else {

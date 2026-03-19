@@ -229,16 +229,19 @@ fun SubtitleSettingsDialog(
                             fontFamily = fontFamily,
                             shadow = when {
                                 shadowRadius <= 0 -> null
+
                                 shadowRadius <= 3 -> Shadow(
                                     color = Color.Black,
                                     offset = androidx.compose.ui.geometry.Offset(0f, 0f),
                                     blurRadius = 0f,
                                 )
+
                                 shadowRadius <= 6 -> Shadow(
                                     color = Color.Black,
                                     offset = androidx.compose.ui.geometry.Offset(1f, 1f),
                                     blurRadius = 2f,
                                 )
+
                                 else -> Shadow(
                                     color = Color.Black,
                                     offset = androidx.compose.ui.geometry.Offset(0f, 0f),

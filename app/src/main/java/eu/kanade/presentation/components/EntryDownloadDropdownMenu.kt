@@ -5,7 +5,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import eu.kanade.presentation.entries.DownloadAction
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
@@ -21,13 +20,16 @@ fun EntryDownloadDropdownMenu(
 ) {
     val downloadAmount = if (isManga) MR.plurals.download_amount else AYMR.plurals.download_amount_anime
     val downloadUnviewed = if (isManga) MR.strings.download_unread else AYMR.strings.download_unseen
-    val options = persistentListOf(
-        DownloadAction.NEXT_1_ITEM to pluralStringResource(downloadAmount, 1, 1),
-        DownloadAction.NEXT_5_ITEMS to pluralStringResource(downloadAmount, 5, 5),
-        DownloadAction.NEXT_10_ITEMS to pluralStringResource(downloadAmount, 10, 10),
-        DownloadAction.NEXT_25_ITEMS to pluralStringResource(downloadAmount, 25, 25),
-        DownloadAction.UNVIEWED_ITEMS to stringResource(downloadUnviewed),
-    )
+    val options = buildList {
+        add(DownloadAction.NEXT_1_ITEM to pluralStringResource(downloadAmount, 1, 1))
+        add(DownloadAction.NEXT_5_ITEMS to pluralStringResource(downloadAmount, 5, 5))
+        add(DownloadAction.NEXT_10_ITEMS to pluralStringResource(downloadAmount, 10, 10))
+        add(DownloadAction.NEXT_25_ITEMS to pluralStringResource(downloadAmount, 25, 25))
+        add(DownloadAction.UNVIEWED_ITEMS to stringResource(downloadUnviewed))
+        if (isManga) {
+            add(DownloadAction.BOOKMARKED_ITEMS to stringResource(MR.strings.download_bookmarked))
+        }
+    }
 
     DropdownMenu(
         expanded = expanded,

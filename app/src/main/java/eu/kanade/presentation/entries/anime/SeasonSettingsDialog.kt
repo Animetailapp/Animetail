@@ -118,6 +118,7 @@ fun SeasonSettingsDialog(
                         onFillermarkedFilterChanged = onFillermarkedFilterChanged,
                     )
                 }
+
                 1 -> {
                     SeasonSortPage(
                         sortingMode = anime?.seasonSorting ?: 0,
@@ -125,6 +126,7 @@ fun SeasonSettingsDialog(
                         onItemSelected = onSortModeChanged,
                     )
                 }
+
                 2 -> {
                     SeasonDisplayPage(
                         displayGridMode = anime?.seasonDisplayGridMode ?: SeasonDisplayMode.CompactGrid,

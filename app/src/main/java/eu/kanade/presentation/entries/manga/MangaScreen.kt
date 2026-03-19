@@ -1,10 +1,7 @@
 package eu.kanade.presentation.entries.manga
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,9 +24,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SmallExtendedFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -78,7 +77,6 @@ import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.TwoPanelBox
 import tachiyomi.presentation.core.components.VerticalFastScroller
-import tachiyomi.presentation.core.components.material.ExtendedFloatingActionButton
 import tachiyomi.presentation.core.components.material.PullRefresh
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
@@ -135,7 +133,7 @@ fun MangaScreen(
     onChapterSwipe: (ChapterList.Item, LibraryPreferences.ChapterSwipeAction) -> Unit,
 
     // Chapter selection
-    onChapterSelected: (ChapterList.Item, Boolean, Boolean, Boolean) -> Unit,
+    onChapterSelected: (ChapterList.Item, Boolean, Boolean) -> Unit,
     onAllChapterSelected: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
 ) {
@@ -282,7 +280,7 @@ private fun MangaScreenSmallImpl(
     onChapterSwipe: (ChapterList.Item, LibraryPreferences.ChapterSwipeAction) -> Unit,
 
     // Chapter selection
-    onChapterSelected: (ChapterList.Item, Boolean, Boolean, Boolean) -> Unit,
+    onChapterSelected: (ChapterList.Item, Boolean, Boolean) -> Unit,
     onAllChapterSelected: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
 ) {
@@ -368,25 +366,23 @@ private fun MangaScreenSmallImpl(
             val isFABVisible = remember(chapters) {
                 chapters.fastAny { !it.chapter.read } && !isAnySelected
             }
-            AnimatedVisibility(
-                visible = isFABVisible,
-                enter = fadeIn(),
-                exit = fadeOut(),
-            ) {
-                ExtendedFloatingActionButton(
-                    text = {
-                        val isReading = remember(state.chapters) {
-                            state.chapters.fastAny { it.chapter.read }
-                        }
-                        Text(
-                            text = stringResource(if (isReading) MR.strings.action_resume else MR.strings.action_start),
-                        )
-                    },
-                    icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
-                    onClick = onContinueReading,
-                    expanded = chapterListState.shouldExpandFAB(),
-                )
-            }
+            SmallExtendedFloatingActionButton(
+                text = {
+                    val isReading = remember(state.chapters) {
+                        state.chapters.fastAny { it.chapter.read }
+                    }
+                    Text(
+                        text = stringResource(if (isReading) MR.strings.action_resume else MR.strings.action_start),
+                    )
+                },
+                icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
+                onClick = onContinueReading,
+                expanded = chapterListState.shouldExpandFAB(),
+                modifier = Modifier.animateFloatingActionButton(
+                    visible = isFABVisible,
+                    alignment = Alignment.BottomEnd,
+                ),
+            )
         },
     ) { contentPadding ->
         val topPadding = contentPadding.calculateTopPadding()
@@ -542,7 +538,7 @@ fun MangaScreenLargeImpl(
     onChapterSwipe: (ChapterList.Item, LibraryPreferences.ChapterSwipeAction) -> Unit,
 
     // Chapter selection
-    onChapterSelected: (ChapterList.Item, Boolean, Boolean, Boolean) -> Unit,
+    onChapterSelected: (ChapterList.Item, Boolean, Boolean) -> Unit,
     onAllChapterSelected: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
 ) {
@@ -626,27 +622,25 @@ fun MangaScreenLargeImpl(
             val isFABVisible = remember(chapters) {
                 chapters.fastAny { !it.chapter.read } && !isAnySelected
             }
-            AnimatedVisibility(
-                visible = isFABVisible,
-                enter = fadeIn(),
-                exit = fadeOut(),
-            ) {
-                ExtendedFloatingActionButton(
-                    text = {
-                        val isReading = remember(state.chapters) {
-                            state.chapters.fastAny { it.chapter.read }
-                        }
-                        Text(
-                            text = stringResource(
-                                if (isReading) MR.strings.action_resume else MR.strings.action_start,
-                            ),
-                        )
-                    },
-                    icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
-                    onClick = onContinueReading,
-                    expanded = chapterListState.shouldExpandFAB(),
-                )
-            }
+            SmallExtendedFloatingActionButton(
+                text = {
+                    val isReading = remember(state.chapters) {
+                        state.chapters.fastAny { it.chapter.read }
+                    }
+                    Text(
+                        text = stringResource(
+                            if (isReading) MR.strings.action_resume else MR.strings.action_start,
+                        ),
+                    )
+                },
+                icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
+                onClick = onContinueReading,
+                expanded = chapterListState.shouldExpandFAB(),
+                modifier = Modifier.animateFloatingActionButton(
+                    visible = isFABVisible,
+                    alignment = Alignment.BottomEnd,
+                ),
+            )
         },
     ) { contentPadding ->
         PullRefresh(
@@ -801,7 +795,7 @@ private fun LazyListScope.sharedChapterItems(
     chapterSwipeEndAction: LibraryPreferences.ChapterSwipeAction,
     onChapterClicked: (Chapter) -> Unit,
     onDownloadChapter: ((List<ChapterList.Item>, ChapterDownloadAction) -> Unit)?,
-    onChapterSelected: (ChapterList.Item, Boolean, Boolean, Boolean) -> Unit,
+    onChapterSelected: (ChapterList.Item, Boolean, Boolean) -> Unit,
     onChapterSwipe: (ChapterList.Item, LibraryPreferences.ChapterSwipeAction) -> Unit,
 ) {
     items(
@@ -820,6 +814,7 @@ private fun LazyListScope.sharedChapterItems(
             is ChapterList.MissingCount -> {
                 MissingItemCountListItem(count = item.count)
             }
+
             is ChapterList.Item -> {
                 MangaChapterListItem(
                     title = if (manga.displayMode == Manga.CHAPTER_DISPLAY_NUMBER) {
@@ -853,14 +848,14 @@ private fun LazyListScope.sharedChapterItems(
                     chapterSwipeStartAction = chapterSwipeStartAction,
                     chapterSwipeEndAction = chapterSwipeEndAction,
                     onLongClick = {
-                        onChapterSelected(item, !item.selected, true, true)
+                        onChapterSelected(item, !item.selected, true)
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     },
                     onClick = {
                         onChapterItemClick(
                             chapterItem = item,
                             isAnyChapterSelected = isAnyChapterSelected,
-                            onToggleSelection = { onChapterSelected(item, !item.selected, true, false) },
+                            onToggleSelection = { onChapterSelected(item, !item.selected, false) },
                             onChapterClicked = onChapterClicked,
                         )
                     },

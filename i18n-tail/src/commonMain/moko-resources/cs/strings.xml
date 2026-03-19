@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
   <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Stav sledování</string>
   <string name="tag">Štítky</string>
@@ -83,7 +83,6 @@
   <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">Výběr vlastní barvy</string>
   <string name="custom_color_description">Vyberte barvu pro vlastní šablonu</string>
   <string name="theme_custom">Vlastní šablona</string>
-  <string name="label_backup" comment="label_backup Cross Device Sync">Záloha</string>
   <string name="label_sync">Synchronizovat</string>
   <string name="label_triggers">Spouštěče</string>
   <string name="pref_backup_and_sync_summary">Manuální &amp; automatické zálohování a synchronizace</string>

@@ -86,6 +86,7 @@ internal fun GlobalSearchContent(
                         AnimeSearchItemResult.Loading -> {
                             GlobalSearchLoadingResultItem()
                         }
+
                         is AnimeSearchItemResult.Success -> {
                             GlobalAnimeSearchCardRow(
                                 titles = result.result,
@@ -94,6 +95,7 @@ internal fun GlobalSearchContent(
                                 onLongClick = onLongClickItem,
                             )
                         }
+
                         is AnimeSearchItemResult.Error -> {
                             GlobalSearchErrorResultItem(message = result.throwable.message)
                         }

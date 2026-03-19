@@ -96,6 +96,7 @@ data class MigrateSeasonSelectScreen(
                     },
                 )
             }
+
             else -> {}
         }
     }

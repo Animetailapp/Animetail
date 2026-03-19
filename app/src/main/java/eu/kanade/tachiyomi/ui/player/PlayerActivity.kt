@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-/**
+/*
  * Code is a mix between PlayerActivity from mpvKt and the former
  * PlayerActivity from Aniyomi.
  */
-
 package eu.kanade.tachiyomi.ui.player
 
 import android.annotation.SuppressLint
@@ -77,6 +76,7 @@ import eu.kanade.tachiyomi.torrentServer.TorrentServerApi
 import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.ui.player.controls.PlayerControls
+import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
@@ -175,6 +175,16 @@ class PlayerActivity : BaseActivity() {
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         }
+
+        fun newStreamIntent(
+            context: Context,
+            request: NetworkStreamRequest,
+        ): Intent {
+            return Intent(context, PlayerActivity::class.java).apply {
+                putExtra(NetworkStreamRequest.EXTRA_KEY, Json.encodeToString(request))
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+        }
         internal const val MPV_DIR = "mpv"
         private const val MPV_FONTS_DIR = "fonts"
         private const val MPV_SCRIPTS_DIR = "scripts"
@@ -189,6 +199,25 @@ class PlayerActivity : BaseActivity() {
     @SuppressLint("MissingSuperCall")
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+
+        val networkStreamPayload = intent.getStringExtra(NetworkStreamRequest.EXTRA_KEY)
+        if (networkStreamPayload != null) {
+            val request = runCatching {
+                Json.decodeFromString<NetworkStreamRequest>(networkStreamPayload)
+            }.getOrElse { error ->
+                logcat(LogPriority.ERROR, error) { "Failed to parse network stream payload" }
+                toast(MR.strings.internal_error)
+                null
+            }
+
+            intent.removeExtra(NetworkStreamRequest.EXTRA_KEY)
+            setIntent(intent)
+
+            if (request != null) {
+                handleNetworkStreamIntent(request)
+            }
+            return
+        }
 
         val animeId = intent.extras?.getLong("animeId") ?: -1
         val episodeId = intent.extras?.getLong("episodeId") ?: -1
@@ -262,9 +291,11 @@ class PlayerActivity : BaseActivity() {
                     is PlayerViewModel.Event.SavedImage -> {
                         onSaveImageResult(event.result)
                     }
+
                     is PlayerViewModel.Event.ShareImage -> {
                         onShareImageResult(event.uri, event.seconds)
                     }
+
                     is PlayerViewModel.Event.SetArtResult -> {
                         onSetAsArtResult(event.result, event.artType)
                     }
@@ -708,11 +739,16 @@ class PlayerActivity : BaseActivity() {
                 viewModel.updatePlayBackPos(value.toFloat())
                 viewModel.setChapter(value.toFloat())
             }
+
             "demuxer-cache-time" -> viewModel.updateReadAhead(value = value)
+
             "volume" -> viewModel.setMPVVolume(value.toInt())
+
             "volume-max" -> viewModel.volumeBoostCap = value.toInt() - 100
+
             // "chapter" -> viewModel.updateChapter(value)
             "duration" -> viewModel.duration.update { value.toFloat() }
+
             "user-data/current-anime/intro-length" -> viewModel.setAnimeSkipIntroLength(value)
         }
     }
@@ -724,6 +760,7 @@ class PlayerActivity : BaseActivity() {
                 viewModel.loadChapters()
                 viewModel.updateChapter(0)
             }
+
             "track-list" -> viewModel.loadTracks()
         }
     }
@@ -772,11 +809,15 @@ class PlayerActivity : BaseActivity() {
         if (player.isExiting) return
         when (property.substringBeforeLast("/")) {
             "aid" -> trackId(value)?.let { viewModel.updateAudio(it) }
+
             "sid" -> trackId(value)?.let { viewModel.updateSubtitle(it, viewModel.selectedSubtitles.value.second) }
+
             "secondary-sid" -> trackId(value)?.let {
                 viewModel.updateSubtitle(viewModel.selectedSubtitles.value.first, it)
             }
+
             "hwdec", "hwdec-current" -> viewModel.getDecoder()
+
             "user-data/aniyomi" -> viewModel.handleLuaInvocation(property, value)
         }
     }
@@ -796,7 +837,9 @@ class PlayerActivity : BaseActivity() {
             MPVLib.mpvEventId.MPV_EVENT_FILE_LOADED -> {
                 viewModel.viewModelScope.launchIO { fileLoaded() }
             }
+
             MPVLib.mpvEventId.MPV_EVENT_SEEK -> viewModel.isLoading.update { true }
+
             MPVLib.mpvEventId.MPV_EVENT_PLAYBACK_RESTART -> player.isExiting = false
         }
     }
@@ -876,6 +919,7 @@ class PlayerActivity : BaseActivity() {
         if (player.isExiting) return
         requestedOrientation = when (playerPreferences.defaultPlayerOrientationType().get()) {
             PlayerOrientation.Free -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
+
             PlayerOrientation.Video -> if ((player.getVideoOutAspect() ?: 0.0) > 1.0) {
                 ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             } else {
@@ -883,10 +927,15 @@ class PlayerActivity : BaseActivity() {
             }
 
             PlayerOrientation.Portrait -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
             PlayerOrientation.ReversePortrait -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+
             PlayerOrientation.SensorPortrait -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+
             PlayerOrientation.Landscape -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+
             PlayerOrientation.ReverseLandscape -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+
             PlayerOrientation.SensorLandscape -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }
     }
@@ -897,16 +946,22 @@ class PlayerActivity : BaseActivity() {
                 viewModel.changeVolumeBy(1)
                 viewModel.displayVolumeSlider()
             }
+
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
                 viewModel.changeVolumeBy(-1)
                 viewModel.displayVolumeSlider()
             }
+
             KeyEvent.KEYCODE_DPAD_LEFT -> viewModel.handleLeftDoubleTap()
+
             KeyEvent.KEYCODE_DPAD_RIGHT -> viewModel.handleRightDoubleTap()
+
             KeyEvent.KEYCODE_SPACE -> viewModel.pauseUnpause()
+
             KeyEvent.KEYCODE_MEDIA_STOP -> finishAndRemoveTask()
 
             KeyEvent.KEYCODE_MEDIA_REWIND -> viewModel.handleLeftDoubleTap()
+
             KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> viewModel.handleRightDoubleTap()
 
             // other keys should be bound by the user in input.conf ig
@@ -934,12 +989,15 @@ class PlayerActivity : BaseActivity() {
                     override fun onPlay() {
                         when (playAction) {
                             SingleActionGesture.None -> {}
+
                             SingleActionGesture.Seek -> {}
+
                             SingleActionGesture.PlayPause -> {
                                 super.onPlay()
                                 viewModel.unpause()
                                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                             }
+
                             SingleActionGesture.Custom -> {
                                 MPVLib.command(arrayOf("keypress", CustomKeyCodes.MediaPlay.keyCode))
                             }
@@ -963,12 +1021,15 @@ class PlayerActivity : BaseActivity() {
                         //
                         when (playAction) {
                             SingleActionGesture.None -> {}
+
                             SingleActionGesture.Seek -> {}
+
                             SingleActionGesture.PlayPause -> {
                                 super.onPause()
                                 viewModel.pause()
                                 window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                             }
+
                             SingleActionGesture.Custom -> {
                                 MPVLib.command(arrayOf("keypress", CustomKeyCodes.MediaPlay.keyCode))
                             }
@@ -980,12 +1041,15 @@ class PlayerActivity : BaseActivity() {
                     override fun onSkipToPrevious() {
                         when (previousAction) {
                             SingleActionGesture.None -> {}
+
                             SingleActionGesture.Seek -> {
                                 viewModel.leftSeek()
                             }
+
                             SingleActionGesture.PlayPause -> {
                                 viewModel.pauseUnpause()
                             }
+
                             SingleActionGesture.Custom -> {
                                 MPVLib.command(arrayOf("keypress", CustomKeyCodes.MediaPrevious.keyCode))
                             }
@@ -997,12 +1061,15 @@ class PlayerActivity : BaseActivity() {
                     override fun onSkipToNext() {
                         when (nextAction) {
                             SingleActionGesture.None -> {}
+
                             SingleActionGesture.Seek -> {
                                 viewModel.rightSeek()
                             }
+
                             SingleActionGesture.PlayPause -> {
                                 viewModel.pauseUnpause()
                             }
+
                             SingleActionGesture.Custom -> {
                                 MPVLib.command(arrayOf("keypress", CustomKeyCodes.MediaNext.keyCode))
                             }
@@ -1085,6 +1152,7 @@ class PlayerActivity : BaseActivity() {
                                     AYMR.strings.no_hosters,
                                 ),
                             )
+
                             else -> {
                                 viewModel.loadHosters(
                                     source = switchMethod.source,
@@ -1205,23 +1273,35 @@ class PlayerActivity : BaseActivity() {
         finish()
     }
 
+    private fun handleNetworkStreamIntent(request: NetworkStreamRequest) {
+        viewModel.saveCurrentEpisodeWatchingProgress()
+        lifecycleScope.launchNonCancellable {
+            viewModel.prepareNetworkStream(request)
+        }
+    }
+
     private fun parseVideoUrl(videoUrl: String?): String? {
         return videoUrl?.toUri()?.resolveUri(this)
             ?: videoUrl
     }
 
     private fun setHttpOptions(video: Video) {
-        if (viewModel.isEpisodeOnline() != true) return
-        val source = viewModel.currentSource.value as? AnimeHttpSource ?: return
+        val resolvedHeaders = video.headers
+            ?: if (viewModel.isEpisodeOnline() == true) {
+                viewModel.currentSource.value as? AnimeHttpSource
+            } else {
+                null
+            }?.headers
+            ?: return
 
-        val headers = (video.headers ?: source.headers)
+        val headers = resolvedHeaders
             .toMultimap()
             .mapValues { it.value.firstOrNull() ?: "" }
             .toMutableMap()
 
-        val httpHeaderString = headers.map {
-            it.key + ": " + it.value.replace(",", "\\,")
-        }.joinToString(",")
+        val httpHeaderString = headers.entries.joinToString(",") { entry ->
+            entry.key + ": " + entry.value.replace(",", "\\,")
+        }
 
         MPVLib.setOptionString("http-header-fields", httpHeaderString)
 
@@ -1255,6 +1335,7 @@ class PlayerActivity : BaseActivity() {
             is PlayerViewModel.SaveImageResult.Success -> {
                 toast(MR.strings.picture_saved)
             }
+
             is PlayerViewModel.SaveImageResult.Error -> {
                 logcat(LogPriority.ERROR, result.error)
             }
@@ -1274,7 +1355,9 @@ class PlayerActivity : BaseActivity() {
                         ArtType.Background -> AYMR.strings.background_updated
                         ArtType.Thumbnail -> AYMR.strings.thumbnail_updated
                     }
+
                 SetAsArt.AddToLibraryFirst -> MR.strings.notification_first_add_to_library
+
                 SetAsArt.Error -> MR.strings.notification_cover_update_failed
             },
         )

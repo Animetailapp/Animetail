@@ -54,6 +54,7 @@ class PlayerSettingsCustomButtonScreenModel(
                 is CreateCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -65,6 +66,7 @@ class PlayerSettingsCustomButtonScreenModel(
                 is ToggleFavoriteCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -76,6 +78,7 @@ class PlayerSettingsCustomButtonScreenModel(
                 is UpdateCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -87,6 +90,7 @@ class PlayerSettingsCustomButtonScreenModel(
                 is DeleteCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -98,6 +102,7 @@ class PlayerSettingsCustomButtonScreenModel(
                 is ReorderCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
                 )
+
                 else -> {}
             }
         }

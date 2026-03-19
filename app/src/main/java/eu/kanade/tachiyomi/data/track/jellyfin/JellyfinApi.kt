@@ -44,6 +44,7 @@ class JellyfinApi(
                     fragment.startsWith("seriesId") -> {
                         getTrackFromSeries(track, httpUrl)
                     }
+
                     else -> track
                 }
             } catch (e: Exception) {

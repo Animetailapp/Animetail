@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
   <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Seurannan tila</string>
   <string name="tag">Tunnisteet</string>
@@ -83,7 +83,6 @@
   <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">Mukautettu Värivalitsin</string>
   <string name="custom_color_description">Valitse väri mukautetulle teemalle</string>
   <string name="theme_custom">Muokattu Teema</string>
-  <string name="label_backup" comment="label_backup Cross Device Sync">Varmuuskopio</string>
   <string name="label_sync">Synkronointi</string>
   <string name="label_triggers">Käynnistimet</string>
   <string name="pref_backup_and_sync_summary">Manual &amp; automatic backups and sync</string>

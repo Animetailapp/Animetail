@@ -13,7 +13,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -132,16 +131,20 @@ open class DiscordWebSocketImpl(
                     heartbeatInterval = map.d.jsonObject["heartbeat_interval"]!!.jsonPrimitive.long
                     sendHeartBeat(true)
                 }
+
                 OpCode.DISPATCH.value -> if (map.t == "READY") {
                     connected = true
                 }
+
                 OpCode.HEARTBEAT.value -> {
                     if (scope.isActive) scope.cancel()
                     webSocket.send("{\"op\":1, \"d\":$seq}")
                 }
 
                 OpCode.HEARTBEAT_ACK.value -> sendHeartBeat(false)
+
                 OpCode.RECONNECT.value -> webSocket.close(400, "Reconnect")
+
                 OpCode.INVALID_SESSION.value -> sendHeartBeat(true)
             }
         }

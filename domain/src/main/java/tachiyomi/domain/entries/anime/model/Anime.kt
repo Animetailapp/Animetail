@@ -3,6 +3,7 @@ package tachiyomi.domain.entries.anime.model
 import androidx.compose.runtime.Immutable
 import aniyomi.domain.anime.SeasonDisplayMode
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
+import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import tachiyomi.core.common.preference.TriState
@@ -26,6 +27,7 @@ data class Anime(
     val coverLastModified: Long,
     val backgroundLastModified: Long,
     val url: String,
+    val cast: List<Credit>?,
     // SY -->
     val ogTitle: String,
     val ogArtist: String?,
@@ -340,6 +342,7 @@ data class Anime(
             ogTitle = "",
             // SY <--
             source = -1L,
+            cast = null,
             favorite = false,
             lastUpdate = 0L,
             nextUpdate = 0L,

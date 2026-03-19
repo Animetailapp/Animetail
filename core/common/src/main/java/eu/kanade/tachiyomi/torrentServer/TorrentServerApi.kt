@@ -1,6 +1,6 @@
 package eu.kanade.tachiyomi.torrentServer
 
-import dev.icerock.moko.graphics.BuildConfig
+import eu.kanade.tachiyomi.core.common.BuildConfig
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.POST

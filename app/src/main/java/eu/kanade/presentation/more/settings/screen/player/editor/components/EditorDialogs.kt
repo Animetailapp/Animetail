@@ -90,6 +90,7 @@ fun FileCreateDialog(
                         is FileCreationResult.Failure -> {
                             Text(text = stringResource(result.stringRes))
                         }
+
                         FileCreationResult.Success -> {}
                     }
                 },

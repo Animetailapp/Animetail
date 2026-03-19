@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
+import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
@@ -376,6 +377,31 @@ class AnimeDownloadManager(
         }
     }
 
+    suspend fun renameAnime(anime: Anime, newTitle: String) {
+        val source = sourceManager.getOrStub(anime.source)
+        val oldFolder = provider.findAnimeDir(anime.title, source) ?: return
+        val newName = provider.getAnimeDirName(newTitle)
+
+        if (oldFolder.name == newName) return
+
+        downloader.removeFromQueue(anime)
+
+        val capitalizationChanged = oldFolder.name.equals(newName, ignoreCase = true)
+        if (capitalizationChanged) {
+            val tempName = newName + AnimeDownloader.TMP_DIR_SUFFIX
+            if (!oldFolder.renameTo(tempName)) {
+                logcat(LogPriority.ERROR) { "Failed to rename anime download folder: ${oldFolder.name}" }
+                return
+            }
+        }
+
+        if (oldFolder.renameTo(newName)) {
+            cache.renameAnime(anime, oldFolder, newTitle)
+        } else {
+            logcat(LogPriority.ERROR) { "Failed to rename anime download folder: ${oldFolder.name}" }
+        }
+    }
+
     /**
      * Renames an already downloaded episode
      *
@@ -393,7 +419,14 @@ class AnimeDownloadManager(
             .mapNotNull { animeDir.findFile(it) }
             .firstOrNull()
 
-        val newName = provider.getEpisodeDirName(newEpisode.name, newEpisode.scanlator)
+        var newName = provider.getEpisodeDirName(newEpisode.name, newEpisode.scanlator)
+
+        if (oldFolder?.isFile == true) {
+            when (oldFolder.extension) {
+                "mp4" -> newName += ".mp4"
+                "mkv" -> newName += ".mkv"
+            }
+        }
 
         if (oldFolder?.name == newName) return
 

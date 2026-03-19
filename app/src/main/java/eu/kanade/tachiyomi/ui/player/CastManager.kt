@@ -75,6 +75,7 @@ class CastManager(
                 val factory = PlayerViewModelProviderFactory(activity)
                 activity.viewModels<PlayerViewModel> { factory }.value
             }
+
             else -> null
         }
     }
@@ -471,6 +472,7 @@ class CastManager(
 
             when {
                 newDevices.any { it.isConnected } -> _castState.value = CastState.CONNECTED
+
                 newDevices.isEmpty() && _castState.value != CastState.DISCONNECTED ->
                     _castState.value = CastState.DISCONNECTED
             }

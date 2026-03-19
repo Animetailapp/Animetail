@@ -85,26 +85,31 @@ class PreferenceRestorer(
                             newValue?.let { preferenceStore.getInt(key).set(it) }
                         }
                     }
+
                     is LongPreferenceValue -> {
                         if (prefs[key] is Long?) {
                             preferenceStore.getLong(key).set(value.value)
                         }
                     }
+
                     is FloatPreferenceValue -> {
                         if (prefs[key] is Float?) {
                             preferenceStore.getFloat(key).set(value.value)
                         }
                     }
+
                     is StringPreferenceValue -> {
                         if (prefs[key] is String?) {
                             preferenceStore.getString(key).set(value.value)
                         }
                     }
+
                     is BooleanPreferenceValue -> {
                         if (prefs[key] is Boolean?) {
                             preferenceStore.getBoolean(key).set(value.value)
                         }
                     }
+
                     is StringSetPreferenceValue -> {
                         if (prefs[key] is Set<*>?) {
                             val restored = restoreCategoriesPreference(

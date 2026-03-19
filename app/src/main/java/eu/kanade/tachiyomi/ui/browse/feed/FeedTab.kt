@@ -193,6 +193,7 @@ fun feedTab(
                             },
                         )
                     }
+
                     is FeedScreenModel.Dialog.AddFeedSearch -> {
                         FeedAddSearchDialog(
                             source = dialog.source,
@@ -204,6 +205,7 @@ fun feedTab(
                             },
                         )
                     }
+
                     is FeedScreenModel.Dialog.DeleteFeed -> {
                         SourceFeedDeleteDialog(
                             onDismissRequest = onDismissRequest,
@@ -213,6 +215,7 @@ fun feedTab(
                             },
                         )
                     }
+
                     // KMK -->
                     is FeedScreenModel.Dialog.FeedActions -> {
                         FeedActionsDialog(
@@ -226,6 +229,7 @@ fun feedTab(
                             onMoveDown = { screenModel.moveDown(it) },
                         )
                     }
+
                     is FeedScreenModel.Dialog.SortAlphabetically -> {
                         FeedSortAlphabeticallyDialog(
                             onDismissRequest = onDismissRequest,
@@ -244,6 +248,7 @@ fun feedTab(
                         FeedScreenModel.Event.FailedFetchingSources -> {
                             launch { snackbarHostState.showSnackbar(internalErrString) }
                         }
+
                         FeedScreenModel.Event.TooManyFeeds -> {
                             launch { snackbarHostState.showSnackbar(tooManyFeedsString) }
                         }

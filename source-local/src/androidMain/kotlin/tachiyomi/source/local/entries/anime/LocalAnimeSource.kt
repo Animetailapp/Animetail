@@ -43,6 +43,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import eu.kanade.tachiyomi.animesource.model.Credit as SourceCredit
 
 actual class LocalAnimeSource(
     private val context: Context,
@@ -112,6 +113,7 @@ actual class LocalAnimeSource(
                         )
                     }
                 }
+
                 is AnimeOrderBy.Latest -> {
                     animeDirs = if (filter.state!!.ascending) {
                         animeDirs.sortedBy(UniFile::lastModified)
@@ -119,6 +121,7 @@ actual class LocalAnimeSource(
                         animeDirs.sortedByDescending(UniFile::lastModified)
                     }
                 }
+
                 else -> {
                     /* Do nothing */
                 }
@@ -185,7 +188,18 @@ actual class LocalAnimeSource(
     }
 
     private fun SAnime.toJson(): AnimeDetails {
-        return AnimeDetails(title, author, artist, description, genre?.split(", "), status)
+        // Map SAnime fields to AnimeDetails, including cast if present
+        return AnimeDetails(
+            title = title,
+            author = author,
+            artist = artist,
+            description = description,
+            genre = genre?.split(", "),
+            status = status,
+            cast = cast?.map {
+                SourceCredit(name = it.name, role = it.role, character = it.character, image_url = it.image_url)
+            },
+        )
     }
     // SY <--
 
@@ -211,6 +225,17 @@ actual class LocalAnimeSource(
                     description?.let { anime.description = it }
                     genre?.let { anime.genre = it.joinToString() }
                     status?.let { anime.status = it }
+                    cast?.let { coreCastList ->
+                        anime.cast =
+                            coreCastList.map { core ->
+                                SourceCredit(
+                                    name = core.name,
+                                    role = core.role,
+                                    character = core.character,
+                                    image_url = core.image_url,
+                                )
+                            }
+                    }
                 }
             }
 
@@ -349,7 +374,7 @@ actual class LocalAnimeSource(
         )
         val outFile = tempFile.path
 
-        val episodeName = episode.url.split('/', limit = 2).last()
+        val episodeName = episode.url.substringAfterLast('/')
         val animeDir = fileSystem.getAnimeDirectory(anime.url)!!
         val episodeFile = animeDir.findFile(episodeName)!!
         val episodeFilename = { episodeFile.toFFmpegString(context) }

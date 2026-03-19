@@ -51,6 +51,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import eu.kanade.tachiyomi.animesource.model.Credit as SourceCredit
 
 actual class LocalMangaSource(
     private val context: Context,
@@ -112,6 +113,7 @@ actual class LocalMangaSource(
                         mangaDirs.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.name.orEmpty() })
                     }
                 }
+
                 is MangaOrderBy.Latest -> {
                     mangaDirs = if (filter.state!!.ascending) {
                         mangaDirs.sortedBy(UniFile::lastModified)
@@ -119,6 +121,7 @@ actual class LocalMangaSource(
                         mangaDirs.sortedByDescending(UniFile::lastModified)
                     }
                 }
+
                 else -> {
                     /* Do nothing */
                 }
@@ -157,7 +160,17 @@ actual class LocalMangaSource(
     }
 
     private fun SManga.toJson(): MangaDetails {
-        return MangaDetails(title, author, artist, description, genre?.split(", "), status)
+        return MangaDetails(
+            title = title,
+            author = author,
+            artist = artist,
+            description = description,
+            genre = genre?.split(", "),
+            status = status,
+            cast = cast?.map {
+                SourceCredit(name = it.name, role = it.role, character = it.character, image_url = it.image_url)
+            },
+        )
     }
     // SY <--
 
@@ -196,6 +209,17 @@ actual class LocalMangaSource(
                         description?.let { manga.description = it }
                         genre?.let { manga.genre = it.joinToString() }
                         status?.let { manga.status = it }
+                        cast?.let { coreCastList ->
+                            manga.cast =
+                                coreCastList.map { core ->
+                                    SourceCredit(
+                                        name = core.name,
+                                        role = core.role,
+                                        character = core.character,
+                                        image_url = core.image_url,
+                                    )
+                                }
+                        }
                     }
                     // Replace with ComicInfo.xml file
                     val comicInfo = manga.getComicInfo()
@@ -218,7 +242,7 @@ actual class LocalMangaSource(
                         setMangaDetailsFromComicInfoFile(copiedFile.openInputStream(), manga)
                     } else {
                         // Avoid re-scanning
-                        mangaDir.createFile(".noxml")
+                        runCatching { mangaDir.createFile(".noxml") }
                     }
                 }
             }
@@ -368,6 +392,7 @@ actual class LocalMangaSource(
 
                     entry?.let { coverManager.update(manga, it.openInputStream()) }
                 }
+
                 is Format.Archive -> {
                     format.file.archiveReader(context).use { reader ->
                         val entry = reader.useEntries { entries ->
@@ -379,6 +404,7 @@ actual class LocalMangaSource(
                         entry?.let { coverManager.update(manga, reader.getInputStream(it.name)!!) }
                     }
                 }
+
                 is Format.Epub -> {
                     format.file.epubReader(context).use { epub ->
                         val entry = epub.getImagesFromPages().firstOrNull()

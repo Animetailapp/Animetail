@@ -145,9 +145,11 @@ fun ExpandedControllerScreen(
                         logcat(LogPriority.ERROR) { "Error initializing cast client: ${e.message}" }
                     }
                 }
+
                 Lifecycle.Event.ON_PAUSE -> {
                     client?.unregisterCallback(mediaCallback)
                 }
+
                 else -> {}
             }
         }

@@ -60,6 +60,7 @@ fun ChapterDownloadIndicator(
             modifier = modifier,
             onClick = onClick,
         )
+
         MangaDownload.State.QUEUE, MangaDownload.State.DOWNLOADING -> DownloadingIndicator(
             enabled = enabled,
             modifier = modifier,
@@ -67,11 +68,13 @@ fun ChapterDownloadIndicator(
             downloadProgressProvider = downloadProgressProvider,
             onClick = onClick,
         )
+
         MangaDownload.State.DOWNLOADED -> DownloadedIndicator(
             enabled = enabled,
             modifier = modifier,
             onClick = onClick,
         )
+
         MangaDownload.State.ERROR -> ErrorIndicator(
             enabled = enabled,
             modifier = modifier,

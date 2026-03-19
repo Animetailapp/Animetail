@@ -93,6 +93,7 @@ private fun AnimeHistoryScreenContent(
                         text = relativeDateText(item.date),
                     )
                 }
+
                 is AnimeHistoryUiModel.Item -> {
                     val value = item.item
                     AnimeHistoryItem(

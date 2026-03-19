@@ -299,6 +299,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
                 setImage(ImageSource.bitmap(data.bitmap))
                 isVisible = true
             }
+
             is BufferedSource -> {
                 if (!isWebtoon || alwaysDecodeLongStripWithSSIV) {
                     setHardwareConfig(ImageUtil.canUseHardwareBitmap(data))
@@ -329,6 +330,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
                     .build()
                     .let(context.imageLoader::enqueue)
             }
+
             else -> {
                 throw IllegalArgumentException("Not implemented for class ${data::class.simpleName}")
             }

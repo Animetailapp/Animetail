@@ -114,10 +114,13 @@ data object MangaLibraryTab : Tab {
                 group = state.groupType,
                 groupExtra = when (state.groupType) {
                     MangaLibraryGroup.BY_DEFAULT -> null
+
                     MangaLibraryGroup.BY_SOURCE,
                     MangaLibraryGroup.BY_TRACK_STATUS, MangaLibraryGroup.BY_TAG,
                     -> category?.id?.toString()
+
                     MangaLibraryGroup.BY_STATUS -> category?.id?.minus(1)?.toString()
+
                     else -> null
                 },
             )
@@ -215,6 +218,7 @@ data object MangaLibraryTab : Tab {
         ) { contentPadding ->
             when {
                 state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
                 state.searchQuery.isNullOrEmpty() && !state.hasActiveFilters && state.isLibraryEmpty -> {
                     val handler = LocalUriHandler.current
                     EmptyScreen(
@@ -229,6 +233,7 @@ data object MangaLibraryTab : Tab {
                         ),
                     )
                 }
+
                 else -> {
                     MangaLibraryContent(
                         categories = state.categories,
@@ -295,6 +300,7 @@ data object MangaLibraryTab : Tab {
                     // SY <--
                 )
             }
+
             is MangaLibraryScreenModel.Dialog.ChangeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -310,6 +316,7 @@ data object MangaLibraryTab : Tab {
                     },
                 )
             }
+
             is MangaLibraryScreenModel.Dialog.DeleteManga -> {
                 DeleteLibraryEntryDialog(
                     containsLocalEntry = dialog.manga.any(Manga::isLocal),
@@ -321,6 +328,7 @@ data object MangaLibraryTab : Tab {
                     isManga = true,
                 )
             }
+
             null -> {}
         }
 

@@ -38,6 +38,7 @@ import eu.kanade.presentation.entries.anime.components.EpisodeDownloadAction
 import eu.kanade.presentation.util.formattedMessage
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.UnmeteredSource
+import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.Video
@@ -178,6 +179,10 @@ class AnimeScreenModel(
     // <-- AM (FILE_SIZE)
 ) : StateScreenModel<AnimeScreenModel.State>(State.Loading) {
 
+    // In-memory cache to hold cast fetched from network so UI can show it even if DB
+    // schema doesn't yet persist the cast. Keyed by anime id.
+    private val castCache: MutableMap<Long, List<Credit>?> = mutableMapOf()
+
     private val successState: State.Success?
         get() = state.value as? State.Success
 
@@ -237,10 +242,15 @@ class AnimeScreenModel(
             ) { animeAndEpisodesAndSeasons, _, _ -> animeAndEpisodesAndSeasons }
                 .flowWithLifecycle(lifecycle)
                 .collectLatest { (anime, episodes, seasons) ->
+                    // Preserve any cast we previously fetched and cached in memory so the UI
+                    // doesn't flash when the DB flow emits an anime without cast.
+                    val animeWithCast = anime.copy(
+                        cast = anime.cast ?: castCache[anime.id],
+                    )
                     updateSuccessState {
                         it.copy(
-                            anime = anime,
-                            episodes = episodes.toEpisodeListItems(anime),
+                            anime = animeWithCast,
+                            episodes = episodes.toEpisodeListItems(animeWithCast),
                             seasons = seasons.toAnimeSeasonItems(),
                         )
                     }
@@ -285,10 +295,14 @@ class AnimeScreenModel(
             }
             // <-- (Torrent)
 
+            // Show what we have earlier. Inject cast from in-memory cache if available.
+            val animeWithCast = anime.copy(
+                cast = anime.cast ?: castCache[anime.id],
+            )
             // Show what we have earlier
             mutableState.update {
                 State.Success(
-                    anime = anime,
+                    anime = animeWithCast,
                     source = source,
                     isFromSource = isFromSource,
                     episodes = episodes,
@@ -340,6 +354,12 @@ class AnimeScreenModel(
         try {
             withIOContext {
                 val networkAnime = state.source.getAnimeDetails(state.anime.toSAnime())
+                // If network provided cast/credits, cache them and update UI state so cast shows immediately.
+                networkAnime.cast?.let { credits ->
+                    castCache[state.anime.id] = credits
+                    // Update in-memory state to show cast without waiting DB persistence
+                    updateSuccessState { s -> s.copy(anime = s.anime.copy(cast = credits)) }
+                }
                 updateAnime.awaitUpdateFromSource(state.anime, networkAnime, manualFetch)
             }
         } catch (e: Throwable) {
@@ -558,7 +578,8 @@ class AnimeScreenModel(
                 )
             ) {
                 val updatedAnime = animeRepository.getAnimeById(anime.id)
-                updateSuccessState { it.copy(anime = updatedAnime) }
+                val updatedWithCast = updatedAnime.copy(cast = updatedAnime.cast ?: castCache[updatedAnime.id])
+                updateSuccessState { it.copy(anime = updatedWithCast) }
             }
         }
     }
@@ -741,7 +762,8 @@ class AnimeScreenModel(
                 snackbarHostState.showSnackbar(message = message)
             }
             val newAnime = animeRepository.getAnimeById(animeId)
-            updateSuccessState { it.copy(anime = newAnime, isRefreshingData = false) }
+            val newWithCast = newAnime.copy(cast = newAnime.cast ?: castCache[newAnime.id])
+            updateSuccessState { it.copy(anime = newWithCast, isRefreshingData = false) }
         }
     }
 
@@ -792,7 +814,8 @@ class AnimeScreenModel(
                 snackbarHostState.showSnackbar(message = message)
             }
             val newAnime = animeRepository.getAnimeById(animeId)
-            updateSuccessState { it.copy(anime = newAnime, isRefreshingData = false) }
+            val newWithCast = newAnime.copy(cast = newAnime.cast ?: castCache[newAnime.id])
+            updateSuccessState { it.copy(anime = newWithCast, isRefreshingData = false) }
         }
     }
 
@@ -841,6 +864,7 @@ class AnimeScreenModel(
     }
 
     // KMK -->
+
     /**
      * Set the fetching related mangas status.
      * @param state
@@ -926,20 +950,25 @@ class AnimeScreenModel(
             LibraryPreferences.EpisodeSwipeAction.ToggleSeen -> {
                 markEpisodesSeen(listOf(episode), !episode.seen)
             }
+
             LibraryPreferences.EpisodeSwipeAction.ToggleBookmark -> {
                 bookmarkEpisodes(listOf(episode), !episode.bookmark)
             }
+
             LibraryPreferences.EpisodeSwipeAction.ToggleFillermark -> {
                 fillermarkEpisodes(listOf(episode), !episode.fillermark)
             }
+
             LibraryPreferences.EpisodeSwipeAction.Download -> {
                 val downloadAction: EpisodeDownloadAction = when (episodeItem.downloadState) {
                     AnimeDownload.State.ERROR,
                     AnimeDownload.State.NOT_DOWNLOADED,
                     -> EpisodeDownloadAction.START_NOW
+
                     AnimeDownload.State.QUEUE,
                     AnimeDownload.State.DOWNLOADING,
                     -> EpisodeDownloadAction.CANCEL
+
                     AnimeDownload.State.DOWNLOADED -> EpisodeDownloadAction.DELETE
                 }
                 runEpisodeDownloadActions(
@@ -947,6 +976,7 @@ class AnimeScreenModel(
                     action = downloadAction,
                 )
             }
+
             LibraryPreferences.EpisodeSwipeAction.Disabled -> throw IllegalStateException()
         }
     }
@@ -1018,17 +1048,21 @@ class AnimeScreenModel(
                     downloadManager.startDownloads()
                 }
             }
+
             EpisodeDownloadAction.START_NOW -> {
                 val episode = items.singleOrNull()?.episode ?: return
                 startDownload(listOf(episode), true)
             }
+
             EpisodeDownloadAction.CANCEL -> {
                 val episodeId = items.singleOrNull()?.id ?: return
                 cancelDownload(episodeId)
             }
+
             EpisodeDownloadAction.DELETE -> {
                 deleteEpisodes(items.map { it.episode })
             }
+
             EpisodeDownloadAction.SHOW_QUALITIES -> {
                 val episode = items.singleOrNull()?.episode ?: return
                 showQualitiesDialog(episode)
@@ -1042,8 +1076,8 @@ class AnimeScreenModel(
             DownloadAction.NEXT_5_ITEMS -> getUnseenEpisodesSorted().take(5)
             DownloadAction.NEXT_10_ITEMS -> getUnseenEpisodesSorted().take(10)
             DownloadAction.NEXT_25_ITEMS -> getUnseenEpisodesSorted().take(25)
-
             DownloadAction.UNVIEWED_ITEMS -> getUnseenEpisodes()
+            DownloadAction.BOOKMARKED_ITEMS -> emptyList()
         }
         if (episodesToDownload.isNotEmpty()) {
             startDownload(episodesToDownload, false)
@@ -1769,6 +1803,7 @@ class AnimeScreenModel(
         mutableState.update { state ->
             when (state) {
                 State.Loading -> state
+
                 is State.Success -> {
                     state.copy(dialog = Dialog.EditAnimeInfo(state.anime))
                 }
@@ -1831,6 +1866,7 @@ class AnimeScreenModel(
             }
 
             // KMK -->
+
             /**
              * a value of null will be treated as still loading, so if all searching were failed and won't update
              * 'relatedAnimeCollection` then we should return empty list

@@ -78,6 +78,7 @@ object Notifications {
     const val ID_TORRENT_SERVER = -801
 
     // AM (DISCORD) -->
+
     /**
      * Notification channel used for Discord RPC
      */

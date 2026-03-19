@@ -82,6 +82,7 @@ fun RelatedAnimesContent(
                 selection = selection!!,
             )
         }
+
         LibraryDisplayMode.ComfortableGridPanorama -> {
             RelatedAnimesComfortableGrid(
                 relatedAnimes = relatedAnimes,
@@ -96,6 +97,7 @@ fun RelatedAnimesContent(
                 usePanoramaCover = true,
             )
         }
+
         LibraryDisplayMode.CompactGrid, LibraryDisplayMode.CoverOnlyGrid -> {
             RelatedAnimesCompactGrid(
                 relatedAnimes = relatedAnimes,
@@ -109,6 +111,7 @@ fun RelatedAnimesContent(
                 selection = selection!!,
             )
         }
+
         LibraryDisplayMode.List -> {
             RelatedAnimesList(
                 relatedAnimes = relatedAnimes,

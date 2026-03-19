@@ -218,7 +218,7 @@ class AnimeExtensionManager(
                     hasUpdate = false,
                 )
                 // KMK: changed = true
-                changed = changed || isObsolete || noExtAvailable && (extension.isObsolete || extension.hasUpdate)
+                changed = changed || isObsolete || (noExtAvailable && (extension.isObsolete || extension.hasUpdate))
                 // KMK <--
             } else {
                 val hasUpdate = extension.updateExists(availableExt)

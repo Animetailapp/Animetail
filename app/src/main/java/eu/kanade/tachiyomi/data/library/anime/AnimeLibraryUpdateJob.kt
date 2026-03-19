@@ -217,6 +217,7 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                         status.int == trackingExtra.toLong()
                     }
                 }
+
                 AnimeLibraryGroup.BY_SOURCE -> {
                     val sourceExtra = groupExtra?.nullIfBlank()?.toIntOrNull()
                     val source = libraryAnime.map { it.anime.source }
@@ -226,6 +227,7 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
 
                     if (source != null) libraryAnime.filter { it.anime.source == source } else emptyList()
                 }
+
                 AnimeLibraryGroup.BY_TAG -> {
                     val tagExtra = groupExtra?.nullIfBlank()?.toIntOrNull()
                     val tag = libraryAnime.map { it.anime.genre }
@@ -234,13 +236,16 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
 
                     if (tag != null) libraryAnime.filter { it.anime.genre == tag } else emptyList()
                 }
+
                 AnimeLibraryGroup.BY_STATUS -> {
                     val statusExtra = groupExtra?.toLongOrNull() ?: -1
                     libraryAnime.filter {
                         it.anime.status == statusExtra
                     }
                 }
+
                 AnimeLibraryGroup.UNGROUPED -> libraryAnime
+
                 else -> libraryAnime
             }
             // SY <--
@@ -261,6 +266,7 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                         emptyList()
                     }
                 }
+
                 FetchType.Episodes -> listOf(libAnime)
             }
         }
@@ -309,6 +315,7 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                         )
                         false
                     }
+
                     else -> true
                 }
             }
@@ -392,10 +399,12 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                                             is NoEpisodesException -> context.stringResource(
                                                 AYMR.strings.no_episodes_error,
                                             )
+
                                             // failedUpdates will already have the source, don't need to copy it into the message
                                             is AnimeSourceNotInstalledException -> context.stringResource(
                                                 MR.strings.loader_not_implemented_error,
                                             )
+
                                             else -> e.message
                                         }
                                         failedUpdates.add(anime to errorMessage)
@@ -531,6 +540,7 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         private const val KEY_CATEGORY = "animeCategory"
 
         // SY -->
+
         /**
          * Key for group to update.
          */

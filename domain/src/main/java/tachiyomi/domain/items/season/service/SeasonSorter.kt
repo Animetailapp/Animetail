@@ -13,24 +13,31 @@ fun getSeasonSortComparator(anime: Anime): Comparator<SeasonAnime> = Comparator 
         Anime.SEASON_SORT_SOURCE -> {
             s1.anime.seasonSourceOrder.compareTo(s2.anime.seasonSourceOrder)
         }
+
         Anime.SEASON_SORT_SEASON -> {
             s1.anime.seasonNumber.compareTo(s2.anime.seasonNumber)
         }
+
         Anime.SEASON_SORT_UPLOAD -> {
             s1.latestUpload.compareTo(s2.latestUpload)
         }
+
         Anime.SEASON_SORT_ALPHABET -> {
             seasonSortAlphabetically(s1, s2)
         }
+
         Anime.SEASON_SORT_COUNT -> {
             s1.unseenCount.compareTo(s2.unseenCount)
         }
+
         Anime.SEASON_SORT_LAST_SEEN -> {
             s1.lastSeen.compareTo(s2.lastSeen)
         }
+
         Anime.SEASON_SORT_FETCHED -> {
             s1.fetchedAt.compareTo(s2.fetchedAt)
         }
+
         else -> throw NotImplementedError("Invalid season sorting method: ${anime.seasonSorting}")
     }
 }

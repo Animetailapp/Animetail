@@ -280,18 +280,21 @@ private fun getSwipeAction(
             isUndo = seen,
             onSwipe = onSwipe,
         )
+
         LibraryPreferences.EpisodeSwipeAction.ToggleBookmark -> swipeAction(
             icon = if (!bookmark) Icons.Outlined.BookmarkAdd else Icons.Outlined.BookmarkRemove,
             background = background,
             isUndo = bookmark,
             onSwipe = onSwipe,
         )
+
         LibraryPreferences.EpisodeSwipeAction.ToggleFillermark -> swipeAction(
             icon = if (!fillermark) Icons.Outlined.NewLabel else Icons.AutoMirrored.Outlined.LabelOff,
             background = background,
             isUndo = fillermark,
             onSwipe = onSwipe,
         )
+
         LibraryPreferences.EpisodeSwipeAction.Download -> swipeAction(
             icon = when (downloadState) {
                 AnimeDownload.State.NOT_DOWNLOADED, AnimeDownload.State.ERROR -> Icons.Outlined.Download
@@ -301,6 +304,7 @@ private fun getSwipeAction(
             background = background,
             onSwipe = onSwipe,
         )
+
         LibraryPreferences.EpisodeSwipeAction.Disabled -> null
     }
 }

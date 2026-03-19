@@ -63,13 +63,19 @@ class PreferenceBackupCreator(
             .mapNotNull { (key, value) ->
                 when (value) {
                     is Int -> BackupPreference(key, IntPreferenceValue(value))
+
                     is Long -> BackupPreference(key, LongPreferenceValue(value))
+
                     is Float -> BackupPreference(key, FloatPreferenceValue(value))
+
                     is String -> BackupPreference(key, StringPreferenceValue(value))
+
                     is Boolean -> BackupPreference(key, BooleanPreferenceValue(value))
+
                     is Set<*> -> (value as? Set<String>)?.let {
                         BackupPreference(key, StringSetPreferenceValue(it))
                     }
+
                     else -> null
                 }
             }

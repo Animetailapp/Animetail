@@ -25,3 +25,7 @@ fun List<Chapter>.filterDownloadedChapters(manga: Manga): List<Chapter> {
         )
     }
 }
+
+fun List<Chapter>.filterDownloaded(manga: Manga): List<Chapter> {
+    return filterDownloadedChapters(manga)
+}

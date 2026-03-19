@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
   <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Spårnings status</string>
   <string name="tag">Taggar</string>
@@ -83,7 +83,6 @@
   <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">Anpassad färgväljare</string>
   <string name="custom_color_description">Välj en färg för det anpassade temat</string>
   <string name="theme_custom">Anpassat tema</string>
-  <string name="label_backup" comment="label_backup Cross Device Sync">Säkerhetskopiera</string>
   <string name="label_sync">Synk</string>
   <string name="label_triggers">Utlösare</string>
   <string name="pref_backup_and_sync_summary">Manuell &amp; automatiska säkerhetskopieringar och synkronisering</string>

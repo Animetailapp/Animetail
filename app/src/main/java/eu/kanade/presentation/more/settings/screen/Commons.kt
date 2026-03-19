@@ -37,9 +37,12 @@ fun getCategoriesLabel(
                     context,
                 )
             }
+
         // All explicitly selected
         includedCategories.size == allCategories.size -> stringResource(MR.strings.all)
+
         allExcluded -> stringResource(MR.strings.none)
+
         else -> stringResource(MR.strings.all)
     }
     val excludedItemsText = when {
@@ -72,9 +75,12 @@ fun getCategoriesLabel(
                     context,
                 )
             }
+
         // All explicitly selected
         includedCategories.size == allCategories.size -> stringResource(MR.strings.all)
+
         includedCategories.isEmpty() -> stringResource(MR.strings.none)
+
         else -> stringResource(MR.strings.all)
     }
     return stringResource(MR.strings.include, includedItemsText)

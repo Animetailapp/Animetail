@@ -86,6 +86,7 @@ class MangaDownloadQueueScreenModel(
                         }
                         reorder(newDownloads)
                     }
+
                     R.id.move_to_top_series, R.id.move_to_bottom_series -> {
                         val (selectedSeries, otherSeries) = adapter?.currentItems
                             ?.filterIsInstance<MangaDownloadItem>()
@@ -98,9 +99,11 @@ class MangaDownloadQueueScreenModel(
                             reorder(otherSeries + selectedSeries)
                         }
                     }
+
                     R.id.cancel_download -> {
                         cancel(listOf(item.download))
                     }
+
                     R.id.cancel_series -> {
                         val allDownloadsForSeries = adapter?.currentItems
                             ?.filterIsInstance<MangaDownloadItem>()
@@ -195,12 +198,15 @@ class MangaDownloadQueueScreenModel(
                 // Initial update of the downloaded pages
                 onUpdateDownloadedPages(download)
             }
+
             MangaDownload.State.DOWNLOADED -> {
                 cancelProgressJob(download)
                 onUpdateProgress(download)
                 onUpdateDownloadedPages(download)
             }
+
             MangaDownload.State.ERROR -> cancelProgressJob(download)
+
             else -> {
                 /* unused */
             }
