@@ -1282,7 +1282,7 @@ class PlayerViewModel @JvmOverloads constructor(
         updateIsLoadingEpisode(false)
         updateIsLoadingHosters(false)
 
-        val fallbackTitle = request.displayTitle
+        val fallbackTitle = request.title.ifBlank { request.url }
         val anime = Anime.create().copy(
             id = NETWORK_STREAM_ANIME_ID,
             source = NetworkStreamSource.id,
