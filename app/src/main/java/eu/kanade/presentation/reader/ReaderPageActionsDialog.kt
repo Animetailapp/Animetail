@@ -61,7 +61,10 @@ fun ReaderPageActionsDialog(
                     // SY <--
                 ),
                 icon = Icons.Outlined.Photo,
-                onClick = { showSetCoverDialog = true },
+                onClick = {
+                    useExtraPage = false
+                    showSetCoverDialog = true
+                },
             )
             ActionButton(
                 modifier = Modifier.weight(1f),
@@ -101,6 +104,7 @@ fun ReaderPageActionsDialog(
                     title = stringResource(TLMR.strings.action_set_second_page_cover),
                     icon = Icons.Outlined.Photo,
                     onClick = {
+                        useExtraPage = true
                         showSetCoverDialog = true
                     },
                 )
@@ -131,7 +135,7 @@ fun ReaderPageActionsDialog(
                     title = stringResource(TLMR.strings.action_share_combined_page),
                     icon = Icons.Outlined.Share,
                     onClick = {
-                        onShareCombined(true)
+                        onShareCombined(false)
                         onDismissRequest()
                     },
                 )

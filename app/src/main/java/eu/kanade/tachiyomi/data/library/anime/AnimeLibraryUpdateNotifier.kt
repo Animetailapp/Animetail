@@ -341,6 +341,7 @@ class AnimeLibraryUpdateNotifier(
                     episodes.size,
                 )
             }
+
             // Only 1 episode has a parsed episode number
             1 -> {
                 val remaining = episodes.size - displayableEpisodeNumbers.size
@@ -359,6 +360,7 @@ class AnimeLibraryUpdateNotifier(
                     )
                 }
             }
+
             // Everything else (i.e. multiple parsed episode numbers)
             else -> {
                 val shouldTruncate = displayableEpisodeNumbers.size > NOTIF_MAX_EPISODES

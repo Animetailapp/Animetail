@@ -304,6 +304,7 @@ internal object AnimeExtensionLoader {
                 // KMK -->
                 repoName = when {
                     isOfficiallySigned(signatures) -> "Animetail"
+
                     else -> repos.firstOrNull { repo ->
                         signatures.all { it == repo.signingKeyFingerprint }
                     }?.name
@@ -359,7 +360,9 @@ internal object AnimeExtensionLoader {
                             is AnimeSource -> {
                                 listOf(obj)
                             }
+
                             is AnimeSourceFactory -> obj.createSources()
+
                             else -> throw Exception("Unknown source class type: ${obj.javaClass}")
                         }
                     } catch (e: Throwable) {
@@ -398,6 +401,7 @@ internal object AnimeExtensionLoader {
             signatureHash = signatures.last(),
             repoName = when {
                 isOfficiallySigned(signatures) -> "Animetail"
+
                 else -> repos.firstOrNull { repo ->
                     signatures.all { it == repo.signingKeyFingerprint }
                 }?.name

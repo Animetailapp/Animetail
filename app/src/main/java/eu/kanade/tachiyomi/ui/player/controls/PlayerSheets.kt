@@ -100,6 +100,7 @@ fun PlayerSheets(
 ) {
     when (sheetShown) {
         Sheets.None -> {}
+
         Sheets.SubtitleTracks -> {
             val subtitlesPicker = rememberLauncherForActivityResult(
                 ActivityResultContracts.OpenDocument(),

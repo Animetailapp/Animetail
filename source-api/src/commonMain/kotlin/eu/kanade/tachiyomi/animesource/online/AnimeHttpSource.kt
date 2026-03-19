@@ -250,6 +250,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     protected abstract fun animeDetailsParse(response: Response): SAnime
 
     // KMK -->
+
     /**
      * Whether parsing related animes in anime page or extension provide custom related animes request.
      *

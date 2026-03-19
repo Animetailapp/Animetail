@@ -260,24 +260,27 @@ class ReaderActivity : BaseActivity() {
                     ReaderViewModel.Event.ReloadViewerChapters -> {
                         viewModel.state.value.viewerChapters?.let(::setChapters)
                     }
+
                     ReaderViewModel.Event.PageChanged -> {
                         displayRefreshHost.flash()
                     }
+
                     is ReaderViewModel.Event.SetOrientation -> {
                         setOrientation(event.orientation)
                     }
+
                     is ReaderViewModel.Event.SavedImage -> {
                         onSaveImageResult(event.result)
                     }
+
                     is ReaderViewModel.Event.ShareImage -> {
                         onShareImageResult(event.uri, event.page, event.secondPage)
                     }
+
                     is ReaderViewModel.Event.CopyImage -> {
                         onCopyImageResult(event.uri)
                     }
-                    is ReaderViewModel.Event.CopyImage -> {
-                        onCopyImageResult(event.uri)
-                    }
+
                     is ReaderViewModel.Event.SetCoverResult -> {
                         onSetAsCoverResult(event.result)
                     }
@@ -536,6 +539,7 @@ class ReaderActivity : BaseActivity() {
                         },
                     )
                 }
+
                 is ReaderViewModel.Dialog.Settings -> {
                     ReaderSettingsDialog(
                         onDismissRequest = onDismissRequest,
@@ -544,6 +548,7 @@ class ReaderActivity : BaseActivity() {
                         screenModel = settingsScreenModel,
                     )
                 }
+
                 is ReaderViewModel.Dialog.ReadingModeSelect -> {
                     ReadingModeSelectDialog(
                         onDismissRequest = onDismissRequest,
@@ -556,6 +561,7 @@ class ReaderActivity : BaseActivity() {
                         },
                     )
                 }
+
                 is ReaderViewModel.Dialog.OrientationModeSelect -> {
                     OrientationSelectDialog(
                         onDismissRequest = onDismissRequest,
@@ -566,6 +572,7 @@ class ReaderActivity : BaseActivity() {
                         },
                     )
                 }
+
                 is ReaderViewModel.Dialog.PageActions -> {
                     ReaderPageActionsDialog(
                         onDismissRequest = onDismissRequest,
@@ -577,6 +584,7 @@ class ReaderActivity : BaseActivity() {
                         hasExtraPage = (state.dialog as? ReaderViewModel.Dialog.PageActions)?.extraPage != null,
                     )
                 }
+
                 // SY -->
                 ReaderViewModel.Dialog.AutoScrollHelp -> AlertDialog(
                     onDismissRequest = onDismissRequest,
@@ -588,6 +596,7 @@ class ReaderActivity : BaseActivity() {
                     title = { Text(text = stringResource(TLMR.strings.eh_autoscroll_help)) },
                     text = { Text(text = stringResource(TLMR.strings.eh_autoscroll_help_message)) },
                 )
+
                 ReaderViewModel.Dialog.BoostPageHelp -> AlertDialog(
                     onDismissRequest = onDismissRequest,
                     confirmButton = {
@@ -598,6 +607,7 @@ class ReaderActivity : BaseActivity() {
                     title = { Text(text = stringResource(TLMR.strings.eh_boost_page_help)) },
                     text = { Text(text = stringResource(TLMR.strings.eh_boost_page_help_message)) },
                 )
+
                 ReaderViewModel.Dialog.RetryAllHelp -> AlertDialog(
                     onDismissRequest = onDismissRequest,
                     confirmButton = {
@@ -608,6 +618,7 @@ class ReaderActivity : BaseActivity() {
                     title = { Text(text = stringResource(TLMR.strings.eh_retry_all_help)) },
                     text = { Text(text = stringResource(TLMR.strings.eh_retry_all_help_message)) },
                 )
+
                 // SY <--
 
                 null -> {}
@@ -659,6 +670,7 @@ class ReaderActivity : BaseActivity() {
                                 viewModel.state.value.viewer.let { v ->
                                     when (v) {
                                         is PagerViewer -> v.moveToNext()
+
                                         is WebtoonViewer -> {
                                             if (readerPreferences.smoothAutoScroll().get()) {
                                                 v.linearScroll(interval)
@@ -831,7 +843,7 @@ class ReaderActivity : BaseActivity() {
     private fun shareChapter() {
         assistUrl?.let {
             val intent = it.toUri().toShareIntent(this, type = "text/plain")
-            startActivity(Intent.createChooser(intent, stringResource(MR.strings.action_share)))
+            startActivity(intent)
         }
     }
 
@@ -1050,7 +1062,7 @@ class ReaderActivity : BaseActivity() {
             context = applicationContext,
             message = text,
         )
-        startActivity(Intent.createChooser(intent, stringResource(MR.strings.action_share)))
+        startActivity(intent)
     }
 
     private fun onCopyImageResult(uri: Uri) {
@@ -1068,6 +1080,7 @@ class ReaderActivity : BaseActivity() {
             is ReaderViewModel.SaveImageResult.Success -> {
                 toast(MR.strings.picture_saved)
             }
+
             is ReaderViewModel.SaveImageResult.Error -> {
                 logcat(LogPriority.ERROR, result.error)
             }
@@ -1142,9 +1155,7 @@ class ReaderActivity : BaseActivity() {
 
         private val grayBackgroundColor = Color.rgb(0x20, 0x21, 0x25)
 
-        /**
-         * Initializes the reader subscriptions.
-         */
+        // Initializes the reader subscriptions.
         init {
             readerPreferences.readerTheme().changes()
                 .onEach { theme ->
@@ -1207,8 +1218,10 @@ class ReaderActivity : BaseActivity() {
                         !it &&
                             when (readerPreferences.pageLayout().get()) {
                                 PagerConfig.PageLayout.DOUBLE_PAGES -> true
+
                                 PagerConfig.PageLayout.AUTOMATIC ->
                                     resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
                                 else -> false
                             },
                         true,
@@ -1300,9 +1313,11 @@ class ReaderActivity : BaseActivity() {
                 value > 0 -> {
                     value / 100f
                 }
+
                 value < 0 -> {
                     0.01f
                 }
+
                 else -> WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
             }
             window.attributes = window.attributes.apply { screenBrightness = readerBrightness }
@@ -1323,7 +1338,7 @@ class ReaderActivity : BaseActivity() {
                     DiscordRPCService.setReaderActivity(
                         context = this@ReaderActivity,
                         ReaderData(
-                            incognitoMode = viewModel.currentSource.isNsfw() || viewModel.incognitoMode,
+                            incognitoMode = viewModel.currentSource?.isNsfw() == true || viewModel.incognitoMode,
                             mangaId = viewModel.manga?.id,
                             // AM (CU)>
                             mangaTitle = viewModel.manga?.ogTitle,

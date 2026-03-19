@@ -327,6 +327,7 @@ class MangaLibraryUpdateNotifier(
                     chapters.size,
                 )
             }
+
             // Only 1 chapter has a parsed chapter number
             1 -> {
                 val remaining = chapters.size - displayableChapterNumbers.size
@@ -345,6 +346,7 @@ class MangaLibraryUpdateNotifier(
                     )
                 }
             }
+
             // Everything else (i.e. multiple parsed chapter numbers)
             else -> {
                 val shouldTruncate = displayableChapterNumbers.size > NOTIF_MAX_CHAPTERS

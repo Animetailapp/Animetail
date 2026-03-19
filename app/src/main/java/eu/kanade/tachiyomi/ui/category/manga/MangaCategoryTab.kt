@@ -44,6 +44,7 @@ fun Screen.mangaCategoryTab(): TabContent {
 
                 when (val dialog = successState.dialog) {
                     null -> {}
+
                     MangaCategoryDialog.Create -> {
                         CategoryCreateDialog(
                             onDismissRequest = screenModel::dismissDialog,
@@ -51,6 +52,7 @@ fun Screen.mangaCategoryTab(): TabContent {
                             categories = successState.categories.fastMap { it.name }.toImmutableList(),
                         )
                     }
+
                     is MangaCategoryDialog.Rename -> {
                         CategoryRenameDialog(
                             onDismissRequest = screenModel::dismissDialog,
@@ -59,6 +61,7 @@ fun Screen.mangaCategoryTab(): TabContent {
                             category = dialog.category.name,
                         )
                     }
+
                     is MangaCategoryDialog.Delete -> {
                         CategoryDeleteDialog(
                             onDismissRequest = screenModel::dismissDialog,

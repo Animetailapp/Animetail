@@ -105,12 +105,14 @@ fun Screen.mangaHistoryTab(
                         isManga = true,
                     )
                 }
+
                 is MangaHistoryScreenModel.Dialog.DeleteAll -> {
                     HistoryDeleteAllDialog(
                         onDismissRequest = onDismissRequest,
                         onDelete = screenModel::removeAllHistory,
                     )
                 }
+
                 is MangaHistoryScreenModel.Dialog.DuplicateManga -> {
                     DuplicateMangaDialog(
                         onDismissRequest = onDismissRequest,
@@ -123,6 +125,7 @@ fun Screen.mangaHistoryTab(
                         },
                     )
                 }
+
                 is MangaHistoryScreenModel.Dialog.ChangeCategory -> {
                     ChangeCategoryDialog(
                         initialSelection = dialog.initialSelection,
@@ -136,6 +139,7 @@ fun Screen.mangaHistoryTab(
                         },
                     )
                 }
+
                 is MangaHistoryScreenModel.Dialog.Migrate -> {
                     MigrateMangaDialog(
                         oldManga = dialog.oldManga,
@@ -146,6 +150,7 @@ fun Screen.mangaHistoryTab(
                         onPopScreen = { navigator.replace(MangaScreen(dialog.newManga.id)) },
                     )
                 }
+
                 null -> {}
             }
 
@@ -163,8 +168,10 @@ fun Screen.mangaHistoryTab(
                     when (e) {
                         MangaHistoryScreenModel.Event.InternalError ->
                             snackbarHostState.showSnackbar(context.stringResource(MR.strings.internal_error))
+
                         MangaHistoryScreenModel.Event.HistoryCleared ->
                             snackbarHostState.showSnackbar(context.stringResource(MR.strings.clear_history_completed))
+
                         is MangaHistoryScreenModel.Event.OpenChapter -> openChapter(context, e.chapter)
                     }
                 }

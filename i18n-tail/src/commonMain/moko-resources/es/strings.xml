@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
   <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Estado del seguimiento</string>
   <string name="tag">Etiquetas</string>
@@ -83,7 +83,6 @@
   <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">Selector de color personalizado</string>
   <string name="custom_color_description">Elige un color para el tema personalizado</string>
   <string name="theme_custom">Tema personalizado</string>
-  <string name="label_backup" comment="label_backup Cross Device Sync">Respaldar</string>
   <string name="label_sync">Sincronizar</string>
   <string name="label_triggers">Disparadores</string>
   <string name="pref_backup_and_sync_summary">Copias de seguridad automáticas &amp; y sincronización manual</string>
@@ -307,10 +306,16 @@
   <string name="put_related_animes_in_overflow_summary">Ponga el botón Sugerencias en el menú de desbordamiento en lugar de en la página de entrada</string>
   <string name="pref_show_home_on_related_animes">Inicio desde sugerencias</string>
   <string name="pref_show_home_on_related_animes_summary">Muestra un icono mientras se navega por las Sugerencias para volver directamente a Inicio</string>
-  <string name="pref_source_related_animes">Sugerencias</string>
+    <string name="pref_show_cast">Show Cast</string>
+    <string name="pref_show_cast_summary">Show cast information on anime details page</string>
+    <string name="pref_source_related_animes">Sugerencias</string>
   <string name="pref_source_related_animes_summary">Mostrar sugerencias del sitio de origen mientras se ve la entrada</string>
   <string name="pref_source_navigation">Reemplazar el último botón</string>
   <string name="pref_source_navigation_summery">Reemplaza el último botón con una vista de navegación personalizada que incluye tanto la última como la última navegación</string>
+  <string name="pref_sync_api_key">Clave API</string>
+  <string name="pref_sync_api_key_summ">Introduzca la clave API para sincronizar su biblioteca</string>
+  <string name="login_error">Error de inicio de sesión</string>
+  <string name="save">Guardar</string>
     <string name="pref_doh_custom_url">URL de DoH personalizada</string>
     <string name="pref_doh_custom_url_summary">Ejemplo: https://dns.example/dns-query</string>
     <string name="error_doh_custom_invalid">URL de DoH no válida</string>
@@ -318,4 +323,21 @@
     <string name="pref_doh_custom_bootstrap">Hosts de arranque de DoH personalizados</string>
     <string name="pref_doh_custom_bootstrap_summary">IP separadas por comas (opcional). Ejemplo: 1.1.1.1,8.8.8.8</string>
     <string name="error_doh_custom_bootstrap_invalid">Host de arranque no válido: %1$s</string>
+    <string name="network_stream">Transmisión por red</string>
+    <string name="network_stream_summary">Reproducir un enlace directo dentro del reproductor integrado</string>
+    <string name="network_stream_url_label">URL de la transmisión</string>
+    <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
+    <string name="network_stream_invalid_url">Ingresa una URL válida</string>
+    <string name="network_stream_title_label">Título (opcional)</string>
+    <string name="network_stream_subtitle_label">URL de subtítulos (opcional)</string>
+    <string name="network_stream_invalid_subtitle">Ingresa una URL de subtítulos válida</string>
+    <string name="network_stream_subtitle_language_label">Etiqueta de subtítulo (opcional)</string>
+    <string name="network_stream_referer_label">Encabezado Referer</string>
+    <string name="network_stream_user_agent_label">Encabezado User-Agent</string>
+    <string name="network_stream_headers_label">Encabezados adicionales</string>
+    <string name="network_stream_headers_hint">Nombre-del-Encabezado: Valor del encabezado</string>
+    <string name="network_stream_header_error">El encabezado en la línea %1$d debe usar el formato "Nombre: Valor"</string>
+    <string name="network_stream_play">Reproducir transmisión</string>
+    <string name="network_stream_reset">Limpiar campos</string>
+
 </resources>

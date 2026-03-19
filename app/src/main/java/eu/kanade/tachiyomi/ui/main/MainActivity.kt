@@ -338,7 +338,7 @@ class MainActivity : BaseActivity() {
         val startTime = System.currentTimeMillis()
         splashScreen?.setKeepOnScreenCondition {
             val elapsed = System.currentTimeMillis() - startTime
-            elapsed <= SPLASH_MIN_DURATION || !ready && elapsed <= SPLASH_MAX_DURATION
+            elapsed <= SPLASH_MIN_DURATION || (!ready && elapsed <= SPLASH_MAX_DURATION)
         }
         setSplashScreenExitAnimation(splashScreen)
 
@@ -491,30 +491,41 @@ class MainActivity : BaseActivity() {
 
         val tabToOpen = when (intent.action) {
             Constants.SHORTCUT_ANIMELIB -> HomeScreen.Tab.AnimeLib()
+
             Constants.SHORTCUT_LIBRARY -> HomeScreen.Tab.Library()
+
             Constants.SHORTCUT_MANGA -> {
                 val idToOpen = intent.extras?.getLong(Constants.MANGA_EXTRA) ?: return false
                 navigator.popUntilRoot()
                 HomeScreen.Tab.Library(idToOpen)
             }
+
             Constants.SHORTCUT_ANIME -> {
                 val idToOpen = intent.extras?.getLong(Constants.ANIME_EXTRA) ?: return false
                 navigator.popUntilRoot()
                 HomeScreen.Tab.AnimeLib(idToOpen)
             }
+
             Constants.SHORTCUT_UPDATES -> HomeScreen.Tab.Updates
+
             Constants.SHORTCUT_HISTORY -> HomeScreen.Tab.History
+
             Constants.SHORTCUT_SOURCES -> HomeScreen.Tab.Browse(false)
+
             Constants.SHORTCUT_ANIMEEXTENSIONS -> HomeScreen.Tab.Browse(true, true)
+
             Constants.SHORTCUT_EXTENSIONS -> HomeScreen.Tab.Browse(true)
+
             Constants.SHORTCUT_DOWNLOADS -> {
                 navigator.popUntilRoot()
                 HomeScreen.Tab.More(toDownloads = true)
             }
+
             Constants.SHORTCUT_ANIME_DOWNLOADS -> {
                 navigator.popUntilRoot()
                 HomeScreen.Tab.More(toDownloads = true)
             }
+
             Intent.ACTION_SEARCH, Intent.ACTION_SEND, "com.google.android.gms.actions.SEARCH_ACTION" -> {
                 // If the intent match the "standard" Android search intent
                 // or the Google-specific search intent (triggered by saying or typing "search *query* on *Tachiyomi*" in Google Search/Google Assistant)
@@ -535,6 +546,7 @@ class MainActivity : BaseActivity() {
                             navigator.push(GlobalMangaSearchScreen(query))
                             navigator.push(DeepLinkMangaScreen(query))
                         }
+
                         DeepLinkScreenType.ANIME -> {
                             navigator.push(GlobalAnimeSearchScreen(query))
                             navigator.push(DeepLinkAnimeScreen(query))
@@ -543,6 +555,7 @@ class MainActivity : BaseActivity() {
                 }
                 null
             }
+
             INTENT_SEARCH -> { // Used by extensions (url intent handlers)
                 val query = intent.getStringExtra(INTENT_SEARCH_QUERY)
                 if (!query.isNullOrEmpty()) {
@@ -552,6 +565,7 @@ class MainActivity : BaseActivity() {
                 }
                 null
             }
+
             INTENT_ANIMESEARCH -> { // Same as above
                 val query = intent.getStringExtra(INTENT_SEARCH_QUERY)
                 if (!query.isNullOrEmpty()) {
@@ -561,6 +575,7 @@ class MainActivity : BaseActivity() {
                 }
                 null
             }
+
             Intent.ACTION_VIEW -> {
                 // Handling opening of backup files
                 if (intent.data.toString().endsWith(".tachibk")) {
@@ -582,6 +597,7 @@ class MainActivity : BaseActivity() {
                 }
                 null
             }
+
             else -> return false
         }
 

@@ -12,6 +12,8 @@ import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
 import eu.kanade.tachiyomi.data.track.shikimori.Shikimori
 import eu.kanade.tachiyomi.data.track.simkl.Simkl
 import eu.kanade.tachiyomi.data.track.suwayomi.Suwayomi
+import eu.kanade.tachiyomi.data.track.tmdb.Tmdb
+import eu.kanade.tachiyomi.data.track.trakt.Trakt
 import kotlinx.coroutines.flow.combine
 
 class TrackerManager(context: Context) {
@@ -22,6 +24,7 @@ class TrackerManager(context: Context) {
         const val KAVITA = 8L
         const val SIMKL = 101L
         const val JELLYFIN = 102L
+        const val TRAKT = 201L
     }
 
     val myAnimeList = MyAnimeList(1L)
@@ -35,10 +38,13 @@ class TrackerManager(context: Context) {
     val suwayomi = Suwayomi(9L)
     val simkl = Simkl(SIMKL)
     val jellyfin = Jellyfin(JELLYFIN)
+    val tmdb = Tmdb(200L)
+    val trakt = Trakt(TRAKT)
 
     val trackers = listOf(
         myAnimeList, aniList, kitsu, shikimori, bangumi,
         komga, mangaUpdates, kavita, suwayomi, simkl, jellyfin,
+        tmdb, trakt,
     )
 
     fun loggedInTrackers() = trackers.filter { it.isLoggedIn }

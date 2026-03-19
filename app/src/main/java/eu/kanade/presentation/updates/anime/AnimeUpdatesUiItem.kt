@@ -108,6 +108,7 @@ internal fun LazyListScope.animeUpdatesUiItems(
                     text = relativeDateText(item.date),
                 )
             }
+
             is AnimeUpdatesUiModel.Item -> {
                 val updatesItem = item.item
                 AnimeUpdatesUiItem(
@@ -134,6 +135,7 @@ internal fun LazyListScope.animeUpdatesUiItems(
                                 true,
                                 false,
                             )
+
                             else -> onClickUpdate(updatesItem, false)
                         }
                     },

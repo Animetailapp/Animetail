@@ -92,6 +92,7 @@ private fun MangaHistoryScreenContent(
                         text = relativeDateText(item.date),
                     )
                 }
+
                 is MangaHistoryUiModel.Item -> {
                     val value = item.item
                     MangaHistoryItem(

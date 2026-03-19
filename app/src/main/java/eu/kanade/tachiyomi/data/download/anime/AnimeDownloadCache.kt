@@ -308,6 +308,22 @@ class AnimeDownloadCache(
         notifyChanges()
     }
 
+    suspend fun renameAnime(anime: Anime, oldDir: UniFile, newTitle: String) {
+        rootDownloadsDirMutex.withLock {
+            val sourceDir = rootDownloadsDir.sourceDirs[anime.source] ?: return
+            val oldName = oldDir.name ?: provider.getAnimeDirName(anime.title)
+            val animeDir = sourceDir.animeDirs[oldName] ?: return
+            val newName = provider.getAnimeDirName(newTitle)
+
+            if (oldName == newName) return
+
+            sourceDir.animeDirs -= oldName
+            sourceDir.animeDirs += newName to animeDir
+        }
+
+        notifyChanges()
+    }
+
     suspend fun removeSource(source: AnimeSource) {
         rootDownloadsDirMutex.withLock {
             rootDownloadsDir.sourceDirs -= source.id
@@ -372,12 +388,16 @@ class AnimeDownloadCache(
                                     when {
                                         // Ignore incomplete downloads
                                         it.name?.endsWith(AnimeDownloader.TMP_DIR_SUFFIX) == true -> null
+
                                         // Folder of videos
                                         it.isDirectory -> it.name
+
                                         // MP4 files
                                         it.isFile && it.extension == "mp4" -> it.nameWithoutExtension
+
                                         // MKV files
                                         it.isFile && it.extension == "mkv" -> it.nameWithoutExtension
+
                                         // Anything else is irrelevant
                                         else -> null
                                     }

@@ -150,7 +150,7 @@ class Kavita(id: Long) : BaseTracker(id, "Kavita"), EnhancedMangaTracker, MangaT
             }
 
             authentication.apiUrl = prefApiUrl
-            authentication.jwtToken = token.toString()
+            authentication.jwtToken = token
         }
         authentications = oauth
     }

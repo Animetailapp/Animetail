@@ -217,7 +217,7 @@ class MangaDownloader(
                         } // Ignore completed downloads, leave them in the queue
                         .groupBy { it.source }
                         .toList().take(5) // Concurrently download from 5 different sources
-                        .map { (_, downloads) -> downloads.first() }
+                        .flatMap { (_, downloads) -> downloads.take(downloadPreferences.numberOfDownloads().get()) }
                     emit(activeDownloads)
 
                     if (activeDownloads.isEmpty()) break
@@ -385,9 +385,9 @@ class MangaDownloader(
             download.status = MangaDownload.State.DOWNLOADING
 
             // Start downloading images, consider we can have downloaded images already
-            // Concurrently do 2 pages at a time
+            // Concurrently do 4 pages at a time
             pageList.asFlow()
-                .flatMapMerge(concurrency = 2) { page ->
+                .flatMapMerge(concurrency = 4) { page ->
                     flow {
                         // Fetch image URL if necessary
                         if (page.imageUrl.isNullOrEmpty()) {
@@ -478,11 +478,13 @@ class MangaDownloader(
             // If the image is already downloaded, do nothing. Otherwise download from network
             val file = when {
                 imageFile != null -> imageFile
+
                 chapterCache.isImageInCache(page.imageUrl!!) -> copyImageFromCache(
                     chapterCache.getImageFile(page.imageUrl!!),
                     tmpDir,
                     filename,
                 )
+
                 else -> downloadImage(page, download.source, tmpDir, filename, dataSaver)
             }
 
@@ -623,9 +625,12 @@ class MangaDownloader(
             val fileName = it.name.orEmpty()
             when {
                 fileName in listOf(COMIC_INFO_FILE, NOMEDIA_FILE) -> false
+
                 fileName.endsWith(".tmp") -> false
+
                 // Only count the first split page and not the others
                 fileName.contains("__") && !fileName.endsWith("__001.jpg") -> false
+
                 else -> true
             }
         }

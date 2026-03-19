@@ -80,6 +80,7 @@ class AnimeDownloadQueueScreenModel(
                         }
                         reorder(newAnimeDownloads)
                     }
+
                     R.id.move_to_top_series, R.id.move_to_bottom_series -> {
                         val (selectedSeries, otherSeries) = adapter?.currentItems
                             ?.filterIsInstance<AnimeDownloadItem>()
@@ -92,9 +93,11 @@ class AnimeDownloadQueueScreenModel(
                             reorder(otherSeries + selectedSeries)
                         }
                     }
+
                     R.id.cancel_download -> {
                         cancel(listOf(item.download))
                     }
+
                     R.id.cancel_series -> {
                         val allAnimeDownloadsForSeries = adapter?.currentItems
                             ?.filterIsInstance<AnimeDownloadItem>()
@@ -189,12 +192,15 @@ class AnimeDownloadQueueScreenModel(
                 onUpdateProgress(download)
                 onUpdateDownloadedPages(download)
             }
+
             AnimeDownload.State.DOWNLOADED -> {
                 cancelProgressJob(download)
                 onUpdateProgress(download)
                 onUpdateDownloadedPages(download)
             }
+
             AnimeDownload.State.ERROR -> cancelProgressJob(download)
+
             else -> {
                 /* unused */
             }

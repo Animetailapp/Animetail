@@ -59,6 +59,7 @@ fun Anime.toSAnime(): SAnime = SAnime.create().also {
     it.fetch_type = fetchType
     it.season_number = seasonNumber
     it.initialized = initialized
+    it.cast = cast
 }
 
 fun Anime.copyFrom(other: SAnime): Anime {
@@ -103,6 +104,7 @@ fun SAnime.toDomainAnime(sourceId: Long): Anime {
         ogDescription = description,
         ogGenre = getGenres(),
         ogStatus = status.toLong(),
+        cast = this.cast,
         // SY <--
         thumbnailUrl = thumbnail_url,
         backgroundUrl = background_url,

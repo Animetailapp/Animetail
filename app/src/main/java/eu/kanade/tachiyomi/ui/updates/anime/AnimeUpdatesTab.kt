@@ -108,6 +108,7 @@ fun Screen.animeUpdatesTab(
                         isManga = false,
                     )
                 }
+
                 is AnimeUpdatesScreenModel.Dialog.ShowQualities -> {
                     EpisodeOptionsDialogScreen.onDismissDialog = onDismissDialog
                     NavigatorAdaptiveSheet(
@@ -121,6 +122,7 @@ fun Screen.animeUpdatesTab(
                         onDismissRequest = onDismissDialog,
                     )
                 }
+
                 null -> {}
             }
 
@@ -135,6 +137,7 @@ fun Screen.animeUpdatesTab(
                                 MR.strings.internal_error,
                             ),
                         )
+
                         is AnimeUpdatesScreenModel.Event.LibraryUpdateTriggered -> {
                             val msg = if (event.started) {
                                 MR.strings.updating_library

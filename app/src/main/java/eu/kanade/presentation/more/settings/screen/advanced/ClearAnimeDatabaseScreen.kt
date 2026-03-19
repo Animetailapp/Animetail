@@ -75,6 +75,7 @@ class ClearAnimeDatabaseScreen : Screen() {
 
         when (val s = state) {
             is ClearAnimeDatabaseScreenModel.State.Loading -> LoadingScreen()
+
             is ClearAnimeDatabaseScreenModel.State.Ready -> {
                 if (s.showConfirmation) {
                     AlertDialog(

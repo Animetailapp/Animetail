@@ -203,8 +203,10 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                         page.number > (currentPage as ReaderPage).number
                     }
                 }
+
                 currentPage is ChapterTransition.Prev && page is ReaderPage ->
                     false
+
                 else -> true
             }
             currentPage = page
@@ -414,6 +416,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                     if (!config.volumeKeysInverted) moveDown() else moveUp()
                 }
             }
+
             KeyEvent.KEYCODE_VOLUME_UP -> {
                 if (!config.volumeKeysEnabled || activity.viewModel.state.value.menuVisible) {
                     return false
@@ -421,21 +424,29 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                     if (!config.volumeKeysInverted) moveUp() else moveDown()
                 }
             }
+
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
                 if (isUp) {
                     if (ctrlPressed) moveToNext() else moveRight()
                 }
             }
+
             KeyEvent.KEYCODE_DPAD_LEFT -> {
                 if (isUp) {
                     if (ctrlPressed) moveToPrevious() else moveLeft()
                 }
             }
+
             KeyEvent.KEYCODE_DPAD_DOWN -> if (isUp) moveDown()
+
             KeyEvent.KEYCODE_DPAD_UP -> if (isUp) moveUp()
+
             KeyEvent.KEYCODE_PAGE_DOWN -> if (isUp) moveDown()
+
             KeyEvent.KEYCODE_PAGE_UP -> if (isUp) moveUp()
+
             KeyEvent.KEYCODE_MENU -> if (isUp) activity.toggleMenu()
+
             else -> return false
         }
         return true

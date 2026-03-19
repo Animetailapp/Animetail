@@ -4,6 +4,7 @@ import android.app.Application
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
 import eu.kanade.domain.track.anime.model.toDomainTrack
+import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
@@ -110,6 +111,17 @@ interface AnimeTracker {
 
     suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? {
         throw NotImplementedError("Not implemented.")
+    }
+
+    /**
+     * Fetch cast and staff credits for a given title.
+     * Default implementation returns null. Trackers that can provide cast should override.
+     *
+     * @param title Title to lookup for credits (may be null).
+     * @return List of [Credit] or null when not available.
+     */
+    suspend fun fetchCastByTitle(title: String?): List<Credit>? {
+        return null
     }
 
     private suspend fun updateRemote(track: AnimeTrack): Unit = withIOContext {

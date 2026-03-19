@@ -316,12 +316,15 @@ fun PlayerControls(
                     when (currentPlayerUpdate) {
                         // is PlayerUpdates.DoubleSpeed -> DoubleSpeedPlayerUpdate()
                         is PlayerUpdates.AspectRatio -> TextPlayerUpdate(stringResource(aspectRatio.titleRes))
+
                         is PlayerUpdates.ShowText -> TextPlayerUpdate(
                             (currentPlayerUpdate as PlayerUpdates.ShowText).value,
                         )
+
                         is PlayerUpdates.ShowTextResource -> TextPlayerUpdate(
                             stringResource((currentPlayerUpdate as PlayerUpdates.ShowTextResource).textResource),
                         )
+
                         else -> {}
                     }
                 }
@@ -342,7 +345,7 @@ fun PlayerControls(
                 }
                 AnimatedVisibility(
                     visible =
-                    (controlsShown && !areControlsLocked || gestureSeekAmount != null) ||
+                    ((controlsShown && !areControlsLocked) || gestureSeekAmount != null) ||
                         isLoading ||
                         isLoadingEpisode,
                     enter = fadeIn(playerControlsEnterAnimationSpec()),

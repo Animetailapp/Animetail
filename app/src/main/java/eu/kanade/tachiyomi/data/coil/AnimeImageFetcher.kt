@@ -72,12 +72,18 @@ class AnimeImageFetcher(
         }
 
         // diskCacheKey is thumbnail_url
-        if (url == null) error("No cover specified")
-        return when (getResourceType(url)) {
+        val resolvedUrl = url ?: return emptyImageLoader()
+        return when (getResourceType(resolvedUrl)) {
             Type.URL -> httpLoader()
-            Type.File -> fileLoader(File(url.substringAfter("file://")))
-            Type.URI -> uniFileLoader(url)
-            null -> error("Invalid image")
+
+            Type.File -> File(resolvedUrl.substringAfter("file://"))
+                .takeIf(File::exists)
+                ?.let(::fileLoader)
+                ?: emptyImageLoader()
+
+            Type.URI -> runCatching { uniFileLoader(resolvedUrl) }.getOrElse { emptyImageLoader() }
+
+            null -> emptyImageLoader()
         }
     }
 
@@ -101,6 +107,16 @@ class AnimeImageFetcher(
             mimeType = "image/*",
             dataSource = DataSource.DISK,
         )
+    }
+
+    private fun emptyImageLoader(): FetchResult {
+        val fallbackFile = File(options.context.cacheDir, "image_fallbacks/empty_cover.png").apply {
+            parentFile?.mkdirs()
+            if (!exists()) {
+                writeBytes(EMPTY_PNG_BYTES)
+            }
+        }
+        return fileLoader(fallbackFile)
     }
 
     private suspend fun httpLoader(): FetchResult {
@@ -193,6 +209,7 @@ class AnimeImageFetcher(
                 // don't take up okhttp cache
                 request.cacheControl(CACHE_CONTROL_NO_STORE)
             }
+
             else -> {
                 // This causes the request to fail with a 504 Unsatisfiable Request.
                 request.cacheControl(CACHE_CONTROL_NO_NETWORK_NO_CACHE)
@@ -363,5 +380,18 @@ class AnimeImageFetcher(
         private val CACHE_CONTROL_NO_NETWORK_NO_CACHE = CacheControl.Builder().noCache().onlyIfCached().build()
 
         private const val HTTP_NOT_MODIFIED = 304
+
+        // 1x1 transparent PNG to avoid hard failures when a local item has no usable cover.
+        private val EMPTY_PNG_BYTES = byteArrayOf(
+            0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+            0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+            0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4.toByte(),
+            0x89.toByte(), 0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41,
+            0x54, 0x78, 0x9C.toByte(), 0x63, 0x00, 0x01, 0x00, 0x00,
+            0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4.toByte(),
+            0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44,
+            0xAE.toByte(), 0x42, 0x60, 0x82.toByte(),
+        )
     }
 }

@@ -69,6 +69,7 @@ class MigrateMangaSearchScreen(private val mangaId: Long) : Screen() {
                     },
                 )
             }
+
             else -> {}
         }
     }

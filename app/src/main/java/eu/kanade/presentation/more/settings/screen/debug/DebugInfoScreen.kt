@@ -81,12 +81,15 @@ class DebugInfoScreen : Screen() {
                 ProfileVerifier.CompilationStatus
                     .RESULT_CODE_NO_PROFILE_INSTALLED,
                 -> "No profile installed"
+
                 ProfileVerifier.CompilationStatus
                     .RESULT_CODE_COMPILED_WITH_PROFILE,
                 -> "Compiled"
+
                 ProfileVerifier.CompilationStatus
                     .RESULT_CODE_COMPILED_WITH_PROFILE_NON_MATCHING,
                 -> "Compiled non-matching"
+
                 ProfileVerifier.CompilationStatus
                     .RESULT_CODE_ERROR_CACHE_FILE_EXISTS_BUT_CANNOT_BE_READ,
                 ProfileVerifier.CompilationStatus
@@ -94,13 +97,17 @@ class DebugInfoScreen : Screen() {
                 ProfileVerifier.CompilationStatus
                     .RESULT_CODE_ERROR_PACKAGE_NAME_DOES_NOT_EXIST,
                 -> "Error $result"
+
                 ProfileVerifier.CompilationStatus
                     .RESULT_CODE_ERROR_UNSUPPORTED_API_VERSION,
                 -> "Not supported"
+
                 ProfileVerifier.CompilationStatus
                     .RESULT_CODE_PROFILE_ENQUEUED_FOR_COMPILATION,
                 -> "Pending compilation"
+
                 ProfileVerifier.CompilationStatus.RESULT_CODE_ERROR_NO_PROFILE_EMBEDDED -> "No profile embedded"
+
                 else -> "Unknown code $result"
             }
         }

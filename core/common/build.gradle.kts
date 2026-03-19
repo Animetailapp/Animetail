@@ -7,6 +7,9 @@ plugins {
 
 android {
     namespace = "eu.kanade.tachiyomi.core.common"
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 kotlin {

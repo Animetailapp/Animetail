@@ -161,8 +161,12 @@ class MangaRestorer(
                 val dbChapter = dbChaptersByUrl[chapter.url]
 
                 when {
-                    dbChapter == null -> chapter // New chapter
-                    chapter.forComparison() == dbChapter.forComparison() -> null // Same state; skip
+                    dbChapter == null -> chapter
+
+                    // New chapter
+                    chapter.forComparison() == dbChapter.forComparison() -> null
+
+                    // Same state; skip
                     else -> updateChapterBasedOnSyncState(chapter, dbChapter)
                 }
             }
@@ -184,9 +188,11 @@ class MangaRestorer(
             chapter.copyFrom(dbChapter).let {
                 when {
                     dbChapter.read && !it.read -> it.copy(read = true, lastPageRead = dbChapter.lastPageRead)
+
                     it.lastPageRead == 0L && dbChapter.lastPageRead != 0L -> it.copy(
                         lastPageRead = dbChapter.lastPageRead,
                     )
+
                     else -> it
                 }
             }

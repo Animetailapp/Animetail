@@ -64,6 +64,7 @@ object EpisodeRecognition {
             numberMatch.none() -> {
                 return episodeNumber ?: -1.0
             }
+
             numberMatch.count() > 1 -> {
                 // Remove unwanted tags.
                 unwanted.replace(cleanEpisodeName, "").let { name ->

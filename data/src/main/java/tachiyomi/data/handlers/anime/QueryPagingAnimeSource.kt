@@ -46,6 +46,7 @@ class QueryPagingAnimeSource<RowType : Any>(
                 is LoadParams.Append -> {
                     offset - loadSize to offset + loadSize
                 }
+
                 else -> {
                     offset to offset + loadSize
                 }

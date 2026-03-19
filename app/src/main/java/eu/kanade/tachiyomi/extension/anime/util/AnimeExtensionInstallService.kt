@@ -51,7 +51,9 @@ class AnimeExtensionInstallService : Service() {
                 BasePreferences.ExtensionInstaller.PACKAGEINSTALLER -> PackageInstallerInstallerAnime(
                     this,
                 )
+
                 BasePreferences.ExtensionInstaller.SHIZUKU -> ShizukuInstallerAnime(this)
+
                 else -> {
                     logcat(LogPriority.ERROR) { "Not implemented for installer $installerUsed" }
                     stopSelf()

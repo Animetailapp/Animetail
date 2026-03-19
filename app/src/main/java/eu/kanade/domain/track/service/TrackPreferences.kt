@@ -34,6 +34,15 @@ class TrackPreferences(
 
     fun trackToken(tracker: Tracker) = preferenceStore.getString(Preference.privateKey("track_token_${tracker.id}"), "")
 
+    fun trackApiKey(tracker: Tracker) = preferenceStore.getString(
+        Preference.privateKey("track_api_key_${tracker.id}"),
+        "",
+    )
+
+    fun setApiKey(tracker: Tracker, apiKey: String) {
+        trackApiKey(tracker).set(apiKey)
+    }
+
     fun anilistScoreType() = preferenceStore.getString("anilist_score_type", Anilist.POINT_10)
 
     fun autoUpdateTrack() = preferenceStore.getBoolean("pref_auto_update_manga_sync_key", true)

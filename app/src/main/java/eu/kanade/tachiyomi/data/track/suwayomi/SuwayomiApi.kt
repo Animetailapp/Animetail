@@ -84,7 +84,9 @@ class SuwayomiApi(private val trackId: Long) {
                 .awaitSuccess()
                 .parseAs<List<ChapterDataClass>>()
         }
-        val lastChapterIndex = chapters.first { it.chapterNumber == track.last_chapter_read }.index
+        val lastChapterIndex = chapters
+            .first { kotlin.math.abs(it.chapterNumber - track.last_chapter_read) <= 0.001 }
+            .index
 
         client.newCall(
             PUT(

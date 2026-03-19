@@ -40,6 +40,7 @@ class GetMangaSourcesWithFavoriteCount(
                         else -> a.first.name.lowercase().compareToWithCollator(b.first.name.lowercase())
                     }
                 }
+
                 SetMigrateSorting.Mode.TOTAL -> {
                     when {
                         a.first.isStub && !b.first.isStub -> -1

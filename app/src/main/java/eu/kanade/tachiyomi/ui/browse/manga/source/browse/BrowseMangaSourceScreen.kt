@@ -94,6 +94,7 @@ data class BrowseMangaSourceScreen(
                 !state.isUserQuery && state.toolbarQuery != null -> screenModel.setToolbarQuery(
                     null,
                 )
+
                 else -> navigator.pop()
             }
         }
@@ -236,12 +237,14 @@ data class BrowseMangaSourceScreen(
                             manga.favorite -> screenModel.setDialog(
                                 BrowseMangaSourceScreenModel.Dialog.RemoveManga(manga),
                             )
+
                             duplicateManga != null -> screenModel.setDialog(
                                 BrowseMangaSourceScreenModel.Dialog.AddDuplicateManga(
                                     manga,
                                     duplicateManga,
                                 ),
                             )
+
                             else -> screenModel.addFavorite(manga)
                         }
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -261,6 +264,7 @@ data class BrowseMangaSourceScreen(
                     onUpdate = screenModel::setFilters,
                 )
             }
+
             is BrowseMangaSourceScreenModel.Dialog.AddDuplicateManga -> {
                 DuplicateMangaDialog(
                     onDismissRequest = onDismissRequest,
@@ -286,6 +290,7 @@ data class BrowseMangaSourceScreen(
                     },
                 )
             }
+
             is BrowseMangaSourceScreenModel.Dialog.RemoveManga -> {
                 RemoveEntryDialog(
                     onDismissRequest = onDismissRequest,
@@ -295,6 +300,7 @@ data class BrowseMangaSourceScreen(
                     entryToRemove = dialog.manga.title,
                 )
             }
+
             is BrowseMangaSourceScreenModel.Dialog.ChangeMangaCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -309,6 +315,7 @@ data class BrowseMangaSourceScreen(
                     },
                 )
             }
+
             else -> {}
         }
 

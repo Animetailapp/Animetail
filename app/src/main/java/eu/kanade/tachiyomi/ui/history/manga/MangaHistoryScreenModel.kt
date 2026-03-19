@@ -97,6 +97,7 @@ class MangaHistoryScreenModel(
                 val afterDate = after?.item?.readAt?.time?.toLocalDate()
                 when {
                     beforeDate != afterDate && afterDate != null -> MangaHistoryUiModel.Header(afterDate)
+
                     // Return null to avoid adding a separator between two items.
                     else -> null
                 }

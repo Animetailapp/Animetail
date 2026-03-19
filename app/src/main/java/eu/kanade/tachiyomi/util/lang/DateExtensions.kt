@@ -56,17 +56,21 @@ fun LocalDate.toRelativeString(
     val difference = ChronoUnit.DAYS.between(this, now)
     return when {
         difference < -7 -> dateFormat.format(this)
+
         difference < 0 -> context.pluralStringResource(
             MR.plurals.upcoming_relative_time,
             difference.toInt().absoluteValue,
             difference.toInt().absoluteValue,
         )
+
         difference < 1 -> context.stringResource(MR.strings.relative_time_today)
+
         difference < 7 -> context.pluralStringResource(
             MR.plurals.relative_time,
             difference.toInt(),
             difference.toInt(),
         )
+
         else -> dateFormat.format(this)
     }
 }
@@ -85,11 +89,13 @@ fun LocalDateTime.toRelativeString(
     val dateDifference = ChronoUnit.DAYS.between(this.toLocalDate(), now.toLocalDate())
     return when {
         timeDifference < -7 -> dateFormat.format(this)
+
         timeDifference < 0 -> context.pluralStringResource(
             MR.plurals.upcoming_relative_time,
             dateDifference.toInt().absoluteValue,
             dateDifference.toInt().absoluteValue,
         )
+
         timeDifference < 1 -> {
             val hourDifference = ChronoUnit.HOURS.between(this, now)
             when {
@@ -98,6 +104,7 @@ fun LocalDateTime.toRelativeString(
                     hourDifference.toInt().absoluteValue,
                     hourDifference.toInt().absoluteValue,
                 )
+
                 hourDifference < 1 -> {
                     val minuteDifference = ChronoUnit.MINUTES.between(this, now)
                     when {
@@ -106,7 +113,9 @@ fun LocalDateTime.toRelativeString(
                             minuteDifference.toInt().absoluteValue,
                             minuteDifference.toInt().absoluteValue,
                         )
+
                         minuteDifference == 0L -> context.stringResource(AYMR.strings.relative_time_now)
+
                         else -> context.pluralStringResource(
                             AYMR.plurals.relative_time_minutes,
                             minuteDifference.toInt(),
@@ -114,6 +123,7 @@ fun LocalDateTime.toRelativeString(
                         )
                     }
                 }
+
                 else -> context.pluralStringResource(
                     AYMR.plurals.relative_time_hours,
                     hourDifference.toInt(),
@@ -121,11 +131,13 @@ fun LocalDateTime.toRelativeString(
                 )
             }
         }
+
         timeDifference < 7 -> context.pluralStringResource(
             MR.plurals.relative_time,
             dateDifference.toInt(),
             dateDifference.toInt(),
         )
+
         else -> dateFormat.format(this)
     }
 }

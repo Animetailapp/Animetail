@@ -615,14 +615,17 @@ object SettingsDataScreen : SearchableSettings {
                                 TLMR.strings.google_drive_not_signed_in,
                                 duration = 5000,
                             )
+
                             GoogleDriveSyncService.DeleteSyncDataStatus.NO_FILES -> context.toast(
                                 TLMR.strings.google_drive_sync_data_not_found,
                                 duration = 5000,
                             )
+
                             GoogleDriveSyncService.DeleteSyncDataStatus.SUCCESS -> context.toast(
                                 TLMR.strings.google_drive_sync_data_purged,
                                 duration = 5000,
                             )
+
                             GoogleDriveSyncService.DeleteSyncDataStatus.ERROR -> context.toast(
                                 TLMR.strings.google_drive_sync_data_purge_error,
                                 duration = 10000,

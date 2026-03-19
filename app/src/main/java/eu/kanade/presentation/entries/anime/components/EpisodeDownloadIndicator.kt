@@ -68,6 +68,7 @@ fun EpisodeDownloadIndicator(
             modifier = modifier,
             onClick = onClick,
         )
+
         AnimeDownload.State.QUEUE, AnimeDownload.State.DOWNLOADING -> DownloadingIndicator(
             enabled = enabled,
             modifier = modifier,
@@ -75,6 +76,7 @@ fun EpisodeDownloadIndicator(
             downloadProgressProvider = downloadProgressProvider,
             onClick = onClick,
         )
+
         AnimeDownload.State.DOWNLOADED -> DownloadedIndicator(
             enabled = enabled,
             modifier = modifier,
@@ -83,6 +85,7 @@ fun EpisodeDownloadIndicator(
             // <-- AM (FILE_SIZE)
             onClick = onClick,
         )
+
         AnimeDownload.State.ERROR -> ErrorIndicator(
             enabled = enabled,
             modifier = modifier,

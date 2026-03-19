@@ -49,10 +49,12 @@ fun MangaSourcesScreen(
 ) {
     when {
         state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
         state.isEmpty -> EmptyScreen(
             stringRes = MR.strings.source_empty_screen,
             modifier = Modifier.padding(contentPadding),
         )
+
         else -> {
             ScrollbarLazyColumn(
                 contentPadding = contentPadding + topSmallPaddingValues,
@@ -79,6 +81,7 @@ fun MangaSourcesScreen(
                                 language = model.language,
                             )
                         }
+
                         is MangaSourceUiModel.Item -> SourceItem(
                             modifier = Modifier.animateItem(),
                             source = model.source,
