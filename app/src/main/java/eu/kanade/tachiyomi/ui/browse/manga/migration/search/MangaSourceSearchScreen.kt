@@ -123,6 +123,7 @@ data class MangaSourceSearchScreen(
                     onUpdate = screenModel::setFilters,
                 )
             }
+
             is BrowseMangaSourceScreenModel.Dialog.Migrate -> {
                 MigrateMangaDialog(
                     oldManga = oldManga,
@@ -139,6 +140,7 @@ data class MangaSourceSearchScreen(
                     },
                 )
             }
+
             else -> {}
         }
     }

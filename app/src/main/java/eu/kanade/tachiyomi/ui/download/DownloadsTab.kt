@@ -184,11 +184,13 @@ data object DownloadsTab : Tab {
                                 } else {
                                     AYMR.strings.action_continue
                                 }
+
                                 1 -> if (mangaIsRunning) {
                                     MR.strings.action_pause
                                 } else {
                                     MR.strings.action_resume
                                 }
+
                                 else -> MR.strings.action_pause
                             }
                             Text(text = stringResource(id))
@@ -200,11 +202,13 @@ data object DownloadsTab : Tab {
                                 } else {
                                     Icons.Filled.PlayArrow
                                 }
+
                                 1 -> if (mangaIsRunning) {
                                     Icons.Outlined.Pause
                                 } else {
                                     Icons.Filled.PlayArrow
                                 }
+
                                 else -> Icons.Filled.PlayArrow
                             }
                             Icon(imageVector = icon, contentDescription = null)
@@ -279,6 +283,7 @@ data object DownloadsTab : Tab {
                             PaddingValues(bottom = contentPadding.calculateBottomPadding()),
                             snackbarHostState,
                         )
+
                         1 -> mangaDownloadTab(
                             nestedScrollConnection,
                         ).content(

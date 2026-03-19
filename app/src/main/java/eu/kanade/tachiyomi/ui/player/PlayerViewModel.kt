@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-/**
+/*
  * Code is a mix between PlayerViewModel from mpvKt and the former
  * PlayerViewModel from Aniyomi.
  */
-
 package eu.kanade.tachiyomi.ui.player
 
 import android.app.Application
@@ -58,7 +57,6 @@ import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.database.models.anime.Episode
 import eu.kanade.tachiyomi.data.database.models.anime.isRecognizedNumber
 import eu.kanade.tachiyomi.data.database.models.anime.toDomainEpisode
-import eu.kanade.tachiyomi.data.database.models.manga.isRecognizedNumber
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.saver.Image
@@ -528,7 +526,9 @@ class PlayerViewModel @JvmOverloads constructor(
         _selectedSubtitles.update {
             when (id) {
                 selectedSubs.first -> Pair(selectedSubs.second, -1)
+
                 selectedSubs.second -> Pair(selectedSubs.first, -1)
+
                 else -> {
                     if (selectedSubs.first != -1) {
                         Pair(selectedSubs.first, id)
@@ -793,12 +793,15 @@ class PlayerViewModel @JvmOverloads constructor(
 
         when (property.substringAfterLast("/")) {
             "show_text" -> playerUpdate.update { PlayerUpdates.ShowText(data) }
+
             "toggle_ui" -> {
                 when (data) {
                     "show" -> showControls()
+
                     "toggle" -> {
                         if (controlsShown.value) hideControls() else showControls()
                     }
+
                     "hide" -> {
                         sheetShown.update { Sheets.None }
                         panelShown.update { Panels.None }
@@ -807,6 +810,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     }
                 }
             }
+
             "show_panel" -> {
                 when (data) {
                     "subtitle_settings" -> showPanel(Panels.SubtitleSettings)
@@ -815,20 +819,24 @@ class PlayerViewModel @JvmOverloads constructor(
                     "video_filters" -> showPanel(Panels.VideoFilters)
                 }
             }
+
             "set_button_title" -> {
                 _primaryButtonTitle.update { _ -> data }
             }
+
             "reset_button_title" -> {
                 _customButtons.value.getButtons().firstOrNull { it.isFavorite }?.let {
                     setPrimaryCustomButtonTitle(it)
                 }
             }
+
             "switch_episode" -> {
                 when (data) {
                     "n" -> changeEpisode(false)
                     "p" -> changeEpisode(true)
                 }
             }
+
             "launch_int_picker" -> {
                 val (title, nameFormat, start, stop, step, pickerProperty) = data.split("|")
                 val defaultValue = MPVLib.getPropertyInt(pickerProperty)
@@ -845,6 +853,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     ),
                 )
             }
+
             "pause" -> {
                 when (data) {
                     "pause" -> pause()
@@ -852,16 +861,21 @@ class PlayerViewModel @JvmOverloads constructor(
                     "pauseunpause" -> pauseUnpause()
                 }
             }
+
             "seek_to_with_text" -> {
                 val (seekValue, text) = data.split("|", limit = 2)
                 seekToWithText(seekValue.toInt(), text)
             }
+
             "seek_by_with_text" -> {
                 val (seekValue, text) = data.split("|", limit = 2)
                 seekByWithText(seekValue.toInt(), text)
             }
+
             "seek_by" -> seekByWithText(data.toInt(), null)
+
             "seek_to" -> seekToWithText(data.toInt(), null)
+
             "toggle_button" -> {
                 fun showButton() {
                     if (_primaryButton.value == null) {
@@ -880,7 +894,9 @@ class PlayerViewModel @JvmOverloads constructor(
 
             "software_keyboard" -> when (data) {
                 "show" -> forceShowSoftwareKeyboard()
+
                 "hide" -> forceHideSoftwareKeyboard()
+
                 "toggle" -> if (inputMethodManager.isActive) {
                     forceHideSoftwareKeyboard()
                 } else {
@@ -916,7 +932,15 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     private fun seekByWithText(value: Int, text: String?) {
-        _doubleTapSeekAmount.update { if (value < 0 && it < 0 || pos.value + value > duration.value) 0 else it + value }
+        _doubleTapSeekAmount.update {
+            if ((value < 0 && it < 0) ||
+                pos.value + value > duration.value
+            ) {
+                0
+            } else {
+                it + value
+            }
+        }
         _seekText.update { text }
         _isSeekingForwards.value = value > 0
         seekBy(value, preciseSeek)
@@ -979,13 +1003,17 @@ class PlayerViewModel @JvmOverloads constructor(
             SingleActionGesture.Seek -> {
                 leftSeek()
             }
+
             SingleActionGesture.PlayPause -> {
                 pauseUnpause()
             }
+
             SingleActionGesture.Custom -> {
                 MPVLib.command(arrayOf("keypress", CustomKeyCodes.DoubleTapLeft.keyCode))
             }
+
             SingleActionGesture.None -> {}
+
             SingleActionGesture.Switch -> changeEpisode(true)
         }
     }
@@ -995,11 +1023,15 @@ class PlayerViewModel @JvmOverloads constructor(
             SingleActionGesture.PlayPause -> {
                 pauseUnpause()
             }
+
             SingleActionGesture.Custom -> {
                 MPVLib.command(arrayOf("keypress", CustomKeyCodes.DoubleTapCenter.keyCode))
             }
+
             SingleActionGesture.Seek -> {}
+
             SingleActionGesture.None -> {}
+
             SingleActionGesture.Switch -> {}
         }
     }
@@ -1009,13 +1041,17 @@ class PlayerViewModel @JvmOverloads constructor(
             SingleActionGesture.Seek -> {
                 rightSeek()
             }
+
             SingleActionGesture.PlayPause -> {
                 pauseUnpause()
             }
+
             SingleActionGesture.Custom -> {
                 MPVLib.command(arrayOf("keypress", CustomKeyCodes.DoubleTapRight.keyCode))
             }
+
             SingleActionGesture.None -> {}
+
             SingleActionGesture.Switch -> changeEpisode(false)
         }
     }
@@ -1089,32 +1125,48 @@ class PlayerViewModel @JvmOverloads constructor(
             ?: error("Requested episode of id $episodeId not found in episode list")
 
         val episodesForPlayer = episodes.filterNot {
-            anime.unseenFilterRaw == Anime.EPISODE_SHOW_SEEN &&
-                !it.seen ||
-                anime.unseenFilterRaw == Anime.EPISODE_SHOW_UNSEEN &&
-                it.seen ||
-                anime.downloadedFilterRaw == Anime.EPISODE_SHOW_DOWNLOADED &&
-                !downloadManager.isEpisodeDownloaded(
-                    it.name,
-                    it.scanlator,
-                    anime.title,
-                    anime.source,
+            (
+                anime.unseenFilterRaw == Anime.EPISODE_SHOW_SEEN &&
+                    !it.seen
                 ) ||
-                anime.downloadedFilterRaw == Anime.EPISODE_SHOW_NOT_DOWNLOADED &&
-                downloadManager.isEpisodeDownloaded(
-                    it.name,
-                    it.scanlator,
-                    anime.title,
-                    anime.source,
-                ) ||
-                anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_BOOKMARKED &&
-                !it.bookmark ||
-                anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_NOT_BOOKMARKED &&
-                it.bookmark ||
-                anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_FILLERMARKED &&
-                !it.fillermark ||
-                anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_NOT_FILLERMARKED &&
-                it.fillermark
+                (
+                    anime.unseenFilterRaw == Anime.EPISODE_SHOW_UNSEEN &&
+                        it.seen
+                    ) ||
+                (
+                    anime.downloadedFilterRaw == Anime.EPISODE_SHOW_DOWNLOADED &&
+                        !downloadManager.isEpisodeDownloaded(
+                            it.name,
+                            it.scanlator,
+                            anime.title,
+                            anime.source,
+                        )
+                    ) ||
+                (
+                    anime.downloadedFilterRaw == Anime.EPISODE_SHOW_NOT_DOWNLOADED &&
+                        downloadManager.isEpisodeDownloaded(
+                            it.name,
+                            it.scanlator,
+                            anime.title,
+                            anime.source,
+                        )
+                    ) ||
+                (
+                    anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_BOOKMARKED &&
+                        !it.bookmark
+                    ) ||
+                (
+                    anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_NOT_BOOKMARKED &&
+                        it.bookmark
+                    ) ||
+                (
+                    anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_FILLERMARKED &&
+                        !it.fillermark
+                    ) ||
+                (
+                    anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_NOT_FILLERMARKED &&
+                        it.fillermark
+                    )
         }.toMutableList()
 
         if (episodesForPlayer.all { it.id != episodeId }) {
@@ -1487,6 +1539,7 @@ class PlayerViewModel @JvmOverloads constructor(
             is HosterState.Ready -> {
                 _hosterExpandedList.updateAt(index, !_hosterExpandedList.value[index])
             }
+
             is HosterState.Idle -> {
                 val hosterName = hosterList.value[index].hosterName
                 _hosterState.updateAt(index, HosterState.Loading(hosterName))
@@ -1500,6 +1553,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     _hosterState.updateAt(index, hosterState)
                 }
             }
+
             is HosterState.Loading, is HosterState.Error -> {}
         }
     }

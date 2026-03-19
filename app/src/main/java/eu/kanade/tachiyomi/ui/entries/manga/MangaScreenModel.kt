@@ -1238,6 +1238,7 @@ class MangaScreenModel(
         mutableState.update { state ->
             when (state) {
                 State.Loading -> state
+
                 is State.Success -> {
                     state.copy(dialog = Dialog.EditMangaInfo(state.manga))
                 }

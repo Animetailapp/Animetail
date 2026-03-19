@@ -175,7 +175,7 @@ class MangaExtensionManager(
                     isObsolete = isObsolete,
                     hasUpdate = false,
                 )
-                changed = changed || isObsolete || noExtAvailable && (extension.isObsolete || extension.hasUpdate)
+                changed = changed || isObsolete || (noExtAvailable && (extension.isObsolete || extension.hasUpdate))
             } else {
                 val hasUpdate = extension.updateExists(availableExt)
                 installedExtensionsMap[pkgName] = if (extension.hasUpdate != hasUpdate) {

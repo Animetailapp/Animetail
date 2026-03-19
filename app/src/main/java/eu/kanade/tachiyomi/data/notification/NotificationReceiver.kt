@@ -64,21 +64,29 @@ class NotificationReceiver : BroadcastReceiver() {
         when (intent.action) {
             // Dismiss notification
             ACTION_DISMISS_NOTIFICATION -> dismissNotification(context, intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1))
+
             // Resume the download service
             ACTION_RESUME_DOWNLOADS -> mangaDownloadManager.startDownloads()
+
             // Pause the download service
             ACTION_PAUSE_DOWNLOADS -> mangaDownloadManager.pauseDownloads()
+
             // Clear the download queue
             ACTION_CLEAR_DOWNLOADS -> mangaDownloadManager.clearQueue()
+
             ACTION_RESUME_ANIME_DOWNLOADS -> animeDownloadManager.startDownloads()
+
             ACTION_PAUSE_ANIME_DOWNLOADS -> animeDownloadManager.pauseDownloads()
+
             ACTION_CLEAR_ANIME_DOWNLOADS -> animeDownloadManager.clearQueue()
+
             // Launch share activity and dismiss notification
             ACTION_SHARE_IMAGE ->
                 shareImage(
                     context,
                     intent.getStringExtra(EXTRA_URI)!!.toUri(),
                 )
+
             // Share backup file
             ACTION_SHARE_BACKUP ->
                 shareFile(
@@ -86,15 +94,22 @@ class NotificationReceiver : BroadcastReceiver() {
                     intent.getParcelableExtraCompat(EXTRA_URI)!!,
                     "application/x-protobuf+gzip",
                 )
+
             ACTION_CANCEL_RESTORE -> cancelRestore(context)
+
             // Cancel library update and dismiss notification
             ACTION_CANCEL_LIBRARY_UPDATE -> cancelLibraryUpdate(context)
+
             ACTION_CANCEL_ANIME_LIBRARY_UPDATE -> cancelAnimeLibraryUpdate(context)
+
             ACTION_CANCEL_SYNC -> cancelSync(context)
+
             // Start downloading app update
             ACTION_START_APP_UPDATE -> startDownloadAppUpdate(context, intent)
+
             // Cancel downloading app update
             ACTION_CANCEL_APP_UPDATE_DOWNLOAD -> cancelDownloadAppUpdate(context)
+
             // Open reader activity
             ACTION_OPEN_CHAPTER -> {
                 openChapter(
@@ -103,6 +118,7 @@ class NotificationReceiver : BroadcastReceiver() {
                     intent.getLongExtra(EXTRA_CHAPTER_ID, -1),
                 )
             }
+
             ACTION_OPEN_EPISODE -> {
                 openEpisode(
                     context,
@@ -110,6 +126,7 @@ class NotificationReceiver : BroadcastReceiver() {
                     intent.getLongExtra(EXTRA_EPISODE_ID, -1),
                 )
             }
+
             // Mark updated manga chapters as read
             ACTION_MARK_AS_READ -> {
                 val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
@@ -122,6 +139,7 @@ class NotificationReceiver : BroadcastReceiver() {
                     markAsRead(urls, mangaId)
                 }
             }
+
             // Download manga chapters
             ACTION_DOWNLOAD_CHAPTER -> {
                 val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
@@ -134,6 +152,7 @@ class NotificationReceiver : BroadcastReceiver() {
                     downloadChapters(urls, mangaId)
                 }
             }
+
             ACTION_MARK_AS_VIEWED -> {
                 val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
                 if (notificationId > -1) {
@@ -145,6 +164,7 @@ class NotificationReceiver : BroadcastReceiver() {
                     markAsViewed(urls, animeId)
                 }
             }
+
             ACTION_DOWNLOAD_EPISODE -> {
                 val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
                 if (notificationId > -1) {

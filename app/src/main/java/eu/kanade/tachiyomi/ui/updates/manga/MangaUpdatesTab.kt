@@ -97,12 +97,14 @@ fun Screen.mangaUpdatesTab(
                         isManga = true,
                     )
                 }
+
                 is MangaUpdatesScreenModel.Dialog.FilterSheet -> {
                     UpdatesFilterDialog(
                         onDismissRequest = onDismissDialog,
                         screenModel = settingsScreenModel,
                     )
                 }
+
                 null -> {}
             }
 
@@ -117,6 +119,7 @@ fun Screen.mangaUpdatesTab(
                                 MR.strings.internal_error,
                             ),
                         )
+
                         is MangaUpdatesScreenModel.Event.LibraryUpdateTriggered -> {
                             val msg = if (event.started) {
                                 MR.strings.updating_library

@@ -71,6 +71,7 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
                     },
                 )
             }
+
             else -> {}
         }
     }

@@ -98,7 +98,9 @@ fun SubtitleDelayPanel(
             val finalDelay = (if (affectedSubtitle == SubtitleDelayType.Secondary) secondaryDelay else delay) / 1000.0
             when (affectedSubtitle) {
                 SubtitleDelayType.Primary -> MPVLib.setPropertyDouble("sub-delay", finalDelay)
+
                 SubtitleDelayType.Secondary -> MPVLib.setPropertyDouble("secondary-sub-delay", finalDelay)
+
                 else -> {
                     MPVLib.setPropertyDouble("sub-delay", finalDelay)
                     MPVLib.setPropertyDouble("secondary-sub-delay", finalDelay)

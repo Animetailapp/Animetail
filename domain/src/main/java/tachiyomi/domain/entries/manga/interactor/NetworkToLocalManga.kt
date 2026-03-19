@@ -15,6 +15,7 @@ class NetworkToLocalManga(
                 val id = insertManga(manga)
                 manga.copy(id = id!!)
             }
+
             manga.source == LOCAL_MANGA_SOURCE_ID -> {
                 val mergedManga = mergeLocalManga(localManga, manga)
                 if (mergedManga != localManga) {
@@ -22,11 +23,13 @@ class NetworkToLocalManga(
                 }
                 mergedManga
             }
+
             !localManga.favorite -> {
                 // if the manga isn't a favorite, set its display title from source
                 // if it later becomes a favorite, updated title will go to db
                 localManga.copy(ogTitle = manga.title)
             }
+
             else -> {
                 localManga
             }

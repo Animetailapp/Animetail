@@ -96,6 +96,7 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
                         mediaType = "movie",
                     ),
                 )
+
                 "tv" -> list.add(
                     TmdbSearchResult(
                         id = item.optLong("id"),
@@ -105,6 +106,7 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
                         mediaType = "tv",
                     ),
                 )
+
                 else -> {
                     // ignore other types (person, etc.) for our purposes
                 }

@@ -93,6 +93,7 @@ fun AnimeExtensionScreen(
     ) {
         when {
             state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
             state.isEmpty -> {
                 val msg = if (!searchQuery.isNullOrEmpty()) {
                     MR.strings.no_results_found
@@ -111,6 +112,7 @@ fun AnimeExtensionScreen(
                     ),
                 )
             }
+
             else -> {
                 AnimeExtensionContent(
                     state = state,
@@ -190,6 +192,7 @@ private fun AnimeExtensionContent(
                             action = action,
                         )
                     }
+
                     is AnimeExtensionUiModel.Header.Text -> {
                         ExtensionHeader(
                             text = header.text,
@@ -216,7 +219,9 @@ private fun AnimeExtensionContent(
                     onClickItem = {
                         when (it) {
                             is AnimeExtension.Available -> onInstallExtension(it)
+
                             is AnimeExtension.Installed -> onOpenExtension(it)
+
                             is AnimeExtension.Untrusted -> {
                                 trustState = it
                             }
@@ -234,6 +239,7 @@ private fun AnimeExtensionContent(
                     onClickItemAction = {
                         when (it) {
                             is AnimeExtension.Available -> onInstallExtension(it)
+
                             is AnimeExtension.Installed -> {
                                 if (it.hasUpdate) {
                                     onUpdateExtension(it)
@@ -426,6 +432,7 @@ private fun AnimeExtensionItemActions(
                     )
                 }
             }
+
             installStep == InstallStep.Error -> {
                 IconButton(onClick = { onClickItemAction(extension) }) {
                     Icon(
@@ -434,6 +441,7 @@ private fun AnimeExtensionItemActions(
                     )
                 }
             }
+
             installStep == InstallStep.Idle -> {
                 when (extension) {
                     is AnimeExtension.Installed -> {
@@ -453,6 +461,7 @@ private fun AnimeExtensionItemActions(
                             }
                         }
                     }
+
                     is AnimeExtension.Untrusted -> {
                         IconButton(onClick = { onClickItemAction(extension) }) {
                             Icon(
@@ -461,6 +470,7 @@ private fun AnimeExtensionItemActions(
                             )
                         }
                     }
+
                     is AnimeExtension.Available -> {
                         if (extension.sources.isNotEmpty()) {
                             IconButton(

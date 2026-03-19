@@ -307,6 +307,7 @@ fun HosterTrack(
                     modifier = Modifier.alpha(DISABLED_ALPHA),
                 )
             }
+
             is HosterState.Error -> {
                 Text(
                     text = stringResource(AYMR.strings.player_hoster_failed),
@@ -315,6 +316,7 @@ fun HosterTrack(
                 Spacer(modifier = Modifier.weight(1f))
                 Icon(Icons.Default.ErrorOutline, null, tint = MaterialTheme.colorScheme.error)
             }
+
             is HosterState.Loading -> {
                 Spacer(modifier = Modifier.weight(1f))
                 CircularProgressIndicator(
@@ -322,6 +324,7 @@ fun HosterTrack(
                     strokeWidth = 2.dp,
                 )
             }
+
             is HosterState.Ready -> {
                 Text(
                     text = pluralStringResource(
@@ -395,12 +398,14 @@ private fun VideoIcon(
     ) {
         when (videoState) {
             Video.State.QUEUE, Video.State.READY -> {}
+
             Video.State.LOAD_VIDEO -> {
                 CircularProgressIndicator(
                     modifier = Modifier.fillMaxSize(),
                     strokeWidth = 2.dp,
                 )
             }
+
             Video.State.ERROR -> {
                 Icon(
                     Icons.Default.ErrorOutline,

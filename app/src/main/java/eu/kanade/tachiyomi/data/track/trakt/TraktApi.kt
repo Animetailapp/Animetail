@@ -42,11 +42,14 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     private fun extractImageUrl(el: JsonElement?): String? {
         val raw = when (el) {
             null -> null
+
             is JsonObject -> el["full"]?.jsonPrimitive?.contentOrNull
                 ?: el["medium"]?.jsonPrimitive?.contentOrNull
                 ?: el["thumb"]?.jsonPrimitive?.contentOrNull
                 ?: el.entries.firstOrNull()?.value?.let { extractImageUrl(it) }
+
             is JsonArray -> el.firstOrNull()?.jsonPrimitive?.contentOrNull
+
             else -> el.jsonPrimitive.contentOrNull
         }?.trim().takeUnless { it.isNullOrBlank() } ?: return null
 

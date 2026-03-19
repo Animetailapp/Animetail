@@ -10,9 +10,7 @@ android {
     buildFeatures {
         buildConfig = true
     }
-
 }
-
 
 kotlin {
     compilerOptions {

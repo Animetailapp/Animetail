@@ -113,12 +113,14 @@ fun Screen.animeHistoryTab(
                         isManga = false,
                     )
                 }
+
                 is AnimeHistoryScreenModel.Dialog.DeleteAll -> {
                     HistoryDeleteAllDialog(
                         onDismissRequest = onDismissRequest,
                         onDelete = screenModel::removeAllHistory,
                     )
                 }
+
                 is AnimeHistoryScreenModel.Dialog.DuplicateAnime -> {
                     DuplicateAnimeDialog(
                         onDismissRequest = onDismissRequest,
@@ -131,6 +133,7 @@ fun Screen.animeHistoryTab(
                         },
                     )
                 }
+
                 is AnimeHistoryScreenModel.Dialog.ChangeCategory -> {
                     ChangeCategoryDialog(
                         initialSelection = dialog.initialSelection,
@@ -141,6 +144,7 @@ fun Screen.animeHistoryTab(
                         },
                     )
                 }
+
                 is AnimeHistoryScreenModel.Dialog.Migrate -> {
                     MigrateAnimeDialog(
                         oldAnime = dialog.oldAnime,
@@ -154,6 +158,7 @@ fun Screen.animeHistoryTab(
                         onPopScreen = { navigator.replace(AnimeScreen(dialog.oldAnime.id)) },
                     )
                 }
+
                 null -> {}
             }
 
@@ -171,8 +176,10 @@ fun Screen.animeHistoryTab(
                     when (e) {
                         AnimeHistoryScreenModel.Event.InternalError ->
                             snackbarHostState.showSnackbar(context.stringResource(MR.strings.internal_error))
+
                         AnimeHistoryScreenModel.Event.HistoryCleared ->
                             snackbarHostState.showSnackbar(context.stringResource(MR.strings.clear_history_completed))
+
                         is AnimeHistoryScreenModel.Event.OpenEpisode -> openEpisode(context, e.episode)
                     }
                 }

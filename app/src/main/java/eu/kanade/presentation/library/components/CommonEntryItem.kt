@@ -349,6 +349,7 @@ fun EntryListItem(
             .height(
                 when (entries) {
                     0 -> 76.dp
+
                     else -> {
                         val density = LocalDensity.current
                         with(density) { (containerHeight / entries).toDp() } - (3 / entries).dp

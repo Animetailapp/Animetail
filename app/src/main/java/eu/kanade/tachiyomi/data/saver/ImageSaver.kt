@@ -176,6 +176,7 @@ sealed class Image(
                         ByteArrayInputStream(baos.toByteArray())
                     }
                 }
+
                 is Page -> inputStream
             }
         }
@@ -196,6 +197,7 @@ sealed interface Location {
     fun directory(context: Context): File {
         return when (this) {
             Cache -> context.cacheImageDir
+
             is Pictures -> {
                 val file = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),

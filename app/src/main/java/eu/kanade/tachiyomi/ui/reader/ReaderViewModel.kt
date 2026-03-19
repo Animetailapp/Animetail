@@ -177,6 +177,7 @@ class ReaderViewModel @JvmOverloads constructor(
                 val filteredChapters = chapters.filterNot {
                     when {
                         readerPreferences.skipRead().get() && it.read -> true
+
                         readerPreferences.skipFiltered().get() -> {
                             (manga.unreadFilterRaw == Manga.CHAPTER_SHOW_READ && !it.read) ||
                                 (manga.unreadFilterRaw == Manga.CHAPTER_SHOW_UNREAD && it.read) ||
@@ -203,6 +204,7 @@ class ReaderViewModel @JvmOverloads constructor(
                                 (manga.bookmarkedFilterRaw == Manga.CHAPTER_SHOW_BOOKMARKED && !it.bookmark) ||
                                 (manga.bookmarkedFilterRaw == Manga.CHAPTER_SHOW_NOT_BOOKMARKED && it.bookmark)
                         }
+
                         else -> false
                     }
                 }
@@ -213,6 +215,7 @@ class ReaderViewModel @JvmOverloads constructor(
                     filteredChapters + listOf(selectedChapter)
                 }
             }
+
             else -> chapters
         }
 

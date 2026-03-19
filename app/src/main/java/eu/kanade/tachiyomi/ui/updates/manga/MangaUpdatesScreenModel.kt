@@ -222,14 +222,17 @@ class MangaUpdatesScreenModel(
                         downloadManager.startDownloads()
                     }
                 }
+
                 ChapterDownloadAction.START_NOW -> {
                     val chapterId = items.singleOrNull()?.update?.chapterId ?: return@launch
                     startDownloadingNow(chapterId)
                 }
+
                 ChapterDownloadAction.CANCEL -> {
                     val chapterId = items.singleOrNull()?.update?.chapterId ?: return@launch
                     cancelDownload(chapterId)
                 }
+
                 ChapterDownloadAction.DELETE -> {
                     deleteChapters(items)
                 }
@@ -466,6 +469,7 @@ class MangaUpdatesScreenModel(
                     val afterDate = after?.item?.update?.dateFetch?.toLocalDate()
                     when {
                         beforeDate != afterDate && afterDate != null -> MangaUpdatesUiModel.Header(afterDate)
+
                         // Return null to avoid adding a separator between two items.
                         else -> null
                     }

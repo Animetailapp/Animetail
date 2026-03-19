@@ -103,6 +103,7 @@ fun MiddlePlayerControls(
             }
 
             (isLoading || isLoadingEpisode) && showLoadingCircle -> CircularProgressIndicator(Modifier.size(96.dp))
+
             else -> {
                 AnimatedVisibility(
                     visible = controlsShown && !areControlsLocked,

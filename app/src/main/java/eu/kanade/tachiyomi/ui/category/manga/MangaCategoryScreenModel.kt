@@ -76,6 +76,7 @@ class MangaCategoryScreenModel(
                 is HideMangaCategory.Result.InternalError -> _events.send(
                     MangaCategoryEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -87,6 +88,7 @@ class MangaCategoryScreenModel(
                 is DeleteMangaCategory.Result.InternalError -> _events.send(
                     MangaCategoryEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -98,6 +100,7 @@ class MangaCategoryScreenModel(
                 is ReorderMangaCategory.Result.InternalError -> _events.send(
                     MangaCategoryEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -109,6 +112,7 @@ class MangaCategoryScreenModel(
                 is RenameMangaCategory.Result.InternalError -> _events.send(
                     MangaCategoryEvent.InternalError,
                 )
+
                 else -> {}
             }
         }

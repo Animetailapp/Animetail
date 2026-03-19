@@ -45,12 +45,16 @@ class UpdateManga(
             when {
                 // Never refresh covers if the url is empty to avoid "losing" existing covers
                 remoteManga.thumbnail_url.isNullOrEmpty() -> null
+
                 !manualFetch && localManga.thumbnailUrl == remoteManga.thumbnail_url -> null
+
                 localManga.isLocal() -> Instant.now().toEpochMilli()
+
                 localManga.hasCustomCover(coverCache) -> {
                     coverCache.deleteFromCache(localManga, false)
                     null
                 }
+
                 else -> {
                     coverCache.deleteFromCache(localManga, false)
                     Instant.now().toEpochMilli()

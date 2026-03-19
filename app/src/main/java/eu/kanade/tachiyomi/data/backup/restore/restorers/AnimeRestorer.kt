@@ -230,9 +230,11 @@ class AnimeRestorer(
             episode.copyFrom(dbEpisode).let {
                 when {
                     dbEpisode.seen && !it.seen -> it.copy(seen = true, lastSecondSeen = dbEpisode.lastSecondSeen)
+
                     it.lastSecondSeen == 0L && dbEpisode.lastSecondSeen != 0L -> it.copy(
                         lastSecondSeen = dbEpisode.lastSecondSeen,
                     )
+
                     else -> it
                 }
             }

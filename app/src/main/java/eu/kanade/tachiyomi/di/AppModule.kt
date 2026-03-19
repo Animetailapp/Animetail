@@ -227,7 +227,7 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { LocalAnimeFetchTypeManager(app, get()) }
         addSingletonFactory { LocalEpisodeThumbnailManager(app, get()) }
 
-    addSingletonFactory { StorageManager(app, get(), get<AndroidStorageFolderProvider>()) }
+        addSingletonFactory { StorageManager(app, get(), get<AndroidStorageFolderProvider>()) }
 
         addSingletonFactory { ExternalIntents() }
 

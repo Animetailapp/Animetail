@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
@@ -216,7 +215,9 @@ open class SourceFeedScreenModel(
                         withContext(coroutineDispatcher) {
                             when (sourceFeed) {
                                 is SourceFeedUI.Browse -> source.getPopularAnime(1)
+
                                 is SourceFeedUI.Latest -> source.getLatestUpdates(1)
+
                                 is SourceFeedUI.SourceSavedSearch -> source.getSearchAnime(
                                     page = 1,
                                     query = sourceFeed.savedSearch.query.orEmpty(),

@@ -46,6 +46,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     var currentChapter: ReaderChapter? = null
 
     // SY -->
+
     /** Page used to start the shifted pages */
     var pageToShift: ReaderPage? = null
 
@@ -188,6 +189,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
             is L2RPagerViewer,
             is VerticalPagerViewer,
             -> currentIndex + 1
+
             else -> currentIndex
         }
 
@@ -244,6 +246,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
                         }
                         pagedItems.last().add(it)
                     }
+
                     is ChapterTransition -> {
                         otherItems.add(it)
                         pagedItems.add(mutableListOf())
@@ -346,7 +349,9 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
                     (oldCurrent?.first as? ChapterTransition)?.from != currentChapter -> subItems.find {
                     (it as? ReaderPage)?.chapter == currentChapter
                 }
+
                 useSecondPage -> (oldCurrent?.second ?: oldCurrent?.first)
+
                 else -> oldCurrent?.first ?: return
             }
         var index = joinedItems.indexOfFirst { it.first == newPage || it.second == newPage }

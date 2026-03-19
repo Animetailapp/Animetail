@@ -384,6 +384,7 @@ class SyncManager(
                             logcat(LogPriority.DEBUG, logTag) { "Already up-to-date favorite: ${remoteManga.title}" }
                         }
                     }
+
                     // Handle non-favorites
                     !remoteManga.favorite -> {
                         logcat(LogPriority.DEBUG, logTag) { "Adding to non-favorites: ${remoteManga.title}" }
@@ -430,6 +431,7 @@ class SyncManager(
                             logcat(LogPriority.DEBUG, logTag) { "Already up-to-date favorite: ${remoteAnime.title}" }
                         }
                     }
+
                     // Handle non-favorites
                     !remoteAnime.favorite -> {
                         logcat(LogPriority.DEBUG, logTag) { "Adding to non-favorites: ${remoteAnime.title}" }

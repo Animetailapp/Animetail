@@ -389,10 +389,13 @@ class MangaDownloadCache(
                                     when {
                                         // Ignore incomplete downloads
                                         it.name?.endsWith(MangaDownloader.TMP_DIR_SUFFIX) == true -> null
+
                                         // Folder of images
                                         it.isDirectory -> it.name
+
                                         // CBZ files
                                         it.isFile && it.extension == "cbz" -> it.nameWithoutExtension
+
                                         // Anything else is irrelevant
                                         else -> null
                                     }

@@ -28,12 +28,10 @@ internal fun ColumnScope.ColorFilterPage(screenModel: ReaderSettingsScreenModel)
         pref = screenModel.preferences.customBrightness(),
     )
 
-    /**
-     * Sets the brightness of the screen. Range is [-75, 100].
-     * From -75 to -1 a semi-transparent black view is shown at the top with the minimum brightness.
-     * From 1 to 100 it sets that value as brightness.
-     * 0 sets system brightness and hides the overlay.
-     */
+    // Sets the brightness of the screen. Range is [-75, 100].
+    // From -75 to -1 a semi-transparent black view is shown at the top with the minimum brightness.
+    // From 1 to 100 it sets that value as brightness.
+    // 0 sets system brightness and hides the overlay.
     if (customBrightness) {
         val customBrightnessValue by screenModel.preferences.customBrightnessValue().collectAsState()
         SliderItem(

@@ -303,6 +303,7 @@ class AnimeLibraryScreenModel(
             trackMap.mapValues { entry ->
                 when {
                     entry.value.isEmpty() -> null
+
                     else ->
                         entry.value
                             .mapNotNull { trackerMap[it.trackerId]?.animeService?.get10PointScore(it) }
@@ -323,46 +324,63 @@ class AnimeLibraryScreenModel(
                 AnimeLibrarySort.Type.Alphabetical -> {
                     sortAlphabetically(i1, i2)
                 }
+
                 AnimeLibrarySort.Type.LastSeen -> {
                     i1.libraryAnime.lastSeen.compareTo(i2.libraryAnime.lastSeen)
                 }
+
                 AnimeLibrarySort.Type.LastUpdate -> {
                     i1.libraryAnime.anime.lastUpdate.compareTo(i2.libraryAnime.anime.lastUpdate)
                 }
+
                 AnimeLibrarySort.Type.UnseenCount -> when {
                     // Ensure unseen content comes first
                     i1.libraryAnime.unseenCount == i2.libraryAnime.unseenCount -> 0
+
                     i1.libraryAnime.unseenCount == 0L -> if (currentSort.isAscending) 1 else -1
+
                     i2.libraryAnime.unseenCount == 0L -> if (currentSort.isAscending) -1 else 1
+
                     else -> i1.libraryAnime.unseenCount.compareTo(i2.libraryAnime.unseenCount)
                 }
+
                 AnimeLibrarySort.Type.TotalEpisodes -> {
                     i1.libraryAnime.totalCount.compareTo(i2.libraryAnime.totalCount)
                 }
+
                 AnimeLibrarySort.Type.LatestEpisode -> {
                     i1.libraryAnime.latestUpload.compareTo(i2.libraryAnime.latestUpload)
                 }
+
                 AnimeLibrarySort.Type.EpisodeFetchDate -> {
                     i1.libraryAnime.episodeFetchedAt.compareTo(i2.libraryAnime.episodeFetchedAt)
                 }
+
                 AnimeLibrarySort.Type.DateAdded -> {
                     i1.libraryAnime.anime.dateAdded.compareTo(i2.libraryAnime.anime.dateAdded)
                 }
+
                 AnimeLibrarySort.Type.TrackerMean -> {
                     val item1Score = trackerScores[i1.libraryAnime.id] ?: defaultTrackerScoreSortValue
                     val item2Score = trackerScores[i2.libraryAnime.id] ?: defaultTrackerScoreSortValue
                     item1Score.compareTo(item2Score)
                 }
+
                 AnimeLibrarySort.Type.AiringTime -> when {
                     i1.libraryAnime.unseenCount != i2.libraryAnime.unseenCount ->
                         i1.libraryAnime.unseenCount.compareTo(i2.libraryAnime.unseenCount)
+
                     i1.libraryAnime.anime.nextEpisodeAiringAt == i2.libraryAnime.anime.nextEpisodeAiringAt -> 0
+
                     i1.libraryAnime.anime.nextEpisodeAiringAt == 0L -> if (currentSort.isAscending) 1 else -1
+
                     i2.libraryAnime.anime.nextEpisodeAiringAt == 0L -> if (currentSort.isAscending) -1 else 1
+
                     else -> i1.libraryAnime.anime.nextEpisodeAiringAt.compareTo(
                         i2.libraryAnime.anime.nextEpisodeAiringAt,
                     )
                 }
+
                 AnimeLibrarySort.Type.Random -> {
                     error("Why Are We Still Here? Just To Suffer?")
                 }
@@ -464,6 +482,7 @@ class AnimeLibraryScreenModel(
     private fun AnimeLibraryMap.applyGrouping(groupType: Int): AnimeLibraryMap {
         val items = when (groupType) {
             AnimeLibraryGroup.BY_DEFAULT -> this
+
             AnimeLibraryGroup.UNGROUPED -> {
                 mapOf(
                     Category(
@@ -476,6 +495,7 @@ class AnimeLibraryScreenModel(
                         values.flatten().distinctBy { it.libraryAnime.anime.id },
                 )
             }
+
             else -> {
                 getGroupedAnimeItems(
                     groupType = groupType,
@@ -738,7 +758,9 @@ class AnimeLibraryScreenModel(
                 val selectedIds = list.fastMap { it.id }
                 val selectionRange = when {
                     lastAnimeIndex < curAnimeIndex -> IntRange(lastAnimeIndex, curAnimeIndex)
+
                     curAnimeIndex < lastAnimeIndex -> IntRange(curAnimeIndex, lastAnimeIndex)
+
                     // We shouldn't reach this point
                     else -> return@mutate
                 }
@@ -829,6 +851,7 @@ class AnimeLibraryScreenModel(
     }
 
     // SY -->
+
     /** Returns first unread chapter of a anime */
     suspend fun getFirstUnseen(anime: Anime): Episode? {
         return getNextEpisodes.await(anime.id).firstOrNull()
@@ -864,6 +887,7 @@ class AnimeLibraryScreenModel(
                     )
                 }
             }
+
             AnimeLibraryGroup.BY_SOURCE -> {
                 val sources: List<Long>
                 libraryAnime.groupBy { item ->
@@ -892,6 +916,7 @@ class AnimeLibraryScreenModel(
                     )
                 }
             }
+
             AnimeLibraryGroup.BY_TAG -> {
                 val defaultTag = context.stringResource(TLMR.strings.ungrouped)
                 val tags = libraryAnime.flatMap { it.libraryAnime.anime.genre.orEmpty() }.distinct()
@@ -919,6 +944,7 @@ class AnimeLibraryScreenModel(
                     )
                 }
             }
+
             else -> {
                 libraryAnime.groupBy { item ->
                     item.libraryAnime.anime.status
@@ -927,13 +953,19 @@ class AnimeLibraryScreenModel(
                         id = it.key + 1,
                         name = when (it.key) {
                             SAnime.ONGOING.toLong() -> context.getString(R.string.ongoing)
+
                             SAnime.LICENSED.toLong() -> context.getString(R.string.licensed)
+
                             SAnime.CANCELLED.toLong() -> context.getString(R.string.cancelled)
+
                             SAnime.ON_HIATUS.toLong() -> context.getString(R.string.on_hiatus)
+
                             SAnime.PUBLISHING_FINISHED.toLong() -> context.getString(
                                 R.string.publishing_finished,
                             )
+
                             SAnime.COMPLETED.toLong() -> context.getString(R.string.completed)
+
                             else -> context.getString(R.string.unknown)
                         },
                         order = when (it.key) {
@@ -1032,7 +1064,9 @@ class AnimeLibraryScreenModel(
             val title = if (showCategoryTabs) defaultTitle else categoryName
             val count = when {
                 !showAnimeCount -> null
+
                 !showCategoryTabs -> getAnimeCountForCategory(category)
+
                 // Whole library count
                 else -> libraryCount
             }

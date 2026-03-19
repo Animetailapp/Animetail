@@ -110,6 +110,7 @@ internal class MangaExtensionInstaller(
 
                 context.startActivity(intent)
             }
+
             BasePreferences.ExtensionInstaller.PRIVATE -> {
                 try {
                     if (MangaExtensionLoader.installPrivateExtensionFile(context, tempFile)) {
@@ -124,6 +125,7 @@ internal class MangaExtensionInstaller(
 
                 tempFile.delete()
             }
+
             else -> {
                 val intent = MangaExtensionInstallService.getIntent(
                     context,

@@ -58,6 +58,7 @@ internal class MangaExtensionInstallReceiver(private val listener: Listener) : B
                     }
                 }
             }
+
             Intent.ACTION_PACKAGE_REPLACED, ACTION_EXTENSION_REPLACED -> {
                 scope.launch {
                     when (val result = getExtensionFromIntent(context, intent)) {
@@ -67,6 +68,7 @@ internal class MangaExtensionInstallReceiver(private val listener: Listener) : B
                     }
                 }
             }
+
             Intent.ACTION_PACKAGE_REMOVED, ACTION_EXTENSION_REMOVED -> {
                 if (isReplacing(intent)) return
 

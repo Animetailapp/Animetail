@@ -91,8 +91,10 @@ fun EntryToolbar(
                 navigateUp()
 
                 if (isHomeEnabled && navigator != null) {
-                    if (navigator.size >= 2 &&
-                        navigator.items[navigator.size - 2] is AnimeScreen ||
+                    if ((
+                            navigator.size >= 2 &&
+                                navigator.items[navigator.size - 2] is AnimeScreen
+                            ) ||
                         navigator.size >= 5
                     ) {
                         onHomeClicked()

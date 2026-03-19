@@ -16,6 +16,7 @@ val Throwable.formattedMessage: String
     get() {
         when (this) {
             is HttpException -> return context.stringResource(MR.strings.exception_http, code)
+
             is UnknownHostException -> {
                 return if (!context.isOnline()) {
                     context.stringResource(MR.strings.exception_offline)
@@ -23,9 +24,11 @@ val Throwable.formattedMessage: String
                     context.stringResource(MR.strings.exception_unknown_host, message ?: "")
                 }
             }
+
             is NoChaptersException, is NoEpisodesException -> {
                 return context.stringResource(MR.strings.no_results_found)
             }
+
             is SourceNotInstalledException, is AnimeSourceNotInstalledException -> {
                 return context.stringResource(MR.strings.loader_not_implemented_error)
             }

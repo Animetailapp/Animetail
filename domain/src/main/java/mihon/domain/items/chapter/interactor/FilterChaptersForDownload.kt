@@ -57,10 +57,13 @@ class FilterChaptersForDownload(
         return when {
             // Default Download from all categories
             includedCategories.isEmpty() && excludedCategories.isEmpty() -> true
+
             // In excluded category
             categories.any { it in excludedCategories } -> false
+
             // Included category not selected
             includedCategories.isEmpty() -> true
+
             // In included category
             else -> categories.any { it in includedCategories }
         }

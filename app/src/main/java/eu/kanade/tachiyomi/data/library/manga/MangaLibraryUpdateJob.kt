@@ -215,6 +215,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                         status.int == trackingExtra.toLong()
                     }
                 }
+
                 MangaLibraryGroup.BY_SOURCE -> {
                     val sourceExtra = groupExtra?.nullIfBlank()?.toIntOrNull()
                     val source = libraryManga.map { it.manga.source }
@@ -224,6 +225,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
 
                     if (source != null) libraryManga.filter { it.manga.source == source } else emptyList()
                 }
+
                 MangaLibraryGroup.BY_TAG -> {
                     val tagExtra = groupExtra?.nullIfBlank()?.toIntOrNull()
                     val tag = libraryManga.map { it.manga.genre }
@@ -231,13 +233,16 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                         .getOrNull(tagExtra ?: -1)
                     if (tag != null) libraryManga.filter { it.manga.genre == tag } else emptyList()
                 }
+
                 MangaLibraryGroup.BY_STATUS -> {
                     val statusExtra = groupExtra?.toLongOrNull() ?: -1
                     libraryManga.filter {
                         it.manga.status == statusExtra
                     }
                 }
+
                 MangaLibraryGroup.UNGROUPED -> libraryManga
+
                 else -> libraryManga
             }
             // SY <--
@@ -287,6 +292,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                         )
                         false
                     }
+
                     else -> true
                 }
             }
@@ -370,10 +376,12 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                                             is NoChaptersException -> context.stringResource(
                                                 MR.strings.no_chapters_error,
                                             )
+
                                             // failedUpdates will already have the source, don't need to copy it into the message
                                             is SourceNotInstalledException -> context.stringResource(
                                                 MR.strings.loader_not_implemented_error,
                                             )
+
                                             else -> e.message
                                         }
                                         failedUpdates.add(manga to errorMessage)
@@ -507,6 +515,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
          */
         private const val KEY_CATEGORY = "category"
         // SY -->
+
         /**
          * Key for group to update.
          */

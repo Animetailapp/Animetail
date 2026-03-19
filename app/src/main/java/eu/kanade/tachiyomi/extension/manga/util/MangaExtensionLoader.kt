@@ -312,6 +312,7 @@ internal object MangaExtensionLoader {
                 // KMK -->
                 repoName = when {
                     isKeiyoushiSigned(signatures) -> "Keiyoushi"
+
                     else -> repos.firstOrNull { repo ->
                         signatures.all { it == repo.signingKeyFingerprint }
                     }?.name
@@ -365,7 +366,9 @@ internal object MangaExtensionLoader {
                             is MangaSource -> {
                                 listOf(obj)
                             }
+
                             is SourceFactory -> obj.createSources()
+
                             else -> throw Exception("Unknown source class type: ${obj.javaClass}")
                         }
                     } catch (e: Throwable) {
@@ -403,6 +406,7 @@ internal object MangaExtensionLoader {
             signatureHash = signatures.last(),
             repoName = when {
                 isKeiyoushiSigned(signatures) -> "Keiyoushi"
+
                 else -> repos.firstOrNull { repo ->
                     signatures.all { it == repo.signingKeyFingerprint }
                 }?.name

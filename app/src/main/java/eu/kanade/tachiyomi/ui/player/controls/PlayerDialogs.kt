@@ -25,6 +25,7 @@ fun PlayerDialogs(
 ) {
     when (dialogShown) {
         Dialogs.None -> {}
+
         Dialogs.EpisodeList -> {
             EpisodeListDialog(
                 displayMode = episodeDisplayMode,
@@ -38,6 +39,7 @@ fun PlayerDialogs(
                 onDismissRequest = onDismissRequest,
             )
         }
+
         is Dialogs.IntegerPicker -> {
             IntegerPickerDialog(
                 defaultValue = dialogShown.defaultValue,

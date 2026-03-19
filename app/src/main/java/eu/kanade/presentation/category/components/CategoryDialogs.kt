@@ -283,6 +283,7 @@ fun ChangeCategoryDialog(
                                     onClick = { onChange(checkbox) },
                                 )
                             }
+
                             is CheckboxState.State -> {
                                 Checkbox(
                                     checked = checkbox.isChecked,

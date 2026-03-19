@@ -220,9 +220,13 @@ object HomeScreen : Screen() {
                     openTabEvent.receiveAsFlow().collectLatest {
                         tabNavigator.current = when (it) {
                             is Tab.AnimeLib -> AnimeLibraryTab
+
                             is Tab.Library -> MangaLibraryTab
+
                             is Tab.Updates -> UpdatesTab
+
                             is Tab.History -> HistoriesTab
+
                             is Tab.Browse -> {
                                 if (it.toExtensions) {
                                     if (!it.anime) {
@@ -233,6 +237,7 @@ object HomeScreen : Screen() {
                                 }
                                 BrowseTab
                             }
+
                             is Tab.More -> MoreTab
                         }
 
@@ -345,6 +350,7 @@ object HomeScreen : Screen() {
                             }
                         }
                     }
+
                     BrowseTab::class.isInstance(tab) -> {
                         val count by produceState(initialValue = 0) {
                             val pref = Injekt.get<SourcePreferences>()

@@ -64,6 +64,7 @@ fun mangaExtensionsTab(
                         is MangaExtension.Available -> extensionsScreenModel.installExtension(
                             extension,
                         )
+
                         else -> {
                             if (context.isPackageInstalled(extension.pkgName)) {
                                 extensionsScreenModel.uninstallExtension(extension)

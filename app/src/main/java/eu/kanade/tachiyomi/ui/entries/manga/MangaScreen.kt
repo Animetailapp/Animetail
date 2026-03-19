@@ -185,6 +185,7 @@ class MangaScreen(
         }
         when (val dialog = successState.dialog) {
             null -> {}
+
             is MangaScreenModel.Dialog.ChangeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -198,6 +199,7 @@ class MangaScreen(
                     },
                 )
             }
+
             is MangaScreenModel.Dialog.DeleteChapters -> {
                 DeleteItemsDialog(
                     onDismissRequest = onDismissRequest,
@@ -230,6 +232,7 @@ class MangaScreen(
                     onPopScreen = { navigator.replace(MangaScreen(dialog.newManga.id)) },
                 )
             }
+
             MangaScreenModel.Dialog.SettingsSheet -> ChapterSettingsDialog(
                 onDismissRequest = onDismissRequest,
                 manga = successState.manga,
@@ -243,6 +246,7 @@ class MangaScreen(
                 scanlatorFilterActive = successState.scanlatorFilterActive,
                 onScanlatorFilterClicked = { showScanlatorsDialog = true },
             )
+
             MangaScreenModel.Dialog.TrackSheet -> {
                 NavigatorAdaptiveSheet(
                     screen = MangaTrackInfoDialogHomeScreen(
@@ -254,6 +258,7 @@ class MangaScreen(
                     onDismissRequest = onDismissRequest,
                 )
             }
+
             MangaScreenModel.Dialog.FullCover -> {
                 val sm = rememberScreenModel { MangaCoverScreenModel(successState.manga.id) }
                 val manga by sm.state.collectAsState()
@@ -282,6 +287,7 @@ class MangaScreen(
                     LoadingScreen(Modifier.systemBarsPadding())
                 }
             }
+
             // SY -->
             is MangaScreenModel.Dialog.EditMangaInfo -> {
                 EditMangaDialog(
@@ -290,6 +296,7 @@ class MangaScreen(
                     onPositiveClick = screenModel::updateMangaInfo,
                 )
             }
+
             // SY <--
             is MangaScreenModel.Dialog.SetMangaFetchInterval -> {
                 SetIntervalDialog(
@@ -375,6 +382,7 @@ class MangaScreen(
                 navigator.pop()
                 MangaLibraryTab.search(query)
             }
+
             is BrowseMangaSourceScreen -> {
                 navigator.pop()
                 previousController.search(query)

@@ -95,6 +95,7 @@ fun MangaExtensionScreen(
     ) {
         when {
             state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
             state.isEmpty -> {
                 val msg = if (!searchQuery.isNullOrEmpty()) {
                     MR.strings.no_results_found
@@ -113,6 +114,7 @@ fun MangaExtensionScreen(
                     ),
                 )
             }
+
             else -> {
                 ExtensionContent(
                     state = state,
@@ -192,6 +194,7 @@ private fun ExtensionContent(
                             action = action,
                         )
                     }
+
                     is MangaExtensionUiModel.Header.Text -> {
                         ExtensionHeader(
                             text = header.text,
@@ -218,7 +221,9 @@ private fun ExtensionContent(
                     onClickItem = {
                         when (it) {
                             is MangaExtension.Available -> onInstallExtension(it)
+
                             is MangaExtension.Installed -> onOpenExtension(it)
+
                             is MangaExtension.Untrusted -> {
                                 trustState = it
                             }
@@ -236,6 +241,7 @@ private fun ExtensionContent(
                     onClickItemAction = {
                         when (it) {
                             is MangaExtension.Available -> onInstallExtension(it)
+
                             is MangaExtension.Installed -> {
                                 if (it.hasUpdate) {
                                     onUpdateExtension(it)
@@ -428,6 +434,7 @@ private fun ExtensionItemActions(
                     )
                 }
             }
+
             installStep == InstallStep.Error -> {
                 IconButton(onClick = { onClickItemAction(extension) }) {
                     Icon(
@@ -436,6 +443,7 @@ private fun ExtensionItemActions(
                     )
                 }
             }
+
             installStep == InstallStep.Idle -> {
                 when (extension) {
                     is MangaExtension.Installed -> {
@@ -455,6 +463,7 @@ private fun ExtensionItemActions(
                             }
                         }
                     }
+
                     is MangaExtension.Untrusted -> {
                         IconButton(onClick = { onClickItemAction(extension) }) {
                             Icon(
@@ -463,6 +472,7 @@ private fun ExtensionItemActions(
                             )
                         }
                     }
+
                     is MangaExtension.Available -> {
                         if (extension.sources.isNotEmpty()) {
                             IconButton(

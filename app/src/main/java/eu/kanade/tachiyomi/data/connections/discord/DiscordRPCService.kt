@@ -148,9 +148,11 @@ class DiscordRPCService : Service() {
                 DiscordScreen.VIDEO -> {
                     setAnimeScreen(context, discordScreen)
                 }
+
                 DiscordScreen.MANGA -> {
                     setMangaScreen(context, discordScreen)
                 }
+
                 else -> {
                     setAnimeScreen(context, discordScreen)
                 }
@@ -408,6 +410,7 @@ class DiscordRPCService : Service() {
             return chapterNumber?.let {
                 when {
                     discordIncognito -> null
+
                     connectionsPreferences.useChapterTitles().get() ->
                         "$it (${chapterProgress.first}/${chapterProgress.second})"
 

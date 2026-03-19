@@ -110,6 +110,7 @@ internal class AnimeExtensionInstaller(private val context: Context) {
 
                 context.startActivity(intent)
             }
+
             BasePreferences.ExtensionInstaller.PRIVATE -> {
                 val extensionManager = Injekt.get<AnimeExtensionManager>()
 
@@ -126,6 +127,7 @@ internal class AnimeExtensionInstaller(private val context: Context) {
 
                 tempFile.delete()
             }
+
             else -> {
                 val intent =
                     AnimeExtensionInstallService.getIntent(

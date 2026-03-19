@@ -219,9 +219,11 @@ object AboutScreen : Screen() {
                     is GetApplicationRelease.Result.NewUpdate -> {
                         onAvailableUpdate(result)
                     }
+
                     is GetApplicationRelease.Result.NoNewUpdate -> {
                         context.toast(MR.strings.update_check_no_new_updates)
                     }
+
                     is GetApplicationRelease.Result.OsTooOld -> {
                         context.toast(MR.strings.update_check_eol)
                     }
@@ -246,6 +248,7 @@ object AboutScreen : Screen() {
                     }
                 }
             }
+
             isPreviewBuildType -> {
                 "Preview r${BuildConfig.COMMIT_COUNT}".let {
                     if (withBuildDate) {
@@ -255,6 +258,7 @@ object AboutScreen : Screen() {
                     }
                 }
             }
+
             else -> {
                 "Stable ${BuildConfig.VERSION_NAME}".let {
                     if (withBuildDate) {

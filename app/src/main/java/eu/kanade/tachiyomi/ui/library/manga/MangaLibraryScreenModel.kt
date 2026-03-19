@@ -298,6 +298,7 @@ class MangaLibraryScreenModel(
             trackMap.mapValues { entry ->
                 when {
                     entry.value.isEmpty() -> null
+
                     else ->
                         entry.value
                             .mapNotNull { trackerMap[it.trackerId]?.mangaService?.get10PointScore(it) }
@@ -318,36 +319,48 @@ class MangaLibraryScreenModel(
                 MangaLibrarySort.Type.Alphabetical -> {
                     sortAlphabetically(i1, i2)
                 }
+
                 MangaLibrarySort.Type.LastRead -> {
                     i1.libraryManga.lastRead.compareTo(i2.libraryManga.lastRead)
                 }
+
                 MangaLibrarySort.Type.LastUpdate -> {
                     i1.libraryManga.manga.lastUpdate.compareTo(i2.libraryManga.manga.lastUpdate)
                 }
+
                 MangaLibrarySort.Type.UnreadCount -> when {
                     // Ensure unread content comes first
                     i1.libraryManga.unreadCount == i2.libraryManga.unreadCount -> 0
+
                     i1.libraryManga.unreadCount == 0L -> if (currentSort.isAscending) 1 else -1
+
                     i2.libraryManga.unreadCount == 0L -> if (currentSort.isAscending) -1 else 1
+
                     else -> i1.libraryManga.unreadCount.compareTo(i2.libraryManga.unreadCount)
                 }
+
                 MangaLibrarySort.Type.TotalChapters -> {
                     i1.libraryManga.totalChapters.compareTo(i2.libraryManga.totalChapters)
                 }
+
                 MangaLibrarySort.Type.LatestChapter -> {
                     i1.libraryManga.latestUpload.compareTo(i2.libraryManga.latestUpload)
                 }
+
                 MangaLibrarySort.Type.ChapterFetchDate -> {
                     i1.libraryManga.chapterFetchedAt.compareTo(i2.libraryManga.chapterFetchedAt)
                 }
+
                 MangaLibrarySort.Type.DateAdded -> {
                     i1.libraryManga.manga.dateAdded.compareTo(i2.libraryManga.manga.dateAdded)
                 }
+
                 MangaLibrarySort.Type.TrackerMean -> {
                     val item1Score = trackerScores[i1.libraryManga.id] ?: defaultTrackerScoreSortValue
                     val item2Score = trackerScores[i2.libraryManga.id] ?: defaultTrackerScoreSortValue
                     item1Score.compareTo(item2Score)
                 }
+
                 MangaLibrarySort.Type.Random -> {
                     error("Why Are We Still Here? Just To Suffer?")
                 }
@@ -448,6 +461,7 @@ class MangaLibraryScreenModel(
     private fun MangaLibraryMap.applyGrouping(groupType: Int): MangaLibraryMap {
         val items = when (groupType) {
             MangaLibraryGroup.BY_DEFAULT -> this
+
             MangaLibraryGroup.UNGROUPED -> {
                 mapOf(
                     Category(
@@ -460,6 +474,7 @@ class MangaLibraryScreenModel(
                         values.flatten().distinctBy { it.libraryManga.manga.id },
                 )
             }
+
             else -> {
                 getGroupedMangaItems(
                     groupType = groupType,
@@ -724,7 +739,9 @@ class MangaLibraryScreenModel(
                 val selectedIds = list.fastMap { it.id }
                 val selectionRange = when {
                     lastMangaIndex < curMangaIndex -> IntRange(lastMangaIndex, curMangaIndex)
+
                     curMangaIndex < lastMangaIndex -> IntRange(curMangaIndex, lastMangaIndex)
+
                     // We shouldn't reach this point
                     else -> return@mutate
                 }
@@ -815,6 +832,7 @@ class MangaLibraryScreenModel(
     }
 
     // SY -->
+
     /** Returns first unread chapter of a manga */
     suspend fun getFirstUnread(manga: Manga): Chapter? {
         return getNextChapters.await(manga.id).firstOrNull()
@@ -850,6 +868,7 @@ class MangaLibraryScreenModel(
                     )
                 }
             }
+
             MangaLibraryGroup.BY_SOURCE -> {
                 val sources: List<Long>
                 libraryManga.groupBy { item ->
@@ -878,6 +897,7 @@ class MangaLibraryScreenModel(
                     )
                 }
             }
+
             MangaLibraryGroup.BY_TAG -> {
                 val tags: List<String> = libraryManga.flatMap { item ->
                     item.libraryManga.manga.genre?.distinct() ?: emptyList()
@@ -897,6 +917,7 @@ class MangaLibraryScreenModel(
                         )
                     }
             }
+
             else -> {
                 libraryManga.groupBy { item ->
                     item.libraryManga.manga.status
@@ -905,13 +926,19 @@ class MangaLibraryScreenModel(
                         id = it.key + 1,
                         name = when (it.key) {
                             SManga.ONGOING.toLong() -> context.getString(R.string.ongoing)
+
                             SManga.LICENSED.toLong() -> context.getString(R.string.licensed)
+
                             SManga.CANCELLED.toLong() -> context.getString(R.string.cancelled)
+
                             SManga.ON_HIATUS.toLong() -> context.getString(R.string.on_hiatus)
+
                             SManga.PUBLISHING_FINISHED.toLong() -> context.getString(
                                 R.string.publishing_finished,
                             )
+
                             SManga.COMPLETED.toLong() -> context.getString(R.string.completed)
+
                             else -> context.getString(R.string.unknown)
                         },
                         order = when (it.key) {
@@ -1013,7 +1040,9 @@ class MangaLibraryScreenModel(
             val title = if (showCategoryTabs) defaultTitle else categoryName
             val count = when {
                 !showMangaCount -> null
+
                 !showCategoryTabs -> getMangaCountForCategory(category)
+
                 // Whole library count
                 else -> libraryCount
             }

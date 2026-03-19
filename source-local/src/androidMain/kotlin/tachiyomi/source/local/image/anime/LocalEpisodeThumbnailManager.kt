@@ -47,4 +47,3 @@ actual class LocalEpisodeThumbnailManager(
         return targetFile
     }
 }
-

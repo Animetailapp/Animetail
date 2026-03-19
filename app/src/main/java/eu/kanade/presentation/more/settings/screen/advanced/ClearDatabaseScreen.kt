@@ -37,7 +37,6 @@ import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
-import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withNonCancellableContext
@@ -68,6 +67,7 @@ class ClearDatabaseScreen : Screen() {
 
         when (val s = state) {
             is ClearDatabaseScreenModel.State.Loading -> LoadingScreen()
+
             is ClearDatabaseScreenModel.State.Ready -> {
                 if (s.showConfirmation) {
                     AlertDialog(
