@@ -2,6 +2,7 @@ package tachiyomi.domain.storage.service
 
 import android.content.Context
 import android.os.Build
+import android.os.Environment
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.util.storage.DiskUtil
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.shareIn
 import tachiyomi.core.common.storage.FolderProvider
+import java.io.File
 
 class StorageManager(
     private val context: Context,
@@ -92,11 +94,11 @@ class StorageManager(
     }
 
     fun getLocalMangaSourceDirectory(): UniFile? {
-        return baseDir?.createDirectory(LOCAL_SOURCE_PATH)
+        return getLocalSourceDirectory(LOCAL_SOURCE_PATH)
     }
 
     fun getLocalAnimeSourceDirectory(): UniFile? {
-        return baseDir?.createDirectory(LOCAL_ANIMESOURCE_PATH)
+        return getLocalSourceDirectory(LOCAL_ANIMESOURCE_PATH)
     }
 
     fun getFontsDirectory(): UniFile? {
@@ -117,6 +119,21 @@ class StorageManager(
 
     fun getMPVConfigDirectory(): UniFile? {
         return baseDir?.createDirectory(MPV_CONFIG_PATH)
+    }
+
+    private fun getLocalSourceDirectory(path: String): UniFile? {
+        return baseDir?.createDirectory(path) ?: getLegacyLocalSourceDirectory(path)
+    }
+
+    private fun getLegacyLocalSourceDirectory(path: String): UniFile? {
+        val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
+        val legacyBaseDir = File(
+            Environment.getExternalStorageDirectory().absolutePath + File.separator +
+                appName,
+        )
+        val legacyDir = File(legacyBaseDir, path)
+        return UniFile.fromFile(legacyDir)
+            ?.takeIf { legacyDir.exists() && legacyDir.isDirectory }
     }
 }
 

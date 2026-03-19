@@ -86,6 +86,7 @@ interface AnimeCatalogueSource : AnimeSource {
     )
     fun fetchLatestUpdates(page: Int): Observable<AnimesPage>
     // KMK -->
+
     /**
      * Whether parsing related animes in anime page or extension provide custom related animes request.
      * @default false

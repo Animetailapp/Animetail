@@ -478,7 +478,6 @@ fun RepeatingIconButton(
         modifier = modifier.pointerInteropFilter {
             pressed = when (it.action) {
                 MotionEvent.ACTION_DOWN -> true
-
                 else -> false
             }
 

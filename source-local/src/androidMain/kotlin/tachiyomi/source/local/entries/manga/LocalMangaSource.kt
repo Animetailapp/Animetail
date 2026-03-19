@@ -113,6 +113,7 @@ actual class LocalMangaSource(
                         mangaDirs.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.name.orEmpty() })
                     }
                 }
+
                 is MangaOrderBy.Latest -> {
                     mangaDirs = if (filter.state!!.ascending) {
                         mangaDirs.sortedBy(UniFile::lastModified)
@@ -120,6 +121,7 @@ actual class LocalMangaSource(
                         mangaDirs.sortedByDescending(UniFile::lastModified)
                     }
                 }
+
                 else -> {
                     /* Do nothing */
                 }
@@ -240,7 +242,7 @@ actual class LocalMangaSource(
                         setMangaDetailsFromComicInfoFile(copiedFile.openInputStream(), manga)
                     } else {
                         // Avoid re-scanning
-                        mangaDir.createFile(".noxml")
+                        runCatching { mangaDir.createFile(".noxml") }
                     }
                 }
             }
@@ -390,6 +392,7 @@ actual class LocalMangaSource(
 
                     entry?.let { coverManager.update(manga, it.openInputStream()) }
                 }
+
                 is Format.Archive -> {
                     format.file.archiveReader(context).use { reader ->
                         val entry = reader.useEntries { entries ->
@@ -401,6 +404,7 @@ actual class LocalMangaSource(
                         entry?.let { coverManager.update(manga, reader.getInputStream(it.name)!!) }
                     }
                 }
+
                 is Format.Epub -> {
                     format.file.epubReader(context).use { epub ->
                         val entry = epub.getImagesFromPages().firstOrNull()
