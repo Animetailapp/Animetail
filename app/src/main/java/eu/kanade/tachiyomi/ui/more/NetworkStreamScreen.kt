@@ -232,9 +232,10 @@ object NetworkStreamScreen : Screen() {
                         referer.trimOrNull()?.let { customHeaders.add(NetworkHeader("Referer", it)) }
                         userAgent.trimOrNull()?.let { customHeaders.add(NetworkHeader("User-Agent", it)) }
 
+                        val trimmedUrl = url.trim()
                         val request = NetworkStreamRequest(
-                            url = url.trim(),
-                            title = title.ifBlank { url.trim() },
+                            url = trimmedUrl,
+                            title = title.ifBlank { trimmedUrl },
                             subtitleUrl = subtitleUrl.trimOrNull(),
                             subtitleLabel = subtitleLabel.trimOrNull(),
                             headers = customHeaders,
