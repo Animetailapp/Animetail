@@ -306,7 +306,7 @@ private fun parseHeaderLines(raw: String): Result<List<NetworkHeader>> {
         val trimmed = line.trim()
         if (trimmed.isEmpty()) return@forEachIndexed
         val separatorIndex = trimmed.indexOf(":")
-        if (separatorIndex <= 0 || separatorIndex >= trimmed.lastIndex) {
+        if (separatorIndex <= 0 || separatorIndex >= trimmed.length - 1) {
             return Result.failure(HeaderFormatException(index))
         }
         val name = trimmed.substring(0, separatorIndex).trim()
