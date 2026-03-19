@@ -93,8 +93,10 @@ internal fun Project.configureCompose(commonExtension: CommonExtension<*, *, *, 
 }
 
 internal fun Project.configureTest() {
-    dependencies {
-        "testRuntimeOnly"(libs.junit.platform.launcher)
+    configurations.findByName("testRuntimeOnly")?.let { testRuntimeOnly ->
+        dependencies {
+            add(testRuntimeOnly.name, libs.junit.platform.launcher)
+        }
     }
 
     tasks.withType<Test> {
