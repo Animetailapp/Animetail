@@ -76,6 +76,7 @@ class AnimeCategoryScreenModel(
                 is HideAnimeCategory.Result.InternalError -> _events.send(
                     AnimeCategoryEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -87,6 +88,7 @@ class AnimeCategoryScreenModel(
                 is DeleteAnimeCategory.Result.InternalError -> _events.send(
                     AnimeCategoryEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -98,6 +100,7 @@ class AnimeCategoryScreenModel(
                 is ReorderAnimeCategory.Result.InternalError -> _events.send(
                     AnimeCategoryEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -109,6 +112,7 @@ class AnimeCategoryScreenModel(
                 is RenameAnimeCategory.Result.InternalError -> _events.send(
                     AnimeCategoryEvent.InternalError,
                 )
+
                 else -> {}
             }
         }

@@ -34,7 +34,9 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
             .flatMap { decimal ->
                 when (decimal) {
                     0 -> listOf("-")
+
                     10 -> listOf("10.0")
+
                     else -> (0..9).map { fraction ->
                         "$decimal.$fraction"
                     }

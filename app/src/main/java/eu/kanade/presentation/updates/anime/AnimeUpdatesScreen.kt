@@ -68,10 +68,12 @@ fun AnimeUpdateScreen(
     ) { contentPadding ->
         when {
             state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
             state.items.isEmpty() -> EmptyScreen(
                 stringRes = MR.strings.information_no_recent,
                 modifier = Modifier.padding(contentPadding),
             )
+
             else -> {
                 val scope = rememberCoroutineScope()
                 var isRefreshing by remember { mutableStateOf(false) }

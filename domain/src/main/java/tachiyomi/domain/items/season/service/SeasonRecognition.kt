@@ -63,6 +63,7 @@ object SeasonRecognition {
             numberMatch.none() -> {
                 return seasonNumber ?: -1.0
             }
+
             numberMatch.count() > 1 -> {
                 // Remove unwanted tags.
                 unwanted.replace(cleanSeasonName, "").let { name ->

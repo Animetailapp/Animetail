@@ -68,6 +68,7 @@ fun ChapterTransition(
                     chapterGap = calculateChapterGap(currChapter, goingToChapter),
                 )
             }
+
             is ChapterTransition.Next -> {
                 TransitionText(
                     topLabel = stringResource(MR.strings.transition_finished),

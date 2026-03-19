@@ -104,6 +104,7 @@ data object BrowseTab : Tab {
                     migrateAnimeSourceTab(),
                     migrateMangaSourceTab(),
                 )
+
             feedTabInFront ->
                 persistentListOf(
                     feedTab(
@@ -118,6 +119,7 @@ data object BrowseTab : Tab {
                     migrateAnimeSourceTab(),
                     migrateMangaSourceTab(),
                 )
+
             else ->
                 persistentListOf(
                     animeSourcesTab(),

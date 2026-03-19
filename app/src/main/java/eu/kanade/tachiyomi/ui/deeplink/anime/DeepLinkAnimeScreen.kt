@@ -45,9 +45,11 @@ class DeepLinkAnimeScreen(
                 is DeepLinkAnimeScreenModel.State.Loading -> {
                     LoadingScreen(Modifier.padding(contentPadding))
                 }
+
                 is DeepLinkAnimeScreenModel.State.NoResults -> {
                     navigator.replace(GlobalAnimeSearchScreen(query))
                 }
+
                 is DeepLinkAnimeScreenModel.State.Result -> {
                     val resultState = state as DeepLinkAnimeScreenModel.State.Result
                     if (resultState.episodeId == null) {

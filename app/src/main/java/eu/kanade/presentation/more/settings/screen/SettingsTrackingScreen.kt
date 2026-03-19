@@ -107,12 +107,14 @@ object SettingsTrackingScreen : SearchableSettings {
                         onDismissRequest = { dialog = null },
                     )
                 }
+
                 is ApiKeyDialog -> {
                     TrackingApiKeyDialog(
                         tracker = tracker,
                         onDismissRequest = { dialog = null },
                     )
                 }
+
                 is LogoutDialog -> {
                     TrackingLogoutDialog(
                         tracker = tracker,

@@ -182,10 +182,13 @@ class PagerConfig(
                 is R2LPagerViewer -> ReaderPageImageView.ZoomStartPosition.RIGHT
                 else -> ReaderPageImageView.ZoomStartPosition.CENTER
             }
+
             // Left
             2 -> ReaderPageImageView.ZoomStartPosition.LEFT
+
             // Right
             3 -> ReaderPageImageView.ZoomStartPosition.RIGHT
+
             // Center
             else -> ReaderPageImageView.ZoomStartPosition.CENTER
         }

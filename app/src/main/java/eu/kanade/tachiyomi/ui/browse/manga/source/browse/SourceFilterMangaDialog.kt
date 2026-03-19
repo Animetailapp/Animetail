@@ -82,9 +82,11 @@ private fun FilterItem(filter: Filter<*>, onUpdate: () -> Unit) {
         is Filter.Header -> {
             HeadingItem(filter.name)
         }
+
         is Filter.Separator -> {
             HorizontalDivider()
         }
+
         is Filter.CheckBox -> {
             CheckboxItem(
                 label = filter.name,
@@ -94,6 +96,7 @@ private fun FilterItem(filter: Filter<*>, onUpdate: () -> Unit) {
                 onUpdate()
             }
         }
+
         is Filter.TriState -> {
             TriStateItem(
                 label = filter.name,
@@ -103,6 +106,7 @@ private fun FilterItem(filter: Filter<*>, onUpdate: () -> Unit) {
                 onUpdate()
             }
         }
+
         is Filter.Text -> {
             TextItem(
                 label = filter.name,
@@ -112,6 +116,7 @@ private fun FilterItem(filter: Filter<*>, onUpdate: () -> Unit) {
                 onUpdate()
             }
         }
+
         is Filter.Select<*> -> {
             SelectItem(
                 label = filter.name,
@@ -123,6 +128,7 @@ private fun FilterItem(filter: Filter<*>, onUpdate: () -> Unit) {
                 },
             )
         }
+
         is Filter.Sort -> {
             CollapsibleBox(
                 heading = filter.name,
@@ -149,6 +155,7 @@ private fun FilterItem(filter: Filter<*>, onUpdate: () -> Unit) {
                 }
             }
         }
+
         is Filter.Group<*> -> {
             CollapsibleBox(
                 heading = filter.name,

@@ -58,6 +58,7 @@ fun Screen.animeSourcesTab(
                     val screen = when {
                         listing == BrowseAnimeSourceScreenModel.Listing.Popular &&
                             screenModel.useNewSourceNavigation -> SourceFeedScreen(source.id)
+
                         else -> BrowseAnimeSourceScreen(source.id, listing.query)
                     }
                     navigator.push(screen)

@@ -48,12 +48,14 @@ open class CastOptionsProvider : OptionsProvider {
                                 NotificationAction.Builder().setAction(MediaIntentReceiver.ACTION_STOP_CASTING).build(),
 
                             )
+
                             isPhoto -> listOf(
                                 NotificationAction.Builder().setAction(
                                     MediaIntentReceiver.ACTION_TOGGLE_PLAYBACK,
                                 ).build(),
                                 NotificationAction.Builder().setAction(MediaIntentReceiver.ACTION_STOP_CASTING).build(),
                             )
+
                             else -> listOf(
                                 NotificationAction.Builder().setAction(MediaIntentReceiver.ACTION_REWIND).build(),
                                 NotificationAction.Builder().setAction(

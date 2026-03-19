@@ -65,6 +65,7 @@ class AnimeExtensionReposScreen(
 
         when (val dialog = successState.dialog) {
             null -> {}
+
             is RepoDialog.Create -> {
                 ExtensionRepoCreateDialog(
                     onDismissRequest = screenModel::dismissDialog,
@@ -72,6 +73,7 @@ class AnimeExtensionReposScreen(
                     repoUrls = successState.repos.map { it.baseUrl }.toImmutableSet(),
                 )
             }
+
             is RepoDialog.Delete -> {
                 ExtensionRepoDeleteDialog(
                     onDismissRequest = screenModel::dismissDialog,
@@ -79,6 +81,7 @@ class AnimeExtensionReposScreen(
                     repo = dialog.repo,
                 )
             }
+
             is RepoDialog.Conflict -> {
                 ExtensionRepoConflictDialog(
                     onDismissRequest = screenModel::dismissDialog,
@@ -87,6 +90,7 @@ class AnimeExtensionReposScreen(
                     newRepo = dialog.newRepo,
                 )
             }
+
             is RepoDialog.Confirm -> {
                 ExtensionRepoConfirmDialog(
                     onDismissRequest = screenModel::dismissDialog,

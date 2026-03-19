@@ -50,6 +50,7 @@ class GlobalAnimeSearchScreen(
             LaunchedEffect(state.items) {
                 when (val result = state.items.values.singleOrNull()) {
                     AnimeSearchItemResult.Loading -> return@LaunchedEffect
+
                     is AnimeSearchItemResult.Success -> {
                         val anime = result.result.singleOrNull()
                         if (anime != null) {
@@ -59,6 +60,7 @@ class GlobalAnimeSearchScreen(
                             showSingleLoadingScreen = false
                         }
                     }
+
                     else -> showSingleLoadingScreen = false
                 }
             }

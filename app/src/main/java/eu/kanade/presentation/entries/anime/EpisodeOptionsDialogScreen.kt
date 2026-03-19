@@ -354,6 +354,7 @@ class EpisodeOptionsDialogScreenModel(
                     }
                 }
             }
+
             is HosterState.Error, is HosterState.Idle -> {
                 val hosterName = hosterState.name
                 _hosterState.updateAt(hosterIndex, HosterState.Loading(hosterName))
@@ -366,6 +367,7 @@ class EpisodeOptionsDialogScreenModel(
                     _hosterState.updateAt(hosterIndex, newHosterState)
                 }
             }
+
             is HosterState.Loading -> {}
         }
     }

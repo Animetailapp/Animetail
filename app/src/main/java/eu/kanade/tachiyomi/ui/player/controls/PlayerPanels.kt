@@ -62,15 +62,19 @@ fun PlayerPanels(
             Panels.None -> {
                 Box(Modifier.fillMaxHeight())
             }
+
             Panels.SubtitleSettings -> {
                 SubtitleSettingsPanel(onDismissRequest)
             }
+
             Panels.SubtitleDelay -> {
                 SubtitleDelayPanel(onDismissRequest)
             }
+
             Panels.AudioDelay -> {
                 AudioDelayPanel(onDismissRequest)
             }
+
             Panels.VideoFilters -> {
                 VideoFiltersPanel(onDismissRequest)
             }

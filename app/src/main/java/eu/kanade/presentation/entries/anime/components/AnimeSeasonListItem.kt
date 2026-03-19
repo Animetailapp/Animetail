@@ -66,6 +66,7 @@ fun AnimeSeasonListItem(
                 },
             )
         }
+
         SeasonDisplayMode.CompactGrid, SeasonDisplayMode.CoverOnlyGrid -> {
             EntryCompactGridItem(
                 title = title.takeIf { anime.seasonDisplayGridMode is SeasonDisplayMode.CompactGrid },
@@ -95,6 +96,7 @@ fun AnimeSeasonListItem(
                 },
             )
         }
+
         SeasonDisplayMode.List -> {
             EntryListItem(
                 title = title,

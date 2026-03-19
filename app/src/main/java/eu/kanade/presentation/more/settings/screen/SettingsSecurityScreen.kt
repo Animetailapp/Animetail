@@ -52,7 +52,9 @@ object SettingsSecurityScreen : SearchableSettings {
                     .associateWith {
                         when (it) {
                             -1 -> stringResource(MR.strings.lock_never)
+
                             0 -> stringResource(MR.strings.lock_always)
+
                             else -> pluralStringResource(
                                 MR.plurals.lock_after_mins,
                                 count = it,

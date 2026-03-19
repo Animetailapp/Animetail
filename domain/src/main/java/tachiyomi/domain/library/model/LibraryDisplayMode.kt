@@ -39,11 +39,15 @@ sealed interface LibraryDisplayMode {
     fun serialize(): String {
         return when (this) {
             ComfortableGrid -> "COMFORTABLE_GRID"
+
             // KMK -->
             ComfortableGridPanorama -> "COMFORTABLE_GRID_PANORAMA"
+
             // KMK <--
             CompactGrid -> "COMPACT_GRID"
+
             CoverOnlyGrid -> "COVER_ONLY_GRID"
+
             List -> "LIST"
         }
     }

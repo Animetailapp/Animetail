@@ -1,6 +1,7 @@
 package tachiyomi.data.updates.manga
 
 import kotlinx.coroutines.flow.Flow
+import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.data.handlers.manga.MangaDatabaseHandler
 import tachiyomi.domain.entries.manga.model.MangaCover
 import tachiyomi.domain.updates.manga.model.MangaUpdatesWithRelations
@@ -21,9 +22,25 @@ class MangaUpdatesRepositoryImpl(
         }
     }
 
-    override fun subscribeAllMangaUpdates(after: Long, limit: Long): Flow<List<MangaUpdatesWithRelations>> {
+    override fun subscribeAllMangaUpdates(
+        after: Long,
+        limit: Long,
+        unread: Boolean?,
+        started: Boolean?,
+        bookmarked: Boolean?,
+        hideExcludedScanlators: Boolean,
+    ): Flow<List<MangaUpdatesWithRelations>> {
         return databaseHandler.subscribeToList {
-            updatesViewQueries.getRecentUpdates(after, limit, ::mapUpdatesWithRelations)
+            updatesViewQueries.getRecentUpdatesWithFilters(
+                after = after,
+                limit = limit,
+                // invert because unread in Kotlin -> read column in SQL
+                read = unread?.let { !it },
+                started = started?.toLong(),
+                bookmarked = bookmarked,
+                hideExcludedScanlators = hideExcludedScanlators.toLong(),
+                mapper = ::mapUpdatesWithRelations,
+            )
         }
     }
 
@@ -53,6 +70,7 @@ class MangaUpdatesRepositoryImpl(
         coverLastModified: Long,
         dateUpload: Long,
         dateFetch: Long,
+        excludedScanlator: String?,
     ): MangaUpdatesWithRelations = MangaUpdatesWithRelations(
         mangaId = mangaId,
         mangaTitle = mangaTitle,

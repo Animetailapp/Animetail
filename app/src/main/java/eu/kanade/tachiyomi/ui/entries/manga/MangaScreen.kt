@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.ui.entries.manga
 
 import android.content.Context
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -60,12 +59,10 @@ import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.launch
 import logcat.LogPriority
-import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
-import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 class MangaScreen(
@@ -188,6 +185,7 @@ class MangaScreen(
         }
         when (val dialog = successState.dialog) {
             null -> {}
+
             is MangaScreenModel.Dialog.ChangeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -201,6 +199,7 @@ class MangaScreen(
                     },
                 )
             }
+
             is MangaScreenModel.Dialog.DeleteChapters -> {
                 DeleteItemsDialog(
                     onDismissRequest = onDismissRequest,
@@ -233,6 +232,7 @@ class MangaScreen(
                     onPopScreen = { navigator.replace(MangaScreen(dialog.newManga.id)) },
                 )
             }
+
             MangaScreenModel.Dialog.SettingsSheet -> ChapterSettingsDialog(
                 onDismissRequest = onDismissRequest,
                 manga = successState.manga,
@@ -246,6 +246,7 @@ class MangaScreen(
                 scanlatorFilterActive = successState.scanlatorFilterActive,
                 onScanlatorFilterClicked = { showScanlatorsDialog = true },
             )
+
             MangaScreenModel.Dialog.TrackSheet -> {
                 NavigatorAdaptiveSheet(
                     screen = MangaTrackInfoDialogHomeScreen(
@@ -257,6 +258,7 @@ class MangaScreen(
                     onDismissRequest = onDismissRequest,
                 )
             }
+
             MangaScreenModel.Dialog.FullCover -> {
                 val sm = rememberScreenModel { MangaCoverScreenModel(successState.manga.id) }
                 val manga by sm.state.collectAsState()
@@ -285,6 +287,7 @@ class MangaScreen(
                     LoadingScreen(Modifier.systemBarsPadding())
                 }
             }
+
             // SY -->
             is MangaScreenModel.Dialog.EditMangaInfo -> {
                 EditMangaDialog(
@@ -293,6 +296,7 @@ class MangaScreen(
                     onPositiveClick = screenModel::updateMangaInfo,
                 )
             }
+
             // SY <--
             is MangaScreenModel.Dialog.SetMangaFetchInterval -> {
                 SetIntervalDialog(
@@ -351,12 +355,7 @@ class MangaScreen(
         try {
             getMangaUrl(manga_, source_)?.let { url ->
                 val intent = url.toUri().toShareIntent(context, type = "text/plain")
-                context.startActivity(
-                    Intent.createChooser(
-                        intent,
-                        context.stringResource(MR.strings.action_share),
-                    ),
-                )
+                context.startActivity(intent)
             }
         } catch (e: Exception) {
             context.toast(e.message)
@@ -383,6 +382,7 @@ class MangaScreen(
                 navigator.pop()
                 MangaLibraryTab.search(query)
             }
+
             is BrowseMangaSourceScreen -> {
                 navigator.pop()
                 previousController.search(query)

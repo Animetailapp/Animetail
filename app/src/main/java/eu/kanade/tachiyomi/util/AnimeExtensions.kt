@@ -34,10 +34,12 @@ fun Anime.prepUpdateCover(coverCache: AnimeCoverCache, remoteAnime: SAnime, refr
         isLocal() -> {
             this.copy(coverLastModified = Instant.now().toEpochMilli())
         }
+
         hasCustomCover(coverCache) -> {
             coverCache.deleteFromCache(this, false)
             this
         }
+
         else -> {
             coverCache.deleteFromCache(this, false)
             this.copy(coverLastModified = Instant.now().toEpochMilli())
@@ -65,10 +67,12 @@ fun Anime.prepUpdateBackground(
         isLocal() -> {
             this.copy(backgroundLastModified = Instant.now().toEpochMilli())
         }
+
         hasCustomBackground(backgroundCache) -> {
             backgroundCache.deleteFromCache(this, false)
             this
         }
+
         else -> {
             backgroundCache.deleteFromCache(this, false)
             this.copy(backgroundLastModified = Instant.now().toEpochMilli())

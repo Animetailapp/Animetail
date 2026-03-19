@@ -361,11 +361,14 @@ class Trakt(
     private fun extractPosterUrl(posterEl: JsonElement?): String {
         val raw = when (posterEl) {
             null -> null
+
             is JsonObject -> posterEl["full"]?.jsonPrimitive?.contentOrNull
                 ?: posterEl["medium"]?.jsonPrimitive?.contentOrNull
                 ?: posterEl["thumb"]?.jsonPrimitive?.contentOrNull
                 ?: posterEl.entries.firstOrNull()?.value?.let { extractPosterUrl(it) }
+
             is JsonArray -> posterEl.firstOrNull()?.jsonPrimitive?.contentOrNull
+
             else -> posterEl.jsonPrimitive.contentOrNull
         }?.trim().takeUnless { it.isNullOrBlank() } ?: return ""
 

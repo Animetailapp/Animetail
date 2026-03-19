@@ -864,6 +864,7 @@ class AnimeScreenModel(
     }
 
     // KMK -->
+
     /**
      * Set the fetching related mangas status.
      * @param state
@@ -949,20 +950,25 @@ class AnimeScreenModel(
             LibraryPreferences.EpisodeSwipeAction.ToggleSeen -> {
                 markEpisodesSeen(listOf(episode), !episode.seen)
             }
+
             LibraryPreferences.EpisodeSwipeAction.ToggleBookmark -> {
                 bookmarkEpisodes(listOf(episode), !episode.bookmark)
             }
+
             LibraryPreferences.EpisodeSwipeAction.ToggleFillermark -> {
                 fillermarkEpisodes(listOf(episode), !episode.fillermark)
             }
+
             LibraryPreferences.EpisodeSwipeAction.Download -> {
                 val downloadAction: EpisodeDownloadAction = when (episodeItem.downloadState) {
                     AnimeDownload.State.ERROR,
                     AnimeDownload.State.NOT_DOWNLOADED,
                     -> EpisodeDownloadAction.START_NOW
+
                     AnimeDownload.State.QUEUE,
                     AnimeDownload.State.DOWNLOADING,
                     -> EpisodeDownloadAction.CANCEL
+
                     AnimeDownload.State.DOWNLOADED -> EpisodeDownloadAction.DELETE
                 }
                 runEpisodeDownloadActions(
@@ -970,6 +976,7 @@ class AnimeScreenModel(
                     action = downloadAction,
                 )
             }
+
             LibraryPreferences.EpisodeSwipeAction.Disabled -> throw IllegalStateException()
         }
     }
@@ -1041,17 +1048,21 @@ class AnimeScreenModel(
                     downloadManager.startDownloads()
                 }
             }
+
             EpisodeDownloadAction.START_NOW -> {
                 val episode = items.singleOrNull()?.episode ?: return
                 startDownload(listOf(episode), true)
             }
+
             EpisodeDownloadAction.CANCEL -> {
                 val episodeId = items.singleOrNull()?.id ?: return
                 cancelDownload(episodeId)
             }
+
             EpisodeDownloadAction.DELETE -> {
                 deleteEpisodes(items.map { it.episode })
             }
+
             EpisodeDownloadAction.SHOW_QUALITIES -> {
                 val episode = items.singleOrNull()?.episode ?: return
                 showQualitiesDialog(episode)
@@ -1065,8 +1076,8 @@ class AnimeScreenModel(
             DownloadAction.NEXT_5_ITEMS -> getUnseenEpisodesSorted().take(5)
             DownloadAction.NEXT_10_ITEMS -> getUnseenEpisodesSorted().take(10)
             DownloadAction.NEXT_25_ITEMS -> getUnseenEpisodesSorted().take(25)
-
             DownloadAction.UNVIEWED_ITEMS -> getUnseenEpisodes()
+            DownloadAction.BOOKMARKED_ITEMS -> emptyList()
         }
         if (episodesToDownload.isNotEmpty()) {
             startDownload(episodesToDownload, false)
@@ -1792,6 +1803,7 @@ class AnimeScreenModel(
         mutableState.update { state ->
             when (state) {
                 State.Loading -> state
+
                 is State.Success -> {
                     state.copy(dialog = Dialog.EditAnimeInfo(state.anime))
                 }
@@ -1854,6 +1866,7 @@ class AnimeScreenModel(
             }
 
             // KMK -->
+
             /**
              * a value of null will be treated as still loading, so if all searching were failed and won't update
              * 'relatedAnimeCollection` then we should return empty list

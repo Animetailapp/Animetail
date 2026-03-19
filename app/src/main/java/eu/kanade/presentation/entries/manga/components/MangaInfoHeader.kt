@@ -200,7 +200,9 @@ fun MangaActionRow(
         MangaActionButton(
             title = when (nextUpdateDays) {
                 null -> stringResource(MR.strings.not_applicable)
+
                 0 -> stringResource(MR.strings.manga_interval_expected_update_soon)
+
                 else -> pluralStringResource(
                     MR.plurals.day,
                     count = nextUpdateDays,

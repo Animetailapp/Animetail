@@ -32,6 +32,7 @@ class AppUpdateChecker {
                 is GetApplicationRelease.Result.NewUpdate -> AppUpdateNotifier(context).promptUpdate(
                     result.release,
                 )
+
                 else -> {}
             }
 

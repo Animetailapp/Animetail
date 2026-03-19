@@ -43,7 +43,7 @@ fun MangaUpdateScreen(
     onMultiBookmarkClicked: (List<MangaUpdatesItem>, bookmark: Boolean) -> Unit,
     onMultiMarkAsReadClicked: (List<MangaUpdatesItem>, read: Boolean) -> Unit,
     onMultiDeleteClicked: (List<MangaUpdatesItem>) -> Unit,
-    onUpdateSelected: (MangaUpdatesItem, Boolean, Boolean, Boolean) -> Unit,
+    onUpdateSelected: (MangaUpdatesItem, Boolean, Boolean) -> Unit,
     onOpenChapter: (MangaUpdatesItem) -> Unit,
 ) {
     BackHandler(enabled = state.selectionMode, onBack = { onSelectAll(false) })
@@ -62,10 +62,12 @@ fun MangaUpdateScreen(
     ) { contentPadding ->
         when {
             state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
             state.items.isEmpty() -> EmptyScreen(
                 stringRes = MR.strings.information_no_recent,
                 modifier = Modifier.padding(contentPadding),
             )
+
             else -> {
                 val scope = rememberCoroutineScope()
                 var isRefreshing by remember { mutableStateOf(false) }

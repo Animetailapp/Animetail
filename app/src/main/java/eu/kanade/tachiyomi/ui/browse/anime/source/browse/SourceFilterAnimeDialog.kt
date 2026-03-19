@@ -134,14 +134,17 @@ private fun FilterItem(filter: AnimeFilter<*>, onUpdate: () -> Unit, startExpand
                 onUpdate()
             }
         }
+
         // SY <--
 
         is AnimeFilter.Header -> {
             HeadingItem(filter.name)
         }
+
         is AnimeFilter.Separator -> {
             HorizontalDivider()
         }
+
         is AnimeFilter.CheckBox -> {
             CheckboxItem(
                 label = filter.name,
@@ -151,6 +154,7 @@ private fun FilterItem(filter: AnimeFilter<*>, onUpdate: () -> Unit, startExpand
                 onUpdate()
             }
         }
+
         is AnimeFilter.TriState -> {
             TriStateItem(
                 label = filter.name,
@@ -160,6 +164,7 @@ private fun FilterItem(filter: AnimeFilter<*>, onUpdate: () -> Unit, startExpand
                 onUpdate()
             }
         }
+
         is AnimeFilter.Text -> {
             TextItem(
                 label = filter.name,
@@ -169,6 +174,7 @@ private fun FilterItem(filter: AnimeFilter<*>, onUpdate: () -> Unit, startExpand
                 onUpdate()
             }
         }
+
         is AnimeFilter.Select<*> -> {
             SelectItem(
                 label = filter.name,
@@ -179,6 +185,7 @@ private fun FilterItem(filter: AnimeFilter<*>, onUpdate: () -> Unit, startExpand
                 onUpdate()
             }
         }
+
         is AnimeFilter.Sort -> {
             CollapsibleBox(
                 heading = filter.name,
@@ -208,6 +215,7 @@ private fun FilterItem(filter: AnimeFilter<*>, onUpdate: () -> Unit, startExpand
                 }
             }
         }
+
         is AnimeFilter.Group<*> -> {
             CollapsibleBox(
                 heading = filter.name,

@@ -111,7 +111,6 @@ data class BrowseAnimeSourceScreen(
         val navigateUp: () -> Unit = {
             when {
                 !state.isUserQuery && state.toolbarQuery != null -> screenModel.setToolbarQuery(null)
-
                 else -> navigator.pop()
             }
         }
@@ -291,12 +290,14 @@ data class BrowseAnimeSourceScreen(
                             anime.favorite -> screenModel.setDialog(
                                 BrowseAnimeSourceScreenModel.Dialog.RemoveAnime(anime),
                             )
+
                             duplicateAnime != null -> screenModel.setDialog(
                                 BrowseAnimeSourceScreenModel.Dialog.AddDuplicateAnime(
                                     anime,
                                     duplicateAnime,
                                 ),
                             )
+
                             else -> screenModel.addFavorite(anime)
                         }
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -330,6 +331,7 @@ data class BrowseAnimeSourceScreen(
                     // SY <--
                 )
             }
+
             is BrowseAnimeSourceScreenModel.Dialog.AddDuplicateAnime -> {
                 DuplicateAnimeDialog(
                     onDismissRequest = onDismissRequest,
@@ -356,6 +358,7 @@ data class BrowseAnimeSourceScreen(
                     },
                 )
             }
+
             is BrowseAnimeSourceScreenModel.Dialog.RemoveAnime -> {
                 RemoveEntryDialog(
                     onDismissRequest = onDismissRequest,
@@ -365,6 +368,7 @@ data class BrowseAnimeSourceScreen(
                     entryToRemove = dialog.anime.title,
                 )
             }
+
             is BrowseAnimeSourceScreenModel.Dialog.ChangeAnimeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -376,11 +380,13 @@ data class BrowseAnimeSourceScreen(
                     },
                 )
             }
+
             is BrowseAnimeSourceScreenModel.Dialog.CreateSavedSearch -> SavedSearchCreateDialog(
                 onDismissRequest = onDismissRequest,
                 currentSavedSearches = dialog.currentSavedSearches,
                 saveSearch = screenModel::saveSearch,
             )
+
             is BrowseAnimeSourceScreenModel.Dialog.DeleteSavedSearch -> SavedSearchDeleteDialog(
                 onDismissRequest = onDismissRequest,
                 name = dialog.name,
@@ -388,6 +394,7 @@ data class BrowseAnimeSourceScreen(
                     screenModel.deleteSearch(dialog.idToDelete)
                 },
             )
+
             else -> {}
         }
 

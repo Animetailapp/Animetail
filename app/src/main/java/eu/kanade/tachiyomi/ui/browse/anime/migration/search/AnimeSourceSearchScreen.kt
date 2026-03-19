@@ -140,6 +140,7 @@ data class AnimeSourceSearchScreen(
                     // SY <--
                 )
             }
+
             is BrowseAnimeSourceScreenModel.Dialog.Migrate -> {
                 MigrateAnimeDialog(
                     oldAnime = oldAnime,
@@ -157,6 +158,7 @@ data class AnimeSourceSearchScreen(
                     },
                 )
             }
+
             else -> {}
         }
     }

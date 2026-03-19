@@ -45,9 +45,11 @@ class DeepLinkMangaScreen(
                 is DeepLinkMangaScreenModel.State.Loading -> {
                     LoadingScreen(Modifier.padding(contentPadding))
                 }
+
                 is DeepLinkMangaScreenModel.State.NoResults -> {
                     navigator.replace(GlobalMangaSearchScreen(query))
                 }
+
                 is DeepLinkMangaScreenModel.State.Result -> {
                     val resultState = state as DeepLinkMangaScreenModel.State.Result
                     if (resultState.chapterId == null) {

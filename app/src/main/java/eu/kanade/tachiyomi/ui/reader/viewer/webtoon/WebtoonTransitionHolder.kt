@@ -88,7 +88,9 @@ class WebtoonTransitionHolder(
                     pagesContainer.removeAllViews()
                     when (state) {
                         is ReaderChapter.State.Loading -> setLoading()
+
                         is ReaderChapter.State.Error -> setError(state.error, transition)
+
                         is ReaderChapter.State.Wait, is ReaderChapter.State.Loaded -> {
                             // No additional view is added
                         }

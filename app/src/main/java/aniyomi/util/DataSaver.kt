@@ -72,7 +72,9 @@ private class BandwidthHeroDataSaver(preferences: SourcePreferences) : DataSaver
                         imageUrl,
                     )
                 }
+
                 imageUrl.contains(".gif", true) -> if (ignoreGif) imageUrl else getUrl(imageUrl)
+
                 else -> getUrl(imageUrl)
             }
         } else {
@@ -105,7 +107,9 @@ private class WsrvNlDataSaver(preferences: SourcePreferences) : DataSaver {
                     imageUrl,
                 )
             }
+
             imageUrl.contains(".gif", true) -> if (ignoreGif) imageUrl else getUrl(imageUrl)
+
             else -> getUrl(imageUrl)
         }
     }
@@ -156,7 +160,9 @@ private class ReSmushItDataSaver(preferences: SourcePreferences) : DataSaver {
                     imageUrl,
                 )
             }
+
             imageUrl.contains(".gif", true) -> if (ignoreGif) imageUrl else getUrl(imageUrl)
+
             else -> getUrl(imageUrl)
         }
     }

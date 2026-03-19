@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.manga.installer
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -48,10 +49,13 @@ class PackageInstallerInstallerManga(private val service: Service) : InstallerMa
                     userAction.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     service.startActivity(userAction)
                 }
+
                 PackageInstaller.STATUS_FAILURE_ABORTED -> {
                     continueQueue(InstallStep.Idle)
                 }
+
                 PackageInstaller.STATUS_SUCCESS -> continueQueue(InstallStep.Installed)
+
                 else -> continueQueue(InstallStep.Error)
             }
         }
@@ -86,6 +90,7 @@ class PackageInstallerInstallerManga(private val service: Service) : InstallerMa
                     inputStream.copyTo(outputStream)
                     session.fsync(outputStream)
                 }
+                service.contentResolver.delete(entry.uri, null, null)
 
                 val intentSender = PendingIntent.getBroadcast(
                     service,
@@ -93,6 +98,7 @@ class PackageInstallerInstallerManga(private val service: Service) : InstallerMa
                     Intent(INSTALL_ACTION).setPackage(service.packageName),
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0,
                 ).intentSender
+                @SuppressLint("RequestInstallPackagesPolicy")
                 session.commit(intentSender)
             }
         } catch (e: Exception) {

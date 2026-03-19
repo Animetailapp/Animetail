@@ -47,6 +47,7 @@ class KavitaApi(private val client: OkHttpClient, interceptor: KavitaInterceptor
                 client.newCall(request).execute().use {
                     when (it.code) {
                         200 -> return it.parseAs<AuthenticationDto>().token
+
                         401 -> {
                             logcat(LogPriority.WARN) {
                                 "Unauthorized / api key not valid: Cleaned api URL: " +
@@ -54,6 +55,7 @@ class KavitaApi(private val client: OkHttpClient, interceptor: KavitaInterceptor
                             }
                             throw IOException("Unauthorized / api key not valid")
                         }
+
                         500 -> {
                             logcat(
                                 LogPriority.WARN,
@@ -63,6 +65,7 @@ class KavitaApi(private val client: OkHttpClient, interceptor: KavitaInterceptor
                             }
                             throw IOException("Error fetching JWT token")
                         }
+
                         else -> {}
                     }
                 }

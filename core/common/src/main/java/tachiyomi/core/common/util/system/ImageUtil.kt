@@ -76,10 +76,13 @@ object ImageUtil {
             // https://coil-kt.github.io/coil/getting_started/#supported-image-formats
             when (type.format) {
                 Format.Gif -> true
+
                 // Animated WebP on Android 9+
                 Format.Webp -> type.isAnimated && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+
                 // Animated Heif on Android 11+
                 Format.Heif -> type.isAnimated && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+
                 else -> false
             }
         } catch (e: Exception) {
@@ -202,6 +205,7 @@ object ImageUtil {
     }
 
     // SY -->
+
     /**
      * Split the image into left and right parts, then merge them into a
      * new image with added center padding scaled relative to the height of the display view
@@ -385,9 +389,6 @@ object ImageUtil {
     /**
      * Algorithm for determining what background to accompany a comic/manga page
      */
-    /**
-     * Algorithm for determining what background to accompany a comic/manga page
-     */
     @Suppress("ReturnCount", "NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
     fun chooseBackground(context: Context, imageSource: BufferedSource): Drawable {
         val decoder = ImageDecoder.newInstance(imageSource.inputStream())
@@ -523,6 +524,7 @@ object ImageUtil {
                     overallWhitePixels = 0
                     break@outer
                 }
+
                 blackStreak -> {
                     darkBG = true
                     if (x == right || x == rightOffsetX) {
@@ -537,6 +539,7 @@ object ImageUtil {
                         break@outer
                     }
                 }
+
                 whiteStreak || whitePixels > 22 -> darkBG = false
             }
         }
@@ -571,12 +574,15 @@ object ImageUtil {
             darkBG && botCornersIsWhite -> {
                 intArrayOf(blackColor, blackColor, whiteColor, whiteColor)
             }
+
             darkBG && topCornersIsWhite -> {
                 intArrayOf(whiteColor, whiteColor, blackColor, blackColor)
             }
+
             darkBG -> {
                 return ColorDrawable(blackColor)
             }
+
             topIsBlackStreak ||
                 (
                     topCornersIsDark &&
@@ -585,6 +591,7 @@ object ImageUtil {
                     ) -> {
                 intArrayOf(blackColor, blackColor, whiteColor, whiteColor)
             }
+
             bottomIsBlackStreak ||
                 (
                     botCornersIsDark &&
@@ -593,6 +600,7 @@ object ImageUtil {
                     ) -> {
                 intArrayOf(whiteColor, whiteColor, blackColor, blackColor)
             }
+
             else -> {
                 return ColorDrawable(whiteColor)
             }

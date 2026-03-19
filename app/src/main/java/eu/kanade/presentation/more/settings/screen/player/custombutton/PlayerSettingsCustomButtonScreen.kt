@@ -52,6 +52,7 @@ object PlayerSettingsCustomButtonScreen : Screen() {
 
         when (val dialog = successState.dialog) {
             null -> {}
+
             CustomButtonDialog.Create -> {
                 CustomButtonCreateDialog(
                     onDismissRequest = screenModel::dismissDialog,
@@ -59,6 +60,7 @@ object PlayerSettingsCustomButtonScreen : Screen() {
                     buttonNames = successState.customButtons.fastMap { it.name }.toImmutableList(),
                 )
             }
+
             is CustomButtonDialog.Delete -> {
                 CustomButtonDeleteDialog(
                     onDismissRequest = screenModel::dismissDialog,
@@ -66,6 +68,7 @@ object PlayerSettingsCustomButtonScreen : Screen() {
                     buttonTitle = dialog.customButton.name,
                 )
             }
+
             is CustomButtonDialog.Edit -> {
                 CustomButtonEditDialog(
                     onDismissRequest = screenModel::dismissDialog,

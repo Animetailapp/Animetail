@@ -171,17 +171,21 @@ class AnimeUpdatesScreenModel(
                         downloadManager.startDownloads()
                     }
                 }
+
                 EpisodeDownloadAction.START_NOW -> {
                     val episodeId = items.singleOrNull()?.update?.episodeId ?: return@launch
                     startDownloadingNow(episodeId)
                 }
+
                 EpisodeDownloadAction.CANCEL -> {
                     val episodeId = items.singleOrNull()?.update?.episodeId ?: return@launch
                     cancelDownload(episodeId)
                 }
+
                 EpisodeDownloadAction.DELETE -> {
                     deleteEpisodes(items)
                 }
+
                 EpisodeDownloadAction.SHOW_QUALITIES -> {
                     val update = items.singleOrNull()?.update ?: return@launch
                     showQualitiesDialog(update)
@@ -413,6 +417,7 @@ class AnimeUpdatesScreenModel(
                     val afterDate = after?.item?.update?.dateFetch?.toLocalDate()
                     when {
                         beforeDate != afterDate && afterDate != null -> AnimeUpdatesUiModel.Header(afterDate)
+
                         // Return null to avoid adding a separator between two items.
                         else -> null
                     }

@@ -425,6 +425,7 @@ class AnimeDownloader(
             // If the video is already downloaded, do nothing. Otherwise download from network
             val file = when {
                 videoFile != null -> videoFile
+
                 else -> {
                     notifier.onProgressChange(download)
 
@@ -721,6 +722,7 @@ class AnimeDownloader(
                             putExtra("extra_headers", bundle)
                         }
                     }
+
                     // ADM
                     pkgName.startsWith("com.dv.adm") -> {
                         val headers = (video.headers ?: source.headers).toList()

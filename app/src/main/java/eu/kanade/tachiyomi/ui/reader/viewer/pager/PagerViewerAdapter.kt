@@ -46,6 +46,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     var currentChapter: ReaderChapter? = null
 
     // SY -->
+
     /** Page used to start the shifted pages */
     var pageToShift: ReaderPage? = null
 
@@ -72,15 +73,8 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         val prevHasMissingChapters = calculateChapterGap(chapters.currChapter, chapters.prevChapter) > 0
         val nextHasMissingChapters = calculateChapterGap(chapters.nextChapter, chapters.currChapter) > 0
 
-        // Add previous chapter pages and transition.
-        if (chapters.prevChapter != null) {
-            // We only need to add the last few pages of the previous chapter, because it'll be
-            // selected as the current chapter when one of those pages is selected.
-            val prevPages = chapters.prevChapter.pages
-            if (prevPages != null) {
-                newItems.addAll(prevPages.takeLast(2))
-            }
-        }
+        // Add previous chapter pages and transition
+        chapters.prevChapter?.pages?.let(newItems::addAll)
 
         // Skip transition page if the chapter is loaded & current page is not a transition page
         if (prevHasMissingChapters || forceTransition || chapters.prevChapter?.state !is ReaderChapter.State.Loaded) {
@@ -121,14 +115,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
                 }
             }
 
-        if (chapters.nextChapter != null) {
-            // Add at most two pages, because this chapter will be selected before the user can
-            // swap more pages.
-            val nextPages = chapters.nextChapter.pages
-            if (nextPages != null) {
-                newItems.addAll(nextPages.take(2))
-            }
-        }
+        chapters.nextChapter?.pages?.let(newItems::addAll)
 
         // Resets double-page splits, else insert pages get misplaced
         subItems.filterIsInstance<InsertPage>().also { subItems.removeAll(it) }
@@ -148,7 +135,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
 
         // Will skip insert page otherwise
         if (insertPageLastPage != null) {
-            viewer.moveToPage(insertPageLastPage!!)
+            viewer.moveToPage(insertPageLastPage)
         }
     }
 
@@ -202,6 +189,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
             is L2RPagerViewer,
             is VerticalPagerViewer,
             -> currentIndex + 1
+
             else -> currentIndex
         }
 
@@ -258,6 +246,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
                         }
                         pagedItems.last().add(it)
                     }
+
                     is ChapterTransition -> {
                         otherItems.add(it)
                         pagedItems.add(mutableListOf())
@@ -360,7 +349,9 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
                     (oldCurrent?.first as? ChapterTransition)?.from != currentChapter -> subItems.find {
                     (it as? ReaderPage)?.chapter == currentChapter
                 }
+
                 useSecondPage -> (oldCurrent?.second ?: oldCurrent?.first)
+
                 else -> oldCurrent?.first ?: return
             }
         var index = joinedItems.indexOfFirst { it.first == newPage || it.second == newPage }

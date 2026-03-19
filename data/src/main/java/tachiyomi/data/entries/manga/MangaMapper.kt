@@ -4,6 +4,7 @@ import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.library.manga.LibraryManga
 object MangaMapper {
+    @Suppress("LongParameterList")
     fun mapManga(
         id: Long,
         source: Long,
@@ -56,6 +57,60 @@ object MangaMapper {
         lastModifiedAt = lastModifiedAt,
         favoriteModifiedAt = favoriteModifiedAt,
         version = version,
+    )
+
+    @Suppress("LongParameterList", "UNUSED_PARAMETER")
+    fun mapManga(
+        id: Long,
+        source: Long,
+        url: String,
+        artist: String?,
+        author: String?,
+        description: String?,
+        genre: List<String>?,
+        title: String,
+        status: Long,
+        thumbnailUrl: String?,
+        favorite: Boolean,
+        lastUpdate: Long?,
+        nextUpdate: Long?,
+        initialized: Boolean,
+        viewerFlags: Long,
+        chapterFlags: Long,
+        coverLastModified: Long,
+        dateAdded: Long,
+        updateStrategy: UpdateStrategy,
+        calculateInterval: Long,
+        lastModifiedAt: Long,
+        favoriteModifiedAt: Long?,
+        version: Long,
+        isSyncing: Long,
+        chapterCount: Long,
+    ): Manga = mapManga(
+        id = id,
+        source = source,
+        url = url,
+        artist = artist,
+        author = author,
+        description = description,
+        genre = genre,
+        title = title,
+        status = status,
+        thumbnailUrl = thumbnailUrl,
+        favorite = favorite,
+        lastUpdate = lastUpdate,
+        nextUpdate = nextUpdate,
+        initialized = initialized,
+        viewerFlags = viewerFlags,
+        chapterFlags = chapterFlags,
+        coverLastModified = coverLastModified,
+        dateAdded = dateAdded,
+        updateStrategy = updateStrategy,
+        calculateInterval = calculateInterval,
+        lastModifiedAt = lastModifiedAt,
+        favoriteModifiedAt = favoriteModifiedAt,
+        version = version,
+        isSyncing = isSyncing,
     )
 
     fun mapLibraryManga(

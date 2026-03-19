@@ -82,10 +82,12 @@ fun FeedScreen(
 ) {
     when {
         state.isLoading -> LoadingScreen()
+
         state.isEmpty -> EmptyScreen(
             TLMR.strings.feed_tab_empty,
             modifier = Modifier.padding(contentPadding),
         )
+
         else -> {
             var refreshing by remember { mutableStateOf(false) }
             LaunchedEffect(refreshing) {
@@ -154,9 +156,11 @@ fun FeedItem(
         item.results == null -> {
             GlobalSearchLoadingResultItem()
         }
+
         item.results.isEmpty() -> {
             GlobalSearchErrorResultItem(message = stringResource(MR.strings.no_results_found))
         }
+
         else -> {
             GlobalSearchCardRow(
                 titles = item.results,

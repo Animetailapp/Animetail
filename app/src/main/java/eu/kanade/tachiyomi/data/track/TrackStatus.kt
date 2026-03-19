@@ -44,6 +44,7 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         else -> null
                     }
                 }
+
                 TrackerManager.ANILIST -> {
                     when (statusLong) {
                         Anilist.READING -> READING
@@ -58,6 +59,7 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         else -> null
                     }
                 }
+
                 TrackerManager.KITSU -> {
                     when (statusLong) {
                         Kitsu.READING -> READING
@@ -70,6 +72,7 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         else -> null
                     }
                 }
+
                 (4L) -> {
                     when (statusLong) {
                         Shikimori.READING -> READING
@@ -81,6 +84,7 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         else -> null
                     }
                 }
+
                 (5L) -> {
                     when (statusLong) {
                         Bangumi.READING -> READING
@@ -91,6 +95,7 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         else -> null
                     }
                 }
+
                 (6L) -> {
                     when (statusLong) {
                         Komga.READING -> READING
@@ -99,6 +104,7 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         else -> null
                     }
                 }
+
                 (7L) -> {
                     when (statusLong) {
                         MangaUpdates.READING_LIST -> READING
@@ -109,6 +115,7 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         else -> null
                     }
                 }
+
                 TrackerManager.SIMKL -> {
                     when (statusLong) {
                         Simkl.WATCHING -> WATCHING
@@ -119,6 +126,7 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         else -> null
                     }
                 }
+
                 200L -> {
                     when (statusLong) {
                         Tmdb.WATCHING -> WATCHING
@@ -129,6 +137,7 @@ enum class TrackStatus(val int: Long, @StringRes val res: Int) {
                         else -> null
                     }
                 }
+
                 else -> null
             }
         }

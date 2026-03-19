@@ -57,8 +57,12 @@ interface SecureActivityDelegate {
             // `requireUnlock` can be true on process start or if app was closed in locked state
             if (!AuthenticatorUtil.isAuthenticating && !requireUnlock) {
                 requireUnlock = when (val lockDelay = preferences.lockAppAfter().get()) {
-                    -1 -> false // Never
-                    0 -> true // Always
+                    -1 -> false
+
+                    // Never
+                    0 -> true
+
+                    // Always
                     else -> lastClosedPref.get() + lockDelay * 60_000 <= System.currentTimeMillis()
                 }
             }
@@ -97,8 +101,10 @@ class SecureActivityDelegateImpl : SecureActivityDelegate, DefaultLifecycleObser
         val incognitoModeFlow = preferences.incognitoMode().changes()
         combine(secureScreenFlow, incognitoModeFlow) { secureScreen, incognitoMode ->
             secureScreen == SecurityPreferences.SecureScreenMode.ALWAYS ||
-                secureScreen == SecurityPreferences.SecureScreenMode.INCOGNITO &&
-                incognitoMode
+                (
+                    secureScreen == SecurityPreferences.SecureScreenMode.INCOGNITO &&
+                        incognitoMode
+                    )
         }
             .onEach(activity.window::setSecureScreen)
             .launchIn(activity.lifecycleScope)

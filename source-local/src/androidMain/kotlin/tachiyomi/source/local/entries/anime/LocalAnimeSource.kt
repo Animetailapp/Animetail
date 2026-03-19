@@ -113,6 +113,7 @@ actual class LocalAnimeSource(
                         )
                     }
                 }
+
                 is AnimeOrderBy.Latest -> {
                     animeDirs = if (filter.state!!.ascending) {
                         animeDirs.sortedBy(UniFile::lastModified)
@@ -120,6 +121,7 @@ actual class LocalAnimeSource(
                         animeDirs.sortedByDescending(UniFile::lastModified)
                     }
                 }
+
                 else -> {
                     /* Do nothing */
                 }
@@ -372,7 +374,7 @@ actual class LocalAnimeSource(
         )
         val outFile = tempFile.path
 
-        val episodeName = episode.url.split('/', limit = 2).last()
+        val episodeName = episode.url.substringAfterLast('/')
         val animeDir = fileSystem.getAnimeDirectory(anime.url)!!
         val episodeFile = animeDir.findFile(episodeName)!!
         val episodeFilename = { episodeFile.toFFmpegString(context) }

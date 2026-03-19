@@ -5,8 +5,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.mikepenz.aboutlibraries.Libs
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
-import com.mikepenz.aboutlibraries.ui.compose.m3.util.htmlReadyLicenseContent
+import com.mikepenz.aboutlibraries.ui.compose.util.htmlReadyLicenseContent
+import com.mikepenz.aboutlibraries.util.withContext
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.Screen
 import tachiyomi.i18n.MR
@@ -27,6 +29,11 @@ class OpenSourceLicensesScreen : Screen() {
             },
         ) { contentPadding ->
             LibrariesContainer(
+                librariesBlock = { context ->
+                    Libs.Builder()
+                        .withContext(context)
+                        .build()
+                },
                 modifier = Modifier
                     .fillMaxSize(),
                 contentPadding = contentPadding,

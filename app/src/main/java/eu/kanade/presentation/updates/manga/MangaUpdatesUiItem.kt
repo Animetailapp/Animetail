@@ -69,7 +69,7 @@ internal fun LazyListScope.mangaUpdatesLastUpdatedItem(
 internal fun LazyListScope.mangaUpdatesUiItems(
     uiModels: List<MangaUpdatesUiModel>,
     selectionMode: Boolean,
-    onUpdateSelected: (MangaUpdatesItem, Boolean, Boolean, Boolean) -> Unit,
+    onUpdateSelected: (MangaUpdatesItem, Boolean, Boolean) -> Unit,
     onClickCover: (MangaUpdatesItem) -> Unit,
     onClickUpdate: (MangaUpdatesItem) -> Unit,
     onDownloadChapter: (List<MangaUpdatesItem>, ChapterDownloadAction) -> Unit,
@@ -96,6 +96,7 @@ internal fun LazyListScope.mangaUpdatesUiItems(
                     text = relativeDateText(item.date),
                 )
             }
+
             is MangaUpdatesUiModel.Item -> {
                 val updatesItem = item.item
                 MangaUpdatesUiItem(
@@ -111,16 +112,11 @@ internal fun LazyListScope.mangaUpdatesUiItems(
                             )
                         },
                     onLongClick = {
-                        onUpdateSelected(updatesItem, !updatesItem.selected, true, true)
+                        onUpdateSelected(updatesItem, !updatesItem.selected, true)
                     },
                     onClick = {
                         when {
-                            selectionMode -> onUpdateSelected(
-                                updatesItem,
-                                !updatesItem.selected,
-                                true,
-                                false,
-                            )
+                            selectionMode -> onUpdateSelected(updatesItem, !updatesItem.selected, false)
                             else -> onClickUpdate(updatesItem)
                         }
                     },

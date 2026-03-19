@@ -96,6 +96,7 @@ fun EpisodeSettingsDialog(
                         onFillermarkedFilterChanged = onFillermarkedFilterChanged,
                     )
                 }
+
                 1 -> {
                     SortPage(
                         sortingMode = anime?.sorting ?: 0,
@@ -103,6 +104,7 @@ fun EpisodeSettingsDialog(
                         onItemSelected = onSortModeChanged,
                     )
                 }
+
                 2 -> {
                     DisplayPage(
                         displayMode = anime?.displayMode ?: 0,

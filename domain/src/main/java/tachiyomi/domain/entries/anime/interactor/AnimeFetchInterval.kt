@@ -73,12 +73,14 @@ class AnimeFetchInterval(
                 val uploadPeriod = uploadDates.indexOf(uploadDates.last())
                 uploadDelta.floorDiv(uploadPeriod).toInt()
             }
+
             // Enough fetch date from client
             fetchDates.size >= 3 -> {
                 val fetchDelta = fetchDates.last().until(fetchDates.first(), ChronoUnit.DAYS)
                 val uploadPeriod = fetchDates.indexOf(fetchDates.last())
                 fetchDelta.floorDiv(uploadPeriod).toInt()
             }
+
             // Default to 7 days
             else -> 7
         }

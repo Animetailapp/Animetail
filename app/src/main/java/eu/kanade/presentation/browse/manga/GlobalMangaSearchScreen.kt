@@ -86,6 +86,7 @@ internal fun GlobalSearchContent(
                         MangaSearchItemResult.Loading -> {
                             GlobalSearchLoadingResultItem()
                         }
+
                         is MangaSearchItemResult.Success -> {
                             GlobalMangaSearchCardRow(
                                 titles = result.result,
@@ -94,6 +95,7 @@ internal fun GlobalSearchContent(
                                 onLongClick = onLongClickItem,
                             )
                         }
+
                         is MangaSearchItemResult.Error -> {
                             GlobalSearchErrorResultItem(message = result.throwable.message)
                         }
