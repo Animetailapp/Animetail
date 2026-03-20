@@ -358,7 +358,7 @@ class MangaDownloadCache(
             }
 
             // Try to wait until extensions and sources have loaded
-            var sources = emptyList<MangaSource>()
+            var sources = emptyList<Source>()
             withTimeoutOrNull(30.seconds) {
                 extensionManager.isInitialized.first { it }
                 sourceManager.isInitialized.first { it }
