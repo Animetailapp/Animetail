@@ -10,16 +10,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.domain.ui.model.AppTheme
-import eu.kanade.domain.ui.model.NavStyle
-import eu.kanade.domain.ui.model.StartScreen
 import eu.kanade.domain.ui.model.TabletUiMode
 import eu.kanade.domain.ui.model.ThemeMode
 import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
 import eu.kanade.presentation.more.settings.Preference
-import eu.kanade.presentation.more.settings.screen.appearance.AppCustomThemeColorPickerScreen
 import eu.kanade.presentation.more.settings.screen.appearance.AppLanguageScreen
 import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
 import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
@@ -27,8 +22,6 @@ import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableMap
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.aniyomi.AYMR
-import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -48,41 +41,23 @@ object SettingsAppearanceScreen : SearchableSettings {
         return listOf(
             getThemeGroup(uiPreferences = uiPreferences),
             getDisplayGroup(uiPreferences = uiPreferences),
-            // SY -->
-            getNavbarGroup(uiPreferences = uiPreferences),
-            getForkGroup(uiPreferences = uiPreferences),
-            // SY <--
         )
     }
 
     @Composable
-    @Suppress("SpreadOperator")
     private fun getThemeGroup(
         uiPreferences: UiPreferences,
     ): Preference.PreferenceGroup {
         val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
 
-        val themeModePref = uiPreferences.themeMode()
+        val themeModePref = uiPreferences.themeMode
         val themeMode by themeModePref.collectAsState()
 
-        val appThemePref = uiPreferences.appTheme()
+        val appThemePref = uiPreferences.appTheme
         val appTheme by appThemePref.collectAsState()
 
-        val amoledPref = uiPreferences.themeDarkAmoled()
+        val amoledPref = uiPreferences.themeDarkAmoled
         val amoled by amoledPref.collectAsState()
-
-        val customPreferenceItem = if (appTheme == AppTheme.CUSTOM) {
-            listOf(
-                Preference.PreferenceItem.TextPreference(
-                    title = stringResource(TLMR.strings.pref_custom_color),
-                    subtitle = stringResource(TLMR.strings.custom_color_description),
-                    onClick = { navigator.push(AppCustomThemeColorPickerScreen()) },
-                ),
-            )
-        } else {
-            emptyList()
-        }
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_theme),
@@ -106,7 +81,6 @@ object SettingsAppearanceScreen : SearchableSettings {
                         )
                     }
                 },
-                *customPreferenceItem.toTypedArray(),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = amoledPref,
                     title = stringResource(MR.strings.pref_dark_theme_pure_black),
@@ -129,7 +103,7 @@ object SettingsAppearanceScreen : SearchableSettings {
 
         val now = remember { LocalDate.now() }
 
-        val dateFormat by uiPreferences.dateFormat().collectAsState()
+        val dateFormat by uiPreferences.dateFormat.collectAsState()
         val formattedNow = remember(dateFormat) {
             UiPreferences.dateFormat(dateFormat).format(now)
         }
@@ -142,7 +116,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                     onClick = { navigator.push(AppLanguageScreen()) },
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    preference = uiPreferences.tabletUiMode(),
+                    preference = uiPreferences.tabletUiMode,
                     entries = TabletUiMode.entries
                         .associateWith { stringResource(it.titleRes) }
                         .toImmutableMap(),
@@ -153,26 +127,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    preference = uiPreferences.startScreen(),
-                    entries = StartScreen.entries
-                        .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
-                    title = stringResource(AYMR.strings.pref_start_screen),
-                    onValueChanged = {
-                        context.toast(MR.strings.requires_app_restart)
-                        true
-                    },
-                ),
-                Preference.PreferenceItem.ListPreference(
-                    preference = uiPreferences.navStyle(),
-                    entries = NavStyle.entries
-                        .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
-                    title = "Navigation Style",
-                    onValueChanged = { true },
-                ),
-                Preference.PreferenceItem.ListPreference(
-                    preference = uiPreferences.dateFormat(),
+                    preference = uiPreferences.dateFormat,
                     entries = DateFormats
                         .associateWith {
                             val formattedDate = UiPreferences.dateFormat(it).format(now)
@@ -182,7 +137,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                     title = stringResource(MR.strings.pref_date_format),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.relativeTime(),
+                    preference = uiPreferences.relativeTime,
                     title = stringResource(MR.strings.pref_relative_format),
                     subtitle = stringResource(
                         MR.strings.pref_relative_format_summary,
@@ -191,126 +146,12 @@ object SettingsAppearanceScreen : SearchableSettings {
                     ),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.showEpisodeTimestamps(),
-                    title = stringResource(TLMR.strings.pref_show_episode_timestamp),
-                    subtitle = stringResource(TLMR.strings.pref_show_episode_timestamp_summary),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.showChapterTimestamps(),
-                    title = stringResource(TLMR.strings.pref_show_chapter_timestamp),
-                    subtitle = stringResource(TLMR.strings.pref_show_chapter_timestamp_summary),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.imagesInDescription(),
+                    preference = uiPreferences.imagesInDescription,
                     title = stringResource(MR.strings.pref_display_images_description),
                 ),
             ),
         )
     }
-
-    // SY -->
-    @Composable
-    fun getForkGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
-//        val previewsRowCount by uiPreferences.previewsRowCount().collectAsState()
-        // KMK -->
-        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
-        val relatedMangasInOverflow by uiPreferences.expandRelatedAnimes().collectAsState()
-        val showCast by uiPreferences.showCast().collectAsState()
-        // KMK <--
-
-        return Preference.PreferenceGroup(
-            stringResource(TLMR.strings.pref_category_fork),
-            preferenceItems = persistentListOf(
-                // KMK -->
-//                Preference.PreferenceItem.SwitchPreference(
-//                    pref = uiPreferences.usePanoramaCoverFlow(),
-//                    title = stringResource(KMR.strings.pref_panorama_cover_flow),
-//                    subtitle = stringResource(KMR.strings.pref_panorama_cover_flow_summary),
-//                ),
-                // KMK <--
-//                Preference.PreferenceItem.SwitchPreference(
-//                    pref = uiPreferences.expandFilters(),
-//                    title = stringResource(SYMR.strings.toggle_expand_search_filters),
-//                ),
-//                // KMK -->
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.expandRelatedAnimes(),
-                    title = stringResource(TLMR.strings.pref_expand_related_animes),
-                    subtitle = stringResource(TLMR.strings.pref_expand_related_animes_summary),
-                    enabled = sourcePreferences.relatedAnimes().get(),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.relatedAnimesInOverflow(),
-                    enabled = !relatedMangasInOverflow,
-                    title = stringResource(TLMR.strings.put_related_animes_in_overflow),
-                    subtitle = stringResource(TLMR.strings.put_related_animes_in_overflow_summary),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.showHomeOnRelatedAnimes(),
-                    title = stringResource(TLMR.strings.pref_show_home_on_related_animes),
-                    subtitle = stringResource(TLMR.strings.pref_show_home_on_related_animes_summary),
-                    enabled = sourcePreferences.relatedAnimes().get(),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.showCast(),
-                    title = stringResource(TLMR.strings.pref_show_cast),
-                    subtitle = stringResource(TLMR.strings.pref_show_cast_summary),
-                ),
-                // KMK <--
-//                Preference.PreferenceItem.SwitchPreference(
-//                    pref = uiPreferences.recommendsInOverflow(),
-//                    title = stringResource(SYMR.strings.put_recommends_in_overflow),
-//                    subtitle = stringResource(SYMR.strings.put_recommends_in_overflow_summary),
-//                ),
-//                Preference.PreferenceItem.SwitchPreference(
-//                    pref = uiPreferences.mergeInOverflow(),
-//                    title = stringResource(SYMR.strings.put_merge_in_overflow),
-//                    subtitle = stringResource(SYMR.strings.put_merge_in_overflow_summary),
-//                ),
-//                Preference.PreferenceItem.SliderPreference(
-//                    value = previewsRowCount,
-//                    title = stringResource(SYMR.strings.pref_previews_row_count),
-//                    subtitle = if (previewsRowCount > 0) {
-//                        pluralStringResource(
-//                            SYMR.plurals.row_count,
-//                            previewsRowCount,
-//                            previewsRowCount,
-//                        )
-//                    } else {
-//                        stringResource(MR.strings.disabled)
-//                    },
-//                    min = 0,
-//                    max = 10,
-//                    onValueChanged = {
-//                        uiPreferences.previewsRowCount().set(it)
-//                        true
-//                    },
-//                ),
-            ),
-        )
-    }
-
-    @Composable
-    fun getNavbarGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
-        return Preference.PreferenceGroup(
-            stringResource(TLMR.strings.pref_category_navbar),
-            preferenceItems = persistentListOf(
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.showNavUpdates(),
-                    title = stringResource(TLMR.strings.pref_hide_updates_button),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.showNavHistory(),
-                    title = stringResource(TLMR.strings.pref_hide_history_button),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.bottomBarLabels(),
-                    title = stringResource(TLMR.strings.pref_show_bottom_bar_labels),
-                ),
-            ),
-        )
-    }
-// SY <--
 }
 
 private val DateFormats = listOf(

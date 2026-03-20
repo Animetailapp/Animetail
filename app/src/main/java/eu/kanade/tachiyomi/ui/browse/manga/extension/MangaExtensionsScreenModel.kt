@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.extension
+package eu.kanade.tachiyomi.ui.browse.extension
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
@@ -6,12 +6,12 @@ import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.base.BasePreferences
-import eu.kanade.domain.extension.manga.interactor.GetMangaExtensionsByType
+import eu.kanade.domain.extension.interactor.GetExtensionsByType
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.components.SEARCH_DEBOUNCE_MILLIS
-import eu.kanade.tachiyomi.extension.InstallStep
-import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
-import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
+import eu.kanade.tachiyomi.extension.ExtensionManager
+import eu.kanade.tachiyomi.extension.model.Extension
+import eu.kanade.tachiyomi.extension.model.InstallStep
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import kotlinx.coroutines.delay
@@ -35,20 +35,20 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
-class MangaExtensionsScreenModel(
+class ExtensionsScreenModel(
     preferences: SourcePreferences = Injekt.get(),
     basePreferences: BasePreferences = Injekt.get(),
-    private val extensionManager: MangaExtensionManager = Injekt.get(),
-    private val getExtensions: GetMangaExtensionsByType = Injekt.get(),
-) : StateScreenModel<MangaExtensionsScreenModel.State>(State()) {
+    private val extensionManager: ExtensionManager = Injekt.get(),
+    private val getExtensions: GetExtensionsByType = Injekt.get(),
+) : StateScreenModel<ExtensionsScreenModel.State>(State()) {
 
     private val currentDownloads = MutableStateFlow<Map<String, InstallStep>>(hashMapOf())
 
     init {
         val context = Injekt.get<Application>()
-        val extensionMapper: (Map<String, InstallStep>) -> ((MangaExtension) -> MangaExtensionUiModel.Item) = { map ->
+        val extensionMapper: (Map<String, InstallStep>) -> ((Extension) -> ExtensionUiModel.Item) = { map ->
             {
-                MangaExtensionUiModel.Item(it, map[it.pkgName] ?: InstallStep.Idle)
+                ExtensionUiModel.Item(it, map[it.pkgName] ?: InstallStep.Idle)
             }
         }
 
@@ -64,13 +64,13 @@ class MangaExtensionsScreenModel(
                 buildMap {
                     val updates = _updates.filter(predicate).map(extensionMapper(downloads))
                     if (updates.isNotEmpty()) {
-                        put(MangaExtensionUiModel.Header.Resource(MR.strings.ext_updates_pending), updates)
+                        put(ExtensionUiModel.Header.Resource(MR.strings.ext_updates_pending), updates)
                     }
 
                     val installed = _installed.filter(predicate).map(extensionMapper(downloads))
                     val untrusted = _untrusted.filter(predicate).map(extensionMapper(downloads))
                     if (installed.isNotEmpty() || untrusted.isNotEmpty()) {
-                        put(MangaExtensionUiModel.Header.Resource(MR.strings.ext_installed), installed + untrusted)
+                        put(ExtensionUiModel.Header.Resource(MR.strings.ext_installed), installed + untrusted)
                     }
 
                     val languagesWithExtensions = _available
@@ -78,7 +78,7 @@ class MangaExtensionsScreenModel(
                         .groupBy { it.lang }
                         .toSortedMap(LocaleHelper.comparator)
                         .map { (lang, exts) ->
-                            MangaExtensionUiModel.Header.Text(LocaleHelper.getSourceDisplayName(lang, context)) to
+                            ExtensionUiModel.Header.Text(LocaleHelper.getSourceDisplayName(lang, context)) to
                                 exts.map(extensionMapper(downloads))
                         }
                     if (languagesWithExtensions.isNotEmpty()) {
@@ -98,16 +98,16 @@ class MangaExtensionsScreenModel(
 
         screenModelScope.launchIO { findAvailableExtensions() }
 
-        preferences.mangaExtensionUpdatesCount().changes()
+        preferences.extensionUpdatesCount.changes()
             .onEach { mutableState.update { state -> state.copy(updates = it) } }
             .launchIn(screenModelScope)
 
-        basePreferences.extensionInstaller().changes()
+        basePreferences.extensionInstaller.changes()
             .onEach { mutableState.update { state -> state.copy(installer = it) } }
             .launchIn(screenModelScope)
     }
 
-    fun searchQueryPredicate(query: String): (MangaExtension) -> Boolean {
+    fun searchQueryPredicate(query: String): (Extension) -> Boolean {
         val subqueries = query.split(",")
             .map { it.trim() }
             .filterNot { it.isBlank() }
@@ -119,19 +119,19 @@ class MangaExtensionsScreenModel(
                 if (extension.name.contains(subquery, ignoreCase = true)) return@any true
 
                 when (extension) {
-                    is MangaExtension.Installed -> extension.sources.any { source ->
+                    is Extension.Installed -> extension.sources.any { source ->
                         source.name.contains(subquery, ignoreCase = true) ||
                             (source as? HttpSource)?.baseUrl?.contains(subquery, ignoreCase = true) == true ||
                             source.id == subquery.toLongOrNull()
                     }
 
-                    is MangaExtension.Available -> extension.sources.any {
+                    is Extension.Available -> extension.sources.any {
                         it.name.contains(subquery, ignoreCase = true) ||
                             it.baseUrl.contains(subquery, ignoreCase = true) ||
                             it.id == subquery.toLongOrNull()
                     }
 
-                    is MangaExtension.Untrusted -> extension.name.contains(subquery, ignoreCase = true)
+                    else -> false
                 }
             }
         }
@@ -147,44 +147,45 @@ class MangaExtensionsScreenModel(
         screenModelScope.launchIO {
             state.value.items.values.flatten()
                 .map { it.extension }
-                .filterIsInstance<MangaExtension.Installed>()
+                .filterIsInstance<Extension.Installed>()
                 .filter { it.hasUpdate }
                 .forEach(::updateExtension)
         }
     }
 
-    fun installExtension(extension: MangaExtension.Available) {
+    fun installExtension(extension: Extension.Available) {
         screenModelScope.launchIO {
             extensionManager.installExtension(extension).collectToInstallUpdate(extension)
         }
     }
 
-    fun updateExtension(extension: MangaExtension.Installed) {
+    fun updateExtension(extension: Extension.Installed) {
         screenModelScope.launchIO {
             extensionManager.updateExtension(extension).collectToInstallUpdate(extension)
         }
     }
 
-    fun cancelInstallUpdateExtension(extension: MangaExtension) {
+    fun cancelInstallUpdateExtension(extension: Extension) {
         extensionManager.cancelInstallUpdateExtension(extension)
+        removeDownloadState(extension)
     }
 
-    private fun addDownloadState(extension: MangaExtension, installStep: InstallStep) {
+    private fun addDownloadState(extension: Extension, installStep: InstallStep) {
         currentDownloads.update { it + Pair(extension.pkgName, installStep) }
     }
 
-    private fun removeDownloadState(extension: MangaExtension) {
+    private fun removeDownloadState(extension: Extension) {
         currentDownloads.update { it - extension.pkgName }
     }
 
-    private suspend fun Flow<InstallStep>.collectToInstallUpdate(extension: MangaExtension) =
+    private suspend fun Flow<InstallStep>.collectToInstallUpdate(extension: Extension) =
         this
             .onEach { installStep -> addDownloadState(extension, installStep) }
             .takeWhile { installStep -> installStep != InstallStep.Installed }
             .onCompletion { removeDownloadState(extension) }
             .collect()
 
-    fun uninstallExtension(extension: MangaExtension) {
+    fun uninstallExtension(extension: Extension) {
         extensionManager.uninstallExtension(extension)
     }
 
@@ -201,7 +202,7 @@ class MangaExtensionsScreenModel(
         }
     }
 
-    fun trustExtension(extension: MangaExtension.Untrusted) {
+    fun trustExtension(extension: Extension.Untrusted) {
         screenModelScope.launch {
             extensionManager.trust(extension)
         }
@@ -220,16 +221,16 @@ class MangaExtensionsScreenModel(
     }
 }
 
-typealias ItemGroups = Map<MangaExtensionUiModel.Header, List<MangaExtensionUiModel.Item>>
+typealias ItemGroups = Map<ExtensionUiModel.Header, List<ExtensionUiModel.Item>>
 
-object MangaExtensionUiModel {
+object ExtensionUiModel {
     sealed interface Header {
         data class Resource(val textRes: StringResource) : Header
         data class Text(val text: String) : Header
     }
 
     data class Item(
-        val extension: MangaExtension,
+        val extension: Extension,
         val installStep: InstallStep,
     )
 }

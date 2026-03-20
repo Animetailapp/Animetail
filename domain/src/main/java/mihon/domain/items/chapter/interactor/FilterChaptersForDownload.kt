@@ -1,10 +1,10 @@
-package mihon.domain.items.chapter.interactor
+package mihon.domain.chapter.interactor
 
-import tachiyomi.domain.category.manga.interactor.GetMangaCategories
+import tachiyomi.domain.category.interactor.GetCategories
+import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
+import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.download.service.DownloadPreferences
-import tachiyomi.domain.entries.manga.model.Manga
-import tachiyomi.domain.items.chapter.interactor.GetChaptersByMangaId
-import tachiyomi.domain.items.chapter.model.Chapter
+import tachiyomi.domain.manga.model.Manga
 
 /**
  * Interactor responsible for determining which chapters of a manga should be downloaded.
@@ -16,7 +16,7 @@ import tachiyomi.domain.items.chapter.model.Chapter
 class FilterChaptersForDownload(
     private val getChaptersByMangaId: GetChaptersByMangaId,
     private val downloadPreferences: DownloadPreferences,
-    private val getCategories: GetMangaCategories,
+    private val getCategories: GetCategories,
 ) {
 
     /**
@@ -29,17 +29,20 @@ class FilterChaptersForDownload(
     suspend fun await(manga: Manga, newChapters: List<Chapter>): List<Chapter> {
         if (
             newChapters.isEmpty() ||
-            !downloadPreferences.downloadNewChapters().get() ||
+            !downloadPreferences.downloadNewChapters.get() ||
             !manga.shouldDownloadNewChapters()
         ) {
             return emptyList()
         }
-        if (!downloadPreferences.downloadNewUnreadChaptersOnly().get()) return newChapters
+
+        if (!downloadPreferences.downloadNewUnreadChaptersOnly.get()) return newChapters
+
         val readChapterNumbers = getChaptersByMangaId.await(manga.id)
             .asSequence()
             .filter { it.read && it.isRecognizedNumber }
             .map { it.chapterNumber }
             .toSet()
+
         return newChapters.filterNot { it.chapterNumber in readChapterNumbers }
     }
 
@@ -51,19 +54,18 @@ class FilterChaptersForDownload(
      */
     private suspend fun Manga.shouldDownloadNewChapters(): Boolean {
         if (!favorite) return false
+
         val categories = getCategories.await(id).map { it.id }.ifEmpty { listOf(DEFAULT_CATEGORY_ID) }
-        val includedCategories = downloadPreferences.downloadNewChapterCategories().get().map { it.toLong() }
-        val excludedCategories = downloadPreferences.downloadNewChapterCategoriesExclude().get().map { it.toLong() }
+        val includedCategories = downloadPreferences.downloadNewChapterCategories.get().map { it.toLong() }
+        val excludedCategories = downloadPreferences.downloadNewChapterCategoriesExclude.get().map { it.toLong() }
+
         return when {
             // Default Download from all categories
             includedCategories.isEmpty() && excludedCategories.isEmpty() -> true
-
             // In excluded category
             categories.any { it in excludedCategories } -> false
-
             // Included category not selected
             includedCategories.isEmpty() -> true
-
             // In included category
             else -> categories.any { it in includedCategories }
         }

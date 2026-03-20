@@ -1,22 +1,22 @@
-package eu.kanade.domain.extension.anime.interactor
+package eu.kanade.domain.extension.interactor
 
-import eu.kanade.domain.extension.anime.model.AnimeExtensions
+import eu.kanade.domain.extension.model.Extensions
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
-import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
+import eu.kanade.tachiyomi.extension.ExtensionManager
+import eu.kanade.tachiyomi.extension.model.Extension
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
-class GetAnimeExtensionsByType(
+class GetExtensionsByType(
     private val preferences: SourcePreferences,
-    private val extensionManager: AnimeExtensionManager,
+    private val extensionManager: ExtensionManager,
 ) {
 
-    fun subscribe(): Flow<AnimeExtensions> {
-        val showNsfwSources = preferences.showNsfwSource().get()
+    fun subscribe(): Flow<Extensions> {
+        val showNsfwSources = preferences.showNsfwSource.get()
 
         return combine(
-            preferences.enabledLanguages().changes(),
+            preferences.enabledLanguages.changes(),
             extensionManager.installedExtensionsFlow,
             extensionManager.untrustedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
@@ -24,7 +24,7 @@ class GetAnimeExtensionsByType(
             val (updates, installed) = _installed
                 .filter { (showNsfwSources || !it.isNsfw) }
                 .sortedWith(
-                    compareBy<AnimeExtension.Installed> { !it.isObsolete }
+                    compareBy<Extension.Installed> { !it.isObsolete }
                         .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name },
                 )
                 .partition { it.hasUpdate }
@@ -34,18 +34,8 @@ class GetAnimeExtensionsByType(
 
             val available = _available
                 .filter { extension ->
-                    _installed.none {
-                        // KMK -->
-                        it.signatureHash == extension.signatureHash &&
-                            // KMK <--
-                            it.pkgName == extension.pkgName
-                    } &&
-                        _untrusted.none {
-                            // KMK -->
-                            it.signatureHash == extension.signatureHash &&
-                                // KMK <--
-                                it.pkgName == extension.pkgName
-                        } &&
+                    _installed.none { it.pkgName == extension.pkgName } &&
+                        _untrusted.none { it.pkgName == extension.pkgName } &&
                         (showNsfwSources || !extension.isNsfw)
                 }
                 .flatMap { ext ->
@@ -64,7 +54,7 @@ class GetAnimeExtensionsByType(
                 }
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
-            AnimeExtensions(updates, installed, available, untrusted)
+            Extensions(updates, installed, available, untrusted)
         }
     }
 }
