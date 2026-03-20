@@ -41,7 +41,7 @@ class NetworkHelper(
             .addInterceptor(FlareSolverrInterceptor(preferences))
         // <-- TLMR
 
-        if (preferences.verboseLogging().get()) {
+        if (preferences.verboseLogging.get()) {
             val httpLoggingInterceptor = HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.HEADERS
             }
@@ -54,7 +54,7 @@ class NetworkHelper(
             // <-- TLMR
         )
 
-        when (preferences.dohProvider().get()) {
+        when (preferences.dohProvider.get()) {
             PREF_DOH_CLOUDFLARE -> builder.dohCloudflare()
 
             PREF_DOH_GOOGLE -> builder.dohGoogle()
@@ -82,14 +82,14 @@ class NetworkHelper(
             PREF_DOH_LIBREDNS -> builder.dohLibreDNS()
 
             PREF_DOH_CUSTOM -> {
-                val custom = preferences.dohCustomUrl().get().trim()
+                val custom = preferences.dohCustomUrl.get().trim()
                 if (custom.isNotEmpty()) {
                     try {
                         // Validate URL early
                         custom.toHttpUrl()
 
                         // Parse optional bootstrap hosts from comma-separated preference
-                        val bootstrapPref = preferences.dohCustomBootstrap().get().trim()
+                        val bootstrapPref = preferences.dohCustomBootstrap.get().trim()
                         val bootstrapHosts = if (bootstrapPref.isNotEmpty()) {
                             bootstrapPref.split(',')
                                 .mapNotNull { it.trim().takeIf { t -> t.isNotEmpty() } }
@@ -133,5 +133,5 @@ class NetworkHelper(
     @Suppress("UNUSED")
     val cloudflareClient: OkHttpClient = client
 
-    fun defaultUserAgentProvider() = preferences.defaultUserAgent().get().trim()
+    fun defaultUserAgentProvider() = preferences.defaultUserAgent.get().trim()
 }

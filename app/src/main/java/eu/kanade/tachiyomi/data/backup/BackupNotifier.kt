@@ -100,7 +100,7 @@ class BackupNotifier(private val context: Context) {
             }
             setContentTitle(contentTitle)
 
-            if (!preferences.hideNotificationContent().get()) {
+            if (!preferences.hideNotificationContent.get()) {
                 setContentText(content)
             }
 

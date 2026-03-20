@@ -27,7 +27,7 @@ class StorageManager(
 
     private val scope = CoroutineScope(Dispatchers.IO)
 
-    private val storageDirPreference = storagePreferences.baseStorageDirectory()
+    private val storageDirPreference = storagePreferences.baseStorageDirectory
     private var baseDir: UniFile? = getBaseDir(storageDirPreference.get())
 
     private val _changes: Channel<Unit> = Channel(Channel.UNLIMITED)

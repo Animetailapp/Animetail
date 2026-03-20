@@ -43,19 +43,29 @@ class TrackPreferences(
         trackApiKey(tracker).set(apiKey)
     }
 
-    fun anilistScoreType() = preferenceStore.getString("anilist_score_type", Anilist.POINT_10)
+    val anilistScoreType: Preference<String> = preferenceStore.getString("anilist_score_type", Anilist.POINT_10)
 
-    fun autoUpdateTrack() = preferenceStore.getBoolean("pref_auto_update_manga_sync_key", true)
+    val autoUpdateTrack: Preference<Boolean> = preferenceStore.getBoolean("pref_auto_update_manga_sync_key", true)
 
-    fun trackOnAddingToLibrary() = preferenceStore.getBoolean("track_on_adding_to_library", true)
+    val trackOnAddingToLibrary: Preference<Boolean> = preferenceStore.getBoolean("track_on_adding_to_library", true)
 
-    fun showNextEpisodeAiringTime() = preferenceStore.getBoolean(
+    val showNextEpisodeAiringTime: Preference<Boolean> = preferenceStore.getBoolean(
         "show_next_episode_airing_time",
         true,
     )
 
-    fun autoUpdateTrackOnMarkRead() = preferenceStore.getEnum(
+    val autoUpdateTrackOnMarkRead: Preference<AutoTrackState> = preferenceStore.getEnum(
         "pref_auto_update_manga_on_mark_read",
         AutoTrackState.ALWAYS,
     )
+
+    fun anilistScoreType() = anilistScoreType
+
+    fun autoUpdateTrack() = autoUpdateTrack
+
+    fun trackOnAddingToLibrary() = trackOnAddingToLibrary
+
+    fun showNextEpisodeAiringTime() = showNextEpisodeAiringTime
+
+    fun autoUpdateTrackOnMarkRead() = autoUpdateTrackOnMarkRead
 }

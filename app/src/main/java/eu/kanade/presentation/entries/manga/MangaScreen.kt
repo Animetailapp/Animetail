@@ -67,7 +67,6 @@ import eu.kanade.tachiyomi.source.manga.getNameForMangaInfo
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaSourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.entries.manga.ChapterList
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreenModel
-import eu.kanade.tachiyomi.ui.home.HomeScreen.uiPreferences
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
@@ -80,11 +79,8 @@ import tachiyomi.presentation.core.components.VerticalFastScroller
 import tachiyomi.presentation.core.components.material.PullRefresh
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
-import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.shouldExpandFAB
 import tachiyomi.source.local.entries.manga.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.time.Instant
 
 @Composable
@@ -291,8 +287,6 @@ private fun MangaScreenSmallImpl(
     onInvertSelection: () -> Unit,
 ) {
     val chapterListState = rememberLazyListState()
-    val showChapterTimestamps by uiPreferences.showChapterTimestamps().collectAsState()
-    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters().collectAsState()
 
     val (chapters, listItem, isAnySelected) = remember(state) {
         Triple(
@@ -474,7 +468,7 @@ private fun MangaScreenSmallImpl(
                         ItemHeader(
                             enabled = !isAnySelected,
                             itemCount = chapters.size,
-                            missingItemsCount = if (hideMissingChapters) 0 else missingChaptersCount,
+                            missingItemsCount = missingChaptersCount,
                             onClick = onFilterClicked,
                             isManga = true,
                         )
@@ -483,9 +477,7 @@ private fun MangaScreenSmallImpl(
                     sharedChapterItems(
                         manga = state.manga,
                         chapters = listItem,
-                        hideMissingChapters = hideMissingChapters,
                         isAnyChapterSelected = chapters.fastAny { it.selected },
-                        showChapterTimestamps = showChapterTimestamps,
                         chapterSwipeStartAction = chapterSwipeStartAction,
                         chapterSwipeEndAction = chapterSwipeEndAction,
                         onChapterClicked = onChapterClicked,
@@ -567,8 +559,6 @@ fun MangaScreenLargeImpl(
 
     val insetPadding = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal).asPaddingValues()
     var topBarHeight by remember { mutableIntStateOf(0) }
-    val showChapterTimestamps by uiPreferences.showChapterTimestamps().collectAsState()
-    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters().collectAsState()
 
     val chapterListState = rememberLazyListState()
 
@@ -733,7 +723,7 @@ fun MangaScreenLargeImpl(
                                 ItemHeader(
                                     enabled = !isAnySelected,
                                     itemCount = chapters.size,
-                                    missingItemsCount = if (hideMissingChapters) 0 else missingChaptersCount,
+                                    missingItemsCount = missingChaptersCount,
                                     onClick = onFilterButtonClicked,
                                     isManga = true,
                                 )
@@ -742,7 +732,6 @@ fun MangaScreenLargeImpl(
                             sharedChapterItems(
                                 manga = state.manga,
                                 chapters = listItem,
-                                hideMissingChapters = hideMissingChapters,
                                 isAnyChapterSelected = chapters.fastAny { it.selected },
                                 chapterSwipeStartAction = chapterSwipeStartAction,
                                 chapterSwipeEndAction = chapterSwipeEndAction,
@@ -750,7 +739,6 @@ fun MangaScreenLargeImpl(
                                 onDownloadChapter = onDownloadChapter,
                                 onChapterSelected = onChapterSelected,
                                 onChapterSwipe = onChapterSwipe,
-                                showChapterTimestamps = showChapterTimestamps,
                             )
                         }
                     }
@@ -806,9 +794,7 @@ private fun SharedMangaBottomActionMenu(
 private fun LazyListScope.sharedChapterItems(
     manga: Manga,
     chapters: List<ChapterList>,
-    hideMissingChapters: Boolean,
     isAnyChapterSelected: Boolean,
-    showChapterTimestamps: Boolean,
     chapterSwipeStartAction: LibraryPreferences.ChapterSwipeAction,
     chapterSwipeEndAction: LibraryPreferences.ChapterSwipeAction,
     onChapterClicked: (Chapter) -> Unit,
@@ -830,11 +816,8 @@ private fun LazyListScope.sharedChapterItems(
 
         when (item) {
             is ChapterList.MissingCount -> {
-                if (!hideMissingChapters) {
-                    MissingItemCountListItem(count = item.count)
-                }
+                MissingItemCountListItem(count = item.count)
             }
-
             is ChapterList.Item -> {
                 MangaChapterListItem(
                     title = if (manga.displayMode == Manga.CHAPTER_DISPLAY_NUMBER) {
@@ -845,11 +828,7 @@ private fun LazyListScope.sharedChapterItems(
                     } else {
                         item.chapter.name
                     },
-                    date = if (showChapterTimestamps) {
-                        relativeDateTimeText(item.chapter.dateUpload)
-                    } else {
-                        null
-                    },
+                    date = relativeDateTimeText(item.chapter.dateUpload),
                     readProgress = item.chapter.lastPageRead
                         .takeIf { !item.chapter.read && it > 0L }
                         ?.let {

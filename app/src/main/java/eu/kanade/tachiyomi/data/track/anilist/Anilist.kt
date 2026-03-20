@@ -66,7 +66,7 @@ class Anilist(id: Long) :
 
     override val supportsPrivateTracking: Boolean = true
 
-    private val scorePreference = trackPreferences.anilistScoreType()
+    private val scorePreference = trackPreferences.anilistScoreType
 
     init {
         // If the preference is an int from APIv1, logout user to force using APIv2

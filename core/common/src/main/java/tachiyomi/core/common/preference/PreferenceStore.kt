@@ -41,3 +41,17 @@ inline fun <reified T : Enum<T>> PreferenceStore.getEnum(
         },
     )
 }
+
+fun <T> PreferenceStore.getObjectFromString(
+    key: String,
+    defaultValue: T,
+    serializer: (T) -> String,
+    deserializer: (String) -> T,
+): Preference<T> {
+    return getObject(
+        key = key,
+        defaultValue = defaultValue,
+        serializer = serializer,
+        deserializer = deserializer,
+    )
+}

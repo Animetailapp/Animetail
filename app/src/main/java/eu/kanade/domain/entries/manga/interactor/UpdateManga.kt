@@ -42,7 +42,7 @@ class UpdateManga(
 
         // Update favorite titles only when the advanced preference explicitly enables it.
         val title =
-            if (remoteTitle.isNotEmpty() && (!localManga.favorite || libraryPreferences.updateMangaTitles().get())) {
+            if (remoteTitle.isNotEmpty() && (!localManga.favorite || libraryPreferences.updateMangaTitles.get())) {
                 remoteTitle
             } else {
                 null

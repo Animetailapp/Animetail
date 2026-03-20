@@ -34,7 +34,7 @@ class CloudflareInterceptor(
 
     override fun shouldIntercept(response: Response): Boolean {
         // TLMR -->
-        if (preferences.enableFlareSolverr().get()) {
+        if (preferences.enableFlareSolverr.get()) {
             return false
         }
         // Check if Cloudflare anti-bot is on

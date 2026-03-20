@@ -111,8 +111,8 @@ private class MoreScreenModel(
     // SY <--
 ) : ScreenModel {
 
-    var downloadedOnly by preferences.downloadedOnly().asState(screenModelScope)
-    var incognitoMode by preferences.incognitoMode().asState(screenModelScope)
+    var downloadedOnly by preferences.downloadedOnly.asState(screenModelScope)
+    var incognitoMode by preferences.incognitoMode.asState(screenModelScope)
 
     // SY -->
     val showNavUpdates by uiPreferences.showNavUpdates().asState(screenModelScope)

@@ -41,7 +41,7 @@ class PreferenceModule(val app: Application) : InjektModule {
         addSingletonFactory {
             NetworkPreferences(
                 preferenceStore = get(),
-                verboseLogging = isDebugBuildType,
+                verboseLoggingDefault = isDebugBuildType,
             )
         }
         addSingletonFactory {
