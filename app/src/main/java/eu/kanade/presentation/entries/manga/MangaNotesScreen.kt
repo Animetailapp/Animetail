@@ -18,7 +18,7 @@ fun MangaNotesScreen(
     state: MangaNotesScreen.State,
     navigateUp: () -> Unit,
     onUpdate: (String) -> Unit,
-    ) {
+) {
     Scaffold(
         topBar = { topBarScrollBehavior ->
             AppBar(
@@ -26,13 +26,13 @@ fun MangaNotesScreen(
                     AppBarTitle(
                         title = stringResource(MR.strings.action_edit_notes),
                         subtitle = state.manga.title,
-                        )
+                    )
                 },
                 navigateUp = navigateUp,
                 scrollBehavior = topBarScrollBehavior,
-                )
+            )
         },
-        ) { contentPadding ->
+    ) { contentPadding ->
         MangaNotesTextArea(
             state = state,
             onUpdate = onUpdate,
@@ -40,6 +40,6 @@ fun MangaNotesScreen(
                 .padding(contentPadding)
                 .consumeWindowInsets(contentPadding)
                 .imePadding(),
-            )
+        )
     }
 }

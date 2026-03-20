@@ -66,7 +66,7 @@ fun DuplicateAnimeDialog(
             Spacer(Modifier.height(PaddingSize))
 
             TextPreferenceWidget(
-                title = stringResource(MR.strings.action_show_anime),
+                title = stringResource(MR.strings.action_show_manga),
                 icon = Icons.Outlined.Book,
                 onPreferenceClick = {
                     onDismissRequest()

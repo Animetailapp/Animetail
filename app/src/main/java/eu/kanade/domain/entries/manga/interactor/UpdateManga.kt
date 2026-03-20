@@ -7,6 +7,7 @@ import tachiyomi.domain.entries.manga.interactor.MangaFetchInterval
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaUpdate
 import tachiyomi.domain.entries.manga.repository.MangaRepository
+import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.source.local.entries.manga.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -17,6 +18,7 @@ class UpdateManga(
     private val mangaRepository: MangaRepository,
     private val mangaFetchInterval: MangaFetchInterval,
 ) {
+    private val libraryPreferences: LibraryPreferences = Injekt.get()
 
     suspend fun await(mangaUpdate: MangaUpdate): Boolean {
         return mangaRepository.updateManga(mangaUpdate)
@@ -38,8 +40,13 @@ class UpdateManga(
             ""
         }
 
-        // if the manga isn't a favorite, set its title from source and update in db
-        val title = if (remoteTitle.isEmpty() || localManga.favorite) null else remoteTitle
+        // Update favorite titles only when the advanced preference explicitly enables it.
+        val title =
+            if (remoteTitle.isNotEmpty() && (!localManga.favorite || libraryPreferences.updateMangaTitles().get())) {
+                remoteTitle
+            } else {
+                null
+            }
 
         val coverLastModified =
             when {

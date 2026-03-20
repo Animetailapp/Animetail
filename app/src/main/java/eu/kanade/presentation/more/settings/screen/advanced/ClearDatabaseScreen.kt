@@ -1,8 +1,10 @@
 package eu.kanade.presentation.more.settings.screen.advanced
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
@@ -12,13 +14,17 @@ import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -39,6 +45,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
+import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.data.Database
 import tachiyomi.domain.source.manga.interactor.GetMangaSourcesWithNonLibraryManga
@@ -70,13 +77,17 @@ class ClearDatabaseScreen : Screen() {
 
             is ClearDatabaseScreenModel.State.Ready -> {
                 if (s.showConfirmation) {
+                    var keepReadManga by remember { mutableStateOf(true) }
                     AlertDialog(
+                        title = {
+                            Text(text = stringResource(MR.strings.are_you_sure))
+                        },
                         onDismissRequest = model::hideConfirmation,
                         confirmButton = {
                             TextButton(
                                 onClick = {
                                     scope.launchUI {
-                                        model.removeMangaBySourceId()
+                                        model.removeMangaBySourceId(keepReadManga)
                                         model.clearSelection()
                                         model.hideConfirmation()
                                         context.toast(MR.strings.clear_database_completed)
@@ -92,7 +103,32 @@ class ClearDatabaseScreen : Screen() {
                             }
                         },
                         text = {
-                            Text(text = stringResource(AYMR.strings.clear_database_confirmation))
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(text = stringResource(MR.strings.clear_database_text))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = stringResource(MR.strings.clear_db_exclude_read),
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    Switch(
+                                        checked = keepReadManga,
+                                        onCheckedChange = { keepReadManga = it },
+                                    )
+                                }
+                                if (!keepReadManga) {
+                                    Text(
+                                        text = stringResource(MR.strings.clear_database_history_warning),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
                         },
                     )
                 }
@@ -207,9 +243,9 @@ private class ClearDatabaseScreenModel : StateScreenModel<ClearDatabaseScreenMod
         }
     }
 
-    suspend fun removeMangaBySourceId() = withNonCancellableContext {
+    suspend fun removeMangaBySourceId(keepReadManga: Boolean) = withNonCancellableContext {
         val state = state.value as? State.Ready ?: return@withNonCancellableContext
-        database.mangasQueries.deleteMangasNotInLibraryBySourceIds(state.selection)
+        database.mangasQueries.deleteNonLibraryManga(state.selection, keepReadManga.toLong())
         database.historyQueries.removeResettedHistory()
     }
 

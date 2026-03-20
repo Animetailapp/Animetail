@@ -9,8 +9,8 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.entries.manga.MangaNotesScreen
+import eu.kanade.presentation.util.Screen
 import kotlinx.coroutines.flow.update
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.domain.entries.manga.interactor.UpdateMangaNotes

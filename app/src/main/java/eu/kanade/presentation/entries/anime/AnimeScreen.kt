@@ -428,6 +428,7 @@ private fun AnimeScreenSmallImpl(
     val expandRelatedAnimes by uiPreferences.expandRelatedAnimes().collectAsState()
     val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow().collectAsState()
     val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps().collectAsState()
+    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters().collectAsState()
     val showCast by uiPreferences.showCast().collectAsState()
 
     BoxWithConstraints {
@@ -466,7 +467,6 @@ private fun AnimeScreenSmallImpl(
                     // SY -->
                     onClickEditInfo = onEditInfoClicked.takeIf { state.anime.favorite },
                     // SY <--
-                    onClickEditNotes = onEditNotesClicked,
                     // KMK -->
                     onClickRelatedAnimes = onRelatedAnimesScreenClick.takeIf {
                         !expandRelatedAnimes &&
@@ -699,7 +699,14 @@ private fun AnimeScreenSmallImpl(
                                 FetchType.Seasons -> seasons.size
                                 FetchType.Episodes -> episodes.size
                             },
-                            missingItemsCount = maxOf(missingEpisodesCount, missingSeasonsCount),
+                            missingItemsCount = if (hideMissingChapters) {
+                                0
+                            } else {
+                                maxOf(
+                                    missingEpisodesCount,
+                                    missingSeasonsCount,
+                                )
+                            },
                             onClick = onFilterClicked,
                             isManga = false,
                             fetchType = state.anime.fetchType,
@@ -752,6 +759,7 @@ private fun AnimeScreenSmallImpl(
 
                             sharedEpisodeItems(
                                 anime = state.anime,
+                                hideMissingChapters = hideMissingChapters,
                                 // AM (FILE_SIZE) -->
                                 source = state.source,
                                 showFileSize = showFileSize,
@@ -866,6 +874,7 @@ fun AnimeScreenLargeImpl(
     val offsetGridPaddingPx = with(density) { GRID_PADDING.roundToPx() }
     val gridSize = remember(state.anime) { state.anime.seasonDisplayGridSize }
     val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps().collectAsState()
+    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters().collectAsState()
 
     val itemListState = rememberLazyGridState()
     val hasFilters = remember(state) {
@@ -1123,7 +1132,14 @@ fun AnimeScreenLargeImpl(
                                         FetchType.Seasons -> seasons.size
                                         FetchType.Episodes -> episodes.size
                                     },
-                                    missingItemsCount = maxOf(missingEpisodesCount, missingSeasonsCount),
+                                    missingItemsCount = if (hideMissingChapters) {
+                                        0
+                                    } else {
+                                        maxOf(
+                                            missingEpisodesCount,
+                                            missingSeasonsCount,
+                                        )
+                                    },
                                     onClick = onFilterButtonClicked,
                                     isManga = false,
                                     fetchType = state.anime.fetchType,
@@ -1175,6 +1191,7 @@ fun AnimeScreenLargeImpl(
 
                                     sharedEpisodeItems(
                                         anime = state.anime,
+                                        hideMissingChapters = hideMissingChapters,
                                         // AM (FILE_SIZE) -->
                                         source = state.source,
                                         showFileSize = showFileSize,
@@ -1286,6 +1303,7 @@ private fun LazyGridScope.sharedSeasons(
 
 private fun LazyGridScope.sharedEpisodeItems(
     anime: Anime,
+    hideMissingChapters: Boolean,
     // AM (FILE_SIZE) -->
     source: AnimeSource,
     showFileSize: Boolean,
@@ -1318,10 +1336,12 @@ private fun LazyGridScope.sharedEpisodeItems(
 
         when (episodeItem) {
             is EpisodeList.MissingCount -> {
-                MissingItemCountListItem(
-                    count = episodeItem.count,
-                    modifier = itemModifier,
-                )
+                if (!hideMissingChapters) {
+                    MissingItemCountListItem(
+                        count = episodeItem.count,
+                        modifier = itemModifier,
+                    )
+                }
             }
 
             is EpisodeList.Item -> {

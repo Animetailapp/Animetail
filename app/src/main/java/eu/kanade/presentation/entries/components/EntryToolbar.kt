@@ -205,8 +205,8 @@ fun EntryToolbar(
                         AppBar.OverflowAction(
                             title = stringResource(MR.strings.action_notes),
                             onClick = onClickEditNotes,
-                            ),
-                        )
+                        ),
+                    )
                     // KMK -->
                     if (onClickRelatedAnimes != null) {
                         add(

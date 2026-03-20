@@ -366,10 +366,6 @@ class AnimeScreen(
             }
 
             AnimeScreenModel.Dialog.EpisodeSettingsSheet -> EpisodeSettingsDialog(
-                )
-            }
-
-            AnimeScreenModel.Dialog.EpisodeSettingsSheet -> EpisodeSettingsDialog(
                 onDismissRequest = onDismissRequest,
                 anime = successState.anime,
                 onDownloadFilterChanged = screenModel::setDownloadedFilter,

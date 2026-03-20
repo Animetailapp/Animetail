@@ -83,6 +83,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.shouldExpandFAB
 import tachiyomi.source.local.entries.manga.isLocal
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.time.Instant
 
 @Composable
@@ -290,6 +292,7 @@ private fun MangaScreenSmallImpl(
 ) {
     val chapterListState = rememberLazyListState()
     val showChapterTimestamps by uiPreferences.showChapterTimestamps().collectAsState()
+    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters().collectAsState()
 
     val (chapters, listItem, isAnySelected) = remember(state) {
         Triple(
@@ -340,7 +343,6 @@ private fun MangaScreenSmallImpl(
                 // SY -->
                 onClickEditInfo = onEditInfoClicked.takeIf { state.manga.favorite },
                 // SY <--
-                onClickEditNotes = onEditNotesClicked,
                 onClickSettings = onSettingsClicked,
                 changeAnimeSkipIntro = null,
                 actionModeCounter = selectedChapterCount,
@@ -472,7 +474,7 @@ private fun MangaScreenSmallImpl(
                         ItemHeader(
                             enabled = !isAnySelected,
                             itemCount = chapters.size,
-                            missingItemsCount = missingChaptersCount,
+                            missingItemsCount = if (hideMissingChapters) 0 else missingChaptersCount,
                             onClick = onFilterClicked,
                             isManga = true,
                         )
@@ -481,6 +483,7 @@ private fun MangaScreenSmallImpl(
                     sharedChapterItems(
                         manga = state.manga,
                         chapters = listItem,
+                        hideMissingChapters = hideMissingChapters,
                         isAnyChapterSelected = chapters.fastAny { it.selected },
                         showChapterTimestamps = showChapterTimestamps,
                         chapterSwipeStartAction = chapterSwipeStartAction,
@@ -565,6 +568,7 @@ fun MangaScreenLargeImpl(
     val insetPadding = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal).asPaddingValues()
     var topBarHeight by remember { mutableIntStateOf(0) }
     val showChapterTimestamps by uiPreferences.showChapterTimestamps().collectAsState()
+    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters().collectAsState()
 
     val chapterListState = rememberLazyListState()
 
@@ -729,7 +733,7 @@ fun MangaScreenLargeImpl(
                                 ItemHeader(
                                     enabled = !isAnySelected,
                                     itemCount = chapters.size,
-                                    missingItemsCount = missingChaptersCount,
+                                    missingItemsCount = if (hideMissingChapters) 0 else missingChaptersCount,
                                     onClick = onFilterButtonClicked,
                                     isManga = true,
                                 )
@@ -738,6 +742,7 @@ fun MangaScreenLargeImpl(
                             sharedChapterItems(
                                 manga = state.manga,
                                 chapters = listItem,
+                                hideMissingChapters = hideMissingChapters,
                                 isAnyChapterSelected = chapters.fastAny { it.selected },
                                 chapterSwipeStartAction = chapterSwipeStartAction,
                                 chapterSwipeEndAction = chapterSwipeEndAction,
@@ -801,6 +806,7 @@ private fun SharedMangaBottomActionMenu(
 private fun LazyListScope.sharedChapterItems(
     manga: Manga,
     chapters: List<ChapterList>,
+    hideMissingChapters: Boolean,
     isAnyChapterSelected: Boolean,
     showChapterTimestamps: Boolean,
     chapterSwipeStartAction: LibraryPreferences.ChapterSwipeAction,
@@ -824,7 +830,9 @@ private fun LazyListScope.sharedChapterItems(
 
         when (item) {
             is ChapterList.MissingCount -> {
-                MissingItemCountListItem(count = item.count)
+                if (!hideMissingChapters) {
+                    MissingItemCountListItem(count = item.count)
+                }
             }
 
             is ChapterList.Item -> {

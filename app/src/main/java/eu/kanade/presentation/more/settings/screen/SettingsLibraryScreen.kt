@@ -17,7 +17,6 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
-import eu.kanade.presentation.more.settings.PreferenceItem
 import eu.kanade.presentation.more.settings.widget.TriStateListDialog
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateJob
@@ -397,6 +396,10 @@ object SettingsLibraryScreen : SearchableSettings {
                             stringResource(MR.strings.pref_mark_duplicate_read_chapter_read_new),
                     ),
                     title = stringResource(MR.strings.pref_mark_duplicate_read_chapter_read),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = libraryPreferences.hideMissingChapters(),
+                    title = stringResource(MR.strings.pref_hide_missing_chapter_indicators),
                 ),
             ),
         )

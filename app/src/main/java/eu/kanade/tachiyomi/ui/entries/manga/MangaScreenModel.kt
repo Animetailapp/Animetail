@@ -1193,6 +1193,7 @@ class MangaScreenModel(
 
         // SY -->
         data class EditMangaInfo(val manga: Manga) : Dialog
+
         // SY <--
         data class Migrate(val newManga: Manga, val oldManga: Manga) : Dialog
         data class SetMangaFetchInterval(val manga: Manga) : Dialog

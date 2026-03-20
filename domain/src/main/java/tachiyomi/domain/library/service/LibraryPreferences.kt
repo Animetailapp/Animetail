@@ -95,6 +95,7 @@ class LibraryPreferences(
     // Common Cache
 
     fun autoClearItemCache() = preferenceStore.getBoolean("auto_clear_chapter_cache", false)
+    fun hideMissingChapters() = preferenceStore.getBoolean("pref_hide_missing_chapter_indicators", false)
 
     // Random Sort Seed
 
@@ -171,6 +172,8 @@ class LibraryPreferences(
 
     fun mangaUpdateCategoriesExclude() =
         preferenceStore.getStringSet(LIBRARY_UPDATE_MANGA_CATEGORIES_EXCLUDE_PREF_KEY, emptySet())
+
+    fun updateMangaTitles() = preferenceStore.getBoolean("pref_update_library_manga_titles", false)
 
     // Mixture Item
 

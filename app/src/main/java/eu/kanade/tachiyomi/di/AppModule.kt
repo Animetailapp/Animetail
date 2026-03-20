@@ -74,7 +74,9 @@ class AppModule(val app: Application) : InjektModule {
 
         val sqlDriverManga = AndroidxSqliteDriver(
             driver = BundledSQLiteDriver(),
-            databaseType = AndroidxSqliteDatabaseType.FileProvider(app, "tachiyomi.db"),
+            databaseType = AndroidxSqliteDatabaseType.FileProvider {
+                app.getDatabasePath("tachiyomi.db").absolutePath
+            },
             schema = Database.Schema,
             configuration = AndroidxSqliteConfiguration(
                 isForeignKeyConstraintsEnabled = true,
@@ -83,7 +85,9 @@ class AppModule(val app: Application) : InjektModule {
 
         val sqlDriverAnime = AndroidxSqliteDriver(
             driver = BundledSQLiteDriver(),
-            databaseType = AndroidxSqliteDatabaseType.FileProvider(app, "tachiyomi.animedb"),
+            databaseType = AndroidxSqliteDatabaseType.FileProvider {
+                app.getDatabasePath("tachiyomi.animedb").absolutePath
+            },
             schema = AnimeDatabase.Schema,
             configuration = AndroidxSqliteConfiguration(
                 isForeignKeyConstraintsEnabled = true,

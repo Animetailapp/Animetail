@@ -989,4 +989,11 @@
 
     <!-- Notes screen -->
     <string name="notes_placeholder">Enjoyed the part where…</string>
+    <string name="pref_update_library_manga_titles">Update library manga titles to match source</string>
+    <string name="pref_update_library_manga_titles_summary">Warning: if a manga is renamed, it will be removed from the download queue (if present).</string>
+    <string name="pref_hide_missing_chapter_indicators">Hide missing chapter indicators</string>
+    <string name="clear_database_text">You’re about to remove entries from the database</string>
+    <string name="clear_database_history_warning">Read chapters and progress of non-library entries will be lost</string>
+    <string name="clear_db_exclude_read">Keep entries with read chapters</string>
+    <string name="pref_display_images_description">Render images in manga descriptions</string>
 </resources>

@@ -597,7 +597,7 @@ private fun AnimeSummary(
                         content = notes,
                         expanded = true,
                         onEditNotes = onEditNotesClicked,
-                        )
+                    )
                     Text(
                         text = expandedDescription,
                         style = MaterialTheme.typography.bodyMedium,
@@ -610,7 +610,7 @@ private fun AnimeSummary(
                         content = notes,
                         expanded = expanded,
                         onEditNotes = onEditNotesClicked,
-                        )
+                    )
                     SelectionContainer {
                         Text(
                             text = if (expanded) expandedDescription else shrunkDescription,
@@ -618,7 +618,7 @@ private fun AnimeSummary(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier.secondaryItemAlpha(),
-                            )
+                        )
                     }
                 }
             },
