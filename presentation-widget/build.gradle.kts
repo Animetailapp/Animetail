@@ -20,12 +20,11 @@ dependencies {
     api(projects.i18n)
     api(projects.i18nAniyomi)
 
-    implementation(compose.glance)
+    implementation(libs.androidx.glance.appWidget)
     implementation(libs.material)
 
-    implementation(kotlinx.immutables)
+    implementation(libs.kotlinx.collections.immutable)
 
-    implementation(platform(libs.coil.bom))
     implementation(libs.coil.core)
 
     api(libs.injekt)
