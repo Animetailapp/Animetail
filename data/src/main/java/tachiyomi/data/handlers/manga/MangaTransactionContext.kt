@@ -5,8 +5,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.asContextElement
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicInteger
@@ -15,10 +13,6 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
-
-// Global mutex to serialize transaction entry and prevent thread pool exhaustion.
-// If you have multiple distinct database files/handlers, this should be a property of AndroidDatabaseHandler.
-private val transactionMutex = Mutex()
 
 /**
  * Returns the transaction dispatcher if we are on a transaction, or the database dispatchers.
@@ -42,41 +36,19 @@ internal suspend fun AndroidMangaDatabaseHandler.getCurrentMangaDatabaseContext(
  * The dispatcher used to execute the given [block] will utilize threads from SQLDelight's query executor.
  */
 internal suspend fun <T> AndroidMangaDatabaseHandler.withMangaTransaction(block: suspend () -> T): T {
-    val transactionElement = coroutineContext[MangaTransactionElement]
-
-    // If we are already in a transaction, we don't need to lock the Mutex.
-    // We just reuse the existing thread/context.
-    if (transactionElement != null) {
-        return withContext(transactionElement.transactionDispatcher) {
-            transactionElement.acquire()
-            try {
-                db.transactionWithResult {
-                    runBlocking(transactionElement.transactionDispatcher) {
-                        block()
-                    }
+    val transactionContext =
+        coroutineContext[MangaTransactionElement]?.transactionDispatcher ?: createTransactionContext()
+    return withContext(transactionContext) {
+        val transactionElement = coroutineContext[MangaTransactionElement]!!
+        transactionElement.acquire()
+        try {
+            db.transactionWithResult {
+                runBlocking(transactionContext) {
+                    block()
                 }
-            } finally {
-                transactionElement.release()
             }
-        }
-    }
-
-    // Acquire the mutex before acquiring a transaction thread.
-    // This ensures we only block a real thread when we have exclusive access.
-    return transactionMutex.withLock {
-        val transactionContext = createTransactionContext()
-        withContext(transactionContext) {
-            val element = coroutineContext[MangaTransactionElement]!!
-            element.acquire()
-            try {
-                db.transactionWithResult {
-                    runBlocking(transactionContext) {
-                        block()
-                    }
-                }
-            } finally {
-                element.release()
-            }
+        } finally {
+            transactionElement.release()
         }
     }
 }
@@ -88,10 +60,6 @@ internal suspend fun <T> AndroidMangaDatabaseHandler.withMangaTransaction(block:
  */
 private suspend fun AndroidMangaDatabaseHandler.createTransactionContext(): CoroutineContext {
     val controlJob = Job()
-    // make sure to tie the control job to this context to avoid blocking the transaction if
-    // context get cancelled before we can even start using this job. Otherwise, the acquired
-    // transaction thread will forever wait for the controlJob to be cancelled.
-    // see b/148181325
     coroutineContext[Job]?.invokeOnCompletion {
         controlJob.cancel()
     }
@@ -113,21 +81,16 @@ private suspend fun CoroutineDispatcher.acquireTransactionThread(
 ): ContinuationInterceptor {
     return suspendCancellableCoroutine { continuation ->
         continuation.invokeOnCancellation {
-            // We got cancelled while waiting to acquire a thread, we can't stop our attempt to
-            // acquire a thread, but we can cancel the controlling job so once it gets acquired it
-            // is quickly released.
             controlJob.cancel()
         }
         try {
             dispatch(EmptyCoroutineContext) {
                 runBlocking {
-                    // Thread acquired, resume coroutine
                     continuation.resume(coroutineContext[ContinuationInterceptor]!!)
                     controlJob.join()
                 }
             }
         } catch (ex: RejectedExecutionException) {
-            // Couldn't acquire a thread, cancel coroutine
             continuation.cancel(
                 IllegalStateException(
                     "Unable to acquire a thread to perform the database transaction",
@@ -151,12 +114,6 @@ private class MangaTransactionElement(
     override val key: CoroutineContext.Key<MangaTransactionElement>
         get() = MangaTransactionElement
 
-    /**
-     * Number of transactions (including nested ones) started with this element.
-     * Call [acquire] to increase the count and [release] to decrease it. If the count reaches zero
-     * when [release] is invoked then the transaction job is cancelled and the transaction thread
-     * is released.
-     */
     private val referenceCount = AtomicInteger(0)
 
     fun acquire() {
@@ -168,7 +125,6 @@ private class MangaTransactionElement(
         if (count < 0) {
             throw IllegalStateException("Transaction was never started or was already released")
         } else if (count == 0) {
-            // Cancel the job that controls the transaction thread, causing it to be released.
             transactionThreadControlJob.cancel()
         }
     }
