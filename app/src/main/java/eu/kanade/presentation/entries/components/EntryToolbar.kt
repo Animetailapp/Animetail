@@ -217,12 +217,6 @@ fun EntryToolbar(
                         )
                     }
                     // KMK <--
-                    add(
-                        AppBar.OverflowAction(
-                            title = stringResource(MR.strings.action_notes),
-                            onClick = onClickEditNotes,
-                        ),
-                    )
                     if (onClickSettings != null) {
                         add(
                             AppBar.OverflowAction(

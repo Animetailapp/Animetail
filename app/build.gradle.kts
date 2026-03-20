@@ -287,6 +287,7 @@ dependencies {
     }
     implementation(libs.insetter)
     implementation(libs.bundles.richtext)
+    implementation("com.mohamedrejeb.richeditor:richeditor-compose:1.0.0-rc10")
     implementation(libs.aboutLibraries.compose)
     implementation(libs.bundles.voyager)
     implementation(libs.compose.materialmotion)
