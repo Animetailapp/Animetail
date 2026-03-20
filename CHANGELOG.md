@@ -10,7 +10,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
-## Unreleased
+## [Unreleased]
 
 ## [v0.19.5] - 2026-03-20
 ### Changed
@@ -460,7 +460,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Minimum supported Android version to 8 ([@AntsyLich](https://github.com/AntsyLich)) ([`dfb3091`](https://github.com/mihonapp/mihon/commit/dfb3091e380dda3e9bfb64bf5c9a685cf3a03d0e))
 
 [unreleased]: https://github.com/mihonapp/mihon/compare/v0.19.5...main
-[v0.19.5]: https://github.com/mihonapp/mihon/compare/v0.19.4...v0.19.5
+[v0.19.4]: https://github.com/mihonapp/mihon/compare/v0.19.4...v0.19.5
 [v0.19.4]: https://github.com/mihonapp/mihon/compare/v0.19.3...v0.19.4
 [v0.19.3]: https://github.com/mihonapp/mihon/compare/v0.19.2...v0.19.3
 [v0.19.2]: https://github.com/mihonapp/mihon/compare/v0.19.1...v0.19.2
