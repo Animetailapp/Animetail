@@ -1,14 +1,13 @@
-package eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch
+package eu.kanade.tachiyomi.ui.browse.source.globalsearch
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.produceState
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import eu.kanade.domain.entries.manga.model.toDomainManga
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
-import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
+import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.CatalogueSource
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.mutate
@@ -24,40 +23,42 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import mihon.domain.manga.model.toDomainManga
 import tachiyomi.core.common.preference.toggle
-import tachiyomi.domain.entries.manga.interactor.GetManga
-import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
-import tachiyomi.domain.entries.manga.model.Manga
-import tachiyomi.domain.source.manga.service.MangaSourceManager
+import tachiyomi.core.common.util.lang.launchIO
+import tachiyomi.domain.manga.interactor.GetManga
+import tachiyomi.domain.manga.interactor.NetworkToLocalManga
+import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.concurrent.Executors
 
-abstract class MangaSearchScreenModel(
+abstract class SearchScreenModel(
     initialState: State = State(),
     sourcePreferences: SourcePreferences = Injekt.get(),
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val extensionManager: MangaExtensionManager = Injekt.get(),
+    private val sourceManager: SourceManager = Injekt.get(),
+    private val extensionManager: ExtensionManager = Injekt.get(),
     private val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
     private val getManga: GetManga = Injekt.get(),
     private val preferences: SourcePreferences = Injekt.get(),
-) : StateScreenModel<MangaSearchScreenModel.State>(initialState) {
+) : StateScreenModel<SearchScreenModel.State>(initialState) {
 
     private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
     private var searchJob: Job? = null
 
-    private val enabledLanguages = sourcePreferences.enabledLanguages().get()
-    private val disabledSources = sourcePreferences.disabledMangaSources().get()
-    protected val pinnedSources = sourcePreferences.pinnedMangaSources().get()
+    private val enabledLanguages = sourcePreferences.enabledLanguages.get()
+    private val disabledSources = sourcePreferences.disabledSources.get()
+    protected val pinnedSources = sourcePreferences.pinnedSources.get()
 
     private var lastQuery: String? = null
-    private var lastSourceFilter: MangaSourceFilter? = null
+    private var lastSourceFilter: SourceFilter? = null
 
     protected var extensionFilter: String? = null
 
-    private val sortComparator = { map: Map<CatalogueSource, MangaSearchItemResult> ->
+    open val sortComparator = { map: Map<CatalogueSource, SearchItemResult> ->
         compareBy<CatalogueSource>(
-            { (map[it] as? MangaSearchItemResult.Success)?.isEmpty ?: true },
+            { (map[it] as? SearchItemResult.Success)?.isEmpty ?: true },
             { "${it.id}" !in pinnedSources },
             { "${it.name.lowercase()} (${it.lang})" },
         )
@@ -65,7 +66,7 @@ abstract class MangaSearchScreenModel(
 
     init {
         screenModelScope.launch {
-            preferences.globalSearchFilterState().changes().collectLatest { state ->
+            preferences.globalSearchFilterState.changes().collectLatest { state ->
                 mutableState.update { it.copy(onlyShowHasResults = state) }
             }
         }
@@ -112,13 +113,13 @@ abstract class MangaSearchScreenModel(
         mutableState.update { it.copy(searchQuery = query) }
     }
 
-    fun setSourceFilter(filter: MangaSourceFilter) {
+    fun setSourceFilter(filter: SourceFilter) {
         mutableState.update { it.copy(sourceFilter = filter) }
         search()
     }
 
     fun toggleFilterResults() {
-        preferences.globalSearchFilterState().toggle()
+        preferences.globalSearchFilterState.toggle()
     }
 
     fun search() {
@@ -126,6 +127,7 @@ abstract class MangaSearchScreenModel(
         val sourceFilter = state.value.sourceFilter
 
         if (query.isNullOrBlank()) return
+
         val sameQuery = this.lastQuery == query
         if (sameQuery && this.lastSourceFilter == sourceFilter) return
 
@@ -133,6 +135,7 @@ abstract class MangaSearchScreenModel(
         this.lastSourceFilter = sourceFilter
 
         searchJob?.cancel()
+
         val sources = getSelectedSources()
 
         // Reuse previous results if possible
@@ -140,37 +143,40 @@ abstract class MangaSearchScreenModel(
             val existingResults = state.value.items
             updateItems(
                 sources
-                    .associateWith { existingResults[it] ?: MangaSearchItemResult.Loading }
+                    .associateWith { existingResults[it] ?: SearchItemResult.Loading }
                     .toPersistentMap(),
             )
         } else {
             updateItems(
                 sources
-                    .associateWith { MangaSearchItemResult.Loading }
+                    .associateWith { SearchItemResult.Loading }
                     .toPersistentMap(),
             )
         }
+
         searchJob = ioCoroutineScope.launch {
             sources.map { source ->
                 async {
-                    if (state.value.items[source] !is MangaSearchItemResult.Loading) {
+                    if (state.value.items[source] !is SearchItemResult.Loading) {
                         return@async
                     }
+
                     try {
                         val page = withContext(coroutineDispatcher) {
                             source.getSearchManga(1, query, source.getFilterList())
                         }
 
-                        val titles = page.mangas.map {
-                            networkToLocalManga.await(it.toDomainManga(source.id))
-                        }
+                        val titles = page.mangas
+                            .map { it.toDomainManga(source.id) }
+                            .distinctBy { it.url }
+                            .let { networkToLocalManga(it) }
 
                         if (isActive) {
-                            updateItem(source, MangaSearchItemResult.Success(titles))
+                            updateItem(source, SearchItemResult.Success(titles))
                         }
                     } catch (e: Exception) {
                         if (isActive) {
-                            updateItem(source, MangaSearchItemResult.Error(e))
+                            updateItem(source, SearchItemResult.Error(e))
                         }
                     }
                 }
@@ -179,7 +185,7 @@ abstract class MangaSearchScreenModel(
         }
     }
 
-    private fun updateItems(items: PersistentMap<CatalogueSource, MangaSearchItemResult>) {
+    private fun updateItems(items: PersistentMap<CatalogueSource, SearchItemResult>) {
         mutableState.update {
             it.copy(
                 items = items
@@ -189,42 +195,58 @@ abstract class MangaSearchScreenModel(
         }
     }
 
-    private fun updateItem(source: CatalogueSource, result: MangaSearchItemResult) {
+    private fun updateItem(source: CatalogueSource, result: SearchItemResult) {
         val newItems = state.value.items.mutate {
             it[source] = result
         }
         updateItems(newItems)
     }
 
+    fun setMigrateDialog(currentId: Long, target: Manga) {
+        screenModelScope.launchIO {
+            val current = getManga.await(currentId) ?: return@launchIO
+            mutableState.update { it.copy(dialog = Dialog.Migrate(target, current)) }
+        }
+    }
+
+    fun clearDialog() {
+        mutableState.update { it.copy(dialog = null) }
+    }
+
     @Immutable
     data class State(
-        val fromSourceId: Long? = null,
+        val from: Manga? = null,
         val searchQuery: String? = null,
-        val sourceFilter: MangaSourceFilter = MangaSourceFilter.PinnedOnly,
+        val sourceFilter: SourceFilter = SourceFilter.PinnedOnly,
         val onlyShowHasResults: Boolean = false,
-        val items: PersistentMap<CatalogueSource, MangaSearchItemResult> = persistentMapOf(),
+        val items: PersistentMap<CatalogueSource, SearchItemResult> = persistentMapOf(),
+        val dialog: Dialog? = null,
     ) {
-        val progress: Int = items.count { it.value !is MangaSearchItemResult.Loading }
+        val progress: Int = items.count { it.value !is SearchItemResult.Loading }
         val total: Int = items.size
         val filteredItems = items.filter { (_, result) -> result.isVisible(onlyShowHasResults) }
     }
+
+    sealed interface Dialog {
+        data class Migrate(val target: Manga, val current: Manga) : Dialog
+    }
 }
 
-enum class MangaSourceFilter {
+enum class SourceFilter {
     All,
     PinnedOnly,
 }
 
-sealed interface MangaSearchItemResult {
-    data object Loading : MangaSearchItemResult
+sealed interface SearchItemResult {
+    data object Loading : SearchItemResult
 
     data class Error(
         val throwable: Throwable,
-    ) : MangaSearchItemResult
+    ) : SearchItemResult
 
     data class Success(
         val result: List<Manga>,
-    ) : MangaSearchItemResult {
+    ) : SearchItemResult {
         val isEmpty: Boolean
             get() = result.isEmpty()
     }

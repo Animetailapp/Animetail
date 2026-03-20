@@ -1,28 +1,28 @@
-package tachiyomi.domain.category.manga.interactor
+package tachiyomi.domain.category.interactor
 
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.category.model.CategoryUpdate
+import tachiyomi.domain.category.repository.CategoryRepository
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
 
-class DeleteMangaCategory(
-    private val categoryRepository: MangaCategoryRepository,
+class DeleteCategory(
+    private val categoryRepository: CategoryRepository,
     private val libraryPreferences: LibraryPreferences,
     private val downloadPreferences: DownloadPreferences,
 ) {
 
     suspend fun await(categoryId: Long) = withNonCancellableContext {
         try {
-            categoryRepository.deleteMangaCategory(categoryId)
+            categoryRepository.delete(categoryId)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             return@withNonCancellableContext Result.InternalError(e)
         }
 
-        val categories = categoryRepository.getAllMangaCategories()
+        val categories = categoryRepository.getAll()
         val updates = categories.mapIndexed { index, category ->
             CategoryUpdate(
                 id = category.id,
@@ -30,17 +30,17 @@ class DeleteMangaCategory(
             )
         }
 
-        val defaultCategory = libraryPreferences.defaultMangaCategory().get()
+        val defaultCategory = libraryPreferences.defaultCategory.get()
         if (defaultCategory == categoryId.toInt()) {
-            libraryPreferences.defaultMangaCategory().delete()
+            libraryPreferences.defaultCategory.delete()
         }
 
         val categoryPreferences = listOf(
-            libraryPreferences.mangaUpdateCategories(),
-            libraryPreferences.mangaUpdateCategories(),
-            downloadPreferences.removeExcludeCategories(),
-            downloadPreferences.downloadNewChapterCategories(),
-            downloadPreferences.downloadNewChapterCategoriesExclude(),
+            libraryPreferences.updateCategories,
+            libraryPreferences.updateCategoriesExclude,
+            downloadPreferences.removeExcludeCategories,
+            downloadPreferences.downloadNewChapterCategories,
+            downloadPreferences.downloadNewChapterCategoriesExclude,
         )
         val categoryIdString = categoryId.toString()
         categoryPreferences.forEach { preference ->
@@ -50,7 +50,7 @@ class DeleteMangaCategory(
         }
 
         try {
-            categoryRepository.updatePartialMangaCategories(updates)
+            categoryRepository.updatePartial(updates)
             Result.Success
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)

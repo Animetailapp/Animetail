@@ -1,4 +1,4 @@
-package tachiyomi.presentation.widget.entries.manga
+package tachiyomi.presentation.widget
 
 import android.content.Context
 import androidx.glance.appwidget.updateAll
@@ -12,19 +12,16 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.updates.manga.interactor.GetMangaUpdates
+import tachiyomi.domain.updates.interactor.GetUpdates
 
-class MangaWidgetManager(
-    private val getUpdates: GetMangaUpdates,
+class WidgetManager(
+    private val getUpdates: GetUpdates,
     private val securityPreferences: SecurityPreferences,
 ) {
 
     fun Context.init(scope: LifecycleCoroutineScope) {
         combine(
-            getUpdates.subscribe(
-                read = false,
-                after = BaseMangaUpdatesGridGlanceWidget.DateLimit.toEpochMilli(),
-            ),
+            getUpdates.subscribe(read = false, after = BaseUpdatesGridGlanceWidget.DateLimit.toEpochMilli()),
             securityPreferences.useAuthenticator.changes(),
             transform = { a, b -> a to b },
         )
@@ -34,13 +31,13 @@ class MangaWidgetManager(
             }
             .onEach {
                 try {
-                    MangaUpdatesGridGlanceWidget().updateAll(this)
-                    MangaUpdatesGridCoverScreenGlanceWidget().updateAll(this)
+                    UpdatesGridGlanceWidget().updateAll(this)
+                    UpdatesGridCoverScreenGlanceWidget().updateAll(this)
                 } catch (e: Exception) {
                     logcat(LogPriority.ERROR, e) { "Failed to update widget" }
                 }
             }
-            .flowOn(Dispatchers.Main)
+            .flowOn(Dispatchers.Default)
             .launchIn(scope)
     }
 }

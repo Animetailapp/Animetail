@@ -1,35 +1,35 @@
-package eu.kanade.tachiyomi.ui.browse.manga.source
+package eu.kanade.tachiyomi.ui.browse.source
 
 import androidx.compose.runtime.Immutable
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import eu.kanade.domain.source.interactor.GetLanguagesWithSources
 import eu.kanade.domain.source.interactor.ToggleLanguage
-import eu.kanade.domain.source.manga.interactor.GetLanguagesWithMangaSources
-import eu.kanade.domain.source.manga.interactor.ToggleMangaSource
+import eu.kanade.domain.source.interactor.ToggleSource
 import eu.kanade.domain.source.service.SourcePreferences
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import tachiyomi.domain.source.manga.model.Source
+import tachiyomi.domain.source.model.Source
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.SortedMap
 
-class MangaSourcesFilterScreenModel(
+class SourcesFilterScreenModel(
     private val preferences: SourcePreferences = Injekt.get(),
-    private val getLanguagesWithSources: GetLanguagesWithMangaSources = Injekt.get(),
-    private val toggleSource: ToggleMangaSource = Injekt.get(),
+    private val getLanguagesWithSources: GetLanguagesWithSources = Injekt.get(),
+    private val toggleSource: ToggleSource = Injekt.get(),
     private val toggleLanguage: ToggleLanguage = Injekt.get(),
-) : StateScreenModel<MangaSourcesFilterScreenModel.State>(State.Loading) {
+) : StateScreenModel<SourcesFilterScreenModel.State>(State.Loading) {
 
     init {
         screenModelScope.launch {
             combine(
                 getLanguagesWithSources.subscribe(),
-                preferences.enabledLanguages().changes(),
-                preferences.disabledMangaSources().changes(),
+                preferences.enabledLanguages.changes(),
+                preferences.disabledSources.changes(),
             ) { a, b, c -> Triple(a, b, c) }
                 .catch { throwable ->
                     mutableState.update {

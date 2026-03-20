@@ -1,30 +1,30 @@
-package eu.kanade.domain.source.anime.interactor
+package eu.kanade.domain.source.interactor
 
 import eu.kanade.domain.source.service.SourcePreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import tachiyomi.domain.source.anime.model.AnimeSource
-import tachiyomi.domain.source.anime.model.Pin
-import tachiyomi.domain.source.anime.model.Pins
-import tachiyomi.domain.source.anime.repository.AnimeSourceRepository
-import tachiyomi.source.local.entries.anime.LocalAnimeSource
+import tachiyomi.domain.source.model.Pin
+import tachiyomi.domain.source.model.Pins
+import tachiyomi.domain.source.model.Source
+import tachiyomi.domain.source.repository.SourceRepository
+import tachiyomi.source.local.isLocal
 
-class GetEnabledAnimeSources(
-    private val repository: AnimeSourceRepository,
+class GetEnabledSources(
+    private val repository: SourceRepository,
     private val preferences: SourcePreferences,
 ) {
 
-    fun subscribe(): Flow<List<AnimeSource>> {
+    fun subscribe(): Flow<List<Source>> {
         return combine(
-            preferences.pinnedAnimeSources().changes(),
-            preferences.enabledLanguages().changes(),
-            preferences.disabledAnimeSources().changes(),
-            preferences.lastUsedAnimeSource().changes(),
-            repository.getAnimeSources(),
+            preferences.pinnedSources.changes(),
+            preferences.enabledLanguages.changes(),
+            preferences.disabledSources.changes(),
+            preferences.lastUsedSource.changes(),
+            repository.getSources(),
         ) { pinnedSourceIds, enabledLanguages, disabledSources, lastUsedSource, sources ->
             sources
-                .filter { it.lang in enabledLanguages || it.id == LocalAnimeSource.ID }
+                .filter { it.lang in enabledLanguages || it.isLocal() }
                 .filterNot { it.id.toString() in disabledSources }
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
                 .flatMap {

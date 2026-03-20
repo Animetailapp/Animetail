@@ -3,30 +3,16 @@ package eu.kanade.tachiyomi.ui.reader.setting
 import android.os.Build
 import androidx.compose.ui.graphics.BlendMode
 import dev.icerock.moko.resources.StringResource
-import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerConfig
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.tail.TLMR
 
 class ReaderPreferences(
-    private val preferenceStore: PreferenceStore,
+    preferenceStore: PreferenceStore,
 ) {
 
     // region General
-
-    // SY -->
-    val pageTransitionsPager: Preference<Boolean> = preferenceStore.getBoolean(
-        "pref_enable_transitions_pager_key",
-        true,
-    )
-
-    val pageTransitionsWebtoon: Preference<Boolean> = preferenceStore.getBoolean(
-        "pref_enable_transitions_webtoon_key",
-        true,
-    )
-    // SY <--
 
     val pageTransitions: Preference<Boolean> = preferenceStore.getBoolean("pref_enable_transitions_key", true)
 
@@ -185,143 +171,6 @@ class ReaderPreferences(
         false,
     )
 
-    // sy -->
-    fun readerInstantRetry() = preferenceStore.getBoolean("eh_reader_instant_retry", true)
-
-    fun autoscrollInterval() = preferenceStore.getFloat("eh_util_autoscroll_interval", 3f)
-
-    fun smoothAutoScroll() = preferenceStore.getBoolean("smooth_auto_scroll", true)
-    // sy <--
-
-    // J2K -->
-    fun preloadSize() = preferenceStore.getInt("reader_preload_size", PRELOAD_SIZE_MIN)
-    // J2K <--
-
-    // SY -->
-    fun preserveReadingPosition() = preferenceStore.getBoolean("eh_preserve_reading_position", false)
-
-    fun readerBottomButtons() = preferenceStore.getStringSet(
-        "reader_bottom_buttons",
-        ReaderBottomButton.BUTTONS_DEFAULTS,
-    )
-
-    fun pageLayout() = preferenceStore.getInt("page_layout", PagerConfig.PageLayout.AUTOMATIC)
-
-    fun invertDoublePages() = preferenceStore.getBoolean("invert_double_pages", false)
-
-    fun centerMarginType() = preferenceStore.getInt("center_margin_type", PagerConfig.CenterMarginType.NONE)
-    // SY <--
-
-    fun pageTransitionsPager() = pageTransitionsPager
-
-    fun pageTransitionsWebtoon() = pageTransitionsWebtoon
-
-    fun pageTransitions() = pageTransitions
-
-    fun flashOnPageChange() = flashOnPageChange
-
-    fun flashDurationMillis() = flashDurationMillis
-
-    fun flashPageInterval() = flashPageInterval
-
-    fun flashColor() = flashColor
-
-    fun doubleTapAnimSpeed() = doubleTapAnimSpeed
-
-    fun showPageNumber() = showPageNumber
-
-    fun showReadingMode() = showReadingMode
-
-    fun fullscreen() = fullscreen
-
-    fun cutoutShort() = drawUnderCutout
-
-    fun keepScreenOn() = keepScreenOn
-
-    fun defaultReadingMode() = defaultReadingMode
-
-    fun defaultOrientationType() = defaultOrientationType
-
-    fun webtoonDoubleTapZoomEnabled() = webtoonDoubleTapZoomEnabled
-
-    fun imageScaleType() = imageScaleType
-
-    fun zoomStart() = zoomStart
-
-    fun readerTheme() = readerTheme
-
-    fun alwaysShowChapterTransition() = alwaysShowChapterTransition
-
-    fun cropBorders() = cropBorders
-
-    fun navigateToPan() = navigateToPan
-
-    fun landscapeZoom() = landscapeZoom
-
-    fun cropBordersWebtoon() = cropBordersWebtoon
-
-    fun webtoonSidePadding() = webtoonSidePadding
-
-    fun readerHideThreshold() = readerHideThreshold
-
-    fun folderPerManga() = folderPerManga
-
-    fun skipRead() = skipRead
-
-    fun skipFiltered() = skipFiltered
-
-    fun skipDupe() = skipDupe
-
-    fun webtoonDisableZoomOut() = webtoonDisableZoomOut
-
-    fun dualPageSplitPaged() = dualPageSplitPaged
-
-    fun dualPageInvertPaged() = dualPageInvertPaged
-
-    fun dualPageSplitWebtoon() = dualPageSplitWebtoon
-
-    fun dualPageInvertWebtoon() = dualPageInvertWebtoon
-
-    fun dualPageRotateToFit() = dualPageRotateToFit
-
-    fun dualPageRotateToFitInvert() = dualPageRotateToFitInvert
-
-    fun dualPageRotateToFitWebtoon() = dualPageRotateToFitWebtoon
-
-    fun dualPageRotateToFitInvertWebtoon() = dualPageRotateToFitInvertWebtoon
-
-    fun customBrightness() = customBrightness
-
-    fun customBrightnessValue() = customBrightnessValue
-
-    fun colorFilter() = colorFilter
-
-    fun colorFilterValue() = colorFilterValue
-
-    fun colorFilterMode() = colorFilterMode
-
-    fun grayscale() = grayscale
-
-    fun invertedColors() = invertedColors
-
-    fun readWithLongTap() = readWithLongTap
-
-    fun readWithVolumeKeys() = readWithVolumeKeys
-
-    fun readWithVolumeKeysInverted() = readWithVolumeKeysInverted
-
-    fun navigationModePager() = navigationModePager
-
-    fun navigationModeWebtoon() = navigationModeWebtoon
-
-    fun pagerNavInverted() = pagerNavInverted
-
-    fun webtoonNavInverted() = webtoonNavInverted
-
-    fun showNavigationOverlayNewUser() = showNavigationOverlayNewUser
-
-    fun showNavigationOverlayOnStart() = showNavigationOverlayOnStart
-
     // endregion
 
     enum class FlashColor {
@@ -352,8 +201,6 @@ class ReaderPreferences(
         const val WEBTOON_PADDING_MIN = 0
         const val WEBTOON_PADDING_MAX = 25
 
-        const val PRELOAD_SIZE_MIN = 4
-        const val PRELOAD_SIZE_MAX = 20
         const val MILLI_CONVERSION = 100
 
         val TapZones = listOf(
@@ -399,20 +246,5 @@ class ReaderPreferences(
                 )
             }
         }
-
-        // SY -->
-        val PageLayouts = listOf(
-            TLMR.strings.single_page,
-            TLMR.strings.double_pages,
-            TLMR.strings.automatic_orientation,
-        )
-
-        val CenterMarginTypes = listOf(
-            TLMR.strings.center_margin_none,
-            TLMR.strings.center_margin_double_page,
-            TLMR.strings.center_margin_wide_page,
-            TLMR.strings.center_margin_double_and_wide_page,
-        )
-        // SY <--
     }
 }
