@@ -17,9 +17,15 @@ class ReaderPreferences(
     // region General
 
     // SY -->
-    val pageTransitionsPager: Preference<Boolean> = preferenceStore.getBoolean("pref_enable_transitions_pager_key", true)
+    val pageTransitionsPager: Preference<Boolean> = preferenceStore.getBoolean(
+        "pref_enable_transitions_pager_key",
+        true,
+    )
 
-    val pageTransitionsWebtoon: Preference<Boolean> = preferenceStore.getBoolean("pref_enable_transitions_webtoon_key", true)
+    val pageTransitionsWebtoon: Preference<Boolean> = preferenceStore.getBoolean(
+        "pref_enable_transitions_webtoon_key",
+        true,
+    )
     // SY <--
 
     val pageTransitions: Preference<Boolean> = preferenceStore.getBoolean("pref_enable_transitions_key", true)

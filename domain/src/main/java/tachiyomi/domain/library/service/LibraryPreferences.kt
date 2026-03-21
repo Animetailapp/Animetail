@@ -48,7 +48,10 @@ class LibraryPreferences(
 
     val landscapeColumns: Preference<Int> = preferenceStore.getInt("pref_library_columns_landscape_key", 0)
 
-    val lastUpdatedTimestamp: Preference<Long> = preferenceStore.getLong(Preference.appStateKey("library_update_last_timestamp"), 0L)
+    val lastUpdatedTimestamp: Preference<Long> = preferenceStore.getLong(
+        Preference.appStateKey("library_update_last_timestamp"),
+        0L,
+    )
     val autoUpdateInterval: Preference<Int> = preferenceStore.getInt("pref_library_update_interval_key", 0)
 
     val autoUpdateDeviceRestrictions: Preference<Set<String>> = preferenceStore.getStringSet(
@@ -105,7 +108,10 @@ class LibraryPreferences(
 
     fun autoClearItemCache() = preferenceStore.getBoolean("auto_clear_chapter_cache", false)
     val autoClearChapterCache: Preference<Boolean> = autoClearItemCache()
-    val hideMissingChapters: Preference<Boolean> = preferenceStore.getBoolean("pref_hide_missing_chapter_indicators", false)
+    val hideMissingChapters: Preference<Boolean> = preferenceStore.getBoolean(
+        "pref_hide_missing_chapter_indicators",
+        false,
+    )
 
     // Random Sort Seed
 
@@ -125,7 +131,10 @@ class LibraryPreferences(
     fun filterDownloadedAnime() =
         preferenceStore.getEnum("pref_filter_animelib_downloaded_v2", TriState.DISABLED)
 
-    val filterDownloaded: Preference<TriState> = preferenceStore.getEnum("pref_filter_library_downloaded_v2", TriState.DISABLED)
+    val filterDownloaded: Preference<TriState> = preferenceStore.getEnum(
+        "pref_filter_library_downloaded_v2",
+        TriState.DISABLED,
+    )
 
     fun filterDownloadedManga() =
         preferenceStore.getEnum("pref_filter_library_downloaded_v2", TriState.DISABLED)
