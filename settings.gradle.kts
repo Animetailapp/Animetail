@@ -1,16 +1,9 @@
 pluginManagement {
-    resolutionStrategy {
-        eachPlugin {
-            val regex = "com.android.(library|application)".toRegex()
-            if (regex matches requested.id.id) {
-                useModule("com.android.tools.build:gradle:${requested.version}")
-            }
-        }
-    }
+    includeBuild("gradle/build-logic")
     repositories {
-        gradlePluginPortal()
         google()
         mavenCentral()
+        gradlePluginPortal()
         maven(url = "https://www.jitpack.io")
     }
 }
@@ -20,11 +13,14 @@ dependencyResolutionManagement {
         create("aniyomilibs") {
             from(files("gradle/aniyomi.versions.toml"))
         }
+        create("mihonx") {
+            from(files("gradle/mihon.versions.toml"))
+        }
     }
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        mavenCentral()
         google()
+        mavenCentral()
         maven(url = "https://www.jitpack.io")
     }
 }
@@ -52,3 +48,4 @@ include(":presentation-core")
 include(":presentation-widget")
 include(":source-api")
 include(":source-local")
+include(":telemetry")
