@@ -24,44 +24,77 @@ Resumen de la serie 0.19.x
 ## Changelog completo por versión
 
 ### 0.19.2
-### ✨ 0.19.2 — Novedades y arreglos destacados
-- Nuevas opciones de concurrencia para descargas; por defecto se incrementó el número de descargas paralelas de páginas.
-- Mejor soporte multi-ventana en WebView y mejoras en el spoofing del header `X-Requested-With`.
-- Mejoras en lector: edge-to-edge, correcciones de zonas táctiles y soporte para recorte en Android 15+.
-- Correcciones de migraciones y varios arreglos de estabilidad (incluye fixes en migraciones y errores de scrollbar/animator).
-- Actualizaciones masivas de dependencias y traducciones.
+### ✨ 0.19.2 — Novedades, mejoras y fixes (detallado)
+- New features:
+  - Personalización del número de descargas concurrentes (fuentes y páginas) y opción para restringir nombres de fichero a ASCII.
+  - Mejora en el manejo de archivos con metadatos idénticos: ahora se añade un hash a los nombres para distinguirlos.
+  - Soporte multi-ventana en WebView (ya no se tratan todas las ventanas emergentes como redirects).
 
-Lista resumida:
-- Personalización del número de descargas concurrentes.
-- Soporte multi-ventana en WebView.
-- Arreglos en la UI del lector y corrección de errores de migración.
+- Changes / Improvements:
+  - Incremento por defecto del número de descargas de páginas de 2 → 5.
+  - Mejor spoofing del header `X-Requested-With` para compatibilidad con WebView más recientes.
+  - Varias actualizaciones automáticas de dependencias y mejoras en Actions/CI.
 
-### 0.19.3
-### ✨ 0.19.3 — Mejoras y correcciones
-- Mejoras adicionales en WebView multi-ventana y estabilidad.
-- Reversión de un cambio que rompía el comportamiento de zonas táctiles en el lector; fixes relacionados con padding y scroll en lectores long-strip.
-- Actualizaciones de dependencias y correcciones menores.
+- Fixes:
+  - Correcciones en la UI del lector (indicadores de página parcialmente visibles, fondo del app/system bar en Android 15+).
+  - Fixes en migraciones (varios crashes y condiciones incorrectas), fix en scrollbar cuando la animación está desactivada.
+  - Reparado caso donde las descargas de extensiones podían quedarse en estado "pending".
+  - Mejor manejo de incognito desde notificaciones.
 
-### 0.19.4
-### ✨ 0.19.4 — Nuevas características y mejoras
-- Funcionalidad: eliminación automática de descargas en Suwayomi tras leer, configurable por extensión.
-- Añadido soporte para mostrar autores/artistas en resultados MAL; filtros nuevos en Updates; opción para añadir páginas adyacentes completas al descargar capítulos.
-- Mejoras de rendimiento y optimizaciones en búsquedas y filtros de biblioteca.
-- Múltiples correcciones de estabilidad y migraciones.
+### Contribuidores relevantes
+- @AntsyLich, @raxod502, @TheUnlocked, @Guzmazow, @c2y5, @Naputt1, @NGB-Was-Taken, y otros.
 
-### 0.19.5.0
-### ✨ 0.19.5 — Cambios principales
-- Correcciones de rendimiento y regresiones detectadas en 0.19.4.
-- Fixes en detección de duplicados y en integración con MangaUpdates/servicios remotos.
-- Mejoras en la robustez de WebView y acciones/CI.
+### ✨ 0.19.3 — Mejoras y correcciones (detallado)
+- Improvements:
+  - Mejoras en la estabilidad y rendimiento de WebView multi-ventana.
 
-### 0.19.5.1
+- Removals:
+  - Reversión de un cambio que introdujo una regresión en las zonas táctiles del lector.
+
+- Fixes:
+  - Arreglado crash de WebView introducido en v0.19.2.
+  - Corregido padding inesperado en el lector tras interacciones.
+  - Fix en scroll de long-strip reader cuando se tocaba consecutivamente.
+
+### Contribuidores
+- @TheUnlocked, @AntsyLich, @bapeey, y otros.
+
+### ✨ 0.19.4 — Nuevas características, mejoras y fixes (detallado)
+- New features:
+  - Eliminación automática de descargas en Suwayomi tras leer (configurable por extensión).
+  - Mostrar autores y artistas en resultados MAL.
+  - Nuevas opciones de filtrado en Updates; `src:` prefix para buscar por source ID (incluye `src:local`).
+  - Añadida opción para descargar páginas adyacentes completas al descargar capítulos.
+
+- Improvements:
+  - Optimización del uso de memoria (cache de covers), optimización de queries de MAL y mejoras en UX de descargas.
+  - Actualizaciones en iconografía de trackers y ajustes menores en comportamientos de UI.
+
+- Fixes:
+  - Correcciones en instalador de Shizuku, fixes en migraciones, y resolución de diversos crashes (incluyendo descargas multi-capítulo en locales con idioma árabe).
+
+### Contribuidores
+- @cuong-tran, @Lolle2000la, @NarwhalHorns, @MajorTanya, @cpiber, @AntsyLich, y otros.
+
+### ✨ 0.19.5 — Cambios principales (detallado)
+- Changes:
+  - Ajustes y mejoras en el reader para reintentos de carga de imagen y otras correcciones de fiabilidad.
+
+- Fixes:
+  - Corrección de regresión de rendimiento introducida en v0.19.4.
+  - Fix en detección de claves duplicadas en duplicate detection y correcciones en MangaUpdates HTTP 4XX.
+  - Correcciones en diálogos JS de WebView que aparecían tras cerrar pantalla y en acciones de extensiones que desaparecían tras instalar/desinstalar en la misma sesión.
+
+### Contribuidores
+- @AntsyLich, @leodyversemilla07, y colaboradores.
+
 ### ✨ 0.19.5.1 — Release del fork (parche)
-- Bumped a `0.19.5.1` en `app/build.gradle.kts`.
-- Correcciones específicas del fork:
-  - Corrección de la condición del workflow para crear releases en Animetail.
-  - Manejo de campos nullables en DTO `MALAuthorNode` (`first_name`/`last_name` ahora por defecto vacíos).
-  - Limpiezas y arreglos de warnings de Kotlin/Compose, y correcciones i18n.
+- Versión del fork con correcciones puntuales y ajustes internos.
+- Cambios principales:
+  - Bumped a `0.19.5.1` en `app/build.gradle.kts`.
+  - Corrección de condición en workflow `build_push.yml` para que las releases por tag se creen correctamente en Animetail.
+  - Fix en DTO `MALAuthorNode` para evitar fallos de serialización cuando `first_name`/`last_name` faltan.
+  - Limpiezas de warnings, ajustes i18n, y pequeñas mejoras locales.
 
 ---
 
