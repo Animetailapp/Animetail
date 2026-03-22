@@ -67,7 +67,6 @@ import eu.kanade.tachiyomi.source.manga.getNameForMangaInfo
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaSourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.entries.manga.ChapterList
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreenModel
-import eu.kanade.tachiyomi.ui.home.HomeScreen.uiPreferences
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
@@ -80,7 +79,6 @@ import tachiyomi.presentation.core.components.VerticalFastScroller
 import tachiyomi.presentation.core.components.material.PullRefresh
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
-import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.shouldExpandFAB
 import tachiyomi.source.local.entries.manga.isLocal
 import java.time.Instant
@@ -119,6 +117,7 @@ fun MangaScreen(
     onEditCategoryClicked: (() -> Unit)?,
     onEditFetchIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     // SY -->
     onEditInfoClicked: () -> Unit,
     // SY <--
@@ -175,6 +174,7 @@ fun MangaScreen(
             onEditCategoryClicked = onEditCategoryClicked,
             onEditIntervalClicked = onEditFetchIntervalClicked,
             onMigrateClicked = onMigrateClicked,
+            onEditNotesClicked = onEditNotesClicked,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
             // SY <--
@@ -214,6 +214,7 @@ fun MangaScreen(
             onEditCategoryClicked = onEditCategoryClicked,
             onEditIntervalClicked = onEditFetchIntervalClicked,
             onMigrateClicked = onMigrateClicked,
+            onEditNotesClicked = onEditNotesClicked,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
             // SY <--
@@ -264,6 +265,7 @@ private fun MangaScreenSmallImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     onSettingsClicked: (() -> Unit)?,
 
     // SY -->
@@ -285,7 +287,6 @@ private fun MangaScreenSmallImpl(
     onInvertSelection: () -> Unit,
 ) {
     val chapterListState = rememberLazyListState()
-    val showChapterTimestamps by uiPreferences.showChapterTimestamps().collectAsState()
 
     val (chapters, listItem, isAnySelected) = remember(state) {
         Triple(
@@ -332,6 +333,7 @@ private fun MangaScreenSmallImpl(
                 onClickEditCategory = onEditCategoryClicked,
                 onClickRefresh = onRefresh,
                 onClickMigrate = onMigrateClicked,
+                onClickEditNotes = onEditNotesClicked,
                 // SY -->
                 onClickEditInfo = onEditInfoClicked.takeIf { state.manga.favorite },
                 // SY <--
@@ -449,8 +451,10 @@ private fun MangaScreenSmallImpl(
                             defaultExpandState = state.isFromSource,
                             description = state.manga.description,
                             tagsProvider = { state.manga.genre },
+                            notes = state.manga.notes,
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                            onEditNotes = onEditNotesClicked,
                         )
                     }
 
@@ -474,7 +478,6 @@ private fun MangaScreenSmallImpl(
                         manga = state.manga,
                         chapters = listItem,
                         isAnyChapterSelected = chapters.fastAny { it.selected },
-                        showChapterTimestamps = showChapterTimestamps,
                         chapterSwipeStartAction = chapterSwipeStartAction,
                         chapterSwipeEndAction = chapterSwipeEndAction,
                         onChapterClicked = onChapterClicked,
@@ -522,6 +525,7 @@ fun MangaScreenLargeImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     onSettingsClicked: (() -> Unit)?,
 
     // SY -->
@@ -555,7 +559,6 @@ fun MangaScreenLargeImpl(
 
     val insetPadding = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal).asPaddingValues()
     var topBarHeight by remember { mutableIntStateOf(0) }
-    val showChapterTimestamps by uiPreferences.showChapterTimestamps().collectAsState()
 
     val chapterListState = rememberLazyListState()
 
@@ -583,6 +586,7 @@ fun MangaScreenLargeImpl(
                 onClickEditCategory = onEditCategoryClicked,
                 onClickRefresh = onRefresh,
                 onClickMigrate = onMigrateClicked,
+                onClickEditNotes = onEditNotesClicked,
                 onCancelActionMode = { onAllChapterSelected(false) },
                 // SY -->
                 onClickEditInfo = onEditInfoClicked.takeIf { state.manga.favorite },
@@ -689,8 +693,10 @@ fun MangaScreenLargeImpl(
                             defaultExpandState = true,
                             description = state.manga.description,
                             tagsProvider = { state.manga.genre },
+                            notes = state.manga.notes,
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                            onEditNotes = onEditNotesClicked,
                         )
                     }
                 },
@@ -733,7 +739,6 @@ fun MangaScreenLargeImpl(
                                 onDownloadChapter = onDownloadChapter,
                                 onChapterSelected = onChapterSelected,
                                 onChapterSwipe = onChapterSwipe,
-                                showChapterTimestamps = showChapterTimestamps,
                             )
                         }
                     }
@@ -790,7 +795,6 @@ private fun LazyListScope.sharedChapterItems(
     manga: Manga,
     chapters: List<ChapterList>,
     isAnyChapterSelected: Boolean,
-    showChapterTimestamps: Boolean,
     chapterSwipeStartAction: LibraryPreferences.ChapterSwipeAction,
     chapterSwipeEndAction: LibraryPreferences.ChapterSwipeAction,
     onChapterClicked: (Chapter) -> Unit,
@@ -825,11 +829,7 @@ private fun LazyListScope.sharedChapterItems(
                     } else {
                         item.chapter.name
                     },
-                    date = if (showChapterTimestamps) {
-                        relativeDateTimeText(item.chapter.dateUpload)
-                    } else {
-                        null
-                    },
+                    date = relativeDateTimeText(item.chapter.dateUpload),
                     readProgress = item.chapter.lastPageRead
                         .takeIf { !item.chapter.read && it > 0L }
                         ?.let {

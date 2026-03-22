@@ -163,6 +163,7 @@ fun AnimeScreen(
     onEditCategoryClicked: (() -> Unit)?,
     onEditFetchIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     // SY -->
     onEditInfoClicked: () -> Unit,
     // SY <--
@@ -237,6 +238,7 @@ fun AnimeScreen(
             onEditCategoryClicked = onEditCategoryClicked,
             onEditIntervalClicked = onEditFetchIntervalClicked,
             onMigrateClicked = onMigrateClicked,
+            onEditNotesClicked = onEditNotesClicked,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
             // SY <--
@@ -292,6 +294,7 @@ fun AnimeScreen(
             onEditIntervalClicked = onEditFetchIntervalClicked,
             changeAnimeSkipIntro = changeAnimeSkipIntro,
             onMigrateClicked = onMigrateClicked,
+            onEditNotesClicked = onEditNotesClicked,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
             // SY <--
@@ -357,6 +360,7 @@ private fun AnimeScreenSmallImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     // SY -->
     onEditInfoClicked: () -> Unit,
     // SY <--
@@ -424,6 +428,7 @@ private fun AnimeScreenSmallImpl(
     val expandRelatedAnimes by uiPreferences.expandRelatedAnimes().collectAsState()
     val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow().collectAsState()
     val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps().collectAsState()
+    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters().collectAsState()
     val showCast by uiPreferences.showCast().collectAsState()
 
     BoxWithConstraints {
@@ -458,15 +463,16 @@ private fun AnimeScreenSmallImpl(
                     onClickEditCategory = onEditCategoryClicked,
                     onClickRefresh = onRefresh,
                     onClickMigrate = onMigrateClicked,
+                    onClickEditNotes = onEditNotesClicked,
                     // SY -->
                     onClickEditInfo = onEditInfoClicked.takeIf { state.anime.favorite },
+                    // SY <--
                     // KMK -->
                     onClickRelatedAnimes = onRelatedAnimesScreenClick.takeIf {
                         !expandRelatedAnimes &&
                             showRelatedAnimesInOverflow
                     },
                     // KMK <--
-                    // SY <--
                     onClickSettings = onSettingsClicked,
                     changeAnimeSkipIntro = changeAnimeSkipIntro,
                     actionModeCounter = selectedEpisodeCount,
@@ -595,8 +601,10 @@ private fun AnimeScreenSmallImpl(
                             defaultExpandState = state.isFromSource,
                             description = state.anime.description,
                             tagsProvider = { state.anime.genre },
+                            notes = state.anime.notes,
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                            onEditNotes = onEditNotesClicked,
                             modifier = Modifier.ignorePadding(offsetGridPaddingPx),
                         )
                     }
@@ -691,7 +699,14 @@ private fun AnimeScreenSmallImpl(
                                 FetchType.Seasons -> seasons.size
                                 FetchType.Episodes -> episodes.size
                             },
-                            missingItemsCount = maxOf(missingEpisodesCount, missingSeasonsCount),
+                            missingItemsCount = if (hideMissingChapters) {
+                                0
+                            } else {
+                                maxOf(
+                                    missingEpisodesCount,
+                                    missingSeasonsCount,
+                                )
+                            },
                             onClick = onFilterClicked,
                             isManga = false,
                             fetchType = state.anime.fetchType,
@@ -744,6 +759,7 @@ private fun AnimeScreenSmallImpl(
 
                             sharedEpisodeItems(
                                 anime = state.anime,
+                                hideMissingChapters = hideMissingChapters,
                                 // AM (FILE_SIZE) -->
                                 source = state.source,
                                 showFileSize = showFileSize,
@@ -809,6 +825,7 @@ fun AnimeScreenLargeImpl(
     onEditCategoryClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
+    onEditNotesClicked: () -> Unit,
     // SY -->
     onEditInfoClicked: () -> Unit,
     // SY <--
@@ -857,6 +874,7 @@ fun AnimeScreenLargeImpl(
     val offsetGridPaddingPx = with(density) { GRID_PADDING.roundToPx() }
     val gridSize = remember(state.anime) { state.anime.seasonDisplayGridSize }
     val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps().collectAsState()
+    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters().collectAsState()
 
     val itemListState = rememberLazyGridState()
     val hasFilters = remember(state) {
@@ -897,6 +915,7 @@ fun AnimeScreenLargeImpl(
                     onClickEditCategory = onEditCategoryClicked,
                     onClickRefresh = onRefresh,
                     onClickMigrate = onMigrateClicked,
+                    onClickEditNotes = onEditNotesClicked,
                     onCancelActionMode = { onAllEpisodeSelected(false) },
                     // SY -->
                     onClickEditInfo = onEditInfoClicked.takeIf { state.anime.favorite },
@@ -1013,8 +1032,10 @@ fun AnimeScreenLargeImpl(
                                 defaultExpandState = true,
                                 description = state.anime.description,
                                 tagsProvider = { state.anime.genre },
+                                notes = state.anime.notes,
                                 onTagSearch = onTagSearch,
                                 onCopyTagToClipboard = onCopyTagToClipboard,
+                                onEditNotes = onEditNotesClicked,
                             )
                             // Cast is shown below the genres/tags on large layout as well,
                             // but only when trackers are in use and there is cast data.
@@ -1111,7 +1132,14 @@ fun AnimeScreenLargeImpl(
                                         FetchType.Seasons -> seasons.size
                                         FetchType.Episodes -> episodes.size
                                     },
-                                    missingItemsCount = maxOf(missingEpisodesCount, missingSeasonsCount),
+                                    missingItemsCount = if (hideMissingChapters) {
+                                        0
+                                    } else {
+                                        maxOf(
+                                            missingEpisodesCount,
+                                            missingSeasonsCount,
+                                        )
+                                    },
                                     onClick = onFilterButtonClicked,
                                     isManga = false,
                                     fetchType = state.anime.fetchType,
@@ -1163,6 +1191,7 @@ fun AnimeScreenLargeImpl(
 
                                     sharedEpisodeItems(
                                         anime = state.anime,
+                                        hideMissingChapters = hideMissingChapters,
                                         // AM (FILE_SIZE) -->
                                         source = state.source,
                                         showFileSize = showFileSize,
@@ -1274,6 +1303,7 @@ private fun LazyGridScope.sharedSeasons(
 
 private fun LazyGridScope.sharedEpisodeItems(
     anime: Anime,
+    hideMissingChapters: Boolean,
     // AM (FILE_SIZE) -->
     source: AnimeSource,
     showFileSize: Boolean,
@@ -1306,10 +1336,12 @@ private fun LazyGridScope.sharedEpisodeItems(
 
         when (episodeItem) {
             is EpisodeList.MissingCount -> {
-                MissingItemCountListItem(
-                    count = episodeItem.count,
-                    modifier = itemModifier,
-                )
+                if (!hideMissingChapters) {
+                    MissingItemCountListItem(
+                        count = episodeItem.count,
+                        modifier = itemModifier,
+                    )
+                }
             }
 
             is EpisodeList.Item -> {

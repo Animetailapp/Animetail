@@ -11,6 +11,19 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Other` - for technical stuff.
 
 ## Unreleased
+
+## [v0.19.5] - 2026-03-20
+### Changed
+- Retry in reader now redownloads image ([@AntsyLich](https://github.com/AntsyLich)) ([#3089](https://github.com/mihonapp/mihon/pull/3089))
+
+### Fixed
+- Fix performance regression introduced in v0.19.4 ([@AntsyLich](https://github.com/AntsyLich)) ([#3082](https://github.com/mihonapp/mihon/pull/3082))
+- Fix duplicate key crash in duplicate detection ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3040](https://github.com/mihonapp/mihon/pull/3040))
+- Fix MangaUpdates HTTP 4XX errors ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3021](https://github.com/mihonapp/mihon/pull/3021))
+- Fix WebView JavaScript dialogs popup after screen is closed ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3041](https://github.com/mihonapp/mihon/pull/3041))
+- Fix extension actions disappearing after installing and uninstalling in same session ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3049](https://github.com/mihonapp/mihon/pull/3049))
+
+## [v0.19.4] - 2026-02-25
 ### Added
 - Added a description for the horizontal seek gesture setting ([@kenkoro](https://github.com/kenkoro)) ([#2224](https://github.com/aniyomiorg/aniyomi/pull/2224))
 - Added settings to hide episode and chapter timestamps when extensions provide bad data
@@ -49,7 +62,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Swapped keyEvent listeners for left and right keyboard arrow keys as they were swapped in the code causing the opposite of the desired behavior([@alphastark](https://github.com/alphastark)) ([#2219](https://github.com/aniyomiorg/aniyomi/pull/2219))
 - Fix some malformed translated strings that made the player quit when Aniskip was enabled ([@686udjie](https://github.com/686udjie)) ([#2217](https://github.com/aniyomiorg/aniyomi/pull/2217))
 - Fix extension install/update stuck at pending ([@AntsyLich](https://github.com/AntsyLich)) ([#3000](https://github.com/mihonapp/mihon/pull/3000))
-- Fix crash when downloading multiple chapters with Arabic locale ([@MajorTanya](https://github.com/MajorTanya)) ([#2676](https://github.com/mihonapp/mihon/pull/2676)) 
+- Fix crash when downloading multiple chapters with Arabic locale ([@MajorTanya](https://github.com/MajorTanya)) ([#2676](https://github.com/mihonapp/mihon/pull/2676))
 
 ## [v0.18.1.4] - 2025-10-28
 ### Fixed
@@ -446,7 +459,8 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Branding to Mihon ([@AntsyLich](https://github.com/AntsyLich))
 - Minimum supported Android version to 8 ([@AntsyLich](https://github.com/AntsyLich)) ([`dfb3091`](https://github.com/mihonapp/mihon/commit/dfb3091e380dda3e9bfb64bf5c9a685cf3a03d0e))
 
-[unreleased]: https://github.com/mihonapp/mihon/compare/v0.19.4...main
+[unreleased]: https://github.com/mihonapp/mihon/compare/v0.19.5...main
+[v0.19.5]: https://github.com/mihonapp/mihon/compare/v0.19.4...v0.19.5
 [v0.19.4]: https://github.com/mihonapp/mihon/compare/v0.19.3...v0.19.4
 [v0.19.3]: https://github.com/mihonapp/mihon/compare/v0.19.2...v0.19.3
 [v0.19.2]: https://github.com/mihonapp/mihon/compare/v0.19.1...v0.19.2

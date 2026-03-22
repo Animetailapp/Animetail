@@ -47,5 +47,6 @@ val migrations: List<Migration>
         VideoPlayerPreferenceMigration(),
         VideoOrientationMigration(),
         CategoryPreferencesCleanupMigration(),
+        InstallationIdMigration(),
         PrefLangMigration(),
     )

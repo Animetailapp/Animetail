@@ -85,7 +85,7 @@
     <string name="enable_auto_play">Automatické přerávání je zapnuté</string>
     <string name="disable_auto_play">Automatické přerávání je vypnuté</string>
     <string name="player_aniskip_dontskip">Nepřeskakovat</string>
-    <string name="player_aniskip_dontskip_toast">Přeskočí %s za %d sekund</string>
+    <string name="player_aniskip_dontskip_toast">Přeskočí %1$s za %2$d sekund</string>
     <string name="player_aniskip_skip">Přeskočeno %s</string>
     <string name="no_next_episode">Další epizoda nenalezena!</string>
     <string name="player_hwdec_mode">Nastavit výchozí hardwarový dekódovací režim</string>
@@ -413,7 +413,7 @@
     <string name="player_hoster_tap_to_load">Stisknutím načtete videa</string>
     <string name="player_hoster_failed">Nepodařilo se načíst videa</string>
     <string name="player_sheets_qualities_title">Kvality</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">Více</string>
     <string name="pref_audio_channels">Audio kanály</string>
     <string name="player_sheets_stats_page_title">Stránka výchozích statistik</string>

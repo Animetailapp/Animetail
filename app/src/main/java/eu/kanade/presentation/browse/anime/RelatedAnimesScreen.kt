@@ -79,7 +79,7 @@ fun RelatedAnimesContent(
                 onMangaLongClick = onMangaLongClick,
                 onKeywordClick = onKeywordClick,
                 onKeywordLongClick = onKeywordLongClick,
-                selection = selection!!,
+                selection = selection,
             )
         }
 
@@ -93,7 +93,7 @@ fun RelatedAnimesContent(
                 onMangaLongClick = onMangaLongClick,
                 onKeywordClick = onKeywordClick,
                 onKeywordLongClick = onKeywordLongClick,
-                selection = selection!!,
+                selection = selection,
                 usePanoramaCover = true,
             )
         }
@@ -108,7 +108,7 @@ fun RelatedAnimesContent(
                 onMangaLongClick = onMangaLongClick,
                 onKeywordClick = onKeywordClick,
                 onKeywordLongClick = onKeywordLongClick,
-                selection = selection!!,
+                selection = selection,
             )
         }
 

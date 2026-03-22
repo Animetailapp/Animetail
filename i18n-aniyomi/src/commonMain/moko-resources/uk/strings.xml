@@ -149,7 +149,7 @@
     <string name="enable_auto_play">Ввімкнено автовідтворення</string>
     <string name="disable_auto_play">Автовідтворення вимкнено</string>
     <string name="player_aniskip_dontskip">Не пропускати</string>
-    <string name="player_aniskip_dontskip_toast">Пропуск %s через %d секунд</string>
+    <string name="player_aniskip_dontskip_toast">Пропуск %1$s через %2$d секунд</string>
     <string name="player_aniskip_skip">%s пропущено</string>
     <string name="no_next_episode">Наступний епізод не знайдено!</string>
     <string name="no_prev_episode">Попередній епізод не знайдено!</string>
@@ -203,7 +203,7 @@
     <string name="player_sheets_add_ext_audio">Додати зовнішні звукові доріжки</string>
     <string name="player_hoster_tap_to_load">Торкніться, щоб завантажити відео</string>
     <string name="player_hoster_failed">Не вдалося завантажити відео</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">більше</string>
     <string name="player_hwdec_mode">Встановити режим апаратного декодування за замовчуванням</string>
     <string name="pref_audio_channels">Аудіо канали</string>

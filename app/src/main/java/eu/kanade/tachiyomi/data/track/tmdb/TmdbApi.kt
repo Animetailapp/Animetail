@@ -92,7 +92,7 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
                         id = item.optLong("id"),
                         title = item.optString("title"),
                         overview = item.optString("overview"),
-                        posterPath = item.optString("poster_path", null),
+                        posterPath = item.optString("poster_path").takeIf { it.isNotBlank() },
                         mediaType = "movie",
                     ),
                 )
@@ -102,7 +102,7 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
                         id = item.optLong("id"),
                         title = item.optString("name"),
                         overview = item.optString("overview"),
-                        posterPath = item.optString("poster_path", null),
+                        posterPath = item.optString("poster_path").takeIf { it.isNotBlank() },
                         mediaType = "tv",
                     ),
                 )
@@ -124,7 +124,7 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
             id = json.optLong("id"),
             title = json.optString("title"),
             overview = json.optString("overview"),
-            posterPath = json.optString("poster_path", null),
+            posterPath = json.optString("poster_path").takeIf { it.isNotBlank() },
             additional = json,
         )
     }
@@ -138,7 +138,7 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
             id = json.optLong("id"),
             title = json.optString("name"),
             overview = json.optString("overview"),
-            posterPath = json.optString("poster_path", null),
+            posterPath = json.optString("poster_path").takeIf { it.isNotBlank() },
             additional = json,
         )
     }

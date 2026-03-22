@@ -54,7 +54,7 @@
     <string name="enable_auto_play">Auto-play jest włączone</string>
     <string name="disable_auto_play">Auto-play jest wyłączone</string>
     <string name="player_aniskip_dontskip">Nie pomiń</string>
-    <string name="player_aniskip_dontskip_toast">Pomijanie %s za %d sekund</string>
+    <string name="player_aniskip_dontskip_toast">Pomijanie %1$s za %2$d sekund</string>
     <string name="player_aniskip_skip">Pominięto %s</string>
     <string name="no_next_episode">Następny odcinek nie został znaleziony!</string>
     <string name="player_hwdec_mode">Ustaw domyślny tryb dekodowania sprzętowego</string>

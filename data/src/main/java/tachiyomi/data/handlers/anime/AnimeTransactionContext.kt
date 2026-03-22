@@ -36,7 +36,6 @@ internal suspend fun AndroidAnimeDatabaseHandler.getCurrentAnimeDatabaseContext(
  * The dispatcher used to execute the given [block] will utilize threads from SQLDelight's query executor.
  */
 internal suspend fun <T> AndroidAnimeDatabaseHandler.withAnimeTransaction(block: suspend () -> T): T {
-    // Use inherited transaction context if available, this allows nested suspending transactions.
     val transactionContext =
         coroutineContext[AnimeTransactionElement]?.transactionDispatcher ?: createTransactionContext()
     return withContext(transactionContext) {
@@ -72,13 +71,8 @@ internal suspend fun <T> AndroidAnimeDatabaseHandler.withAnimeTransaction(block:
  * if a blocking DAO method is invoked within the transaction coroutine. Never assign meaning to
  * this value, for now all we care is if its present or not.
  */
-
 private suspend fun AndroidAnimeDatabaseHandler.createTransactionContext(): CoroutineContext {
     val controlJob = Job()
-    // make sure to tie the control job to this context to avoid blocking the transaction if
-    // context get cancelled before we can even start using this job. Otherwise, the acquired
-    // transaction thread will forever wait for the controlJob to be cancelled.
-    // see b/148181325
     coroutineContext[Job]?.invokeOnCompletion {
         controlJob.cancel()
     }
@@ -100,21 +94,16 @@ private suspend fun CoroutineDispatcher.acquireTransactionThread(
 ): ContinuationInterceptor {
     return suspendCancellableCoroutine { continuation ->
         continuation.invokeOnCancellation {
-            // We got cancelled while waiting to acquire a thread, we can't stop our attempt to
-            // acquire a thread, but we can cancel the controlling job so once it gets acquired it
-            // is quickly released.
             controlJob.cancel()
         }
         try {
             dispatch(EmptyCoroutineContext) {
                 runBlocking {
-                    // Thread acquired, resume coroutine
                     continuation.resume(coroutineContext[ContinuationInterceptor]!!)
                     controlJob.join()
                 }
             }
         } catch (ex: RejectedExecutionException) {
-            // Couldn't acquire a thread, cancel coroutine
             continuation.cancel(
                 IllegalStateException(
                     "Unable to acquire a thread to perform the database transaction",
@@ -138,12 +127,6 @@ private class AnimeTransactionElement(
     override val key: CoroutineContext.Key<AnimeTransactionElement>
         get() = AnimeTransactionElement
 
-    /**
-     * Number of transactions (including nested ones) started with this element.
-     * Call [acquire] to increase the count and [release] to decrease it. If the count reaches zero
-     * when [release] is invoked then the transaction job is cancelled and the transaction thread
-     * is released.
-     */
     private val referenceCount = AtomicInteger(0)
 
     fun acquire() {
@@ -155,7 +138,6 @@ private class AnimeTransactionElement(
         if (count < 0) {
             throw IllegalStateException("Transaction was never started or was already released")
         } else if (count == 0) {
-            // Cancel the job that controls the transaction thread, causing it to be released.
             transactionThreadControlJob.cancel()
         }
     }

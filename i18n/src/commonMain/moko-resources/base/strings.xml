@@ -147,6 +147,8 @@
     <string name="action_move_to_top_all_for_series">Move series to top</string>
     <string name="action_move_to_bottom">Move to bottom</string>
     <string name="action_move_to_bottom_all_for_series">Move series to bottom</string>
+    <string name="action_notes">Notes</string>
+    <string name="action_edit_notes">Edit notes</string>
     <string name="action_install">Install</string>
     <string name="action_share">Share</string>
     <string name="action_save">Save</string>
@@ -165,8 +167,6 @@
     <string name="action_not_now">Not now</string>
     <string name="action_add_anyway">Add anyway</string>
     <string name="action_migrate_duplicate">Migrate existing entry</string>
-
-    <!-- Operations -->
     <string name="loading">Loading…</string>
     <string name="internal_error">InternalError: Check crash logs for further information</string>
 
@@ -985,4 +985,14 @@
     <string name="exception_http">HTTP %d, check website in WebView</string>
     <string name="exception_offline">No Internet connection</string>
     <string name="exception_unknown_host">Couldn\'t reach %s</string>
+
+    <!-- Notes screen -->
+    <string name="notes_placeholder">Enjoyed the part where…</string>
+    <string name="pref_update_library_manga_titles">Update library manga titles to match source</string>
+    <string name="pref_update_library_manga_titles_summary">Warning: if a manga is renamed, it will be removed from the download queue (if present).</string>
+    <string name="pref_hide_missing_chapter_indicators">Hide missing chapter indicators</string>
+    <string name="clear_database_text">You’re about to remove entries from the database</string>
+    <string name="clear_database_history_warning">Read chapters and progress of non-library entries will be lost</string>
+    <string name="clear_db_exclude_read">Keep entries with read chapters</string>
+    <string name="pref_display_images_description">Render images in manga descriptions</string>
 </resources>

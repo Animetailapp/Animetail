@@ -55,7 +55,6 @@ class DiscordLoginActivity : BaseActivity() {
     private fun setupWebView(webView: WebView) {
         webView.apply {
             settings.javaScriptEnabled = true
-            settings.databaseEnabled = true
             settings.domStorageEnabled = true
             settings.userAgentString = USER_AGENT
         }
@@ -250,14 +249,9 @@ class DiscordLoginActivity : BaseActivity() {
         Log.i(TAG, "Discord API response: ${response.code}")
 
         return if (response.isSuccessful) {
-            val body = response.body?.string()
-            if (body != null) {
-                Log.i(TAG, "API response received successfully")
-                parseUserInfo(body)
-            } else {
-                Log.e(TAG, "Response body is null")
-                null
-            }
+            val body = response.body.string()
+            Log.i(TAG, "API response received successfully")
+            parseUserInfo(body)
         } else {
             Log.e(TAG, "Token verification failed: ${response.code}")
             null

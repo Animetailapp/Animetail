@@ -690,7 +690,6 @@ class CastManager(
                             BorderStyle.DROP_SHADOW -> TextTrackStyle.EDGE_TYPE_DROP_SHADOW
                             BorderStyle.RAISED -> TextTrackStyle.EDGE_TYPE_RAISED
                             BorderStyle.DEPRESSED -> TextTrackStyle.EDGE_TYPE_DEPRESSED
-                            else -> TextTrackStyle.EDGE_TYPE_NONE
                         }
                     }
                 }

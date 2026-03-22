@@ -87,6 +87,7 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.interactor.ResetMangaViewerFlags
+import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
@@ -213,11 +214,9 @@ object SettingsAdvancedScreen : SearchableSettings {
                     title = stringResource(MR.strings.pref_invalidate_download_cache),
                     subtitle = stringResource(AYMR.strings.pref_invalidate_download_cache_summary),
                     onClick = {
-                        scope.launch {
-                            Injekt.get<MangaDownloadCache>().invalidateCache()
-                            Injekt.get<AnimeDownloadCache>().invalidateCache()
-                            context.toast(MR.strings.download_cache_invalidated)
-                        }
+                        Injekt.get<MangaDownloadCache>().invalidateCache()
+                        Injekt.get<AnimeDownloadCache>().invalidateCache()
+                        context.toast(MR.strings.download_cache_invalidated)
                     },
                 ),
                 Preference.PreferenceItem.TextPreference(
@@ -410,6 +409,7 @@ object SettingsAdvancedScreen : SearchableSettings {
     private fun getLibraryGroup(): Preference.PreferenceGroup {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
+        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_library),
@@ -439,6 +439,11 @@ object SettingsAdvancedScreen : SearchableSettings {
                             }
                         }
                     },
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = libraryPreferences.updateMangaTitles(),
+                    title = stringResource(MR.strings.pref_update_library_manga_titles),
+                    subtitle = stringResource(MR.strings.pref_update_library_manga_titles_summary),
                 ),
             ),
         )

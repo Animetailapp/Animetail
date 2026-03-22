@@ -146,7 +146,7 @@
     <string name="enable_auto_play">স্বয়ংক্ৰিয় চলন সক্ৰিয়</string>
     <string name="disable_auto_play">স্বয়ংক্ৰিয় চলন অক্ষম</string>
     <string name="player_aniskip_dontskip">এৰি নিদিব</string>
-    <string name="player_aniskip_dontskip_toast">%s ৰ %d ছেকেণ্ডত এৰি দিয়া হ’ব</string>
+    <string name="player_aniskip_dontskip_toast">%1$s ৰ %2$d ছেকেণ্ডত এৰি দিয়া হ’ব</string>
     <string name="player_aniskip_skip">%s এৰি দিয়া হৈছে</string>
     <string name="no_next_episode">পৰৱৰ্তী পৰ্ব পোৱা নগ’ল!</string>
     <string name="no_prev_episode">আগৰ পৰ্ব পোৱা নগ’ল!</string>
@@ -194,7 +194,7 @@
     <string name="player_sheets_filters_hue">ৰঙৰ ছাঁ</string>
     <string name="player_sheets_filters_warning">কিছুমান ফিল্টাৰ আপোনাৰ বৰ্তমানৰ ভিডিঅ’ ড্ৰাইভাৰত কাম নকৰিব পাৰে</string>
     <string name="player_sheets_add_ext_audio">বাহ্যিক শব্দৰ ট্ৰেক যোগ কৰক</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">অধিক</string>
     <string name="player_hwdec_mode">হাৰ্ডৱেৰ ডিক’ডিং মোড</string>
     <string name="pref_audio_channels">শব্দৰ চেনেল</string>

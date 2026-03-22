@@ -29,6 +29,7 @@ import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
+import kotlinx.coroutines.DelicateCoroutinesApi
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.domain.entries.manga.model.Manga
@@ -41,6 +42,7 @@ import uy.kohesive.injekt.api.get
 import java.math.RoundingMode
 import java.text.NumberFormat
 
+@OptIn(DelicateCoroutinesApi::class)
 class MangaLibraryUpdateNotifier(
     private val context: Context,
 
@@ -101,7 +103,7 @@ class MangaLibraryUpdateNotifier(
                 ),
             )
 
-        if (!securityPreferences.hideNotificationContent().get()) {
+        if (!securityPreferences.hideNotificationContent.get()) {
             val updatingText = manga.joinToString("\n") { it.title.chop(40) }
             progressNotificationBuilder.setStyle(NotificationCompat.BigTextStyle().bigText(updatingText))
         }
@@ -177,7 +179,7 @@ class MangaLibraryUpdateNotifier(
             Notifications.CHANNEL_NEW_CHAPTERS_EPISODES,
         ) {
             setContentTitle(context.stringResource(MR.strings.notification_new_chapters))
-            if (updates.size == 1 && !securityPreferences.hideNotificationContent().get()) {
+            if (updates.size == 1 && !securityPreferences.hideNotificationContent.get()) {
                 setContentText(updates.first().first.title.chop(NOTIF_TITLE_MAX_LEN))
             } else {
                 setContentText(
@@ -188,7 +190,7 @@ class MangaLibraryUpdateNotifier(
                     ),
                 )
 
-                if (!securityPreferences.hideNotificationContent().get()) {
+                if (!securityPreferences.hideNotificationContent.get()) {
                     setStyle(
                         NotificationCompat.BigTextStyle().bigText(
                             updates.joinToString("\n") {
@@ -212,7 +214,7 @@ class MangaLibraryUpdateNotifier(
         }
 
         // Per-manga notification
-        if (!securityPreferences.hideNotificationContent().get()) {
+        if (!securityPreferences.hideNotificationContent.get()) {
             launchUI {
                 context.notify(
                     updates.map { (manga, chapters) ->

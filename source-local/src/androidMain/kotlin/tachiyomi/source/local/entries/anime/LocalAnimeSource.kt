@@ -163,16 +163,14 @@ actual class LocalAnimeSource(
     // TODO: Should be replaced when Anime Extensions get to 1.15
 
     @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getPopularAnime"))
-    override fun fetchPopularAnime(page: Int) = fetchSearchAnime(page, "", PopularFilters)
+    override fun fetchPopularAnime(page: Int) = Observable.fromCallable { runBlocking { getPopularAnime(page) } }
 
     @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getLatestUpdates"))
-    override fun fetchLatestUpdates(page: Int) = fetchSearchAnime(page, "", LatestFilters)
+    override fun fetchLatestUpdates(page: Int) = Observable.fromCallable { runBlocking { getLatestUpdates(page) } }
 
     @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getSearchAnime"))
     override fun fetchSearchAnime(page: Int, query: String, filters: AnimeFilterList): Observable<AnimesPage> {
-        return runBlocking {
-            Observable.just(getSearchAnime(page, query, filters))
-        }
+        return Observable.fromCallable { runBlocking { getSearchAnime(page, query, filters) } }
     }
 
     // SY -->

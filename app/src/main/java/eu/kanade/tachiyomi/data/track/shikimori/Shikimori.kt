@@ -17,7 +17,6 @@ import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMOAuth
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -132,7 +131,7 @@ class Shikimori(id: Long) :
         }
     }
 
-    override suspend fun bind(track: AnimeTrack, hasReadChapters: Boolean): AnimeTrack {
+    override suspend fun bind(track: AnimeTrack, hasSeenEpisodes: Boolean): AnimeTrack {
         val remoteTrack = api.findLibAnime(track, getUsername())
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack)
@@ -140,13 +139,13 @@ class Shikimori(id: Long) :
 
             if (track.status != COMPLETED) {
                 val isRereading = track.status == REREADING
-                track.status = if (!isRereading && hasReadChapters) READING else track.status
+                track.status = if (!isRereading && hasSeenEpisodes) READING else track.status
             }
 
             update(track)
         } else {
             // Set default fields if it's not found in the list
-            track.status = if (hasReadChapters) READING else PLAN_TO_READ
+            track.status = if (hasSeenEpisodes) READING else PLAN_TO_READ
             track.score = 0.0
             add(track)
         }

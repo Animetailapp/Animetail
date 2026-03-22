@@ -120,7 +120,7 @@ private fun ColumnScope.FilterPage(
     TriStateItem(
         label = stringResource(MR.strings.action_filter_unread),
         state = filterUnread,
-        onClick = { screenModel.toggleFilter(LibraryPreferences::filterUnread) },
+        onClick = { screenModel.toggleFilter { it.filterUnread() } },
     )
     val filterStarted by screenModel.libraryPreferences.filterStartedManga().collectAsState()
     TriStateItem(
@@ -147,7 +147,7 @@ private fun ColumnScope.FilterPage(
         TriStateItem(
             label = stringResource(MR.strings.action_filter_interval_custom),
             state = filterIntervalCustom,
-            onClick = { screenModel.toggleFilter(LibraryPreferences::filterIntervalCustom) },
+            onClick = { screenModel.toggleFilter { it.filterIntervalCustom() } },
         )
     }
 

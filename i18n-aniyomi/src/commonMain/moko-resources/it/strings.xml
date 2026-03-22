@@ -149,7 +149,7 @@
     <string name="enable_auto_play">Auto-play è attivo</string>
     <string name="disable_auto_play">Auto-play è disattivato</string>
     <string name="player_aniskip_dontskip">Non saltare</string>
-    <string name="player_aniskip_dontskip_toast">Salto di %s in %d secondi</string>
+    <string name="player_aniskip_dontskip_toast">Salto di %1$s in %2$d secondi</string>
     <string name="player_aniskip_skip">%s saltati</string>
     <string name="no_next_episode">Episodio successivo non trovato!</string>
     <string name="no_prev_episode">Episodio precedente non trovato!</string>
@@ -203,7 +203,7 @@
     <string name="player_sheets_add_ext_audio">Aggiungi tracce audio esterne</string>
     <string name="player_hoster_tap_to_load">Tocca per caricare i video</string>
     <string name="player_hoster_failed">Caricamento video fallito</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">Altro</string>
     <string name="player_hwdec_mode">Imposta la modalità di decodifica hardware predefinita</string>
     <string name="pref_audio_channels">Canali audio</string>

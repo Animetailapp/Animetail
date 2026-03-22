@@ -200,6 +200,10 @@ object SettingsAppearanceScreen : SearchableSettings {
                     title = stringResource(TLMR.strings.pref_show_chapter_timestamp),
                     subtitle = stringResource(TLMR.strings.pref_show_chapter_timestamp_summary),
                 ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.imagesInDescription(),
+                    title = stringResource(MR.strings.pref_display_images_description),
+                ),
             ),
         )
     }

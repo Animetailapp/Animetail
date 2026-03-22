@@ -361,7 +361,8 @@ class MangaDownloadCache(
             var sources = emptyList<MangaSource>()
             withTimeoutOrNull(30.seconds) {
                 extensionManager.isInitialized.first { it }
-                sourceManager.catalogueSources.first { it.isNotEmpty() }
+                sourceManager.isInitialized.first { it }
+
                 sources = getSources()
             }
 

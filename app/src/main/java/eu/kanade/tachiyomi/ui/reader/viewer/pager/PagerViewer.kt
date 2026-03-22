@@ -104,11 +104,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         pager.offscreenPageLimit = 1
         pager.id = R.id.reader_pager
         pager.adapter = adapter
-        pager.addOnPageChangeListener(
-            // SY -->
-            pagerListener,
-            // SY <--
-        )
+        pager.addOnPageChangeListener(pagerListener)
         pager.tapListener = { event ->
             val viewPosition = IntArray(2)
             pager.getLocationOnScreen(viewPosition)
@@ -293,6 +289,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * Sets the active [chapters] on this pager.
      */
     private fun setChaptersInternal(chapters: ViewerChapters) {
+        // Remove listener so the change in item doesn't trigger it
+        pager.removeOnPageChangeListener(pagerListener)
+
         val forceTransition = config.alwaysShowChapterTransition ||
             adapter.items.getOrNull(
                 pager.currentItem,
@@ -306,6 +305,10 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
             moveToPage(pages[min(chapters.currChapter.requestedPage, pages.lastIndex)])
             pager.isVisible = true
         }
+
+        pager.addOnPageChangeListener(pagerListener)
+        // Manually call onPageChange to update the UI
+        onPageChange(pager.currentItem)
     }
 
     /**
@@ -485,13 +488,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
 
     // SY -->
     fun setChaptersDoubleShift(chapters: ViewerChapters) {
-        // Remove Listener since we're about to change the size of the items
-        // If we don't the size change could put us on a new chapter
-        pager.removeOnPageChangeListener(pagerListener)
         setChaptersInternal(chapters)
-        pager.addOnPageChangeListener(pagerListener)
-        // Since we removed the listener while shifting, call page change to update the ui
-        onPageChange(pager.currentItem)
     }
 
     fun updateShifting(page: ReaderPage? = null) {

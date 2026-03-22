@@ -519,7 +519,7 @@
     <string name="backup_restore_missing_trackers">டிராக்கர்கள் உள்நுழையவில்லை:</string>
     <string name="backup_restore_content_full">நீங்கள் காணாமல் போன நீட்டிப்புகளை நிறுவ வேண்டும், பின்னர் அவற்றைப் பயன்படுத்த கண்காணிப்பு சேவைகளில் உள்நுழைய வேண்டும்.</string>
     <string name="restore_completed">மீட்டமை முடிந்தது</string>
-    <string name="restore_duration">%1 $ 02 டி மணித்துளி, %2 $ 02 டி நொடி</string>
+    <string name="restore_duration">%1$02d மணித்துளி, %2$02d நொடி</string>
     <string name="backup_in_progress">காப்புப்பிரதி ஏற்கனவே நடந்து வருகிறது</string>
     <string name="backup_choice">நீங்கள் என்ன காப்புப் பிரதி எடுக்க விரும்புகிறீர்கள்?</string>
     <string name="app_settings">பயன்பாட்டு அமைப்புகள்</string>

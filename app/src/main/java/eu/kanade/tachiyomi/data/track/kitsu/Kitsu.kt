@@ -17,7 +17,6 @@ import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -185,19 +184,19 @@ class Kitsu(id: Long) :
         }
     }
 
-    override suspend fun bind(track: AnimeTrack, hasWatchedEpisodes: Boolean): AnimeTrack {
+    override suspend fun bind(track: AnimeTrack, hasSeenEpisodes: Boolean): AnimeTrack {
         val remoteTrack = api.findLibAnime(track, getUserId())
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack, copyRemotePrivate = false)
             track.remote_id = remoteTrack.remote_id
 
             if (track.status != COMPLETED) {
-                track.status = if (hasWatchedEpisodes) WATCHING else track.status
+                track.status = if (hasSeenEpisodes) WATCHING else track.status
             }
 
             update(track)
         } else {
-            track.status = if (hasWatchedEpisodes) WATCHING else PLAN_TO_WATCH
+            track.status = if (hasSeenEpisodes) WATCHING else PLAN_TO_WATCH
             track.score = 0.0
             add(track)
         }

@@ -19,6 +19,7 @@ import eu.kanade.tachiyomi.util.storage.DiskUtil.NOMEDIA_FILE
 import eu.kanade.tachiyomi.util.storage.saveTo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -77,6 +78,7 @@ import java.util.Locale
  * The queue manipulation must be done in one thread (currently the main thread) to avoid unexpected
  * behavior, but it's safe to read it from multiple threads.
  */
+@OptIn(DelicateCoroutinesApi::class)
 class MangaDownloader(
     private val context: Context,
     private val provider: MangaDownloadProvider,

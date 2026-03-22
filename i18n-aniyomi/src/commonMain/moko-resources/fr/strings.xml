@@ -87,7 +87,7 @@
     <string name="enable_auto_play">La lecture automatique est activée</string>
     <string name="disable_auto_play">La lecture automatique est désactivée</string>
     <string name="player_aniskip_dontskip">Ne pas passer</string>
-    <string name="player_aniskip_dontskip_toast">Passage de %s dans %d secondes</string>
+    <string name="player_aniskip_dontskip_toast">Passage de %1$s dans %2$d secondes</string>
     <string name="player_aniskip_skip">%s passer</string>
     <string name="no_next_episode">L\'épisode suivant n\'a pas été trouvé !</string>
     <string name="player_hwdec_mode">Définir le mode de décodage matériel par défaut</string>
@@ -463,7 +463,7 @@
     <string name="player_hoster_tap_to_load">Appuyer pour charger les vidéos</string>
     <string name="player_hoster_failed">Impossible de charger les vidéos</string>
     <string name="player_sheets_qualities_title">Qualités</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">Plus</string>
     <string name="pref_audio_channels">Canaux audio</string>
     <string name="player_sheets_stats_page_title">Page des statistiques par défaut</string>

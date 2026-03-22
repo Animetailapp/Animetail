@@ -130,7 +130,7 @@
     <string name="enable_auto_play">Naka-on ang auto-play</string>
     <string name="disable_auto_play">Naka-off ang auto-play</string>
     <string name="player_aniskip_dontskip">Huwag laktawan</string>
-    <string name="player_aniskip_dontskip_toast">Laktawan ang %s sa loob ng %d segundo</string>
+    <string name="player_aniskip_dontskip_toast">Laktawan ang %1$s sa loob ng %2$d segundo</string>
     <string name="player_aniskip_skip">Nilaktawan ng %s</string>
     <string name="no_next_episode">Hindi nahanap ang Susunod na Episode!</string>
     <string name="no_prev_episode">Hindi nahanap ang Nakaraang Episode!</string>
@@ -177,7 +177,7 @@
     <string name="player_sheets_filters_hue">Hue</string>
     <string name="player_sheets_filters_warning">Maaaring hindi gumana ang ilang filter sa iyong kasalukuyang video driver</string>
     <string name="player_sheets_add_ext_audio">Magdagdag ng mga external na audio track</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">Higit pa</string>
     <string name="player_hwdec_mode">Itakda ang default na hardware decoding mode</string>
     <string name="pref_audio_channels">Mga channel ng audio</string>

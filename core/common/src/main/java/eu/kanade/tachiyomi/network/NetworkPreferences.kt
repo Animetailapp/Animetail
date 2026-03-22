@@ -4,40 +4,40 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 
 class NetworkPreferences(
-    private val preferenceStore: PreferenceStore,
-    private val verboseLogging: Boolean = false,
+    preferenceStore: PreferenceStore,
+    verboseLoggingDefault: Boolean = false,
 ) {
 
-    fun verboseLogging(): Preference<Boolean> {
-        return preferenceStore.getBoolean("verbose_logging", verboseLogging)
-    }
+    val verboseLogging: Preference<Boolean> = preferenceStore.getBoolean("verbose_logging", verboseLoggingDefault)
 
     // TLMR -->
-    fun enableFlareSolverr(): Preference<Boolean> {
-        return preferenceStore.getBoolean("enable_flare_solverr", false)
-    }
+    val enableFlareSolverr: Preference<Boolean> = preferenceStore.getBoolean("enable_flare_solverr", false)
 
-    fun flareSolverrUrl(): Preference<String> {
-        return preferenceStore.getString("flare_solverr_url", "http://localhost:8191/v1")
-    }
+    val flareSolverrUrl: Preference<String> = preferenceStore.getString("flare_solverr_url", "http://localhost:8191/v1")
     // <-- TLMR
 
-    fun dohProvider(): Preference<Int> {
-        return preferenceStore.getInt("doh_provider", -1)
-    }
+    val dohProvider: Preference<Int> = preferenceStore.getInt("doh_provider", -1)
 
-    fun dohCustomUrl(): Preference<String> {
-        return preferenceStore.getString("doh_custom_url", "")
-    }
+    val dohCustomUrl: Preference<String> = preferenceStore.getString("doh_custom_url", "")
 
-    fun dohCustomBootstrap(): Preference<String> {
-        return preferenceStore.getString("doh_custom_bootstrap", "")
-    }
+    val dohCustomBootstrap: Preference<String> = preferenceStore.getString("doh_custom_bootstrap", "")
 
-    fun defaultUserAgent(): Preference<String> {
-        return preferenceStore.getString(
-            "default_user_agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:136.0) Gecko/20100101 Firefox/136.0",
-        )
-    }
+    val defaultUserAgent: Preference<String> = preferenceStore.getString(
+        "default_user_agent",
+        "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36",
+    )
+
+    fun verboseLogging() = verboseLogging
+
+    fun enableFlareSolverr() = enableFlareSolverr
+
+    fun flareSolverrUrl() = flareSolverrUrl
+
+    fun dohProvider() = dohProvider
+
+    fun dohCustomUrl() = dohCustomUrl
+
+    fun dohCustomBootstrap() = dohCustomBootstrap
+
+    fun defaultUserAgent() = defaultUserAgent
 }

@@ -146,7 +146,7 @@
     <string name="enable_auto_play">Otomatis memutar menyala</string>
     <string name="disable_auto_play">Otomatis memutar mati</string>
     <string name="player_aniskip_dontskip">Jangan di skip</string>
-    <string name="player_aniskip_dontskip_toast">Melewatkan %s dalam %d detik</string>
+    <string name="player_aniskip_dontskip_toast">Melewatkan %1$s dalam %2$d detik</string>
     <string name="player_aniskip_skip">%s lewati</string>
     <string name="no_next_episode">episode selanjutnya tidak ditemukan!</string>
     <string name="no_prev_episode">Episode sebelumnya tidak ditemukan!</string>
@@ -194,7 +194,7 @@
     <string name="player_sheets_filters_hue">Hue</string>
     <string name="player_sheets_filters_warning">Beberapa filter kemungkinan tidak bekerja pada driver video saat ini</string>
     <string name="player_sheets_add_ext_audio">Tambahkan trek audio eksternal</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">Lebih lanjut</string>
     <string name="player_hwdec_mode">Pengaturan standar mode decoding hardware</string>
     <string name="pref_audio_channels">Saluran audio</string>

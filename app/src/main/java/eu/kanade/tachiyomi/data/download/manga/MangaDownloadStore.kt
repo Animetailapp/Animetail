@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.core.content.edit
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.source.online.HttpSource
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import tachiyomi.domain.entries.manga.interactor.GetManga
@@ -54,7 +53,7 @@ class MangaDownloadStore(
         return download.chapter.id.toString()
     }
 
-    fun restore(): List<MangaDownload> {
+    suspend fun restore(): List<MangaDownload> {
         val objs = preferences.all
             .mapNotNull { it.value as? String }
             .mapNotNull { deserialize(it) }
@@ -65,10 +64,10 @@ class MangaDownloadStore(
             val cachedManga = mutableMapOf<Long, Manga?>()
             for ((mangaId, chapterId) in objs) {
                 val manga = cachedManga.getOrPut(mangaId) {
-                    runBlocking { getManga.await(mangaId) }
+                    getManga.await(mangaId)
                 } ?: continue
                 val source = sourceManager.get(manga.source) as? HttpSource ?: continue
-                val chapter = runBlocking { getChapter.await(chapterId) } ?: continue
+                val chapter = getChapter.await(chapterId) ?: continue
                 downloads.add(MangaDownload(source, manga, chapter))
             }
         }
