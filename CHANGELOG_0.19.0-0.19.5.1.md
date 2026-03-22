@@ -24,42 +24,44 @@ Resumen de la serie 0.19.x
 ## Changelog completo por versión
 
 ### 0.19.2
-- Translations update from Hosted Weblate (#2639)
-- Migrated to the Android specific about libraries gradle plugin
-- Handle reader cutout setting with Insets to support Android 15+ (#2640)
-- Make reader edge-to-edge (#1908)
-- Fix reader tap zones triggering after scrolling was stopped by the user (#2518)
-- Update Suwayomi tracker to use GraphQL API instead of REST API (#2585)
-- Added proper multi window support in WebView (#2584)
-- Add option to customize concurrent downloads, increase page concurrency (#2637)
-- Add subtitle support to slider preference and general cleanup (#2635)
-- Fix migration "Attempt to invoke virtual method" crash (#2632)
-- (varias actualizaciones de dependencias y traducciones)
+### ✨ 0.19.2 — Novedades y arreglos destacados
+- Nuevas opciones de concurrencia para descargas; por defecto se incrementó el número de descargas paralelas de páginas.
+- Mejor soporte multi-ventana en WebView y mejoras en el spoofing del header `X-Requested-With`.
+- Mejoras en lector: edge-to-edge, correcciones de zonas táctiles y soporte para recorte en Android 15+.
+- Correcciones de migraciones y varios arreglos de estabilidad (incluye fixes en migraciones y errores de scrollbar/animator).
+- Actualizaciones masivas de dependencias y traducciones.
+
+Lista resumida:
+- Personalización del número de descargas concurrentes.
+- Soporte multi-ventana en WebView.
+- Arreglos en la UI del lector y corrección de errores de migración.
 
 ### 0.19.3
-- Fix extra padding appearing in reader after user interactions (#2669)
-- Improve WebView multi-window UX (#2662)
-- Fix long strip reader not scrolling on consecutive taps (#2650)
-- Fix WebView crash introduced in v0.19.2 (#2649)
-- (varias actualizaciones de dependencias y traducciones)
+### ✨ 0.19.3 — Mejoras y correcciones
+- Mejoras adicionales en WebView multi-ventana y estabilidad.
+- Reversión de un cambio que rompía el comportamiento de zonas táctiles en el lector; fixes relacionados con padding y scroll en lectores long-strip.
+- Actualizaciones de dependencias y correcciones menores.
 
 ### 0.19.4
-- Fix extension install/update stuck at pending (#3000)
-- Add all pages of adjacent chapters in the UI instead of only the first or last three (#2995)
-- Optimize tracked library filter (#2977)
-- Fix cache invalidation and other migration fixes
-- (varias actualizaciones de dependencias)
+### ✨ 0.19.4 — Nuevas características y mejoras
+- Funcionalidad: eliminación automática de descargas en Suwayomi tras leer, configurable por extensión.
+- Añadido soporte para mostrar autores/artistas en resultados MAL; filtros nuevos en Updates; opción para añadir páginas adyacentes completas al descargar capítulos.
+- Mejoras de rendimiento y optimizaciones en búsquedas y filtros de biblioteca.
+- Múltiples correcciones de estabilidad y migraciones.
 
 ### 0.19.5.0
-- Actualizaciones automáticas de dependencias y acciones de GitHub
-- Correcciones en WebView, migraciones, y mejoras en la gestión de descargas
+### ✨ 0.19.5 — Cambios principales
+- Correcciones de rendimiento y regresiones detectadas en 0.19.4.
+- Fixes en detección de duplicados y en integración con MangaUpdates/servicios remotos.
+- Mejoras en la robustez de WebView y acciones/CI.
 
 ### 0.19.5.1
-- Bumped to 0.19.5.1 (versión de app en `app/build.gradle.kts`)
+### ✨ 0.19.5.1 — Release del fork (parche)
+- Bumped a `0.19.5.1` en `app/build.gradle.kts`.
 - Correcciones específicas del fork:
-	- Corrección de la condición del workflow para crear releases en Animetail
-	- Manejo de campos nullables en DTO MAL (`MALAuthorNode`) — `first_name`/`last_name` por defecto vacíos
-	- Limpiezas y arreglos de warnings de Kotlin/Compose y ajustes i18n
+  - Corrección de la condición del workflow para crear releases en Animetail.
+  - Manejo de campos nullables en DTO `MALAuthorNode` (`first_name`/`last_name` ahora por defecto vacíos).
+  - Limpiezas y arreglos de warnings de Kotlin/Compose, y correcciones i18n.
 
 ---
 
