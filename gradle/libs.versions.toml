@@ -144,7 +144,7 @@ injekt = { module = "com.github.mihonapp:injekt", version.ref = "injekt" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 junrar = { module = "com.github.junrar:junrar", version = "7.5.5" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit" }
 kotest-assertions = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest-assertions" }
 kotlin-compose-compiler-gradle = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin-gradle" }
 kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-gradle" }
