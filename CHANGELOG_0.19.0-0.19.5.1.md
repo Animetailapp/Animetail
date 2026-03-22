@@ -25,9 +25,15 @@ Estas notas están estructuradas al estilo de Mihon: por versión, con una visi�
 ### New features
 - Mejoras en el reader para hacer más fiables los reintentos de carga de imagen.
 
+- feat: Add network stream player — PR #346 by @Dark25 — merged 3 days ago. Revisión requerida: 1. https://github.com/Animetailapp/Animetail/pull/346
+- feat: Add option to hide episode/chapter timestamps — PR #345 by @Dark25 — merged 3 days ago. Revisión requerida. https://github.com/Animetailapp/Animetail/pull/345
+
 ### Improvements
 - Ajustes en dependencias y en el flujo de publicación.
 - Limpieza de catálogos de versiones y propiedades de preferencias.
+
+- perf(download): Increase concurrent page and chapter downloads — PR #356 by @mklive — merged last month. Revisión requerida: 3. https://github.com/Animetailapp/Animetail/pull/356
+- Handle popups properly as separate WebView instances — PR #355 by @mklive — merged last month. Revisión requerida: 4 — responsable: @Dark25. https://github.com/Animetailapp/Animetail/pull/355
 
 ### Fixes
 - Corrección de regresión de rendimiento introducida en 0.19.4.
