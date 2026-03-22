@@ -16,6 +16,7 @@ kotlin {
                 api(libs.injekt)
                 api(libs.rxJava)
                 api(libs.jsoup)
+                api(libs.re2j)
                 // TAIL
                 api(projects.i18nTail)
                 // TAIL

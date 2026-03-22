@@ -10,6 +10,7 @@ android {
 
 dependencies {
     implementation(libs.jsoup)
+    implementation(libs.re2j)
     implementation(libs.archive)
     implementation(libs.unifile)
 }

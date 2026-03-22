@@ -109,6 +109,10 @@
 -dontwarn org.ietf.jgss.GSSName
 -dontwarn org.ietf.jgss.Oid
 
+# Optional OEM WindowManager extension APIs accessed reflectively by androidx.window
+-dontwarn androidx.window.extensions.**
+-dontwarn androidx.window.sidecar.**
+
 # Apache Commons Compress
 -keep class * extends org.apache.commons.compress.archivers.zip.ZipExtraField { <init>(); }
 

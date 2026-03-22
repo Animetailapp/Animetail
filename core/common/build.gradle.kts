@@ -48,6 +48,7 @@ dependencies {
     api(libs.androidx.preference)
 
     implementation(libs.jsoup)
+    implementation(libs.re2j)
 
     // Sort
     implementation(libs.natural.comparator)

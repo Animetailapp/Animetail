@@ -251,6 +251,7 @@ dependencies {
 
     // HTML parser
     implementation(libs.jsoup)
+    implementation(libs.re2j)
 
     // Disk
     implementation(libs.diskLruCache)
