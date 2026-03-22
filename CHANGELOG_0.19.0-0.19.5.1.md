@@ -89,12 +89,19 @@ Resumen de la serie 0.19.x
 - @AntsyLich, @leodyversemilla07, y colaboradores.
 
 ### ✨ 0.19.5.1 — Release del fork (parche)
-- Versión del fork con correcciones puntuales y ajustes internos.
-- Cambios principales:
   - Bumped a `0.19.5.1` en `app/build.gradle.kts`.
   - Corrección de condición en workflow `build_push.yml` para que las releases por tag se creen correctamente en Animetail.
   - Fix en DTO `MALAuthorNode` para evitar fallos de serialización cuando `first_name`/`last_name` faltan.
   - Limpiezas de warnings, ajustes i18n, y pequeñas mejoras locales.
+
+### Cambios implementados en este repositorio durante la sesión
+- Actualizado el guard del workflow de release: [.github/workflows/build_push.yml](.github/workflows/build_push.yml) — se corrigió la condición `github.repository` para que coincida con `Animetailapp/Animetail` y las releases por tag ya no se omitan.
+- Ajuste en DTO MAL para evitar crashes: [app/src/main/java/eu/kanade/tachiyomi/data/track/myanimelist/dto/MALManga.kt](app/src/main/java/eu/kanade/tachiyomi/data/track/myanimelist/dto/MALManga.kt) — `MALAuthorNode` ahora tiene valores por defecto para `firstName`/`lastName`.
+- Bumped de versión local: [app/build.gradle.kts](app/build.gradle.kts) a `0.19.5.1`.
+- Creación y expansión del changelog: [CHANGELOG_0.19.0-0.19.5.1.md](CHANGELOG_0.19.0-0.19.5.1.md) (este archivo), con notas estilo Mihon y bullets traducidos al español.
+- Limpiezas y correcciones menores en múltiples módulos: `app`, `core`, `source-api`, `source-local`, `domain`, `i18n` — correcciones de warnings, ajustes en recursos y fixes de migraciones aplicados durante la sesión.
+- Commits aplicados en `master` con los cambios mencionados (workflow, DTO, changelog, y limpiezas diversas).
+
 
 ---
 
