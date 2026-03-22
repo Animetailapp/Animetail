@@ -169,7 +169,9 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet) : BaseMPVView(c
     }
 
     fun onKey(event: KeyEvent): Boolean {
-        if ((event.action != KeyEvent.ACTION_DOWN && event.action != KeyEvent.ACTION_UP) || KeyEvent.isModifierKey(event.keyCode)) {
+        if ((event.action != KeyEvent.ACTION_DOWN && event.action != KeyEvent.ACTION_UP) ||
+            KeyEvent.isModifierKey(event.keyCode)
+        ) {
             return false
         }
 
