@@ -24,9 +24,9 @@ data class MALManga(
 @Serializable
 data class MALAuthorNode(
     @SerialName("first_name")
-    val firstName: String,
+    val firstName: String = "",
     @SerialName("last_name")
-    val lastName: String,
+    val lastName: String = "",
 ) {
     fun getFullName(): String? = "$firstName $lastName".trim().ifBlank { null }
 }
