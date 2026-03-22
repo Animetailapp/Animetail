@@ -31,9 +31,7 @@ import androidx.compose.material.icons.outlined.BookmarkRemove
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.Input
 import androidx.compose.material.icons.outlined.NewLabel
-import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.RemoveDone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -393,7 +391,7 @@ fun LibraryBottomActionMenu(
                         icon = Icons.Outlined.Delete,
                         toConfirm = confirm[5],
                         onLongClick = { onLongClickItem(5) },
-                        onClick = onClickResetInfo!!,
+                        onClick = onClickResetInfo,
                     )
                 }
                 // SY <--

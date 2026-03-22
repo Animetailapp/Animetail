@@ -42,7 +42,7 @@ object PlayerSettingsAudioScreen : SearchableSettings {
                     val langs = pref.split(",").filter(String::isNotEmpty).map(String::trim)
                     langs.forEach {
                         try {
-                            val locale = Locale(it)
+                            val locale = Locale.forLanguageTag(it)
                             if (locale.isO3Language == locale.language &&
                                 locale.language == locale.getDisplayName(Locale.ENGLISH)
                             ) {
@@ -59,7 +59,7 @@ object PlayerSettingsAudioScreen : SearchableSettings {
                     val langs = pref.split(",").filter(String::isNotEmpty).map(String::trim)
                     langs.forEach {
                         try {
-                            val locale = Locale(it)
+                            val locale = Locale.forLanguageTag(it)
                             if (locale.isO3Language == locale.language &&
                                 locale.language == locale.getDisplayName(Locale.ENGLISH)
                             ) {

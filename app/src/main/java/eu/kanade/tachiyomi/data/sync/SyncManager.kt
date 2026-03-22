@@ -166,7 +166,7 @@ class SyncManager(
         }
 
         // Stop the sync early if the remote backup is null or empty
-        if (remoteBackup.backupManga?.size == 0 && remoteBackup.backupAnime?.size == 0) {
+        if (remoteBackup.backupManga.size == 0 && remoteBackup.backupAnime.size == 0) {
             notifier.showSyncError("No data found on remote server.")
             return
         }

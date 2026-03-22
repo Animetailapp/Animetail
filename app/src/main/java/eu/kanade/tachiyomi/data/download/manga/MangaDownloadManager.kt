@@ -4,6 +4,7 @@ import android.content.Context
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.model.Page
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.drop
@@ -27,6 +28,7 @@ import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+@OptIn(DelicateCoroutinesApi::class)
 class MangaDownloadManager(
     private val context: Context,
     private val provider: MangaDownloadProvider = Injekt.get(),

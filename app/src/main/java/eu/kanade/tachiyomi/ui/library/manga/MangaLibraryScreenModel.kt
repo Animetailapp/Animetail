@@ -855,7 +855,7 @@ class MangaLibraryScreenModel(
                     status.int
                 }.mapKeys { (id) ->
                     Category(
-                        id = id.toLong(),
+                        id = id,
                         name = TrackStatus.entries
                             .find { it.int == id }
                             .let { it ?: TrackStatus.OTHER }

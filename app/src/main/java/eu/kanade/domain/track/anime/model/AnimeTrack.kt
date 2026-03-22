@@ -35,7 +35,7 @@ fun DbAnimeTrack.toDomainTrack(idRequired: Boolean = true): AnimeTrack? {
     return AnimeTrack(
         id = trackId,
         animeId = anime_id,
-        trackerId = tracker_id.toLong(),
+        trackerId = tracker_id,
         remoteId = remote_id,
         libraryId = library_id,
         title = title,

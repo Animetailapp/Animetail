@@ -341,7 +341,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                     val item = castArr.getJSONObject(i)
                     val name = item.optString("name")
                     val character = item.optString("character").ifEmpty { null }
-                    var image: String? = item.optString("profile_path", null)
+                    var image = item.optString("profile_path").takeIf { it.isNotBlank() }
                     if (!image.isNullOrBlank()) image = TmdbApi.IMAGE_BASE + image
                     credits.add(Credit(name = name, role = "Cast", character = character, image_url = image))
                 }
@@ -353,7 +353,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                     val item = crewArr.getJSONObject(i)
                     val name = item.optString("name")
                     val job = item.optString("job").ifEmpty { null }
-                    var image: String? = item.optString("profile_path", null)
+                    var image = item.optString("profile_path").takeIf { it.isNotBlank() }
                     if (!image.isNullOrBlank()) image = TmdbApi.IMAGE_BASE + image
                     credits.add(Credit(name = name, role = job, image_url = image))
                 }

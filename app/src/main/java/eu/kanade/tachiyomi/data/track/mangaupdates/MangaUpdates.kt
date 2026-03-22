@@ -110,7 +110,7 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
 
     override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata? {
         val series = api.getSeries(track)
-        return series?.let {
+        return series.let {
             TrackMangaMetadata(
                 it.seriesId,
                 it.title?.htmlDecode(),

@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.util.size
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.drop
@@ -36,6 +37,7 @@ import uy.kohesive.injekt.api.get
  * and retrieved through dependency injection. You can use this class to queue new episodes or query
  * downloaded episodes.
  */
+@OptIn(DelicateCoroutinesApi::class)
 class AnimeDownloadManager(
     private val context: Context,
     private val storageManager: StorageManager = Injekt.get(),

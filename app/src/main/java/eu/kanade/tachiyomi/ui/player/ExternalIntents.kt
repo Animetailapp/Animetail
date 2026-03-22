@@ -522,7 +522,7 @@ class ExternalIntents {
                 ),
             )
             if (trackPreferences.autoUpdateTrack().get() && currEp.seen) {
-                updateTrackEpisodeSeen(currEp.episodeNumber.toDouble(), anime)
+                updateTrackEpisodeSeen(currEp.episodeNumber, anime)
             }
             if (seen) {
                 deleteEpisodeIfNeeded(currentEpisode, anime)

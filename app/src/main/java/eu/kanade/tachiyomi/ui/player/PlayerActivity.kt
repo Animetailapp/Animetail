@@ -1211,7 +1211,7 @@ class PlayerActivity : BaseActivity() {
             launchIO {
                 TorrentServerService.start()
                 TorrentServerService.wait(10)
-                torrentLinkHandler(video.videoUrl!!, video.quality)
+                torrentLinkHandler(video.videoUrl, video.videoTitle)
             }
         } else {
             val videoOptions = video.mpvArgs.joinToString(",") { (option, value) ->
@@ -1221,7 +1221,7 @@ class PlayerActivity : BaseActivity() {
             MPVLib.command(
                 arrayOf(
                     "loadfile",
-                    parseVideoUrl(video?.videoUrl),
+                    parseVideoUrl(video.videoUrl),
                     "replace",
                     "0",
                     videoOptions,

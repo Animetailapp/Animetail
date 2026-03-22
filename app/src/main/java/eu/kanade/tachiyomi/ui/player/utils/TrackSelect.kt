@@ -32,7 +32,7 @@ class TrackSelect(
             ""
         }.split(",").filter(String::isNotEmpty).map(String::trim)
 
-        val locales = prefLangs.map(::Locale).ifEmpty {
+        val locales = prefLangs.map(Locale::forLanguageTag).ifEmpty {
             listOf(LocaleListCompat.getDefault()[0]!!)
         }
 
