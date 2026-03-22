@@ -111,7 +111,7 @@
     <string name="enable_auto_play">ஆட்டோ-பிளே இயக்கத்தில் உள்ளது</string>
     <string name="disable_auto_play">ஆட்டோ-பிளே முடக்கப்பட்டுள்ளது</string>
     <string name="player_aniskip_dontskip">தவிர்க்க வேண்டாம்</string>
-    <string name="player_aniskip_dontskip_toast">%s ஐ %d வினாடிகளில் தவிர்க்கவும்</string>
+    <string name="player_aniskip_dontskip_toast">%1$s ஐ %2$d வினாடிகளில் தவிர்க்கவும்</string>
     <string name="player_aniskip_skip">%s தவிர்க்கப்பட்டன</string>
     <string name="no_next_episode">அடுத்த அத்தியாயம் கிடைக்கவில்லை!</string>
     <string name="player_hwdec_mode">வன்பொருள் டிகோடிங் பயன்முறை</string>
@@ -201,7 +201,7 @@
     <string name="pref_anime_library_update_categories_details">விலக்கப்பட்ட வகைகளில் அனிம் சேர்க்கப்பட்ட வகைகளில் இருந்தாலும் அவை புதுப்பிக்கப்படாது.</string>
     <string name="unofficial_extension_message_aniyomi">இந்த நீட்டிப்பு அதிகாரப்பூர்வ பட்டியலிலிருந்து அல்ல.</string>
     <string name="unofficial_anime_extension_message">இந்த நீட்டிப்பு அதிகாரப்பூர்வ பட்டியலிலிருந்து அல்ல.</string>
-    <string name="episode_download_progress">%1$d %%</string>
+    <string name="episode_download_progress">%1$d%%</string>
     <string name="pref_remove_exclude_categories_manga">விலக்கப்பட்ட மங்கா வகைகள்</string>
     <string name="pref_remove_exclude_categories_anime">விலக்கப்பட்ட அனிம் வகைகள்</string>
     <string name="pref_category_external_downloader">வெளிப்புற பதிவிறக்குபவர்</string>
@@ -233,7 +233,7 @@
     <string name="snack_add_to_manga_library">நூலகத்தில் மங்காவைச் சேர்க்கவா?</string>
     <string name="snack_add_to_anime_library">நூலகத்தில் அனிம் சேர்க்கவா?</string>
     <string name="display_mode_episode">எபிசோட் %1$s</string>
-    <string name="episode_downloading_progress">பதிவிறக்குதல் (%d %%)</string>
+    <string name="episode_downloading_progress">பதிவிறக்குதல் (%1$d%%)</string>
     <string name="download_error">பிழை</string>
     <string name="download_paused">இடைநிறுத்தப்பட்டது</string>
     <string name="show_episode_number">அத்தியாயம் எண்</string>
@@ -255,7 +255,7 @@
     <string name="share_screenshot_info">%1$s: %2$s, %3$s</string>
     <string name="episode_progress">முன்னேற்றம்: %1$s/ %2$s</string>
     <string name="episode_progress_no_total">முன்னேற்றம்: %1$s</string>
-    <string name="recent_anime_time">ஈ.பி. %1 $ C - %$ 2 s</string>
+    <string name="recent_anime_time">ஈ.பி. %1$s - %2$s</string>
     <string name="video_list_empty_error">வீடியோ எதுவும் கிடைக்கவில்லை</string>
     <string name="notification_new_episodes">புதிய அத்தியாயங்கள் காணப்பட்டன</string>
     <string name="information_no_recent_anime">அண்மைக் காலத்தில் எதுவும் பார்க்கவில்லை</string>

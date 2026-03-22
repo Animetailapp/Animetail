@@ -242,7 +242,7 @@
     <string name="enable_auto_play">Auto-play is on</string>
     <string name="disable_auto_play">Auto-play is off</string>
     <string name="player_aniskip_dontskip">Don\'t skip</string>
-    <string name="player_aniskip_dontskip_toast">Skipping %s in %d seconds</string>
+    <string name="player_aniskip_dontskip_toast">Skipping %1$s in %2$d seconds</string>
     <string name="player_aniskip_skip">%s skipped</string>
     <!-- Errors -->
     <string name="no_next_episode">Next Episode not found!</string>
@@ -253,9 +253,9 @@
     <string name="select_hoster_from_empty_list">Hoster selected from empty list</string>
     <!-- Sheets -->
     <string name="player_sheets_delay_set_as_default">Set as default</string>
-    <string name="player_sheets_track_title_w_lang" translatable="false">#%d: %s (%s)</string>
-    <string name="player_sheets_track_title_wo_lang" translatable="false">#%d: %s</string>
-    <string name="player_sheets_track_lang_wo_title" translatable="false">#%d: %s</string>
+    <string name="player_sheets_track_title_w_lang" translatable="false">#%1$d: %2$s (%3$s)</string>
+    <string name="player_sheets_track_title_wo_lang" translatable="false">#%1$d: %2$s</string>
+    <string name="player_sheets_track_lang_wo_title" translatable="false">#%1$d: %2$s</string>
     <string name="player_sheets_track_delay">Delay</string>
     <string name="player_sheets_track_palette">Palette</string>
     <!-- Sheets - Audio delay -->
@@ -315,7 +315,7 @@
     <string name="player_hoster_failed">Failed to load videos</string>
     <string name="player_sheets_qualities_title">Qualities</string>
     <!-- Sheets - Decoders -->
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <!-- Sheets - More Sheet -->
     <string name="player_sheets_more_title">More</string>
     <string name="player_hwdec_mode">Hardware decoding mode</string>
@@ -325,7 +325,7 @@
     <string name="player_sheets_stats_page_chip">Page %d</string>
     <string name="player_sheets_custom_buttons_title">Custom buttons</string>
     <string name="player_seek_n_seconds">%d seconds</string>
-    <string name="player_gesture_seek_indicator" translatable="false">%c%s\n[%s]</string>
+    <string name="player_gesture_seek_indicator" translatable="false">%1$c%2$s\n[%3$s]</string>
     <string name="timer_title">Sleep Timer</string>
     <string name="timer_remaining">%s remaining</string>
     <string name="timer_picker_enter_timer">Enter duration</string>

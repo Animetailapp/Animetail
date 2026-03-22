@@ -145,7 +145,7 @@
     <string name="enable_auto_play">Reproducción automática activada</string>
     <string name="disable_auto_play">Reproducción automática desactivada</string>
     <string name="player_aniskip_dontskip">No te lo saltes</string>
-    <string name="player_aniskip_dontskip_toast">Omitiendo %s en %d segundos</string>
+    <string name="player_aniskip_dontskip_toast">Omitiendo %1$s en %2$d segundos</string>
     <string name="player_aniskip_skip">%s omitidos</string>
     <string name="no_next_episode">¡Próximo episodio no encontrado!</string>
     <string name="no_prev_episode">Episodio anterior no encontrado!</string>
@@ -471,7 +471,7 @@
     <string name="player_hoster_tap_to_load">Toca para cargar vídeos</string>
     <string name="player_hoster_failed">Error al cargar videos</string>
     <string name="player_sheets_qualities_title">Calidades</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">Más</string>
     <string name="pref_audio_channels">Canales de audio</string>
     <string name="player_sheets_stats_page_title">Pagina de estadísticas predeterminada</string>

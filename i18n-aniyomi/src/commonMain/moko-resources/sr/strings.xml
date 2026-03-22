@@ -130,7 +130,7 @@
     <string name="enable_auto_play">Аутоматска репродукција је укључена</string>
     <string name="disable_auto_play">Аутоматска репродукција је искључена</string>
     <string name="player_aniskip_dontskip">Не прескачи</string>
-    <string name="player_aniskip_dontskip_toast">Прескочи %s у %d секунди</string>
+    <string name="player_aniskip_dontskip_toast">Прескочи %1$s у %2$d секунди</string>
     <string name="player_aniskip_skip">%s прескочено</string>
     <string name="no_next_episode">Следећа епизода није пронађена!</string>
     <string name="no_prev_episode">Претходна епизода није пронађена!</string>
@@ -178,7 +178,7 @@
     <string name="player_sheets_filters_hue">Нијанса</string>
     <string name="player_sheets_filters_warning">Неки филтери можда неће радити на вашим тренутним видео драјверима</string>
     <string name="player_sheets_add_ext_audio">Додајте спољне аудио траке</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">Више</string>
     <string name="player_hwdec_mode">Режим хардверског декодирања</string>
     <string name="pref_audio_channels">Аудио канали</string>

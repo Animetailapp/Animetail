@@ -146,7 +146,7 @@
     <string name="enable_auto_play">Автовоспроизведение включено</string>
     <string name="disable_auto_play">Автовоспроизведение отключено</string>
     <string name="player_aniskip_dontskip">Не пропускать</string>
-    <string name="player_aniskip_dontskip_toast">%s: будет пропущено через %d сек</string>
+    <string name="player_aniskip_dontskip_toast">%1$s: будет пропущено через %2$d сек</string>
     <string name="player_aniskip_skip">%s: пропущено</string>
     <string name="no_next_episode">Следующий эпизод не найден!</string>
     <string name="no_prev_episode">Предыдущий эпизод не найден!</string>
@@ -194,7 +194,7 @@
     <string name="player_sheets_filters_hue">Оттенок</string>
     <string name="player_sheets_filters_warning">Некоторые фильтры могут не работать на вашем текущем видеодрайвере</string>
     <string name="player_sheets_add_ext_audio">Добавить внешние звуковые дорожки</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">Ещё</string>
     <string name="player_hwdec_mode">Режим аппаратного декодирования</string>
     <string name="pref_audio_channels">Звуковые каналы</string>

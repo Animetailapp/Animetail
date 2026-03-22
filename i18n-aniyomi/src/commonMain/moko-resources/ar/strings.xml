@@ -144,7 +144,7 @@
     <string name="enable_auto_play">التشغيل التلقائي مفعل</string>
     <string name="disable_auto_play">التشغيل التلقائي متوقف</string>
     <string name="player_aniskip_dontskip">لا تتخطى</string>
-    <string name="player_aniskip_dontskip_toast">تخطي %s خلال %d ثانية</string>
+    <string name="player_aniskip_dontskip_toast">تخطي %1$s خلال %2$d ثانية</string>
     <string name="player_aniskip_skip">تم تخطي %s</string>
     <string name="no_next_episode">الحلقة التالية غير موجودة!</string>
     <string name="no_prev_episode">الحلقة السابقة غير موجودة!</string>
@@ -192,7 +192,7 @@
     <string name="player_sheets_filters_hue">الصبغة</string>
     <string name="player_sheets_filters_warning">قد لا تعمل بعض الفلاتر على برنامج تشغيل الفيديو الحالي لديك</string>
     <string name="player_sheets_add_ext_audio">إضافة صوت خارجي</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">المزيد</string>
     <string name="player_hwdec_mode">تعيين وضع فك تشفير الأجهزة الافتراضي</string>
     <string name="pref_audio_channels">قنوات الصوت</string>

@@ -148,7 +148,7 @@
     <string name="enable_auto_play">Otomatik oynatma açık</string>
     <string name="disable_auto_play">Otomatik oynatma kapalı</string>
     <string name="player_aniskip_dontskip">Atlama</string>
-    <string name="player_aniskip_dontskip_toast">%s, %d saniye içinde atlanacak</string>
+    <string name="player_aniskip_dontskip_toast">%1$s, %2$d saniye içinde atlanacak</string>
     <string name="player_aniskip_skip">%s atlandı</string>
     <string name="no_next_episode">Sonraki bölüm bulunamadı!</string>
     <string name="no_prev_episode">Önceki Bölüm bulunamadı!</string>
@@ -202,7 +202,7 @@
     <string name="player_sheets_add_ext_audio">Harici ses kaynakları ekle</string>
     <string name="player_hoster_tap_to_load">Videoları yüklemek için dokunun</string>
     <string name="player_hoster_failed">Videolar yüklenemedi</string>
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
+    <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <string name="player_sheets_more_title">Daha fazla</string>
     <string name="player_hwdec_mode">Donanım kod çözme modu</string>
     <string name="pref_audio_channels">Ses kanalları</string>
