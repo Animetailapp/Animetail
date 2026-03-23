@@ -1,6 +1,6 @@
 package mihon.data.repository.anime
 
-import android.database.sqlite.SQLiteException
+import android.database.SQLException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import mihon.domain.extensionrepo.anime.repository.AnimeExtensionRepoRepository
@@ -42,7 +42,7 @@ class AnimeExtensionRepoRepositoryImpl(
     ) {
         try {
             handler.await { extension_reposQueries.insert(baseUrl, name, shortName, website, signingKeyFingerprint) }
-        } catch (ex: SQLiteException) {
+        } catch (ex: SQLException) {
             throw SaveExtensionRepoException(ex)
         }
     }
@@ -56,7 +56,7 @@ class AnimeExtensionRepoRepositoryImpl(
     ) {
         try {
             handler.await { extension_reposQueries.upsert(baseUrl, name, shortName, website, signingKeyFingerprint) }
-        } catch (ex: SQLiteException) {
+        } catch (ex: SQLException) {
             throw SaveExtensionRepoException(ex)
         }
     }

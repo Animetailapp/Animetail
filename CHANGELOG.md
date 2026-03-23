@@ -17,6 +17,9 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 ### Improved
 - Show informative error when trying to add unapproved titles to list on MAL ([@MajorTanya](https://github.com/MajorTanya)) ([#3155](https://github.com/mihonapp/mihon/pull/3155))
 
+### Fixed
+- Fix app crashing when trying to add extension repo with existing signature ([@AntsyLich](https://github.com/AntsyLich))
+
 ## [v0.19.5] - 2026-03-20
 ### Changed
 - Retry in reader now redownloads image ([@AntsyLich](https://github.com/AntsyLich)) ([#3089](https://github.com/mihonapp/mihon/pull/3089))
