@@ -89,7 +89,11 @@ fun AnimeHistoryItem(
             var totalSeconds: Long? by remember { mutableStateOf(null) }
             LaunchedEffect(history.episodeId) {
                 val getEpisode: GetEpisode = Injekt.get()
-                val ep = try { getEpisode.await(history.episodeId) } catch (e: Exception) { null }
+                val ep = try {
+                    getEpisode.await(history.episodeId)
+                } catch (e: Exception) {
+                    null
+                }
                 if (ep != null && !ep.seen && ep.lastSecondSeen > 0L) {
                     lastSecondSeen = ep.lastSecondSeen
                     totalSeconds = ep.totalSeconds
