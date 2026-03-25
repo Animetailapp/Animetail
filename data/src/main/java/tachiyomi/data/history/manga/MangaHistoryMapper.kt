@@ -28,6 +28,7 @@ object MangaHistoryMapper {
         isFavorite: Boolean,
         coverLastModified: Long,
         chapterNumber: Double,
+        lastPageRead: Long,
         readAt: Date?,
         readDuration: Long,
     ): MangaHistoryWithRelations = MangaHistoryWithRelations(
@@ -36,6 +37,7 @@ object MangaHistoryMapper {
         mangaId = mangaId,
         title = title,
         chapterNumber = chapterNumber,
+        lastPageRead = lastPageRead,
         readAt = readAt,
         readDuration = readDuration,
         coverData = MangaCover(
