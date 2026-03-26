@@ -5,7 +5,6 @@ plugins {
     alias(mihonx.plugins.spotless)
 
     alias(libs.plugins.kotlin.serialization)
-    id("com.github.ben-manes.versions")
 }
 
 kotlin {

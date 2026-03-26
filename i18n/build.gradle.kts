@@ -6,7 +6,6 @@ plugins {
     alias(mihonx.plugins.spotless)
 
     alias(libs.plugins.moko.resources)
-    id("com.github.ben-manes.versions")
 }
 
 kotlin {

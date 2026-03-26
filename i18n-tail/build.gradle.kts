@@ -1,45 +1,37 @@
 plugins {
-    id("mihon.library")
-    kotlin("multiplatform")
+    alias(mihonx.plugins.kotlin.multiplatform)
+    alias(mihonx.plugins.spotless)
     alias(libs.plugins.moko.resources)
-    id("com.github.ben-manes.versions")
 }
 
 kotlin {
-    androidTarget()
+    android {
+        namespace = "tachiyomi.i18n.tail"
+    }
 
-    applyDefaultHierarchyTemplate()
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
+    @Suppress("UnstableApiUsage")
+    dependencies {
+        api(libs.moko.resources)
+    }
 
     sourceSets {
         commonMain {
-            dependencies {
-                api(libs.moko.resources)
-            }
-        }
-    }
-}
-
-android {
-    namespace = "tachiyomi.i18n.tail"
-
-    sourceSets {
-        named("main") {
-            res.srcDir("src/commonMain/resources")
+            resources.srcDir("src/commonMain/resources")
         }
     }
 
     lint {
         disable.addAll(listOf("MissingTranslation", "ExtraTranslation"))
     }
+
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
 }
 
 multiplatformResources {
     resourcesClassName.set("TLMR")
     resourcesPackage.set("tachiyomi.i18n.tail")
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    compilerOptions.freeCompilerArgs.addAll(
-        "-Xexpect-actual-classes",
-    )
 }

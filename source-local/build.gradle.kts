@@ -20,6 +20,7 @@ kotlin {
         api(projects.i18nTail)
         // TAIL <--
         implementation(libs.unifile)
+        implementation(aniyomilibs.ffmpeg.kit)
     }
 
     sourceSets {
@@ -49,11 +50,5 @@ kotlin {
 android {
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-rules.pro")
-    }
-
-    dependencies {
-        // FFmpeg-kit
-        implementation(aniyomilibs.ffmpeg.kit)
     }
 }

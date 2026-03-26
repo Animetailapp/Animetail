@@ -10,7 +10,6 @@ plugins {
     alias(mihonx.plugins.spotless)
 
     alias(libs.plugins.aboutLibraries)
-    id("com.github.ben-manes.versions")
     alias(libs.plugins.kotlin.serialization)
 }
 

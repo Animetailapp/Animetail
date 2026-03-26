@@ -1,16 +1,3 @@
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url = uri("https://jitpack.io") }
-    }
-    dependencies {
-        classpath(libs.android.shortcut.gradle)
-        classpath(libs.google.services.gradle)
-        classpath(libs.gradleversionsx)
-    }
-}
-
 plugins {
     alias(libs.plugins.aboutLibraries) apply false
     alias(libs.plugins.android.application) apply false
