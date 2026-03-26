@@ -11,11 +11,16 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -23,15 +28,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import eu.kanade.presentation.entries.components.DotSeparatorText
 import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.util.formatEpisodeNumber
 import eu.kanade.tachiyomi.util.lang.toTimestampString
 import tachiyomi.domain.history.anime.model.AnimeHistoryWithRelations
+import tachiyomi.domain.items.episode.interactor.GetEpisode
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+import java.util.concurrent.TimeUnit
 
 private val HistoryItemHeight = 96.dp
 
@@ -73,19 +84,57 @@ fun AnimeHistoryItem(
                 style = textStyle,
             )
             val seenAt = remember { history.seenAt?.toTimestampString() ?: "" }
-            Text(
-                text = if (history.episodeNumber > -1) {
-                    stringResource(
-                        AYMR.strings.recent_anime_time,
-                        formatEpisodeNumber(history.episodeNumber),
-                        seenAt,
+
+            var lastSecondSeen: Long? by remember { mutableStateOf(null) }
+            var totalSeconds: Long? by remember { mutableStateOf(null) }
+            LaunchedEffect(history.episodeId) {
+                val getEpisode: GetEpisode = Injekt.get()
+                val ep = try {
+                    getEpisode.await(history.episodeId)
+                } catch (e: Exception) {
+                    null
+                }
+                if (ep != null && !ep.seen && ep.lastSecondSeen > 0L) {
+                    lastSecondSeen = ep.lastSecondSeen
+                    totalSeconds = ep.totalSeconds
+                }
+            }
+
+            val watchProgress: String? = lastSecondSeen?.let { last ->
+                stringResource(
+                    AYMR.strings.episode_progress,
+                    formatProgress(last),
+                    formatProgress(totalSeconds ?: 0L),
+                )
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (history.episodeNumber > -1) {
+                        stringResource(
+                            AYMR.strings.recent_anime_time,
+                            formatEpisodeNumber(history.episodeNumber),
+                            seenAt,
+                        )
+                    } else {
+                        seenAt
+                    },
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = textStyle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                if (watchProgress != null) {
+                    DotSeparatorText()
+                    Text(
+                        text = watchProgress,
+                        maxLines = 1,
+                        color = LocalContentColor.current.copy(alpha = DISABLED_ALPHA),
+                        overflow = TextOverflow.Ellipsis,
                     )
-                } else {
-                    seenAt
-                },
-                modifier = Modifier.padding(top = 4.dp),
-                style = textStyle,
-            )
+                }
+            }
         }
 
         if (!history.coverData.isAnimeFavorite) {
@@ -105,6 +154,26 @@ fun AnimeHistoryItem(
                 tint = MaterialTheme.colorScheme.onSurface,
             )
         }
+    }
+}
+
+private fun formatProgress(milliseconds: Long): String {
+    return if (milliseconds > 3600000L) {
+        String.format(
+            "%d:%02d:%02d",
+            TimeUnit.MILLISECONDS.toHours(milliseconds),
+            TimeUnit.MILLISECONDS.toMinutes(milliseconds) -
+                TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(milliseconds)),
+            TimeUnit.MILLISECONDS.toSeconds(milliseconds) -
+                TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(milliseconds)),
+        )
+    } else {
+        String.format(
+            "%d:%02d",
+            TimeUnit.MILLISECONDS.toMinutes(milliseconds),
+            TimeUnit.MILLISECONDS.toSeconds(milliseconds) -
+                TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(milliseconds)),
+        )
     }
 }
 
