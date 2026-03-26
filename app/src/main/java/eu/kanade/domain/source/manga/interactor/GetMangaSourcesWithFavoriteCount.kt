@@ -1,27 +1,28 @@
-package eu.kanade.domain.source.interactor
+package eu.kanade.domain.source.manga.interactor
 
+import eu.kanade.domain.source.interactor.SetMigrateSorting
 import eu.kanade.domain.source.service.SourcePreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import tachiyomi.core.common.util.lang.compareToWithCollator
-import tachiyomi.domain.source.model.Source
-import tachiyomi.domain.source.repository.SourceRepository
-import tachiyomi.source.local.isLocal
+import tachiyomi.domain.source.manga.model.Source
+import tachiyomi.domain.source.manga.repository.MangaSourceRepository
+import tachiyomi.source.local.entries.manga.LocalMangaSource
 import java.util.Collections
 
-class GetSourcesWithFavoriteCount(
-    private val repository: SourceRepository,
+class GetMangaSourcesWithFavoriteCount(
+    private val repository: MangaSourceRepository,
     private val preferences: SourcePreferences,
 ) {
 
     fun subscribe(): Flow<List<Pair<Source, Long>>> {
         return combine(
-            preferences.migrationSortingDirection.changes(),
-            preferences.migrationSortingMode.changes(),
-            repository.getSourcesWithFavoriteCount(),
+            preferences.migrationSortingDirection().changes(),
+            preferences.migrationSortingMode().changes(),
+            repository.getMangaSourcesWithFavoriteCount(),
         ) { direction, mode, list ->
             list
-                .filterNot { it.first.isLocal() }
+                .filterNot { it.first.id == LocalMangaSource.ID }
                 .sortedWith(sortFn(direction, mode))
         }
     }
@@ -39,6 +40,7 @@ class GetSourcesWithFavoriteCount(
                         else -> a.first.name.lowercase().compareToWithCollator(b.first.name.lowercase())
                     }
                 }
+
                 SetMigrateSorting.Mode.TOTAL -> {
                     when {
                         a.first.isStub && !b.first.isStub -> -1

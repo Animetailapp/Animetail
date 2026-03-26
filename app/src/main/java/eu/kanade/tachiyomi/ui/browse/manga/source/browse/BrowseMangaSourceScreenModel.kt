@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package eu.kanade.tachiyomi.ui.browse.source.browse
 
 import android.content.res.Configuration

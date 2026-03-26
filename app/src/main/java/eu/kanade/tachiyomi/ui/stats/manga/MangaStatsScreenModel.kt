@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.stats
+package eu.kanade.tachiyomi.ui.stats.manga
 
 import androidx.compose.ui.util.fastDistinctBy
 import androidx.compose.ui.util.fastFilter
@@ -7,7 +7,8 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.core.util.fastCountNot
 import eu.kanade.presentation.more.stats.StatsScreenState
 import eu.kanade.presentation.more.stats.data.StatsData
-import eu.kanade.tachiyomi.data.download.DownloadManager
+import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
+import eu.kanade.tachiyomi.data.track.MangaTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.model.SManga
 import kotlinx.coroutines.flow.update
@@ -19,22 +20,22 @@ import tachiyomi.domain.library.service.LibraryPreferences.Companion.MANGA_HAS_U
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.MANGA_NON_COMPLETED
 import tachiyomi.domain.library.service.LibraryPreferences.Companion.MANGA_NON_READ
 import tachiyomi.domain.manga.interactor.GetLibraryManga
-import tachiyomi.domain.track.interactor.GetTracks
-import tachiyomi.domain.track.model.Track
+import tachiyomi.domain.track.manga.interactor.GetMangaTracks
+import tachiyomi.domain.track.manga.model.MangaTrack
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class StatsScreenModel(
-    private val downloadManager: DownloadManager = Injekt.get(),
+class MangaStatsScreenModel(
+    private val downloadManager: MangaDownloadManager = Injekt.get(),
     private val getLibraryManga: GetLibraryManga = Injekt.get(),
     private val getTotalReadDuration: GetTotalReadDuration = Injekt.get(),
-    private val getTracks: GetTracks = Injekt.get(),
+    private val getTracks: GetMangaTracks = Injekt.get(),
     private val preferences: LibraryPreferences = Injekt.get(),
     private val trackerManager: TrackerManager = Injekt.get(),
 ) : StateScreenModel<StatsScreenState>(StatsScreenState.Loading) {
 
-    private val loggedInTrackers by lazy { trackerManager.loggedInTrackers() }
+    private val loggedInTrackers by lazy { trackerManager.loggedInTrackers().filter { it is MangaTracker } }
 
     init {
         screenModelScope.launchIO {
@@ -74,7 +75,7 @@ class StatsScreenModel(
             )
 
             mutableState.update {
-                StatsScreenState.Success(
+                StatsScreenState.SuccessManga(
                     overview = overviewStatData,
                     titles = titlesStatData,
                     chapters = chaptersStatData,
@@ -101,7 +102,7 @@ class StatsScreenModel(
             }
     }
 
-    private suspend fun getMangaTrackMap(libraryManga: List<LibraryManga>): Map<Long, List<Track>> {
+    private suspend fun getMangaTrackMap(libraryManga: List<LibraryManga>): Map<Long, List<MangaTrack>> {
         val loggedInTrackerIds = loggedInTrackers.map { it.id }.toHashSet()
         return libraryManga.associate { manga ->
             val tracks = getTracks.await(manga.id)
@@ -111,7 +112,7 @@ class StatsScreenModel(
         }
     }
 
-    private fun getScoredMangaTrackMap(mangaTrackMap: Map<Long, List<Track>>): Map<Long, List<Track>> {
+    private fun getScoredMangaTrackMap(mangaTrackMap: Map<Long, List<MangaTrack>>): Map<Long, List<MangaTrack>> {
         return mangaTrackMap.mapNotNull { (mangaId, tracks) ->
             val trackList = tracks.mapNotNull { track ->
                 track.takeIf { it.score > 0.0 }
@@ -121,7 +122,7 @@ class StatsScreenModel(
         }.toMap()
     }
 
-    private fun getTrackMeanScore(scoredMangaTrackMap: Map<Long, List<Track>>): Double {
+    private fun getTrackMeanScore(scoredMangaTrackMap: Map<Long, List<MangaTrack>>): Double {
         return scoredMangaTrackMap
             .map { (_, tracks) ->
                 tracks.map(::get10PointScore).average()
@@ -130,8 +131,8 @@ class StatsScreenModel(
             .average()
     }
 
-    private fun get10PointScore(track: Track): Double {
+    private fun get10PointScore(track: MangaTrack): Double {
         val service = trackerManager.get(track.trackerId)!!
-        return service.get10PointScore(track)
+        return service.mangaService.get10PointScore(track)
     }
 }

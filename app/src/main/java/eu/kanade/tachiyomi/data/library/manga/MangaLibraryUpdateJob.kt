@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package eu.kanade.tachiyomi.data.library
 
 import android.content.Context
@@ -282,10 +284,12 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                                             is NoChaptersException -> context.stringResource(
                                                 MR.strings.no_chapters_error,
                                             )
+
                                             // failedUpdates will already have the source, don't need to copy it into the message
                                             is SourceNotInstalledException -> context.stringResource(
                                                 MR.strings.loader_not_implemented_error,
                                             )
+
                                             else -> e.message
                                         }
                                         failedUpdates.add(manga to errorMessage)

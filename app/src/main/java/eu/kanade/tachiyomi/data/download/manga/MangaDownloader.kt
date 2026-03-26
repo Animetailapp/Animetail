@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package eu.kanade.tachiyomi.data.download
 
 import android.content.Context
@@ -454,9 +456,11 @@ class Downloader(
             // If the image is already downloaded, do nothing. Otherwise download from network
             val file = when {
                 imageFile != null -> imageFile
+
                 chapterCache.isImageInCache(
                     page.imageUrl!!,
                 ) -> copyImageFromCache(chapterCache.getImageFile(page.imageUrl!!), tmpDir, filename)
+
                 else -> downloadImage(page, download.source, tmpDir, filename)
             }
 
@@ -584,9 +588,12 @@ class Downloader(
             val fileName = it.name.orEmpty()
             when {
                 fileName in listOf(COMIC_INFO_FILE, NOMEDIA_FILE) -> false
+
                 fileName.endsWith(".tmp") -> false
+
                 // Only count the first split page and not the others
                 fileName.contains("__") && !fileName.endsWith("__001.jpg") -> false
+
                 else -> true
             }
         }

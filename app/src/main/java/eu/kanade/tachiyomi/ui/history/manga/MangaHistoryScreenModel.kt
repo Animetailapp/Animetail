@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package eu.kanade.tachiyomi.ui.history
 
 import androidx.compose.material3.SnackbarHostState
@@ -88,6 +90,7 @@ class HistoryScreenModel(
                 val afterDate = after?.item?.readAt?.time?.toLocalDate()
                 when {
                     beforeDate != afterDate && afterDate != null -> HistoryUiModel.Header(afterDate)
+
                     // Return null to avoid adding a separator between two items.
                     else -> null
                 }

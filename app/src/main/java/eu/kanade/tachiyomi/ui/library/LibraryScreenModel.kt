@@ -258,8 +258,8 @@ class LibraryScreenModel(
     private fun List<LibraryItem>.applyGrouping(
         categories: List<Category>,
         showSystemCategory: Boolean,
-    ): Map<Category, List</* LibraryItem */ Long>> {
-        val groupCache = mutableMapOf</* Category */ Long, MutableList</* LibraryItem */ Long>>()
+    ): Map<Category, List<Long>> {
+        val groupCache = mutableMapOf<Long, MutableList<Long>>()
         forEach { item ->
             item.libraryManga.categories.forEach { categoryId ->
                 groupCache.getOrPut(categoryId) { mutableListOf() }.add(item.id)
@@ -269,11 +269,11 @@ class LibraryScreenModel(
             .associateWith { groupCache[it.id]?.toList().orEmpty() }
     }
 
-    private fun Map<Category, List</* LibraryItem */ Long>>.applySort(
+    private fun Map<Category, List<Long>>.applySort(
         favoritesById: Map<Long, LibraryItem>,
         trackMap: Map<Long, List<Track>>,
         loggedInTrackerIds: Set<Long>,
-    ): Map<Category, List</* LibraryItem */ Long>> {
+    ): Map<Category, List<Long>> {
         val sortAlphabetically: (LibraryItem, LibraryItem) -> Int = { manga1, manga2 ->
             val title1 = manga1.libraryManga.manga.title.lowercase()
             val title2 = manga2.libraryManga.manga.title.lowercase()
@@ -286,6 +286,7 @@ class LibraryScreenModel(
             trackMap.mapValues { entry ->
                 when {
                     entry.value.isEmpty() -> null
+
                     else ->
                         entry.value
                             .mapNotNull { trackerMap[it.trackerId]?.get10PointScore(it) }
@@ -299,36 +300,48 @@ class LibraryScreenModel(
                 LibrarySort.Type.Alphabetical -> {
                     sortAlphabetically(manga1, manga2)
                 }
+
                 LibrarySort.Type.LastRead -> {
                     manga1.libraryManga.lastRead.compareTo(manga2.libraryManga.lastRead)
                 }
+
                 LibrarySort.Type.LastUpdate -> {
                     manga1.libraryManga.manga.lastUpdate.compareTo(manga2.libraryManga.manga.lastUpdate)
                 }
+
                 LibrarySort.Type.UnreadCount -> when {
                     // Ensure unread content comes first
                     manga1.libraryManga.unreadCount == manga2.libraryManga.unreadCount -> 0
+
                     manga1.libraryManga.unreadCount == 0L -> if (this.isAscending) 1 else -1
+
                     manga2.libraryManga.unreadCount == 0L -> if (this.isAscending) -1 else 1
+
                     else -> manga1.libraryManga.unreadCount.compareTo(manga2.libraryManga.unreadCount)
                 }
+
                 LibrarySort.Type.TotalChapters -> {
                     manga1.libraryManga.totalChapters.compareTo(manga2.libraryManga.totalChapters)
                 }
+
                 LibrarySort.Type.LatestChapter -> {
                     manga1.libraryManga.latestUpload.compareTo(manga2.libraryManga.latestUpload)
                 }
+
                 LibrarySort.Type.ChapterFetchDate -> {
                     manga1.libraryManga.chapterFetchedAt.compareTo(manga2.libraryManga.chapterFetchedAt)
                 }
+
                 LibrarySort.Type.DateAdded -> {
                     manga1.libraryManga.manga.dateAdded.compareTo(manga2.libraryManga.manga.dateAdded)
                 }
+
                 LibrarySort.Type.TrackerMean -> {
                     val item1Score = trackerScores[manga1.id] ?: defaultTrackerScoreSortValue
                     val item2Score = trackerScores[manga2.id] ?: defaultTrackerScoreSortValue
                     item1Score.compareTo(item2Score)
                 }
+
                 LibrarySort.Type.Random -> {
                     error("Why Are We Still Here? Just To Suffer?")
                 }
@@ -642,7 +655,9 @@ class LibraryScreenModel(
 
                 val selectionRange = when {
                     lastMangaIndex < curMangaIndex -> lastMangaIndex..curMangaIndex
+
                     curMangaIndex < lastMangaIndex -> curMangaIndex..lastMangaIndex
+
                     // We shouldn't reach this point
                     else -> return@mutate
                 }
@@ -754,7 +769,7 @@ class LibraryScreenModel(
         val showSystemCategory: Boolean = false,
         val categories: List<Category> = emptyList(),
         val favorites: List<LibraryItem> = emptyList(),
-        val tracksMap: Map</* Manga */ Long, List<Track>> = emptyMap(),
+        val tracksMap: Map<Long, List<Track>> = emptyMap(),
         val loggedInTrackerIds: Set<Long> = emptySet(),
     ) {
         val favoritesById by lazy { favorites.associateBy { it.id } }
@@ -765,7 +780,7 @@ class LibraryScreenModel(
         val isInitialized: Boolean = false,
         val isLoading: Boolean = true,
         val searchQuery: String? = null,
-        val selection: Set</* Manga */ Long> = setOf(),
+        val selection: Set<Long> = setOf(),
         val hasActiveFilters: Boolean = false,
         val showCategoryTabs: Boolean = false,
         val showMangaCount: Boolean = false,
@@ -773,7 +788,7 @@ class LibraryScreenModel(
         val dialog: Dialog? = null,
         val libraryData: LibraryData = LibraryData(),
         private val activeCategoryIndex: Int = 0,
-        private val groupedFavorites: Map<Category, List</* LibraryItem */ Long>> = emptyMap(),
+        private val groupedFavorites: Map<Category, List<Long>> = emptyMap(),
     ) {
         val displayedCategories: List<Category> = groupedFavorites.keys.toList()
 
@@ -816,7 +831,9 @@ class LibraryScreenModel(
             val title = if (showCategoryTabs) defaultTitle else categoryName
             val count = when {
                 !showMangaCount -> null
+
                 !showCategoryTabs -> getItemCountForCategory(category)
+
                 // Whole library count
                 else -> libraryData.favorites.size
             }

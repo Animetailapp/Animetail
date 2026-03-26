@@ -1,22 +1,22 @@
-package eu.kanade.domain.extension.interactor
+package eu.kanade.domain.extension.anime.interactor
 
-import eu.kanade.domain.extension.model.Extensions
+import eu.kanade.domain.extension.anime.model.AnimeExtensions
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.tachiyomi.extension.ExtensionManager
-import eu.kanade.tachiyomi.extension.model.Extension
+import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
+import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
-class GetExtensionsByType(
+class GetAnimeExtensionsByType(
     private val preferences: SourcePreferences,
-    private val extensionManager: ExtensionManager,
+    private val extensionManager: AnimeExtensionManager,
 ) {
 
-    fun subscribe(): Flow<Extensions> {
-        val showNsfwSources = preferences.showNsfwSource.get()
+    fun subscribe(): Flow<AnimeExtensions> {
+        val showNsfwSources = preferences.showNsfwSource().get()
 
         return combine(
-            preferences.enabledLanguages.changes(),
+            preferences.enabledLanguages().changes(),
             extensionManager.installedExtensionsFlow,
             extensionManager.untrustedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
@@ -24,7 +24,7 @@ class GetExtensionsByType(
             val (updates, installed) = _installed
                 .filter { (showNsfwSources || !it.isNsfw) }
                 .sortedWith(
-                    compareBy<Extension.Installed> { !it.isObsolete }
+                    compareBy<AnimeExtension.Installed> { !it.isObsolete }
                         .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name },
                 )
                 .partition { it.hasUpdate }
@@ -54,7 +54,7 @@ class GetExtensionsByType(
                 }
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
-            Extensions(updates, installed, available, untrusted)
+            AnimeExtensions(updates, installed, available, untrusted)
         }
     }
 }

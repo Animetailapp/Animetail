@@ -28,8 +28,12 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
+}
+
+android {
     lint {
-        disable.addAll(listOf("MissingTranslation", "ExtraTranslation"))
+        disable += "MissingTranslation"
+        disable += "ExtraTranslation"
     }
 }
 
@@ -52,6 +56,10 @@ tasks {
 androidComponents {
     onVariants { variant ->
         val resSource = variant.sources.res ?: return@onVariants
-        resSource.addGeneratedSourceDirectory(tasks.named("generateLocalesConfig", GenerateLocalesConfigTask::class.java)) { it.outputDir }
+        resSource.addGeneratedSourceDirectory(
+            tasks.named("generateLocalesConfig", GenerateLocalesConfigTask::class.java),
+        ) {
+            it.outputDir
+        }
     }
 }

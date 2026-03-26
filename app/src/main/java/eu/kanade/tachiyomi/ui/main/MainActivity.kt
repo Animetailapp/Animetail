@@ -399,19 +399,26 @@ class MainActivity : BaseActivity() {
 
         val tabToOpen = when (intent.action) {
             Constants.SHORTCUT_LIBRARY -> HomeScreen.Tab.Library()
+
             Constants.SHORTCUT_MANGA -> {
                 val idToOpen = intent.extras?.getLong(Constants.MANGA_EXTRA) ?: return false
                 navigator.popUntilRoot()
                 HomeScreen.Tab.Library(idToOpen)
             }
+
             Constants.SHORTCUT_UPDATES -> HomeScreen.Tab.Updates
+
             Constants.SHORTCUT_HISTORY -> HomeScreen.Tab.History
+
             Constants.SHORTCUT_SOURCES -> HomeScreen.Tab.Browse(false)
+
             Constants.SHORTCUT_EXTENSIONS -> HomeScreen.Tab.Browse(true)
+
             Constants.SHORTCUT_DOWNLOADS -> {
                 navigator.popUntilRoot()
                 HomeScreen.Tab.More(toDownloads = true)
             }
+
             Intent.ACTION_SEARCH, Intent.ACTION_SEND, "com.google.android.gms.actions.SEARCH_ACTION" -> {
                 // If the intent match the "standard" Android search intent
                 // or the Google-specific search intent (triggered by saying or typing "search *query* on *Tachiyomi*" in Google Search/Google Assistant)
@@ -424,6 +431,7 @@ class MainActivity : BaseActivity() {
                 }
                 null
             }
+
             INTENT_SEARCH -> {
                 val query = intent.getStringExtra(INTENT_SEARCH_QUERY)
                 if (!query.isNullOrEmpty()) {
@@ -433,6 +441,7 @@ class MainActivity : BaseActivity() {
                 }
                 null
             }
+
             Intent.ACTION_VIEW -> {
                 // Handling opening of backup files
                 if (intent.data.toString().endsWith(".tachibk")) {
@@ -448,6 +457,7 @@ class MainActivity : BaseActivity() {
                 }
                 null
             }
+
             else -> return false
         }
 

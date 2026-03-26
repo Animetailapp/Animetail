@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package eu.kanade.tachiyomi.data.download
 
 import android.content.Context

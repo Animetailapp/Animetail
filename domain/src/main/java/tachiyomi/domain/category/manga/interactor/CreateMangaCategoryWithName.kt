@@ -1,14 +1,14 @@
-package tachiyomi.domain.category.interactor
+package tachiyomi.domain.category.manga.interactor
 
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.category.repository.CategoryRepository
 import tachiyomi.domain.library.service.LibraryPreferences
 
-class CreateCategoryWithName(
-    private val categoryRepository: CategoryRepository,
+class CreateMangaCategoryWithName(
+    private val categoryRepository: MangaCategoryRepository,
     private val preferences: LibraryPreferences,
 ) {
 
@@ -19,17 +19,18 @@ class CreateCategoryWithName(
         }
 
     suspend fun await(name: String): Result = withNonCancellableContext {
-        val categories = categoryRepository.getAll()
+        val categories = categoryRepository.getAllMangaCategories()
         val nextOrder = categories.maxOfOrNull { it.order }?.plus(1) ?: 0
         val newCategory = Category(
             id = 0,
             name = name,
             order = nextOrder,
             flags = initialFlags,
+            hidden = false,
         )
 
         try {
-            categoryRepository.insert(newCategory)
+            categoryRepository.insertMangaCategory(newCategory)
             Result.Success
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)

@@ -607,17 +607,21 @@ class MangaScreenModel(
             LibraryPreferences.ChapterSwipeAction.ToggleRead -> {
                 markChaptersRead(listOf(chapter), !chapter.read)
             }
+
             LibraryPreferences.ChapterSwipeAction.ToggleBookmark -> {
                 bookmarkChapters(listOf(chapter), !chapter.bookmark)
             }
+
             LibraryPreferences.ChapterSwipeAction.Download -> {
                 val downloadAction: ChapterDownloadAction = when (chapterItem.downloadState) {
                     Download.State.ERROR,
                     Download.State.NOT_DOWNLOADED,
                     -> ChapterDownloadAction.START_NOW
+
                     Download.State.QUEUE,
                     Download.State.DOWNLOADING,
                     -> ChapterDownloadAction.CANCEL
+
                     Download.State.DOWNLOADED -> ChapterDownloadAction.DELETE
                 }
                 runChapterDownloadActions(
@@ -625,6 +629,7 @@ class MangaScreenModel(
                     action = downloadAction,
                 )
             }
+
             LibraryPreferences.ChapterSwipeAction.Disabled -> throw IllegalStateException()
         }
     }
@@ -698,14 +703,17 @@ class MangaScreenModel(
                     downloadManager.startDownloads()
                 }
             }
+
             ChapterDownloadAction.START_NOW -> {
                 val chapter = items.singleOrNull()?.chapter ?: return
                 startDownload(listOf(chapter), true)
             }
+
             ChapterDownloadAction.CANCEL -> {
                 val chapterId = items.singleOrNull()?.id ?: return
                 cancelDownload(chapterId)
             }
+
             ChapterDownloadAction.DELETE -> {
                 deleteChapters(items.map { it.chapter })
             }

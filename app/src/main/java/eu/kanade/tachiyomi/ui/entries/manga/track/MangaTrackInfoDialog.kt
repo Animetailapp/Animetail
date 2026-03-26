@@ -457,11 +457,13 @@ private data class TrackDateSelectorScreen(
                     val finishDate = Instant.ofEpochMilli(track.finishDate).toLocalDate(ZoneOffset.UTC)
                     targetDate <= finishDate
                 }
+
                 // Disallow setting finish date before start date
                 !start && track.startDate > 0 -> {
                     val startDate = Instant.ofEpochMilli(track.startDate).toLocalDate(ZoneOffset.UTC)
                     startDate <= targetDate
                 }
+
                 else -> {
                     true
                 }
@@ -478,11 +480,13 @@ private data class TrackDateSelectorScreen(
                     val finishDate = Instant.ofEpochMilli(track.finishDate).toLocalDate(ZoneOffset.UTC)
                     year <= finishDate.year
                 }
+
                 // Disallow setting finish year before start year
                 !start && track.startDate > 0 -> {
                     val startDate = Instant.ofEpochMilli(track.startDate).toLocalDate(ZoneOffset.UTC)
                     startDate.year <= year
                 }
+
                 else -> {
                     true
                 }

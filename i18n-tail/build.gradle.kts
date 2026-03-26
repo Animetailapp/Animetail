@@ -21,13 +21,16 @@ kotlin {
         }
     }
 
-    lint {
-        disable.addAll(listOf("MissingTranslation", "ExtraTranslation"))
-    }
-
     @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+}
+
+android {
+    lint {
+        disable += "MissingTranslation"
+        disable += "ExtraTranslation"
     }
 }
 

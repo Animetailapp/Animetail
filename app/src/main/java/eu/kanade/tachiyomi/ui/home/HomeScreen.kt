@@ -154,14 +154,18 @@ object HomeScreen : Screen() {
                     openTabEvent.receiveAsFlow().collectLatest {
                         tabNavigator.current = when (it) {
                             is Tab.Library -> LibraryTab
+
                             Tab.Updates -> UpdatesTab
+
                             Tab.History -> HistoryTab
+
                             is Tab.Browse -> {
                                 if (it.toExtensions) {
                                     BrowseTab.showExtension()
                                 }
                                 BrowseTab
                             }
+
                             is Tab.More -> MoreTab
                         }
 
@@ -261,6 +265,7 @@ object HomeScreen : Screen() {
                             }
                         }
                     }
+
                     BrowseTab::class.isInstance(tab) -> {
                         val count by produceState(initialValue = 0) {
                             Injekt.get<SourcePreferences>().extensionUpdatesCount.changes()

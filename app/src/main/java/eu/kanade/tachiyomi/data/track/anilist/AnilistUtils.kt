@@ -20,8 +20,10 @@ private val preferences: TrackPreferences by injectLazy()
 fun DomainTrack.toApiScore(): String = when (preferences.anilistScoreType.get()) {
     // 10 point
     "POINT_10" -> (score.toInt() / 10).toString()
+
     // 100 point
     "POINT_100" -> score.toInt().toString()
+
     // 5 stars
     "POINT_5" -> when {
         score == 0.0 -> "0"
@@ -31,6 +33,7 @@ fun DomainTrack.toApiScore(): String = when (preferences.anilistScoreType.get())
         score < 90 -> "4"
         else -> "5"
     }
+
     // Smiley
     "POINT_3" -> when {
         score == 0.0 -> "0"
@@ -38,7 +41,9 @@ fun DomainTrack.toApiScore(): String = when (preferences.anilistScoreType.get())
         score <= 60 -> ":|"
         else -> ":)"
     }
+
     // 10 point decimal
     "POINT_10_DECIMAL" -> (score / 10).toString()
+
     else -> throw NotImplementedError("Unknown score type")
 }
