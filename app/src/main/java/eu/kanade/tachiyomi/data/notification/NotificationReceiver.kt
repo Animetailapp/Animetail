@@ -23,11 +23,9 @@ import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.domain.chapter.interactor.GetChapter
-import tachiyomi.domain.chapter.interactor.UpdateChapter
-import tachiyomi.domain.chapter.model.Chapter
-import tachiyomi.domain.chapter.model.toChapterUpdate
+import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.model.Anime

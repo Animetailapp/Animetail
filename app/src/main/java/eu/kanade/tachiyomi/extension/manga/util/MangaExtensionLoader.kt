@@ -134,7 +134,7 @@ internal object MangaExtensionLoader {
      *
      * @param context The application context.
      */
-    fun loadExtensions(context: Context): List<LoadResult> {
+    fun loadMangaExtensions(context: Context): List<MangaLoadResult> {
         val pkgManager = context.packageManager
 
         val installedPkgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -184,7 +184,7 @@ internal object MangaExtensionLoader {
         // Load each extension concurrently and wait for completion
         return runBlocking {
             val deferred = extPkgs.map {
-                async { loadExtension(context, it) }
+                async { loadMangaExtension(context, it) }
             }
             deferred.awaitAll()
         }

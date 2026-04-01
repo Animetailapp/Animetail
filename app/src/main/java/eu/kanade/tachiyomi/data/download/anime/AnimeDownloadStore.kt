@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.content.edit
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import tachiyomi.domain.entries.anime.interactor.GetAnime
@@ -88,7 +89,7 @@ class AnimeDownloadStore(
     /**
      * Returns the list of downloads to restore. It should be called in a background thread.
      */
-    fun restore(): List<Download> {
+    fun restore(): List<AnimeDownload> {
         val objs = preferences.all
             .mapNotNull { it.value as? String }
             .mapNotNull { deserialize(it) }
@@ -96,14 +97,14 @@ class AnimeDownloadStore(
 
         val downloads = mutableListOf<AnimeDownload>()
         if (objs.isNotEmpty()) {
-            val cachedManga = mutableMapOf<Long, Manga?>()
-            for ((mangaId, chapterId) in objs) {
-                val manga = cachedManga.getOrPut(mangaId) {
-                    runBlocking { getManga.await(mangaId) }
+            val cachedAnime = mutableMapOf<Long, Anime?>()
+            for ((animeId, episodeId) in objs) {
+                val anime = cachedAnime.getOrPut(animeId) {
+                    runBlocking { getAnime.await(animeId) }
                 } ?: continue
-                val source = sourceManager.get(manga.source) as? HttpSource ?: continue
-                val chapter = runBlocking { getChapter.await(chapterId) } ?: continue
-                downloads.add(Download(source, manga, chapter))
+                val source = sourceManager.get(anime.source) as? AnimeHttpSource ?: continue
+                val episode = runBlocking { getEpisode.await(episodeId) } ?: continue
+                downloads.add(AnimeDownload(source, anime, episode))
             }
         }
 

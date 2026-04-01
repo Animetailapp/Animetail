@@ -107,19 +107,17 @@ class MangaExtensionManager(
     fun getSourceData(id: Long) = availableMangaExtensionsSourcesData[id]
 
     private fun initMangaExtensions() {
-        scope.launch {
-            val extensions = MangaExtensionLoader.loadMangaExtensions(context)
+        val extensions = MangaExtensionLoader.loadMangaExtensions(context)
 
-            installedExtensionsMapFlow.value = extensions
-                .filterIsInstance<MangaLoadResult.Success>()
-                .associate { it.extension.pkgName to it.extension }
+        installedExtensionsMapFlow.value = extensions
+            .filterIsInstance<MangaLoadResult.Success>()
+            .associate { it.extension.pkgName to it.extension }
 
-            untrustedExtensionsMapFlow.value = extensions
-                .filterIsInstance<MangaLoadResult.Untrusted>()
-                .associate { it.extension.pkgName to it.extension }
+        untrustedExtensionsMapFlow.value = extensions
+            .filterIsInstance<MangaLoadResult.Untrusted>()
+            .associate { it.extension.pkgName to it.extension }
 
-            _isInitialized.value = true
-        }
+        _isInitialized.value = true
     }
 
     suspend fun findAvailableExtensions() {

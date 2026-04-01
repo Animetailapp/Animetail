@@ -159,7 +159,7 @@ class MangaLibraryUpdateNotifier(
             Notifications.ID_LIBRARY_ERROR,
             Notifications.CHANNEL_LIBRARY_ERROR,
         ) {
-            setContentTitle(context.pluralStringResource(MR.plurals.notification_update_error, failed, failed))
+            setContentTitle(context.stringResource(MR.strings.notification_update_error, failed))
             setContentText(context.stringResource(MR.strings.action_show_errors))
             setSmallIcon(R.drawable.ic_ani)
 

@@ -129,19 +129,17 @@ class AnimeExtensionManager(
      * Loads and registers the installed animeextensions.
      */
     private fun initAnimeExtensions() {
-        scope.launch {
-            val animeextensions = AnimeExtensionLoader.loadExtensions(context)
+        val animeextensions = AnimeExtensionLoader.loadExtensions(context)
 
-            installedExtensionsMapFlow.value = animeextensions
-                .filterIsInstance<AnimeLoadResult.Success>()
-                .associate { it.extension.pkgName to it.extension }
+        installedExtensionsMapFlow.value = animeextensions
+            .filterIsInstance<AnimeLoadResult.Success>()
+            .associate { it.extension.pkgName to it.extension }
 
-            untrustedExtensionsMapFlow.value = animeextensions
-                .filterIsInstance<AnimeLoadResult.Untrusted>()
-                .associate { it.extension.pkgName to it.extension }
+        untrustedExtensionsMapFlow.value = animeextensions
+            .filterIsInstance<AnimeLoadResult.Untrusted>()
+            .associate { it.extension.pkgName to it.extension }
 
-            _isInitialized.value = true
-        }
+        _isInitialized.value = true
     }
 
     /**

@@ -35,12 +35,11 @@ internal suspend fun AndroidAnimeDatabaseHandler.getCurrentAnimeDatabaseContext(
  *
  * The dispatcher used to execute the given [block] will utilize threads from SQLDelight's query executor.
  */
-internal suspend fun <T> AndroidDatabaseHandler.withTransaction(block: suspend () -> T): T {
-    // Use inherited transaction context if available, this allows nested suspending transactions.
+internal suspend fun <T> AndroidAnimeDatabaseHandler.withAnimeTransaction(block: suspend () -> T): T {
     val transactionContext =
-        coroutineContext[TransactionElement]?.transactionDispatcher ?: createTransactionContext()
+        coroutineContext[AnimeTransactionElement]?.transactionDispatcher ?: createTransactionContext()
     return withContext(transactionContext) {
-        val transactionElement = coroutineContext[TransactionElement]!!
+        val transactionElement = coroutineContext[AnimeTransactionElement]!!
         transactionElement.acquire()
         try {
             db.transactionWithResult {
