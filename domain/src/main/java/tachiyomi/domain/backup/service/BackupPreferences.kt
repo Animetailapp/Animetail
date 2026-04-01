@@ -13,4 +13,15 @@ class BackupPreferences(
         Preference.appStateKey("last_auto_backup_timestamp"),
         0L,
     )
+
+    val backupFlags: Preference<Set<String>> = preferenceStore.getStringSet(
+        "backup_flags",
+        setOf(FLAG_CATEGORIES, FLAG_CHAPTERS, FLAG_HISTORY, FLAG_TRACK),
+    )
+
+    fun backupInterval() = backupInterval
+
+    fun lastAutoBackupTimestamp() = lastAutoBackupTimestamp
+
+    fun backupFlags() = backupFlags
 }

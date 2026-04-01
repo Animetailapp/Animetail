@@ -13,4 +13,12 @@ class StoragePreferences(
         Preference.appStateKey("storage_dir"),
         folderProvider.path(),
     )
+
+    // AM (FILE_SIZE) -->
+    val showEpisodeFileSize: Preference<Boolean> = preferenceStore.getBoolean("pref_show_downloaded_episode_size", true)
+    // <-- AM (FILE_SIZE)
+
+    fun baseStorageDirectory() = baseStorageDirectory
+
+    fun showEpisodeFileSize() = showEpisodeFileSize
 }

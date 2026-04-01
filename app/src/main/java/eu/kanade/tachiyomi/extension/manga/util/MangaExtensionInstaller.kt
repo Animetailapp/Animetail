@@ -1,15 +1,13 @@
-@file:Suppress("ktlint:standard:filename")
-
-package eu.kanade.tachiyomi.extension.util
+package eu.kanade.tachiyomi.extension.manga.util
 
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import eu.kanade.domain.base.BasePreferences
-import eu.kanade.tachiyomi.extension.installer.Installer
-import eu.kanade.tachiyomi.extension.model.Extension
-import eu.kanade.tachiyomi.extension.model.InstallStep
+import eu.kanade.tachiyomi.extension.InstallStep
+import eu.kanade.tachiyomi.extension.manga.installer.InstallerManga
+import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.util.storage.getUriCompat
 import eu.kanade.tachiyomi.util.system.isPackageInstalled
@@ -34,15 +32,13 @@ import java.io.File
  *
  * @param context The application context.
  */
-internal class ExtensionInstaller(
+internal class MangaExtensionInstaller(
     private val context: Context,
 ) {
-
     private val scope = CoroutineScope(Dispatchers.IO)
     private val activeJobs = mutableMapOf<String, Job>()
     private val activeSteps = mutableMapOf<Long, MutableStateFlow<InstallStep>>()
-    private val extensionInstaller = Injekt.get<BasePreferences>().extensionInstaller
-
+    private val extensionInstaller = Injekt.get<BasePreferences>().extensionInstaller()
     private val httpClient: OkHttpClient = Injekt.get<NetworkHelper>().client
 
     /**
@@ -52,7 +48,7 @@ internal class ExtensionInstaller(
      * @param url The url of the apk.
      * @param extension The extension to install.
      */
-    fun downloadAndInstall(url: String, extension: Extension): Flow<InstallStep> {
+    fun downloadAndInstall(url: String, extension: MangaExtension): Flow<InstallStep> {
         val downloadId = extension.pkgName.hashCode().toLong()
         cancelInstall(extension.pkgName)
 
@@ -105,17 +101,19 @@ internal class ExtensionInstaller(
     private fun installApk(downloadId: Long, tempFile: File) {
         when (val installer = extensionInstaller.get()) {
             BasePreferences.ExtensionInstaller.LEGACY -> {
-                val intent = Intent(context, ExtensionInstallActivity::class.java)
+                val intent = Intent(context, MangaExtensionInstallActivity::class.java)
                     .setDataAndType(tempFile.getUriCompat(context), APK_MIME)
                     .putExtra(EXTRA_DOWNLOAD_ID, downloadId)
-                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    .setFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
 
                 context.startActivity(intent)
             }
 
             BasePreferences.ExtensionInstaller.PRIVATE -> {
                 try {
-                    if (ExtensionLoader.installPrivateExtensionFile(context, tempFile)) {
+                    if (MangaExtensionLoader.installPrivateExtensionFile(context, tempFile)) {
                         updateInstallStep(downloadId, InstallStep.Installed)
                     } else {
                         updateInstallStep(downloadId, InstallStep.Error)
@@ -129,7 +127,7 @@ internal class ExtensionInstaller(
             }
 
             else -> {
-                val intent = ExtensionInstallService.getIntent(
+                val intent = MangaExtensionInstallService.getIntent(
                     context,
                     downloadId,
                     tempFile.getUriCompat(context),
@@ -145,7 +143,7 @@ internal class ExtensionInstaller(
      */
     fun cancelInstall(pkgName: String) {
         activeJobs.remove(pkgName)?.cancel()
-        Installer.cancelInstallQueue(context, pkgName.hashCode().toLong())
+        InstallerManga.cancelInstallQueue(context, pkgName.hashCode().toLong())
     }
 
     /**
@@ -160,8 +158,8 @@ internal class ExtensionInstaller(
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         } else {
-            ExtensionLoader.uninstallPrivateExtension(context, pkgName)
-            ExtensionInstallReceiver.notifyRemoved(context, pkgName)
+            MangaExtensionLoader.uninstallPrivateExtension(context, pkgName)
+            MangaExtensionInstallReceiver.notifyRemoved(context, pkgName)
         }
     }
 
@@ -177,6 +175,6 @@ internal class ExtensionInstaller(
 
     companion object {
         const val APK_MIME = "application/vnd.android.package-archive"
-        const val EXTRA_DOWNLOAD_ID = "ExtensionInstaller.extra.DOWNLOAD_ID"
+        const val EXTRA_DOWNLOAD_ID = "MangaExtensionInstaller.extra.DOWNLOAD_ID"
     }
 }

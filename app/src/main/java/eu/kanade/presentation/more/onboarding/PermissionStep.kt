@@ -13,13 +13,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -36,18 +34,12 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
-import eu.kanade.tachiyomi.core.security.PrivacyPreferences
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
-import eu.kanade.tachiyomi.util.system.telemetryIncluded
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
-import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.secondaryItemAlpha
-import uy.kohesive.injekt.injectLazy
 
 internal class PermissionStep : OnboardingStep {
-
-    private val privacyPreferences: PrivacyPreferences by injectLazy()
 
     private var notificationGranted by mutableStateOf(false)
     private var batteryGranted by mutableStateOf(false)
@@ -81,7 +73,7 @@ internal class PermissionStep : OnboardingStep {
         }
 
         Column {
-            PermissionCheckbox(
+            PermissionItem(
                 title = stringResource(MR.strings.onboarding_permission_install_apps),
                 subtitle = stringResource(MR.strings.onboarding_permission_install_apps_description),
                 granted = installGranted,
@@ -97,7 +89,7 @@ internal class PermissionStep : OnboardingStep {
                         // no-op. resulting checks is being done on resume
                     },
                 )
-                PermissionCheckbox(
+                PermissionItem(
                     title = stringResource(MR.strings.onboarding_permission_notifications),
                     subtitle = stringResource(MR.strings.onboarding_permission_notifications_description),
                     granted = notificationGranted,
@@ -105,7 +97,7 @@ internal class PermissionStep : OnboardingStep {
                 )
             }
 
-            PermissionCheckbox(
+            PermissionItem(
                 title = stringResource(MR.strings.onboarding_permission_ignore_battery_opts),
                 subtitle = stringResource(MR.strings.onboarding_permission_ignore_battery_opts_description),
                 granted = batteryGranted,
@@ -116,31 +108,6 @@ internal class PermissionStep : OnboardingStep {
                     }
                     context.startActivity(intent)
                 },
-            )
-
-            if (!telemetryIncluded) return@Column
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-
-            val crashlyticsPref = privacyPreferences.crashlytics
-            val crashlytics by crashlyticsPref.collectAsState()
-            PermissionSwitch(
-                title = stringResource(MR.strings.onboarding_permission_crashlytics),
-                subtitle = stringResource(MR.strings.onboarding_permission_crashlytics_description),
-                granted = crashlytics,
-                onToggleChange = crashlyticsPref::set,
-            )
-
-            val analyticsPref = privacyPreferences.analytics
-            val analytics by analyticsPref.collectAsState()
-            PermissionSwitch(
-                title = stringResource(MR.strings.onboarding_permission_analytics),
-                subtitle = stringResource(MR.strings.onboarding_permission_analytics_description),
-                granted = analytics,
-                onToggleChange = analyticsPref::set,
             )
         }
     }
@@ -160,7 +127,7 @@ internal class PermissionStep : OnboardingStep {
     }
 
     @Composable
-    private fun PermissionCheckbox(
+    private fun PermissionItem(
         title: String,
         subtitle: String,
         granted: Boolean,
@@ -186,28 +153,6 @@ internal class PermissionStep : OnboardingStep {
                         Text(stringResource(MR.strings.onboarding_permission_action_grant))
                     }
                 }
-            },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        )
-    }
-
-    @Composable
-    private fun PermissionSwitch(
-        title: String,
-        subtitle: String,
-        granted: Boolean,
-        modifier: Modifier = Modifier,
-        onToggleChange: (Boolean) -> Unit,
-    ) {
-        ListItem(
-            modifier = modifier,
-            headlineContent = { Text(text = title) },
-            supportingContent = { Text(text = subtitle) },
-            trailingContent = {
-                Switch(
-                    checked = granted,
-                    onCheckedChange = onToggleChange,
-                )
             },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         )

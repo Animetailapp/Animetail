@@ -2,9 +2,11 @@ package eu.kanade.tachiyomi.ui.stats.manga
 
 import androidx.compose.ui.util.fastDistinctBy
 import androidx.compose.ui.util.fastFilter
+import androidx.compose.ui.util.fastMapNotNull
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.core.util.fastCountNot
+import eu.kanade.core.util.fastFilterNot
 import eu.kanade.presentation.more.stats.StatsScreenState
 import eu.kanade.presentation.more.stats.data.StatsData
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
@@ -13,16 +15,16 @@ import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.model.SManga
 import kotlinx.coroutines.flow.update
 import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.domain.history.interactor.GetTotalReadDuration
-import tachiyomi.domain.library.model.LibraryManga
+import tachiyomi.domain.entries.manga.interactor.GetLibraryManga
+import tachiyomi.domain.history.manga.interactor.GetTotalReadDuration
+import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.domain.library.service.LibraryPreferences
-import tachiyomi.domain.library.service.LibraryPreferences.Companion.MANGA_HAS_UNREAD
-import tachiyomi.domain.library.service.LibraryPreferences.Companion.MANGA_NON_COMPLETED
-import tachiyomi.domain.library.service.LibraryPreferences.Companion.MANGA_NON_READ
-import tachiyomi.domain.manga.interactor.GetLibraryManga
+import tachiyomi.domain.library.service.LibraryPreferences.Companion.ENTRY_HAS_UNVIEWED
+import tachiyomi.domain.library.service.LibraryPreferences.Companion.ENTRY_NON_COMPLETED
+import tachiyomi.domain.library.service.LibraryPreferences.Companion.ENTRY_NON_VIEWED
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.domain.track.manga.model.MangaTrack
-import tachiyomi.source.local.isLocal
+import tachiyomi.source.local.entries.manga.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -48,7 +50,7 @@ class MangaStatsScreenModel(
 
             val meanScore = getTrackMeanScore(scoredMangaTrackerMap)
 
-            val overviewStatData = StatsData.Overview(
+            val overviewStatData = StatsData.MangaOverview(
                 libraryMangaCount = distinctLibraryManga.size,
                 completedMangaCount = distinctLibraryManga.count {
                     it.manga.status.toInt() == SManga.COMPLETED && it.unreadCount == 0L
@@ -56,7 +58,7 @@ class MangaStatsScreenModel(
                 totalReadDuration = getTotalReadDuration.await(),
             )
 
-            val titlesStatData = StatsData.Titles(
+            val titlesStatData = StatsData.MangaTitles(
                 globalUpdateItemCount = getGlobalUpdateItemCount(libraryManga),
                 startedMangaCount = distinctLibraryManga.count { it.hasStarted },
                 localMangaCount = distinctLibraryManga.count { it.manga.isLocal() },
@@ -86,19 +88,30 @@ class MangaStatsScreenModel(
     }
 
     private fun getGlobalUpdateItemCount(libraryManga: List<LibraryManga>): Int {
-        val includedCategories = preferences.updateCategories.get().map { it.toLong() }
-        val excludedCategories = preferences.updateCategoriesExclude.get().map { it.toLong() }
-        val updateRestrictions = preferences.autoUpdateMangaRestrictions.get()
-
-        return libraryManga.filter {
-            val included = includedCategories.isEmpty() || it.categories.intersect(includedCategories).isNotEmpty()
-            val excluded = it.categories.intersect(excludedCategories).isNotEmpty()
-            included && !excluded
+        val includedCategories = preferences.mangaUpdateCategories().get().map { it.toLong() }
+        val includedManga = if (includedCategories.isNotEmpty()) {
+            libraryManga.filter { it.category in includedCategories }
+        } else {
+            libraryManga
         }
+
+        val excludedCategories = preferences.mangaUpdateCategoriesExclude().get().map { it.toLong() }
+        val excludedMangaIds = if (excludedCategories.isNotEmpty()) {
+            libraryManga.fastMapNotNull { manga ->
+                manga.id.takeIf { manga.category in excludedCategories }
+            }
+        } else {
+            emptyList()
+        }
+
+        val updateRestrictions = preferences.autoUpdateItemRestrictions().get()
+        return includedManga
+            .fastFilterNot { it.manga.id in excludedMangaIds }
+            .fastDistinctBy { it.manga.id }
             .fastCountNot {
-                (MANGA_NON_COMPLETED in updateRestrictions && it.manga.status.toInt() == SManga.COMPLETED) ||
-                    (MANGA_HAS_UNREAD in updateRestrictions && it.unreadCount != 0L) ||
-                    (MANGA_NON_READ in updateRestrictions && it.totalChapters > 0 && !it.hasStarted)
+                (ENTRY_NON_COMPLETED in updateRestrictions && it.manga.status.toInt() == SManga.COMPLETED) ||
+                    (ENTRY_HAS_UNVIEWED in updateRestrictions && it.unreadCount != 0L) ||
+                    (ENTRY_NON_VIEWED in updateRestrictions && it.totalChapters > 0 && !it.hasStarted)
             }
     }
 

@@ -29,7 +29,7 @@ class MangaSourcesFilterScreenModel(
             combine(
                 getLanguagesWithSources.subscribe(),
                 preferences.enabledLanguages().changes(),
-                preferences.disabledSources().changes(),
+                preferences.disabledMangaSources().changes(),
             ) { a, b, c -> Triple(a, b, c) }
                 .catch { throwable ->
                     mutableState.update {

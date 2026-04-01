@@ -1,6 +1,7 @@
 package eu.kanade.domain.base
 
 import android.content.Context
+import android.content.pm.PackageManager
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.util.system.GLUtil
 import tachiyomi.core.common.preference.Preference
@@ -20,6 +21,10 @@ class BasePreferences(
     val incognitoMode: Preference<Boolean> = preferenceStore.getBoolean(Preference.appStateKey("incognito_mode"), false)
 
     val extensionInstaller: ExtensionInstallerPreference = ExtensionInstallerPreference(context, preferenceStore)
+
+    fun deviceHasPip() = context.packageManager.hasSystemFeature(
+        PackageManager.FEATURE_PICTURE_IN_PICTURE,
+    )
 
     val shownOnboardingFlow: Preference<Boolean> = preferenceStore.getBoolean(
         Preference.appStateKey("onboarding_complete"),
@@ -46,4 +51,20 @@ class BasePreferences(
     )
 
     val installationId: Preference<String> = preferenceStore.getString(Preference.appStateKey("installation_id"), "")
+
+    fun downloadedOnly() = downloadedOnly
+
+    fun incognitoMode() = incognitoMode
+
+    fun extensionInstaller() = extensionInstaller
+
+    fun shownOnboardingFlow() = shownOnboardingFlow
+
+    fun displayProfile() = displayProfile
+
+    fun hardwareBitmapThreshold() = hardwareBitmapThreshold
+
+    fun alwaysDecodeLongStripWithSSIV() = alwaysDecodeLongStripWithSSIV
+
+    fun installationId() = installationId
 }

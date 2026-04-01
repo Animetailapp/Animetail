@@ -1,24 +1,25 @@
-@file:Suppress("ktlint:standard:filename")
-
-package eu.kanade.tachiyomi.ui.history
+package eu.kanade.tachiyomi.ui.history.manga
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.core.util.insertSeparators
-import eu.kanade.domain.manga.interactor.UpdateManga
-import eu.kanade.domain.track.interactor.AddTracks
-import eu.kanade.presentation.history.HistoryUiModel
+import eu.kanade.domain.entries.manga.interactor.UpdateManga
+import eu.kanade.domain.track.manga.interactor.AddMangaTracks
+import eu.kanade.presentation.history.manga.MangaHistoryUiModel
 import eu.kanade.tachiyomi.util.lang.toLocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -30,66 +31,72 @@ import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.category.interactor.GetCategories
-import tachiyomi.domain.category.interactor.SetMangaCategories
+import tachiyomi.domain.category.manga.interactor.GetMangaCategories
+import tachiyomi.domain.category.manga.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.chapter.model.Chapter
-import tachiyomi.domain.history.interactor.GetHistory
-import tachiyomi.domain.history.interactor.GetNextChapters
-import tachiyomi.domain.history.interactor.RemoveHistory
-import tachiyomi.domain.history.model.HistoryWithRelations
+import tachiyomi.domain.entries.manga.interactor.GetDuplicateLibraryManga
+import tachiyomi.domain.entries.manga.interactor.GetManga
+import tachiyomi.domain.entries.manga.model.Manga
+import tachiyomi.domain.history.manga.interactor.GetMangaHistory
+import tachiyomi.domain.history.manga.interactor.GetNextChapters
+import tachiyomi.domain.history.manga.interactor.RemoveMangaHistory
+import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
+import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.library.service.LibraryPreferences
-import tachiyomi.domain.manga.interactor.GetDuplicateLibraryManga
-import tachiyomi.domain.manga.interactor.GetManga
-import tachiyomi.domain.manga.model.Manga
-import tachiyomi.domain.manga.model.MangaWithChapterCount
-import tachiyomi.domain.source.service.SourceManager
+import tachiyomi.domain.source.manga.service.MangaSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class HistoryScreenModel(
-    private val addTracks: AddTracks = Injekt.get(),
-    private val getCategories: GetCategories = Injekt.get(),
+class MangaHistoryScreenModel(
+    private val addTracks: AddMangaTracks = Injekt.get(),
+    private val getCategories: GetMangaCategories = Injekt.get(),
     private val getDuplicateLibraryManga: GetDuplicateLibraryManga = Injekt.get(),
-    private val getHistory: GetHistory = Injekt.get(),
+    private val getHistory: GetMangaHistory = Injekt.get(),
     private val getManga: GetManga = Injekt.get(),
     private val getNextChapters: GetNextChapters = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val removeHistory: RemoveHistory = Injekt.get(),
+    private val removeHistory: RemoveMangaHistory = Injekt.get(),
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val updateManga: UpdateManga = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
-    private val sourceManager: SourceManager = Injekt.get(),
-) : StateScreenModel<HistoryScreenModel.State>(State()) {
+    private val sourceManager: MangaSourceManager = Injekt.get(),
+) : StateScreenModel<MangaHistoryScreenModel.State>(State()) {
 
     private val _events: Channel<Event> = Channel(Channel.UNLIMITED)
     val events: Flow<Event> = _events.receiveAsFlow()
 
+    private val _query: MutableStateFlow<String?> = MutableStateFlow(null)
+    val query: StateFlow<String?> = _query.asStateFlow()
+
     init {
         screenModelScope.launch {
-            state.map { it.searchQuery }
-                .distinctUntilChanged()
-                .flatMapLatest { query ->
-                    getHistory.subscribe(query ?: "")
-                        .distinctUntilChanged()
-                        .catch { error ->
-                            logcat(LogPriority.ERROR, error)
-                            _events.send(Event.InternalError)
-                        }
-                        .map { it.toHistoryUiModels() }
-                        .flowOn(Dispatchers.IO)
-                }
-                .collect { newList -> mutableState.update { it.copy(list = newList) } }
+            _query.collectLatest { query ->
+                getHistory.subscribe(query ?: "")
+                    .distinctUntilChanged()
+                    .catch { error ->
+                        logcat(LogPriority.ERROR, error)
+                        _events.send(Event.InternalError)
+                    }
+                    .map { it.toHistoryUiModels() }
+                    .flowOn(Dispatchers.IO)
+                    .collect { newList -> mutableState.update { it.copy(list = newList) } }
+            }
         }
     }
 
-    private fun List<HistoryWithRelations>.toHistoryUiModels(): List<HistoryUiModel> {
-        return map { HistoryUiModel.Item(it) }
+    fun search(query: String?) {
+        screenModelScope.launchIO {
+            _query.emit(query)
+        }
+    }
+
+    private fun List<MangaHistoryWithRelations>.toHistoryUiModels(): List<MangaHistoryUiModel> {
+        return map { MangaHistoryUiModel.Item(it) }
             .insertSeparators { before, after ->
                 val beforeDate = before?.item?.readAt?.time?.toLocalDate()
                 val afterDate = after?.item?.readAt?.time?.toLocalDate()
                 when {
-                    beforeDate != afterDate && afterDate != null -> HistoryUiModel.Header(afterDate)
+                    beforeDate != afterDate && afterDate != null -> MangaHistoryUiModel.Header(afterDate)
 
                     // Return null to avoid adding a separator between two items.
                     else -> null
@@ -112,7 +119,7 @@ class HistoryScreenModel(
         _events.send(Event.OpenChapter(chapter))
     }
 
-    fun removeFromHistory(history: HistoryWithRelations) {
+    fun removeFromHistory(history: MangaHistoryWithRelations) {
         screenModelScope.launchIO {
             removeHistory.await(history)
         }
@@ -162,6 +169,7 @@ class HistoryScreenModel(
 
     fun moveMangaToCategoriesAndAddToLibrary(manga: Manga, categories: List<Long>) {
         moveMangaToCategory(manga.id, categories)
+
         if (manga.favorite) return
 
         screenModelScope.launchIO {
@@ -178,9 +186,9 @@ class HistoryScreenModel(
         screenModelScope.launchIO {
             val manga = getManga.await(mangaId) ?: return@launchIO
 
-            val duplicates = getDuplicateLibraryManga(manga)
-            if (duplicates.isNotEmpty()) {
-                mutableState.update { it.copy(dialog = Dialog.DuplicateManga(manga, duplicates)) }
+            val duplicate = getDuplicateLibraryManga.await(manga).getOrNull(0)
+            if (duplicate != null) {
+                mutableState.update { it.copy(dialog = Dialog.DuplicateManga(manga, duplicate)) }
                 return@launchIO
             }
 
@@ -192,7 +200,7 @@ class HistoryScreenModel(
         screenModelScope.launchIO {
             // Move to default category if applicable
             val categories = getCategories()
-            val defaultCategoryId = libraryPreferences.defaultCategory.get().toLong()
+            val defaultCategoryId = libraryPreferences.defaultMangaCategory().get().toLong()
             val defaultCategory = categories.find { it.id == defaultCategoryId }
 
             when {
@@ -219,9 +227,9 @@ class HistoryScreenModel(
         }
     }
 
-    fun showMigrateDialog(target: Manga, current: Manga) {
+    fun showMigrateDialog(currentManga: Manga, duplicate: Manga) {
         mutableState.update { currentState ->
-            currentState.copy(dialog = Dialog.Migrate(target = target, current = current))
+            currentState.copy(dialog = Dialog.Migrate(newManga = currentManga, oldManga = duplicate))
         }
     }
 
@@ -243,19 +251,19 @@ class HistoryScreenModel(
     @Immutable
     data class State(
         val searchQuery: String? = null,
-        val list: List<HistoryUiModel>? = null,
+        val list: List<MangaHistoryUiModel>? = null,
         val dialog: Dialog? = null,
     )
 
     sealed interface Dialog {
         data object DeleteAll : Dialog
-        data class Delete(val history: HistoryWithRelations) : Dialog
-        data class DuplicateManga(val manga: Manga, val duplicates: List<MangaWithChapterCount>) : Dialog
+        data class Delete(val history: MangaHistoryWithRelations) : Dialog
+        data class DuplicateManga(val manga: Manga, val duplicate: Manga) : Dialog
         data class ChangeCategory(
             val manga: Manga,
             val initialSelection: ImmutableList<CheckboxState<Category>>,
         ) : Dialog
-        data class Migrate(val target: Manga, val current: Manga) : Dialog
+        data class Migrate(val newManga: Manga, val oldManga: Manga) : Dialog
     }
 
     sealed interface Event {

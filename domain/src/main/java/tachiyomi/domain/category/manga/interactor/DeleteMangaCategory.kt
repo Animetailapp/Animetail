@@ -30,17 +30,17 @@ class DeleteMangaCategory(
             )
         }
 
-        val defaultCategory = libraryPreferences.defaultCategory.get()
+        val defaultCategory = libraryPreferences.defaultMangaCategory().get()
         if (defaultCategory == categoryId.toInt()) {
-            libraryPreferences.defaultCategory.delete()
+            libraryPreferences.defaultMangaCategory().delete()
         }
 
         val categoryPreferences = listOf(
-            libraryPreferences.updateCategories,
-            libraryPreferences.updateCategoriesExclude,
-            downloadPreferences.removeExcludeCategories,
-            downloadPreferences.downloadNewChapterCategories,
-            downloadPreferences.downloadNewChapterCategoriesExclude,
+            libraryPreferences.mangaUpdateCategories(),
+            libraryPreferences.mangaUpdateCategories(),
+            downloadPreferences.removeExcludeCategories(),
+            downloadPreferences.downloadNewChapterCategories(),
+            downloadPreferences.downloadNewChapterCategoriesExclude(),
         )
         val categoryIdString = categoryId.toString()
         categoryPreferences.forEach { preference ->

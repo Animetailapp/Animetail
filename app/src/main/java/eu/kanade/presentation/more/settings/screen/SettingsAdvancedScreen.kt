@@ -25,26 +25,40 @@ import androidx.core.net.toUri
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.base.BasePreferences
-import eu.kanade.domain.extension.interactor.TrustExtension
+import eu.kanade.domain.extension.anime.interactor.TrustAnimeExtension
+import eu.kanade.domain.extension.manga.interactor.TrustMangaExtension
+import eu.kanade.domain.source.service.SourcePreferences
+import eu.kanade.domain.source.service.SourcePreferences.DataSaver
 import eu.kanade.presentation.more.settings.Preference
+import eu.kanade.presentation.more.settings.screen.advanced.ClearAnimeDatabaseScreen
 import eu.kanade.presentation.more.settings.screen.advanced.ClearDatabaseScreen
 import eu.kanade.presentation.more.settings.screen.debug.DebugInfoScreen
-import eu.kanade.tachiyomi.data.download.DownloadCache
-import eu.kanade.tachiyomi.data.library.MetadataUpdateJob
+import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
+import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
+import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
+import eu.kanade.tachiyomi.data.library.anime.AnimeMetadataUpdateJob
+import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateJob
+import eu.kanade.tachiyomi.data.library.manga.MangaMetadataUpdateJob
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.NetworkPreferences
+import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.PREF_DOH_360
 import eu.kanade.tachiyomi.network.PREF_DOH_ADGUARD
 import eu.kanade.tachiyomi.network.PREF_DOH_ALIDNS
 import eu.kanade.tachiyomi.network.PREF_DOH_CLOUDFLARE
 import eu.kanade.tachiyomi.network.PREF_DOH_CONTROLD
+import eu.kanade.tachiyomi.network.PREF_DOH_CUSTOM
 import eu.kanade.tachiyomi.network.PREF_DOH_DNSPOD
 import eu.kanade.tachiyomi.network.PREF_DOH_GOOGLE
+import eu.kanade.tachiyomi.network.PREF_DOH_LIBREDNS
 import eu.kanade.tachiyomi.network.PREF_DOH_MULLVAD
 import eu.kanade.tachiyomi.network.PREF_DOH_NJALLA
 import eu.kanade.tachiyomi.network.PREF_DOH_QUAD101
 import eu.kanade.tachiyomi.network.PREF_DOH_QUAD9
 import eu.kanade.tachiyomi.network.PREF_DOH_SHECAN
+import eu.kanade.tachiyomi.network.awaitSuccess
+import eu.kanade.tachiyomi.network.interceptor.FlareSolverrInterceptor
+import eu.kanade.tachiyomi.network.parseAs
 import eu.kanade.tachiyomi.ui.more.OnboardingScreen
 import eu.kanade.tachiyomi.util.CrashLogUtil
 import eu.kanade.tachiyomi.util.system.GLUtil
@@ -56,21 +70,35 @@ import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.toPersistentMap
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import logcat.LogPriority
+import mihon.core.migration.Migrator.scope
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.entries.manga.interactor.ResetMangaViewerFlags
 import tachiyomi.domain.library.service.LibraryPreferences
-import tachiyomi.domain.manga.interactor.ResetViewerFlags
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 import java.io.File
+import java.net.InetAddress
+import tachiyomi.core.common.preference.Preference as BasePreference
 
 object SettingsAdvancedScreen : SearchableSettings {
 
@@ -86,7 +114,6 @@ object SettingsAdvancedScreen : SearchableSettings {
 
         val basePreferences = remember { Injekt.get<BasePreferences>() }
         val networkPreferences = remember { Injekt.get<NetworkPreferences>() }
-        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
 
         return listOf(
             Preference.PreferenceItem.TextPreference(
@@ -99,7 +126,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                 },
             ),
             Preference.PreferenceItem.SwitchPreference(
-                preference = networkPreferences.verboseLogging,
+                preference = networkPreferences.verboseLogging(),
                 title = stringResource(MR.strings.pref_verbose_logging),
                 subtitle = stringResource(MR.strings.pref_verbose_logging_summary),
                 onValueChanged = {
@@ -127,9 +154,12 @@ object SettingsAdvancedScreen : SearchableSettings {
             getBackgroundActivityGroup(),
             getDataGroup(),
             getNetworkGroup(networkPreferences = networkPreferences),
-            getLibraryGroup(libraryPreferences = libraryPreferences),
+            getLibraryGroup(),
             getReaderGroup(basePreferences = basePreferences),
             getExtensionsGroup(basePreferences = basePreferences),
+            // SY -->
+            getDataSaverGroup(),
+            // SY <--
         )
     }
 
@@ -182,16 +212,22 @@ object SettingsAdvancedScreen : SearchableSettings {
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_invalidate_download_cache),
-                    subtitle = stringResource(MR.strings.pref_invalidate_download_cache_summary),
+                    subtitle = stringResource(AYMR.strings.pref_invalidate_download_cache_summary),
                     onClick = {
-                        Injekt.get<DownloadCache>().invalidateCache()
+                        Injekt.get<MangaDownloadCache>().invalidateCache()
+                        Injekt.get<AnimeDownloadCache>().invalidateCache()
                         context.toast(MR.strings.download_cache_invalidated)
                     },
                 ),
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_clear_database),
-                    subtitle = stringResource(MR.strings.pref_clear_database_summary),
+                    title = stringResource(AYMR.strings.pref_clear_manga_database),
+                    subtitle = stringResource(AYMR.strings.pref_clear_manga_database_summary),
                     onClick = { navigator.push(ClearDatabaseScreen()) },
+                ),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(AYMR.strings.pref_clear_anime_database),
+                    subtitle = stringResource(AYMR.strings.pref_clear_anime_database_summary),
+                    onClick = { navigator.push(ClearAnimeDatabaseScreen()) },
                 ),
             ),
         )
@@ -204,8 +240,19 @@ object SettingsAdvancedScreen : SearchableSettings {
         val context = LocalContext.current
         val networkHelper = remember { Injekt.get<NetworkHelper>() }
 
-        val userAgentPref = networkPreferences.defaultUserAgent
+        val userAgentPref = networkPreferences.defaultUserAgent()
         val userAgent by userAgentPref.collectAsState()
+        val dohProviderPref = networkPreferences.dohProvider()
+        val dohProvider by dohProviderPref.collectAsState()
+        val dohCustomUrlPref = networkPreferences.dohCustomUrl()
+        val dohCustomBootstrapPref = networkPreferences.dohCustomBootstrap()
+        val errorDohCustomBootstrapInvalid = stringResource(TLMR.strings.error_doh_custom_bootstrap_invalid)
+
+        // TLMR -->
+        val flareSolverrUrlPref = networkPreferences.flareSolverrUrl()
+        val enableFlareSolverrPref = networkPreferences.enableFlareSolverr()
+        val enableFlareSolverr by enableFlareSolverrPref.collectAsState()
+        // <-- TLMR
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_network),
@@ -238,7 +285,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    preference = networkPreferences.dohProvider,
+                    preference = networkPreferences.dohProvider(),
                     entries = persistentMapOf(
                         -1 to stringResource(MR.strings.disabled),
                         PREF_DOH_CLOUDFLARE to "Cloudflare",
@@ -253,9 +300,57 @@ object SettingsAdvancedScreen : SearchableSettings {
                         PREF_DOH_CONTROLD to "Control D",
                         PREF_DOH_NJALLA to "Njalla",
                         PREF_DOH_SHECAN to "Shecan",
+                        PREF_DOH_LIBREDNS to "LibreDNS",
+                        PREF_DOH_CUSTOM to "Custom",
                     ),
                     title = stringResource(MR.strings.pref_dns_over_https),
                     onValueChanged = {
+                        context.toast(MR.strings.requires_app_restart)
+                        true
+                    },
+                ),
+                Preference.PreferenceItem.EditTextPreference(
+                    preference = dohCustomUrlPref,
+                    title = stringResource(TLMR.strings.pref_doh_custom_url),
+                    subtitle = stringResource(TLMR.strings.pref_doh_custom_url_summary),
+                    enabled = dohProvider == PREF_DOH_CUSTOM,
+                    onValueChanged = {
+                        val value = it.trim()
+                        try {
+                            val parsed = value.toHttpUrl()
+                            if (!parsed.scheme.equals("https", ignoreCase = true)) {
+                                context.toast(TLMR.strings.error_doh_custom_must_use_https)
+                                return@EditTextPreference false
+                            }
+                        } catch (e: Exception) {
+                            context.toast(TLMR.strings.error_doh_custom_invalid)
+                            return@EditTextPreference false
+                        }
+                        context.toast(MR.strings.requires_app_restart)
+                        true
+                    },
+                ),
+                Preference.PreferenceItem.EditTextPreference(
+                    preference = dohCustomBootstrapPref,
+                    title = stringResource(TLMR.strings.pref_doh_custom_bootstrap),
+                    subtitle = stringResource(TLMR.strings.pref_doh_custom_bootstrap_summary),
+                    enabled = dohProvider == PREF_DOH_CUSTOM,
+                    onValueChanged = {
+                        // Validate comma separated hosts by attempting to resolve them
+                        val raw = it.trim()
+                        if (raw.isEmpty()) {
+                            context.toast(MR.strings.requires_app_restart)
+                            return@EditTextPreference true
+                        }
+                        val parts = raw.split(',').map { p -> p.trim() }.filter { p -> p.isNotEmpty() }
+                        for (p in parts) {
+                            try {
+                                InetAddress.getByName(p)
+                            } catch (e: Exception) {
+                                context.toast(errorDohCustomBootstrapInvalid.format(p))
+                                return@EditTextPreference false
+                            }
+                        }
                         context.toast(MR.strings.requires_app_restart)
                         true
                     },
@@ -283,30 +378,57 @@ object SettingsAdvancedScreen : SearchableSettings {
                         context.toast(MR.strings.requires_app_restart)
                     },
                 ),
+                // TLMR -->
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = enableFlareSolverrPref,
+                    title = stringResource(TLMR.strings.pref_enable_flare_solverr),
+                    subtitle = stringResource(TLMR.strings.pref_enable_flare_solverr_summary),
+                ),
+                Preference.PreferenceItem.EditTextPreference(
+                    preference = flareSolverrUrlPref,
+                    title = stringResource(TLMR.strings.pref_flare_solverr_url),
+                    enabled = enableFlareSolverr,
+                    subtitle = stringResource(TLMR.strings.pref_flare_solverr_url_summary),
+                ),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(TLMR.strings.pref_test_flare_solverr_and_update_user_agent),
+                    enabled = enableFlareSolverr,
+                    subtitle = stringResource(TLMR.strings.pref_test_flare_solverr_and_update_user_agent_summary),
+                    onClick = {
+                        scope.launch {
+                            testFlareSolverrAndUpdateUserAgent(flareSolverrUrlPref, userAgentPref, context)
+                        }
+                    },
+                ),
+                // <-- TLMR
             ),
         )
     }
 
     @Composable
-    private fun getLibraryGroup(
-        libraryPreferences: LibraryPreferences,
-    ): Preference.PreferenceGroup {
+    private fun getLibraryGroup(): Preference.PreferenceGroup {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
+        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_library),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_refresh_library_covers),
-                    onClick = { MetadataUpdateJob.startNow(context) },
+                    onClick = {
+                        AnimeLibraryUpdateJob.startNow(context)
+                        MangaLibraryUpdateJob.startNow(context)
+                        AnimeMetadataUpdateJob.startNow(context)
+                        MangaMetadataUpdateJob.startNow(context)
+                    },
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_reset_viewer_flags),
                     subtitle = stringResource(MR.strings.pref_reset_viewer_flags_summary),
                     onClick = {
                         scope.launchNonCancellable {
-                            val success = Injekt.get<ResetViewerFlags>().await()
+                            val success = Injekt.get<ResetMangaViewerFlags>().await()
                             withUIContext {
                                 val message = if (success) {
                                     MR.strings.pref_reset_viewer_flags_success
@@ -319,14 +441,9 @@ object SettingsAdvancedScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = libraryPreferences.updateMangaTitles,
+                    preference = libraryPreferences.updateMangaTitles(),
                     title = stringResource(MR.strings.pref_update_library_manga_titles),
                     subtitle = stringResource(MR.strings.pref_update_library_manga_titles_summary),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = libraryPreferences.disallowNonAsciiFilenames,
-                    title = stringResource(MR.strings.pref_disallow_non_ascii_filenames),
-                    subtitle = stringResource(MR.strings.pref_disallow_non_ascii_filenames_details),
                 ),
             ),
         )
@@ -343,14 +460,14 @@ object SettingsAdvancedScreen : SearchableSettings {
             uri?.let {
                 val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 context.contentResolver.takePersistableUriPermission(uri, flags)
-                basePreferences.displayProfile.set(uri.toString())
+                basePreferences.displayProfile().set(uri.toString())
             }
         }
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_reader),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.ListPreference(
-                    preference = basePreferences.hardwareBitmapThreshold,
+                    preference = basePreferences.hardwareBitmapThreshold(),
                     entries = GLUtil.CUSTOM_TEXTURE_LIMIT_OPTIONS
                         .mapIndexed { index, option ->
                             val display = if (index == 0) {
@@ -370,13 +487,13 @@ object SettingsAdvancedScreen : SearchableSettings {
                         GLUtil.DEVICE_TEXTURE_LIMIT > GLUtil.SAFE_TEXTURE_LIMIT,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = basePreferences.alwaysDecodeLongStripWithSSIV,
+                    preference = basePreferences.alwaysDecodeLongStripWithSSIV(),
                     title = stringResource(MR.strings.pref_always_decode_long_strip_with_ssiv_2),
                     subtitle = stringResource(MR.strings.pref_always_decode_long_strip_with_ssiv_summary),
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_display_profile),
-                    subtitle = basePreferences.displayProfile.get(),
+                    subtitle = basePreferences.displayProfile().get(),
                     onClick = {
                         chooseColorProfile.launch(arrayOf("*/*"))
                     },
@@ -391,16 +508,21 @@ object SettingsAdvancedScreen : SearchableSettings {
     ): Preference.PreferenceGroup {
         val context = LocalContext.current
         val uriHandler = LocalUriHandler.current
-        val extensionInstallerPref = basePreferences.extensionInstaller
+        val extensionInstallerPref = basePreferences.extensionInstaller()
         var shizukuMissing by rememberSaveable { mutableStateOf(false) }
-        val trustExtension = remember { Injekt.get<TrustExtension>() }
+        val trustAnimeExtension = remember { Injekt.get<TrustAnimeExtension>() }
+        val trustMangaExtension = remember { Injekt.get<TrustMangaExtension>() }
 
         if (shizukuMissing) {
             val dismiss = { shizukuMissing = false }
             AlertDialog(
                 onDismissRequest = dismiss,
                 title = { Text(text = stringResource(MR.strings.ext_installer_shizuku)) },
-                text = { Text(text = stringResource(MR.strings.ext_installer_shizuku_unavailable_dialog)) },
+                text = {
+                    Text(
+                        text = stringResource(MR.strings.ext_installer_shizuku_unavailable_dialog),
+                    )
+                },
                 dismissButton = {
                     TextButton(onClick = dismiss) {
                         Text(text = stringResource(MR.strings.action_cancel))
@@ -449,11 +571,143 @@ object SettingsAdvancedScreen : SearchableSettings {
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.ext_revoke_trust),
                     onClick = {
-                        trustExtension.revokeAll()
+                        trustMangaExtension.revokeAll()
+                        trustAnimeExtension.revokeAll()
                         context.toast(MR.strings.requires_app_restart)
                     },
                 ),
             ),
         )
     }
+
+    // SY -->
+    @Composable
+    private fun getDataSaverGroup(): Preference.PreferenceGroup {
+        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
+        val dataSaver by sourcePreferences.dataSaver().collectAsState()
+        return Preference.PreferenceGroup(
+            title = stringResource(AYMR.strings.data_saver),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.ListPreference(
+                    preference = sourcePreferences.dataSaver(),
+                    entries = persistentMapOf(
+                        DataSaver.NONE to stringResource(MR.strings.disabled),
+                        DataSaver.BANDWIDTH_HERO to stringResource(AYMR.strings.bandwidth_hero),
+                        DataSaver.WSRV_NL to stringResource(AYMR.strings.wsrv),
+                        DataSaver.RESMUSH_IT to stringResource(AYMR.strings.resmush),
+                    ),
+                    title = stringResource(AYMR.strings.data_saver),
+                    subtitle = stringResource(AYMR.strings.data_saver_summary),
+                ),
+                Preference.PreferenceItem.EditTextPreference(
+                    preference = sourcePreferences.dataSaverServer(),
+                    title = stringResource(AYMR.strings.bandwidth_data_saver_server),
+                    subtitle = stringResource(AYMR.strings.data_saver_server_summary),
+                    enabled = dataSaver == DataSaver.BANDWIDTH_HERO,
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = sourcePreferences.dataSaverDownloader(),
+                    title = stringResource(AYMR.strings.data_saver_downloader),
+                    enabled = dataSaver != DataSaver.NONE,
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = sourcePreferences.dataSaverIgnoreJpeg(),
+                    title = stringResource(AYMR.strings.data_saver_ignore_jpeg),
+                    enabled = dataSaver != DataSaver.NONE,
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = sourcePreferences.dataSaverIgnoreGif(),
+                    title = stringResource(AYMR.strings.data_saver_ignore_gif),
+                    enabled = dataSaver != DataSaver.NONE,
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = sourcePreferences.dataSaverImageQuality(),
+                    entries = listOf(
+                        "10%",
+                        "20%",
+                        "40%",
+                        "50%",
+                        "70%",
+                        "80%",
+                        "90%",
+                        "95%",
+                    ).associateBy { it.trimEnd('%').toInt() }.toPersistentMap(),
+                    title = stringResource(AYMR.strings.data_saver_image_quality),
+                    subtitle = stringResource(AYMR.strings.data_saver_image_quality_summary),
+                    enabled = dataSaver != DataSaver.NONE,
+                ),
+                kotlin.run {
+                    val dataSaverImageFormatJpeg by sourcePreferences.dataSaverImageFormatJpeg().collectAsState()
+                    Preference.PreferenceItem.SwitchPreference(
+                        preference = sourcePreferences.dataSaverImageFormatJpeg(),
+                        title = stringResource(AYMR.strings.data_saver_image_format),
+                        subtitle = if (dataSaverImageFormatJpeg) {
+                            stringResource(AYMR.strings.data_saver_image_format_summary_on)
+                        } else {
+                            stringResource(AYMR.strings.data_saver_image_format_summary_off)
+                        },
+                        enabled = dataSaver != DataSaver.NONE && dataSaver != DataSaver.RESMUSH_IT,
+                    )
+                },
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = sourcePreferences.dataSaverColorBW(),
+                    title = stringResource(AYMR.strings.data_saver_color_bw),
+                    enabled = dataSaver == DataSaver.BANDWIDTH_HERO,
+                ),
+            ),
+        )
+    }
+
+    // SY <--
+    // TLMR -->
+    private suspend fun testFlareSolverrAndUpdateUserAgent(
+        flareSolverrUrlPref: BasePreference<String>,
+        userAgentPref: BasePreference<String>,
+        context: android.content.Context,
+    ) {
+        val json: Json by injectLazy()
+        val jsonMediaType = "application/json".toMediaType()
+        val client = OkHttpClient.Builder().build()
+
+        try {
+            withContext(Dispatchers.IO) {
+                val flareSolverUrl = flareSolverrUrlPref.get().trim()
+                val flareSolverResponse = with(json) {
+                    client.newCall(
+                        POST(
+                            url = flareSolverUrl,
+                            body =
+                            Json.encodeToString(
+                                FlareSolverrInterceptor.CFClearance.FlareSolverRequest(
+                                    "request.get",
+                                    "https://www.google.com/",
+                                    returnOnlyCookies = true,
+                                    maxTimeout = 60000,
+                                ),
+                            ).toRequestBody(jsonMediaType),
+                        ),
+                    ).awaitSuccess().parseAs<FlareSolverrInterceptor.CFClearance.FlareSolverResponse>()
+                }
+
+                if (flareSolverResponse.solution.status in 200..299) {
+                    // Set the user agent to the one provided by FlareSolverr
+                    userAgentPref.set(flareSolverResponse.solution.userAgent)
+
+                    withContext(Dispatchers.Main) {
+                        context.toast(TLMR.strings.flare_solver_user_agent_update_success)
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        context.toast(TLMR.strings.flare_solver_update_user_agent_failed)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, tag = "FlareSolverr") { "Failed to resolve with FlareSolverr: ${e.message}" }
+            withContext(Dispatchers.Main) {
+                context.toast(TLMR.strings.flare_solver_error)
+            }
+        }
+    }
+    // <-- TLMR
 }

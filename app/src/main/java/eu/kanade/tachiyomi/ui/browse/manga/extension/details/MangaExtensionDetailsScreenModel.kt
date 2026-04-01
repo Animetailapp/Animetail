@@ -1,16 +1,16 @@
-package eu.kanade.tachiyomi.ui.browse.extension.details
+package eu.kanade.tachiyomi.ui.browse.manga.extension.details
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import eu.kanade.domain.extension.interactor.ExtensionSourceItem
-import eu.kanade.domain.extension.interactor.GetExtensionSources
-import eu.kanade.domain.source.interactor.ToggleIncognito
-import eu.kanade.domain.source.interactor.ToggleSource
+import eu.kanade.domain.extension.manga.interactor.GetExtensionSources
+import eu.kanade.domain.extension.manga.interactor.MangaExtensionSourceItem
+import eu.kanade.domain.source.manga.interactor.ToggleMangaIncognito
+import eu.kanade.domain.source.manga.interactor.ToggleMangaSource
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.tachiyomi.extension.ExtensionManager
-import eu.kanade.tachiyomi.extension.model.Extension
+import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
+import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.system.LocaleHelper
@@ -32,19 +32,19 @@ import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class ExtensionDetailsScreenModel(
+class MangaExtensionDetailsScreenModel(
     pkgName: String,
     context: Context,
     private val network: NetworkHelper = Injekt.get(),
-    private val extensionManager: ExtensionManager = Injekt.get(),
+    private val extensionManager: MangaExtensionManager = Injekt.get(),
     private val getExtensionSources: GetExtensionSources = Injekt.get(),
-    private val toggleSource: ToggleSource = Injekt.get(),
-    private val toggleIncognito: ToggleIncognito = Injekt.get(),
+    private val toggleSource: ToggleMangaSource = Injekt.get(),
+    private val toggleIncognito: ToggleMangaIncognito = Injekt.get(),
     private val preferences: SourcePreferences = Injekt.get(),
-) : StateScreenModel<ExtensionDetailsScreenModel.State>(State()) {
+) : StateScreenModel<MangaExtensionDetailsScreenModel.State>(State()) {
 
-    private val _events: Channel<ExtensionDetailsEvent> = Channel()
-    val events: Flow<ExtensionDetailsEvent> = _events.receiveAsFlow()
+    private val _events: Channel<MangaExtensionDetailsEvent> = Channel()
+    val events: Flow<MangaExtensionDetailsEvent> = _events.receiveAsFlow()
 
     init {
         screenModelScope.launch {
@@ -53,7 +53,7 @@ class ExtensionDetailsScreenModel(
                     .map { it.firstOrNull { extension -> extension.pkgName == pkgName } }
                     .collectLatest { extension ->
                         if (extension == null) {
-                            _events.send(ExtensionDetailsEvent.Uninstalled)
+                            _events.send(MangaExtensionDetailsEvent.Uninstalled)
                             return@collectLatest
                         }
                         mutableState.update { state ->
@@ -71,7 +71,10 @@ class ExtensionDetailsScreenModel(
                                     { !it.enabled },
                                     { item ->
                                         item.source.name.takeIf { item.labelAsName }
-                                            ?: LocaleHelper.getSourceDisplayName(item.source.lang, context).lowercase()
+                                            ?: LocaleHelper.getSourceDisplayName(
+                                                item.source.lang,
+                                                context,
+                                            ).lowercase()
                                     },
                                 ),
                             )
@@ -86,7 +89,7 @@ class ExtensionDetailsScreenModel(
                 }
             }
             launch {
-                preferences.incognitoExtensions
+                preferences.incognitoMangaExtensions()
                     .changes()
                     .map { pkgName in it }
                     .distinctUntilChanged()
@@ -140,12 +143,12 @@ class ExtensionDetailsScreenModel(
 
     @Immutable
     data class State(
-        val extension: Extension.Installed? = null,
+        val extension: MangaExtension.Installed? = null,
         val isIncognito: Boolean = false,
-        private val _sources: ImmutableList<ExtensionSourceItem>? = null,
+        private val _sources: ImmutableList<MangaExtensionSourceItem>? = null,
     ) {
 
-        val sources: ImmutableList<ExtensionSourceItem>
+        val sources: ImmutableList<MangaExtensionSourceItem>
             get() = _sources ?: persistentListOf()
 
         val isLoading: Boolean
@@ -153,6 +156,6 @@ class ExtensionDetailsScreenModel(
     }
 }
 
-sealed interface ExtensionDetailsEvent {
-    data object Uninstalled : ExtensionDetailsEvent
+sealed interface MangaExtensionDetailsEvent {
+    data object Uninstalled : MangaExtensionDetailsEvent
 }

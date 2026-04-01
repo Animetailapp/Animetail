@@ -16,13 +16,11 @@ class GetAnimeIncognitoState(
         if (basePreferences.incognitoMode().get()) return true
         if (sourceId == null) return false
         val extensionPackage = extensionManager.getExtensionPackage(sourceId) ?: return false
-
         return extensionPackage in sourcePreferences.incognitoAnimeExtensions().get()
     }
 
     fun subscribe(sourceId: Long?): Flow<Boolean> {
         if (sourceId == null) return basePreferences.incognitoMode().changes()
-
         return combine(
             basePreferences.incognitoMode().changes(),
             sourcePreferences.incognitoAnimeExtensions().changes(),

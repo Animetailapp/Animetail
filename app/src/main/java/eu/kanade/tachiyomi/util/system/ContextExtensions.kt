@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.appcompat.view.ContextThemeWrapper
+import androidx.core.content.PermissionChecker
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
@@ -19,6 +20,7 @@ import eu.kanade.domain.ui.model.ThemeMode
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.base.delegate.ThemingDelegate
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import eu.kanade.tachiyomi.ui.setting.connections.DiscordLoginActivity
 import eu.kanade.tachiyomi.util.lang.truncateCenter
 import logcat.LogPriority
 import rikka.sui.Sui
@@ -53,6 +55,17 @@ fun Context.copyToClipboard(label: String, content: String) {
     }
 }
 
+/**
+ * Checks if the give permission is granted.
+ *
+ * @param permission the permission to check.
+ * @return true if it has permissions.
+ */
+fun Context.hasPermission(permission: String) = PermissionChecker.checkSelfPermission(
+    this,
+    permission,
+) == PermissionChecker.PERMISSION_GRANTED
+
 val Context.powerManager: PowerManager
     get() = getSystemService()!!
 
@@ -73,6 +86,17 @@ fun Context.openInBrowser(uri: Uri, forceDefaultBrowser: Boolean = false) {
         toast(e.message)
     }
 }
+
+// AM (DISCORD) -->
+fun Context.openDiscordLoginActivity() {
+    try {
+        val intent = Intent(this, DiscordLoginActivity::class.java)
+        startActivity(intent)
+    } catch (e: Exception) {
+        toast(e.message)
+    }
+}
+// <-- AM (DISCORD)
 
 private fun Context.defaultBrowserPackageName(): String? {
     val browserIntent = Intent(Intent.ACTION_VIEW, "http://".toUri())
@@ -107,8 +131,8 @@ fun Context.createFileInCacheDir(name: String): File {
 fun Context.createReaderThemeContext(): Context {
     val preferences = Injekt.get<UiPreferences>()
     val readerPreferences = Injekt.get<ReaderPreferences>()
-    val themeMode = preferences.themeMode.get()
-    val isDarkBackground = when (readerPreferences.readerTheme.get()) {
+    val themeMode = preferences.themeMode().get()
+    val isDarkBackground = when (readerPreferences.readerTheme().get()) {
         1, 2 -> true
 
         // Black, Gray
@@ -124,11 +148,14 @@ fun Context.createReaderThemeContext(): Context {
     if (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != expected) {
         val overrideConf = Configuration()
         overrideConf.setTo(resources.configuration)
-        overrideConf.uiMode = (overrideConf.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or expected
+        overrideConf.uiMode = overrideConf.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv() or expected
 
         val wrappedContext = ContextThemeWrapper(this, R.style.Theme_Tachiyomi)
         wrappedContext.applyOverrideConfiguration(overrideConf)
-        ThemingDelegate.getThemeResIds(preferences.appTheme.get(), preferences.themeDarkAmoled.get())
+        ThemingDelegate.getThemeResIds(
+            preferences.appTheme().get(),
+            preferences.themeDarkAmoled().get(),
+        )
             .forEach { wrappedContext.theme.applyStyle(it, true) }
         return wrappedContext
     }

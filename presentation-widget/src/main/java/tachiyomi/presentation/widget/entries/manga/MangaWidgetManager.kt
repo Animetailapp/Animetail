@@ -12,16 +12,19 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.updates.interactor.GetUpdates
+import tachiyomi.domain.updates.manga.interactor.GetMangaUpdates
 
 class MangaWidgetManager(
-    private val getUpdates: GetUpdates,
+    private val getUpdates: GetMangaUpdates,
     private val securityPreferences: SecurityPreferences,
 ) {
 
     fun Context.init(scope: LifecycleCoroutineScope) {
         combine(
-            getUpdates.subscribe(read = false, after = BaseMangaUpdatesGridGlanceWidget.DateLimit.toEpochMilli()),
+            getUpdates.subscribe(
+                read = false,
+                after = BaseMangaUpdatesGridGlanceWidget.DateLimit.toEpochMilli(),
+            ),
             securityPreferences.useAuthenticator.changes(),
             transform = { a, b -> a to b },
         )
@@ -37,7 +40,7 @@ class MangaWidgetManager(
                     logcat(LogPriority.ERROR, e) { "Failed to update widget" }
                 }
             }
-            .flowOn(Dispatchers.Default)
+            .flowOn(Dispatchers.Main)
             .launchIn(scope)
     }
 }
