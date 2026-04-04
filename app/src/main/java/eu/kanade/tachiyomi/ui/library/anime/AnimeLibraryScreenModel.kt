@@ -113,7 +113,7 @@ class AnimeLibraryScreenModel(
     // SY <--
 ) : StateScreenModel<AnimeLibraryScreenModel.State>(State()) {
 
-    var activeCategoryIndex: Int by libraryPreferences.lastUsedAnimeCategory().asState(
+    var activeCategoryIndex: Int by libraryPreferences.lastUsedAnimeCategory.asState(
         screenModelScope,
     )
 
@@ -131,7 +131,7 @@ class AnimeLibraryScreenModel(
                 // SY -->
                 combine(
                     state.map { it.groupType }.distinctUntilChanged(),
-                    libraryPreferences.animeSortingMode().changes(),
+                    libraryPreferences.animeSortingMode.changes(),
                     ::Pair,
                 ),
                 // SY <--
@@ -161,9 +161,9 @@ class AnimeLibraryScreenModel(
         }
 
         combine(
-            libraryPreferences.categoryTabs().changes(),
-            libraryPreferences.categoryNumberOfItems().changes(),
-            libraryPreferences.showContinueViewingButton().changes(),
+            libraryPreferences.categoryTabs.changes(),
+            libraryPreferences.categoryNumberOfItems.changes(),
+            libraryPreferences.showContinueReadingButton.changes(),
         ) { a, b, c -> arrayOf(a, b, c) }
             .onEach { (showCategoryTabs, showAnimeCount, showAnimeContinueButton) ->
                 mutableState.update { state ->
@@ -200,7 +200,7 @@ class AnimeLibraryScreenModel(
             .launchIn(screenModelScope)
 
         // SY -->
-        libraryPreferences.groupAnimeLibraryBy().changes()
+        libraryPreferences.groupAnimeLibraryBy.changes()
             .onEach {
                 mutableState.update { state ->
                     state.copy(groupType = it)
@@ -389,7 +389,7 @@ class AnimeLibraryScreenModel(
 
         return mapValues { (key, value) ->
             if (key.sort.type == AnimeLibrarySort.Type.Random) {
-                return@mapValues value.shuffled(Random(libraryPreferences.randomAnimeSortSeed().get()))
+                return@mapValues value.shuffled(Random(libraryPreferences.randomAnimeSortSeed.get()))
             }
 
             // Use groupSort if we're in a grouped mode, otherwise use the category's sort
@@ -404,19 +404,19 @@ class AnimeLibraryScreenModel(
 
     private fun getAnimelibItemPreferencesFlow(): Flow<ItemPreferences> {
         return combine(
-            libraryPreferences.downloadBadge().changes(),
-            libraryPreferences.unreadBadge().changes(),
-            libraryPreferences.localBadge().changes(),
-            libraryPreferences.languageBadge().changes(),
-            libraryPreferences.autoUpdateItemRestrictions().changes(),
+            libraryPreferences.downloadBadge.changes(),
+            libraryPreferences.unreadBadge.changes(),
+            libraryPreferences.localBadge.changes(),
+            libraryPreferences.languageBadge.changes(),
+            libraryPreferences.autoUpdateMangaRestrictions.changes(),
 
-            preferences.downloadedOnly().changes(),
-            libraryPreferences.filterDownloadedAnime().changes(),
-            libraryPreferences.filterUnseen().changes(),
-            libraryPreferences.filterStartedAnime().changes(),
-            libraryPreferences.filterBookmarkedAnime().changes(),
-            libraryPreferences.filterCompletedAnime().changes(),
-            libraryPreferences.filterIntervalCustom().changes(),
+            preferences.downloadedOnly.changes(),
+            libraryPreferences.filterDownloadedAnime.changes(),
+            libraryPreferences.filterUnseen.changes(),
+            libraryPreferences.filterStartedAnime.changes(),
+            libraryPreferences.filterBookmarkedAnime.changes(),
+            libraryPreferences.filterCompletedAnime.changes(),
+            libraryPreferences.filterIntervalCustom.changes(),
             transform = {
                 ItemPreferences(
                     downloadBadge = it[0] as Boolean,
@@ -691,15 +691,15 @@ class AnimeLibraryScreenModel(
     }
 
     fun getDisplayMode(): PreferenceMutableState<LibraryDisplayMode> {
-        return libraryPreferences.displayMode().asState(screenModelScope)
+        return libraryPreferences.displayMode.asState(screenModelScope)
     }
 
     fun getColumnsPreferenceForCurrentOrientation(isLandscape: Boolean): PreferenceMutableState<Int> {
         return (
             if (isLandscape) {
-                libraryPreferences.animeLandscapeColumns()
+                libraryPreferences.animeLandscapeColumns
             } else {
-                libraryPreferences.animePortraitColumns()
+                libraryPreferences.animePortraitColumns
             }
             ).asState(
             screenModelScope,

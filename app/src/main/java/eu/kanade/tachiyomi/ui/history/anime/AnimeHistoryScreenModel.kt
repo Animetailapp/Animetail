@@ -195,7 +195,7 @@ class AnimeHistoryScreenModel(
         screenModelScope.launchIO {
             // Move to default category if applicable
             val categories = getCategories()
-            val defaultCategoryId = libraryPreferences.defaultAnimeCategory().get().toLong()
+            val defaultCategoryId = libraryPreferences.defaultAnimeCategory.get().toLong()
             val defaultCategory = categories.find { it.id == defaultCategoryId }
 
             when {

@@ -56,11 +56,11 @@ class MangaSourcesScreenModel(
                 .collectLatest(::collectLatestSources)
         }
         // SY -->
-        sourcePreferences.dataSaver().changes()
+        sourcePreferences.dataSaver.changes()
             .onEach {
                 mutableState.update {
                     it.copy(
-                        dataSaverEnabled = sourcePreferences.dataSaver().get() != DataSaver.NONE,
+                        dataSaverEnabled = sourcePreferences.dataSaver.get() != DataSaver.NONE,
                     )
                 }
             }

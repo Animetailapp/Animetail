@@ -29,7 +29,7 @@ fun AnimeTrack.toApiStatus() = when (status) {
 
 private val preferences: TrackPreferences by injectLazy()
 
-private fun Double.toApiScore(): String = when (preferences.anilistScoreType().get()) {
+private fun Double.toApiScore(): String = when (preferences.anilistScoreType.get()) {
     // 10 point
     "POINT_10" -> (this.toInt() / 10).toString()
 

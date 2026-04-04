@@ -424,12 +424,12 @@ private fun AnimeScreenSmallImpl(
         }
     })
 
-    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes().collectAsState()
-    val expandRelatedAnimes by uiPreferences.expandRelatedAnimes().collectAsState()
-    val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow().collectAsState()
-    val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps().collectAsState()
-    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters().collectAsState()
-    val showCast by uiPreferences.showCast().collectAsState()
+    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes.collectAsState()
+    val expandRelatedAnimes by uiPreferences.expandRelatedAnimes.collectAsState()
+    val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow.collectAsState()
+    val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps.collectAsState()
+    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters.collectAsState()
+    val showCast by uiPreferences.showCast.collectAsState()
 
     BoxWithConstraints {
         val density = LocalDensity.current
@@ -873,8 +873,8 @@ fun AnimeScreenLargeImpl(
     var topBarHeight by remember { mutableIntStateOf(0) }
     val offsetGridPaddingPx = with(density) { GRID_PADDING.roundToPx() }
     val gridSize = remember(state.anime) { state.anime.seasonDisplayGridSize }
-    val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps().collectAsState()
-    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters().collectAsState()
+    val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps.collectAsState()
+    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters.collectAsState()
 
     val itemListState = rememberLazyGridState()
     val hasFilters = remember(state) {
@@ -891,10 +891,10 @@ fun AnimeScreenLargeImpl(
             navigateUp()
         }
     })
-    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes().collectAsState()
-    val expandRelatedAnimes by uiPreferences.expandRelatedAnimes().collectAsState()
-    val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow().collectAsState()
-    val showCast by uiPreferences.showCast().collectAsState()
+    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes.collectAsState()
+    val expandRelatedAnimes by uiPreferences.expandRelatedAnimes.collectAsState()
+    val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow.collectAsState()
+    val showCast by uiPreferences.showCast.collectAsState()
 
     BoxWithConstraints {
         val density = LocalDensity.current

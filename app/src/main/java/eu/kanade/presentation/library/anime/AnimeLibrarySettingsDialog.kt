@@ -102,9 +102,9 @@ fun AnimeLibrarySettingsDialog(
 private fun ColumnScope.FilterPage(
     screenModel: AnimeLibrarySettingsScreenModel,
 ) {
-    val filterDownloaded by screenModel.libraryPreferences.filterDownloadedAnime().collectAsState()
-    val downloadedOnly by screenModel.preferences.downloadedOnly().collectAsState()
-    val autoUpdateAnimeRestrictions by screenModel.libraryPreferences.autoUpdateItemRestrictions().collectAsState()
+    val filterDownloaded by screenModel.libraryPreferences.filterDownloadedAnime.collectAsState()
+    val downloadedOnly by screenModel.preferences.downloadedOnly.collectAsState()
+    val autoUpdateAnimeRestrictions by screenModel.libraryPreferences.autoUpdateMangaRestrictions.collectAsState()
 
     TriStateItem(
         label = stringResource(MR.strings.label_downloaded),
@@ -116,25 +116,25 @@ private fun ColumnScope.FilterPage(
         enabled = !downloadedOnly,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterDownloadedAnime) },
     )
-    val filterUnseen by screenModel.libraryPreferences.filterUnseen().collectAsState()
+    val filterUnseen by screenModel.libraryPreferences.filterUnseen.collectAsState()
     TriStateItem(
         label = stringResource(AYMR.strings.action_filter_unseen),
         state = filterUnseen,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterUnseen) },
     )
-    val filterStarted by screenModel.libraryPreferences.filterStartedAnime().collectAsState()
+    val filterStarted by screenModel.libraryPreferences.filterStartedAnime.collectAsState()
     TriStateItem(
         label = stringResource(MR.strings.label_started),
         state = filterStarted,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterStartedAnime) },
     )
-    val filterBookmarked by screenModel.libraryPreferences.filterBookmarkedAnime().collectAsState()
+    val filterBookmarked by screenModel.libraryPreferences.filterBookmarkedAnime.collectAsState()
     TriStateItem(
         label = stringResource(MR.strings.action_filter_bookmarked),
         state = filterBookmarked,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterBookmarkedAnime) },
     )
-    val filterCompleted by screenModel.libraryPreferences.filterCompletedAnime().collectAsState()
+    val filterCompleted by screenModel.libraryPreferences.filterCompletedAnime.collectAsState()
     TriStateItem(
         label = stringResource(MR.strings.completed),
         state = filterCompleted,
@@ -142,11 +142,11 @@ private fun ColumnScope.FilterPage(
     )
     // TODO: re-enable when custom intervals are ready for stable
     if ((!isReleaseBuildType) && LibraryPreferences.ENTRY_OUTSIDE_RELEASE_PERIOD in autoUpdateAnimeRestrictions) {
-        val filterIntervalCustom by screenModel.libraryPreferences.filterIntervalCustom().collectAsState()
+        val filterIntervalCustom by screenModel.libraryPreferences.filterIntervalCustom.collectAsState()
         TriStateItem(
             label = stringResource(MR.strings.action_filter_interval_custom),
             state = filterIntervalCustom,
-            onClick = { screenModel.toggleFilter { it.filterIntervalCustom() } },
+            onClick = { screenModel.toggleFilter { it.filterIntervalCustom } },
         )
     }
 
@@ -191,7 +191,7 @@ private fun ColumnScope.SortPage(
 ) {
     val trackers by screenModel.trackersFlow.collectAsState()
     // SY -->
-    val globalSortMode by screenModel.libraryPreferences.animeSortingMode().collectAsState()
+    val globalSortMode by screenModel.libraryPreferences.animeSortingMode.collectAsState()
     val sortingMode = if (screenModel.grouping == AnimeLibraryGroup.BY_DEFAULT) {
         category.sort.type
     } else {
@@ -272,7 +272,7 @@ private val displayModes = listOf(
 private fun ColumnScope.DisplayPage(
     screenModel: AnimeLibrarySettingsScreenModel,
 ) {
-    val displayMode by screenModel.libraryPreferences.displayMode().collectAsState()
+    val displayMode by screenModel.libraryPreferences.displayMode.collectAsState()
     SettingsChipRow(MR.strings.action_display_mode) {
         displayModes.map { (titleRes, mode) ->
             FilterChip(
@@ -286,9 +286,9 @@ private fun ColumnScope.DisplayPage(
     val configuration = LocalConfiguration.current
     val columnPreference = remember {
         if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            screenModel.libraryPreferences.animeLandscapeColumns()
+            screenModel.libraryPreferences.animeLandscapeColumns
         } else {
-            screenModel.libraryPreferences.animePortraitColumns()
+            screenModel.libraryPreferences.animePortraitColumns
         }
     }
 
@@ -324,33 +324,33 @@ private fun ColumnScope.DisplayPage(
     HeadingItem(MR.strings.overlay_header)
     CheckboxItem(
         label = stringResource(AYMR.strings.action_display_download_badge_anime),
-        pref = screenModel.libraryPreferences.downloadBadge(),
+        pref = screenModel.libraryPreferences.downloadBadge,
     )
     CheckboxItem(
         label = stringResource(AYMR.strings.action_display_unseen_badge),
-        pref = screenModel.libraryPreferences.unreadBadge(),
+        pref = screenModel.libraryPreferences.unreadBadge,
     )
     CheckboxItem(
         label = stringResource(MR.strings.action_display_local_badge),
-        pref = screenModel.libraryPreferences.localBadge(),
+        pref = screenModel.libraryPreferences.localBadge,
     )
     CheckboxItem(
         label = stringResource(MR.strings.action_display_language_badge),
-        pref = screenModel.libraryPreferences.languageBadge(),
+        pref = screenModel.libraryPreferences.languageBadge,
     )
     CheckboxItem(
         label = stringResource(AYMR.strings.action_display_show_continue_reading_button),
-        pref = screenModel.libraryPreferences.showContinueViewingButton(),
+        pref = screenModel.libraryPreferences.showContinueReadingButton,
     )
 
     HeadingItem(MR.strings.tabs_header)
     CheckboxItem(
         label = stringResource(MR.strings.action_display_show_tabs),
-        pref = screenModel.libraryPreferences.categoryTabs(),
+        pref = screenModel.libraryPreferences.categoryTabs,
     )
     CheckboxItem(
         label = stringResource(MR.strings.action_display_show_number_of_items),
-        pref = screenModel.libraryPreferences.categoryNumberOfItems(),
+        pref = screenModel.libraryPreferences.categoryNumberOfItems,
     )
 }
 

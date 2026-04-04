@@ -10,7 +10,7 @@ import eu.kanade.domain.ui.UiPreferences
 
 internal class CustomColorScheme(uiPreferences: UiPreferences) : BaseColorScheme() {
 
-    private val seed = uiPreferences.colorTheme().get()
+    private val seed = uiPreferences.colorTheme.get()
 
     private val custom = CustomCompatColorScheme(seed)
 

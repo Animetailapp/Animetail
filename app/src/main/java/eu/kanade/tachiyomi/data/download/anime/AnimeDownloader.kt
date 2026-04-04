@@ -433,7 +433,7 @@ class AnimeDownloader(
                     download.progress = 0
 
                     // If videoFile is not existing then download it
-                    if (preferences.useExternalDownloader().get() == download.changeDownloader) {
+                    if (preferences.useExternalDownloader.get() == download.changeDownloader) {
                         progressJob = scope.launch {
                             while (download.status == AnimeDownload.State.DOWNLOADING) {
                                 delay(50)
@@ -695,7 +695,7 @@ class AnimeDownloader(
             // TODO: support other file formats!!
             // start download with intent
             val pm = context.packageManager
-            val pkgName = preferences.externalDownloaderSelection().get()
+            val pkgName = preferences.externalDownloaderSelection.get()
             val intent: Intent
             if (pkgName.isNotEmpty()) {
                 intent = pm.getLaunchIntentForPackage(pkgName) ?: throw Exception(

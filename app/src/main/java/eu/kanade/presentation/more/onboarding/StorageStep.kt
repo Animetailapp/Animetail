@@ -33,7 +33,7 @@ import uy.kohesive.injekt.api.get
 
 internal class StorageStep : OnboardingStep {
 
-    private val storagePref = Injekt.get<StoragePreferences>().baseStorageDirectory()
+    private val storagePref = Injekt.get<StoragePreferences>().baseStorageDirectory
     private val folderProvider = Injekt.get<AndroidStorageFolderProvider>()
 
     private var _isComplete by mutableStateOf(false)

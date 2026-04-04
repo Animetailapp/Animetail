@@ -40,7 +40,7 @@ class AnimeCategoryScreenModel(
 
     init {
         screenModelScope.launch {
-            val allCategories = if (libraryPreferences.hideHiddenCategoriesSettings().get()) {
+            val allCategories = if (libraryPreferences.hideHiddenCategoriesSettings.get()) {
                 getVisibleCategories.subscribe()
             } else {
                 getAllCategories.subscribe()

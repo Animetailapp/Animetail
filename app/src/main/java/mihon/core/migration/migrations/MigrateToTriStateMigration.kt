@@ -19,19 +19,19 @@ class MigrateToTriStateMigration : Migration {
 
         prefs.edit {
             putInt(
-                libraryPreferences.filterDownloadedManga().key(),
+                libraryPreferences.filterDownloadedManga.key(),
                 convertBooleanPrefToTriState(prefs, "pref_filter_downloaded_key"),
             )
             remove("pref_filter_downloaded_key")
 
             putInt(
-                libraryPreferences.filterUnread().key(),
+                libraryPreferences.filterUnread.key(),
                 convertBooleanPrefToTriState(prefs, "pref_filter_unread_key"),
             )
             remove("pref_filter_unread_key")
 
             putInt(
-                libraryPreferences.filterCompletedManga().key(),
+                libraryPreferences.filterCompleted.key(),
                 convertBooleanPrefToTriState(prefs, "pref_filter_completed_key"),
             )
             remove("pref_filter_completed_key")

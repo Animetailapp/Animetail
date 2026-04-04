@@ -17,7 +17,7 @@ fun AnimeSource.toStubSource(): StubAnimeSource = StubAnimeSource(id = id, lang 
 
 fun AnimeSource.getNameForAnimeInfo(): String {
     val preferences = Injekt.get<SourcePreferences>()
-    val enabledLanguages = preferences.enabledLanguages().get()
+    val enabledLanguages = preferences.enabledLanguages.get()
         .filterNot { it in listOf("all", "other") }
     val hasOneActiveLanguages = enabledLanguages.size == 1
     val isInEnabledLanguages = lang in enabledLanguages

@@ -89,7 +89,7 @@ class MangaExtensionDetailsScreenModel(
                 }
             }
             launch {
-                preferences.incognitoMangaExtensions()
+                preferences.incognitoMangaExtensions
                     .changes()
                     .map { pkgName in it }
                     .distinctUntilChanged()

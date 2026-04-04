@@ -37,7 +37,7 @@ abstract class CommonStorageScreenModel<T>(
 
     init {
         screenModelScope.launchIO {
-            val hideHiddenCategories = libraryPreferences.hideHiddenCategoriesSettings().get()
+            val hideHiddenCategories = libraryPreferences.hideHiddenCategoriesSettings.get()
 
             combine(
                 flow = downloadCacheChanges,

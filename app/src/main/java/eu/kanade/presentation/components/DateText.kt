@@ -67,8 +67,8 @@ fun relativeDateTimeText(
     val context = LocalContext.current
 
     val preferences = remember { Injekt.get<UiPreferences>() }
-    val relativeTime = remember { preferences.relativeTime().get() }
-    val dateFormat = remember { UiPreferences.dateFormat(preferences.dateFormat().get()) }
+    val relativeTime = remember { preferences.relativeTime.get() }
+    val dateFormat = remember { UiPreferences.dateFormat(preferences.dateFormat.get()) }
 
     return localDateTime?.toRelativeString(
         context = context,

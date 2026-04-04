@@ -64,7 +64,7 @@ class MangaExtensionManager(
         MangaExtensionInstallReceiver(MangaInstallationListener()).register(context)
     }
 
-    private var subLanguagesEnabledOnFirstRun = preferences.enabledLanguages().isSet()
+    private var subLanguagesEnabledOnFirstRun = preferences.enabledLanguages.isSet()
 
     fun getExtensionPackage(sourceId: Long): String? {
         return installedExtensionsFlow.value.find { extension ->
@@ -147,12 +147,12 @@ class MangaExtensionManager(
             .map(MangaExtension.Available.MangaSource::lang)
 
         val deviceLanguage = Locale.getDefault().language
-        val defaultLanguages = preferences.enabledLanguages().defaultValue()
+        val defaultLanguages = preferences.enabledLanguages.defaultValue()
         val languagesToEnable = availableLanguages.filter {
             it != deviceLanguage && it.startsWith(deviceLanguage)
         }
 
-        preferences.enabledLanguages().set(defaultLanguages + languagesToEnable)
+        preferences.enabledLanguages.set(defaultLanguages + languagesToEnable)
         subLanguagesEnabledOnFirstRun = true
     }
 
@@ -291,7 +291,7 @@ class MangaExtensionManager(
 
     private fun updatePendingUpdatesCount() {
         val pendingUpdateCount = installedExtensionsMapFlow.value.values.count { it.hasUpdate }
-        preferences.mangaExtensionUpdatesCount().set(pendingUpdateCount)
+        preferences.extensionUpdatesCount.set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
             ExtensionUpdateNotifier(context).dismiss()
         }

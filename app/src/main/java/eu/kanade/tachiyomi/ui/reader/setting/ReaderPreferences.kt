@@ -186,142 +186,31 @@ class ReaderPreferences(
     )
 
     // sy -->
-    fun readerInstantRetry() = preferenceStore.getBoolean("eh_reader_instant_retry", true)
+    val readerInstantRetry = preferenceStore.getBoolean("eh_reader_instant_retry", true)
 
-    fun autoscrollInterval() = preferenceStore.getFloat("eh_util_autoscroll_interval", 3f)
+    val autoscrollInterval = preferenceStore.getFloat("eh_util_autoscroll_interval", 3f)
 
-    fun smoothAutoScroll() = preferenceStore.getBoolean("smooth_auto_scroll", true)
+    val smoothAutoScroll = preferenceStore.getBoolean("smooth_auto_scroll", true)
     // sy <--
 
     // J2K -->
-    fun preloadSize() = preferenceStore.getInt("reader_preload_size", PRELOAD_SIZE_MIN)
+    val preloadSize = preferenceStore.getInt("reader_preload_size", PRELOAD_SIZE_MIN)
     // J2K <--
 
     // SY -->
-    fun preserveReadingPosition() = preferenceStore.getBoolean("eh_preserve_reading_position", false)
+    val preserveReadingPosition = preferenceStore.getBoolean("eh_preserve_reading_position", false)
 
-    fun readerBottomButtons() = preferenceStore.getStringSet(
+    val readerBottomButtons = preferenceStore.getStringSet(
         "reader_bottom_buttons",
         ReaderBottomButton.BUTTONS_DEFAULTS,
     )
 
-    fun pageLayout() = preferenceStore.getInt("page_layout", PagerConfig.PageLayout.AUTOMATIC)
+    val pageLayout = preferenceStore.getInt("page_layout", PagerConfig.PageLayout.AUTOMATIC)
 
-    fun invertDoublePages() = preferenceStore.getBoolean("invert_double_pages", false)
+    val invertDoublePages = preferenceStore.getBoolean("invert_double_pages", false)
 
-    fun centerMarginType() = preferenceStore.getInt("center_margin_type", PagerConfig.CenterMarginType.NONE)
+    val centerMarginType = preferenceStore.getInt("center_margin_type", PagerConfig.CenterMarginType.NONE)
     // SY <--
-
-    fun pageTransitionsPager() = pageTransitionsPager
-
-    fun pageTransitionsWebtoon() = pageTransitionsWebtoon
-
-    fun pageTransitions() = pageTransitions
-
-    fun flashOnPageChange() = flashOnPageChange
-
-    fun flashDurationMillis() = flashDurationMillis
-
-    fun flashPageInterval() = flashPageInterval
-
-    fun flashColor() = flashColor
-
-    fun doubleTapAnimSpeed() = doubleTapAnimSpeed
-
-    fun showPageNumber() = showPageNumber
-
-    fun showReadingMode() = showReadingMode
-
-    fun fullscreen() = fullscreen
-
-    fun cutoutShort() = drawUnderCutout
-
-    fun keepScreenOn() = keepScreenOn
-
-    fun defaultReadingMode() = defaultReadingMode
-
-    fun defaultOrientationType() = defaultOrientationType
-
-    fun webtoonDoubleTapZoomEnabled() = webtoonDoubleTapZoomEnabled
-
-    fun imageScaleType() = imageScaleType
-
-    fun zoomStart() = zoomStart
-
-    fun readerTheme() = readerTheme
-
-    fun alwaysShowChapterTransition() = alwaysShowChapterTransition
-
-    fun cropBorders() = cropBorders
-
-    fun navigateToPan() = navigateToPan
-
-    fun landscapeZoom() = landscapeZoom
-
-    fun cropBordersWebtoon() = cropBordersWebtoon
-
-    fun webtoonSidePadding() = webtoonSidePadding
-
-    fun readerHideThreshold() = readerHideThreshold
-
-    fun folderPerManga() = folderPerManga
-
-    fun skipRead() = skipRead
-
-    fun skipFiltered() = skipFiltered
-
-    fun skipDupe() = skipDupe
-
-    fun webtoonDisableZoomOut() = webtoonDisableZoomOut
-
-    fun dualPageSplitPaged() = dualPageSplitPaged
-
-    fun dualPageInvertPaged() = dualPageInvertPaged
-
-    fun dualPageSplitWebtoon() = dualPageSplitWebtoon
-
-    fun dualPageInvertWebtoon() = dualPageInvertWebtoon
-
-    fun dualPageRotateToFit() = dualPageRotateToFit
-
-    fun dualPageRotateToFitInvert() = dualPageRotateToFitInvert
-
-    fun dualPageRotateToFitWebtoon() = dualPageRotateToFitWebtoon
-
-    fun dualPageRotateToFitInvertWebtoon() = dualPageRotateToFitInvertWebtoon
-
-    fun customBrightness() = customBrightness
-
-    fun customBrightnessValue() = customBrightnessValue
-
-    fun colorFilter() = colorFilter
-
-    fun colorFilterValue() = colorFilterValue
-
-    fun colorFilterMode() = colorFilterMode
-
-    fun grayscale() = grayscale
-
-    fun invertedColors() = invertedColors
-
-    fun readWithLongTap() = readWithLongTap
-
-    fun readWithVolumeKeys() = readWithVolumeKeys
-
-    fun readWithVolumeKeysInverted() = readWithVolumeKeysInverted
-
-    fun navigationModePager() = navigationModePager
-
-    fun navigationModeWebtoon() = navigationModeWebtoon
-
-    fun pagerNavInverted() = pagerNavInverted
-
-    fun webtoonNavInverted() = webtoonNavInverted
-
-    fun showNavigationOverlayNewUser() = showNavigationOverlayNewUser
-
-    fun showNavigationOverlayOnStart() = showNavigationOverlayOnStart
-
     // endregion
 
     enum class FlashColor {

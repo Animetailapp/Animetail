@@ -72,7 +72,7 @@ class MangaUpdatesScreenModel(
     private val _events: Channel<Event> = Channel(Int.MAX_VALUE)
     val events: Flow<Event> = _events.receiveAsFlow()
 
-    val lastUpdated by libraryPreferences.lastUpdatedTimestamp().asState(screenModelScope)
+    val lastUpdated by libraryPreferences.lastUpdatedTimestamp.asState(screenModelScope)
 
     // First and last selected index in list
     private val selectedPositions: Array<Int> = arrayOf(-1, -1)
@@ -417,16 +417,16 @@ class MangaUpdatesScreenModel(
     }
 
     fun resetNewUpdatesCount() {
-        libraryPreferences.newMangaUpdatesCount().set(0)
+        libraryPreferences.newMangaUpdatesCount.set(0)
     }
 
     private fun getUpdatesItemPreferenceFlow(): Flow<ItemPreferences> {
         return combine(
-            updatesPreferences.filterDownloaded().changes(),
-            updatesPreferences.filterUnread().changes(),
-            updatesPreferences.filterStarted().changes(),
-            updatesPreferences.filterBookmarked().changes(),
-            updatesPreferences.filterExcludedScanlators().changes(),
+            updatesPreferences.filterDownloaded.changes(),
+            updatesPreferences.filterUnread.changes(),
+            updatesPreferences.filterStarted.changes(),
+            updatesPreferences.filterBookmarked.changes(),
+            updatesPreferences.filterExcludedScanlators.changes(),
         ) { downloaded, unread, started, bookmarked, excludedScanlators ->
             ItemPreferences(
                 filterDownloaded = downloaded,

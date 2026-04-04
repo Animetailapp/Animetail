@@ -18,7 +18,7 @@ class TrustExtensionRepositoryMigration : Migration {
 
         val animeExtensionRepositoryRepository =
             migrationContext.get<AnimeExtensionRepoRepository>() ?: return@withIOContext false
-        for ((index, source) in sourcePreferences.animeExtensionRepos().get().withIndex()) {
+        for ((index, source) in sourcePreferences.animeExtensionRepos.get().withIndex()) {
             try {
                 animeExtensionRepositoryRepository.upsertRepo(
                     source,
@@ -31,11 +31,11 @@ class TrustExtensionRepositoryMigration : Migration {
                 logcat(LogPriority.ERROR, e) { "Error Migrating Extension Repo with baseUrl: $source" }
             }
         }
-        sourcePreferences.animeExtensionRepos().delete()
+        sourcePreferences.animeExtensionRepos.delete()
 
         val mangaExtensionRepositoryRepository =
             migrationContext.get<MangaExtensionRepoRepository>() ?: return@withIOContext false
-        for ((index, source) in sourcePreferences.mangaExtensionRepos().get().withIndex()) {
+        for ((index, source) in sourcePreferences.extensionRepos.get().withIndex()) {
             try {
                 mangaExtensionRepositoryRepository.upsertRepo(
                     source,
@@ -50,7 +50,7 @@ class TrustExtensionRepositoryMigration : Migration {
                 }
             }
         }
-        sourcePreferences.mangaExtensionRepos().delete()
+        sourcePreferences.extensionRepos.delete()
 
         return@withIOContext true
     }

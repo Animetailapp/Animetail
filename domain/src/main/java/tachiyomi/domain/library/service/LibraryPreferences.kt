@@ -26,16 +26,16 @@ class LibraryPreferences(
         LibraryDisplayMode.Serializer::deserialize,
     )
 
-    fun mangaSortingMode() = preferenceStore.getObject(
+    val mangaSortingMode = preferenceStore.getObject(
         "library_sorting_mode",
         MangaLibrarySort.default,
         MangaLibrarySort.Serializer::serialize,
         MangaLibrarySort.Serializer::deserialize,
     )
 
-    val sortingMode = mangaSortingMode()
+    val sortingMode = mangaSortingMode
 
-    fun animeSortingMode() = preferenceStore.getObject(
+    val animeSortingMode = preferenceStore.getObject(
         "animelib_sorting_mode",
         AnimeLibrarySort.default,
         AnimeLibrarySort.Serializer::serialize,
@@ -84,7 +84,7 @@ class LibraryPreferences(
 
     val categorizedDisplaySettings: Preference<Boolean> = preferenceStore.getBoolean("categorized_display", false)
 
-    fun hideHiddenCategoriesSettings() = preferenceStore.getBoolean("hidden_categories", false)
+    val hideHiddenCategoriesSettings = preferenceStore.getBoolean("hidden_categories", false)
 
     val filterIntervalCustom: Preference<TriState> = preferenceStore.getEnum(
         "pref_filter_library_interval_custom",
@@ -106,8 +106,8 @@ class LibraryPreferences(
 
     // Common Cache
 
-    fun autoClearItemCache() = preferenceStore.getBoolean("auto_clear_chapter_cache", false)
-    val autoClearChapterCache: Preference<Boolean> = autoClearItemCache()
+    val autoClearItemCache = preferenceStore.getBoolean("auto_clear_chapter_cache", false)
+    val autoClearChapterCache: Preference<Boolean> = autoClearItemCache
     val hideMissingChapters: Preference<Boolean> = preferenceStore.getBoolean(
         "pref_hide_missing_chapter_indicators",
         false,
@@ -115,50 +115,44 @@ class LibraryPreferences(
 
     // Random Sort Seed
 
-    fun randomAnimeSortSeed() = preferenceStore.getInt("library_random_anime_sort_seed", 0)
-    fun randomMangaSortSeed() = preferenceStore.getInt("library_random_manga_sort_seed", 0)
+    val randomAnimeSortSeed = preferenceStore.getInt("library_random_anime_sort_seed", 0)
+    val randomMangaSortSeed = preferenceStore.getInt("library_random_manga_sort_seed", 0)
 
     // Mixture Columns
 
-    fun animePortraitColumns() = preferenceStore.getInt("pref_animelib_columns_portrait_key", 0)
-    fun mangaPortraitColumns() = preferenceStore.getInt("pref_library_columns_portrait_key", 0)
+    val animePortraitColumns = preferenceStore.getInt("pref_animelib_columns_portrait_key", 0)
+    val mangaPortraitColumns = preferenceStore.getInt("pref_library_columns_portrait_key", 0)
 
-    fun animeLandscapeColumns() = preferenceStore.getInt("pref_animelib_columns_landscape_key", 0)
-    fun mangaLandscapeColumns() = preferenceStore.getInt("pref_library_columns_landscape_key", 0)
+    val animeLandscapeColumns = preferenceStore.getInt("pref_animelib_columns_landscape_key", 0)
+    val mangaLandscapeColumns = preferenceStore.getInt("pref_library_columns_landscape_key", 0)
 
     // Mixture Filter
 
-    fun filterDownloadedAnime() =
-        preferenceStore.getEnum("pref_filter_animelib_downloaded_v2", TriState.DISABLED)
+    val filterDownloadedAnime = preferenceStore.getEnum("pref_filter_animelib_downloaded_v2", TriState.DISABLED)
 
     val filterDownloaded: Preference<TriState> = preferenceStore.getEnum(
         "pref_filter_library_downloaded_v2",
         TriState.DISABLED,
     )
 
-    fun filterDownloadedManga() =
-        preferenceStore.getEnum("pref_filter_library_downloaded_v2", TriState.DISABLED)
+    val filterDownloadedManga = preferenceStore.getEnum("pref_filter_library_downloaded_v2", TriState.DISABLED)
 
-    fun filterUnseen() =
-        preferenceStore.getEnum("pref_filter_animelib_unread_v2", TriState.DISABLED)
+    val filterUnseen = preferenceStore.getEnum("pref_filter_animelib_unread_v2", TriState.DISABLED)
 
     val filterUnread: Preference<TriState> =
         preferenceStore.getEnum("pref_filter_library_unread_v2", TriState.DISABLED)
 
-    fun filterStartedAnime() =
-        preferenceStore.getEnum("pref_filter_animelib_started_v2", TriState.DISABLED)
+    val filterStartedAnime = preferenceStore.getEnum("pref_filter_animelib_started_v2", TriState.DISABLED)
 
     val filterStarted: Preference<TriState> =
         preferenceStore.getEnum("pref_filter_library_started_v2", TriState.DISABLED)
 
-    fun filterBookmarkedAnime() =
-        preferenceStore.getEnum("pref_filter_animelib_bookmarked_v2", TriState.DISABLED)
+    val filterBookmarkedAnime = preferenceStore.getEnum("pref_filter_animelib_bookmarked_v2", TriState.DISABLED)
 
     val filterBookmarked: Preference<TriState> =
         preferenceStore.getEnum("pref_filter_library_bookmarked_v2", TriState.DISABLED)
 
-    fun filterCompletedAnime() =
-        preferenceStore.getEnum("pref_filter_animelib_completed_v2", TriState.DISABLED)
+    val filterCompletedAnime = preferenceStore.getEnum("pref_filter_animelib_completed_v2", TriState.DISABLED)
 
     val filterCompleted: Preference<TriState> =
         preferenceStore.getEnum("pref_filter_library_completed_v2", TriState.DISABLED)
@@ -173,100 +167,45 @@ class LibraryPreferences(
 
     // Mixture Update Count
 
-    fun newMangaUpdatesCount() = preferenceStore.getInt("library_unread_updates_count", 0)
-    fun newAnimeUpdatesCount() = preferenceStore.getInt("library_unseen_updates_count", 0)
+    val newMangaUpdatesCount = preferenceStore.getInt("library_unread_updates_count", 0)
+    val newAnimeUpdatesCount = preferenceStore.getInt("library_unseen_updates_count", 0)
 
     // Mixture Category
 
-    fun defaultAnimeCategory() = preferenceStore.getInt(DEFAULT_ANIME_CATEGORY_PREF_KEY, -1)
+    val defaultAnimeCategory = preferenceStore.getInt(DEFAULT_ANIME_CATEGORY_PREF_KEY, -1)
     val defaultCategory: Preference<Int> = preferenceStore.getInt(DEFAULT_MANGA_CATEGORY_PREF_KEY, -1)
-    fun defaultMangaCategory() = defaultCategory
-
-    fun lastUsedAnimeCategory() = preferenceStore.getInt(Preference.appStateKey("last_used_anime_category"), 0)
+    val lastUsedAnimeCategory = preferenceStore.getInt(Preference.appStateKey("last_used_anime_category"), 0)
     val lastUsedCategory: Preference<Int> = preferenceStore.getInt(Preference.appStateKey("last_used_category"), 0)
-    fun lastUsedMangaCategory() = lastUsedCategory
-
-    fun animeUpdateCategories() =
-        preferenceStore.getStringSet(LIBRARY_UPDATE_ANIME_CATEGORIES_PREF_KEY, emptySet())
+    val animeUpdateCategories = preferenceStore.getStringSet(LIBRARY_UPDATE_ANIME_CATEGORIES_PREF_KEY, emptySet())
 
     val updateCategories: Preference<Set<String>> =
         preferenceStore.getStringSet(LIBRARY_UPDATE_MANGA_CATEGORIES_PREF_KEY, emptySet())
-    fun mangaUpdateCategories() = updateCategories
-
-    fun animeUpdateCategoriesExclude() =
-        preferenceStore.getStringSet(LIBRARY_UPDATE_ANIME_CATEGORIES_EXCLUDE_PREF_KEY, emptySet())
+    val animeUpdateCategoriesExclude = preferenceStore.getStringSet(LIBRARY_UPDATE_ANIME_CATEGORIES_EXCLUDE_PREF_KEY, emptySet())
 
     val updateCategoriesExclude: Preference<Set<String>> =
         preferenceStore.getStringSet(LIBRARY_UPDATE_MANGA_CATEGORIES_EXCLUDE_PREF_KEY, emptySet())
-    fun mangaUpdateCategoriesExclude() = updateCategoriesExclude
-
     val updateMangaTitles: Preference<Boolean> = preferenceStore.getBoolean("pref_update_library_manga_titles", false)
-
-    fun displayMode() = displayMode
-    fun sortingMode() = sortingMode
-    fun randomSortSeed() = randomSortSeed
-    fun portraitColumns() = portraitColumns
-    fun landscapeColumns() = landscapeColumns
-    fun lastUpdatedTimestamp() = lastUpdatedTimestamp
-    fun autoUpdateInterval() = autoUpdateInterval
-    fun autoUpdateDeviceRestrictions() = autoUpdateDeviceRestrictions
-    fun autoUpdateItemRestrictions() = autoUpdateMangaRestrictions
-    fun autoUpdateMetadata() = autoUpdateMetadata
-    fun showContinueViewingButton() = showContinueReadingButton
-    fun categoryTabs() = categoryTabs
-    fun categoryNumberOfItems() = categoryNumberOfItems
-    fun categorizedDisplaySettings() = categorizedDisplaySettings
-    fun filterIntervalCustom() = filterIntervalCustom
-    fun downloadBadge() = downloadBadge
-    fun unreadBadge() = unreadBadge
-    fun localBadge() = localBadge
-    fun languageBadge() = languageBadge
-    fun newShowUpdatesCount() = newShowUpdatesCount
-    fun newUpdatesCount() = newUpdatesCount
-    fun hideMissingChapters() = hideMissingChapters
-    fun filterDownloaded() = filterDownloaded
-    fun filterUnread() = filterUnread
-    fun filterStartedManga() = filterStarted
-    fun filterBookmarkedManga() = filterBookmarked
-    fun filterCompletedManga() = filterCompleted
-    fun defaultCategory() = defaultCategory
-    fun lastUsedCategory() = lastUsedCategory
-    fun updateCategories() = updateCategories
-    fun updateCategoriesExclude() = updateCategoriesExclude
-    fun updateMangaTitles() = updateMangaTitles
-    fun filterChapterByRead() = filterChapterByRead
-    fun filterChapterByDownloaded() = filterChapterByDownloaded
-    fun filterChapterByBookmarked() = filterChapterByBookmarked
-    fun sortChapterBySourceOrNumber() = sortChapterBySourceOrNumber
-    fun displayChapterByNameOrNumber() = displayChapterByNameOrNumber
-    fun sortChapterByAscendingOrDescending() = sortChapterByAscendingOrDescending
-    fun markDuplicateReadChapterAsRead() = markDuplicateReadChapterAsRead
-
     // Mixture Item
 
-    fun filterEpisodeBySeen() =
-        preferenceStore.getLong("default_episode_filter_by_seen", Anime.SHOW_ALL)
+    val filterEpisodeBySeen = preferenceStore.getLong("default_episode_filter_by_seen", Anime.SHOW_ALL)
 
     val filterChapterByRead: Preference<Long> =
         preferenceStore.getLong("default_chapter_filter_by_read", Manga.SHOW_ALL)
 
-    fun filterEpisodeByDownloaded() =
-        preferenceStore.getLong("default_episode_filter_by_downloaded", Anime.SHOW_ALL)
+    val filterEpisodeByDownloaded = preferenceStore.getLong("default_episode_filter_by_downloaded", Anime.SHOW_ALL)
 
     val filterChapterByDownloaded: Preference<Long> =
         preferenceStore.getLong("default_chapter_filter_by_downloaded", Manga.SHOW_ALL)
 
-    fun filterEpisodeByBookmarked() =
-        preferenceStore.getLong("default_episode_filter_by_bookmarked", Anime.SHOW_ALL)
+    val filterEpisodeByBookmarked = preferenceStore.getLong("default_episode_filter_by_bookmarked", Anime.SHOW_ALL)
 
     val filterChapterByBookmarked: Preference<Long> =
         preferenceStore.getLong("default_chapter_filter_by_bookmarked", Manga.SHOW_ALL)
 
-    fun filterEpisodeByFillermarked() =
-        preferenceStore.getLong("default_episode_filter_by_fillermarked", Anime.SHOW_ALL)
+    val filterEpisodeByFillermarked = preferenceStore.getLong("default_episode_filter_by_fillermarked", Anime.SHOW_ALL)
 
     // and upload date
-    fun sortEpisodeBySourceOrNumber() = preferenceStore.getLong(
+    val sortEpisodeBySourceOrNumber = preferenceStore.getLong(
         "default_episode_sort_by_source_or_number",
         Anime.EPISODE_SORTING_SOURCE,
     )
@@ -276,7 +215,7 @@ class LibraryPreferences(
         Manga.CHAPTER_SORTING_SOURCE,
     )
 
-    fun displayEpisodeByNameOrNumber() = preferenceStore.getLong(
+    val displayEpisodeByNameOrNumber = preferenceStore.getLong(
         "default_chapter_display_by_name_or_number",
         Anime.EPISODE_DISPLAY_NAME,
     )
@@ -286,7 +225,7 @@ class LibraryPreferences(
         Manga.CHAPTER_DISPLAY_NAME,
     )
 
-    fun sortEpisodeByAscendingOrDescending() = preferenceStore.getLong(
+    val sortEpisodeByAscendingOrDescending = preferenceStore.getLong(
         "default_chapter_sort_by_ascending_or_descending",
         Anime.EPISODE_SORT_DESC,
     )
@@ -296,28 +235,28 @@ class LibraryPreferences(
         Manga.CHAPTER_SORT_DESC,
     )
 
-    fun showEpisodeThumbnailPreviews() = preferenceStore.getLong(
+    val showEpisodeThumbnailPreviews = preferenceStore.getLong(
         "default_episode_show_thumbnail_previews",
         Anime.EPISODE_SHOW_PREVIEWS,
     )
 
-    fun showEpisodeSummaries() = preferenceStore.getLong(
+    val showEpisodeSummaries = preferenceStore.getLong(
         "default_episode_show_summaries",
         Anime.EPISODE_SHOW_SUMMARIES,
     )
 
     fun setEpisodeSettingsDefault(anime: Anime) {
-        filterEpisodeBySeen().set(anime.unseenFilterRaw)
-        filterEpisodeByDownloaded().set(anime.downloadedFilterRaw)
-        filterEpisodeByBookmarked().set(anime.bookmarkedFilterRaw)
-        filterEpisodeByFillermarked().set(anime.fillermarkedFilterRaw)
-        sortEpisodeBySourceOrNumber().set(anime.sorting)
-        displayEpisodeByNameOrNumber().set(anime.displayMode)
-        sortEpisodeByAscendingOrDescending().set(
+        filterEpisodeBySeen.set(anime.unseenFilterRaw)
+        filterEpisodeByDownloaded.set(anime.downloadedFilterRaw)
+        filterEpisodeByBookmarked.set(anime.bookmarkedFilterRaw)
+        filterEpisodeByFillermarked.set(anime.fillermarkedFilterRaw)
+        sortEpisodeBySourceOrNumber.set(anime.sorting)
+        displayEpisodeByNameOrNumber.set(anime.displayMode)
+        sortEpisodeByAscendingOrDescending.set(
             if (anime.sortDescending()) Anime.EPISODE_SORT_DESC else Anime.EPISODE_SORT_ASC,
         )
-        showEpisodeThumbnailPreviews().set(anime.showPreviewsRaw)
-        showEpisodeSummaries().set(anime.showSummariesRaw)
+        showEpisodeThumbnailPreviews.set(anime.showPreviewsRaw)
+        showEpisodeSummaries.set(anime.showSummariesRaw)
     }
 
     fun setChapterSettingsDefault(manga: Manga) {
@@ -333,117 +272,107 @@ class LibraryPreferences(
 
     // Seasons
 
-    fun filterSeasonByDownload() =
-        preferenceStore.getLong("default_season_filter_by_downloaded", Anime.SHOW_ALL)
+    val filterSeasonByDownload = preferenceStore.getLong("default_season_filter_by_downloaded", Anime.SHOW_ALL)
 
-    fun filterSeasonByUnseen() =
-        preferenceStore.getLong("default_season_filter_by_unseen", Anime.SHOW_ALL)
+    val filterSeasonByUnseen = preferenceStore.getLong("default_season_filter_by_unseen", Anime.SHOW_ALL)
 
-    fun filterSeasonByStarted() =
-        preferenceStore.getLong("default_season_filter_by_started", Anime.SHOW_ALL)
+    val filterSeasonByStarted = preferenceStore.getLong("default_season_filter_by_started", Anime.SHOW_ALL)
 
-    fun filterSeasonByCompleted() =
-        preferenceStore.getLong("default_season_filter_by_completed", Anime.SHOW_ALL)
+    val filterSeasonByCompleted = preferenceStore.getLong("default_season_filter_by_completed", Anime.SHOW_ALL)
 
-    fun filterSeasonByBookmarked() =
-        preferenceStore.getLong("default_season_filter_by_bookmarked", Anime.SHOW_ALL)
+    val filterSeasonByBookmarked = preferenceStore.getLong("default_season_filter_by_bookmarked", Anime.SHOW_ALL)
 
-    fun filterSeasonByFillermarked() =
-        preferenceStore.getLong("default_season_filter_by_fillermarked", Anime.SHOW_ALL)
+    val filterSeasonByFillermarked = preferenceStore.getLong("default_season_filter_by_fillermarked", Anime.SHOW_ALL)
 
-    fun sortSeasonBySourceOrNumber() = preferenceStore.getLong(
+    val sortSeasonBySourceOrNumber = preferenceStore.getLong(
         "default_season_sort_by_source_or_number",
         Anime.SEASON_SORT_SOURCE,
     )
 
-    fun sortSeasonByAscendingOrDescending() = preferenceStore.getLong(
+    val sortSeasonByAscendingOrDescending = preferenceStore.getLong(
         "default_season_sort_by_ascending_or_descending",
         Anime.SEASON_SORT_DESC,
     )
 
-    fun seasonDisplayGridMode() = preferenceStore.getLong(
+    val seasonDisplayGridMode = preferenceStore.getLong(
         "default_season_grid_display_mode",
         SeasonDisplayMode.toLong(SeasonDisplayMode.CompactGrid),
     )
 
-    fun seasonDisplayGridSize() = preferenceStore.getInt(
+    val seasonDisplayGridSize = preferenceStore.getInt(
         "default_season_grid_display_size",
         0,
     )
 
-    fun seasonDownloadOverlay() = preferenceStore.getBoolean(
+    val seasonDownloadOverlay = preferenceStore.getBoolean(
         "default_season_download_overlay",
         false,
     )
 
-    fun seasonUnseenOverlay() = preferenceStore.getBoolean(
+    val seasonUnseenOverlay = preferenceStore.getBoolean(
         "default_season_unseen_overlay",
         true,
     )
 
-    fun seasonLocalOverlay() = preferenceStore.getBoolean(
+    val seasonLocalOverlay = preferenceStore.getBoolean(
         "default_season_local_overlay",
         true,
     )
 
-    fun seasonLangOverlay() = preferenceStore.getBoolean(
+    val seasonLangOverlay = preferenceStore.getBoolean(
         "default_season_lang_overlay",
         false,
     )
 
-    fun seasonContinueOverlay() = preferenceStore.getBoolean(
+    val seasonContinueOverlay = preferenceStore.getBoolean(
         "default_season_continue_overlay",
         true,
     )
 
-    fun seasonDisplayMode() = preferenceStore.getLong(
+    val seasonDisplayMode = preferenceStore.getLong(
         "default_season_display_mode",
         Anime.SEASON_DISPLAY_MODE_SOURCE,
     )
 
     fun setSeasonSettingsDefault(anime: Anime) {
-        filterSeasonByDownload().set(anime.seasonUnseenFilterRaw)
-        filterSeasonByUnseen().set(anime.seasonUnseenFilterRaw)
-        filterSeasonByStarted().set(anime.seasonStartedFilterRaw)
-        filterSeasonByCompleted().set(anime.seasonCompletedFilterRaw)
-        filterSeasonByBookmarked().set(anime.seasonBookmarkedFilterRaw)
-        filterSeasonByFillermarked().set(anime.seasonFillermarkedFilterRaw)
-        sortSeasonBySourceOrNumber().set(anime.seasonSorting)
-        sortSeasonByAscendingOrDescending().set(
+        filterSeasonByDownload.set(anime.seasonUnseenFilterRaw)
+        filterSeasonByUnseen.set(anime.seasonUnseenFilterRaw)
+        filterSeasonByStarted.set(anime.seasonStartedFilterRaw)
+        filterSeasonByCompleted.set(anime.seasonCompletedFilterRaw)
+        filterSeasonByBookmarked.set(anime.seasonBookmarkedFilterRaw)
+        filterSeasonByFillermarked.set(anime.seasonFillermarkedFilterRaw)
+        sortSeasonBySourceOrNumber.set(anime.seasonSorting)
+        sortSeasonByAscendingOrDescending.set(
             if (anime.seasonSortDescending()) Anime.SEASON_SORT_DESC else Anime.SEASON_SORT_ASC,
         )
-        seasonDisplayGridMode().set(SeasonDisplayMode.toLong(anime.seasonDisplayGridMode))
-        seasonDisplayGridSize().set(anime.seasonDisplayGridSize)
-        seasonDownloadOverlay().set(anime.seasonDownloadedOverlay)
-        seasonUnseenOverlay().set(anime.seasonUnseenOverlay)
-        seasonLocalOverlay().set(anime.seasonLocalOverlay)
-        seasonLangOverlay().set(anime.seasonLangOverlay)
-        seasonContinueOverlay().set(anime.seasonContinueOverlay)
-        seasonDisplayMode().set(anime.seasonDisplayMode)
+        seasonDisplayGridMode.set(SeasonDisplayMode.toLong(anime.seasonDisplayGridMode))
+        seasonDisplayGridSize.set(anime.seasonDisplayGridSize)
+        seasonDownloadOverlay.set(anime.seasonDownloadedOverlay)
+        seasonUnseenOverlay.set(anime.seasonUnseenOverlay)
+        seasonLocalOverlay.set(anime.seasonLocalOverlay)
+        seasonLangOverlay.set(anime.seasonLangOverlay)
+        seasonContinueOverlay.set(anime.seasonContinueOverlay)
+        seasonDisplayMode.set(anime.seasonDisplayMode)
     }
 
     // Season behavior
 
-    fun updateSeasonOnRefresh() =
-        preferenceStore.getBoolean("pref_update_season_on_refresh", false)
+    val updateSeasonOnRefresh = preferenceStore.getBoolean("pref_update_season_on_refresh", false)
 
-    fun updateSeasonOnLibraryUpdate() =
-        preferenceStore.getBoolean("pref_update_season_on_library_update", false)
+    val updateSeasonOnLibraryUpdate = preferenceStore.getBoolean("pref_update_season_on_library_update", false)
 
     // region Item behavior
 
-    fun swipeEpisodeStartAction() =
-        preferenceStore.getEnum("pref_episode_swipe_end_action", EpisodeSwipeAction.ToggleSeen)
+    val swipeEpisodeStartAction = preferenceStore.getEnum("pref_episode_swipe_end_action", EpisodeSwipeAction.ToggleSeen)
 
-    fun swipeEpisodeEndAction() = preferenceStore.getEnum(
+    val swipeEpisodeEndAction = preferenceStore.getEnum(
         "pref_episode_swipe_start_action",
         EpisodeSwipeAction.ToggleBookmark,
     )
 
-    fun swipeChapterStartAction() =
-        preferenceStore.getEnum("pref_chapter_swipe_end_action", ChapterSwipeAction.ToggleRead)
+    val swipeChapterStartAction = preferenceStore.getEnum("pref_chapter_swipe_end_action", ChapterSwipeAction.ToggleRead)
 
-    fun swipeChapterEndAction() = preferenceStore.getEnum(
+    val swipeChapterEndAction = preferenceStore.getEnum(
         "pref_chapter_swipe_start_action",
         ChapterSwipeAction.ToggleBookmark,
     )
@@ -451,7 +380,7 @@ class LibraryPreferences(
     val markDuplicateReadChapterAsRead: Preference<Set<String>> =
         preferenceStore.getStringSet("mark_duplicate_read_chapter_read", emptySet())
 
-    fun markDuplicateSeenEpisodeAsSeen() = preferenceStore.getStringSet("mark_duplicate_seen_episode_seen", emptySet())
+    val markDuplicateSeenEpisodeAsSeen = preferenceStore.getStringSet("mark_duplicate_seen_episode_seen", emptySet())
 
     // endregion
 
@@ -472,22 +401,22 @@ class LibraryPreferences(
 
     // SY -->
 
-    fun groupAnimeLibraryUpdateType() = preferenceStore.getEnum(
+    val groupAnimeLibraryUpdateType = preferenceStore.getEnum(
         "group_anime_library_update_type",
         AnimeGroupLibraryMode.GLOBAL,
     )
 
-    fun groupMangaLibraryUpdateType() = preferenceStore.getEnum(
+    val groupMangaLibraryUpdateType = preferenceStore.getEnum(
         "group_library_update_type",
         MangaGroupLibraryMode.GLOBAL,
     )
 
-    fun groupAnimeLibraryBy() = preferenceStore.getInt(
+    val groupAnimeLibraryBy = preferenceStore.getInt(
         "group_anime_library_by",
         AnimeLibraryGroup.BY_DEFAULT,
     )
 
-    fun groupMangaLibraryBy() = preferenceStore.getInt(
+    val groupMangaLibraryBy = preferenceStore.getInt(
         "group_library_by",
         MangaLibraryGroup.BY_DEFAULT,
     )

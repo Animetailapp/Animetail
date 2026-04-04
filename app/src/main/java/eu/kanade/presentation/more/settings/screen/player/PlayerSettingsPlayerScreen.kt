@@ -54,7 +54,7 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
         val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
         val basePreferences = remember { Injekt.get<BasePreferences>() }
         val torrentServerPreferences = remember { Injekt.get<TorrentServerPreferences>() }
-        val deviceSupportsPip = basePreferences.deviceHasPip()
+        val deviceSupportsPip = basePreferences.deviceHasPip
         val localHttpServerHolder = remember { Injekt.get<LocalHttpServerHolder>() }
 
         return listOfNotNull(

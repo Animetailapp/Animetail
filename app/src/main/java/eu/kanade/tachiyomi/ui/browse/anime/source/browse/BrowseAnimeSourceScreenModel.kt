@@ -105,12 +105,12 @@ class BrowseAnimeSourceScreenModel(
     // SY <--
 ) : StateScreenModel<BrowseAnimeSourceScreenModel.State>(State(Listing.valueOf(listingQuery))) {
 
-    var displayMode by sourcePreferences.sourceDisplayMode().asState(screenModelScope)
+    var displayMode by sourcePreferences.sourceDisplayMode.asState(screenModelScope)
 
     var source = sourceManager.getOrStub(sourceId)
 
     // SY -->
-    val startExpanded by uiPreferences.expandFilters().asState(screenModelScope)
+    val startExpanded by uiPreferences.expandFilters.asState(screenModelScope)
 
     private val filterSerializer = FilterSerializer()
 
@@ -147,7 +147,7 @@ class BrowseAnimeSourceScreenModel(
             }.join()
 
             if (!getIncognitoState.await(source.id)) {
-                sourcePreferences.lastUsedSource().set(source.id)
+                sourcePreferences.lastUsedSource.set(source.id)
             }
 
             // SY -->
@@ -186,7 +186,7 @@ class BrowseAnimeSourceScreenModel(
     /**
      * Flow of Pager flow tied to [State.listing]
      */
-    private val hideInLibraryItems = sourcePreferences.hideInAnimeLibraryItems().get()
+    private val hideInLibraryItems = sourcePreferences.hideInAnimeLibraryItems.get()
     val animePagerFlowFlow = state.map { it.listing }
         .distinctUntilChanged()
         .map { listing ->
@@ -208,9 +208,9 @@ class BrowseAnimeSourceScreenModel(
     fun getColumnsPreference(orientation: Int): GridCells {
         val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
         val columns = if (isLandscape) {
-            libraryPreferences.animeLandscapeColumns()
+            libraryPreferences.animeLandscapeColumns
         } else {
-            libraryPreferences.animePortraitColumns()
+            libraryPreferences.animePortraitColumns
         }.get()
         return if (columns == 0) GridCells.Adaptive(128.dp) else GridCells.Fixed(columns)
     }
@@ -219,9 +219,9 @@ class BrowseAnimeSourceScreenModel(
     fun getColumnsPreferenceForCurrentOrientation(orientation: Int): Int {
         val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
         return if (isLandscape) {
-            libraryPreferences.animeLandscapeColumns()
+            libraryPreferences.animeLandscapeColumns
         } else {
-            libraryPreferences.animePortraitColumns()
+            libraryPreferences.animePortraitColumns
         }.get()
     }
 
@@ -366,7 +366,7 @@ class BrowseAnimeSourceScreenModel(
     fun addFavorite(anime: Anime) {
         screenModelScope.launch {
             val categories = getCategories()
-            val defaultCategoryId = libraryPreferences.defaultAnimeCategory().get()
+            val defaultCategoryId = libraryPreferences.defaultAnimeCategory.get()
             val defaultCategory = categories.find { it.id == defaultCategoryId.toLong() }
 
             when {

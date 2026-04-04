@@ -78,31 +78,6 @@ class DownloadPreferences(
         "download_new_unread_episodes_only",
         false,
     )
-
-    fun downloadOnlyOverWifi() = downloadOnlyOverWifi
-    fun useExternalDownloader() = useExternalDownloader
-    fun externalDownloaderSelection() = externalDownloaderSelection
-    fun saveChaptersAsCBZ() = saveChaptersAsCBZ
-    fun splitTallImages() = splitTallImages
-    fun autoDownloadWhileReading() = autoDownloadWhileReading
-    fun autoDownloadWhileWatching() = autoDownloadWhileWatching
-    fun removeAfterReadSlots() = removeAfterReadSlots
-    fun removeAfterMarkedAsRead() = removeAfterMarkedAsRead
-    fun removeBookmarkedChapters() = removeBookmarkedChapters
-    fun downloadFillermarkedItems() = downloadFillermarkedItems
-    fun removeExcludeCategories() = removeExcludeCategories
-    fun removeExcludeAnimeCategories() = removeExcludeAnimeCategories
-    fun downloadNewChapters() = downloadNewChapters
-    fun downloadNewEpisodes() = downloadNewEpisodes
-    fun downloadNewChapterCategories() = downloadNewChapterCategories
-    fun downloadNewEpisodeCategories() = downloadNewEpisodeCategories
-    fun downloadNewChapterCategoriesExclude() = downloadNewChapterCategoriesExclude
-    fun downloadNewEpisodeCategoriesExclude() = downloadNewEpisodeCategoriesExclude
-    fun numberOfDownloads() = numberOfDownloads
-    fun downloadSpeedLimit() = downloadSpeedLimit
-    fun downloadNewUnreadChaptersOnly() = downloadNewUnreadChaptersOnly
-    fun downloadNewUnseenEpisodesOnly() = downloadNewUnseenEpisodesOnly
-
     companion object {
         private const val REMOVE_EXCLUDE_MANGA_CATEGORIES_PREF_KEY = "remove_exclude_categories"
         private const val REMOVE_EXCLUDE_ANIME_CATEGORIES_PREF_KEY = "remove_exclude_anime_categories"

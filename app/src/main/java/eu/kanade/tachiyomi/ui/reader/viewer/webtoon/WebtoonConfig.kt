@@ -109,7 +109,7 @@ class WebtoonConfig(
             .launchIn(scope)
 
         // SY -->
-        readerPreferences.pageTransitionsWebtoon()
+        readerPreferences.pageTransitionsWebtoon
             .register({ usePageTransitions = it }, { imagePropertyChangedListener?.invoke() })
         // SY <--
     }

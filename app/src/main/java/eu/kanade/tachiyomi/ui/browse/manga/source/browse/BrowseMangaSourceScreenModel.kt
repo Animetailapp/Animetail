@@ -74,7 +74,7 @@ class BrowseMangaSourceScreenModel(
     private val getIncognitoState: GetMangaIncognitoState = Injekt.get(),
 ) : StateScreenModel<BrowseMangaSourceScreenModel.State>(State(Listing.valueOf(listingQuery))) {
 
-    var displayMode by sourcePreferences.sourceDisplayMode().asState(screenModelScope)
+    var displayMode by sourcePreferences.sourceDisplayMode.asState(screenModelScope)
 
     val source = sourceManager.getOrStub(sourceId)
 
@@ -98,14 +98,14 @@ class BrowseMangaSourceScreenModel(
         }
 
         if (!getIncognitoState.await(source.id)) {
-            sourcePreferences.lastUsedMangaSource().set(source.id)
+            sourcePreferences.lastUsedSource.set(source.id)
         }
     }
 
     /**
      * Flow of Pager flow tied to [State.listing]
      */
-    private val hideInLibraryItems = sourcePreferences.hideInMangaLibraryItems().get()
+    private val hideInLibraryItems = sourcePreferences.hideInLibraryItems.get()
     val mangaPagerFlowFlow = state.map { it.listing }
         .distinctUntilChanged()
         .map { listing ->
@@ -127,9 +127,9 @@ class BrowseMangaSourceScreenModel(
     fun getColumnsPreference(orientation: Int): GridCells {
         val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
         val columns = if (isLandscape) {
-            libraryPreferences.mangaLandscapeColumns()
+            libraryPreferences.mangaLandscapeColumns
         } else {
-            libraryPreferences.mangaPortraitColumns()
+            libraryPreferences.mangaPortraitColumns
         }.get()
         return if (columns == 0) GridCells.Adaptive(128.dp) else GridCells.Fixed(columns)
     }
@@ -138,9 +138,9 @@ class BrowseMangaSourceScreenModel(
     fun getColumnsPreferenceForCurrentOrientation(orientation: Int): Int {
         val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
         return if (isLandscape) {
-            libraryPreferences.mangaLandscapeColumns()
+            libraryPreferences.mangaLandscapeColumns
         } else {
-            libraryPreferences.mangaPortraitColumns()
+            libraryPreferences.mangaPortraitColumns
         }.get()
     }
 
@@ -255,7 +255,7 @@ class BrowseMangaSourceScreenModel(
     fun addFavorite(manga: Manga) {
         screenModelScope.launch {
             val categories = getCategories()
-            val defaultCategoryId = libraryPreferences.defaultMangaCategory().get()
+            val defaultCategoryId = libraryPreferences.defaultCategory.get()
             val defaultCategory = categories.find { it.id == defaultCategoryId.toLong() }
 
             when {

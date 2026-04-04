@@ -229,7 +229,7 @@ class ReaderActivity : BaseActivity() {
         initializeMenu()
 
         // Finish when incognito mode is disabled
-        preferences.incognitoMode().changes()
+        preferences.incognitoMode.changes()
             .drop(1)
             .onEach { if (!it) finish() }
             .launchIn(lifecycleScope)
@@ -392,7 +392,7 @@ class ReaderActivity : BaseActivity() {
     private fun initializeMenu() {
         binding.pageNumber.setComposeContent {
             val state by viewModel.state.collectAsState()
-            val showPageNumber by viewModel.readerPreferences.showPageNumber().collectAsState()
+            val showPageNumber by viewModel.readerPreferences.showPageNumber.collectAsState()
 
             if (!state.menuVisible && showPageNumber) {
                 PageIndicatorText(
@@ -420,24 +420,24 @@ class ReaderActivity : BaseActivity() {
             }
 
             val isHttpSource = viewModel.getSource() is HttpSource
-            val isFullscreen by readerPreferences.fullscreen().collectAsState()
-            val flashOnPageChange by readerPreferences.flashOnPageChange().collectAsState()
+            val isFullscreen by readerPreferences.fullscreen.collectAsState()
+            val flashOnPageChange by readerPreferences.flashOnPageChange.collectAsState()
 
-            val colorOverlayEnabled by readerPreferences.colorFilter().collectAsState()
-            val colorOverlay by readerPreferences.colorFilterValue().collectAsState()
-            val colorOverlayMode by readerPreferences.colorFilterMode().collectAsState()
+            val colorOverlayEnabled by readerPreferences.colorFilter.collectAsState()
+            val colorOverlay by readerPreferences.colorFilterValue.collectAsState()
+            val colorOverlayMode by readerPreferences.colorFilterMode.collectAsState()
             val colorOverlayBlendMode = remember(colorOverlayMode) {
                 ReaderPreferences.ColorFilterMode.getOrNull(colorOverlayMode)?.second
             }
 
-            val cropBorderPaged by readerPreferences.cropBorders().collectAsState()
-            val cropBorderWebtoon by readerPreferences.cropBordersWebtoon().collectAsState()
+            val cropBorderPaged by readerPreferences.cropBorders.collectAsState()
+            val cropBorderWebtoon by readerPreferences.cropBordersWebtoon.collectAsState()
             val isPagerType = ReadingMode.isPagerType(viewModel.getMangaReadingMode())
             val cropEnabled = if (isPagerType) cropBorderPaged else cropBorderWebtoon
             // SY -->
-            val readerBottomButtons by readerPreferences.readerBottomButtons().changes().map { it.toImmutableSet() }
+            val readerBottomButtons by readerPreferences.readerBottomButtons.changes().map { it.toImmutableSet() }
                 .collectAsState(persistentSetOf())
-            val dualPageSplitPaged by readerPreferences.dualPageSplitPaged().collectAsState()
+            val dualPageSplitPaged by readerPreferences.dualPageSplitPaged.collectAsState()
             // SY <--
 
             ReaderContentOverlay(
@@ -503,13 +503,13 @@ class ReaderActivity : BaseActivity() {
                 dualPageSplitEnabled = dualPageSplitPaged,
                 doublePages = state.doublePages,
                 onClickPageLayout = {
-                    if (readerPreferences.pageLayout().get() == PagerConfig.PageLayout.AUTOMATIC) {
+                    if (readerPreferences.pageLayout.get() == PagerConfig.PageLayout.AUTOMATIC) {
                         (viewModel.state.value.viewer as? PagerViewer)?.config?.let { config ->
                             config.doublePages = !config.doublePages
                             reloadChapters(config.doublePages, true)
                         }
                     } else {
-                        readerPreferences.pageLayout().set(1 - readerPreferences.pageLayout().get())
+                        readerPreferences.pageLayout.set(1 - readerPreferences.pageLayout.get())
                     }
                 },
                 onClickShiftPage = ::shiftDoublePages,
@@ -555,7 +555,7 @@ class ReaderActivity : BaseActivity() {
                         screenModel = settingsScreenModel,
                         onChange = { stringRes ->
                             menuToggleToast?.cancel()
-                            if (!readerPreferences.showReadingMode().get()) {
+                            if (!readerPreferences.showReadingMode.get()) {
                                 menuToggleToast = toast(stringRes)
                             }
                         },
@@ -649,7 +649,7 @@ class ReaderActivity : BaseActivity() {
             windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
         } else {
-            if (readerPreferences.fullscreen().get()) {
+            if (readerPreferences.fullscreen.get()) {
                 windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
                 windowInsetsController.systemBarsBehavior =
                     WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -658,7 +658,7 @@ class ReaderActivity : BaseActivity() {
     }
 
     private fun enableExhAutoScroll() {
-        readerPreferences.autoscrollInterval().changes()
+        readerPreferences.autoscrollInterval.changes()
             .combine(viewModel.state.map { it.autoScroll }.distinctUntilChanged()) { interval, enabled ->
                 interval.toDouble() to enabled
             }.mapLatest { (intervalFloat, enabled) ->
@@ -672,7 +672,7 @@ class ReaderActivity : BaseActivity() {
                                         is PagerViewer -> v.moveToNext()
 
                                         is WebtoonViewer -> {
-                                            if (readerPreferences.smoothAutoScroll().get()) {
+                                            if (readerPreferences.smoothAutoScroll.get()) {
                                                 v.linearScroll(interval)
                                             } else {
                                                 v.scrollDown()
@@ -788,18 +788,18 @@ class ReaderActivity : BaseActivity() {
             binding.viewerContainer.removeAllViews()
         }
         viewModel.onViewerLoaded(newViewer)
-        updateViewerInset(readerPreferences.fullscreen().get())
+        updateViewerInset(readerPreferences.fullscreen.get())
         binding.viewerContainer.addView(newViewer.getView())
 
         // SY -->
         if (newViewer is PagerViewer) {
-            if (readerPreferences.pageLayout().get() == PagerConfig.PageLayout.AUTOMATIC) {
+            if (readerPreferences.pageLayout.get() == PagerConfig.PageLayout.AUTOMATIC) {
                 setDoublePageMode(newViewer)
             }
             viewModel.state.value.lastShiftDoubleState?.let { newViewer.config.shiftDoublePage = it }
         }
 
-        if (readerPreferences.showReadingMode().get()) {
+        if (readerPreferences.showReadingMode.get()) {
             // SY <--
             showReadingModeToast(viewModel.getMangaReadingMode())
         }
@@ -1157,7 +1157,7 @@ class ReaderActivity : BaseActivity() {
 
         // Initializes the reader subscriptions.
         init {
-            readerPreferences.readerTheme().changes()
+            readerPreferences.readerTheme.changes()
                 .onEach { theme ->
                     binding.readerContainer.setBackgroundColor(
                         when (theme) {
@@ -1170,27 +1170,27 @@ class ReaderActivity : BaseActivity() {
                 }
                 .launchIn(lifecycleScope)
 
-            preferences.displayProfile().changes()
+            preferences.displayProfile.changes()
                 .onEach { setDisplayProfile(it) }
                 .launchIn(lifecycleScope)
 
-            readerPreferences.cutoutShort().changes()
+            readerPreferences.drawUnderCutout.changes()
                 .onEach(::setCutoutShort)
                 .launchIn(lifecycleScope)
 
-            readerPreferences.keepScreenOn().changes()
+            readerPreferences.keepScreenOn.changes()
                 .onEach(::setKeepScreenOn)
                 .launchIn(lifecycleScope)
 
-            readerPreferences.customBrightness().changes()
+            readerPreferences.customBrightness.changes()
                 .onEach(::setCustomBrightness)
                 .launchIn(lifecycleScope)
 
-            merge(readerPreferences.grayscale().changes(), readerPreferences.invertedColors().changes())
-                .onEach { setLayerPaint(readerPreferences.grayscale().get(), readerPreferences.invertedColors().get()) }
+            merge(readerPreferences.grayscale.changes(), readerPreferences.invertedColors.changes())
+                .onEach { setLayerPaint(readerPreferences.grayscale.get(), readerPreferences.invertedColors.get()) }
                 .launchIn(lifecycleScope)
 
-            readerPreferences.fullscreen().changes()
+            readerPreferences.fullscreen.changes()
                 .onEach {
                     WindowCompat.setDecorFitsSystemWindows(window, !it)
                     updateViewerInset(it)
@@ -1198,7 +1198,7 @@ class ReaderActivity : BaseActivity() {
                 .launchIn(lifecycleScope)
 
             // SY -->
-            readerPreferences.pageLayout().changes()
+            readerPreferences.pageLayout.changes()
                 .drop(1)
                 .onEach {
                     viewModel.setDoublePages(
@@ -1210,13 +1210,13 @@ class ReaderActivity : BaseActivity() {
                 }
                 .launchIn(lifecycleScope)
 
-            readerPreferences.dualPageSplitPaged().changes()
+            readerPreferences.dualPageSplitPaged.changes()
                 .drop(1)
                 .onEach {
                     if (viewModel.state.value.viewer !is PagerViewer) return@onEach
                     reloadChapters(
                         !it &&
-                            when (readerPreferences.pageLayout().get()) {
+                            when (readerPreferences.pageLayout.get()) {
                                 PagerConfig.PageLayout.DOUBLE_PAGES -> true
 
                                 PagerConfig.PageLayout.AUTOMATIC ->
@@ -1292,7 +1292,7 @@ class ReaderActivity : BaseActivity() {
          */
         private fun setCustomBrightness(enabled: Boolean) {
             if (enabled) {
-                readerPreferences.customBrightnessValue().changes()
+                readerPreferences.customBrightnessValue.changes()
                     .sample(100)
                     .onEach(::setCustomBrightnessValue)
                     .launchIn(lifecycleScope)

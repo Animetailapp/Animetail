@@ -219,7 +219,7 @@ class MangaDownloader(
                         } // Ignore completed downloads, leave them in the queue
                         .groupBy { it.source }
                         .toList().take(5) // Concurrently download from 5 different sources
-                        .flatMap { (_, downloads) -> downloads.take(downloadPreferences.numberOfDownloads().get()) }
+                        .flatMap { (_, downloads) -> downloads.take(downloadPreferences.numberOfDownloads.get()) }
                     emit(activeDownloads)
 
                     if (activeDownloads.isEmpty()) break
@@ -373,7 +373,7 @@ class MangaDownloader(
                 reIndexedPages
             }
 
-            val dataSaver = if (sourcePreferences.dataSaverDownloader().get()) {
+            val dataSaver = if (sourcePreferences.dataSaverDownloader.get()) {
                 DataSaver(download.source, sourcePreferences)
             } else {
                 DataSaver.NoOp
@@ -424,7 +424,7 @@ class MangaDownloader(
             )
 
             // Only rename the directory if it's downloaded
-            if (downloadPreferences.saveChaptersAsCBZ().get()) {
+            if (downloadPreferences.saveChaptersAsCBZ.get()) {
                 archiveChapter(mangaDir, chapterDirname, tmpDir)
             } else {
                 tmpDir.renameTo(chapterDirname)
@@ -526,7 +526,7 @@ class MangaDownloader(
             val file = tmpDir.createFile("$filename.tmp")!!
             try {
                 throttler.apply {
-                    bytesPerSecond(downloadPreferences.downloadSpeedLimit().get().toLong() * 1024)
+                    bytesPerSecond(downloadPreferences.downloadSpeedLimit.get().toLong() * 1024)
                 }
                 val throttledSource = throttler.source(response.body.source()).buffer()
                 throttledSource.saveTo(file.openOutputStream())
@@ -586,7 +586,7 @@ class MangaDownloader(
     }
 
     private fun splitTallImageIfNeeded(page: Page, tmpDir: UniFile) {
-        if (!downloadPreferences.splitTallImages().get()) return
+        if (!downloadPreferences.splitTallImages.get()) return
 
         try {
             val filenamePrefix = "%03d".format(Locale.ENGLISH, page.number)

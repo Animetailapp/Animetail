@@ -18,10 +18,4 @@ class BackupPreferences(
         "backup_flags",
         setOf(FLAG_CATEGORIES, FLAG_CHAPTERS, FLAG_HISTORY, FLAG_TRACK),
     )
-
-    fun backupInterval() = backupInterval
-
-    fun lastAutoBackupTimestamp() = lastAutoBackupTimestamp
-
-    fun backupFlags() = backupFlags
 }

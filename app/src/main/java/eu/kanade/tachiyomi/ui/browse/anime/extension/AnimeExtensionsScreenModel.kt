@@ -145,11 +145,11 @@ class AnimeExtensionsScreenModel(
         }
         screenModelScope.launchIO { findAvailableExtensions() }
 
-        preferences.animeExtensionUpdatesCount().changes()
+        preferences.animeExtensionUpdatesCount.changes()
             .onEach { mutableState.update { state -> state.copy(updates = it) } }
             .launchIn(screenModelScope)
 
-        basePreferences.extensionInstaller().changes()
+        basePreferences.extensionInstaller.changes()
             .onEach { mutableState.update { state -> state.copy(installer = it) } }
             .launchIn(screenModelScope)
     }

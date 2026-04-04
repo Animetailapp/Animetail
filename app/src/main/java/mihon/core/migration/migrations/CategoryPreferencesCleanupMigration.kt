@@ -20,26 +20,26 @@ class CategoryPreferencesCleanupMigration : Migration {
         val allAnimeCategories = getAnimeCategories.await().map { it.id.toString() }.toSet()
         val allMangaCategories = getMangaCategories.await().map { it.id.toString() }.toSet()
 
-        val defaultAnimeCategory = libraryPreferences.defaultAnimeCategory().get()
+        val defaultAnimeCategory = libraryPreferences.defaultAnimeCategory.get()
         if (defaultAnimeCategory.toString() !in allAnimeCategories) {
-            libraryPreferences.defaultAnimeCategory().delete()
+            libraryPreferences.defaultAnimeCategory.delete()
         }
-        val defaultMangaCategory = libraryPreferences.defaultMangaCategory().get()
-        if (defaultMangaCategory.toString() !in allMangaCategories) {
-            libraryPreferences.defaultMangaCategory().delete()
+        val defaultCategory = libraryPreferences.defaultCategory.get()
+        if (defaultCategory.toString() !in allMangaCategories) {
+            libraryPreferences.defaultCategory.delete()
         }
 
         val categoryPreferences = listOf(
-            libraryPreferences.animeUpdateCategories(),
-            libraryPreferences.mangaUpdateCategories(),
-            libraryPreferences.animeUpdateCategoriesExclude(),
-            libraryPreferences.mangaUpdateCategoriesExclude(),
-            downloadPreferences.removeExcludeCategories(),
-            downloadPreferences.removeExcludeAnimeCategories(),
-            downloadPreferences.downloadNewChapterCategories(),
-            downloadPreferences.downloadNewEpisodeCategories(),
-            downloadPreferences.downloadNewChapterCategoriesExclude(),
-            downloadPreferences.downloadNewEpisodeCategoriesExclude(),
+            libraryPreferences.animeUpdateCategories,
+            libraryPreferences.updateCategories,
+            libraryPreferences.animeUpdateCategoriesExclude,
+            libraryPreferences.updateCategoriesExclude,
+            downloadPreferences.removeExcludeCategories,
+            downloadPreferences.removeExcludeAnimeCategories,
+            downloadPreferences.downloadNewChapterCategories,
+            downloadPreferences.downloadNewEpisodeCategories,
+            downloadPreferences.downloadNewChapterCategoriesExclude,
+            downloadPreferences.downloadNewEpisodeCategoriesExclude,
         )
         categoryPreferences.forEach { preference ->
             val ids = preference.get()

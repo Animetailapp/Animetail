@@ -43,7 +43,7 @@ internal object AnimeExtensionLoader {
     // KMK <--
 
     private val loadNsfwSource by lazy {
-        preferences.showNsfwSource().get()
+        preferences.showNsfwSource.get()
     }
 
     private const val EXTENSION_FEATURE = "tachiyomi.animeextension"

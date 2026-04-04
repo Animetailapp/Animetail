@@ -43,7 +43,7 @@ internal class AnimeExtensionApi {
 
     suspend fun findExtensions(): List<AnimeExtension.Available> {
         // KMK -->
-        val disabledRepos = sourcePreferences.disabledRepos().get()
+        val disabledRepos = sourcePreferences.disabledRepos.get()
         // KMK <--
         return withIOContext {
             getExtensionRepo.getAll()

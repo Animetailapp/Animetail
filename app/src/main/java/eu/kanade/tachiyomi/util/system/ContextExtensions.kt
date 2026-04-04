@@ -131,8 +131,8 @@ fun Context.createFileInCacheDir(name: String): File {
 fun Context.createReaderThemeContext(): Context {
     val preferences = Injekt.get<UiPreferences>()
     val readerPreferences = Injekt.get<ReaderPreferences>()
-    val themeMode = preferences.themeMode().get()
-    val isDarkBackground = when (readerPreferences.readerTheme().get()) {
+    val themeMode = preferences.themeMode.get()
+    val isDarkBackground = when (readerPreferences.readerTheme.get()) {
         1, 2 -> true
 
         // Black, Gray
@@ -153,8 +153,8 @@ fun Context.createReaderThemeContext(): Context {
         val wrappedContext = ContextThemeWrapper(this, R.style.Theme_Tachiyomi)
         wrappedContext.applyOverrideConfiguration(overrideConf)
         ThemingDelegate.getThemeResIds(
-            preferences.appTheme().get(),
-            preferences.themeDarkAmoled().get(),
+            preferences.appTheme.get(),
+            preferences.themeDarkAmoled.get(),
         )
             .forEach { wrappedContext.theme.applyStyle(it, true) }
         return wrappedContext

@@ -7,7 +7,7 @@ class ToggleMangaIncognito(
     private val preferences: SourcePreferences,
 ) {
     fun await(extensions: String, enable: Boolean) {
-        preferences.incognitoMangaExtensions().getAndSet {
+        preferences.incognitoMangaExtensions.getAndSet {
             if (enable) it.plus(extensions) else it.minus(extensions)
         }
     }

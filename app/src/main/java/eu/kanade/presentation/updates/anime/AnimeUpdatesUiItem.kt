@@ -268,7 +268,7 @@ private fun AnimeUpdatesUiItem(
 // AM (FILE_SIZE) -->
         var fileSizeAsync: Long? by remember { mutableStateOf(updatesItem.fileSize) }
         if (downloadStateProvider() == AnimeDownload.State.DOWNLOADED &&
-            storagePreferences.showEpisodeFileSize().get() &&
+            storagePreferences.showEpisodeFileSize.get() &&
             fileSizeAsync == null
         ) {
             LaunchedEffect(update, Unit) {

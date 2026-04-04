@@ -46,9 +46,9 @@ abstract class AnimeSearchScreenModel(
     private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
     private var searchJob: Job? = null
 
-    private val enabledLanguages = sourcePreferences.enabledLanguages().get()
-    private val disabledSources = sourcePreferences.disabledAnimeSources().get()
-    protected val pinnedSources = sourcePreferences.pinnedAnimeSources().get()
+    private val enabledLanguages = sourcePreferences.enabledLanguages.get()
+    private val disabledSources = sourcePreferences.disabledAnimeSources.get()
+    protected val pinnedSources = sourcePreferences.pinnedAnimeSources.get()
 
     private var lastQuery: String? = null
     private var lastSourceFilter: AnimeSourceFilter? = null
@@ -65,7 +65,7 @@ abstract class AnimeSearchScreenModel(
 
     init {
         screenModelScope.launch {
-            preferences.globalSearchFilterState().changes().collectLatest { state ->
+            preferences.globalSearchFilterState.changes().collectLatest { state ->
                 mutableState.update { it.copy(onlyShowHasResults = state) }
             }
         }
@@ -118,7 +118,7 @@ abstract class AnimeSearchScreenModel(
     }
 
     fun toggleFilterResults() {
-        preferences.globalSearchFilterState().toggle()
+        preferences.globalSearchFilterState.toggle()
     }
 
     fun search() {

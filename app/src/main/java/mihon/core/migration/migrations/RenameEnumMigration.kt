@@ -19,7 +19,7 @@ class RenameEnumMigration : Migration {
         prefs.edit {
             val newMangaSortingMode = when (
                 val oldSortingMode = prefs.getString(
-                    libraryPreferences.mangaSortingMode().key(),
+                    libraryPreferences.mangaSortingMode.key(),
                     "ALPHABETICAL",
                 )
             ) {
@@ -30,7 +30,7 @@ class RenameEnumMigration : Migration {
             }
             val newAnimeSortingMode = when (
                 val oldSortingMode = prefs.getString(
-                    libraryPreferences.animeSortingMode().key(),
+                    libraryPreferences.animeSortingMode.key(),
                     "ALPHABETICAL",
                 )
             ) {
@@ -39,8 +39,8 @@ class RenameEnumMigration : Migration {
                 "DATE_FETCHED" -> "CHAPTER_FETCH_DATE"
                 else -> oldSortingMode
             }
-            putString(libraryPreferences.mangaSortingMode().key(), newMangaSortingMode)
-            putString(libraryPreferences.animeSortingMode().key(), newAnimeSortingMode)
+            putString(libraryPreferences.mangaSortingMode.key(), newMangaSortingMode)
+            putString(libraryPreferences.animeSortingMode.key(), newAnimeSortingMode)
         }
 
         return true

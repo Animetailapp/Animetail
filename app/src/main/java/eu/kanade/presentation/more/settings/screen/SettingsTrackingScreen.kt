@@ -95,7 +95,7 @@ object SettingsTrackingScreen : SearchableSettings {
         val trackerManager = remember { Injekt.get<TrackerManager>() }
         val mangaSourceManager = remember { Injekt.get<MangaSourceManager>() }
         val animeSourceManager = remember { Injekt.get<AnimeSourceManager>() }
-        val autoTrackStatePref = trackPreferences.autoUpdateTrackOnMarkRead()
+        val autoTrackStatePref = trackPreferences.autoUpdateTrackOnMarkRead
 
         var dialog by remember { mutableStateOf<Any?>(null) }
         dialog?.run {
@@ -148,19 +148,19 @@ object SettingsTrackingScreen : SearchableSettings {
 
         return listOf(
             Preference.PreferenceItem.SwitchPreference(
-                preference = trackPreferences.autoUpdateTrack(),
+                preference = trackPreferences.autoUpdateTrack,
                 title = stringResource(AYMR.strings.pref_auto_update_manga_sync),
             ),
             Preference.PreferenceItem.SwitchPreference(
-                preference = trackPreferences.trackOnAddingToLibrary(),
+                preference = trackPreferences.trackOnAddingToLibrary,
                 title = stringResource(AYMR.strings.pref_track_on_add_library),
             ),
             Preference.PreferenceItem.SwitchPreference(
-                preference = trackPreferences.showNextEpisodeAiringTime(),
+                preference = trackPreferences.showNextEpisodeAiringTime,
                 title = stringResource(AYMR.strings.pref_show_next_episode_airing_time),
             ),
             Preference.PreferenceItem.ListPreference(
-                preference = trackPreferences.autoUpdateTrackOnMarkRead(),
+                preference = trackPreferences.autoUpdateTrackOnMarkRead,
                 entries = AutoTrackState.entries
                     .associateWith { stringResource(it.titleRes) }
                     .toPersistentMap(),

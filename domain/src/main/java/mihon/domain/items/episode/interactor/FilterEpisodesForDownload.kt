@@ -29,12 +29,12 @@ class FilterEpisodesForDownload(
     suspend fun await(anime: Anime, newEpisodes: List<Episode>): List<Episode> {
         if (
             newEpisodes.isEmpty() ||
-            !downloadPreferences.downloadNewEpisodes().get() ||
+            !downloadPreferences.downloadNewEpisodes.get() ||
             !anime.shouldDownloadNewEpisodes()
         ) {
             return emptyList()
         }
-        if (!downloadPreferences.downloadNewUnseenEpisodesOnly().get()) return newEpisodes
+        if (!downloadPreferences.downloadNewUnseenEpisodesOnly.get()) return newEpisodes
         val seenEpisodeNumbers = getEpisodesByAnimeId.await(anime.id)
             .asSequence()
             .filter { it.seen && it.isRecognizedNumber }
@@ -52,8 +52,8 @@ class FilterEpisodesForDownload(
     private suspend fun Anime.shouldDownloadNewEpisodes(): Boolean {
         if (!favorite) return false
         val categories = getCategories.await(id).map { it.id }.ifEmpty { listOf(DEFAULT_CATEGORY_ID) }
-        val includedCategories = downloadPreferences.downloadNewEpisodeCategories().get().map { it.toLong() }
-        val excludedCategories = downloadPreferences.downloadNewEpisodeCategoriesExclude().get().map { it.toLong() }
+        val includedCategories = downloadPreferences.downloadNewEpisodeCategories.get().map { it.toLong() }
+        val excludedCategories = downloadPreferences.downloadNewEpisodeCategoriesExclude.get().map { it.toLong() }
         return when {
             // Default Download from all categories
             includedCategories.isEmpty() && excludedCategories.isEmpty() -> true

@@ -33,14 +33,4 @@ class UpdatesPreferences(
         "pref_filter_updates_hide_excluded_scanlators",
         false,
     )
-
-    fun filterDownloaded() = filterDownloaded
-
-    fun filterUnread() = filterUnread
-
-    fun filterStarted() = filterStarted
-
-    fun filterBookmarked() = filterBookmarked
-
-    fun filterExcludedScanlators() = filterExcludedScanlators
 }
