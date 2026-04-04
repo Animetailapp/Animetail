@@ -83,6 +83,7 @@ class SourcePreferences(
         "browse_hide_in_anime_library_items",
         false,
     )
+
     // KMK -->
     val hideInLibraryFeedItems = preferenceStore.getBoolean("feed_hide_in_library_items", false)
 

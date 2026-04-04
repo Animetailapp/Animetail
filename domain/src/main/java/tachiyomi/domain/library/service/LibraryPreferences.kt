@@ -180,7 +180,10 @@ class LibraryPreferences(
 
     val updateCategories: Preference<Set<String>> =
         preferenceStore.getStringSet(LIBRARY_UPDATE_MANGA_CATEGORIES_PREF_KEY, emptySet())
-    val animeUpdateCategoriesExclude = preferenceStore.getStringSet(LIBRARY_UPDATE_ANIME_CATEGORIES_EXCLUDE_PREF_KEY, emptySet())
+    val animeUpdateCategoriesExclude = preferenceStore.getStringSet(
+        LIBRARY_UPDATE_ANIME_CATEGORIES_EXCLUDE_PREF_KEY,
+        emptySet(),
+    )
 
     val updateCategoriesExclude: Preference<Set<String>> =
         preferenceStore.getStringSet(LIBRARY_UPDATE_MANGA_CATEGORIES_EXCLUDE_PREF_KEY, emptySet())
@@ -363,14 +366,20 @@ class LibraryPreferences(
 
     // region Item behavior
 
-    val swipeEpisodeStartAction = preferenceStore.getEnum("pref_episode_swipe_end_action", EpisodeSwipeAction.ToggleSeen)
+    val swipeEpisodeStartAction = preferenceStore.getEnum(
+        "pref_episode_swipe_end_action",
+        EpisodeSwipeAction.ToggleSeen,
+    )
 
     val swipeEpisodeEndAction = preferenceStore.getEnum(
         "pref_episode_swipe_start_action",
         EpisodeSwipeAction.ToggleBookmark,
     )
 
-    val swipeChapterStartAction = preferenceStore.getEnum("pref_chapter_swipe_end_action", ChapterSwipeAction.ToggleRead)
+    val swipeChapterStartAction = preferenceStore.getEnum(
+        "pref_chapter_swipe_end_action",
+        ChapterSwipeAction.ToggleRead,
+    )
 
     val swipeChapterEndAction = preferenceStore.getEnum(
         "pref_chapter_swipe_start_action",
