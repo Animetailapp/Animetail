@@ -173,7 +173,7 @@ class AnimeDownloadManager(
      */
     fun buildVideo(source: AnimeSource, anime: Anime, episode: Episode): Video {
         val episodeDir =
-            provider.findEpisodeDir(episode.name, episode.scanlator, anime.title, source)
+            provider.findEpisodeDir(episode.name, episode.scanlator, episode.url, anime.title, source)
         val files = episodeDir?.listFiles().orEmpty()
             .filter { "video" in it.type.orEmpty() }
 
@@ -202,6 +202,7 @@ class AnimeDownloadManager(
     fun isEpisodeDownloaded(
         episodeName: String,
         episodeScanlator: String?,
+        episodeUrl: String,
         animeTitle: String,
         sourceId: Long,
         skipCache: Boolean = false,
@@ -209,6 +210,7 @@ class AnimeDownloadManager(
         return cache.isEpisodeDownloaded(
             episodeName,
             episodeScanlator,
+            episodeUrl,
             animeTitle,
             sourceId,
             skipCache,
@@ -412,7 +414,7 @@ class AnimeDownloadManager(
      * @param newEpisode the target episode with the new name.
      */
     suspend fun renameEpisode(source: AnimeSource, anime: Anime, oldEpisode: Episode, newEpisode: Episode) {
-        val oldNames = provider.getValidEpisodeDirNames(oldEpisode.name, oldEpisode.scanlator)
+        val oldNames = provider.getValidEpisodeDirNames(oldEpisode.name, oldEpisode.scanlator, oldEpisode.url)
         val animeDir = provider.getAnimeDir(anime.title, source)
 
         // Assume there's only 1 version of the episode name formats present
@@ -420,7 +422,7 @@ class AnimeDownloadManager(
             .mapNotNull { animeDir.findFile(it) }
             .firstOrNull()
 
-        var newName = provider.getEpisodeDirName(newEpisode.name, newEpisode.scanlator)
+        var newName = provider.getEpisodeDirName(newEpisode.name, newEpisode.scanlator, newEpisode.url)
 
         if (oldFolder?.isFile == true) {
             when (oldFolder.extension) {

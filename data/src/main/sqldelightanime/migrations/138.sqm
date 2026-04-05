@@ -1,3 +1,5 @@
+-- Add episode urls to anime updates view
+DROP VIEW IF EXISTS animeupdatesView;
 CREATE VIEW animeupdatesView AS
 SELECT
     animes._id AS animeId,
@@ -22,17 +24,3 @@ ON animes._id = episodes.anime_id
 WHERE favorite = 1
 AND date_fetch > date_added
 ORDER BY date_fetch DESC;
-
-getRecentAnimeUpdates:
-SELECT *
-FROM animeupdatesView
-WHERE dateUpload > :after
-LIMIT :limit;
-
-getUpdatesBySeenStatus:
-SELECT *
-FROM animeupdatesView
-WHERE seen = :seen
-AND dateUpload > :after
-
-LIMIT :limit;

@@ -36,6 +36,7 @@ internal class DownloadPageLoader(
         val chapterPath = downloadProvider.findChapterDir(
             dbChapter.name,
             dbChapter.scanlator,
+            dbChapter.url,
             manga.ogTitle,
             source,
         )

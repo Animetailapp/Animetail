@@ -111,6 +111,7 @@ class AnimeUpdatesScreenModel(
                 val downloaded = downloadManager.isEpisodeDownloaded(
                     update.episodeName,
                     update.scanlator,
+                    update.episodeUrl,
                     update.animeTitle,
                     update.sourceId,
                 )

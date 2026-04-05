@@ -135,13 +135,14 @@ class AnimeDownloadCache(
     fun isEpisodeDownloaded(
         episodeName: String,
         episodeScanlator: String?,
+        episodeUrl: String,
         animeTitle: String,
         sourceId: Long,
         skipCache: Boolean,
     ): Boolean {
         if (skipCache) {
             val source = sourceManager.getOrStub(sourceId)
-            return provider.findEpisodeDir(episodeName, episodeScanlator, animeTitle, source) != null
+            return provider.findEpisodeDir(episodeName, episodeScanlator, episodeUrl, animeTitle, source) != null
         }
 
         renewCache()
@@ -153,6 +154,7 @@ class AnimeDownloadCache(
                 return provider.getValidEpisodeDirNames(
                     episodeName,
                     episodeScanlator,
+                    episodeUrl,
                 ).any { it in animeDir.episodeDirs }
             }
         }
@@ -259,7 +261,7 @@ class AnimeDownloadCache(
         rootDownloadsDirMutex.withLock {
             val sourceDir = rootDownloadsDir.sourceDirs[anime.source] ?: return
             val animeDir = sourceDir.animeDirs[provider.getAnimeDirName(anime.title)] ?: return
-            provider.getValidEpisodeDirNames(episode.name, episode.scanlator).forEach {
+            provider.getValidEpisodeDirNames(episode.name, episode.scanlator, episode.url).forEach {
                 if (it in animeDir.episodeDirs) {
                     animeDir.episodeDirs -= it
                 }
@@ -280,7 +282,7 @@ class AnimeDownloadCache(
             val sourceDir = rootDownloadsDir.sourceDirs[anime.source] ?: return
             val animeDir = sourceDir.animeDirs[provider.getAnimeDirName(anime.title)] ?: return
             episodes.forEach { episode ->
-                provider.getValidEpisodeDirNames(episode.name, episode.scanlator).forEach {
+                provider.getValidEpisodeDirNames(episode.name, episode.scanlator, episode.url).forEach {
                     if (it in animeDir.episodeDirs) {
                         animeDir.episodeDirs -= it
                     }

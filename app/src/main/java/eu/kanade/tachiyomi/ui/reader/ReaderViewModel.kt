@@ -42,7 +42,6 @@ import eu.kanade.tachiyomi.util.chapter.filterDownloaded
 import eu.kanade.tachiyomi.util.chapter.removeDuplicates
 import eu.kanade.tachiyomi.util.editCover
 import eu.kanade.tachiyomi.util.lang.byteSize
-import eu.kanade.tachiyomi.util.lang.takeBytes
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.DiskUtil.MAX_FILE_NAME_BYTES
 import eu.kanade.tachiyomi.util.storage.cacheImageDir
@@ -786,9 +785,8 @@ class ReaderViewModel @JvmOverloads constructor(
         val chapter = page.chapter.chapter
         val filenameSuffix = " - ${page.number}"
         return DiskUtil.buildValidFilename(
-            "${manga.title} - ${chapter.name}".takeBytes(
-                MAX_FILE_NAME_BYTES - filenameSuffix.byteSize(),
-            ),
+            "${manga.title} - ${chapter.name}",
+            MAX_FILE_NAME_BYTES - filenameSuffix.byteSize(),
         ) + filenameSuffix
     }
 
@@ -1025,7 +1023,8 @@ class ReaderViewModel @JvmOverloads constructor(
         val chapter = page1.chapter.chapter
         val filenameSuffix = " - ${page1.number}-${page2.number}.jpg"
         val filename = DiskUtil.buildValidFilename(
-            "${manga.title} - ${chapter.name}".takeBytes(MAX_FILE_NAME_BYTES - filenameSuffix.byteSize()),
+            "${manga.title} - ${chapter.name}",
+            MAX_FILE_NAME_BYTES - filenameSuffix.byteSize(),
         ) + filenameSuffix
 
         return imageSaver.save(

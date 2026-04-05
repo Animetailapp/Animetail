@@ -99,6 +99,7 @@
     <string name="pref_clear_database">Borrar la base de datos</string>
     <string name="pref_clear_database_summary">Borra del historial los títulos que hayas leído pero no formen parte de tu biblioteca</string>
     <string name="clear_database_completed">Elementos borrados</string>
+    <string name="clear_database_confirmation">¿Estás seguro? Se perderán los capítulos leídos y el progreso de los títulos fuera de tu biblioteca</string>
     <string name="version">Versión</string>
     <string name="pref_enable_acra">Enviar informes de fallos</string>
     <string name="pref_acra_summary">Ayuda a corregir cualquier error. No se enviará ninguna información personal</string>
@@ -113,6 +114,7 @@
     <string name="unknown">Desconocido</string>
     <string name="licensed">Con licencia</string>
     <string name="remove_from_library">Eliminar de biblioteca</string>
+    <string name="confirm_add_duplicate_manga">Ya tienes un título en tu biblioteca con el mismo nombre.\n\n¿Quieres continuar de todas formas?</string>
     <string name="display_mode_chapter">Capítulo %1$s</string>
     <string name="chapter_downloading_progress">Descargando (%1$d/%2$d)</string>
     <string name="chapter_error">Error</string>
@@ -372,6 +374,7 @@
     <string name="pref_library_update_refresh_metadata">Actualizar automáticamente los metadatos</string>
     <string name="action_display_comfortable_grid">Cuadrícula amplia</string>
     <string name="action_migrate">Migrar</string>
+    <string name="action_migrate_duplicate">Migrar entrada existente</string>
     <string name="tabs_header">Pestañas</string>
     <string name="action_display_show_tabs">Mostrar pestañas de categorías</string>
     <string name="page_list_empty_error">No se encontraron páginas</string>

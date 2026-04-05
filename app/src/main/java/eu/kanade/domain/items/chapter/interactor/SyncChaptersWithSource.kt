@@ -121,6 +121,7 @@ class SyncChaptersWithSource(
                         downloadManager.isChapterDownloaded(
                             dbChapter.name,
                             dbChapter.scanlator,
+                            dbChapter.url,
                             manga.title,
                             manga.source,
                         )
