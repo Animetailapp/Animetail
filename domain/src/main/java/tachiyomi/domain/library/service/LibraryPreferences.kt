@@ -189,7 +189,10 @@ class LibraryPreferences(
         preferenceStore.getStringSet(LIBRARY_UPDATE_MANGA_CATEGORIES_EXCLUDE_PREF_KEY, emptySet())
     val updateMangaTitles: Preference<Boolean> = preferenceStore.getBoolean("pref_update_library_manga_titles", false)
 
-    val disallowNonAsciiFilenames: Preference<Boolean> = preferenceStore.getBoolean("disallow_non_ascii_filenames", false)
+    val disallowNonAsciiFilenames: Preference<Boolean> = preferenceStore.getBoolean(
+        "disallow_non_ascii_filenames",
+        false,
+    )
     // Mixture Item
 
     val filterEpisodeBySeen = preferenceStore.getLong("default_episode_filter_by_seen", Anime.SHOW_ALL)

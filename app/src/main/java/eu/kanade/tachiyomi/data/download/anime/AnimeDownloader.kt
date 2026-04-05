@@ -349,7 +349,11 @@ class AnimeDownloader(
             return
         }
 
-        val episodeDirname = provider.getEpisodeDirName(download.episode.name, download.episode.scanlator, download.episode.url)
+        val episodeDirname = provider.getEpisodeDirName(
+            download.episode.name,
+            download.episode.scanlator,
+            download.episode.url,
+        )
         val tmpDir = animeDir.createDirectory(episodeDirname + TMP_DIR_SUFFIX)!!
 
         try {
