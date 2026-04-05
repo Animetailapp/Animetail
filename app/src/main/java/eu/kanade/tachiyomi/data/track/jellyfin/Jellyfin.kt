@@ -101,6 +101,15 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedAnimeTracker, An
             null
         }
 
+    // AM -->
+    override suspend fun matchSeason(anime: Anime): AnimeTrackSearch {
+        return AnimeTrackSearch.create(id).apply {
+            title = anime.title
+            tracking_url = anime.url
+        }
+    }
+    // <-- AM
+
     override fun isTrackFrom(track: DomainTrack, anime: Anime, source: AnimeSource?): Boolean =
         track.remoteUrl == anime.url && source?.let { accept(it) } == true
 

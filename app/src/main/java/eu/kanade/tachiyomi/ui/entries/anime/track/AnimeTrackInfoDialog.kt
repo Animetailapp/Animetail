@@ -39,6 +39,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.track.anime.interactor.RefreshAnimeTracks
+import eu.kanade.domain.track.anime.interactor.RefreshResult
 import eu.kanade.domain.track.anime.model.toDbTrack
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.track.TrackDateSelector
@@ -93,12 +94,15 @@ data class AnimeTrackInfoDialogHomeScreen(
     private val animeId: Long,
     private val animeTitle: String,
     private val sourceId: Long,
+    // AM -->
+    private val isSeason: Boolean = false,
+    // <-- AM
 ) : Screen() {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
-        val screenModel = rememberScreenModel { Model(animeId, sourceId) }
+        val screenModel = rememberScreenModel { Model(animeId, sourceId, isSeason = isSeason) }
 
         val dateFormat = remember {
             UiPreferences.dateFormat(
@@ -110,6 +114,9 @@ data class AnimeTrackInfoDialogHomeScreen(
         AnimeTrackInfoDialogHome(
             trackItems = state.trackItems,
             dateFormat = dateFormat,
+            // AM -->
+            isSeason = isSeason,
+            // <-- AM
             onStatusClick = {
                 navigator.push(
                     TrackStatusSelectorScreen(
@@ -201,13 +208,20 @@ data class AnimeTrackInfoDialogHomeScreen(
     private class Model(
         private val animeId: Long,
         private val sourceId: Long,
+        // AM -->
+        private val isSeason: Boolean = false,
+        // <-- AM
         private val getTracks: GetAnimeTracks = Injekt.get(),
     ) : StateScreenModel<Model.State>(State()) {
 
         init {
-            screenModelScope.launch {
-                refreshTrackers()
+            // AM (skip auto-refresh for seasons — handled by syncTrackers) -->
+            if (!isSeason) {
+                screenModelScope.launch {
+                    refreshTrackers()
+                }
             }
+            // <-- AM
 
             screenModelScope.launch {
                 getTracks.subscribe(animeId)
@@ -229,8 +243,14 @@ data class AnimeTrackInfoDialogHomeScreen(
             screenModelScope.launchNonCancellable {
                 val anime = Injekt.get<GetAnime>().await(animeId) ?: return@launchNonCancellable
                 try {
-                    val matchResult = item.tracker.match(anime) ?: throw Exception()
-                    item.tracker.animeService.register(matchResult, animeId)
+                    // AM -->
+                    val matchResult = if (isSeason) {
+                        item.tracker.matchSeason(anime)
+                    } else {
+                        item.tracker.match(anime)
+                    } ?: throw Exception()
+                    item.tracker.animeService.register(matchResult, anime)
+                    // <-- AM
                 } catch (e: Exception) {
                     withUIContext { Injekt.get<Application>().toast(MR.strings.error_no_match) }
                 }
@@ -241,22 +261,24 @@ data class AnimeTrackInfoDialogHomeScreen(
             val refreshTracks = Injekt.get<RefreshAnimeTracks>()
             val context = Injekt.get<Application>()
 
+            // AM -->
             refreshTracks.await(animeId)
-                .filter { it.first != null }
+                .filterIsInstance<RefreshResult.Failure>()
                 .forEach { (track, e) ->
                     logcat(LogPriority.ERROR, e) {
-                        "Failed to refresh track data mangaId=$animeId for service ${track!!.id}"
+                        "Failed to refresh track data animeId=$animeId for service ${track.id}"
                     }
                     withUIContext {
                         context.toast(
                             context.stringResource(
                                 MR.strings.track_error,
-                                track!!.name,
+                                track.name,
                                 e.message ?: "",
                             ),
                         )
                     }
                 }
+            // <-- AM
         }
 
         fun togglePrivate(item: AnimeTrackItem) {
@@ -758,7 +780,12 @@ data class TrackServiceSearchScreen(
         }
 
         fun registerTracking(item: AnimeTrackSearch) {
-            screenModelScope.launchNonCancellable { tracker.animeService.register(item, animeId) }
+            screenModelScope.launchNonCancellable {
+                // AM -->
+                val anime = Injekt.get<GetAnime>().await(animeId) ?: return@launchNonCancellable
+                tracker.animeService.register(item, anime)
+                // <-- AM
+            }
         }
 
         fun updateSelection(selected: AnimeTrackSearch) {

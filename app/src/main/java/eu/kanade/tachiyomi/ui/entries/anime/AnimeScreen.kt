@@ -234,7 +234,7 @@ class AnimeScreen(
                 } else {
                     screenModel.showTrackDialog()
                 }
-            }.takeIf { successState.anime.fetchType == FetchType.Episodes },
+            },
             onTagSearch = { scope.launch { performGenreSearch(navigator, it, screenModel.source!!) } },
             onFilterButtonClicked = screenModel::showSettingsDialog,
             onRefresh = screenModel::fetchAllFromSource,
@@ -406,6 +406,9 @@ class AnimeScreen(
                         animeId = successState.anime.id,
                         animeTitle = successState.anime.title,
                         sourceId = successState.source.id,
+                        // AM -->
+                        isSeason = successState.anime.fetchType == FetchType.Seasons,
+                        // <-- AM
                     ),
                     enableSwipeDismiss = { it.lastItem is AnimeTrackInfoDialogHomeScreen },
                     onDismissRequest = onDismissRequest,

@@ -54,6 +54,12 @@ class TrackPreferences(
         true,
     )
 
+    // AM -->
+    fun syncEnhancedTrackers() = preferenceStore.getBoolean("sync_enhanced_trackers", true)
+
+    fun smartTrackerSync() = preferenceStore.getBoolean("smart_sync_trackers", true)
+    // <-- AM
+
     val autoUpdateTrackOnMarkRead: Preference<AutoTrackState> = preferenceStore.getEnum(
         "pref_auto_update_manga_on_mark_read",
         AutoTrackState.ALWAYS,

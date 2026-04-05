@@ -14,6 +14,7 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -57,14 +58,16 @@ interface AnimeTracker {
     suspend fun refresh(track: AnimeTrack): AnimeTrack
 
     // TODO: move this to an interactor, and update all trackers based on common data
-    suspend fun register(item: AnimeTrack, animeId: Long) {
-        item.anime_id = animeId
+    // AM -->
+    suspend fun register(item: AnimeTrack, anime: Anime) {
+        item.anime_id = anime.id
         try {
-            addTracks.bind(this, item, animeId)
+            addTracks.bind(this, item, anime)
         } catch (e: Throwable) {
             withUIContext { Injekt.get<Application>().toast(e.message) }
         }
     }
+    // <-- AM
 
     suspend fun setRemoteAnimeStatus(track: AnimeTrack, status: Long) {
         track.status = status

@@ -580,6 +580,9 @@ private fun AnimeScreenSmallImpl(
                         AnimeActionRow(
                             favorite = state.anime.favorite,
                             trackingCount = state.trackingCount,
+                            // AM -->
+                            isSyncingTrackers = state.isSyncingTrackers,
+                            // <-- AM
                             nextUpdate = nextUpdate,
                             isUserIntervalMode = state.anime.fetchInterval < 0,
                             onAddToLibraryClicked = onAddToLibraryClicked,
@@ -1019,6 +1022,9 @@ fun AnimeScreenLargeImpl(
                             AnimeActionRow(
                                 favorite = state.anime.favorite,
                                 trackingCount = state.trackingCount,
+                                // AM -->
+                                isSyncingTrackers = state.isSyncingTrackers,
+                                // <-- AM
                                 nextUpdate = nextUpdate,
                                 isUserIntervalMode = state.anime.fetchInterval < 0,
                                 onAddToLibraryClicked = onAddToLibraryClicked,

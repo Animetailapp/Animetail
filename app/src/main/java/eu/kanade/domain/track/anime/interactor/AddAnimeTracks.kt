@@ -4,6 +4,7 @@ import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.track.anime.model.toDbTrack
 import eu.kanade.domain.track.anime.model.toDomainTrack
 import eu.kanade.tachiyomi.animesource.AnimeSource
+import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
@@ -18,6 +19,8 @@ import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.history.anime.interactor.GetAnimeHistory
 import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
+import tachiyomi.domain.items.season.interactor.GetAnimeSeasonsByParentId
+import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -28,12 +31,18 @@ class AddAnimeTracks(
     private val syncChapterProgressWithTrack: SyncEpisodeProgressWithTrack,
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
     private val trackerManager: TrackerManager,
+    // AM -->
+    private val getAnimeSeasonsByParentId: GetAnimeSeasonsByParentId,
+    private val sourceManager: AnimeSourceManager,
+    // <-- AM
 ) {
 
     // TODO: update all trackers based on common data
-    suspend fun bind(tracker: AnimeTracker, item: AnimeTrack, animeId: Long) = withNonCancellableContext {
+    // AM -->
+    suspend fun bind(tracker: AnimeTracker, item: AnimeTrack, anime: Anime) = withNonCancellableContext {
+        // <-- AM
         withIOContext {
-            val allChapters = getEpisodesByAnimeId.await(animeId)
+            val allChapters = getEpisodesByAnimeId.await(anime.id)
             val hasSeenEpisodes = allChapters.any { it.seen }
             tracker.bind(item, hasSeenEpisodes)
 
@@ -45,7 +54,7 @@ class AddAnimeTracks(
             try {
                 val updateAnime: UpdateAnime = Injekt.get()
                 val getAnime: GetAnime = Injekt.get()
-                val localAnime = getAnime.await(animeId)
+                val localAnime = getAnime.await(anime.id)
                 val titleForLookup = localAnime?.title
 
                 try {
@@ -53,7 +62,7 @@ class AddAnimeTracks(
                     if (!cast.isNullOrEmpty()) {
                         updateAnime.await(
                             tachiyomi.domain.entries.anime.model.AnimeUpdate(
-                                id = animeId,
+                                id = anime.id,
                                 cast = cast,
                             ),
                         )
@@ -66,66 +75,100 @@ class AddAnimeTracks(
                 logcat(LogPriority.WARN, e) { "Could not fetch/persist cast after binding tracker" }
             }
 
-            // TODO: merge into [SyncChapterProgressWithTrack]?
-            // Update chapter progress if newer chapters marked read locally
-            if (hasSeenEpisodes) {
-                val latestLocalReadChapterNumber = allChapters
-                    .sortedBy { it.episodeNumber }
-                    .takeWhile { it.seen }
-                    .lastOrNull()
-                    ?.episodeNumber ?: -1.0
+            // AM -->
+            when (anime.fetchType) {
+                FetchType.Seasons -> { }
 
-                if (latestLocalReadChapterNumber > track.lastEpisodeSeen) {
-                    track = track.copy(
-                        lastEpisodeSeen = latestLocalReadChapterNumber,
-                    )
-                    tracker.setRemoteLastEpisodeSeen(track.toDbTrack(), latestLocalReadChapterNumber.toInt())
-                }
+                // <-- AM
+                FetchType.Episodes -> {
+                    // TODO: merge into [SyncChapterProgressWithTrack]?
+                    // Update chapter progress if newer chapters marked read locally
+                    if (hasSeenEpisodes) {
+                        val latestLocalReadChapterNumber = allChapters
+                            .sortedBy { it.episodeNumber }
+                            .takeWhile { it.seen }
+                            .lastOrNull()
+                            ?.episodeNumber ?: -1.0
 
-                if (track.startDate <= 0) {
-                    val firstReadChapterDate = Injekt.get<GetAnimeHistory>().await(animeId)
-                        .sortedBy { it.seenAt }
-                        .firstOrNull()
-                        ?.seenAt
+                        if (latestLocalReadChapterNumber > track.lastEpisodeSeen) {
+                            track = track.copy(
+                                lastEpisodeSeen = latestLocalReadChapterNumber,
+                            )
+                            tracker.setRemoteLastEpisodeSeen(track.toDbTrack(), latestLocalReadChapterNumber.toInt())
+                        }
 
-                    firstReadChapterDate?.let {
-                        val startDate = firstReadChapterDate.time.convertEpochMillisZone(
-                            ZoneOffset.systemDefault(),
-                            ZoneOffset.UTC,
-                        )
-                        track = track.copy(
-                            startDate = startDate,
-                        )
-                        tracker.setRemoteStartDate(track.toDbTrack(), startDate)
+                        if (track.startDate <= 0) {
+                            val firstReadChapterDate = Injekt.get<GetAnimeHistory>().await(anime.id)
+                                .sortedBy { it.seenAt }
+                                .firstOrNull()
+                                ?.seenAt
+
+                            firstReadChapterDate?.let {
+                                val startDate = firstReadChapterDate.time.convertEpochMillisZone(
+                                    ZoneOffset.systemDefault(),
+                                    ZoneOffset.UTC,
+                                )
+                                track = track.copy(
+                                    startDate = startDate,
+                                )
+                                tracker.setRemoteStartDate(track.toDbTrack(), startDate)
+                            }
+                        }
                     }
+
+                    syncChapterProgressWithTrack.await(anime.id, track, tracker)
                 }
             }
 
-            syncChapterProgressWithTrack.await(animeId, track, tracker)
+            // AM -->
+            val source = sourceManager.getOrStub(anime.source)
+            bindEnhancedTrackers(anime, source)
+            // <-- AM
         }
     }
 
-    suspend fun bindEnhancedTrackers(anime: Anime, source: AnimeSource) = withNonCancellableContext {
-        withIOContext {
-            trackerManager.trackers
-                .filter { (it as? eu.kanade.tachiyomi.data.track.Tracker)?.isAvailableForUse() == true }
-                .filterIsInstance<EnhancedAnimeTracker>()
-                .filter { it.accept(source) }
-                .forEach { service ->
-                    try {
-                        service.match(anime)?.let { track ->
-                            track.anime_id = anime.id
-                            try {
-                                (service as Tracker).animeService.register(track, anime.id)
-                            } catch (_: Exception) {
-                                // Fallback to previous behavior if register fails for some reason
+    suspend fun bindEnhancedTrackers(anime: Anime, source: AnimeSource) {
+        withNonCancellableContext {
+            withIOContext {
+                trackerManager.trackers
+                    .filter { (it as? eu.kanade.tachiyomi.data.track.Tracker)?.isAvailableForUse() == true }
+                    .filterIsInstance<EnhancedAnimeTracker>()
+                    .filter { it.accept(source) }
+                    .forEach { service ->
+                        try {
+                            // AM -->
+                            val match = when (anime.fetchType) {
+                                FetchType.Seasons -> service.matchSeason(anime)
+                                FetchType.Episodes -> service.match(anime)
+                            }
+                            // <-- AM
+
+                            match?.let { track ->
+                                track.anime_id = anime.id
                                 (service as Tracker).animeService.bind(track)
                                 insertTrack.await(track.toDomainTrack(idRequired = false)!!)
-                            }
 
-                            try {
-                                if (service is AnimeTracker) {
-                                    try {
+                                when (anime.fetchType) {
+                                    // AM -->
+                                    FetchType.Seasons -> {
+                                        val seasons = getAnimeSeasonsByParentId.await(anime.id)
+                                        seasons.filter { it.anime.fetchType == FetchType.Episodes }.forEach { s ->
+                                            bindEnhancedTrackers(s.anime, source)
+                                        }
+                                    }
+
+                                    // <-- AM
+                                    FetchType.Episodes -> {
+                                        syncChapterProgressWithTrack.await(
+                                            anime.id,
+                                            track.toDomainTrack(idRequired = false)!!,
+                                            service.animeService,
+                                        )
+                                    }
+                                }
+
+                                try {
+                                    if (service is AnimeTracker) {
                                         val cast = (service as AnimeTracker).fetchCastByTitle(anime.title)
                                         if (!cast.isNullOrEmpty()) {
                                             Injekt.get<UpdateAnime>().await(
@@ -135,31 +178,21 @@ class AddAnimeTracks(
                                                 ),
                                             )
                                         }
-                                    } catch (e: Exception) {
-                                        logcat(LogPriority.WARN, e) {
-                                            "Could not fetch/persist cast from enhanced tracker"
-                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    logcat(LogPriority.WARN, e) {
+                                        "Could not fetch/persist cast from enhanced tracker"
                                     }
                                 }
-                            } catch (e: Exception) {
-                                logcat(LogPriority.WARN, e) {
-                                    "Could not fetch/persist cast after enhanced tracker bind"
-                                }
                             }
-
-                            syncChapterProgressWithTrack.await(
-                                anime.id,
-                                track.toDomainTrack(idRequired = false)!!,
-                                service.animeService,
-                            )
+                        } catch (e: Exception) {
+                            logcat(
+                                LogPriority.WARN,
+                                e,
+                            ) { "Could not match anime: ${anime.title} with service $service" }
                         }
-                    } catch (e: Exception) {
-                        logcat(
-                            LogPriority.WARN,
-                            e,
-                        ) { "Could not match anime: ${anime.title} with service $service" }
                     }
-                }
+            }
         }
     }
 }
