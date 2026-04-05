@@ -173,10 +173,16 @@ internal object AnimeExtensionLoader {
 
         if (extPkgs.isEmpty()) return emptyList()
 
+        // KMK -->
+        // Pre-fetch repos outside runBlocking to avoid nested runBlocking deadlock
+        // with the SQLDelight driver's connection pool
+        val repos = runBlocking { getExtensionRepo.getAll() }
+        // KMK <--
+
         // Load each extension concurrently and wait for completion
         return runBlocking {
             val deferred = extPkgs.map {
-                async { loadExtension(context, it) }
+                async { loadExtension(context, it, extRepos = repos) }
             }
             deferred.awaitAll()
         }
