@@ -19,6 +19,7 @@ fun List<Chapter>.filterDownloadedChapters(manga: Manga): List<Chapter> {
         downloadCache.isChapterDownloaded(
             it.name,
             it.scanlator,
+            it.url,
             manga.title,
             manga.source,
             false,

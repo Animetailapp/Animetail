@@ -990,6 +990,8 @@
     <string name="notes_placeholder">Enjoyed the part where…</string>
     <string name="pref_update_library_manga_titles">Update library manga titles to match source</string>
     <string name="pref_update_library_manga_titles_summary">Warning: if a manga is renamed, it will be removed from the download queue (if present).</string>
+    <string name="pref_disallow_non_ascii_filenames">Disallow non-ASCII filenames</string>
+    <string name="pref_disallow_non_ascii_filenames_details">Ensures compatibility with certain storage media that don\'t support Unicode. When enabled, you will need to manually rename your source and manga folders by replacing non-ASCII characters with their lowercase UTF-8 hexadecimal representations. Chapter files do not need to be renamed.</string>
     <string name="pref_hide_missing_chapter_indicators">Hide missing chapter indicators</string>
     <string name="clear_database_text">You’re about to remove entries from the database</string>
     <string name="clear_database_history_warning">Read chapters and progress of non-library entries will be lost</string>

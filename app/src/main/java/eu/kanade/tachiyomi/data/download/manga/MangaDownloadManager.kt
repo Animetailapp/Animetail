@@ -112,6 +112,7 @@ class MangaDownloadManager(
         val chapterDir = provider.findChapterDir(
             chapterName = chapter.name,
             chapterScanlator = chapter.scanlator,
+            chapterUrl = chapter.url,
             mangaTitle = manga.title,
             source = source,
         )
@@ -131,6 +132,7 @@ class MangaDownloadManager(
     fun isChapterDownloaded(
         chapterName: String,
         chapterScanlator: String?,
+        chapterUrl: String,
         mangaTitle: String,
         sourceId: Long,
         skipCache: Boolean = false,
@@ -138,21 +140,11 @@ class MangaDownloadManager(
         return cache.isChapterDownloaded(
             chapterName = chapterName,
             chapterScanlator = chapterScanlator,
+            chapterUrl = chapterUrl,
             mangaTitle = mangaTitle,
             sourceId = sourceId,
             skipCache = skipCache,
         )
-    }
-
-    fun isChapterDownloaded(
-        chapterName: String,
-        chapterScanlator: String?,
-        chapterUrl: String,
-        mangaTitle: String,
-        sourceId: Long,
-        skipCache: Boolean = false,
-    ): Boolean {
-        return isChapterDownloaded(chapterName, chapterScanlator, mangaTitle, sourceId, skipCache)
     }
 
     fun getDownloadCount(): Int {
@@ -285,7 +277,7 @@ class MangaDownloadManager(
     }
 
     suspend fun renameChapter(source: MangaSource, manga: Manga, oldChapter: Chapter, newChapter: Chapter) {
-        val oldNames = provider.getValidChapterDirNames(oldChapter.name, oldChapter.scanlator)
+        val oldNames = provider.getValidChapterDirNames(oldChapter.name, oldChapter.scanlator, oldChapter.url)
         val mangaDir = try {
             provider.getMangaDir(manga.title, source)
         } catch (e: Exception) {
@@ -298,7 +290,7 @@ class MangaDownloadManager(
             .firstOrNull()
             ?: return
 
-        var newName = provider.getChapterDirName(newChapter.name, newChapter.scanlator)
+        var newName = provider.getChapterDirName(newChapter.name, newChapter.scanlator, newChapter.url)
         if (oldDownload.isFile && oldDownload.extension == "cbz") {
             newName += ".cbz"
         }

@@ -1144,6 +1144,7 @@ class PlayerViewModel @JvmOverloads constructor(
                         !downloadManager.isEpisodeDownloaded(
                             it.name,
                             it.scanlator,
+                            it.url,
                             anime.title,
                             anime.source,
                         )
@@ -1153,6 +1154,7 @@ class PlayerViewModel @JvmOverloads constructor(
                         downloadManager.isEpisodeDownloaded(
                             it.name,
                             it.scanlator,
+                            it.url,
                             anime.title,
                             anime.source,
                         )

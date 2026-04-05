@@ -712,6 +712,7 @@ class AnimeScreenModel(
                 downloadManager.isEpisodeDownloaded(
                     episode.name,
                     episode.scanlator,
+                    episode.url,
                     anime.title,
                     anime.source,
                 )

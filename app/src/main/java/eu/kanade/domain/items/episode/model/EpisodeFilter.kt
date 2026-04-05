@@ -28,6 +28,7 @@ fun List<Episode>.applyFilters(anime: Anime, downloadManager: AnimeDownloadManag
                 val downloaded = downloadManager.isEpisodeDownloaded(
                     episode.name,
                     episode.scanlator,
+                    episode.url,
                     anime.title,
                     anime.source,
                 )

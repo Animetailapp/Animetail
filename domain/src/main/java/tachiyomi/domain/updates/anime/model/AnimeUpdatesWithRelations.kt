@@ -8,6 +8,7 @@ data class AnimeUpdatesWithRelations(
     val episodeId: Long,
     val episodeName: String,
     val scanlator: String?,
+    val episodeUrl: String,
     val seen: Boolean,
     val bookmark: Boolean,
     val fillermark: Boolean,
