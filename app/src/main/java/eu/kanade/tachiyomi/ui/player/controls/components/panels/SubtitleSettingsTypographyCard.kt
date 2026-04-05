@@ -356,7 +356,6 @@ private val FONT_EXTENSION_REGEX = Regex(""".*\.[ot]tf${'$'}""")
 fun resetTypography(preferences: SubtitlePreferences) {
     MPVLib.setPropertyBoolean("sub-bold", preferences.boldSubtitles().deleteAndGet())
     MPVLib.setPropertyBoolean("sub-italic", preferences.italicSubtitles().deleteAndGet())
-    MPVLib.setPropertyBoolean("sub-ass-justify", preferences.overrideSubsASS().deleteAndGet())
     MPVLib.setPropertyString("sub-justify", preferences.subtitleJustification().deleteAndGet().value)
     MPVLib.setPropertyString("sub-font", preferences.subtitleFont().deleteAndGet())
     MPVLib.setPropertyInt("sub-font-size", preferences.subtitleFontSize().deleteAndGet())
