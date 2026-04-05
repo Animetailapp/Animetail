@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -165,6 +166,9 @@ fun AnimeInfoBox(
 fun AnimeActionRow(
     favorite: Boolean,
     trackingCount: Int,
+    // AM -->
+    isSyncingTrackers: Boolean,
+    // <-- AM
     nextUpdate: Instant?,
     isUserIntervalMode: Boolean,
     onAddToLibraryClicked: () -> Unit,
@@ -216,16 +220,38 @@ fun AnimeActionRow(
             onClick = { onEditIntervalClicked?.invoke() },
         )
         if (onTrackingClicked != null) {
+            // AM -->
             AnimeActionButton(
                 title = if (trackingCount == 0) {
                     stringResource(MR.strings.manga_tracking_tab)
                 } else {
                     pluralStringResource(MR.plurals.num_trackers, count = trackingCount, trackingCount)
                 },
-                icon = if (trackingCount == 0) Icons.Outlined.Sync else Icons.Outlined.Done,
-                color = if (trackingCount == 0) defaultActionButtonColor else MaterialTheme.colorScheme.primary,
+                color = if (isSyncingTrackers) {
+                    MaterialTheme.colorScheme.primary
+                } else if (trackingCount == 0) {
+                    defaultActionButtonColor
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
                 onClick = onTrackingClicked,
-            )
+            ) {
+                if (isSyncingTrackers) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Icon(
+                        imageVector = if (trackingCount == 0) Icons.Outlined.Sync else Icons.Outlined.Done,
+                        contentDescription = null,
+                        tint = if (trackingCount == 0) defaultActionButtonColor else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+            // <-- AM
         }
 
         if (onWebViewClicked != null) {
@@ -690,18 +716,38 @@ private fun RowScope.AnimeActionButton(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
 ) {
+    AnimeActionButton(
+        title = title,
+        color = color,
+        onClick = onClick,
+        onLongClick = onLongClick,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+// AM -->
+@Composable
+private fun RowScope.AnimeActionButton(
+    title: String,
+    color: Color,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+// <-- AM
     TextButton(
         onClick = onClick,
         modifier = Modifier.weight(1f),
         onLongClick = onLongClick,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(20.dp),
-            )
+            content()
             Spacer(Modifier.height(4.dp))
             Text(
                 text = title,

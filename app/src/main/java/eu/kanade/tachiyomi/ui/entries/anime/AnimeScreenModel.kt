@@ -30,6 +30,7 @@ import eu.kanade.domain.items.episode.interactor.SyncEpisodesWithSource
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
 import eu.kanade.domain.track.anime.interactor.RefreshAnimeTracks
+import eu.kanade.domain.track.anime.interactor.RefreshResult
 import eu.kanade.domain.track.anime.interactor.TrackEpisode
 import eu.kanade.domain.track.model.AutoTrackState
 import eu.kanade.domain.track.service.TrackPreferences
@@ -77,6 +78,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import logcat.LogPriority
 import mihon.domain.items.episode.interactor.FilterEpisodesForDownload
 import tachiyomi.core.common.i18n.stringResource
@@ -317,6 +319,9 @@ class AnimeScreenModel(
             // Fetch info-episodes when needed
             if (screenModelScope.isActive) {
                 val fetchFromSourceTasks = listOf(
+                    // AM -->
+                    async { syncTrackers() },
+                    // <-- AM
                     async { if (needRefreshInfo) fetchAnimeFromSource() },
                     async { if (needRefreshEpisode || needRefreshSeason) fetchEpisodesAndSeasonsFromSource() },
                 )
@@ -335,6 +340,9 @@ class AnimeScreenModel(
         screenModelScope.launch {
             updateSuccessState { it.copy(isRefreshingData = true) }
             val fetchFromSourceTasks = listOf(
+                // AM -->
+                async { syncTrackers() },
+                // <-- AM
                 async { fetchAnimeFromSource(manualFetch) },
                 async { fetchEpisodesAndSeasonsFromSource(manualFetch) },
             )
@@ -1148,26 +1156,82 @@ class AnimeScreenModel(
         }
     }
 
+    // AM -->
+    private suspend fun syncTrackers() {
+        if (!trackPreferences.syncEnhancedTrackers().get()) return
+        val state = successState ?: return
+        updateSuccessState { it.copy(isSyncingTrackers = true) }
+
+        when (state.anime.fetchType) {
+            FetchType.Seasons -> {
+                if (trackPreferences.smartTrackerSync().get()) {
+                    seasons@ for (s in state.seasons) {
+                        refreshTrackers(animeId = s.seasonAnime.id, enhancedOnly = true, skipCompleted = true)
+                            .filterIsInstance<RefreshResult.Success>()
+                            .onEach {
+                                if (it.track.lastEpisodeSeen.toLong() != it.track.totalEpisodes) {
+                                    break@seasons
+                                }
+                            }
+                    }
+                } else {
+                    state.seasons.chunked(5).forEach { s ->
+                        supervisorScope {
+                            s.map { season ->
+                                async { refreshTrackers(animeId = season.seasonAnime.id, enhancedOnly = true) }
+                            }.awaitAll()
+                        }
+                    }
+                }
+            }
+
+            FetchType.Episodes -> {
+                refreshTrackers(enhancedOnly = true)
+            }
+        }
+
+        updateSuccessState { it.copy(isSyncingTrackers = false) }
+    }
+    // <-- AM
+
+    private suspend fun refreshTrackers(
+        // AM -->
+        enhancedOnly: Boolean = false,
+        skipCompleted: Boolean = false,
+        // <-- AM
+    ): List<RefreshResult> {
+        return refreshTrackers(
+            animeId = animeId,
+            enhancedOnly = enhancedOnly,
+            skipCompleted = skipCompleted,
+        )
+    }
+
+    // AM -->
     private suspend fun refreshTrackers(
         refreshTracks: RefreshAnimeTracks = Injekt.get(),
-    ) {
-        refreshTracks.await(animeId)
-            .filter { it.first != null }
-            .forEach { (track, e) ->
+        animeId: Long,
+        enhancedOnly: Boolean = false,
+        skipCompleted: Boolean = false,
+    ): List<RefreshResult> {
+        return refreshTracks.await(animeId, enhancedOnly, skipCompleted)
+            .onEach {
+                val (track, e) = it as? RefreshResult.Failure ?: return@onEach
                 logcat(LogPriority.ERROR, e) {
-                    "Failed to refresh track data animeId=$animeId for service ${track!!.id}"
+                    "Failed to refresh track data animeId=$animeId for service ${track.id}"
                 }
                 withUIContext {
                     context.toast(
                         context.stringResource(
                             MR.strings.track_error,
-                            track!!.name,
+                            track.name,
                             e.message ?: "",
                         ),
                     )
                 }
             }
     }
+    // <-- AM
 
     /**
      * Downloads the given list of episodes with the manager.
@@ -1709,6 +1773,11 @@ class AnimeScreenModel(
                 val supportedTrackers = loggedInTrackers.filter {
                     (it as? EnhancedAnimeTracker)?.accept(source!!) ?: true
                 }
+                    // AM -->
+                    // For now, only enhanced trackers supports season tracking to sync the seasons.
+                    // This could probably be fleshed out later.
+                    .filter { anime.fetchType == FetchType.Episodes || it is EnhancedAnimeTracker }
+                // <-- AM
                 val supportedTrackerIds = supportedTrackers.map { it.id }.toHashSet()
                 val supportedTrackerTracks = animeTracks.filter { it.trackerId in supportedTrackerIds }
                 supportedTrackerTracks.size to supportedTrackers.isNotEmpty()
@@ -1839,6 +1908,9 @@ class AnimeScreenModel(
             val seasons: List<AnimeSeasonItem>,
             val trackingCount: Int = 0,
             val hasLoggedInTrackers: Boolean = false,
+            // AM -->
+            val isSyncingTrackers: Boolean = false,
+            // <-- AM
             val isRefreshingData: Boolean = false,
             val dialog: Dialog? = null,
             val hasPromptedToAddBefore: Boolean = false,

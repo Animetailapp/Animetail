@@ -344,4 +344,14 @@
     <string name="network_stream_play">Reproducir transmisión</string>
     <string name="network_stream_reset">Limpiar campos</string>
 
+    <string name="player_sheets_subtitles_ass_no">No</string>
+    <string name="player_sheets_subtitles_ass_yes">Sí</string>
+    <string name="player_sheets_subtitles_ass_scale">Escalar</string>
+    <string name="player_sheets_subtitles_ass_force">Forzar</string>
+    <string name="player_sheets_subtitles_ass_strip">Eliminar</string>
+
+    <string name="pref_tracking_sync_enhanced">Sincronizar progreso desde rastreadores mejorados</string>
+    <string name="pref_smart_sync_tracker">Sincronización inteligente de temporadas</string>
+    <string name="pref_smart_sync_tracker_summary">Omite elementos completados y se detiene en el elemento en curso</string>
+
 </resources>

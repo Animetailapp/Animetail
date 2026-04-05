@@ -16,6 +16,7 @@ import logcat.LogPriority
 import okhttp3.OkHttpClient
 import org.json.JSONObject
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import java.util.Locale
@@ -365,7 +366,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
         }
     }
 
-    override suspend fun register(item: AnimeTrack, animeId: Long) {
+    override suspend fun register(item: AnimeTrack, anime: Anime) {
         if (item.remote_id == 0L) {
             val url = item.tracking_url
             if (url.isNotBlank()) {
@@ -423,7 +424,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
                 }
             }
         }
-        super.register(item, animeId)
+        super.register(item, anime)
     }
 
     override fun isAvailableForUse(): Boolean {

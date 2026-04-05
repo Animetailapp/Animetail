@@ -49,4 +49,5 @@ val migrations: List<Migration>
         CategoryPreferencesCleanupMigration(),
         InstallationIdMigration(),
         PrefLangMigration(),
+        SubtitleAssEnumMigration(),
     )

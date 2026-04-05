@@ -8,9 +8,11 @@ import androidx.compose.material.icons.filled.FormatAlignJustify
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.SubtitlesBorderStyle
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
+import tachiyomi.i18n.tail.TLMR
 
 class SubtitlePreferences(
     private val preferenceStore: PreferenceStore,
@@ -46,11 +48,35 @@ class SubtitlePreferences(
     fun subtitleJustification() = preferenceStore.getEnum("pref_sub_justify", SubtitleJustification.Auto)
     fun subtitlePos() = preferenceStore.getInt("pref_sub_pos", 100)
 
-    fun overrideSubsASS() = preferenceStore.getBoolean("pref_override_subtitles_ass", false)
+    fun overrideSubsASS() = preferenceStore.getEnum("pref_override_subtitles_ass_enum", SubtitleAssOverride.No)
 
     fun subtitlesDelay() = preferenceStore.getInt("pref_subtitles_delay", 0)
     fun subtitlesSpeed() = preferenceStore.getFloat("pref_subtitles_speed", 1f)
     fun subtitlesSecondaryDelay() = preferenceStore.getInt("pref_subtitles_secondary_delay", 0)
+}
+
+enum class SubtitleAssOverride(
+    val value: String,
+    val titleRes: StringResource,
+) {
+    No("no", TLMR.strings.player_sheets_subtitles_ass_no),
+    Yes("yes", TLMR.strings.player_sheets_subtitles_ass_yes),
+    Scale("scale", TLMR.strings.player_sheets_subtitles_ass_scale),
+    Force("force", TLMR.strings.player_sheets_subtitles_ass_force),
+    Strip("strip", TLMR.strings.player_sheets_subtitles_ass_strip),
+    ;
+
+    companion object {
+        fun byValue(value: String): SubtitleAssOverride {
+            return when (value) {
+                "strip" -> Strip
+                "force" -> Force
+                "scale" -> Scale
+                "yes" -> Yes
+                else -> No
+            }
+        }
+    }
 }
 
 enum class SubtitleJustification(
