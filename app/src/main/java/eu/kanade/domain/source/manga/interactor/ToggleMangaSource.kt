@@ -13,14 +13,14 @@ class ToggleMangaSource(
     }
 
     fun await(sourceId: Long, enable: Boolean = isEnabled(sourceId)) {
-        preferences.disabledMangaSources().getAndSet { disabled ->
+        preferences.disabledMangaSources.getAndSet { disabled ->
             if (enable) disabled.minus("$sourceId") else disabled.plus("$sourceId")
         }
     }
 
     fun await(sourceIds: List<Long>, enable: Boolean) {
         val transformedSourceIds = sourceIds.map { it.toString() }
-        preferences.disabledMangaSources().getAndSet { disabled ->
+        preferences.disabledMangaSources.getAndSet { disabled ->
             if (enable) {
                 disabled.minus(transformedSourceIds)
             } else {
@@ -32,6 +32,6 @@ class ToggleMangaSource(
     }
 
     private fun isEnabled(sourceId: Long): Boolean {
-        return sourceId.toString() in preferences.disabledMangaSources().get()
+        return sourceId.toString() in preferences.disabledMangaSources.get()
     }
 }

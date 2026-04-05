@@ -45,20 +45,20 @@ class MigrateSeasonSelectScreenModel(
     private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
 ) : StateScreenModel<MigrateSeasonSelectScreenModel.State>(State()) {
 
-    var displayMode by sourcePreferences.sourceDisplayMode().asState(screenModelScope)
+    var displayMode by sourcePreferences.sourceDisplayMode.asState(screenModelScope)
     val source = sourceManager.getOrStub(anime.source)
 
     fun getColumnsPreference(orientation: Int): GridCells {
         val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
         val columns = if (isLandscape) {
-            libraryPreferences.animeLandscapeColumns()
+            libraryPreferences.animeLandscapeColumns
         } else {
-            libraryPreferences.animePortraitColumns()
+            libraryPreferences.animePortraitColumns
         }.get()
         return if (columns == 0) GridCells.Adaptive(128.dp) else GridCells.Fixed(columns)
     }
 
-    private val hideInLibraryItems = sourcePreferences.hideInAnimeLibraryItems().get()
+    private val hideInLibraryItems = sourcePreferences.hideInAnimeLibraryItems.get()
     val seasonPagerFlowFlow = flow { emit(anime) }
         .map { anime ->
             Pager(

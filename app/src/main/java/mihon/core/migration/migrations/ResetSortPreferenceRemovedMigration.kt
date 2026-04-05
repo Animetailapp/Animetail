@@ -17,24 +17,24 @@ class ResetSortPreferenceRemovedMigration : Migration {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
         val oldMangaSortingMode = prefs.getInt(
-            libraryPreferences.mangaSortingMode().key(),
+            libraryPreferences.mangaSortingMode.key(),
             0,
         )
 
         if (oldMangaSortingMode == 5) { // SOURCE = 5
             prefs.edit {
-                putInt(libraryPreferences.mangaSortingMode().key(), 0) // ALPHABETICAL = 0
+                putInt(libraryPreferences.mangaSortingMode.key(), 0) // ALPHABETICAL = 0
             }
         }
 
         val oldAnimeSortingMode = prefs.getInt(
-            libraryPreferences.animeSortingMode().key(),
+            libraryPreferences.animeSortingMode.key(),
             0,
         )
 
         if (oldAnimeSortingMode == 5) { // SOURCE = 5
             prefs.edit {
-                putInt(libraryPreferences.animeSortingMode().key(), 0) // ALPHABETICAL = 0
+                putInt(libraryPreferences.animeSortingMode.key(), 0) // ALPHABETICAL = 0
             }
         }
 

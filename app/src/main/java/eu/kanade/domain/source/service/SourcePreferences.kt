@@ -61,66 +61,56 @@ class SourcePreferences(
 
     // Mixture sources
 
-    fun animeExtensionRepos() = preferenceStore.getStringSet("anime_extension_repos", emptySet())
+    val animeExtensionRepos = preferenceStore.getStringSet("anime_extension_repos", emptySet())
+    val disabledAnimeSources = preferenceStore.getStringSet("hidden_anime_catalogues", emptySet())
+    val disabledMangaSources = preferenceStore.getStringSet("hidden_catalogues", emptySet())
+    val disabledSources: Preference<Set<String>> = disabledMangaSources
 
-    fun mangaExtensionRepos() = extensionRepos
+    val incognitoAnimeExtensions = preferenceStore.getStringSet("incognito_anime_extensions", emptySet())
+    val incognitoMangaExtensions = preferenceStore.getStringSet("incognito_manga_extensions", emptySet())
+    val incognitoExtensions: Preference<Set<String>> = incognitoMangaExtensions
 
-    fun disabledAnimeSources() = preferenceStore.getStringSet("hidden_anime_catalogues", emptySet())
-    fun disabledMangaSources() = preferenceStore.getStringSet("hidden_catalogues", emptySet())
-    val disabledSources: Preference<Set<String>> = disabledMangaSources()
+    val pinnedAnimeSources = preferenceStore.getStringSet("pinned_anime_catalogues", emptySet())
+    val pinnedMangaSources = preferenceStore.getStringSet("pinned_catalogues", emptySet())
+    val pinnedSources: Preference<Set<String>> = pinnedMangaSources
 
-    fun incognitoAnimeExtensions() = preferenceStore.getStringSet("incognito_anime_extensions", emptySet())
-    fun incognitoMangaExtensions() = preferenceStore.getStringSet("incognito_manga_extensions", emptySet())
-    val incognitoExtensions: Preference<Set<String>> = incognitoMangaExtensions()
-
-    fun pinnedAnimeSources() = preferenceStore.getStringSet("pinned_anime_catalogues", emptySet())
-    fun pinnedMangaSources() = preferenceStore.getStringSet("pinned_catalogues", emptySet())
-    val pinnedSources: Preference<Set<String>> = pinnedMangaSources()
-
-    fun lastUsedAnimeSource() = preferenceStore.getLong(
+    val lastUsedAnimeSource = preferenceStore.getLong(
         Preference.appStateKey("last_anime_catalogue_source"),
         -1,
     )
-
-    fun lastUsedMangaSource() = lastUsedSource
-
-    fun animeExtensionUpdatesCount() = preferenceStore.getInt("animeext_updates_count", 0)
-    fun mangaExtensionUpdatesCount() = extensionUpdatesCount
-
-    fun hideInAnimeLibraryItems() = preferenceStore.getBoolean(
+    val animeExtensionUpdatesCount = preferenceStore.getInt("animeext_updates_count", 0)
+    val hideInAnimeLibraryItems = preferenceStore.getBoolean(
         "browse_hide_in_anime_library_items",
         false,
     )
 
-    fun hideInMangaLibraryItems() = hideInLibraryItems
-
     // KMK -->
-    fun hideInLibraryFeedItems() = preferenceStore.getBoolean("feed_hide_in_library_items", false)
+    val hideInLibraryFeedItems = preferenceStore.getBoolean("feed_hide_in_library_items", false)
 
-    fun disabledRepos() = preferenceStore.getStringSet("disabled_repos", emptySet())
+    val disabledRepos = preferenceStore.getStringSet("disabled_repos", emptySet())
     // KMK <--
 
     // SY -->
-    fun dataSaver() = preferenceStore.getEnum("data_saver", DataSaver.NONE)
+    val dataSaver = preferenceStore.getEnum("data_saver", DataSaver.NONE)
 
-    fun dataSaverIgnoreJpeg() = preferenceStore.getBoolean("ignore_jpeg", false)
+    val dataSaverIgnoreJpeg = preferenceStore.getBoolean("ignore_jpeg", false)
 
-    fun dataSaverIgnoreGif() = preferenceStore.getBoolean("ignore_gif", true)
+    val dataSaverIgnoreGif = preferenceStore.getBoolean("ignore_gif", true)
 
-    fun dataSaverImageQuality() = preferenceStore.getInt("data_saver_image_quality", 80)
+    val dataSaverImageQuality = preferenceStore.getInt("data_saver_image_quality", 80)
 
-    fun dataSaverImageFormatJpeg() = preferenceStore.getBoolean(
+    val dataSaverImageFormatJpeg = preferenceStore.getBoolean(
         "data_saver_image_format_jpeg",
         false,
     )
 
-    fun dataSaverServer() = preferenceStore.getString("data_saver_server", "")
+    val dataSaverServer = preferenceStore.getString("data_saver_server", "")
 
-    fun dataSaverColorBW() = preferenceStore.getBoolean("data_saver_color_bw", false)
+    val dataSaverColorBW = preferenceStore.getBoolean("data_saver_color_bw", false)
 
-    fun dataSaverExcludedSources() = preferenceStore.getStringSet("data_saver_excluded", emptySet())
+    val dataSaverExcludedSources = preferenceStore.getStringSet("data_saver_excluded", emptySet())
 
-    fun dataSaverDownloader() = preferenceStore.getBoolean("data_saver_downloader", true)
+    val dataSaverDownloader = preferenceStore.getBoolean("data_saver_downloader", true)
 
     enum class DataSaver {
         NONE,
@@ -131,34 +121,6 @@ class SourcePreferences(
     // SY <--
 
     // KMK -->
-    fun relatedAnimes() = preferenceStore.getBoolean("related_animes", true)
+    val relatedAnimes = preferenceStore.getBoolean("related_animes", true)
     // KMK <--
-
-    fun sourceDisplayMode() = sourceDisplayMode
-
-    fun enabledLanguages() = enabledLanguages
-
-    fun showNsfwSource() = showNsfwSource
-
-    fun migrationSortingMode() = migrationSortingMode
-
-    fun migrationSortingDirection() = migrationSortingDirection
-
-    fun extensionRepos() = extensionRepos
-
-    fun extensionUpdatesCount() = extensionUpdatesCount
-
-    fun hideInLibraryItems() = hideInLibraryItems
-
-    fun lastUsedSource() = lastUsedSource
-
-    fun trustedExtensions() = trustedExtensions
-
-    fun globalSearchFilterState() = globalSearchFilterState
-
-    fun disabledSources() = disabledSources
-
-    fun incognitoExtensions() = incognitoExtensions
-
-    fun pinnedSources() = pinnedSources
 }

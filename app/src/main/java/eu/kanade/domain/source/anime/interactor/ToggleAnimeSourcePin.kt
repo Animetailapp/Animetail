@@ -9,8 +9,8 @@ class ToggleAnimeSourcePin(
 ) {
 
     fun await(source: AnimeSource) {
-        val isPinned = source.id.toString() in preferences.pinnedAnimeSources().get()
-        preferences.pinnedAnimeSources().getAndSet { pinned ->
+        val isPinned = source.id.toString() in preferences.pinnedAnimeSources.get()
+        preferences.pinnedAnimeSources.getAndSet { pinned ->
             if (isPinned) pinned.minus("${source.id}") else pinned.plus("${source.id}")
         }
     }

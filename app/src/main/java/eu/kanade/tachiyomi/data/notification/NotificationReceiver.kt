@@ -23,6 +23,7 @@ import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.download.service.DownloadPreferences
@@ -114,18 +115,11 @@ class NotificationReceiver : BroadcastReceiver() {
 
             // Open reader activity
             ACTION_OPEN_CHAPTER -> {
-                val pendingResult = goAsync()
-                launchIO {
-                    try {
-                        openChapter(
-                            context,
-                            intent.getLongExtra(EXTRA_MANGA_ID, -1),
-                            intent.getLongExtra(EXTRA_CHAPTER_ID, -1),
-                        )
-                    } finally {
-                        pendingResult.finish()
-                    }
-                }
+                openChapter(
+                    context,
+                    intent.getLongExtra(EXTRA_MANGA_ID, -1),
+                    intent.getLongExtra(EXTRA_CHAPTER_ID, -1),
+                )
             }
 
             ACTION_OPEN_EPISODE -> {
@@ -231,18 +225,16 @@ class NotificationReceiver : BroadcastReceiver() {
      * @param mangaId id of manga
      * @param chapterId id of chapter
      */
-    private suspend fun openChapter(context: Context, mangaId: Long, chapterId: Long) {
-        val manga = getManga.await(mangaId)
-        val chapter = getChapter.await(chapterId)
-        withUIContext {
-            if (manga != null && chapter != null) {
-                val intent = ReaderActivity.newIntent(context, manga.id, chapter.id).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                }
-                context.startActivity(intent)
-            } else {
-                context.toast(MR.strings.chapter_error)
+    private fun openChapter(context: Context, mangaId: Long, chapterId: Long) {
+        val manga = runBlocking { getManga.await(mangaId) }
+        val chapter = runBlocking { getChapter.await(chapterId) }
+        if (manga != null && chapter != null) {
+            val intent = ReaderActivity.newIntent(context, manga.id, chapter.id).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
+            context.startActivity(intent)
+        } else {
+            context.toast(MR.strings.chapter_error)
         }
     }
 

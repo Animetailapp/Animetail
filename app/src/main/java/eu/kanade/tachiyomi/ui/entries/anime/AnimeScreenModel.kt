@@ -198,16 +198,16 @@ class AnimeScreenModel(
     private val processedEpisodes: List<EpisodeList.Item>?
         get() = successState?.processedEpisodes
 
-    val episodeSwipeStartAction = libraryPreferences.swipeEpisodeEndAction().get()
-    val episodeSwipeEndAction = libraryPreferences.swipeEpisodeStartAction().get()
-    var autoTrackState = trackPreferences.autoUpdateTrackOnMarkRead().get()
+    val episodeSwipeStartAction = libraryPreferences.swipeEpisodeEndAction.get()
+    val episodeSwipeEndAction = libraryPreferences.swipeEpisodeStartAction.get()
+    var autoTrackState = trackPreferences.autoUpdateTrackOnMarkRead.get()
 
-    val showNextEpisodeAirTime = trackPreferences.showNextEpisodeAiringTime().get()
+    val showNextEpisodeAirTime = trackPreferences.showNextEpisodeAiringTime.get()
     val alwaysUseExternalPlayer = playerPreferences.alwaysUseExternalPlayer().get()
-    val useExternalDownloader = downloadPreferences.useExternalDownloader().get()
+    val useExternalDownloader = downloadPreferences.useExternalDownloader.get()
 
     val isUpdateIntervalEnabled =
-        LibraryPreferences.ENTRY_OUTSIDE_RELEASE_PERIOD in libraryPreferences.autoUpdateItemRestrictions().get()
+        LibraryPreferences.ENTRY_OUTSIDE_RELEASE_PERIOD in libraryPreferences.autoUpdateMangaRestrictions.get()
 
     private val selectedPositions: Array<Int> = arrayOf(-1, -1) // first and last selected index in list
     private val selectedEpisodeIds: HashSet<Long> = HashSet()
@@ -215,10 +215,10 @@ class AnimeScreenModel(
     internal var isFromChangeCategory: Boolean = false
 
     internal val autoOpenTrack: Boolean
-        get() = successState?.hasLoggedInTrackers == true && trackPreferences.trackOnAddingToLibrary().get()
+        get() = successState?.hasLoggedInTrackers == true && trackPreferences.trackOnAddingToLibrary.get()
 
     // AM (FILE_SIZE) -->
-    val showFileSize = storagePreferences.showEpisodeFileSize().get()
+    val showFileSize = storagePreferences.showEpisodeFileSize.get()
     // <-- AM (FILE_SIZE)
 
     /**
@@ -513,7 +513,7 @@ class AnimeScreenModel(
 
                 // Now check if user previously set categories, when available
                 val categories = getCategories()
-                val defaultCategoryId = libraryPreferences.defaultAnimeCategory().get().toLong()
+                val defaultCategoryId = libraryPreferences.defaultAnimeCategory.get().toLong()
                 val defaultCategory = categories.find { it.id == defaultCategoryId }
                 when {
                     // Default category set
@@ -798,7 +798,7 @@ class AnimeScreenModel(
                     state.source,
                 )
 
-                if (libraryPreferences.updateSeasonOnRefresh().get()) {
+                if (libraryPreferences.updateSeasonOnRefresh.get()) {
                     fetchEpisodesFromSeasons(newSeasons, manualFetch)
                 }
             }
@@ -879,7 +879,7 @@ class AnimeScreenModel(
      * Requests an list of related mangas from the source.
      */
     internal suspend fun fetchRelatedMangasFromSource(onDemand: Boolean = false, onFinish: (() -> Unit)? = null) {
-        val expandRelatedMangas = uiPreferences.expandRelatedAnimes().get()
+        val expandRelatedMangas = uiPreferences.expandRelatedAnimes.get()
         if (!onDemand && !expandRelatedMangas) return
 
         // start fetching related mangas
@@ -894,7 +894,7 @@ class AnimeScreenModel(
             }
         }
         val state = successState ?: return
-        val relatedMangasEnabled = sourcePreferences.relatedAnimes().get()
+        val relatedMangasEnabled = sourcePreferences.relatedAnimes.get()
 
         try {
             if (state.source !is StubAnimeSource && relatedMangasEnabled) {

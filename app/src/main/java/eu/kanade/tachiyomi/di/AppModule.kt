@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.di
 import android.app.Application
 import androidx.core.content.ContextCompat
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import app.cash.sqldelight.db.SqlDriver
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConfiguration
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDatabaseType
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDriver
@@ -66,33 +67,46 @@ import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.api.addSingleton
 import uy.kohesive.injekt.api.addSingletonFactory
 import uy.kohesive.injekt.api.get
+import java.lang.ref.WeakReference
+
+private val mangaSqlDriverLock = Any()
+private val animeSqlDriverLock = Any()
 
 class AppModule(val app: Application) : InjektModule {
+
+    private var mangaSqlDriverRef: WeakReference<SqlDriver>? = null
+    private var animeSqlDriverRef: WeakReference<SqlDriver>? = null
 
     override fun InjektRegistrar.registerInjectables() {
         addSingleton(app)
 
-        val sqlDriverManga = AndroidxSqliteDriver(
-            driver = BundledSQLiteDriver(),
-            databaseType = AndroidxSqliteDatabaseType.FileProvider {
-                app.getDatabasePath("tachiyomi.db").absolutePath
-            },
-            schema = Database.Schema,
-            configuration = AndroidxSqliteConfiguration(
-                isForeignKeyConstraintsEnabled = true,
-            ),
-        )
+        val sqlDriverManga =
+            synchronized(mangaSqlDriverLock) {
+                mangaSqlDriverRef?.get() ?: AndroidxSqliteDriver(
+                    driver = BundledSQLiteDriver(),
+                    databaseType = AndroidxSqliteDatabaseType.FileProvider {
+                        app.getDatabasePath("tachiyomi.db").absolutePath
+                    },
+                    schema = Database.Schema,
+                    configuration = AndroidxSqliteConfiguration(
+                        isForeignKeyConstraintsEnabled = true,
+                    ),
+                ).also { mangaSqlDriverRef = WeakReference(it) }
+            }
 
-        val sqlDriverAnime = AndroidxSqliteDriver(
-            driver = BundledSQLiteDriver(),
-            databaseType = AndroidxSqliteDatabaseType.FileProvider {
-                app.getDatabasePath("tachiyomi.animedb").absolutePath
-            },
-            schema = AnimeDatabase.Schema,
-            configuration = AndroidxSqliteConfiguration(
-                isForeignKeyConstraintsEnabled = true,
-            ),
-        )
+        val sqlDriverAnime =
+            synchronized(animeSqlDriverLock) {
+                animeSqlDriverRef?.get() ?: AndroidxSqliteDriver(
+                    driver = BundledSQLiteDriver(),
+                    databaseType = AndroidxSqliteDatabaseType.FileProvider {
+                        app.getDatabasePath("tachiyomi.animedb").absolutePath
+                    },
+                    schema = AnimeDatabase.Schema,
+                    configuration = AndroidxSqliteConfiguration(
+                        isForeignKeyConstraintsEnabled = true,
+                    ),
+                ).also { animeSqlDriverRef = WeakReference(it) }
+            }
         addSingletonFactory {
             Database(
                 driver = sqlDriverManga,

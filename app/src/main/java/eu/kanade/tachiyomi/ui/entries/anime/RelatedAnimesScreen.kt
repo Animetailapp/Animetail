@@ -34,7 +34,7 @@ fun RelatedAnimesScreen(
     successState: AnimeScreenModel.State.Success,
 ) {
     val sourcePreferences: SourcePreferences = Injekt.get()
-    var displayMode by sourcePreferences.sourceDisplayMode().asState(scope)
+    var displayMode by sourcePreferences.sourceDisplayMode.asState(scope)
 
     val haptic = LocalHapticFeedback.current
 
@@ -88,9 +88,9 @@ private fun getColumnsPreference(orientation: Int): GridCells {
 
     val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
     val columns = if (isLandscape) {
-        libraryPreferences.animeLandscapeColumns()
+        libraryPreferences.animeLandscapeColumns
     } else {
-        libraryPreferences.animePortraitColumns()
+        libraryPreferences.animePortraitColumns
     }.get()
     return if (columns == 0) GridCells.Adaptive(128.dp) else GridCells.Fixed(columns)
 }

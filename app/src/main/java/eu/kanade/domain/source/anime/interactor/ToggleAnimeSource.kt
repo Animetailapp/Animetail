@@ -13,14 +13,14 @@ class ToggleAnimeSource(
     }
 
     fun await(sourceId: Long, enable: Boolean = isEnabled(sourceId)) {
-        preferences.disabledAnimeSources().getAndSet { disabled ->
+        preferences.disabledAnimeSources.getAndSet { disabled ->
             if (enable) disabled.minus("$sourceId") else disabled.plus("$sourceId")
         }
     }
 
     fun await(sourceIds: List<Long>, enable: Boolean) {
         val transformedSourceIds = sourceIds.map { it.toString() }
-        preferences.disabledAnimeSources().getAndSet { disabled ->
+        preferences.disabledAnimeSources.getAndSet { disabled ->
             if (enable) {
                 disabled.minus(transformedSourceIds)
             } else {
@@ -32,6 +32,6 @@ class ToggleAnimeSource(
     }
 
     private fun isEnabled(sourceId: Long): Boolean {
-        return sourceId.toString() in preferences.disabledAnimeSources().get()
+        return sourceId.toString() in preferences.disabledAnimeSources.get()
     }
 }

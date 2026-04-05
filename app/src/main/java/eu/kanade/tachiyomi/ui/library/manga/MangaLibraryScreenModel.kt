@@ -108,7 +108,7 @@ class MangaLibraryScreenModel(
     // SY <--
 ) : StateScreenModel<MangaLibraryScreenModel.State>(State()) {
 
-    var activeCategoryIndex: Int by libraryPreferences.lastUsedMangaCategory().asState(
+    var activeCategoryIndex: Int by libraryPreferences.lastUsedCategory.asState(
         screenModelScope,
     )
 
@@ -126,7 +126,7 @@ class MangaLibraryScreenModel(
                 // SY -->
                 combine(
                     state.map { it.groupType }.distinctUntilChanged(),
-                    libraryPreferences.mangaSortingMode().changes(),
+                    libraryPreferences.mangaSortingMode.changes(),
                     ::Pair,
                 ),
                 // SY <--
@@ -156,9 +156,9 @@ class MangaLibraryScreenModel(
         }
 
         combine(
-            libraryPreferences.categoryTabs().changes(),
-            libraryPreferences.categoryNumberOfItems().changes(),
-            libraryPreferences.showContinueViewingButton().changes(),
+            libraryPreferences.categoryTabs.changes(),
+            libraryPreferences.categoryNumberOfItems.changes(),
+            libraryPreferences.showContinueReadingButton.changes(),
         ) { a, b, c -> arrayOf(a, b, c) }
             .onEach { (showCategoryTabs, showMangaCount, showMangaContinueButton) ->
                 mutableState.update { state ->
@@ -195,7 +195,7 @@ class MangaLibraryScreenModel(
             .launchIn(screenModelScope)
 
         // SY -->
-        libraryPreferences.groupMangaLibraryBy().changes()
+        libraryPreferences.groupMangaLibraryBy.changes()
             .onEach {
                 mutableState.update { state ->
                     state.copy(groupType = it)
@@ -369,7 +369,7 @@ class MangaLibraryScreenModel(
 
         return mapValues { (key, value) ->
             if (key.sort.type == MangaLibrarySort.Type.Random) {
-                return@mapValues value.shuffled(Random(libraryPreferences.randomMangaSortSeed().get()))
+                return@mapValues value.shuffled(Random(libraryPreferences.randomMangaSortSeed.get()))
             }
 
             // Use groupSort if we're in a grouped mode, otherwise use the category's sort
@@ -384,19 +384,19 @@ class MangaLibraryScreenModel(
 
     private fun getLibraryItemPreferencesFlow(): Flow<ItemPreferences> {
         return combine(
-            libraryPreferences.downloadBadge().changes(),
-            libraryPreferences.unreadBadge().changes(),
-            libraryPreferences.localBadge().changes(),
-            libraryPreferences.languageBadge().changes(),
-            libraryPreferences.autoUpdateItemRestrictions().changes(),
+            libraryPreferences.downloadBadge.changes(),
+            libraryPreferences.unreadBadge.changes(),
+            libraryPreferences.localBadge.changes(),
+            libraryPreferences.languageBadge.changes(),
+            libraryPreferences.autoUpdateMangaRestrictions.changes(),
 
-            preferences.downloadedOnly().changes(),
-            libraryPreferences.filterDownloadedManga().changes(),
-            libraryPreferences.filterUnread().changes(),
-            libraryPreferences.filterStartedManga().changes(),
-            libraryPreferences.filterBookmarkedManga().changes(),
-            libraryPreferences.filterCompletedManga().changes(),
-            libraryPreferences.filterIntervalCustom().changes(),
+            preferences.downloadedOnly.changes(),
+            libraryPreferences.filterDownloadedManga.changes(),
+            libraryPreferences.filterUnread.changes(),
+            libraryPreferences.filterStarted.changes(),
+            libraryPreferences.filterBookmarked.changes(),
+            libraryPreferences.filterCompleted.changes(),
+            libraryPreferences.filterIntervalCustom.changes(),
         ) {
             ItemPreferences(
                 downloadBadge = it[0] as Boolean,
@@ -672,15 +672,15 @@ class MangaLibraryScreenModel(
     }
 
     fun getDisplayMode(): PreferenceMutableState<LibraryDisplayMode> {
-        return libraryPreferences.displayMode().asState(screenModelScope)
+        return libraryPreferences.displayMode.asState(screenModelScope)
     }
 
     fun getColumnsPreferenceForCurrentOrientation(isLandscape: Boolean): PreferenceMutableState<Int> {
         return (
             if (isLandscape) {
-                libraryPreferences.mangaLandscapeColumns()
+                libraryPreferences.mangaLandscapeColumns
             } else {
-                libraryPreferences.mangaPortraitColumns()
+                libraryPreferences.mangaPortraitColumns
             }
             ).asState(
             screenModelScope,

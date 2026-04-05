@@ -70,7 +70,7 @@ fun EntryToolbar(
     fun onHomeClicked() = navigator?.popUntil { screen ->
         screen is SourceFeedScreen || screen is BrowseAnimeSourceScreen
     }
-    val isHomeEnabled = Injekt.get<UiPreferences>().showHomeOnRelatedAnimes().get()
+    val isHomeEnabled = Injekt.get<UiPreferences>().showHomeOnRelatedAnimes.get()
 
     val isActionMode = actionModeCounter > 0
     AppBar(

@@ -10,7 +10,22 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
-## Unreleased
+## [Unreleased]
+### Changed
+- Don't prompt users to enable Google Play services if disabled or unavailable ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3152](https://github.com/mihonapp/mihon/pull/3152))
+
+### Improved
+- Show informative error when trying to add unapproved titles to list on MAL ([@MajorTanya](https://github.com/MajorTanya)) ([#3155](https://github.com/mihonapp/mihon/pull/3155))
+
+## [v0.19.7] - 2026-03-23
+Same as v0.19.6
+
+## [v0.19.6] - 2026-03-23
+### Fixed
+- Fix app crashing when trying to add extension repo with existing signature ([@AntsyLich](https://github.com/AntsyLich)) ([`cb0e329`](https://github.com/mihonapp/mihon/commit/cb0e329))
+- Potentially fix 'database is locked' crash ([@AntsyLich](https://github.com/AntsyLich)) ([`f8e82b9`](https://github.com/mihonapp/mihon/commit/f8e82b9))
+- Fix occasional crash when mass installing/uninstalling extension using `PackageManager` ([@AntsyLich](https://github.com/AntsyLich)) ([`42daa3f`](https://github.com/mihonapp/mihon/commit/42daa3f))
+- Fix app crash on startup on some Android TV ([@AntsyLich](https://github.com/AntsyLich)) ([`b40f1d3`](https://github.com/mihonapp/mihon/commit/b40f1d3))
 
 ## [v0.19.5] - 2026-03-20
 ### Changed
@@ -459,7 +474,9 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Branding to Mihon ([@AntsyLich](https://github.com/AntsyLich))
 - Minimum supported Android version to 8 ([@AntsyLich](https://github.com/AntsyLich)) ([`dfb3091`](https://github.com/mihonapp/mihon/commit/dfb3091e380dda3e9bfb64bf5c9a685cf3a03d0e))
 
-[unreleased]: https://github.com/mihonapp/mihon/compare/v0.19.5...main
+[unreleased]: https://github.com/mihonapp/mihon/compare/v0.19.7...main
+[v0.19.7]: https://github.com/mihonapp/mihon/compare/v0.19.6...v0.19.7
+[v0.19.6]: https://github.com/mihonapp/mihon/compare/v0.19.5...v0.19.6
 [v0.19.5]: https://github.com/mihonapp/mihon/compare/v0.19.4...v0.19.5
 [v0.19.4]: https://github.com/mihonapp/mihon/compare/v0.19.3...v0.19.4
 [v0.19.3]: https://github.com/mihonapp/mihon/compare/v0.19.2...v0.19.3

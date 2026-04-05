@@ -179,9 +179,9 @@ open class FeedScreenModel(
     }
 
     private fun getEnabledSources(): ImmutableList<AnimeCatalogueSource> {
-        val languages = sourcePreferences.enabledLanguages().get()
-        val pinnedSources = sourcePreferences.pinnedSources().get()
-        val disabledSources = sourcePreferences.disabledSources().get()
+        val languages = sourcePreferences.enabledLanguages.get()
+        val pinnedSources = sourcePreferences.pinnedSources.get()
+        val disabledSources = sourcePreferences.disabledSources.get()
             .mapNotNull { it.toLongOrNull() }
 
         val list = sourceManager.getVisibleCatalogueSources()
@@ -283,7 +283,7 @@ open class FeedScreenModel(
     }
 
     // KMK -->
-    private val hideInLibraryFeedItems = sourcePreferences.hideInLibraryFeedItems()
+    private val hideInLibraryFeedItems = sourcePreferences.hideInLibraryFeedItems
     // KMK <--
 
     /**

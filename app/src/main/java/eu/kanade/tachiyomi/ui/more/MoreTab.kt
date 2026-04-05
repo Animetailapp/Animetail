@@ -115,8 +115,8 @@ private class MoreScreenModel(
     var incognitoMode by preferences.incognitoMode.asState(screenModelScope)
 
     // SY -->
-    val showNavUpdates by uiPreferences.showNavUpdates().asState(screenModelScope)
-    val showNavHistory by uiPreferences.showNavHistory().asState(screenModelScope)
+    val showNavUpdates by uiPreferences.showNavUpdates.asState(screenModelScope)
+    val showNavHistory by uiPreferences.showNavHistory.asState(screenModelScope)
     // SY <--
 
     private var _downloadQueueState: MutableStateFlow<DownloadQueueState> = MutableStateFlow(

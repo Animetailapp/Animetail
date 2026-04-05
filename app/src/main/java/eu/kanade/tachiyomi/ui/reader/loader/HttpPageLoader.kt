@@ -49,7 +49,7 @@ internal class HttpPageLoader(
      */
     private val queue = PriorityBlockingQueue<PriorityPage>()
 
-    private val preloadSize = readerPreferences.preloadSize().get()
+    private val preloadSize = readerPreferences.preloadSize.get()
 
     // SY -->
     private val dataSaver = DataSaver(source, sourcePreferences)

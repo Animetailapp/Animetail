@@ -12,7 +12,7 @@ class ExternalRepoMigration : Migration {
     override suspend fun invoke(migrationContext: MigrationContext): Boolean {
         val sourcePreferences = migrationContext.get<SourcePreferences>() ?: return false
 
-        sourcePreferences.mangaExtensionRepos().getAndSet {
+        sourcePreferences.extensionRepos.getAndSet {
             it.map { repo -> "https://raw.githubusercontent.com/$repo/repo" }.toSet()
         }
 

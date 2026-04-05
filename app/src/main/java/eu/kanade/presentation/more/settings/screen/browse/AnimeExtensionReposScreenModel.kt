@@ -42,7 +42,7 @@ class AnimeExtensionReposScreenModel(
                         RepoScreenState.Success(
                             repos = repos.toImmutableSet(),
                             // KMK -->
-                            disabledRepos = sourcePreferences.disabledRepos().get(),
+                            disabledRepos = sourcePreferences.disabledRepos.get(),
                             // KMK <--
                         )
                     }
@@ -50,7 +50,7 @@ class AnimeExtensionReposScreenModel(
         }
 
         // KMK -->
-        sourcePreferences.disabledRepos().changes()
+        sourcePreferences.disabledRepos.changes()
             .onEach { disabledRepos ->
                 mutableState.update {
                     when (it) {
@@ -124,17 +124,17 @@ class AnimeExtensionReposScreenModel(
 
     // KMK -->
     fun enableRepo(baseUrl: String) {
-        val disabledRepos = sourcePreferences.disabledRepos().get()
+        val disabledRepos = sourcePreferences.disabledRepos.get()
         if (baseUrl in disabledRepos) {
-            sourcePreferences.disabledRepos().set(
+            sourcePreferences.disabledRepos.set(
                 disabledRepos.filterNot { it == baseUrl }.toSet(),
             )
         }
     }
     fun disableRepo(baseUrl: String) {
-        val disabledRepos = sourcePreferences.disabledRepos().get()
+        val disabledRepos = sourcePreferences.disabledRepos.get()
         if (baseUrl !in disabledRepos) {
-            sourcePreferences.disabledRepos().set(
+            sourcePreferences.disabledRepos.set(
                 disabledRepos + baseUrl,
             )
         }

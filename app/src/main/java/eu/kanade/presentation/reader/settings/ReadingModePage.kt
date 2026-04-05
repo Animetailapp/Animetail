@@ -104,12 +104,12 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
     }
 
     // SY -->
-    val pageLayout by screenModel.preferences.pageLayout().collectAsState()
+    val pageLayout by screenModel.preferences.pageLayout.collectAsState()
     SettingsChipRow(TLMR.strings.page_layout) {
         ReaderPreferences.PageLayouts.mapIndexed { index, text ->
             FilterChip(
                 selected = pageLayout == index,
-                onClick = { screenModel.preferences.pageLayout().set(index) },
+                onClick = { screenModel.preferences.pageLayout.set(index) },
                 label = { Text(stringResource(text)) },
             )
         }
@@ -160,20 +160,20 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
     // SY -->
     CheckboxItem(
         label = stringResource(MR.strings.pref_page_transitions),
-        pref = screenModel.preferences.pageTransitionsPager(),
+        pref = screenModel.preferences.pageTransitionsPager,
     )
 
     CheckboxItem(
         label = stringResource(TLMR.strings.invert_double_pages),
-        pref = screenModel.preferences.invertDoublePages(),
+        pref = screenModel.preferences.invertDoublePages,
     )
 
-    val centerMarginType by screenModel.preferences.centerMarginType().collectAsState()
+    val centerMarginType by screenModel.preferences.centerMarginType.collectAsState()
     SettingsChipRow(TLMR.strings.pref_center_margin) {
         ReaderPreferences.CenterMarginTypes.mapIndexed { index, text ->
             FilterChip(
                 selected = centerMarginType == index,
-                onClick = { screenModel.preferences.centerMarginType().set(index) },
+                onClick = { screenModel.preferences.centerMarginType.set(index) },
                 label = { Text(stringResource(text)) },
             )
         }

@@ -22,7 +22,7 @@ class BasePreferences(
 
     val extensionInstaller: ExtensionInstallerPreference = ExtensionInstallerPreference(context, preferenceStore)
 
-    fun deviceHasPip() = context.packageManager.hasSystemFeature(
+    val deviceHasPip = context.packageManager.hasSystemFeature(
         PackageManager.FEATURE_PICTURE_IN_PICTURE,
     )
 
@@ -51,20 +51,4 @@ class BasePreferences(
     )
 
     val installationId: Preference<String> = preferenceStore.getString(Preference.appStateKey("installation_id"), "")
-
-    fun downloadedOnly() = downloadedOnly
-
-    fun incognitoMode() = incognitoMode
-
-    fun extensionInstaller() = extensionInstaller
-
-    fun shownOnboardingFlow() = shownOnboardingFlow
-
-    fun displayProfile() = displayProfile
-
-    fun hardwareBitmapThreshold() = hardwareBitmapThreshold
-
-    fun alwaysDecodeLongStripWithSSIV() = alwaysDecodeLongStripWithSSIV
-
-    fun installationId() = installationId
 }

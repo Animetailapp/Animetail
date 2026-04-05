@@ -59,28 +59,28 @@ private fun ColumnScope.FilterSheet(
     TriStateItem(
         label = stringResource(MR.strings.label_downloaded),
         state = filterDownloaded,
-        onClick = { screenModel.toggleFilter { it.filterDownloaded() } },
+        onClick = { screenModel.toggleFilter { it.filterDownloaded } },
     )
 
     val filterUnread by screenModel.updatesPreferences.filterUnread.collectAsState()
     TriStateItem(
         label = stringResource(MR.strings.action_filter_unread),
         state = filterUnread,
-        onClick = { screenModel.toggleFilter { it.filterUnread() } },
+        onClick = { screenModel.toggleFilter { it.filterUnread } },
     )
 
     val filterStarted by screenModel.updatesPreferences.filterStarted.collectAsState()
     TriStateItem(
         label = stringResource(MR.strings.label_started),
         state = filterStarted,
-        onClick = { screenModel.toggleFilter { it.filterStarted() } },
+        onClick = { screenModel.toggleFilter { it.filterStarted } },
     )
 
     val filterBookmarked by screenModel.updatesPreferences.filterBookmarked.collectAsState()
     TriStateItem(
         label = stringResource(MR.strings.action_filter_bookmarked),
         state = filterBookmarked,
-        onClick = { screenModel.toggleFilter { it.filterBookmarked() } },
+        onClick = { screenModel.toggleFilter { it.filterBookmarked } },
     )
 
     HorizontalDivider(modifier = Modifier.padding(MaterialTheme.padding.small))

@@ -20,7 +20,7 @@ import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
 import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import mihon.domain.extensionrepo.anime.interactor.CreateAnimeExtensionRepo.Companion.ANIMETAIL_SIGNATURE
 import mihon.domain.extensionrepo.anime.interactor.GetAnimeExtensionRepo
@@ -43,7 +43,7 @@ internal object AnimeExtensionLoader {
     // KMK <--
 
     private val loadNsfwSource by lazy {
-        preferences.showNsfwSource().get()
+        preferences.showNsfwSource.get()
     }
 
     private const val EXTENSION_FEATURE = "tachiyomi.animeextension"
@@ -126,7 +126,7 @@ internal object AnimeExtensionLoader {
      *
      * @param context The application context.
      */
-    suspend fun loadExtensions(context: Context): List<AnimeLoadResult> {
+    fun loadExtensions(context: Context): List<AnimeLoadResult> {
         val pkgManager = context.packageManager
 
         val installedPkgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -173,22 +173,18 @@ internal object AnimeExtensionLoader {
 
         if (extPkgs.isEmpty()) return emptyList()
 
+        // KMK -->
+        // Pre-fetch repos outside runBlocking to avoid nested runBlocking deadlock
+        // with the SQLDelight driver's connection pool
+        val repos = runBlocking { getExtensionRepo.getAll() }
+        // KMK <--
+
         // Load each extension concurrently and wait for completion
-        return coroutineScope {
-            // KMK -->
-            val extRepos = getExtensionRepo.getAll()
-            // KMK <--
-            extPkgs.map {
-                async {
-                    loadExtension(
-                        context,
-                        it,
-                        // KMK -->
-                        extRepos,
-                        // KMK <--
-                    )
-                }
-            }.awaitAll()
+        return runBlocking {
+            val deferred = extPkgs.map {
+                async { loadExtension(context, it, extRepos = repos) }
+            }
+            deferred.awaitAll()
         }
     }
 

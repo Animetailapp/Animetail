@@ -3,12 +3,12 @@ DROP VIEW IF EXISTS animelibView;
 CREATE VIEW animelibView AS
 SELECT
     A.*,
-    coalesce(E.total, 0) AS totalCount,
-    coalesce(E.seenCount, 0) AS seenCount,
-    coalesce(E.latestUpload, 0) AS latestUpload,
-    coalesce(E.fetchedAt, 0) AS episodeFetchedAt,
-    coalesce(E.lastSeen, 0) AS lastSeen,
-    coalesce(E.bookmarkCount, 0) AS bookmarkCount,
+    coalesce(EP.total, 0) AS totalCount,
+    coalesce(EP.seenCount, 0) AS seenCount,
+    coalesce(EP.latestUpload, 0) AS latestUpload,
+    coalesce(EP.fetchedAt, 0) AS episodeFetchedAt,
+    coalesce(EP.lastSeen, 0) AS lastSeen,
+    coalesce(EP.bookmarkCount, 0) AS bookmarkCount,
     coalesce(AC.category_id, 0) AS category
 FROM animes A
 LEFT JOIN(
@@ -24,8 +24,8 @@ LEFT JOIN(
     LEFT JOIN animehistory
     ON episodes._id = animehistory.episode_id
     GROUP BY episodes.anime_id
-) AS E
-ON A._id = E.anime_id
+) AS EP
+ON A._id = EP.anime_id
 LEFT JOIN animes_categories AS AC
 ON AC.anime_id = A._id
 WHERE A.favorite = 1;

@@ -65,9 +65,9 @@ class AnimeUpdatesScreenModel(
     private val _events: Channel<Event> = Channel(Int.MAX_VALUE)
     val events: Flow<Event> = _events.receiveAsFlow()
 
-    val lastUpdated by libraryPreferences.lastUpdatedTimestamp().asState(screenModelScope)
+    val lastUpdated by libraryPreferences.lastUpdatedTimestamp.asState(screenModelScope)
 
-    val useExternalDownloader = downloadPreferences.useExternalDownloader().get()
+    val useExternalDownloader = downloadPreferences.useExternalDownloader.get()
 
     // First and last selected index in list
     private val selectedPositions: Array<Int> = arrayOf(-1, -1)
@@ -397,7 +397,7 @@ class AnimeUpdatesScreenModel(
     }
 
     fun resetNewUpdatesCount() {
-        libraryPreferences.newAnimeUpdatesCount().set(0)
+        libraryPreferences.newAnimeUpdatesCount.set(0)
     }
 
     @Immutable

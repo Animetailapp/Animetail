@@ -1091,10 +1091,10 @@ class PlayerViewModel @JvmOverloads constructor(
     val eventFlow = eventChannel.receiveAsFlow()
 
     val incognitoMode: Boolean by lazy { getIncognitoState.await(currentAnime.value?.source) }
-    private val downloadAheadAmount = downloadPreferences.autoDownloadWhileWatching().get()
+    private val downloadAheadAmount = downloadPreferences.autoDownloadWhileWatching.get()
 
-    internal val relativeTime = uiPreferences.relativeTime().get()
-    internal val dateFormat = UiPreferences.dateFormat(uiPreferences.dateFormat().get())
+    internal val relativeTime = uiPreferences.relativeTime.get()
+    internal val dateFormat = UiPreferences.dateFormat(uiPreferences.dateFormat.get())
 
     /**
      * The position in the current video. Used to restore from process kill.
@@ -1403,7 +1403,7 @@ class PlayerViewModel @JvmOverloads constructor(
         return episodes
             .sortedWith(getEpisodeSort(anime, sortDescending = false))
             .run {
-                if (basePreferences.downloadedOnly().get()) {
+                if (basePreferences.downloadedOnly.get()) {
                     filterDownloadedEpisodes(anime)
                 } else {
                     this
@@ -1717,7 +1717,7 @@ class PlayerViewModel @JvmOverloads constructor(
         updateTrackEpisodeSeen(currentEp)
         deleteEpisodeIfNeeded(currentEp)
 
-        val markDuplicateAsSeen = libraryPreferences.markDuplicateSeenEpisodeAsSeen().get()
+        val markDuplicateAsSeen = libraryPreferences.markDuplicateSeenEpisodeAsSeen.get()
             .contains(LibraryPreferences.MARK_DUPLICATE_EPISODE_SEEN_EXISTING)
         if (!markDuplicateAsSeen) return
 
@@ -1768,7 +1768,7 @@ class PlayerViewModel @JvmOverloads constructor(
         if (isNetworkStreamSession) return
         // Determine which episode should be deleted and enqueue
         val currentEpisodePosition = currentPlaylist.value.indexOf(chosenEpisode)
-        val removeAfterSeenSlots = downloadPreferences.removeAfterReadSlots().get()
+        val removeAfterSeenSlots = downloadPreferences.removeAfterReadSlots.get()
         val episodeToDelete = currentPlaylist.value.getOrNull(
             currentEpisodePosition - removeAfterSeenSlots,
         )
@@ -1977,8 +1977,8 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     private fun updateTrackEpisodeSeen(episode: Episode) {
-        if (basePreferences.incognitoMode().get() || !hasTrackers) return
-        if (!trackPreferences.autoUpdateTrack().get()) return
+        if (basePreferences.incognitoMode.get() || !hasTrackers) return
+        if (!trackPreferences.autoUpdateTrack.get()) return
 
         val anime = currentAnime.value ?: return
         val context = Injekt.get<Application>()

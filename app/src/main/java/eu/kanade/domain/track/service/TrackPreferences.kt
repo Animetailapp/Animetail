@@ -58,14 +58,4 @@ class TrackPreferences(
         "pref_auto_update_manga_on_mark_read",
         AutoTrackState.ALWAYS,
     )
-
-    fun anilistScoreType() = anilistScoreType
-
-    fun autoUpdateTrack() = autoUpdateTrack
-
-    fun trackOnAddingToLibrary() = trackOnAddingToLibrary
-
-    fun showNextEpisodeAiringTime() = showNextEpisodeAiringTime
-
-    fun autoUpdateTrackOnMarkRead() = autoUpdateTrackOnMarkRead
 }

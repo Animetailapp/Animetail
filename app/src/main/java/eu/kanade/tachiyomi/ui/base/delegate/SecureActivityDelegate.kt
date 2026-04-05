@@ -98,7 +98,7 @@ class SecureActivityDelegateImpl : SecureActivityDelegate, DefaultLifecycleObser
 
     private fun setSecureScreen() {
         val secureScreenFlow = securityPreferences.secureScreen().changes()
-        val incognitoModeFlow = preferences.incognitoMode().changes()
+        val incognitoModeFlow = preferences.incognitoMode.changes()
         combine(secureScreenFlow, incognitoModeFlow) { secureScreen, incognitoMode ->
             secureScreen == SecurityPreferences.SecureScreenMode.ALWAYS ||
                 (

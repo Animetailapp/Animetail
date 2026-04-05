@@ -30,17 +30,17 @@ class DeleteAnimeCategory(
             )
         }
 
-        val defaultCategory = libraryPreferences.defaultAnimeCategory().get()
+        val defaultCategory = libraryPreferences.defaultAnimeCategory.get()
         if (defaultCategory == categoryId.toInt()) {
-            libraryPreferences.defaultAnimeCategory().delete()
+            libraryPreferences.defaultAnimeCategory.delete()
         }
 
         val categoryPreferences = listOf(
-            libraryPreferences.animeUpdateCategories(),
-            libraryPreferences.animeUpdateCategoriesExclude(),
-            downloadPreferences.removeExcludeAnimeCategories(),
-            downloadPreferences.downloadNewEpisodeCategories(),
-            downloadPreferences.downloadNewEpisodeCategoriesExclude(),
+            libraryPreferences.animeUpdateCategories,
+            libraryPreferences.animeUpdateCategoriesExclude,
+            downloadPreferences.removeExcludeAnimeCategories,
+            downloadPreferences.downloadNewEpisodeCategories,
+            downloadPreferences.downloadNewEpisodeCategoriesExclude,
         )
         val categoryIdString = categoryId.toString()
         categoryPreferences.forEach { preference ->

@@ -9,7 +9,7 @@ class ToggleExcludeFromMangaDataSaver(
 ) {
 
     fun await(source: Source) {
-        preferences.dataSaverExcludedSources().getAndSet {
+        preferences.dataSaverExcludedSources.getAndSet {
             if (source.id.toString() in it) {
                 it - source.id.toString()
             } else {

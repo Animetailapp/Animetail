@@ -57,8 +57,8 @@ class PagerConfig(
 
     var shiftDoublePage = false
 
-    var doublePages = readerPreferences.pageLayout().get() == PageLayout.DOUBLE_PAGES &&
-        !readerPreferences.dualPageSplitPaged().get()
+    var doublePages = readerPreferences.pageLayout.get() == PageLayout.DOUBLE_PAGES &&
+        !readerPreferences.dualPageSplitPaged.get()
         set(value) {
             field = value
             if (!value) {
@@ -68,7 +68,7 @@ class PagerConfig(
 
     var invertDoublePages = false
 
-    var autoDoublePages = readerPreferences.pageLayout().get() == PageLayout.AUTOMATIC
+    var autoDoublePages = readerPreferences.pageLayout.get() == PageLayout.AUTOMATIC
 
     @ColorInt
     var pageCanvasColor = Color.WHITE
@@ -137,9 +137,9 @@ class PagerConfig(
             )
 
         // SY -->
-        readerPreferences.pageTransitionsPager()
+        readerPreferences.pageTransitionsPager
             .register({ usePageTransitions = it }, { imagePropertyChangedListener?.invoke() })
-        readerPreferences.readerTheme()
+        readerPreferences.readerTheme
             .register(
                 {
                     themeToColor(it)
@@ -149,7 +149,7 @@ class PagerConfig(
                     reloadChapterListener?.invoke(doublePages)
                 },
             )
-        readerPreferences.pageLayout()
+        readerPreferences.pageLayout
             .register(
                 {
                     autoDoublePages = it == PageLayout.AUTOMATIC
@@ -166,10 +166,10 @@ class PagerConfig(
                 },
             )
 
-        readerPreferences.centerMarginType()
+        readerPreferences.centerMarginType
             .register({ centerMarginType = it }, { imagePropertyChangedListener?.invoke() })
 
-        readerPreferences.invertDoublePages()
+        readerPreferences.invertDoublePages
             .register({ invertDoublePages = it && dualPageSplit == false }, { imagePropertyChangedListener?.invoke() })
         // SY <--
     }

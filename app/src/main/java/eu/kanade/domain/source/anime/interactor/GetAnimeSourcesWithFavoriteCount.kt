@@ -17,8 +17,8 @@ class GetAnimeSourcesWithFavoriteCount(
 
     fun subscribe(): Flow<List<Pair<AnimeSource, Long>>> {
         return combine(
-            preferences.migrationSortingDirection().changes(),
-            preferences.migrationSortingMode().changes(),
+            preferences.migrationSortingDirection.changes(),
+            preferences.migrationSortingMode.changes(),
             repository.getAnimeSourcesWithFavoriteCount(),
         ) { direction, mode, list ->
             list

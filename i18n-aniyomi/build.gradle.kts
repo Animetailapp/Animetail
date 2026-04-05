@@ -1,23 +1,26 @@
-import mihon.buildlogic.generatedBuildDir
-import mihon.buildlogic.tasks.getLocalesConfigTask
+import mihon.gradle.tasks.GenerateLocalesConfigTask
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
-    id("mihon.library")
-    kotlin("multiplatform")
+    alias(mihonx.plugins.kotlin.multiplatform)
+    alias(mihonx.plugins.spotless)
     alias(libs.plugins.moko.resources)
 }
 
 kotlin {
-    androidTarget()
+    android {
+        namespace = "tachiyomi.i18n.aniyomi"
+    }
 
-    applyDefaultHierarchyTemplate()
+    @OptIn(ExperimentalKotlinGradlePluginApi::class)
+    @Suppress("UnstableApiUsage")
+    dependencies {
+        api(libs.moko.resources)
+    }
 
     sourceSets {
         commonMain {
-            dependencies {
-                api(libs.moko.resources)
-            }
+            resources.srcDir("src/commonMain/resources")
         }
     }
 
@@ -27,21 +30,10 @@ kotlin {
     }
 }
 
-val generatedAndroidResourceDir = generatedBuildDir.resolve("android/res")
-
 android {
-    namespace = "tachiyomi.i18n.aniyomi"
-
-    sourceSets {
-        val main by getting
-        main.res.srcDirs(
-            "src/commonMain/resources",
-            generatedAndroidResourceDir,
-        )
-    }
-
     lint {
-        disable.addAll(listOf("MissingTranslation", "ExtraTranslation"))
+        disable += "MissingTranslation"
+        disable += "ExtraTranslation"
     }
 }
 
@@ -51,8 +43,23 @@ multiplatformResources {
 }
 
 tasks {
-    val localesConfigTask = project.getLocalesConfigTask(generatedAndroidResourceDir)
-    preBuild {
+    val generatedAndroidResourceDir = layout.buildDirectory.dir("generated/android/res")
+    val localesConfigTask = register<GenerateLocalesConfigTask>("generateLocalesConfig") {
+        outputDir.set(generatedAndroidResourceDir)
+    }
+
+    named("preBuild") {
         dependsOn(localesConfigTask)
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val resSource = variant.sources.res ?: return@onVariants
+        resSource.addGeneratedSourceDirectory(
+            tasks.named("generateLocalesConfig", GenerateLocalesConfigTask::class.java),
+        ) {
+            it.outputDir
+        }
     }
 }

@@ -88,14 +88,14 @@ class MangaStatsScreenModel(
     }
 
     private fun getGlobalUpdateItemCount(libraryManga: List<LibraryManga>): Int {
-        val includedCategories = preferences.mangaUpdateCategories().get().map { it.toLong() }
+        val includedCategories = preferences.updateCategories.get().map { it.toLong() }
         val includedManga = if (includedCategories.isNotEmpty()) {
             libraryManga.filter { it.category in includedCategories }
         } else {
             libraryManga
         }
 
-        val excludedCategories = preferences.mangaUpdateCategoriesExclude().get().map { it.toLong() }
+        val excludedCategories = preferences.updateCategoriesExclude.get().map { it.toLong() }
         val excludedMangaIds = if (excludedCategories.isNotEmpty()) {
             libraryManga.fastMapNotNull { manga ->
                 manga.id.takeIf { manga.category in excludedCategories }
@@ -104,7 +104,7 @@ class MangaStatsScreenModel(
             emptyList()
         }
 
-        val updateRestrictions = preferences.autoUpdateItemRestrictions().get()
+        val updateRestrictions = preferences.autoUpdateMangaRestrictions.get()
         return includedManga
             .fastFilterNot { it.manga.id in excludedMangaIds }
             .fastDistinctBy { it.manga.id }

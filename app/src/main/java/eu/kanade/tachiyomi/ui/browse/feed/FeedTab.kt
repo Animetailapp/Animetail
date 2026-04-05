@@ -130,7 +130,7 @@ fun feedTab(
                         state = state,
                         contentPadding = contentPadding,
                         onClickSavedSearch = { savedSearch, source ->
-                            screenModel.sourcePreferences.lastUsedSource().set(savedSearch.source)
+                            screenModel.sourcePreferences.lastUsedSource.set(savedSearch.source)
                             navigator.push(
                                 BrowseAnimeSourceScreen(
                                     source.id,
@@ -139,7 +139,7 @@ fun feedTab(
                             )
                         },
                         onClickSource = { source ->
-                            screenModel.sourcePreferences.lastUsedSource().set(source.id)
+                            screenModel.sourcePreferences.lastUsedSource.set(source.id)
                             navigator.push(
                                 BrowseAnimeSourceScreen(
                                     source.id,

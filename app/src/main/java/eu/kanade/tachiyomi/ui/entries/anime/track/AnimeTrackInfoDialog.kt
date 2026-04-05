@@ -102,7 +102,7 @@ data class AnimeTrackInfoDialogHomeScreen(
 
         val dateFormat = remember {
             UiPreferences.dateFormat(
-                Injekt.get<UiPreferences>().dateFormat().get(),
+                Injekt.get<UiPreferences>().dateFormat.get(),
             )
         }
         val state by screenModel.state.collectAsState()
