@@ -32,11 +32,11 @@ class DiscordLoginActivity : BaseActivity() {
 
     companion object {
         private const val TAG = "DiscordLogin"
-        private const val TOKEN_EXTRACTION_DELAY = 2000L
-        private const val MAX_RETRY_ATTEMPTS = 5
+        private const val TOKEN_EXTRACTION_DELAY = 3000L
+        private const val MAX_RETRY_ATTEMPTS = 8
         private const val MIN_TOKEN_LENGTH = 50
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -56,6 +56,7 @@ class DiscordLoginActivity : BaseActivity() {
         webView.apply {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
+            settings.databaseEnabled = true
             settings.userAgentString = USER_AGENT
         }
 
@@ -124,74 +125,95 @@ class DiscordLoginActivity : BaseActivity() {
     private fun getTokenExtractionScript(): String {
         return """
             (function() {
-                // Method 1: Webpack chunks (most reliable for modern Discord)
-                try {
-                    const wreq = (webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m)
-                        .find(m => m?.exports?.default?.getToken !== void 0)?.exports?.default;
-                    if (wreq) {
-                        const token = wreq.getToken();
-                        if (token && token.length > 50) {
-                            console.log('Token found via webpack');
-                            return token;
-                        }
-                    }
-                } catch (e) {
-                    console.log('Webpack method 1 failed:', e);
-                }
+                // Find webpack chunk array dynamically
+                var chunkName = Object.keys(window).find(function(k) {
+                    return k.startsWith('webpackChunk');
+                });
+                if (!chunkName) return 'NO_TOKEN';
 
-                // Method 2: Alternative webpack approach
+                var chunks = window[chunkName];
+                if (!chunks || !chunks.push) return 'NO_TOKEN';
+
+                var token = null;
+
+                // Method 1: Inject into webpack require and scan all modules
                 try {
-                    let token = null;
-                    webpackChunkdiscord_app.push([
-                        [Math.random()], {},
-                        (req) => {
-                            for (const m of Object.keys(req.c).map((x) => req.c[x].exports).filter((x) => x)) {
-                                if (m.default && m.default.getToken !== undefined) {
-                                    token = m.default.getToken();
-                                }
-                                if (m.getToken !== undefined) {
-                                    token = m.getToken();
+                    var id = Symbol();
+                    chunks.push([[id], {}, function(e) {
+                        for (var key in e.c) {
+                            if (!e.c.hasOwnProperty(key)) continue;
+                            var mod = e.c[key];
+                            if (!mod || !mod.exports) continue;
+                            var ex = mod.exports;
+
+                            // Check default export
+                            if (ex.default && typeof ex.default.getToken === 'function') {
+                                try {
+                                    var t = ex.default.getToken();
+                                    if (t && t.length > 50) { token = t; return; }
+                                } catch(err) {}
+                            }
+
+                            // Check Z export (common in newer Discord builds)
+                            if (ex.Z && typeof ex.Z.getToken === 'function') {
+                                try {
+                                    var t = ex.Z.getToken();
+                                    if (t && t.length > 50) { token = t; return; }
+                                } catch(err) {}
+                            }
+
+                            // Check ZP export
+                            if (ex.ZP && typeof ex.ZP.getToken === 'function') {
+                                try {
+                                    var t = ex.ZP.getToken();
+                                    if (t && t.length > 50) { token = t; return; }
+                                } catch(err) {}
+                            }
+
+                            // Check direct getToken on exports
+                            if (typeof ex.getToken === 'function') {
+                                try {
+                                    var t = ex.getToken();
+                                    if (t && t.length > 50) { token = t; return; }
+                                } catch(err) {}
+                            }
+
+                            // Scan all export properties for getToken
+                            if (typeof ex === 'object') {
+                                for (var prop in ex) {
+                                    if (!ex.hasOwnProperty(prop)) continue;
+                                    var val = ex[prop];
+                                    if (val && typeof val.getToken === 'function') {
+                                        try {
+                                            var t = val.getToken();
+                                            if (t && t.length > 50) { token = t; return; }
+                                        } catch(err) {}
+                                    }
                                 }
                             }
                         }
-                    ]);
-                    if (token && token.length > 50) {
-                        console.log('Token found via alternative webpack');
-                        return token;
-                    }
+                    }]);
+                    // Clean up by removing our injected chunk
+                    chunks.pop();
                 } catch (e) {
-                    console.log('Webpack method 2 failed:', e);
+                    console.log('Webpack scan failed:', e);
                 }
 
-                // Method 3: Search in localStorage for token pattern
-                try {
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const key = localStorage.key(i);
-                        const value = localStorage.getItem(key);
-                        if (value && value.length > 50) {
-                            const cleaned = value.replace(/['"]/g, '');
-                            if (cleaned.match(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)) {
-                                console.log('Token found via pattern match in key:', key);
-                                return cleaned;
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.log('LocalStorage scan failed:', e);
-                }
+                if (token) return token;
 
-                // Method 4: Direct localStorage token (legacy)
+                // Method 2: Search iframe localStorage
                 try {
-                    const storageToken = localStorage.getItem('token');
-                    if (storageToken) {
-                        const cleaned = storageToken.replace(/['"]/g, '');
-                        if (cleaned.length > 50) {
-                            console.log('Token found in localStorage directly');
-                            return cleaned;
-                        }
+                    var iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                    var iframeToken = iframe.contentWindow.localStorage.getItem('token');
+                    iframe.remove();
+                    if (iframeToken) {
+                        var cleaned = JSON.parse(iframeToken);
+                        if (cleaned && cleaned.length > 50) return cleaned;
                     }
                 } catch (e) {
-                    console.log('Direct localStorage failed:', e);
+                    console.log('iframe localStorage failed:', e);
                 }
 
                 return 'NO_TOKEN';
