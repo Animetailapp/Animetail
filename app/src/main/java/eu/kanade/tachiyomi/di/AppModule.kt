@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.di
 import android.app.Application
 import androidx.core.content.ContextCompat
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import animetail.feature.mpvfiles.MpvConfig
 import app.cash.sqldelight.db.SqlDriver
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConfiguration
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDatabaseType
@@ -213,6 +214,10 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { StorageManager(app, get(), get<AndroidStorageFolderProvider>()) }
 
         addSingletonFactory { ExternalIntents() }
+
+        // AM -->
+        addSingletonFactory { MpvConfig(app) }
+        // <-- AM
 
         // AM (CONNECTIONS) -->
         addSingletonFactory { ConnectionsManager() }

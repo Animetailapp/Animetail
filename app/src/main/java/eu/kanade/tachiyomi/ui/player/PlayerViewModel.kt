@@ -315,19 +315,22 @@ class PlayerViewModel @JvmOverloads constructor(
         viewModelScope.launchIO {
             try {
                 val buttons = getCustomButtons.getAll()
-                buttons.firstOrNull { it.isFavorite }?.let {
-                    _primaryButton.update { _ -> it }
-                    // If the button text is not empty, it has been set buy a lua script in which
-                    // case we don't want to override it
-                    if (_primaryButtonTitle.value.isEmpty()) {
-                        setPrimaryCustomButtonTitle(it)
-                    }
-                }
-                activity.setupCustomButtons(buttons)
-                _customButtons.update { _ -> CustomButtonFetchState.Success(buttons.toImmutableList()) }
+                setCustomButtons(buttons)
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e)
                 _customButtons.update { _ -> CustomButtonFetchState.Error(e.message ?: "Unable to fetch buttons") }
+            }
+        }
+    }
+
+    private fun setCustomButtons(buttons: List<CustomButton>) {
+        _customButtons.update { _ -> CustomButtonFetchState.Success(buttons.toImmutableList()) }
+        buttons.firstOrNull { it.isFavorite }?.let {
+            _primaryButton.update { _ -> it }
+            // If the button text is not empty, it has been set by a lua script in which
+            // case we don't want to override it
+            if (_primaryButtonTitle.value.isEmpty()) {
+                setPrimaryCustomButtonTitle(it)
             }
         }
     }

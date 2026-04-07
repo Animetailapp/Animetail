@@ -54,6 +54,7 @@ import androidx.core.util.Consumer
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.interpolator.view.animation.LinearOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
+import animetail.feature.mpvfiles.MpvConfig
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
@@ -150,6 +151,10 @@ class MainActivity : BaseActivity() {
     // AM (CONNECTIONS) -->
     private val connectionsPreferences: ConnectionsPreferences by injectLazy()
     // <-- AM (CONNECTIONS)
+
+    // AM -->
+    private val mpvConfig: MpvConfig by injectLazy()
+    // <-- AM
 
     init {
         registerSecureActivity(this)
@@ -619,6 +624,13 @@ class MainActivity : BaseActivity() {
             outState.putLong(SAVED_STATE_EPISODE_KEY, it)
         }
     }
+
+    // AM -->
+    override fun onResume() {
+        super.onResume()
+        mpvConfig.copyFiles()
+    }
+    // <-- AM
 
     companion object {
         const val INTENT_SEARCH = "eu.kanade.tachiyomi.SEARCH"
