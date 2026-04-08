@@ -35,6 +35,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.PlaybackSpeedShe
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ScreenshotSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.SubtitlesSheet
+import `is`.xyz.mpv.MPV
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.domain.custombuttons.model.CustomButton
@@ -42,6 +43,7 @@ import java.io.InputStream
 
 @Composable
 fun PlayerSheets(
+    mpv: MPV,
     sheetShown: Sheets,
 
     // subtitles sheet
@@ -163,6 +165,7 @@ fun PlayerSheets(
 
         Sheets.More -> {
             MoreSheet(
+                mpv = mpv,
                 selectedDecoder = decoder,
                 onSelectDecoder = onUpdateDecoder,
                 remainingTime = sleepTimerTimeRemaining,
@@ -175,7 +178,8 @@ fun PlayerSheets(
 
         Sheets.PlaybackSpeed -> {
             PlaybackSpeedSheet(
-                speed,
+                mpv = mpv,
+                speed = speed,
                 onSpeedChange = onSpeedChange,
                 onDismissRequest = onDismissRequest,
             )

@@ -80,6 +80,7 @@ class CastManager(
         }
     }
     private val player by lazy { (activity as? PlayerActivity)?.player }
+    private val mpv by lazy { viewModel?.mpv }
     private val playerPreferences: PlayerPreferences by lazy {
         viewModel?.playerPreferences ?: PlayerPreferences(preferenceStore)
     }
@@ -202,7 +203,7 @@ class CastManager(
 
     fun updateCastState(state: CastState) {
         _castState.value = state
-        if (state == CastState.CONNECTED) player?.paused = true
+        if (state == CastState.CONNECTED) mpv?.setPropertyBoolean("pause", true)
         activity.invalidateOptionsMenu()
     }
 
@@ -254,7 +255,7 @@ class CastManager(
                 val video = hosterState?.videoList?.getOrNull(selectedVideoIndex) ?: return@launch
 
                 val mediaInfo = mediaBuilder!!.buildMediaInfo(video) // Ahora pasa el objeto `Video` directamente
-                val currentLocalPosition = (player?.timePos ?: 0).toLong()
+                val currentLocalPosition = (mpv?.getPropertyInt("time-pos") ?: 0).toLong()
 
                 updateQueueItems()
                 if (remoteMediaClient.mediaQueue.itemCount > 0) {

@@ -51,7 +51,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.toFixed
 import eu.kanade.tachiyomi.ui.player.controls.panelCardsColors
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleAssOverride
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import tachiyomi.core.common.preference.deleteAndGet
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -61,7 +61,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Composable
-fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
+fun SubtitlesMiscellaneousCard(mpv: MPV, modifier: Modifier = Modifier) {
     val preferences = remember { Injekt.get<SubtitlePreferences>() }
     var isExpanded by remember { mutableStateOf(true) }
     ExpandableCard(
@@ -79,7 +79,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
         Column {
             var overrideAssSubs by remember {
                 mutableStateOf(
-                    SubtitleAssOverride.byValue(MPVLib.getPropertyString("sub-ass-override") ?: "no"),
+                    SubtitleAssOverride.byValue(mpv.getPropertyString("sub-ass-override") ?: "no"),
                 )
             }
             var selectingOverrideAss by remember { mutableStateOf(false) }
@@ -113,7 +113,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
                             onClick = {
                                 overrideAssSubs = option
                                 preferences.overrideSubsASS().set(option)
-                                MPVLib.setPropertyString("sub-ass-override", option.value)
+                                mpv.setPropertyString("sub-ass-override", option.value)
                                 selectingOverrideAss = false
                             },
                             trailingIcon = {
@@ -129,10 +129,10 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
                 }
             }
             var subScale by remember {
-                mutableStateOf(MPVLib.getPropertyDouble("sub-scale").toFloat())
+                mutableStateOf((mpv.getPropertyDouble("sub-scale") ?: 1.0).toFloat())
             }
             var subPos by remember {
-                mutableStateOf(MPVLib.getPropertyInt("sub-pos"))
+                mutableStateOf(mpv.getPropertyInt("sub-pos") ?: 100)
             }
             SliderItem(
                 label = stringResource(AYMR.strings.player_sheets_sub_scale),
@@ -141,7 +141,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
                 onChange = {
                     subScale = it
                     preferences.subtitleFontScale().set(it)
-                    MPVLib.setPropertyDouble("sub-scale", it.toDouble())
+                    mpv.setPropertyDouble("sub-scale", it.toDouble())
                 },
                 max = 5f,
                 icon = {
@@ -158,7 +158,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
                 onChange = {
                     subPos = it
                     preferences.subtitlePos().set(it)
-                    MPVLib.setPropertyInt("sub-pos", it)
+                    mpv.setPropertyInt("sub-pos", it)
                 },
                 max = 150,
                 icon = {
@@ -178,14 +178,14 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
                     onClick = {
                         preferences.subtitlePos().deleteAndGet().let {
                             subPos = it
-                            MPVLib.setPropertyInt("sub-pos", it)
+                            mpv.setPropertyInt("sub-pos", it)
                         }
                         preferences.subtitleFontScale().deleteAndGet().let {
                             subScale = it
-                            MPVLib.setPropertyDouble("sub-scale", it.toDouble())
+                            mpv.setPropertyDouble("sub-scale", it.toDouble())
                         }
                         preferences.overrideSubsASS().deleteAndGet().let { overrideAssSubs = it }
-                        MPVLib.setPropertyString("sub-ass-override", "scale") // mpv's default is 'scale'
+                        mpv.setPropertyString("sub-ass-override", "scale") // mpv's default is 'scale'
                     },
                 ) {
                     Row {

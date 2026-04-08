@@ -70,7 +70,7 @@ import eu.kanade.tachiyomi.ui.player.executeLongPress
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioChannels
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.i18n.MR
@@ -83,6 +83,7 @@ import uy.kohesive.injekt.api.get
 
 @Composable
 fun MoreSheet(
+    mpv: MPV,
     selectedDecoder: Decoder,
     onSelectDecoder: (Decoder) -> Unit,
     remainingTime: Int,
@@ -194,10 +195,10 @@ fun MoreSheet(
                         },
                         onClick = {
                             if ((page == 0) xor (statisticsPage == 0)) {
-                                MPVLib.command(arrayOf("script-binding", "stats/display-stats-toggle"))
+                                mpv.command("script-binding", "stats/display-stats-toggle")
                             }
                             if (page != 0) {
-                                MPVLib.command(arrayOf("script-binding", "stats/display-page-$page"))
+                                mpv.command("script-binding", "stats/display-page-$page")
                             }
                             advancedPreferences.playerStatisticsPage().set(page)
                         },
@@ -228,8 +229,8 @@ fun MoreSheet(
                                 modifier = Modifier
                                     .matchParentSize()
                                     .combinedClickable(
-                                        onClick = { button.execute() },
-                                        onLongClick = { button.executeLongPress() },
+                                        onClick = { button.execute(mpv) },
+                                        onLongClick = { button.executeLongPress(mpv) },
                                         interactionSource = inputChipInteractionSource,
                                         indication = null,
                                     ),
@@ -249,11 +250,11 @@ fun MoreSheet(
                         onClick = {
                             audioPreferences.audioChannels().set(it)
                             if (it == AudioChannels.ReverseStereo) {
-                                MPVLib.setPropertyString(AudioChannels.AutoSafe.property, AudioChannels.AutoSafe.value)
+                                mpv.setPropertyString(AudioChannels.AutoSafe.property, AudioChannels.AutoSafe.value)
                             } else {
-                                MPVLib.setPropertyString(AudioChannels.ReverseStereo.property, "")
+                                mpv.setPropertyString(AudioChannels.ReverseStereo.property, "")
                             }
-                            MPVLib.setPropertyString(it.property, it.value)
+                            mpv.setPropertyString(it.property, it.value)
                         },
                         label = { Text(text = stringResource(it.titleRes)) },
                     )

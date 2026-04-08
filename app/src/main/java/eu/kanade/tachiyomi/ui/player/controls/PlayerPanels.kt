@@ -39,11 +39,13 @@ import eu.kanade.tachiyomi.ui.player.controls.components.panels.SubtitleDelayPan
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.SubtitleSettingsPanel
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.VideoFiltersPanel
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import `is`.xyz.mpv.MPV
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Composable
 fun PlayerPanels(
+    mpv: MPV,
     panelShown: Panels,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
@@ -64,19 +66,19 @@ fun PlayerPanels(
             }
 
             Panels.SubtitleSettings -> {
-                SubtitleSettingsPanel(onDismissRequest)
+                SubtitleSettingsPanel(mpv, onDismissRequest)
             }
 
             Panels.SubtitleDelay -> {
-                SubtitleDelayPanel(onDismissRequest)
+                SubtitleDelayPanel(mpv, onDismissRequest)
             }
 
             Panels.AudioDelay -> {
-                AudioDelayPanel(onDismissRequest)
+                AudioDelayPanel(mpv, onDismissRequest)
             }
 
             Panels.VideoFilters -> {
-                VideoFiltersPanel(onDismissRequest)
+                VideoFiltersPanel(mpv, onDismissRequest)
             }
         }
     }
