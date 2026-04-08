@@ -311,18 +311,6 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _primaryButton = MutableStateFlow<CustomButton?>(null)
     val primaryButton = _primaryButton.asStateFlow()
 
-    init {
-        viewModelScope.launchIO {
-            try {
-                val buttons = getCustomButtons.getAll()
-                setCustomButtons(buttons)
-            } catch (e: Exception) {
-                logcat(LogPriority.ERROR, e)
-                _customButtons.update { _ -> CustomButtonFetchState.Error(e.message ?: "Unable to fetch buttons") }
-            }
-        }
-    }
-
     private fun setCustomButtons(buttons: List<CustomButton>) {
         _customButtons.update { _ -> CustomButtonFetchState.Success(buttons.toImmutableList()) }
         buttons.firstOrNull { it.isFavorite }?.let {
@@ -1271,6 +1259,9 @@ class PlayerViewModel @JvmOverloads constructor(
                 animeTitle.update { _ -> anime.title }
                 sourceManager.isInitialized.first { it }
                 episodeId = initialEpisodeId
+
+                val buttons = getCustomButtons.getAll()
+                setCustomButtons(buttons)
 
                 checkTrackers(anime)
 

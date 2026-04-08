@@ -216,7 +216,7 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { ExternalIntents() }
 
         // AM -->
-        addSingletonFactory { MpvConfig(app) }
+        addSingletonFactory { MpvConfig(app, get(), get(), get()) }
         // <-- AM
 
         // AM (CONNECTIONS) -->
