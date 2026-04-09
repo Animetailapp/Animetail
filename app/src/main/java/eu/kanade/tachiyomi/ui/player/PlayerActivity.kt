@@ -94,7 +94,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
@@ -356,7 +355,7 @@ class PlayerActivity : BaseActivity() {
 
         mpv.removeLogObserver(playerObserver)
         mpv.removeObserver(playerObserver)
-        mpv.close()
+        Thread { runCatching { mpv.close() } }.start()
         castManager.cleanup()
 
         // AM (DISCORD) -->
@@ -380,7 +379,7 @@ class PlayerActivity : BaseActivity() {
         player.isExiting = true
         if (isFinishing) {
             viewModel.deletePendingEpisodes()
-            mpv.command("stop")
+            Thread { runCatching { mpv.command("stop") } }.start()
         } else {
             viewModel.pause()
         }
@@ -430,7 +429,7 @@ class PlayerActivity : BaseActivity() {
 
     override fun onStart() {
         super.onStart()
-        setPictureInPictureParams(createPipParams())
+        runCatching { setPictureInPictureParams(createPipParams()) }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.setFlags(
             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
@@ -686,7 +685,7 @@ class PlayerActivity : BaseActivity() {
         if (player.isExiting) return
         when (property) {
             "speed" -> viewModel.playbackSpeed.update { value.toFloat() }
-            "video-params/aspect" -> if (isPipSupportedAndEnabled) createPipParams()
+            "video-params/aspect" -> if (isPipSupportedAndEnabled) runCatching { setPictureInPictureParams(createPipParams()) }
         }
     }
 
@@ -739,7 +738,7 @@ class PlayerActivity : BaseActivity() {
         builder.setSourceRectHint(pipRect)
         mpv.getPropertyInt("video-params/h")?.let {
             val height = it
-            val width = it * player.getVideoOutAspect()!!
+            val width = it * (player.getVideoOutAspect() ?: return@let)
             val rational = Rational(height, width.toInt()).toFloat()
             if (rational in 0.42..2.38) builder.setAspectRatio(Rational(width.toInt(), height))
         }
@@ -1235,32 +1234,30 @@ class PlayerActivity : BaseActivity() {
     // at void eu.kanade.tachiyomi.ui.player.PlayerActivity.fileLoaded() (PlayerActivity.kt:1874)
     // at void eu.kanade.tachiyomi.ui.player.PlayerActivity.event(int) (PlayerActivity.kt:1566)
     // at void is.xyz.mpv.MPV.event(int, MPVNode) (MPV.java)
-    private fun fileLoaded() {
+    private suspend fun fileLoaded() {
         if (player.isExiting) return
         setMpvOptions()
         setMpvMediaTitle()
-        setupPlayerOrientation()
+        runOnUiThread { setupPlayerOrientation() }
         setupChapters()
         setupTracks()
 
         // aniSkip stuff
         viewModel.waitingSkipIntro = playerPreferences.waitingTimeIntroSkip().get()
-        runBlocking {
-            if (
-                viewModel.introSkipEnabled &&
-                playerPreferences.aniSkipEnabled().get() &&
-                !(playerPreferences.disableAniSkipOnChapters().get() && viewModel.chapters.value.isNotEmpty())
-            ) {
-                viewModel.aniSkipResponse(mpv.getPropertyInt("duration"))?.let {
-                    viewModel.updateChapters(
-                        ChapterUtils.mergeChapters(
-                            currentChapters = viewModel.chapters.value,
-                            stamps = it,
-                            duration = mpv.getPropertyInt("duration"),
-                        ),
-                    )
-                    viewModel.setChapter(viewModel.pos.value)
-                }
+        if (
+            viewModel.introSkipEnabled &&
+            playerPreferences.aniSkipEnabled().get() &&
+            !(playerPreferences.disableAniSkipOnChapters().get() && viewModel.chapters.value.isNotEmpty())
+        ) {
+            viewModel.aniSkipResponse(mpv.getPropertyInt("duration"))?.let {
+                viewModel.updateChapters(
+                    ChapterUtils.mergeChapters(
+                        currentChapters = viewModel.chapters.value,
+                        stamps = it,
+                        duration = mpv.getPropertyInt("duration"),
+                    ),
+                )
+                viewModel.setChapter(viewModel.pos.value)
             }
         }
     }
