@@ -4,6 +4,9 @@ object Constants {
     const val URL_HELP = "https://aniyomi.org/docs/guides/troubleshooting/"
     const val URL_HELP_UPCOMING = "https://aniyomi.org/docs/faq/updates/upcoming"
     const val URL_DONATE = "https://www.patreon.com/abydev/membership"
+    const val URL_DONATE_PATREON = "https://patreon.com/mihon/membership"
+    const val URL_DONATE_OPENCOLLECTIVE = "https://opencollective.com/mihon/contribute"
+    const val URL_DISCORD = "https://discord.gg/wPRFW6ccDE"
 
     const val MANGA_EXTRA = "manga"
 
