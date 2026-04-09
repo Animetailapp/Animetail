@@ -685,7 +685,12 @@ class PlayerActivity : BaseActivity() {
         if (player.isExiting) return
         when (property) {
             "speed" -> viewModel.playbackSpeed.update { value.toFloat() }
-            "video-params/aspect" -> if (isPipSupportedAndEnabled) runCatching { setPictureInPictureParams(createPipParams()) }
+
+            "video-params/aspect" -> if (isPipSupportedAndEnabled) {
+                runCatching {
+                    setPictureInPictureParams(createPipParams())
+                }
+            }
         }
     }
 
