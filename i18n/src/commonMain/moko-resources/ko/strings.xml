@@ -469,7 +469,7 @@
     <string name="skipped_reason_not_started">읽지 않은 만화를 건너 뛰었습니다</string>
     <string name="update_check_eol">이 안드로이드 버전은 더이상 지원되지 않습니다</string>
     <string name="information_cloudflare_bypass_failure">Cloudflare를 통과하지 못했습니다</string>
-    <string name="information_webview_required">Mihon 앱의 기능을 사용하려면 WebView가 필요합니다</string>
+    <string name="information_webview_required">Animetail 앱의 기능을 사용하려면 WebView가 필요합니다</string>
     <string name="information_webview_outdated">호환성을 위해 WebView 어플리케이션을 업데이트 해 주세요</string>
     <string name="pref_navigate_pan">넓은 이미지 이동</string>
     <string name="obsolete_extension_message">이 확장 프로그램은 더 이상 사용할 수 없습니다. 제대로 작동하지 않을 수 있으며 앱에 문제가 발생할 수 있습니다. 제거하는 것이 좋습니다.</string>

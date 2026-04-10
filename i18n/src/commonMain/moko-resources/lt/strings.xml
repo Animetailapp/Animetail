@@ -186,7 +186,7 @@
     <string name="obsolete_extension_message">Šis plėtinys nebėra prieinamas. Plėtinys gali veikti netinkamai arba sukelti problemas programėlėje. Rekomenduojama išdiegti plėtinį.</string>
     <string name="untrusted_extension_message">Šis plėtinys buvo pasirašytas nepatikimu sertifikatu ir nebuvo aktyvuotas.
 \n
-\nPlėtinys, su negeranoriškais ketinimais, gali perskaityti prisijungimo duomenys patalpintus Mihon arba gali paleisti kenkėjišką kodą.
+\nPlėtinys, su negeranoriškais ketinimais, gali perskaityti prisijungimo duomenys patalpintus Animetail arba gali paleisti kenkėjišką kodą.
 \n
 \nJūs priimate šias rizikas pasitikėdami sertifikatu.</string>
     <string name="untrusted_extension">Nepatikimas plėtinys</string>

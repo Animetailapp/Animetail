@@ -386,7 +386,7 @@
     <string name="channel_errors">Lỗi</string>
     <string name="channel_complete">Hoàn thành</string>
     <string name="channel_progress">Quá trình</string>
-    <string name="information_webview_required">Mihon yêu cầu phải có WebView</string>
+    <string name="information_webview_required">Animetail yêu cầu phải có WebView</string>
     <string name="update_check_eol">Phiên bản Android này không còn được hỗ trợ</string>
     <string name="notification_chapters_multiple">Chương %1$s</string>
     <string name="notification_chapters_single_and_more">Chương %1$s và thêm %2$d</string>

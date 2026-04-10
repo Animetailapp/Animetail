@@ -101,7 +101,7 @@
     <string name="untrusted_extension">Nedôveryhodné rozšírenie</string>
     <string name="untrusted_extension_message">Toto rozšírenie bolo podpísané nedôveryhodným certifikátom a nebolo aktivované.
 \n
-\nŠkodlivé rozšírenie môže čítať všetky prihlasovacie údaje uložené v Mihon alebo spúšťať ľubovoľný kód.
+\nŠkodlivé rozšírenie môže čítať všetky prihlasovacie údaje uložené v Animetail alebo spúšťať ľubovoľný kód.
 \n
 \nDôverovaním tohto certifikátu akceptujete tieto riziká.</string>
     <string name="pref_fullscreen">Na celú obrazovku</string>

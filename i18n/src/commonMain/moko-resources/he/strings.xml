@@ -102,7 +102,7 @@
     <string name="pref_enable_acra">שלח דוחות קריסה</string>
     <string name="untrusted_extension_message">תוסף זה נחתם עם אישור לא מהימן ולא הופעל.
 \n
-\nתוסף זדוני יכול לקרוא את אישורי ההתחברות המאוחסנים ב-Mihon או להריץ קוד שרירותי.
+\nתוסף זדוני יכול לקרוא את אישורי ההתחברות המאוחסנים ב-Animetail או להריץ קוד שרירותי.
 \n
 \nעל ידי אמון באישור זה אתה מקבל סיכונים אלה.</string>
     <string name="ext_uninstall">הסר התקנה</string>

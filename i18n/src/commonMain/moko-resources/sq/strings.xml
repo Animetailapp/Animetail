@@ -289,7 +289,7 @@
     <string name="ext_installer_legacy">Trashëgimia</string>
     <string name="untrusted_extension_message">Kjo shtesë u nënshkrua me një certifikatë të pabesueshme dhe nuk u aktivizua.
 \n
-\n Një shtesë me qëllim të keq mund të lexojë çdo kredencial identifikimi të ruajtur në Mihon ose të ekzekutojë kod arbitrar.
+\n Një shtesë me qëllim të keq mund të lexojë çdo kredencial identifikimi të ruajtur në Animetail ose të ekzekutojë kod arbitrar.
 \n
 \n Duke i besuar kësaj certifikate ju i pranoni këto rreziqe.</string>
     <string name="obsolete_extension_message">Kjo shtesë nuk është më e disponueshme. Mund të mos funksionojë siç duhet dhe mund të shkaktojë probleme me aplikacionin. Rekomandohet ta çinstaloni.</string>
