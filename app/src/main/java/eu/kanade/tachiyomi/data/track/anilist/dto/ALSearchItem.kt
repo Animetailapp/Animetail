@@ -9,7 +9,6 @@ data class ALSearchItem(
     val coverImage: ItemCover,
     val description: String?,
     val format: String,
-    val countryOfOrigin: String,
     val status: String?,
     val startDate: ALFuzzyDate,
     val chapters: Long?,
@@ -17,6 +16,7 @@ data class ALSearchItem(
     val averageScore: Int?,
     val staff: ALStaff?,
     val studios: ALStudios?,
+    val countryOfOrigin: String = "",
 ) {
     fun toALManga(): ALManga = ALManga(
         remoteId = id,
