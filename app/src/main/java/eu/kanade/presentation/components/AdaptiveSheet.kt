@@ -81,7 +81,7 @@ fun AdaptiveSheet(
         AdaptiveSheetImpl(
             modifier = modifier,
             isTabletUi = isTabletUi,
-            enableImplicitDismiss = enableSwipeDismiss,
+            enableImplicitDismiss = enableImplicitDismiss,
             onDismissRequest = onDismissRequest,
         ) {
             content()
