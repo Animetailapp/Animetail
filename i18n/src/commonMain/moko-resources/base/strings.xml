@@ -168,6 +168,7 @@
     <string name="action_start_downloading_now">Start downloading now</string>
     <string name="action_not_now">Not now</string>
     <string name="action_add_anyway">Add anyway</string>
+    <string name="action_migrate_duplicate">Migrate existing entry</string>
 
     <!-- Operations -->
     <string name="loading">Loading…</string>
@@ -643,6 +644,7 @@
       <!-- About section -->
     <string name="website">Website</string>
     <string name="version">Version</string>
+    <string name="updated_version">Updated to v%1$s</string>
     <string name="whats_new">What\'s new</string>
     <string name="help_translate">Help translate</string>
     <string name="licenses">Open source licenses</string>
@@ -770,6 +772,7 @@
     <string name="set_chapter_settings_as_default">Set as default</string>
     <string name="no_chapters_error">No chapters found</string>
     <string name="are_you_sure">Are you sure?</string>
+    <string name="confirm_add_duplicate_manga">You have an entry in your library with the same name.\n\nDo you still wish to continue?</string>
     <string name="exclude_scanlators">Exclude scanlators</string>
     <string name="no_scanlators_found">No scanlators found</string>
     <string name="confirm_tracker_update">Update trackers to chapter %d?</string>
@@ -923,6 +926,7 @@
     <string name="learn_more">Tap to learn more</string>
     <string name="notification_cover_update_failed">Failed to update cover</string>
     <string name="notification_first_add_to_library">Please add the entry to your library before doing this</string>
+    <string name="notification_update_error">%1$d update(s) failed</string>
     <string name="library_errors_help">For help on how to fix library update errors, see %1$s</string>
     <string name="skipped_reason_completed">Skipped because series is complete</string>
     <string name="skipped_reason_not_caught_up">Skipped because there are unread chapters</string>

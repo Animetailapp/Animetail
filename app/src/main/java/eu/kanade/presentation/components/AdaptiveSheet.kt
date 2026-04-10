@@ -69,7 +69,7 @@ fun NavigatorAdaptiveSheet(
 fun AdaptiveSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    enableSwipeDismiss: Boolean = true,
+    enableImplicitDismiss: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val isTabletUi = isTabletUi()

@@ -191,7 +191,7 @@ class MainActivity : BaseActivity() {
 
         super.onCreate(savedInstanceState)
 
-        Migrator.awaitAndRelease()
+        val didMigration = Migrator.awaitAndRelease()
 
         // Do not let the launcher create a new activity http://stackoverflow.com/questions/16283079
         if (!isTaskRoot) {
