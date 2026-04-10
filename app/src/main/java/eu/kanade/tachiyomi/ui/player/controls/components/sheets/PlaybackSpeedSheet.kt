@@ -48,7 +48,7 @@ import eu.kanade.presentation.player.components.SliderItem
 import eu.kanade.presentation.player.components.SwitchPreference
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -60,6 +60,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun PlaybackSpeedSheet(
+    mpv: MPV,
     speed: Float,
     onSpeedChange: (Float) -> Unit,
     onDismissRequest: () -> Unit,
@@ -137,7 +138,7 @@ fun PlaybackSpeedSheet(
                 value = pitchCorrection,
                 onValueChange = {
                     audioPreferences.enablePitchCorrection().set(it)
-                    MPVLib.setPropertyBoolean("audio-pitch-correction", it)
+                    mpv.setPropertyBoolean("audio-pitch-correction", it)
                 },
                 content = {
                     Column(

@@ -40,7 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -49,6 +49,7 @@ import uy.kohesive.injekt.api.get
 
 @Composable
 fun AudioDelayPanel(
+    mpv: MPV,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -61,9 +62,9 @@ fun AudioDelayPanel(
     ) {
         val delayControlCard = createRef()
 
-        var delay by remember { mutableIntStateOf((MPVLib.getPropertyDouble("audio-delay") * 1000).toInt()) }
+        var delay by remember { mutableIntStateOf(((mpv.getPropertyDouble("audio-delay") ?: 0.0) * 1000).toInt()) }
         LaunchedEffect(delay) {
-            MPVLib.setPropertyDouble("audio-delay", delay / 1000.0)
+            mpv.setPropertyDouble("audio-delay", delay / 1000.0)
         }
         DelayCard(
             delay = delay,

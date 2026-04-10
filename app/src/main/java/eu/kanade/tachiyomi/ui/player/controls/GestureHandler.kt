@@ -64,7 +64,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.DoubleTapSeekTriangles
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import tachiyomi.i18n.aniyomi.AYMR
@@ -162,7 +162,7 @@ fun GestureHandler(
                         tryAwaitRelease()
                         if (isLongPressing) {
                             isLongPressing = false
-                            MPVLib.setPropertyDouble("speed", originalSpeed.toDouble())
+                            viewModel.mpv.setPropertyDouble("speed", originalSpeed.toDouble())
                             viewModel.playerUpdate.update { PlayerUpdates.None }
                         }
                         interactionSource.emit(PressInteraction.Release(press))

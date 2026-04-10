@@ -27,10 +27,12 @@ import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
 import eu.kanade.tachiyomi.ui.player.controls.components.FilledControlsButton
 import eu.kanade.tachiyomi.ui.player.execute
 import eu.kanade.tachiyomi.ui.player.executeLongPress
+import `is`.xyz.mpv.MPV
 import tachiyomi.domain.custombuttons.model.CustomButton
 
 @Composable
 fun BottomRightPlayerControls(
+    mpv: MPV,
     customButton: CustomButton?,
     customButtonTitle: String,
     skipIntroButton: String?,
@@ -50,8 +52,8 @@ fun BottomRightPlayerControls(
         } else if (customButton != null) {
             FilledControlsButton(
                 text = customButtonTitle,
-                onClick = customButton::execute,
-                onLongClick = customButton::executeLongPress,
+                onClick = { customButton.execute(mpv) },
+                onLongClick = { customButton.executeLongPress(mpv) },
             )
         }
 

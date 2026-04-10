@@ -77,7 +77,7 @@ import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
@@ -504,6 +504,7 @@ fun PlayerControls(
                 ) {
                     val activity = LocalContext.current as PlayerActivity
                     BottomRightPlayerControls(
+                        mpv = viewModel.mpv,
                         customButton = customButton,
                         customButtonTitle = customButtonTitle,
                         skipIntroButton = skipIntroButton,
@@ -554,7 +555,7 @@ fun PlayerControls(
                         onLockControls = viewModel::lockControls,
                         onCycleRotation = viewModel::cycleScreenRotations,
                         onPlaybackSpeedChange = {
-                            MPVLib.setPropertyDouble("speed", it.toDouble())
+                            viewModel.mpv.setPropertyDouble("speed", it.toDouble())
                         },
                         onOpenSheet = viewModel::showSheet,
                     )
@@ -581,6 +582,7 @@ fun PlayerControls(
         val emptyHosters by playerPreferences.showEmptyHosters().collectAsState()
 
         PlayerSheets(
+            mpv = viewModel.mpv,
             sheetShown = sheetShown,
             subtitles = subtitles.toImmutableList(),
             selectedSubtitles = selectedSubtitles.toList().toImmutableList(),
@@ -610,7 +612,7 @@ fun PlayerControls(
             decoder = decoder,
             onUpdateDecoder = viewModel::updateDecoder,
             speed = speed,
-            onSpeedChange = { MPVLib.setPropertyDouble("speed", it.toFixed(2).toDouble()) },
+            onSpeedChange = { viewModel.mpv.setPropertyDouble("speed", it.toFixed(2).toDouble()) },
             sleepTimerTimeRemaining = sleepTimerTimeRemaining,
             onStartSleepTimer = viewModel::startTimer,
             buttons = customButtons.getButtons().toImmutableList(),
@@ -633,6 +635,7 @@ fun PlayerControls(
         )
         val panel by viewModel.panelShown.collectAsState()
         PlayerPanels(
+            mpv = viewModel.mpv,
             panelShown = panel,
             onDismissRequest = { viewModel.showPanel(Panels.None) },
         )

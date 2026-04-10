@@ -88,7 +88,7 @@ import eu.kanade.tachiyomi.util.lang.takeBytes
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.cacheImageDir
 import eu.kanade.tachiyomi.util.system.toast
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
@@ -176,6 +176,16 @@ class PlayerViewModel @JvmOverloads constructor(
     uiPreferences: UiPreferences = Injekt.get(),
 ) : ViewModel() {
 
+    val cachePath: String = activity.cacheDir.path
+
+    val mpv = MPV(activity.applicationContext) {
+        it.setOptionString("config", "yes")
+        it.setOptionString("config-dir", activity.filesDir.resolve(PlayerActivity.MPV_DIR).toString())
+        it.setOptionString("gpu-shader-cache-dir", cachePath)
+        it.setOptionString("icc-cache-dir", cachePath)
+        it.setOptionString("keep-open", "yes")
+    }
+
     private val _currentPlaylist = MutableStateFlow<List<Episode>>(emptyList())
     val currentPlaylist = _currentPlaylist.asStateFlow()
 
@@ -200,7 +210,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _isLoadingEpisode = MutableStateFlow(false)
     val isLoadingEpisode = _isLoadingEpisode.asStateFlow()
 
-    private val _currentDecoder = MutableStateFlow(getDecoderFromValue(MPVLib.getPropertyString("hwdec")))
+    private val _currentDecoder = MutableStateFlow(getDecoderFromValue(mpv.getPropertyString("hwdec") ?: ""))
     val currentDecoder = _currentDecoder.asStateFlow()
 
     val mediaTitle = MutableStateFlow("")
@@ -276,8 +286,8 @@ class PlayerViewModel @JvmOverloads constructor(
         }.getOrElse { 0f },
     )
     val currentVolume = MutableStateFlow(activity.audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
-    val currentMPVVolume = MutableStateFlow(MPVLib.getPropertyInt("volume"))
-    var volumeBoostCap: Int = MPVLib.getPropertyInt("volume-max")
+    val currentMPVVolume = MutableStateFlow(mpv.getPropertyInt("volume") ?: 100)
+    var volumeBoostCap: Int = (mpv.getPropertyInt("volume-max") ?: 100) - 100
 
     // Pair(startingPosition, seekAmount)
     val gestureSeekAmount = MutableStateFlow<Pair<Int, Int>?>(null)
@@ -300,8 +310,6 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _remainingTime = MutableStateFlow(0)
     val remainingTime = _remainingTime.asStateFlow()
 
-    val cachePath: String = activity.cacheDir.path
-
     private val _customButtons = MutableStateFlow<CustomButtonFetchState>(CustomButtonFetchState.Loading)
     val customButtons = _customButtons.asStateFlow()
 
@@ -311,23 +319,14 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _primaryButton = MutableStateFlow<CustomButton?>(null)
     val primaryButton = _primaryButton.asStateFlow()
 
-    init {
-        viewModelScope.launchIO {
-            try {
-                val buttons = getCustomButtons.getAll()
-                buttons.firstOrNull { it.isFavorite }?.let {
-                    _primaryButton.update { _ -> it }
-                    // If the button text is not empty, it has been set buy a lua script in which
-                    // case we don't want to override it
-                    if (_primaryButtonTitle.value.isEmpty()) {
-                        setPrimaryCustomButtonTitle(it)
-                    }
-                }
-                activity.setupCustomButtons(buttons)
-                _customButtons.update { _ -> CustomButtonFetchState.Success(buttons.toImmutableList()) }
-            } catch (e: Exception) {
-                logcat(LogPriority.ERROR, e)
-                _customButtons.update { _ -> CustomButtonFetchState.Error(e.message ?: "Unable to fetch buttons") }
+    private fun setCustomButtons(buttons: List<CustomButton>) {
+        _customButtons.update { _ -> CustomButtonFetchState.Success(buttons.toImmutableList()) }
+        buttons.firstOrNull { it.isFavorite }?.let {
+            _primaryButton.update { _ -> it }
+            // If the button text is not empty, it has been set by a lua script in which
+            // case we don't want to override it
+            if (_primaryButtonTitle.value.isEmpty()) {
+                setPrimaryCustomButtonTitle(it)
             }
         }
     }
@@ -369,36 +368,36 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun getDecoder() {
-        _currentDecoder.update { getDecoderFromValue(activity.player.hwdecActive) }
+        _currentDecoder.update { getDecoderFromValue(mpv.getPropertyString("hwdec-current") ?: "") }
     }
 
     fun updateDecoder(decoder: Decoder) {
-        MPVLib.setPropertyString("hwdec", decoder.value)
+        mpv.setPropertyString("hwdec", decoder.value)
     }
 
     val getTrackLanguage: (Int) -> String = {
         if (it != -1) {
-            MPVLib.getPropertyString("track-list/$it/lang") ?: ""
+            mpv.getPropertyString("track-list/$it/lang") ?: ""
         } else {
             activity.stringResource(MR.strings.off)
         }
     }
     val getTrackTitle: (Int) -> String = {
         if (it != -1) {
-            MPVLib.getPropertyString("track-list/$it/title") ?: ""
+            mpv.getPropertyString("track-list/$it/title") ?: ""
         } else {
             activity.stringResource(MR.strings.off)
         }
     }
     val getTrackMPVId: (Int) -> Int = {
         if (it != -1) {
-            MPVLib.getPropertyInt("track-list/$it/id")
+            mpv.getPropertyInt("track-list/$it/id") ?: -1
         } else {
             -1
         }
     }
     val getTrackType: (Int) -> String? = {
-        MPVLib.getPropertyString("track-list/$it/type")
+        mpv.getPropertyString("track-list/$it/type")
     }
 
     private var trackLoadingJob: Job? = null
@@ -411,7 +410,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 VideoTrack(-1, activity.stringResource(MR.strings.off), null),
             )
             try {
-                val tracksCount = MPVLib.getPropertyInt("track-list/count") ?: 0
+                val tracksCount = mpv.getPropertyInt("track-list/count") ?: 0
                 for (i in 0..<tracksCount) {
                     val type = getTrackType(i)
                     if (!possibleTrackTypes.contains(type) || type == null) continue
@@ -441,13 +440,13 @@ class PlayerViewModel @JvmOverloads constructor(
     fun onFinishLoadingTracks() {
         val preferredSubtitle = trackSelect.getPreferredTrackIndex(subtitleTracks.value)
         (preferredSubtitle ?: subtitleTracks.value.firstOrNull())?.let {
-            activity.player.sid = it.id
-            activity.player.secondarySid = -1
+            activity.player.mpv?.setPropertyInt("sid", it.id)
+            activity.player.mpv?.setPropertyBoolean("secondary-sid", false)
         }
 
         val preferredAudio = trackSelect.getPreferredTrackIndex(audioTracks.value, subtitle = false)
         (preferredAudio ?: audioTracks.value.getOrNull(1))?.let {
-            activity.player.aid = it.id
+            activity.player.mpv?.setPropertyInt("aid", it.id)
         }
 
         isLoadingTracks.update { _ -> true }
@@ -464,10 +463,10 @@ class PlayerViewModel @JvmOverloads constructor(
 
     fun loadChapters() {
         val chapters = mutableListOf<IndexedSegment>()
-        val count = MPVLib.getPropertyInt("chapter-list/count")!!
+        val count = mpv.getPropertyInt("chapter-list/count") ?: 0
         for (i in 0 until count) {
-            val title = MPVLib.getPropertyString("chapter-list/$i/title")
-            val time = MPVLib.getPropertyInt("chapter-list/$i/time")!!
+            val title = mpv.getPropertyString("chapter-list/$i/title") ?: ""
+            val time = mpv.getPropertyInt("chapter-list/$i/time") ?: 0
             chapters.add(
                 IndexedSegment(
                     name = title,
@@ -500,14 +499,14 @@ class PlayerViewModel @JvmOverloads constructor(
             ?: return
         val name = if (isContentUri) uri.getFileName(activity) else null
         if (name == null) {
-            MPVLib.command(arrayOf("audio-add", path, "cached"))
+            mpv.command("audio-add", path, "cached")
         } else {
-            MPVLib.command(arrayOf("audio-add", path, "cached", name))
+            mpv.command("audio-add", path, "cached", name)
         }
     }
 
     fun selectAudio(id: Int) {
-        activity.player.aid = id
+        activity.player.mpv?.setPropertyInt("aid", id)
     }
 
     fun updateAudio(id: Int) {
@@ -521,9 +520,9 @@ class PlayerViewModel @JvmOverloads constructor(
             ?: return
         val name = if (isContentUri) uri.getFileName(activity) else null
         if (name == null) {
-            MPVLib.command(arrayOf("sub-add", path, "cached"))
+            mpv.command("sub-add", path, "cached")
         } else {
-            MPVLib.command(arrayOf("sub-add", path, "cached", name))
+            mpv.command("sub-add", path, "cached", name)
         }
     }
 
@@ -544,8 +543,8 @@ class PlayerViewModel @JvmOverloads constructor(
                 }
             }
         }
-        activity.player.secondarySid = _selectedSubtitles.value.second
-        activity.player.sid = _selectedSubtitles.value.first
+        activity.player.mpv?.setPropertyInt("secondary-sid", _selectedSubtitles.value.second)
+        activity.player.mpv?.setPropertyInt("sid", _selectedSubtitles.value.first)
     }
 
     fun updateSubtitle(sid: Int, secondarySid: Int) {
@@ -588,7 +587,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun pause() {
-        activity.player.paused = true
+        mpv.setPropertyBoolean("pause", true)
         _paused.update { true }
         runCatching {
             activity.setPictureInPictureParams(activity.createPipParams())
@@ -596,7 +595,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun unpause() {
-        activity.player.paused = false
+        mpv.setPropertyBoolean("pause", false)
         _paused.update { false }
     }
 
@@ -679,12 +678,12 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun seekBy(offset: Int, precise: Boolean = false) {
-        MPVLib.command(arrayOf("seek", offset.toString(), if (precise) "relative+exact" else "relative"))
+        mpv.command("seek", offset.toString(), if (precise) "relative+exact" else "relative")
     }
 
     fun seekTo(position: Int, precise: Boolean = true) {
-        if (position !in 0..(activity.player.duration ?: 0)) return
-        MPVLib.command(arrayOf("seek", position.toString(), if (precise) "absolute" else "absolute+keyframes"))
+        if (position !in 0..(mpv.getPropertyInt("duration") ?: 0)) return
+        mpv.command("seek", position.toString(), if (precise) "absolute" else "absolute+keyframes")
     }
 
     fun changeBrightnessTo(
@@ -702,7 +701,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
     val maxVolume = activity.audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
     fun changeVolumeBy(change: Int) {
-        val mpvVolume = MPVLib.getPropertyInt("volume")
+        val mpvVolume = mpv.getPropertyInt("volume") ?: 100
         if (volumeBoostCap > 0 && currentVolume.value == maxVolume) {
             if (mpvVolume == 100 && change < 0) changeVolumeTo(currentVolume.value + change)
             val finalMPVVolume = (mpvVolume + change).coerceAtLeast(100)
@@ -725,7 +724,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun changeMPVVolumeTo(volume: Int) {
-        MPVLib.setPropertyInt("volume", volume)
+        mpv.setPropertyInt("volume", volume)
     }
 
     fun setMPVVolume(volume: Int) {
@@ -758,7 +757,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
             VideoAspect.Fit -> {
                 pan = 0.0
-                MPVLib.setPropertyDouble("panscan", 0.0)
+                mpv.setPropertyDouble("panscan", 0.0)
             }
 
             VideoAspect.Stretch -> {
@@ -768,8 +767,8 @@ class PlayerViewModel @JvmOverloads constructor(
                 pan = 0.0
             }
         }
-        MPVLib.setPropertyDouble("panscan", pan)
-        MPVLib.setPropertyDouble("video-aspect-override", ratio)
+        mpv.setPropertyDouble("panscan", pan)
+        mpv.setPropertyDouble("video-aspect-override", ratio)
         playerPreferences.aspectState().set(aspect)
         playerUpdate.update { PlayerUpdates.AspectRatio }
     }
@@ -845,7 +844,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
             "launch_int_picker" -> {
                 val (title, nameFormat, start, stop, step, pickerProperty) = data.split("|")
-                val defaultValue = MPVLib.getPropertyInt(pickerProperty)
+                val defaultValue = mpv.getPropertyInt(pickerProperty) ?: 0
                 showDialog(
                     Dialogs.IntegerPicker(
                         defaultValue = defaultValue,
@@ -854,7 +853,7 @@ class PlayerViewModel @JvmOverloads constructor(
                         step = step.toInt(),
                         nameFormat = nameFormat,
                         title = title,
-                        onChange = { MPVLib.setPropertyInt(pickerProperty, it) },
+                        onChange = { mpv.setPropertyInt(pickerProperty, it) },
                         onDismissRequest = { showDialog(Dialogs.None) },
                     ),
                 )
@@ -911,7 +910,7 @@ class PlayerViewModel @JvmOverloads constructor(
             }
         }
 
-        MPVLib.setPropertyString(property, "")
+        mpv.setPropertyString(property, "")
     }
 
     private operator fun <T> List<T>.component6(): T = get(5)
@@ -1015,7 +1014,7 @@ class PlayerViewModel @JvmOverloads constructor(
             }
 
             SingleActionGesture.Custom -> {
-                MPVLib.command(arrayOf("keypress", CustomKeyCodes.DoubleTapLeft.keyCode))
+                mpv.command("keypress", CustomKeyCodes.DoubleTapLeft.keyCode)
             }
 
             SingleActionGesture.None -> {}
@@ -1031,7 +1030,7 @@ class PlayerViewModel @JvmOverloads constructor(
             }
 
             SingleActionGesture.Custom -> {
-                MPVLib.command(arrayOf("keypress", CustomKeyCodes.DoubleTapCenter.keyCode))
+                mpv.command("keypress", CustomKeyCodes.DoubleTapCenter.keyCode)
             }
 
             SingleActionGesture.Seek -> {}
@@ -1053,7 +1052,7 @@ class PlayerViewModel @JvmOverloads constructor(
             }
 
             SingleActionGesture.Custom -> {
-                MPVLib.command(arrayOf("keypress", CustomKeyCodes.DoubleTapRight.keyCode))
+                mpv.command("keypress", CustomKeyCodes.DoubleTapRight.keyCode)
             }
 
             SingleActionGesture.None -> {}
@@ -1269,6 +1268,9 @@ class PlayerViewModel @JvmOverloads constructor(
                 sourceManager.isInitialized.first { it }
                 episodeId = initialEpisodeId
 
+                val buttons = getCustomButtons.getAll()
+                setCustomButtons(buttons)
+
                 checkTrackers(anime)
 
                 updateEpisodeList(initEpisodeList(anime))
@@ -1286,10 +1288,10 @@ class PlayerViewModel @JvmOverloads constructor(
 
                 // Write to mpv table
                 val parentTitle = anime.parentId?.let { getAnime.await(it)?.title } ?: ""
-                MPVLib.setPropertyString("user-data/current-anime/anime-title", anime.title)
-                MPVLib.setPropertyString("user-data/current-anime/parent-title", parentTitle)
-                MPVLib.setPropertyInt("user-data/current-anime/intro-length", getAnimeSkipIntroLength())
-                MPVLib.setPropertyString(
+                mpv.setPropertyString("user-data/current-anime/anime-title", anime.title)
+                mpv.setPropertyString("user-data/current-anime/parent-title", parentTitle)
+                mpv.setPropertyInt("user-data/current-anime/intro-length", getAnimeSkipIntroLength())
+                mpv.setPropertyString(
                     "user-data/current-anime/category",
                     getAnimeCategories.await(anime.id).joinToString {
                         it.name
@@ -1398,7 +1400,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private fun updateEpisode(episode: Episode) {
         mediaTitle.update { _ -> episode.name }
         _isEpisodeOnline.update { _ -> isEpisodeOnline() == true }
-        MPVLib.setPropertyDouble("user-data/current-anime/episode-number", episode.episode_number.toDouble())
+        mpv.setPropertyDouble("user-data/current-anime/episode-number", episode.episode_number.toDouble())
     }
 
     private fun initEpisodeList(anime: Anime): List<Episode> {
@@ -1867,7 +1869,7 @@ class PlayerViewModel @JvmOverloads constructor(
         val filename = cachePath + "/${System.currentTimeMillis()}_mpv_screenshot_tmp.png"
         val subtitleFlag = if (showSubtitles) "subtitles" else "video"
 
-        MPVLib.command(arrayOf("screenshot-to-file", filename, subtitleFlag))
+        mpv.command("screenshot-to-file", filename, subtitleFlag)
         val tempFile = File(filename).takeIf { it.exists() } ?: return null
         val newFile = File("$cachePath/mpv_screenshot.png")
 
@@ -2199,12 +2201,12 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 }
 
-fun CustomButton.execute() {
-    MPVLib.command(arrayOf("script-message", "call_button_$id"))
+fun CustomButton.execute(mpv: MPV) {
+    mpv.command("script-message", "call_button_$id")
 }
 
-fun CustomButton.executeLongPress() {
-    MPVLib.command(arrayOf("script-message", "call_button_${id}_long"))
+fun CustomButton.executeLongPress(mpv: MPV) {
+    mpv.command("script-message", "call_button_${id}_long")
 }
 
 fun Float.normalize(inMin: Float, inMax: Float, outMin: Float, outMax: Float): Float {

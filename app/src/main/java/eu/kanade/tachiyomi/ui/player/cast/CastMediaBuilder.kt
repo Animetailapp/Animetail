@@ -57,7 +57,7 @@ class CastMediaBuilder(
             .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
             .addMetadata(video)
             .addTracks(video)
-            .setStreamDuration((player.duration ?: 0).toLong() * 1000)
+            .setStreamDuration((viewModel.mpv.getPropertyInt("duration") ?: 0).toLong() * 1000)
             .build()
     }
 
