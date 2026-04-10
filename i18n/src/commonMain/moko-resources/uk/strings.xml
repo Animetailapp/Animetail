@@ -753,7 +753,7 @@
     <string name="label_extension_repos">Репозиторії розширень</string>
     <string name="error_repo_exists">Цей репозиторій вже існує!</string>
     <string name="label_add_repo_input">Посилання на репозиторій</string>
-    <string name="action_add_repo_message">Додати додаткові репозиторії до Mihon. Це повинні бути посилання які закінчуються на \"index.min.json\".</string>
+    <string name="action_add_repo_message">Додати додаткові репозиторії до Animetail. Це повинні бути посилання які закінчуються на \"index.min.json\".</string>
     <string name="manga_interval_expected_update">Нові глави передбачено будуть випущені приблизно в %1$s, перевіряючи кожні %2$s.</string>
     <string name="onboarding_storage_help_info">Оновлюєтесь з попередньої версії і не впевнені яку обрати? Перегляньте гайд по сховищу для додаткової інформації.</string>
     <string name="onboarding_storage_help_action">Гайд по сховищу</string>

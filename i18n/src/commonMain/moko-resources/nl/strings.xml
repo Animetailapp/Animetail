@@ -773,7 +773,7 @@
     <string name="ext_permission_install_apps_warning">Er zijn rechten nodig om extensies te installeren. Tik hier om deze toe te staan.</string>
     <string name="action_add_repo">Repo toevoegen</string>
     <string name="label_add_repo_input">Repo URL</string>
-    <string name="action_add_repo_message">Voeg aanvullende repo\'s toe aan Mihon. Dit moet een URL zijn die eindigt op “index.min.json”.</string>
+    <string name="action_add_repo_message">Voeg aanvullende repo\'s toe aan Animetail. Dit moet een URL zijn die eindigt op “index.min.json”.</string>
     <string name="invalid_repo_name">Ongeldige repo URL</string>
     <string name="no_location_set">Geen opslaglocatie ingesteld</string>
     <string name="action_add_anyway">Toch toevoegen</string>
