@@ -394,7 +394,6 @@
     <string name="unknown_author">Невідомий автор</string>
     <string name="requires_app_restart">Потрібен перезапуск застосунку, щоб зміни вступили в дію</string>
     <string name="label_network">Мережа</string>
-    <string name="updated_version">Оновлено до v%1$s</string>
     <string name="whats_new">Що новенького</string>
     <string name="download_insufficient_space">Не вдалось завантажити розділи через нестачу місця в сховищі</string>
     <string name="action_global_search_query">Шукати \"%1$s\" глобально</string>
@@ -539,7 +538,7 @@
     <string name="pref_verbose_logging_summary">Записувати докладні журнали до системного журналу (знижує продуктивність застосунку)</string>
     <string name="notification_size_warning">Попередження: великі оновлення можуть призвести до сповільнення джерел або збільшити використання батареї. Тицьніть задля подробиць.</string>
     <string name="channel_app_updates">Оновлення застосунку</string>
-    <string name="download_queue_size_warning">Попередження: великий об\'єм завантажень може призвести до сповільнення роботи джерел та/або блокуванню Mihon.</string>
+    <string name="download_queue_size_warning">Попередження: великий об\'єм завантажень може призвести до сповільнення роботи джерел та/або блокуванню Animetail.</string>
     <string name="ext_update_all">Оновити все</string>
     <string name="backup_info">Ви повинні зберігати декілька резервних копій в інших місцях. Резервні копії можуть містити конфіденційні дані, включно зі збереженими паролями; будьте обережні, якщо ділитеся ними.</string>
     <string name="label_warning">Попередження</string>
@@ -562,7 +561,6 @@
     <string name="pref_update_only_started">Пропустити непочаті глави</string>
     <string name="action_move_to_top_all_for_series">Перемістити серію на початок</string>
     <string name="rotation_reverse_portrait">Портретна навпаки</string>
-    <string name="notification_update_error">%1$d оновлення(нь) не вдалось</string>
     <string name="skipped_reason_completed">Пропущено, оскільки серія завершена</string>
     <string name="skipped_reason_not_caught_up">Пропущено через те, що є непрочитані розділи</string>
     <string name="skipped_reason_not_started">Пропущено, оскільки серія не почата</string>
@@ -755,7 +753,7 @@
     <string name="label_extension_repos">Репозиторії розширень</string>
     <string name="error_repo_exists">Цей репозиторій вже існує!</string>
     <string name="label_add_repo_input">Посилання на репозиторій</string>
-    <string name="action_add_repo_message">Додати додаткові репозиторії до Mihon. Це повинні бути посилання які закінчуються на \"index.min.json\".</string>
+    <string name="action_add_repo_message">Додати додаткові репозиторії до Animetail. Це повинні бути посилання які закінчуються на \"index.min.json\".</string>
     <string name="manga_interval_expected_update">Нові глави передбачено будуть випущені приблизно в %1$s, перевіряючи кожні %2$s.</string>
     <string name="onboarding_storage_help_info">Оновлюєтесь з попередньої версії і не впевнені яку обрати? Перегляньте гайд по сховищу для додаткової інформації.</string>
     <string name="onboarding_storage_help_action">Гайд по сховищу</string>

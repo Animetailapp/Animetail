@@ -263,6 +263,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                             |large
                         |}
                         |format
+                        |countryOfOrigin
                         |status
                         |chapters
                         |description

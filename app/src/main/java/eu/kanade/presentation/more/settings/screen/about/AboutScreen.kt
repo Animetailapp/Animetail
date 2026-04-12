@@ -3,6 +3,7 @@ package eu.kanade.presentation.more.settings.screen.about
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,7 @@ import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import eu.kanade.presentation.util.LocalBackPress
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.BuildConfig
+import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
 import eu.kanade.tachiyomi.data.updater.RELEASE_URL
 import eu.kanade.tachiyomi.ui.more.NewUpdateScreen
@@ -82,7 +84,9 @@ object AboutScreen : Screen() {
                 contentPadding = contentPadding,
             ) {
                 item {
-                    LogoHeader()
+                    LogoHeader(
+                        iconPadding = PaddingValues(vertical = 56.dp),
+                    )
                 }
 
                 item {
@@ -184,7 +188,7 @@ object AboutScreen : Screen() {
                         LinkIcon(
                             label = "Discord",
                             icon = CustomIcons.Discord,
-                            url = "https://discord.gg/wPRFW6ccDE",
+                            url = Constants.URL_DISCORD,
                         )
                         LinkIcon(
                             label = "GitHub",

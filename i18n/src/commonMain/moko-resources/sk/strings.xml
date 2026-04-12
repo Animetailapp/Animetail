@@ -101,7 +101,7 @@
     <string name="untrusted_extension">Nedôveryhodné rozšírenie</string>
     <string name="untrusted_extension_message">Toto rozšírenie bolo podpísané nedôveryhodným certifikátom a nebolo aktivované.
 \n
-\nŠkodlivé rozšírenie môže čítať všetky prihlasovacie údaje uložené v Mihon alebo spúšťať ľubovoľný kód.
+\nŠkodlivé rozšírenie môže čítať všetky prihlasovacie údaje uložené v Animetail alebo spúšťať ľubovoľný kód.
 \n
 \nDôverovaním tohto certifikátu akceptujete tieto riziká.</string>
     <string name="pref_fullscreen">Na celú obrazovku</string>
@@ -415,7 +415,7 @@
     <string name="error_sharing_cover">Chyba pri zdieľaní obalu</string>
     <string name="loader_not_implemented_error">Zdroj sa nenašiel</string>
     <string name="empty_screen">No, toto je trápne</string>
-    <string name="information_webview_required">WebView je potrebné pre Mihon</string>
+    <string name="information_webview_required">WebView je potrebné pre Animetail</string>
     <string name="popular">Populárne</string>
     <string name="reading_list">Zoznam čítania</string>
     <string name="track_finished_reading_date">Dátum ukončenia</string>
@@ -536,7 +536,6 @@
     <string name="tapping_inverted_horizontal">Horizontálne</string>
     <string name="disabled_nav">Zakázané</string>
     <string name="pref_remove_exclude_categories">Vylúčené kategórie</string>
-    <string name="updated_version">Aktualizované na v%1$s</string>
     <string name="label_downloaded_only">Iba stiahnuté</string>
     <string name="wish_list">Zoznam prianí</string>
     <string name="remove_manga">Chystáte sa odstrániť \"%s\" zo svojej knižnice</string>
@@ -602,9 +601,8 @@
     <string name="pref_clear_webview_data">Vymazanie údajov WebView</string>
     <string name="webview_data_deleted">Údaje WebView boli vymazané</string>
     <string name="manga_info_expand">Viac</string>
-    <string name="download_queue_size_warning">Upozornenie: Veľké hromadné sťahovanie môže viesť k spomaleniu zdrojov a/alebo blokovaniu Mihon. Klepnutím sa dozviete viac.</string>
+    <string name="download_queue_size_warning">Upozornenie: Veľké hromadné sťahovanie môže viesť k spomaleniu zdrojov a/alebo blokovaniu Animetail. Klepnutím sa dozviete viac.</string>
     <string name="notification_size_warning">Veľké aktualizácie poškodzujú zdroje a môžu viesť k pomalším aktualizáciám a tiež k zvýšeniu spotreby batérie. Klepnutím sa dozviete viac.</string>
-    <string name="notification_update_error">Zlyhané aktualizácie: %1$d</string>
     <string name="creating_backup_error">Zálohovanie zlyhalo</string>
     <string name="action_track">Sledovať</string>
     <string name="website">Webová stránka</string>
@@ -664,7 +662,6 @@
     <string name="label_upcoming">Nadchádzajúce</string>
     <string name="action_replace_repo">Nahradiť</string>
     <string name="action_bar_up_description">Navigovať hore</string>
-    <string name="label_donate">Prispieť finančne</string>
     <string name="label_auto">Auto</string>
     <string name="action_filter_interval_custom">Vlastná frekvencia aktualizácie</string>
     <string name="action_sort_tracker_score">Skóre na sledovači</string>

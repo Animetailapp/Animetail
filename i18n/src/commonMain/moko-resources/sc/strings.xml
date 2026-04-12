@@ -392,7 +392,6 @@
     <string name="pref_read_with_tapping_inverted">Fùrria sas zonas de tocu</string>
     <string name="unknown_status">Istadu disconnotu</string>
     <string name="unknown_author">Autore disconnotu</string>
-    <string name="updated_version">Agiornadu a v%1$s</string>
     <string name="whats_new">Ite b\'at de nou</string>
     <string name="download_insufficient_space">Iscarrigamentu de sos capìtulos fallidu pro neghe de su pagu ispàtziu lìberu in su discu</string>
     <string name="action_global_search_query">Chirca \"%1$s\" globalmente</string>
@@ -541,7 +540,7 @@
     <string name="notification_size_warning">Sos agiornamentos mannos diant pòdere fàghere dannu a sas fontes e causare agiornamentos prus lentos e fintzas un\'impreu de sa bateria prus mannu. Toca pro nde ischire de prus.</string>
     <string name="update_72hour">Cada 3 dies</string>
     <string name="connected_to_wifi">Petzi cun su Wi-Fi</string>
-    <string name="download_queue_size_warning">Dae cara: sos iscarrigamentos de massa mannos diant pòdere rallentare sas fontes e/o blocare Mihon. Toca pro nde ischire de prus.</string>
+    <string name="download_queue_size_warning">Dae cara: sos iscarrigamentos de massa mannos diant pòdere rallentare sas fontes e/o blocare Animetail. Toca pro nde ischire de prus.</string>
     <string name="ext_update_all">Agiorna totu</string>
     <string name="channel_app_updates">Agiornamentos de s\'aplicatzione</string>
     <string name="clear_database_source_item_count">%1$d elementos chi non sunt in sa biblioteca in sa base de datos</string>
@@ -564,7 +563,6 @@
     <string name="skipped_reason_not_caught_up">Brincadu ca bi sunt capìtulos non lèghidos</string>
     <string name="skipped_reason_not_started">Brincadu ca non bi sunt capìtulos lèghidos</string>
     <string name="learn_more">Toca pro àteras informatziones</string>
-    <string name="notification_update_error">%1$d agiornamentu(os) fallidu(os)</string>
     <string name="rotation_reverse_portrait">Verticale a s\'imbesse</string>
     <string name="action_move_to_top_all_for_series">Move sa sèrie cara a pitzos</string>
     <string name="disabled_nav">Disabilitadu</string>
@@ -779,7 +777,7 @@
     <string name="pref_library_update_smart_update">Agiornamentu inteligente</string>
     <string name="action_add_repo">Annanghe unu depòsitu</string>
     <string name="label_add_repo_input">URL de su depòsitu</string>
-    <string name="action_add_repo_message">Annanghe depòsitos additzionales a Mihon. Custu diat dèpere èssere un\'URL chi acabbat cun \"index.min.json\".</string>
+    <string name="action_add_repo_message">Annanghe depòsitos additzionales a Animetail. Custu diat dèpere èssere un\'URL chi acabbat cun \"index.min.json\".</string>
     <string name="private_settings">Include impostatziones sensìbiles ( a es. getones de intrada a sos arrastadores)</string>
     <string name="manga_interval_expected_update_soon">Luego</string>
     <string name="action_add_anyway">Annanghe su matessi</string>

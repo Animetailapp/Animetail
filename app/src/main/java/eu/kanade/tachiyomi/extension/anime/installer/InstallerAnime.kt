@@ -159,7 +159,7 @@ abstract class InstallerAnime(private val service: Service) {
         /**
          * Attempts to cancel the installation entry for the provided download ID.
          *
-         * @param downloadId Download ID as known by [ExtensionManager]
+         * @param downloadId Download ID as known by [AnimeExtensionManager]
          */
         fun cancelInstallQueue(context: Context, downloadId: Long) {
             val intent = Intent(ACTION_CANCEL_QUEUE)

@@ -10,16 +10,27 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
+<<<<<<< HEAD
 ## [Unreleased
 
 ### Fixed
 - Bump mpv ([@Secozzi](https://github.com/Secozzi)) ([#144](https://github.com/quickdesh/Animiru/pull/144))
+=======
+## [Unreleased]
+### Added
+- Add dedicated "Support Us" screen ([@AntsyLich](https://github.com/AntsyLich)) ([#3200](https://github.com/mihonapp/mihon/pull/3200))
+>>>>>>> 50b0ccb92 (Add dedicated "Support Us" screen (#3200))
 
 ### Changed
 - Don't prompt users to enable Google Play services if disabled or unavailable ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3152](https://github.com/mihonapp/mihon/pull/3152))
+- Make "Support Us" more prominent in More screen ([@AntsyLich](https://github.com/AntsyLich)) ([#3196](https://github.com/mihonapp/mihon/pull/3196))
 
 ### Improved
 - Show informative error when trying to add unapproved titles to list on MAL ([@MajorTanya](https://github.com/MajorTanya)) ([#3155](https://github.com/mihonapp/mihon/pull/3155))
+- Show AniList publishing type based on country of origin ([@zweimach](https://github.com/zweimach)) ([#3100](https://github.com/mihonapp/mihon/pull/3100))
+
+### Fixed
+- Fix app trying to split long strip when not needed ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3121](https://github.com/mihonapp/mihon/pull/3121))
 
 ## [v0.19.7] - 2026-03-23
 Same as v0.19.6

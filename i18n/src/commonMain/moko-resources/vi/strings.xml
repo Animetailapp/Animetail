@@ -296,7 +296,7 @@
     <string name="pref_skip_filtered_chapters">Bỏ qua các chương đã lọc</string>
     <string name="filter_mode_screen">Màn hình</string>
     <string name="pref_cutout_short">Hiển thị nội dung ở phần rìa</string>
-    <string name="obsolete_extension_message">Phần mở rộng này không khả dụng. Nó có thể không chạy và có thể gây ra lỗi với Mihon. Kiến nghị nên Gỡ cài đặt.</string>
+    <string name="obsolete_extension_message">Phần mở rộng này không khả dụng. Nó có thể không chạy và có thể gây ra lỗi với Animetail. Kiến nghị nên Gỡ cài đặt.</string>
     <string name="ext_obsolete">Lỗi thời</string>
     <string name="ext_updates_pending">Đang chờ cập nhật</string>
     <string name="pref_category_library_update">Cập nhật toàn bộ</string>
@@ -386,7 +386,7 @@
     <string name="channel_errors">Lỗi</string>
     <string name="channel_complete">Hoàn thành</string>
     <string name="channel_progress">Quá trình</string>
-    <string name="information_webview_required">Mihon yêu cầu phải có WebView</string>
+    <string name="information_webview_required">Animetail yêu cầu phải có WebView</string>
     <string name="update_check_eol">Phiên bản Android này không còn được hỗ trợ</string>
     <string name="notification_chapters_multiple">Chương %1$s</string>
     <string name="notification_chapters_single_and_more">Chương %1$s và thêm %2$d</string>
@@ -418,7 +418,6 @@
     <string name="tabs_header">Mục</string>
     <string name="downloaded_only_summary">Lọc tất cả truyện trong thư viện</string>
     <string name="notification_incognito_text">Tắt chế độ ẩn danh</string>
-    <string name="updated_version">Được cập nhật đến phiên bản v%1$s</string>
     <string name="check_for_updates">Kiểm tra cập nhật</string>
     <string name="licenses">Mở giấy phép nguồn mở</string>
     <string name="whats_new">Có gì mới</string>
@@ -563,7 +562,6 @@
     <string name="pref_navigate_pan">Xoay ảnh rộng</string>
     <string name="action_display_cover_only_grid">Lưới chỉ mỗi bìa</string>
     <string name="rotation_reverse_portrait">Đảo ngược chân dung</string>
-    <string name="notification_update_error">%1$d cập nhật thất bại</string>
     <string name="skipped_reason_completed">Đã bỏ qua vì bộ truyện đã hoàn thành</string>
     <string name="skipped_reason_not_caught_up">Đã bỏ qua vì vẫn còn chương chưa đọc</string>
     <string name="skipped_reason_not_started">Đã bỏ qua vì chưa chương được đọc</string>
@@ -901,7 +899,6 @@
     <string name="migrationListScreen.migrateDialog.cancelLabel">Hủy bỏ</string>
     <string name="migrationListScreen.progressDialog.cancelLabel">Hủy bỏ</string>
     <string name="migrationListScreen.matchWithoutChapterToast">Không tìm thấy chương nào, mục này không thể được sử dụng để di chuyển</string>
-    <string name="label_donate">Quyên góp</string>
     <string name="pref_display_images_description">Hiển thị hình ảnh trong mô tả manga</string>
     <string name="pref_disallow_non_ascii_filenames">Không cho phép tên tệp không phải định dạng ASCII</string>
     <string name="pref_disallow_non_ascii_filenames_details">Đảm bảo khả năng tương thích với một số phương tiện lưu trữ nhất định không hỗ trợ Unicode. Khi tính năng này được bật, bạn sẽ cần đổi tên thủ công các thư mục nguồn và manga bằng cách thay thế các ký tự không phải ASCII bằng cách biểu diễn thập lục phân UTF-8 chữ thường của chúng. Các tập tin chương không cần phải đổi tên.</string>

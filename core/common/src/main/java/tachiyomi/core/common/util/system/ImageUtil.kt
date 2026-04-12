@@ -254,8 +254,11 @@ object ImageUtil {
         imageSource: BufferedSource,
     ): Boolean {
         val options = extractImageOptions(imageSource)
-
-        return (options.outHeight / options.outWidth) > 3
+        return TallImageSplitCalculator.shouldSplit(
+            imageWidth = options.outWidth,
+            imageHeight = options.outHeight,
+            optimalImageHeight = optimalImageHeight,
+        )
     }
 
     /**
@@ -285,7 +288,6 @@ object ImageUtil {
         val options = extractImageOptions(imageSource).apply {
             inJustDecodeBounds = false
         }
-
         val splitDataList = options.splitData
 
         return try {
@@ -332,8 +334,7 @@ object ImageUtil {
             val imageHeight = outHeight
             val imageWidth = outWidth
 
-            // -1 so it doesn't try to split when imageHeight = optimalImageHeight
-            val partCount = (imageHeight - 1) / optimalImageHeight + 1
+            val partCount = TallImageSplitCalculator.calculatePartCount(imageHeight, optimalImageHeight)
             val optimalSplitHeight = imageHeight / partCount
 
             logcat {

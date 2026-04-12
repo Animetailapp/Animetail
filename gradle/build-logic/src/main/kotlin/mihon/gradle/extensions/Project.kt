@@ -9,6 +9,7 @@ import org.gradle.api.plugins.PluginManager
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.the
 import org.gradle.kotlin.dsl.withType
 
@@ -26,6 +27,12 @@ internal fun Project.android(block: CommonExtension<*, *, *, *, *, *>.() -> Unit
 }
 
 fun Project.configureTest() {
+    configurations.findByName("testRuntimeOnly")?.let { testRuntimeOnly ->
+        dependencies {
+            add(testRuntimeOnly.name, libs.junit.platform.launcher)
+        }
+    }
+
     tasks.withType<Test> {
         useJUnitPlatform()
         testLogging {
