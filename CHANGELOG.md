@@ -10,15 +10,11 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
-## [v0.19.9] - 2026-04-12
-### Fixed
-- Regression with installing/updating extension ([@AntsyLich](https://github.com/AntsyLich))
-
-### Fixed
-- Bump mpv ([@Secozzi](https://github.com/Secozzi)) ([#144](https://github.com/quickdesh/Animiru/pull/144))
-## [Unreleased]
+## [v0.19.9.0] - 2026-04-12
 ### Added
+- MPV: Implement MpvConfig for file management and custom button setup ([#375](https://github.com/Dark25/animetail2/pull/375))
 - Add dedicated "Support Us" screen ([@AntsyLich](https://github.com/AntsyLich)) ([#3200](https://github.com/mihonapp/mihon/pull/3200))
+- One time popup asking for donation from long time users ([@AntsyLich](https://github.com/AntsyLich)) ([#3203](https://github.com/mihonapp/mihon/pull/3203))
 
 ### Changed
 - Don't prompt users to enable Google Play services if disabled or unavailable ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3152](https://github.com/mihonapp/mihon/pull/3152))
@@ -29,7 +25,17 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Show AniList publishing type based on country of origin ([@zweimach](https://github.com/zweimach)) ([#3100](https://github.com/mihonapp/mihon/pull/3100))
 
 ### Fixed
+- Fix AniList user list item fetch erroring ([@AntsyLich](https://github.com/AntsyLich)) ([#3220](https://github.com/mihonapp/mihon/pull/3220))
 - Fix app trying to split long strip when not needed ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3121](https://github.com/mihonapp/mihon/pull/3121))
+- Fix regression with installing/updating extensions ([@AntsyLich](https://github.com/AntsyLich))
+
+### Other
+- Translations update from Hosted Weblate ([#3141](https://github.com/mihonapp/mihon/pull/3141), [#3222](https://github.com/mihonapp/mihon/pull/3222))
+- Update aboutLibraries to v14.0.1
+- Update kotlinx.serialization to v1.11.0
+- Update moko.resources to v0.26.3
+- Update Compose BOM to v2026.04.00
+- Update Firebase BOM to v34.12.0
 
 ## [v0.19.7] - 2026-03-23
 Same as v0.19.6
