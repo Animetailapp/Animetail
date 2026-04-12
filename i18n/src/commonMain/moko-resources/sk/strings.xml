@@ -415,7 +415,7 @@
     <string name="error_sharing_cover">Chyba pri zdieľaní obalu</string>
     <string name="loader_not_implemented_error">Zdroj sa nenašiel</string>
     <string name="empty_screen">No, toto je trápne</string>
-    <string name="information_webview_required">WebView je potrebné pre Mihon</string>
+    <string name="information_webview_required">WebView je potrebné pre Animetail</string>
     <string name="popular">Populárne</string>
     <string name="reading_list">Zoznam čítania</string>
     <string name="track_finished_reading_date">Dátum ukončenia</string>

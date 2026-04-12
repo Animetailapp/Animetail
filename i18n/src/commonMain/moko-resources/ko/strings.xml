@@ -93,7 +93,7 @@
     <string name="ext_untrusted">신뢰되지않음</string>
     <string name="ext_uninstall">삭제</string>
     <string name="untrusted_extension">신뢰할 수 없는 확장 앱</string>
-    <string name="untrusted_extension_message">일부 악의적인 확장 앱은 Mihon에 저장된 로그인 정보를 읽거나 임의의 코드를 실행할 수도 있습니다.
+    <string name="untrusted_extension_message">일부 악의적인 확장 앱은 Animetail에 저장된 로그인 정보를 읽거나 임의의 코드를 실행할 수도 있습니다.
 \n
 \n이 확장 앱을 신뢰하면 이러한 위험에 노출될 수 있습니다.</string>
     <string name="pref_fullscreen">전체화면</string>

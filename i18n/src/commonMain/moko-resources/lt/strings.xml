@@ -350,7 +350,7 @@
     <string name="notification_first_add_to_library">Prieš atlikdami šį veiksmą, pridėkite įrašą į savo biblioteką</string>
     <string name="skipped_reason_not_started">Praleista, nes nėra perskaitytų skyrių</string>
     <string name="information_cloudflare_bypass_failure">Nepavyko apeiti \"Cloudflare\"</string>
-    <string name="information_webview_required">\"WebView\" reikalingas \"Mihon\"</string>
+    <string name="information_webview_required">\"WebView\" reikalingas \"Animetail\"</string>
     <string name="loader_not_implemented_error">Šaltinis nerastas</string>
     <string name="migration_selection_prompt">Pasirinkite šaltinį, iš kurio norite perkelti</string>
     <string name="migrate">Perkelti</string>
@@ -477,7 +477,7 @@
     <string name="download_notifier_text_only_wifi">Nėra „Wi-Fi“ ryšio</string>
     <string name="channel_progress">Progresas</string>
     <string name="backup_in_progress">Atsarginė kopija jau kuriama</string>
-    <string name="download_queue_size_warning">Įspėjimas: dėl didelių masinių atsisiuntimų šaltiniai gali tapti lėtesni ir (arba) jie blokuoti \"Mihon\". Bakstelėkite , jei norite sužinoti daugiau.</string>
+    <string name="download_queue_size_warning">Įspėjimas: dėl didelių masinių atsisiuntimų šaltiniai gali tapti lėtesni ir (arba) jie blokuoti \"Animetail\". Bakstelėkite , jei norite sužinoti daugiau.</string>
     <string name="pref_disable_battery_optimization">Išjungti akumuliatoriaus optimizavimą</string>
     <string name="restore_completed">Atkūrimas baigtas</string>
     <string name="restore_duration">%1$02d min, %2$02d sek</string>

@@ -75,7 +75,7 @@
     <string name="getting_started_guide">Udhëzues për fillimin</string>
     <string name="information_no_entries_found">Nuk u gjet asnjë element në këtë kategori</string>
     <string name="information_empty_category">Nuk ke kategori. Prekni butonin plus për të krijuar një për organizimin e bibliotekës tuaj.</string>
-    <string name="information_webview_required">WebView kërkohet për Mihon</string>
+    <string name="information_webview_required">WebView kërkohet për Animetail</string>
     <string name="information_cloudflare_bypass_failure">Dështoi të anashkalojë Cloudflare</string>
     <string name="information_empty_category_dialog">Nuk ke ende asnjë kategori.</string>
     <string name="download_notifier_download_paused">Shkarkimet u ndërprenë</string>

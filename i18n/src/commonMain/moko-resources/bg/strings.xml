@@ -300,7 +300,7 @@
     <string name="channel_ext_updates">Ъпдейти на разширенията</string>
     <string name="channel_new_chapters">Нови глави</string>
     <string name="information_webview_outdated">Моля, обновете WebView за по-добра съвместимост</string>
-    <string name="information_webview_required">WebView е необходим за Mihon</string>
+    <string name="information_webview_required">WebView е необходим за Animetail</string>
     <string name="information_cloudflare_bypass_failure">Грешка при минаването през Cloudflare</string>
     <string name="notification_chapters_multiple">Глави %1$s</string>
     <string name="notification_chapters_single_and_more">Глава %1$s и %2$d още</string>

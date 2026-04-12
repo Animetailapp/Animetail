@@ -440,6 +440,6 @@
     <string name="label_local">Lokal</string>
     <string name="pref_appearance_summary">Tema, format sa petsa ug panahon</string>
     <string name="action_not_now">Dili karon</string>
-    <string name="information_webview_required">Gikinahanlan ang WebView alang sa Mihon</string>
+    <string name="information_webview_required">Gikinahanlan ang WebView alang sa Animetail</string>
     <string name="information_required_plain">*gikinahanlan</string>
 </resources>
