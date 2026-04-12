@@ -10,16 +10,15 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
-<<<<<<< HEAD
-## [Unreleased
+## [v0.19.9] - 2026-04-12
+### Fixed
+- Regression with installing/updating extension ([@AntsyLich](https://github.com/AntsyLich))
 
 ### Fixed
 - Bump mpv ([@Secozzi](https://github.com/Secozzi)) ([#144](https://github.com/quickdesh/Animiru/pull/144))
-=======
 ## [Unreleased]
 ### Added
 - Add dedicated "Support Us" screen ([@AntsyLich](https://github.com/AntsyLich)) ([#3200](https://github.com/mihonapp/mihon/pull/3200))
->>>>>>> 50b0ccb92 (Add dedicated "Support Us" screen (#3200))
 
 ### Changed
 - Don't prompt users to enable Google Play services if disabled or unavailable ([@leodyversemilla07](https://github.com/leodyversemilla07)) ([#3152](https://github.com/mihonapp/mihon/pull/3152))

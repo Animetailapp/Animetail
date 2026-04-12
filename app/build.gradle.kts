@@ -19,8 +19,8 @@ android {
     defaultConfig {
         applicationId = "com.dark.animetailv2"
 
-        versionCode = 134
-        versionName = "0.19.7.0"
+        versionCode = 135
+        versionName = "0.19.9.0"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getLatestCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getLatestCommitSha()}\"")
