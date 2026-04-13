@@ -8,7 +8,7 @@ data class ALSearchItem(
     val title: ALItemTitle,
     val coverImage: ItemCover,
     val description: String?,
-    val format: String,
+    val format: String?,
     val status: String?,
     val startDate: ALFuzzyDate,
     val chapters: Long?,
@@ -23,8 +23,10 @@ data class ALSearchItem(
         title = title.userPreferred,
         imageUrl = coverImage.large,
         description = description,
-        format = if (format != "MANGA") {
+        format = if (format != null && format != "MANGA") {
             format.replace("_", "-")
+        } else if (format == null) {
+            "Unknown"
         } else {
             when (countryOfOrigin) {
                 "KR" -> "Manhwa"
@@ -44,7 +46,7 @@ data class ALSearchItem(
         title = title.userPreferred,
         imageUrl = coverImage.large,
         description = description,
-        format = format.replace("_", "-"),
+        format = format?.replace("_", "-") ?: "Unknown",
         publishingStatus = status ?: "",
         startDateFuzzy = startDate.toEpochMilli(),
         totalEpisodes = episodes ?: 0,
