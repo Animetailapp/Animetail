@@ -46,7 +46,7 @@ data class ALSearchItem(
         title = title.userPreferred,
         imageUrl = coverImage.large,
         description = description,
-        format = format?.replace("_", "-") ?: "Unknown",
+        format = format?.replace("_", "-") ?: "",
         publishingStatus = status ?: "",
         startDateFuzzy = startDate.toEpochMilli(),
         totalEpisodes = episodes ?: 0,
