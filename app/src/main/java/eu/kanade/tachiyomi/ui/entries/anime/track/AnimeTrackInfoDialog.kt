@@ -833,7 +833,11 @@ data class TrackServiceSearchScreen(
             mutableState.update { it.copy(seasonPickerData = SeasonPickerData(pendingTrack = item, isLoading = true)) }
             screenModelScope.launch {
                 val seasons = withIOContext {
-                    try { traktTracker.fetchShowSeasons(traktId) } catch (_: Exception) { emptyList() }
+                    try {
+                        traktTracker.fetchShowSeasons(traktId)
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
                 }
                 if (seasons.size <= 1) {
                     // Only one (or zero) seasons available — set episode count and register without picker.
