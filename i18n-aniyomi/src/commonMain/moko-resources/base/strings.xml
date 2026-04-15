@@ -582,4 +582,6 @@
     <string name="pref_download_fillermarked_items">Allow downloading of fillermarked episodes</string>
     <string name="show_episode_previews">Episode thumbnails</string>
     <string name="show_episode_summaries">Episode summaries</string>
+    <string name="trakt_select_season">Select Trakt season</string>
+    <string name="trakt_season_episodes">%1$s (%2$d episodes)</string>
 </resources>

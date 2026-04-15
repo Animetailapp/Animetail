@@ -332,6 +332,12 @@ class Trakt(
         }
     }
 
+    /**
+     * Fetch seasons for a given Trakt show, returned as (seasonNumber, episodeCount) pairs.
+     * Delegated to the API; called from the UI layer before showing the season picker.
+     */
+    fun fetchShowSeasons(traktId: Long): List<Pair<Int, Int>> = api.getShowSeasons(traktId)
+
     private fun TraktShow.toTrackSearch(): AnimeTrackSearch =
         createTrackSearch(ids.trakt, title, overview, images?.poster, ids.slug, isMovie = false)
 
@@ -408,12 +414,33 @@ class Trakt(
 
     private fun updateShowTrack(track: AnimeTrack): AnimeTrack {
         val traktId = track.remote_id
-        val (seasonParam, episodeParam) = resolveSeasonEpisode(track.last_episode_seen)
+        // If the tracking URL encodes a specific season (via ?season=N), use it directly so that
+        // episode numbers are interpreted relative to that season rather than deriving the season
+        // from the absolute cumulative episode count across all seasons.
+        val urlSeason = extractSeasonFromUrl(track.tracking_url)
+        val (seasonParam, episodeParam) = if (urlSeason != null) {
+            urlSeason to track.last_episode_seen.roundToInt().coerceAtLeast(0)
+        } else {
+            resolveSeasonEpisode(track.last_episode_seen)
+        }
         runCatching {
             api.updateShowEpisodeProgress(traktId, seasonParam, episodeParam)
         }
         syncRating(traktId, track.score, isMovie = false)
         return track
+    }
+
+    /**
+     * Extract an explicit season number encoded in the Trakt tracking URL as a `?season=N` query
+     * parameter. Returns null if the URL does not contain a season parameter.
+     */
+    private fun extractSeasonFromUrl(url: String): Int? {
+        return try {
+            val uri = android.net.Uri.parse(url)
+            uri.getQueryParameter("season")?.toIntOrNull()?.takeIf { it > 0 }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun resolveSeasonEpisode(lastSeen: Double): Pair<Int?, Int> {
