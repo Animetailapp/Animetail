@@ -556,6 +556,38 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
     }
 
     /**
+     * Fetch the list of seasons for a show from Trakt.
+     * Returns pairs of (seasonNumber, episodeCount) for numbered seasons only (season 0 / specials are excluded).
+     * Uses the public client so no authentication is required.
+     */
+    fun getShowSeasons(traktId: Long): List<Pair<Int, Int>> {
+        val request = Request.Builder()
+            .url("$baseUrl/shows/$traktId/seasons?extended=full")
+            .applyTraktHeaders(includeContentType = false)
+            .get()
+            .build()
+        val response = publicClient.newCall(request).execute()
+        val body = response.body.string()
+        return try {
+            val root = json.parseToJsonElement(body).jsonArray
+            root.mapNotNull { seasonEl ->
+                try {
+                    val seasonObj = seasonEl.jsonObject
+                    val seasonNum = seasonObj["number"]?.jsonPrimitive?.intOrNull ?: return@mapNotNull null
+                    if (seasonNum == 0) return@mapNotNull null // skip specials
+                    val count = seasonObj["episode_count"]?.jsonPrimitive?.intOrNull ?: 0
+                    if (count <= 0) return@mapNotNull null
+                    seasonNum to count
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    /**
      * Fetch movie metadata (title, overview, poster) from Trakt.
      */
     fun getMovieMetadata(traktId: Long): eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata? {

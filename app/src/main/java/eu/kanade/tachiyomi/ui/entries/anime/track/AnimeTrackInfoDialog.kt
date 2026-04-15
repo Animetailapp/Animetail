@@ -9,10 +9,14 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +60,7 @@ import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
+import eu.kanade.tachiyomi.data.track.trakt.Trakt
 import eu.kanade.tachiyomi.util.lang.convertEpochMillisZone
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import eu.kanade.tachiyomi.util.system.openInBrowser
@@ -78,6 +84,7 @@ import tachiyomi.domain.track.anime.interactor.DeleteAnimeTrack
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.domain.track.anime.model.AnimeTrack
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.material.AlertDialogContent
 import tachiyomi.presentation.core.components.material.padding
@@ -723,6 +730,12 @@ data class TrackServiceSearchScreen(
 
         val state by screenModel.state.collectAsState()
 
+        // Navigate back when the model signals that registration is complete.
+        val navigateBack = state.navigateBack
+        LaunchedEffect(navigateBack) {
+            if (navigateBack) navigator.pop()
+        }
+
         val textFieldState = rememberTextFieldState(initialQuery)
         AnimeTrackerSearch(
             state = textFieldState,
@@ -733,12 +746,22 @@ data class TrackServiceSearchScreen(
             onConfirmSelection = f@{ private: Boolean ->
                 val selected = state.selected ?: return@f
                 selected.private = private
-                screenModel.registerTracking(selected)
-                navigator.pop()
+                screenModel.requestSeasonPickerOrRegister(selected, private)
             },
             onDismissRequest = navigator::pop,
             supportsPrivateTracking = screenModel.supportsPrivateTracking,
         )
+
+        // Show Trakt season picker when the model requests it.
+        val seasonData = state.seasonPickerData
+        if (seasonData != null) {
+            TraktSeasonPickerDialog(
+                seasons = seasonData.seasons,
+                isLoading = seasonData.isLoading,
+                onSeasonSelected = screenModel::confirmSeasonSelection,
+                onDismissRequest = screenModel::dismissSeasonPicker,
+            )
+        }
     }
 
     private class Model(
@@ -788,14 +811,80 @@ data class TrackServiceSearchScreen(
             }
         }
 
+        /**
+         * For Trakt shows, fetches available seasons and shows the season picker.
+         * For other trackers or Trakt movies, registers immediately and signals navigation.
+         */
+        fun requestSeasonPickerOrRegister(item: AnimeTrackSearch, @Suppress("UNUSED_PARAMETER") isPrivate: Boolean) {
+            val traktTracker = tracker as? Trakt
+            if (traktTracker == null || item.total_episodes == 1L) {
+                // Not Trakt or it's a movie — register directly and navigate back.
+                registerTracking(item)
+                mutableState.update { it.copy(navigateBack = true) }
+                return
+            }
+            val traktId = item.remote_id
+            if (traktId == 0L) {
+                registerTracking(item)
+                mutableState.update { it.copy(navigateBack = true) }
+                return
+            }
+            // Show loading state in the season picker dialog while fetching seasons.
+            mutableState.update { it.copy(seasonPickerData = SeasonPickerData(pendingTrack = item, isLoading = true)) }
+            screenModelScope.launch {
+                val seasons = withIOContext {
+                    try {
+                        traktTracker.fetchShowSeasons(traktId)
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+                }
+                if (seasons.size <= 1) {
+                    // Only one (or zero) seasons available — set episode count and register without picker.
+                    val singleSeason = seasons.firstOrNull()
+                    if (singleSeason != null) {
+                        item.total_episodes = singleSeason.second.toLong()
+                    }
+                    registerTracking(item)
+                    mutableState.update { it.copy(seasonPickerData = null, navigateBack = true) }
+                } else {
+                    mutableState.update {
+                        it.copy(seasonPickerData = it.seasonPickerData?.copy(seasons = seasons, isLoading = false))
+                    }
+                }
+            }
+        }
+
+        /** Called when the user picks a season from the Trakt season picker dialog. */
+        fun confirmSeasonSelection(seasonNumber: Int, episodeCount: Int) {
+            val pendingTrack = mutableState.value.seasonPickerData?.pendingTrack ?: return
+            val baseUrl = pendingTrack.tracking_url.substringBefore("?")
+            pendingTrack.tracking_url = "$baseUrl?season=$seasonNumber"
+            pendingTrack.total_episodes = episodeCount.toLong()
+            registerTracking(pendingTrack)
+            mutableState.update { it.copy(seasonPickerData = null, navigateBack = true) }
+        }
+
+        fun dismissSeasonPicker() {
+            mutableState.update { it.copy(seasonPickerData = null) }
+        }
+
         fun updateSelection(selected: AnimeTrackSearch) {
             mutableState.update { it.copy(selected = selected) }
         }
+
+        data class SeasonPickerData(
+            val pendingTrack: AnimeTrackSearch,
+            val seasons: List<Pair<Int, Int>> = emptyList(),
+            val isLoading: Boolean = false,
+        )
 
         @Immutable
         data class State(
             val queryResult: Result<List<AnimeTrackSearch>>? = null,
             val selected: AnimeTrackSearch? = null,
+            val seasonPickerData: SeasonPickerData? = null,
+            val navigateBack: Boolean = false,
         )
     }
 }
@@ -902,4 +991,58 @@ private data class TrackerAnimeRemoveScreen(
             screenModelScope.launchNonCancellable { deleteTrack.await(animeId, serviceId) }
         }
     }
+}
+
+/**
+ * Dialog that lets users pick a specific Trakt season when tracking a multi-season show.
+ * Shows a loading spinner while seasons are being fetched, then displays a list of seasons.
+ *
+ * @param seasons List of (seasonNumber, episodeCount) pairs.
+ * @param isLoading Whether seasons are still loading from the network.
+ * @param onSeasonSelected Called with (seasonNumber, episodeCount) when the user picks a season.
+ * @param onDismissRequest Called when the user cancels the dialog.
+ */
+@Composable
+private fun TraktSeasonPickerDialog(
+    seasons: List<Pair<Int, Int>>,
+    isLoading: Boolean,
+    onSeasonSelected: (seasonNumber: Int, episodeCount: Int) -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(text = stringResource(AYMR.strings.trakt_select_season)) },
+        text = {
+            if (isLoading) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn {
+                    items(seasons) { (seasonNumber, episodeCount) ->
+                        val seasonLabel = stringResource(AYMR.strings.display_mode_season, seasonNumber.toString())
+                        val itemLabel = stringResource(AYMR.strings.trakt_season_episodes, seasonLabel, episodeCount)
+                        TextButton(
+                            onClick = { onSeasonSelected(seasonNumber, episodeCount) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = itemLabel,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(text = stringResource(MR.strings.action_cancel))
+            }
+        },
+    )
 }

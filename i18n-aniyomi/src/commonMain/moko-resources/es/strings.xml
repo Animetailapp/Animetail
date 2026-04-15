@@ -527,4 +527,6 @@
     <string name="pref_download_fillermarked_items">Permitir la descarga de episodios de relleno</string>
     <string name="show_episode_previews">Miniaturas de episodio</string>
     <string name="show_episode_summaries">Resúmenes de episodio</string>
+    <string name="trakt_select_season">Seleccionar temporada de Trakt</string>
+    <string name="trakt_season_episodes">%1$s (%2$d episodios)</string>
 </resources>
