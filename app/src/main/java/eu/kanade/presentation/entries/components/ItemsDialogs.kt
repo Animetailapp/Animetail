@@ -193,7 +193,7 @@ fun SetDateDialog(
             LocalDate.now()
         }
     }
-    val years = remember { (2000..LocalDate.now().year + 1).toList() }
+    val years = remember { (1900..LocalDate.now().year + 1).toList() }
     val months = remember { (1..12).toList() }
 
     var selectedYear by rememberSaveable { mutableIntStateOf(initialDate.year) }
