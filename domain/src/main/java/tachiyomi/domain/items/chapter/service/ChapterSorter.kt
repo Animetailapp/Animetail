@@ -25,6 +25,7 @@ fun getChapterSort(manga: Manga, sortDescending: Boolean = manga.sortDescending(
                 val d2 = c2.dateUploadOverride.takeIf { it > 0 } ?: c2.dateUpload
                 d2.compareTo(d1)
             }
+
             false -> { c1, c2 ->
                 val d1 = c1.dateUploadOverride.takeIf { it > 0 } ?: c1.dateUpload
                 val d2 = c2.dateUploadOverride.takeIf { it > 0 } ?: c2.dateUpload
