@@ -203,7 +203,7 @@ fun SetDateDialog(
     val daysInMonth = remember(selectedYear, selectedMonth) {
         YearMonth.of(selectedYear, selectedMonth).lengthOfMonth()
     }
-    if (selectedDay > daysInMonth) selectedDay = daysInMonth
+    val effectiveDay = selectedDay.coerceAtMost(daysInMonth)
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -236,7 +236,7 @@ fun SetDateDialog(
                 WheelTextPicker(
                     modifier = Modifier.weight(1f),
                     items = remember(daysInMonth) { (1..daysInMonth).map { it.toString() }.toImmutableList() },
-                    startIndex = (selectedDay - 1).coerceIn(0, daysInMonth - 1),
+                    startIndex = effectiveDay - 1,
                     size = DpSize(64.dp, 128.dp),
                     onSelectionChanged = { selectedDay = it + 1 },
                 )
@@ -255,7 +255,7 @@ fun SetDateDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                val millis = LocalDate.of(selectedYear, selectedMonth, selectedDay)
+                val millis = LocalDate.of(selectedYear, selectedMonth, effectiveDay)
                     .atStartOfDay(ZoneOffset.UTC)
                     .toInstant()
                     .toEpochMilli()
