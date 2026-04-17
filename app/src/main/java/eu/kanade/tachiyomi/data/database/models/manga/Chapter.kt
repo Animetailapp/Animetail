@@ -25,6 +25,8 @@ interface Chapter : SChapter, Serializable {
     var last_modified: Long
 
     var version: Long
+
+    var date_upload_override: Long
 }
 
 val Chapter.isRecognizedNumber: Boolean
@@ -47,6 +49,6 @@ fun Chapter.toDomainChapter(): DomainChapter? {
         scanlator = scanlator,
         lastModifiedAt = last_modified,
         version = version,
-        dateUploadOverride = 0,
+        dateUploadOverride = date_upload_override,
     )
 }

@@ -37,6 +37,7 @@ fun Chapter.toDbChapter(): DbChapter = ChapterImpl().also {
     it.last_page_read = lastPageRead.toInt()
     it.date_fetch = dateFetch
     it.date_upload = dateUpload
+    it.date_upload_override = dateUploadOverride
     it.chapter_number = chapterNumber.toFloat()
     it.source_order = sourceOrder.toInt()
     it.last_modified = lastModifiedAt
