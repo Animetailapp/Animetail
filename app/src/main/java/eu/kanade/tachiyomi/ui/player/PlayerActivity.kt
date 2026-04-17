@@ -703,7 +703,7 @@ class PlayerActivity : BaseActivity() {
         logcat(LogPriority.ERROR) { "Failed to load track: $url" }
     }
 
-    internal fun event(eventId: Int, @Suppress("unused") data: MPVNode) {
+    internal fun event(eventId: Int, data: MPVNode) {
         if (player.isExiting) return
         when (eventId) {
             MPV.mpvEvent.MPV_EVENT_FILE_LOADED -> {
@@ -713,6 +713,30 @@ class PlayerActivity : BaseActivity() {
             MPV.mpvEvent.MPV_EVENT_SEEK -> viewModel.isLoading.update { true }
 
             MPV.mpvEvent.MPV_EVENT_PLAYBACK_RESTART -> player.isExiting = false
+
+            MPV.mpvEvent.MPV_EVENT_END_FILE -> {
+                val errorNode = data.asMap()?.get("file_error") ?: return
+                var errorMessage = errorNode.asString() ?: "Error: File ended"
+
+                val httpError = playerObserver.httpError
+                if (!httpError.isNullOrEmpty()) {
+                    errorMessage += ": $httpError"
+                    playerObserver.httpError = null
+                }
+
+                logcat(LogPriority.ERROR) { errorMessage }
+                showToast(errorMessage)
+
+                viewModel.setCurrentVideoError()
+
+                if (playerPreferences.switchOnFailure().get()) {
+                    if (!viewModel.loadBestVideo()) {
+                        finish()
+                    }
+                } else {
+                    viewModel.setIsStopped(true)
+                }
+            }
         }
     }
 
