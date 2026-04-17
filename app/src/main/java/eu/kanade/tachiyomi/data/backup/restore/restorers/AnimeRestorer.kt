@@ -265,6 +265,7 @@ class AnimeRestorer(
                     episode.summary,
                     episode.previewUrl,
                     episode.fillermark,
+                    episode.dateUploadOverride,
                 )
             }
         }
@@ -292,6 +293,7 @@ class AnimeRestorer(
                     episodeId = episode.id,
                     version = episode.version,
                     isSyncing = 0,
+                    dateUploadOverride = episode.dateUploadOverride,
                 )
             }
         }

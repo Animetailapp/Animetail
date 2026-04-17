@@ -1,3 +1,17 @@
+DROP VIEW IF EXISTS episodestatsView;
+CREATE VIEW episodestatsView AS
+SELECT
+    episodes.anime_id,
+    count(*) AS total,
+    sum(seen) AS seenCount,
+    coalesce(max(CASE WHEN episodes.date_upload_override > 0 THEN episodes.date_upload_override ELSE episodes.date_upload END), 0) AS latestUpload,
+    coalesce(max(episodes.date_fetch), 0) AS fetchedAt,
+    sum(episodes.bookmark) AS bookmarkCount,
+    sum(episodes.fillermark) AS fillermarkCount
+FROM episodes
+GROUP BY episodes.anime_id;
+
+DROP VIEW IF EXISTS animeupdatesView;
 CREATE VIEW animeupdatesView AS
 SELECT
     animes._id AS animeId,
@@ -22,17 +36,3 @@ ON animes._id = episodes.anime_id
 WHERE favorite = 1
 AND date_fetch > date_added
 ORDER BY date_fetch DESC;
-
-getRecentAnimeUpdates:
-SELECT *
-FROM animeupdatesView
-WHERE dateUpload > :after
-LIMIT :limit;
-
-getUpdatesBySeenStatus:
-SELECT *
-FROM animeupdatesView
-WHERE seen = :seen
-AND dateUpload > :after
-
-LIMIT :limit;

@@ -27,6 +27,8 @@ interface Episode : SEpisode, Serializable {
     var last_modified: Long
 
     var version: Long
+
+    var date_upload_override: Long
 }
 
 val Episode.isRecognizedNumber: Boolean
@@ -53,5 +55,6 @@ fun Episode.toDomainEpisode(): DomainEpisode? {
         previewUrl = preview_url,
         lastModifiedAt = last_modified,
         version = version,
+        dateUploadOverride = date_upload_override,
     )
 }

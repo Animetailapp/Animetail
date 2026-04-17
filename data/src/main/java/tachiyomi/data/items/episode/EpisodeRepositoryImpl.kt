@@ -33,6 +33,7 @@ class EpisodeRepositoryImpl(
                         episode.summary,
                         episode.previewUrl,
                         episode.fillermark,
+                        episode.dateUploadOverride,
                     )
                     val lastInsertId = episodesQueries.selectLastInsertedRowId().executeAsOne()
                     episode.copy(id = lastInsertId)
@@ -74,6 +75,7 @@ class EpisodeRepositoryImpl(
                     summary = episodeUpdate.summary,
                     previewUrl = episodeUpdate.previewUrl,
                     fillermark = episodeUpdate.fillermark,
+                    dateUploadOverride = episodeUpdate.dateUploadOverride,
                 )
             }
         }
@@ -144,6 +146,7 @@ class EpisodeRepositoryImpl(
         summary: String?,
         previewUrl: String?,
         fillermark: Boolean,
+        dateUploadOverride: Long,
     ): Episode = Episode(
         id = id,
         animeId = animeId,
@@ -163,5 +166,6 @@ class EpisodeRepositoryImpl(
         previewUrl = previewUrl,
         lastModifiedAt = lastModifiedAt,
         version = version,
+        dateUploadOverride = dateUploadOverride,
     )
 }

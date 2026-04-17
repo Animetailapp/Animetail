@@ -40,6 +40,8 @@ class EpisodeImpl : Episode {
 
     override var version: Long = 0
 
+    override var date_upload_override: Long = 0
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false

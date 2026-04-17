@@ -31,6 +31,7 @@ data class BackupEpisode(
     @ProtoNumber(502) var summary: String? = null,
     @ProtoNumber(503) var previewUrl: String? = null,
 
+    @ProtoNumber(504) var dateUploadOverride: Long = 0,
 ) {
     fun toEpisodeImpl(): Episode {
         return Episode.create().copy(
@@ -50,6 +51,7 @@ data class BackupEpisode(
             sourceOrder = this@BackupEpisode.sourceOrder,
             lastModifiedAt = this@BackupEpisode.lastModifiedAt,
             version = this@BackupEpisode.version,
+            dateUploadOverride = this@BackupEpisode.dateUploadOverride,
         )
     }
 }
@@ -74,6 +76,7 @@ val backupEpisodeMapper = {
         summary: String?,
         previewUrl: String?,
         fillermark: Boolean,
+        dateUploadOverride: Long,
     ->
     BackupEpisode(
         url = url,
@@ -92,5 +95,6 @@ val backupEpisodeMapper = {
         sourceOrder = sourceOrder,
         lastModifiedAt = lastModifiedAt,
         version = version,
+        dateUploadOverride = dateUploadOverride,
     )
 }

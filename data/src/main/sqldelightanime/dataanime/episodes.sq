@@ -20,6 +20,7 @@ CREATE TABLE episodes(
     summary TEXT,
     preview_url TEXT,
     fillermark INTEGER AS Boolean NOT NULL,
+    date_upload_override INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY(anime_id) REFERENCES animes (_id)
     ON DELETE CASCADE
 );
@@ -90,8 +91,8 @@ SET is_syncing = 0
 WHERE is_syncing = 1;
 
 insert:
-INSERT INTO episodes(anime_id, url, name, scanlator, seen, bookmark, last_second_seen, total_seconds, episode_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing, summary, preview_url, fillermark)
-VALUES (:animeId, :url, :name, :scanlator, :seen, :bookmark, :lastSecondSeen, :totalSeconds, :episodeNumber, :sourceOrder, :dateFetch, :dateUpload, 0, :version, 0, :summary, :previewUrl, :fillermark);
+INSERT INTO episodes(anime_id, url, name, scanlator, seen, bookmark, last_second_seen, total_seconds, episode_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing, summary, preview_url, fillermark, date_upload_override)
+VALUES (:animeId, :url, :name, :scanlator, :seen, :bookmark, :lastSecondSeen, :totalSeconds, :episodeNumber, :sourceOrder, :dateFetch, :dateUpload, 0, :version, 0, :summary, :previewUrl, :fillermark, :dateUploadOverride);
 
 update:
 UPDATE episodes
@@ -111,7 +112,8 @@ SET anime_id = coalesce(:animeId, anime_id),
     is_syncing = coalesce(:isSyncing, is_syncing),
     summary = coalesce(:summary, summary),
     preview_url = coalesce(:previewUrl, preview_url),
-    fillermark = coalesce(:fillermark, fillermark)
+    fillermark = coalesce(:fillermark, fillermark),
+    date_upload_override = coalesce(:dateUploadOverride, date_upload_override)
 WHERE _id = :episodeId;
 
 selectLastInsertedRowId:

@@ -93,7 +93,7 @@ fun EpisodeListDialog(
                         episode.name
                     }
 
-                    val date = episode.date_upload
+                    val date = (episode.date_upload_override.takeIf { it > 0L } ?: episode.date_upload)
                         .takeIf { it > 0L }
                         ?.let {
                             LocalDate.ofInstant(

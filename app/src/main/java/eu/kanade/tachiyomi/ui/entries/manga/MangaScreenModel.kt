@@ -923,6 +923,19 @@ class MangaScreenModel(
      * Bookmarks the given list of chapters.
      * @param chapters the list of chapters to bookmark.
      */
+    fun showSetChapterDateDialog(chapters: List<Chapter>) {
+        updateSuccessState { it.copy(dialog = Dialog.SetChapterDate(chapters)) }
+    }
+
+    fun setChapterDateOverride(chapters: List<Chapter>, dateOverride: Long) {
+        screenModelScope.launchIO {
+            chapters
+                .map { ChapterUpdate(id = it.id, dateUploadOverride = dateOverride) }
+                .let { updateChapter.awaitAll(it) }
+        }
+        toggleAllSelection(false)
+    }
+
     fun bookmarkChapters(chapters: List<Chapter>, bookmarked: Boolean) {
         screenModelScope.launchIO {
             chapters
@@ -1190,6 +1203,7 @@ class MangaScreenModel(
             val initialSelection: ImmutableList<CheckboxState<Category>>,
         ) : Dialog
         data class DeleteChapters(val chapters: List<Chapter>) : Dialog
+        data class SetChapterDate(val chapters: List<Chapter>) : Dialog
         data class DuplicateManga(val manga: Manga, val duplicate: Manga) : Dialog
 
         // SY -->

@@ -18,6 +18,7 @@ data class EpisodeUpdate(
     val summary: String? = null,
     val previewUrl: String? = null,
     val version: Long? = null,
+    val dateUploadOverride: Long? = null,
 )
 
 fun Episode.toEpisodeUpdate(): EpisodeUpdate {
@@ -39,5 +40,6 @@ fun Episode.toEpisodeUpdate(): EpisodeUpdate {
         summary,
         previewUrl,
         version,
+        dateUploadOverride,
     )
 }

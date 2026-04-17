@@ -219,6 +219,7 @@ class MangaRestorer(
                     chapter.dateFetch,
                     chapter.dateUpload,
                     chapter.version,
+                    chapter.dateUploadOverride,
                 )
             }
         }
@@ -242,6 +243,7 @@ class MangaRestorer(
                     chapterId = chapter.id,
                     version = chapter.version,
                     isSyncing = 0,
+                    dateUploadOverride = chapter.dateUploadOverride,
                 )
             }
         }
