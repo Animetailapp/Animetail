@@ -20,8 +20,16 @@ fun getEpisodeSort(anime: Anime, sortDescending: Boolean = anime.sortDescending(
         }
 
         Anime.EPISODE_SORTING_UPLOAD_DATE -> when (sortDescending) {
-            true -> { e1, e2 -> e2.dateUpload.compareTo(e1.dateUpload) }
-            false -> { e1, e2 -> e1.dateUpload.compareTo(e2.dateUpload) }
+            true -> { e1, e2 ->
+                val d1 = e1.dateUploadOverride.takeIf { it > 0 } ?: e1.dateUpload
+                val d2 = e2.dateUploadOverride.takeIf { it > 0 } ?: e2.dateUpload
+                d2.compareTo(d1)
+            }
+            false -> { e1, e2 ->
+                val d1 = e1.dateUploadOverride.takeIf { it > 0 } ?: e1.dateUpload
+                val d2 = e2.dateUploadOverride.takeIf { it > 0 } ?: e2.dateUpload
+                d1.compareTo(d2)
+            }
         }
 
         Anime.EPISODE_SORTING_ALPHABET -> when (sortDescending) {

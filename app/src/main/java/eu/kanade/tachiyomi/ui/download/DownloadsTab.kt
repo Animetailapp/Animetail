@@ -315,7 +315,7 @@ data object DownloadsTab : Tab {
                             text = { Text(text = stringResource(MR.strings.action_newest)) },
                             onClick = {
                                 animeScreenModel.reorderQueue(
-                                    { it.download.episode.dateUpload },
+                                    { it.download.episode.let { e -> e.dateUploadOverride.takeIf { d -> d > 0 } ?: e.dateUpload } },
                                     true,
                                 )
                                 closeMenu()
@@ -325,7 +325,7 @@ data object DownloadsTab : Tab {
                             text = { Text(text = stringResource(MR.strings.action_oldest)) },
                             onClick = {
                                 animeScreenModel.reorderQueue(
-                                    { it.download.episode.dateUpload },
+                                    { it.download.episode.let { e -> e.dateUploadOverride.takeIf { d -> d > 0 } ?: e.dateUpload } },
                                     false,
                                 )
                                 closeMenu()
@@ -399,7 +399,7 @@ data object DownloadsTab : Tab {
                             text = { Text(text = stringResource(MR.strings.action_newest)) },
                             onClick = {
                                 mangaScreenModel.reorderQueue(
-                                    { it.download.chapter.dateUpload },
+                                    { it.download.chapter.let { c -> c.dateUploadOverride.takeIf { d -> d > 0 } ?: c.dateUpload } },
                                     true,
                                 )
                                 closeMenu()
@@ -409,7 +409,7 @@ data object DownloadsTab : Tab {
                             text = { Text(text = stringResource(MR.strings.action_oldest)) },
                             onClick = {
                                 mangaScreenModel.reorderQueue(
-                                    { it.download.chapter.dateUpload },
+                                    { it.download.chapter.let { c -> c.dateUploadOverride.takeIf { d -> d > 0 } ?: c.dateUpload } },
                                     false,
                                 )
                                 closeMenu()

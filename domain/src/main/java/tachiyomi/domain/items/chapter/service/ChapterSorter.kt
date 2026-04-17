@@ -20,8 +20,16 @@ fun getChapterSort(manga: Manga, sortDescending: Boolean = manga.sortDescending(
         }
 
         Manga.CHAPTER_SORTING_UPLOAD_DATE -> when (sortDescending) {
-            true -> { c1, c2 -> c2.dateUpload.compareTo(c1.dateUpload) }
-            false -> { c1, c2 -> c1.dateUpload.compareTo(c2.dateUpload) }
+            true -> { c1, c2 ->
+                val d1 = c1.dateUploadOverride.takeIf { it > 0 } ?: c1.dateUpload
+                val d2 = c2.dateUploadOverride.takeIf { it > 0 } ?: c2.dateUpload
+                d2.compareTo(d1)
+            }
+            false -> { c1, c2 ->
+                val d1 = c1.dateUploadOverride.takeIf { it > 0 } ?: c1.dateUpload
+                val d2 = c2.dateUploadOverride.takeIf { it > 0 } ?: c2.dateUpload
+                d1.compareTo(d2)
+            }
         }
 
         Manga.CHAPTER_SORTING_ALPHABET -> when (sortDescending) {

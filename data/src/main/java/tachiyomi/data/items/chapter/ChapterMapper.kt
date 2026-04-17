@@ -21,6 +21,7 @@ object ChapterMapper {
         version: Long,
         @Suppress("UNUSED_PARAMETER")
         isSyncing: Long,
+        dateUploadOverride: Long,
     ): Chapter = Chapter(
         id = id,
         mangaId = mangaId,
@@ -36,5 +37,6 @@ object ChapterMapper {
         scanlator = scanlator,
         lastModifiedAt = lastModifiedAt,
         version = version,
+        dateUploadOverride = dateUploadOverride,
     )
 }

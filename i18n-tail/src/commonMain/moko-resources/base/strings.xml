@@ -415,6 +415,9 @@
     <string name="player_sheets_subtitles_ass_strip">Strip</string>
 
     <!-- Tracking -->
+    <string name="action_set_date">Set date</string>
+    <string name="action_set_date_title">Set upload date</string>
+
     <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
     <string name="pref_smart_sync_tracker">Smart sync seasons</string>
     <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>

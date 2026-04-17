@@ -13,7 +13,7 @@ SELECT
     mangas.favorite,
     mangas.thumbnail_url AS thumbnailUrl,
     mangas.cover_last_modified AS coverLastModified,
-    chapters.date_upload AS dateUpload,
+    CASE WHEN chapters.date_upload_override > 0 THEN chapters.date_upload_override ELSE chapters.date_upload END AS dateUpload,
     chapters.date_fetch AS datefetch,
     excluded_scanlators.scanlator AS excludedScanlator
 FROM mangas JOIN chapters

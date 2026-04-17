@@ -3,7 +3,7 @@ SELECT
     episodes.anime_id,
     count(*) AS total,
     sum(seen) AS seenCount,
-    coalesce(max(episodes.date_upload), 0) AS latestUpload,
+    coalesce(max(CASE WHEN episodes.date_upload_override > 0 THEN episodes.date_upload_override ELSE episodes.date_upload END), 0) AS latestUpload,
     coalesce(max(episodes.date_fetch), 0) AS fetchedAt,
     sum(episodes.bookmark) AS bookmarkCount,
     sum(episodes.fillermark) AS fillermarkCount

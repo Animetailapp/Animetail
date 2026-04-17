@@ -30,6 +30,7 @@ import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
 import eu.kanade.presentation.entries.EditCoverAction
 import eu.kanade.presentation.entries.components.DeleteItemsDialog
+import eu.kanade.presentation.entries.components.SetDateDialog
 import eu.kanade.presentation.entries.components.SetIntervalDialog
 import eu.kanade.presentation.entries.manga.ChapterSettingsDialog
 import eu.kanade.presentation.entries.manga.DuplicateMangaDialog
@@ -170,6 +171,7 @@ class MangaScreen(
             onMultiMarkAsReadClicked = screenModel::markChaptersRead,
             onMarkPreviousAsReadClicked = screenModel::markPreviousChapterRead,
             onMultiDeleteClicked = screenModel::showDeleteChapterDialog,
+            onSetDateClicked = screenModel::showSetChapterDateDialog,
             onChapterSwipe = screenModel::chapterSwipe,
             onChapterSelected = screenModel::toggleSelection,
             onAllChapterSelected = screenModel::toggleAllSelection,
@@ -210,6 +212,23 @@ class MangaScreen(
                         screenModel.deleteChapters(dialog.chapters)
                     },
                     isManga = true,
+                )
+            }
+
+            is MangaScreenModel.Dialog.SetChapterDate -> {
+                SetDateDialog(
+                    onDismissRequest = onDismissRequest,
+                    onConfirm = { dateMillis ->
+                        screenModel.setChapterDateOverride(dialog.chapters, dateMillis)
+                        screenModel.dismissDialog()
+                    },
+                    onRemove = {
+                        screenModel.setChapterDateOverride(dialog.chapters, 0)
+                        screenModel.dismissDialog()
+                    },
+                    initialDateMillis = dialog.chapters.firstOrNull()?.let {
+                        it.dateUploadOverride.takeIf { d -> d > 0 } ?: it.dateUpload
+                    } ?: 0,
                 )
             }
 

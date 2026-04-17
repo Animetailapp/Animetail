@@ -2,9 +2,11 @@ package eu.kanade.presentation.entries.components
 
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,12 +27,18 @@ import tachiyomi.domain.entries.anime.interactor.AnimeFetchInterval
 import tachiyomi.domain.entries.manga.interactor.MangaFetchInterval
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.WheelTextPicker
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import java.time.Instant
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneOffset
+import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 import kotlin.math.absoluteValue
 
 @Composable
@@ -163,6 +171,95 @@ fun SetIntervalDialog(
         confirmButton = {
             TextButton(onClick = {
                 onValueChanged?.invoke(selectedInterval)
+                onDismissRequest()
+            }) {
+                Text(text = stringResource(MR.strings.action_ok))
+            }
+        },
+    )
+}
+
+@Composable
+fun SetDateDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: (Long) -> Unit,
+    onRemove: () -> Unit,
+    initialDateMillis: Long = 0,
+) {
+    val initialDate = remember {
+        if (initialDateMillis > 0) {
+            Instant.ofEpochMilli(initialDateMillis).atZone(ZoneOffset.UTC).toLocalDate()
+        } else {
+            LocalDate.now()
+        }
+    }
+    val years = remember { (2000..LocalDate.now().year + 1).toList() }
+    val months = remember { (1..12).toList() }
+
+    var selectedYear by rememberSaveable { mutableIntStateOf(initialDate.year) }
+    var selectedMonth by rememberSaveable { mutableIntStateOf(initialDate.monthValue) }
+    var selectedDay by rememberSaveable { mutableIntStateOf(initialDate.dayOfMonth) }
+
+    val daysInMonth = remember(selectedYear, selectedMonth) {
+        YearMonth.of(selectedYear, selectedMonth).lengthOfMonth()
+    }
+    if (selectedDay > daysInMonth) selectedDay = daysInMonth
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(text = stringResource(TLMR.strings.action_set_date_title)) },
+        text = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val locale = Locale.getDefault()
+                val monthNames = remember(locale) {
+                    months.map { java.time.Month.of(it).getDisplayName(TextStyle.SHORT, locale) }
+                        .toImmutableList()
+                }
+
+                WheelTextPicker(
+                    modifier = Modifier.weight(1f),
+                    items = remember { years.map { it.toString() }.toImmutableList() },
+                    startIndex = years.indexOf(selectedYear),
+                    size = DpSize(64.dp, 128.dp),
+                    onSelectionChanged = { selectedYear = years[it] },
+                )
+                WheelTextPicker(
+                    modifier = Modifier.weight(1f),
+                    items = monthNames,
+                    startIndex = selectedMonth - 1,
+                    size = DpSize(64.dp, 128.dp),
+                    onSelectionChanged = { selectedMonth = it + 1 },
+                )
+                WheelTextPicker(
+                    modifier = Modifier.weight(1f),
+                    items = remember(daysInMonth) { (1..daysInMonth).map { it.toString() }.toImmutableList() },
+                    startIndex = (selectedDay - 1).coerceIn(0, daysInMonth - 1),
+                    size = DpSize(64.dp, 128.dp),
+                    onSelectionChanged = { selectedDay = it + 1 },
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                onRemove()
+                onDismissRequest()
+            }) {
+                Text(text = stringResource(MR.strings.action_remove))
+            }
+            TextButton(onClick = onDismissRequest) {
+                Text(text = stringResource(MR.strings.action_cancel))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val millis = LocalDate.of(selectedYear, selectedMonth, selectedDay)
+                    .atStartOfDay(ZoneOffset.UTC)
+                    .toInstant()
+                    .toEpochMilli()
+                onConfirm(millis)
                 onDismissRequest()
             }) {
                 Text(text = stringResource(MR.strings.action_ok))

@@ -175,6 +175,7 @@ fun AnimeScreen(
     onMultiMarkAsSeenClicked: (List<Episode>, markAsSeen: Boolean) -> Unit,
     onMarkPreviousAsSeenClicked: (Episode) -> Unit,
     onMultiDeleteClicked: (List<Episode>) -> Unit,
+    onSetDateClicked: (List<Episode>) -> Unit,
 
     // For episode swipe
     onEpisodeSwipe: (EpisodeList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
@@ -248,6 +249,7 @@ fun AnimeScreen(
             onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
             onMarkPreviousAsSeenClicked = onMarkPreviousAsSeenClicked,
             onMultiDeleteClicked = onMultiDeleteClicked,
+            onSetDateClicked = onSetDateClicked,
             onEpisodeSwipe = onEpisodeSwipe,
             onEpisodeSelected = onEpisodeSelected,
             onAllEpisodeSelected = onAllEpisodeSelected,
@@ -303,6 +305,7 @@ fun AnimeScreen(
             onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
             onMarkPreviousAsSeenClicked = onMarkPreviousAsSeenClicked,
             onMultiDeleteClicked = onMultiDeleteClicked,
+            onSetDateClicked = onSetDateClicked,
             onEpisodeSwipe = onEpisodeSwipe,
             onEpisodeSelected = onEpisodeSelected,
             onAllEpisodeSelected = onAllEpisodeSelected,
@@ -373,6 +376,7 @@ private fun AnimeScreenSmallImpl(
     onMultiMarkAsSeenClicked: (List<Episode>, markAsSeen: Boolean) -> Unit,
     onMarkPreviousAsSeenClicked: (Episode) -> Unit,
     onMultiDeleteClicked: (List<Episode>) -> Unit,
+    onSetDateClicked: (List<Episode>) -> Unit,
 
     // For episode swipe
     onEpisodeSwipe: (EpisodeList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
@@ -498,6 +502,7 @@ private fun AnimeScreenSmallImpl(
                     onMarkPreviousAsSeenClicked = onMarkPreviousAsSeenClicked,
                     onDownloadEpisode = onDownloadEpisode,
                     onMultiDeleteClicked = onMultiDeleteClicked,
+                    onSetDateClicked = onSetDateClicked,
                     fillFraction = 1f,
                     alwaysUseExternalPlayer = alwaysUseExternalPlayer,
                 )
@@ -841,6 +846,7 @@ fun AnimeScreenLargeImpl(
     onMultiMarkAsSeenClicked: (List<Episode>, markAsSeen: Boolean) -> Unit,
     onMarkPreviousAsSeenClicked: (Episode) -> Unit,
     onMultiDeleteClicked: (List<Episode>) -> Unit,
+    onSetDateClicked: (List<Episode>) -> Unit,
 
     // For swipe actions
     onEpisodeSwipe: (EpisodeList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
@@ -956,6 +962,7 @@ fun AnimeScreenLargeImpl(
                         onMarkPreviousAsSeenClicked = onMarkPreviousAsSeenClicked,
                         onDownloadEpisode = onDownloadEpisode,
                         onMultiDeleteClicked = onMultiDeleteClicked,
+                        onSetDateClicked = onSetDateClicked,
                         fillFraction = 0.5f,
                         alwaysUseExternalPlayer = alwaysUseExternalPlayer,
                     )
@@ -1235,6 +1242,7 @@ private fun SharedAnimeBottomActionMenu(
     onMarkPreviousAsSeenClicked: (Episode) -> Unit,
     onDownloadEpisode: ((List<EpisodeList.Item>, EpisodeDownloadAction) -> Unit)?,
     onMultiDeleteClicked: (List<Episode>) -> Unit,
+    onSetDateClicked: (List<Episode>) -> Unit,
     fillFraction: Float,
     alwaysUseExternalPlayer: Boolean,
     modifier: Modifier = Modifier,
@@ -1279,6 +1287,9 @@ private fun SharedAnimeBottomActionMenu(
         onInternalClicked = {
             onEpisodeClicked(selected.fastMap { it.episode }.first(), true)
         }.takeIf { alwaysUseExternalPlayer && selected.size == 1 },
+        onSetDateClicked = {
+            onSetDateClicked(selected.fastMap { it.episode })
+        },
         isManga = false,
     )
 }
@@ -1381,7 +1392,10 @@ private fun LazyGridScope.sharedEpisodeItems(
                         episodeItem.episode.name
                     },
                     date = if (showEpisodeTimestamps) {
-                        relativeDateTimeText(episodeItem.episode.dateUpload)
+                        relativeDateTimeText(
+                            episodeItem.episode.dateUploadOverride.takeIf { it > 0 }
+                                ?: episodeItem.episode.dateUpload,
+                        )
                     } else {
                         null
                     },

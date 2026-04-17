@@ -19,6 +19,7 @@ data class Episode(
     val previewUrl: String?,
     val lastModifiedAt: Long,
     val version: Long,
+    val dateUploadOverride: Long,
 ) {
     val isRecognizedNumber: Boolean
         get() = episodeNumber >= 0f
@@ -56,6 +57,7 @@ data class Episode(
             previewUrl = null,
             lastModifiedAt = 0,
             version = 1,
+            dateUploadOverride = 0,
         )
     }
 }

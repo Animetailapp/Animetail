@@ -1265,6 +1265,19 @@ class AnimeScreenModel(
      * Fillermarks the given list of episodes.
      * @param episodes the list of episodes to fillermark.
      */
+    fun showSetEpisodeDateDialog(episodes: List<Episode>) {
+        updateSuccessState { it.copy(dialog = Dialog.SetEpisodeDate(episodes)) }
+    }
+
+    fun setEpisodeDateOverride(episodes: List<Episode>, dateOverride: Long) {
+        screenModelScope.launchIO {
+            episodes
+                .map { EpisodeUpdate(id = it.id, dateUploadOverride = dateOverride) }
+                .let { updateEpisode.awaitAll(it) }
+        }
+        toggleAllSelection(false)
+    }
+
     fun fillermarkEpisodes(episodes: List<Episode>, fillermarked: Boolean) {
         screenModelScope.launchIO {
             episodes
@@ -1836,6 +1849,7 @@ class AnimeScreenModel(
         data class EditAnimeInfo(val anime: Anime) : Dialog
         // SY <--
 
+        data class SetEpisodeDate(val episodes: List<Episode>) : Dialog
         data object ChangeAnimeSkipIntro : Dialog
         data object EpisodeSettingsSheet : Dialog
         data object SeasonSettingsSheet : Dialog

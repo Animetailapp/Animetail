@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.BookmarkRemove
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material.icons.outlined.NewLabel
 import androidx.compose.material.icons.outlined.RemoveDone
 import androidx.compose.material3.Icon
@@ -85,6 +86,7 @@ fun EntryBottomActionMenu(
     onDeleteClicked: (() -> Unit)? = null,
     onExternalClicked: (() -> Unit)? = null,
     onInternalClicked: (() -> Unit)? = null,
+    onSetDateClicked: (() -> Unit)? = null,
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -103,7 +105,7 @@ fun EntryBottomActionMenu(
         ) {
             val haptic = LocalHapticFeedback.current
             val confirm = remember {
-                mutableStateListOf(false, false, false, false, false, false, false, false, false, false, false)
+                mutableStateListOf(false, false, false, false, false, false, false, false, false, false, false, false)
             }
             var resetJob by remember { mutableStateOf<Job?>(null) }
             val onLongClickItem: (Int) -> Unit = { toConfirmIndex ->
@@ -218,12 +220,21 @@ fun EntryBottomActionMenu(
                         onClick = onDeleteClicked,
                     )
                 }
+                if (onSetDateClicked != null) {
+                    Button(
+                        title = stringResource(TLMR.strings.action_set_date),
+                        icon = Icons.Outlined.EditCalendar,
+                        toConfirm = confirm[9],
+                        onLongClick = { onLongClickItem(9) },
+                        onClick = onSetDateClicked,
+                    )
+                }
                 if (!isManga && onExternalClicked != null && !playerPreferences.alwaysUseExternalPlayer().get()) {
                     Button(
                         title = stringResource(AYMR.strings.action_play_externally),
                         icon = Icons.AutoMirrored.Outlined.OpenInNew,
-                        toConfirm = confirm[9],
-                        onLongClick = { onLongClickItem(9) },
+                        toConfirm = confirm[10],
+                        onLongClick = { onLongClickItem(10) },
                         onClick = onExternalClicked,
                     )
                 }
@@ -231,8 +242,8 @@ fun EntryBottomActionMenu(
                     Button(
                         title = stringResource(AYMR.strings.action_play_internally),
                         icon = Icons.AutoMirrored.Outlined.Input,
-                        toConfirm = confirm[10],
-                        onLongClick = { onLongClickItem(10) },
+                        toConfirm = confirm[11],
+                        onLongClick = { onLongClickItem(11) },
                         onClick = onInternalClicked,
                     )
                 }

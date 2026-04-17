@@ -40,6 +40,7 @@ import eu.kanade.presentation.entries.anime.EpisodeSettingsDialog
 import eu.kanade.presentation.entries.anime.SeasonSettingsDialog
 import eu.kanade.presentation.entries.anime.components.AnimeImagesDialog
 import eu.kanade.presentation.entries.components.DeleteItemsDialog
+import eu.kanade.presentation.entries.components.SetDateDialog
 import eu.kanade.presentation.entries.components.SetIntervalDialog
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsGesturesScreen.SkipIntroLengthDialog
 import eu.kanade.presentation.theme.TachiyomiTheme
@@ -274,6 +275,7 @@ class AnimeScreen(
             onMultiMarkAsSeenClicked = screenModel::markEpisodesSeen,
             onMarkPreviousAsSeenClicked = screenModel::markPreviousEpisodeSeen,
             onMultiDeleteClicked = screenModel::showDeleteEpisodeDialog,
+            onSetDateClicked = screenModel::showSetEpisodeDateDialog,
             onEpisodeSwipe = screenModel::episodeSwipe,
             onEpisodeSelected = screenModel::toggleSelection,
             onAllEpisodeSelected = screenModel::toggleAllSelection,
@@ -339,6 +341,23 @@ class AnimeScreen(
                         screenModel.deleteEpisodes(dialog.episodes)
                     },
                     isManga = false,
+                )
+            }
+
+            is AnimeScreenModel.Dialog.SetEpisodeDate -> {
+                SetDateDialog(
+                    onDismissRequest = onDismissRequest,
+                    onConfirm = { dateMillis ->
+                        screenModel.setEpisodeDateOverride(dialog.episodes, dateMillis)
+                        screenModel.dismissDialog()
+                    },
+                    onRemove = {
+                        screenModel.setEpisodeDateOverride(dialog.episodes, 0)
+                        screenModel.dismissDialog()
+                    },
+                    initialDateMillis = dialog.episodes.firstOrNull()?.let {
+                        it.dateUploadOverride.takeIf { d -> d > 0 } ?: it.dateUpload
+                    } ?: 0,
                 )
             }
 
