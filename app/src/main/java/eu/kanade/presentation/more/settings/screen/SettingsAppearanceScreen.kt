@@ -48,14 +48,14 @@ object SettingsAppearanceScreen : SearchableSettings {
 
         return listOf(
             getThemeGroup(uiPreferences = uiPreferences),
+            // KMK -->
+            getAnimeInfoThemeGroup(uiPreferences = uiPreferences),
+            // KMK <--
             getDisplayGroup(uiPreferences = uiPreferences),
             // SY -->
             getNavbarGroup(uiPreferences = uiPreferences),
             getForkGroup(uiPreferences = uiPreferences),
             // SY <--
-            // KMK -->
-            getAnimeInfoThemeGroup(uiPreferences = uiPreferences),
-            // KMK <--
         )
     }
 
