@@ -195,7 +195,8 @@ interface CatalogueSource : MangaSource {
     ) {
         val words = HashSet<String>()
         words.add(manga.title)
-        if (manga.title.lowercase() != manga.title.lowercase()) words.add(manga.title)
+        val lowercaseTitle = manga.title.lowercase()
+        if (manga.title != lowercaseTitle) words.add(lowercaseTitle)
         manga.title.stripKeywordForRelatedMangas()
             .filterNot { word -> words.any { it.lowercase() == word } }
             .onEach { words.add(it) }
