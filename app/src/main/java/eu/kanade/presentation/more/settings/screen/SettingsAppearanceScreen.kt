@@ -133,6 +133,56 @@ object SettingsAppearanceScreen : SearchableSettings {
         )
     }
 
+    // KMK -->
+    @Composable
+    private fun paletteStyleEntries(): kotlinx.collections.immutable.ImmutableMap<PaletteStyle, String> {
+        return mapOf(
+            PaletteStyle.TonalSpot to stringResource(TLMR.strings.pref_theme_cover_based_style_tonalspot),
+            PaletteStyle.Neutral to stringResource(TLMR.strings.pref_theme_cover_based_style_neutral),
+            PaletteStyle.Vibrant to stringResource(TLMR.strings.pref_theme_cover_based_style_vibrant),
+            PaletteStyle.Expressive to stringResource(TLMR.strings.pref_theme_cover_based_style_expressive),
+            PaletteStyle.Rainbow to stringResource(TLMR.strings.pref_theme_cover_based_style_rainbow),
+            PaletteStyle.FruitSalad to stringResource(TLMR.strings.pref_theme_cover_based_style_fruitsalad),
+            PaletteStyle.Monochrome to stringResource(TLMR.strings.pref_theme_cover_based_style_monochrome),
+            PaletteStyle.Fidelity to stringResource(TLMR.strings.pref_theme_cover_based_style_fidelity),
+            PaletteStyle.Content to stringResource(TLMR.strings.pref_theme_cover_based_style_content),
+        ).toImmutableMap()
+    }
+
+    @Composable
+    private fun getAnimeInfoThemeGroup(
+        uiPreferences: UiPreferences,
+    ): Preference.PreferenceGroup {
+        val themeCoverBased by uiPreferences.themeCoverBased.collectAsState()
+
+        return Preference.PreferenceGroup(
+            title = stringResource(TLMR.strings.pref_anime_info),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.themeCoverBased,
+                    title = stringResource(TLMR.strings.pref_theme_cover_based),
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = uiPreferences.themeCoverBasedStyle,
+                    entries = paletteStyleEntries(),
+                    title = stringResource(TLMR.strings.pref_theme_cover_based_style),
+                    enabled = themeCoverBased,
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.usePanoramaCoverMangaInfo,
+                    title = stringResource(TLMR.strings.pref_panorama_cover),
+                    subtitle = stringResource(TLMR.strings.pref_panorama_cover_summary),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.topAlignCover,
+                    title = stringResource(TLMR.strings.pref_top_align_cover),
+                    subtitle = stringResource(TLMR.strings.pref_top_align_cover_summary),
+                ),
+            ),
+        )
+    }
+    // KMK <--
+
     @Composable
     private fun getDisplayGroup(
         uiPreferences: UiPreferences,
@@ -324,56 +374,6 @@ object SettingsAppearanceScreen : SearchableSettings {
         )
     }
 // SY <--
-
-    // KMK -->
-    @Composable
-    private fun paletteStyleEntries(): kotlinx.collections.immutable.ImmutableMap<PaletteStyle, String> {
-        return mapOf(
-            PaletteStyle.TonalSpot to stringResource(TLMR.strings.pref_theme_cover_based_style_tonalspot),
-            PaletteStyle.Neutral to stringResource(TLMR.strings.pref_theme_cover_based_style_neutral),
-            PaletteStyle.Vibrant to stringResource(TLMR.strings.pref_theme_cover_based_style_vibrant),
-            PaletteStyle.Expressive to stringResource(TLMR.strings.pref_theme_cover_based_style_expressive),
-            PaletteStyle.Rainbow to stringResource(TLMR.strings.pref_theme_cover_based_style_rainbow),
-            PaletteStyle.FruitSalad to stringResource(TLMR.strings.pref_theme_cover_based_style_fruitsalad),
-            PaletteStyle.Monochrome to stringResource(TLMR.strings.pref_theme_cover_based_style_monochrome),
-            PaletteStyle.Fidelity to stringResource(TLMR.strings.pref_theme_cover_based_style_fidelity),
-            PaletteStyle.Content to stringResource(TLMR.strings.pref_theme_cover_based_style_content),
-        ).toImmutableMap()
-    }
-
-    @Composable
-    private fun getAnimeInfoThemeGroup(
-        uiPreferences: UiPreferences,
-    ): Preference.PreferenceGroup {
-        val themeCoverBased by uiPreferences.themeCoverBased.collectAsState()
-
-        return Preference.PreferenceGroup(
-            title = stringResource(TLMR.strings.pref_anime_info),
-            preferenceItems = persistentListOf(
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.themeCoverBased,
-                    title = stringResource(TLMR.strings.pref_theme_cover_based),
-                ),
-                Preference.PreferenceItem.ListPreference(
-                    preference = uiPreferences.themeCoverBasedStyle,
-                    entries = paletteStyleEntries(),
-                    title = stringResource(TLMR.strings.pref_theme_cover_based_style),
-                    enabled = themeCoverBased,
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.usePanoramaCoverMangaInfo,
-                    title = stringResource(TLMR.strings.pref_panorama_cover),
-                    subtitle = stringResource(TLMR.strings.pref_panorama_cover_summary),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = uiPreferences.topAlignCover,
-                    title = stringResource(TLMR.strings.pref_top_align_cover),
-                    subtitle = stringResource(TLMR.strings.pref_top_align_cover_summary),
-                ),
-            ),
-        )
-    }
-    // KMK <--
 }
 
 private val DateFormats = listOf(
