@@ -81,4 +81,20 @@ interface MangaSource {
     )
     fun fetchPageList(chapter: SChapter): Observable<List<Page>> =
         throw IllegalStateException("Not used")
+
+    // KMK -->
+
+    /**
+     * Get all the available related mangas for a manga.
+     *
+     * @since komikku/extensions-lib 1.6
+     * @param manga the current manga to get related mangas.
+     * @return a list of <keyword, related mangas>
+     */
+    suspend fun getRelatedMangaList(
+        manga: SManga,
+        exceptionHandler: (Throwable) -> Unit,
+        pushResults: suspend (relatedManga: Pair<String, List<SManga>>, completed: Boolean) -> Unit,
+    ): Unit = throw UnsupportedOperationException()
+    // KMK <--
 }

@@ -78,12 +78,12 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.entries.components.DotSeparatorText
 import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.animesource.model.SAnime
-import eu.kanade.tachiyomi.data.coil.useBackground
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.MR
@@ -94,6 +94,8 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.clickableNoIndication
 import tachiyomi.presentation.core.util.secondaryItemAlpha
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
@@ -120,7 +122,6 @@ fun AnimeInfoBox(
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(anime)
-                .useBackground(true)
                 .crossfade(true)
                 .build(),
             contentDescription = null,
@@ -378,21 +379,40 @@ private fun AnimeAndSourceTitlesLarge(
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
+    // KMK -->
+    val uiPreferences = remember { Injekt.get<UiPreferences>() }
+    val usePanoramaCover = uiPreferences.usePanoramaCoverMangaInfo.get()
+    // KMK <--
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ItemCover.Book(
-            modifier = Modifier.fillMaxWidth(0.65f),
-            data = ImageRequest.Builder(LocalContext.current)
-                .data(anime)
-                .crossfade(true)
-                .build(),
-            contentDescription = stringResource(MR.strings.manga_cover),
-            onClick = onCoverClick,
-        )
+        // KMK -->
+        if (usePanoramaCover) {
+            ItemCover.Thumb(
+                modifier = Modifier.fillMaxWidth(),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(anime)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
+            )
+        } else {
+            // KMK <--
+            ItemCover.Book(
+                modifier = Modifier.fillMaxWidth(0.65f),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(anime)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
         AnimeContentInfo(
             title = anime.title,
@@ -416,36 +436,67 @@ private fun AnimeAndSourceTitlesSmall(
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
-    Row(
+    // KMK -->
+    val uiPreferences = remember { Injekt.get<UiPreferences>() }
+    val usePanoramaCover = uiPreferences.usePanoramaCoverMangaInfo.get()
+    val topAlignCover = uiPreferences.topAlignCover.get()
+    // KMK <--
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        ItemCover.Book(
-            modifier = Modifier
-                .sizeIn(maxWidth = 100.dp)
-                .align(Alignment.Top),
-            data = ImageRequest.Builder(LocalContext.current)
-                .data(anime)
-                .crossfade(true)
-                .build(),
-            contentDescription = stringResource(MR.strings.manga_cover),
-            onClick = onCoverClick,
-        )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            AnimeContentInfo(
-                title = anime.title,
-                author = anime.author,
-                artist = anime.artist,
-                status = anime.status,
-                sourceName = sourceName,
-                isStubSource = isStubSource,
-                doSearch = doSearch,
+        // KMK -->
+        if (usePanoramaCover) {
+            // Show panoramic cover at full width first
+            ItemCover.Thumb(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(anime)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
             )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        // KMK <--
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // KMK -->
+            if (!usePanoramaCover) {
+                // KMK <--
+                ItemCover.Book(
+                    modifier = Modifier
+                        .sizeIn(maxWidth = 100.dp)
+                        .align(if (topAlignCover) Alignment.Top else Alignment.CenterVertically),
+                    data = ImageRequest.Builder(LocalContext.current)
+                        .data(anime)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = stringResource(MR.strings.manga_cover),
+                    onClick = onCoverClick,
+                )
+            }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                AnimeContentInfo(
+                    title = anime.title,
+                    author = anime.author,
+                    artist = anime.artist,
+                    status = anime.status,
+                    sourceName = sourceName,
+                    isStubSource = isStubSource,
+                    doSearch = doSearch,
+                )
+            }
         }
     }
 }

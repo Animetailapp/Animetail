@@ -287,6 +287,7 @@ dependencies {
     implementation(libs.reorderable)
     implementation(libs.bundles.markdown)
     implementation(libs.materialKolor)
+    implementation(libs.androidx.palette)
     implementation(libs.google.api.services.drive)
     implementation(libs.google.api.client.oauth)
 

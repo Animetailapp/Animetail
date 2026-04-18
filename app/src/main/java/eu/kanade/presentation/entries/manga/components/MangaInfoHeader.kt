@@ -354,21 +354,40 @@ private fun MangaAndSourceTitlesLarge(
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
+    // KMK -->
+    val uiPreferences = remember { Injekt.get<UiPreferences>() }
+    val usePanoramaCover = uiPreferences.usePanoramaCoverMangaInfo.get()
+    // KMK <--
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ItemCover.Book(
-            modifier = Modifier.fillMaxWidth(0.65f),
-            data = ImageRequest.Builder(LocalContext.current)
-                .data(manga)
-                .crossfade(true)
-                .build(),
-            contentDescription = stringResource(MR.strings.manga_cover),
-            onClick = onCoverClick,
-        )
+        // KMK -->
+        if (usePanoramaCover) {
+            ItemCover.Thumb(
+                modifier = Modifier.fillMaxWidth(),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(manga)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
+            )
+        } else {
+            // KMK <--
+            ItemCover.Book(
+                modifier = Modifier.fillMaxWidth(0.65f),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(manga)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
         MangaContentInfo(
             title = manga.title,
@@ -392,36 +411,67 @@ private fun MangaAndSourceTitlesSmall(
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
-    Row(
+    // KMK -->
+    val uiPreferences = remember { Injekt.get<UiPreferences>() }
+    val usePanoramaCover = uiPreferences.usePanoramaCoverMangaInfo.get()
+    val topAlignCover = uiPreferences.topAlignCover.get()
+    // KMK <--
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        ItemCover.Book(
-            modifier = Modifier
-                .sizeIn(maxWidth = 100.dp)
-                .align(Alignment.Top),
-            data = ImageRequest.Builder(LocalContext.current)
-                .data(manga)
-                .crossfade(true)
-                .build(),
-            contentDescription = stringResource(MR.strings.manga_cover),
-            onClick = onCoverClick,
-        )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            MangaContentInfo(
-                title = manga.title,
-                author = manga.author,
-                artist = manga.artist,
-                status = manga.status,
-                sourceName = sourceName,
-                isStubSource = isStubSource,
-                doSearch = doSearch,
+        // KMK -->
+        if (usePanoramaCover) {
+            // Show panoramic cover at full width first
+            ItemCover.Thumb(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(manga)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
             )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        // KMK <--
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // KMK -->
+            if (!usePanoramaCover) {
+                // KMK <--
+                ItemCover.Book(
+                    modifier = Modifier
+                        .sizeIn(maxWidth = 100.dp)
+                        .align(if (topAlignCover) Alignment.Top else Alignment.CenterVertically),
+                    data = ImageRequest.Builder(LocalContext.current)
+                        .data(manga)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = stringResource(MR.strings.manga_cover),
+                    onClick = onCoverClick,
+                )
+            }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                MangaContentInfo(
+                    title = manga.title,
+                    author = manga.author,
+                    artist = manga.artist,
+                    status = manga.status,
+                    sourceName = sourceName,
+                    isStubSource = isStubSource,
+                    doSearch = doSearch,
+                )
+            }
         }
     }
 }

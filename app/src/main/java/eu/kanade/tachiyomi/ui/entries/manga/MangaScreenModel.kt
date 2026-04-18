@@ -4,8 +4,11 @@ import android.content.Context
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
@@ -21,15 +24,18 @@ import eu.kanade.domain.entries.manga.interactor.SetExcludedScanlators
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.entries.manga.model.chaptersFiltered
 import eu.kanade.domain.entries.manga.model.downloadedFilter
+import eu.kanade.domain.entries.manga.model.toDomainManga
 import eu.kanade.domain.entries.manga.model.toSManga
 import eu.kanade.domain.items.chapter.interactor.GetAvailableScanlators
 import eu.kanade.domain.items.chapter.interactor.SetReadStatus
 import eu.kanade.domain.items.chapter.interactor.SyncChaptersWithSource
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.manga.interactor.AddMangaTracks
 import eu.kanade.domain.track.manga.interactor.RefreshMangaTracks
 import eu.kanade.domain.track.manga.interactor.TrackChapter
 import eu.kanade.domain.track.model.AutoTrackState
 import eu.kanade.domain.track.service.TrackPreferences
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.entries.DownloadAction
 import eu.kanade.presentation.entries.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.util.formattedMessage
@@ -40,6 +46,9 @@ import eu.kanade.tachiyomi.data.track.EnhancedMangaTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.source.MangaSource
+import eu.kanade.tachiyomi.ui.entries.manga.RelatedManga.Companion.isLoading
+import eu.kanade.tachiyomi.ui.entries.manga.RelatedManga.Companion.removeDuplicates
+import eu.kanade.tachiyomi.ui.entries.manga.RelatedManga.Companion.sorted
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.util.chapter.getNextUnread
 import eu.kanade.tachiyomi.util.removeCovers
@@ -72,7 +81,9 @@ import tachiyomi.domain.category.manga.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.entries.applyFilter
 import tachiyomi.domain.entries.manga.interactor.GetDuplicateLibraryManga
+import tachiyomi.domain.entries.manga.interactor.GetManga
 import tachiyomi.domain.entries.manga.interactor.GetMangaWithChapters
+import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.entries.manga.interactor.SetCustomMangaInfo
 import tachiyomi.domain.entries.manga.interactor.SetMangaChapterFlags
 import tachiyomi.domain.entries.manga.model.CustomMangaInfo
@@ -87,6 +98,7 @@ import tachiyomi.domain.items.chapter.model.NoChaptersException
 import tachiyomi.domain.items.chapter.service.calculateChapterGap
 import tachiyomi.domain.items.chapter.service.getChapterSort
 import tachiyomi.domain.library.service.LibraryPreferences
+import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.i18n.MR
@@ -96,6 +108,7 @@ import tachiyomi.source.local.entries.manga.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.math.floor
+import androidx.compose.runtime.State as RuntimeState
 
 class MangaScreenModel(
     private val context: Context,
@@ -130,6 +143,12 @@ class MangaScreenModel(
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val mangaRepository: MangaRepository = Injekt.get(),
     private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get(),
+    // KMK -->
+    private val sourcePreferences: SourcePreferences = Injekt.get(),
+    private val uiPreferences: UiPreferences = Injekt.get(),
+    private val getMangaInteractor: GetManga = Injekt.get(),
+    val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
+    // KMK <--
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
 ) : StateScreenModel<MangaScreenModel.State>(State.Loading) {
 
@@ -262,6 +281,11 @@ class MangaScreenModel(
 
             // Initial loading finished
             updateSuccessState { it.copy(isRefreshingData = false) }
+
+            // KMK -->
+            // Fetch related mangas
+            fetchRelatedMangasFromSource()
+            // KMK <--
         }
     }
 
@@ -276,6 +300,82 @@ class MangaScreenModel(
             updateSuccessState { it.copy(isRefreshingData = false) }
         }
     }
+
+    // KMK -->
+
+    /**
+     * Set the fetching related mangas status.
+     * @param state
+     * - false: started & fetching
+     * - true: finished
+     */
+    private fun setRelatedMangasFetchedStatus(state: Boolean) {
+        updateSuccessState { it.copy(isRelatedMangasFetched = state) }
+    }
+
+    /**
+     * Requests a list of related mangas from the source.
+     */
+    internal suspend fun fetchRelatedMangasFromSource(onDemand: Boolean = false, onFinish: (() -> Unit)? = null) {
+        val expandRelatedMangas = uiPreferences.expandRelatedAnimes.get()
+        if (!onDemand && !expandRelatedMangas) return
+
+        // start fetching related mangas
+        setRelatedMangasFetchedStatus(false)
+
+        fun exceptionHandler(e: Throwable) {
+            logcat(LogPriority.ERROR, e)
+            val message = with(context) { e.formattedMessage }
+
+            screenModelScope.launch {
+                snackbarHostState.showSnackbar(message = message)
+            }
+        }
+        val state = successState ?: return
+        val relatedMangasEnabled = sourcePreferences.relatedAnimes.get()
+
+        try {
+            if (state.source !is StubMangaSource && relatedMangasEnabled) {
+                state.source.getRelatedMangaList(state.manga.toSManga(), { e -> exceptionHandler(e) }) { pair, _ ->
+                    /* Push found related mangas into collection */
+                    val relatedManga = RelatedManga.Success.fromPair(pair) { mangaList ->
+                        mangaList.map {
+                            it.toDomainManga(state.source.id)
+                        }
+                    }
+
+                    updateSuccessState { successState ->
+                        val relatedMangaCollection =
+                            successState.relatedMangaCollection
+                                ?.toMutableList()
+                                ?.apply { add(relatedManga) }
+                                ?: listOf(relatedManga)
+                        successState.copy(relatedMangaCollection = relatedMangaCollection)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            exceptionHandler(e)
+        } finally {
+            if (onFinish != null) {
+                onFinish()
+            } else {
+                setRelatedMangasFetchedStatus(true)
+            }
+        }
+    }
+
+    @Composable
+    fun getManga(initialManga: Manga): RuntimeState<Manga> {
+        return produceState(initialValue = initialManga) {
+            getMangaInteractor.subscribe(initialManga.url, initialManga.source)
+                .flowWithLifecycle(lifecycle)
+                .collectLatest { manga ->
+                    value = manga ?: initialManga
+                }
+        }
+    }
+    // KMK <--
 
     // Manga info - start
 
@@ -1279,10 +1379,22 @@ class MangaScreenModel(
             val isRefreshingData: Boolean = false,
             val dialog: Dialog? = null,
             val hasPromptedToAddBefore: Boolean = false,
+            // KMK -->
+            val isRelatedMangasFetched: Boolean? = null,
+            val relatedMangaCollection: List<RelatedManga>? = null,
+            // KMK <--
         ) : State {
             val processedChapters by lazy {
                 chapters.applyFilters(manga).toList()
             }
+
+            // KMK -->
+            val relatedMangasSorted = relatedMangaCollection
+                ?.sorted(manga)
+                ?.removeDuplicates(manga)
+                ?.filter { it.isVisible() }
+                ?.isLoading(isRelatedMangasFetched)
+            // KMK <--
 
             val isAnySelected by lazy {
                 chapters.fastAny { it.selected }
@@ -1367,3 +1479,71 @@ sealed class ChapterList {
         val isDownloaded = downloadState == MangaDownload.State.DOWNLOADED
     }
 }
+
+// KMK -->
+sealed interface RelatedManga {
+    data object Loading : RelatedManga
+
+    data class Success(
+        val keyword: String,
+        val mangaList: List<Manga>,
+    ) : RelatedManga {
+        val isEmpty: Boolean
+            get() = mangaList.isEmpty()
+
+        companion object {
+            suspend fun fromPair(
+                pair: Pair<String, List<eu.kanade.tachiyomi.source.model.SManga>>,
+                toManga: suspend (mangaList: List<eu.kanade.tachiyomi.source.model.SManga>) -> List<Manga>,
+            ) = Success(pair.first, toManga(pair.second))
+        }
+    }
+
+    fun isVisible(): Boolean {
+        return this is Loading || (this is Success && !this.isEmpty)
+    }
+
+    companion object {
+        internal fun List<RelatedManga>.sorted(manga: Manga): List<RelatedManga> {
+            val success = filterIsInstance<Success>()
+            val loading = filterIsInstance<Loading>()
+            val title = manga.title.lowercase()
+            val ogTitle = manga.ogTitle.lowercase()
+            return success.filter { it.keyword.isEmpty() } +
+                success.filter { it.keyword.lowercase() == title } +
+                success.filter { it.keyword.lowercase() == ogTitle && ogTitle != title } +
+                success.filter { it.keyword.isNotEmpty() && it.keyword.lowercase() !in listOf(title, ogTitle) }
+                    .sortedByDescending { it.keyword.length }
+                    .sortedBy { it.mangaList.size } +
+                loading
+        }
+
+        internal fun List<RelatedManga>.removeDuplicates(manga: Manga): List<RelatedManga> {
+            val mangaHashes = HashSet<Int>().apply { add(manga.url.hashCode()) }
+
+            return map { relatedManga ->
+                if (relatedManga is Success) {
+                    val stripedList = relatedManga.mangaList.mapNotNull {
+                        if (!mangaHashes.contains(it.url.hashCode())) {
+                            mangaHashes.add(it.url.hashCode())
+                            it
+                        } else {
+                            null
+                        }
+                    }
+                    Success(
+                        relatedManga.keyword,
+                        stripedList,
+                    )
+                } else {
+                    relatedManga
+                }
+            }
+        }
+
+        internal fun List<RelatedManga>.isLoading(isRelatedMangaFetched: Boolean?): List<RelatedManga> {
+            return if (isRelatedMangaFetched == false) this + listOf(Loading) else this
+        }
+    }
+}
+// KMK <--

@@ -24,5 +24,6 @@ enum class EntryScreenItem {
 
     // KMK -->
     RELATED_ANIMES,
+    RELATED_MANGAS,
     // KMK <--
 }
