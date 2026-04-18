@@ -393,7 +393,7 @@ class MangaScreen(
             getMangaState = { screenModel.getManga(initialManga = it) },
             onRelatedMangasScreenClick = {
                 if (successState.isRelatedMangasFetched == null) {
-                    scope.launchIO { screenModel.fetchRelatedMangasFromSource() }
+                    scope.launchIO { screenModel.fetchRelatedMangasFromSource(onDemand = true) }
                 }
                 showRelatedMangasScreen()
             },
