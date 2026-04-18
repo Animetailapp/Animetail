@@ -484,7 +484,7 @@ abstract class HttpSource : CatalogueSource {
         async {
             client.newCall(relatedMangaListRequest(manga))
                 .execute()
-                .let { response ->
+                .use { response ->
                     relatedMangaListParse(response)
                 }
         }.await()
