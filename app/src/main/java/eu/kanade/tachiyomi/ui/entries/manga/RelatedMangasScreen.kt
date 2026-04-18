@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastAny
 import cafe.adriel.voyager.navigator.Navigator
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.source.service.SourcePreferences
@@ -35,7 +34,6 @@ import kotlinx.coroutines.CoroutineScope
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaCover
-import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
