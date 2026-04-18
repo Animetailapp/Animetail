@@ -1393,7 +1393,7 @@ class MangaScreenModel(
                 ?.removeDuplicates(manga)
                 ?.filter { it.isVisible() }
                 ?.isLoading(isRelatedMangasFetched)
-                ?: if (isRelatedMangasFetched) emptyList() else null
+                ?: if (isRelatedMangasFetched == true) emptyList() else null
             // KMK <--
 
             val isAnySelected by lazy {
