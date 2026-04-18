@@ -61,7 +61,7 @@ private fun CoverBasedThemeImpl(
 
     var coverColorScheme by remember { mutableStateOf<ColorScheme?>(null) }
 
-    LaunchedEffect(thumbnailUrl, style) {
+    LaunchedEffect(coverData, thumbnailUrl, style, isDark, isAmoled) {
         thumbnailUrl ?: return@LaunchedEffect
         try {
             val request = ImageRequest.Builder(context)
