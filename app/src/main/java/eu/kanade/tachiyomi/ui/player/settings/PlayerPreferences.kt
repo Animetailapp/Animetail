@@ -89,4 +89,6 @@ class PlayerPreferences(
     // Old
 
     fun autoplayEnabled() = preferenceStore.getBoolean("pref_auto_play_enabled", false)
+
+    fun switchOnFailure() = preferenceStore.getBoolean("pref_switch_on_failure", true)
 }

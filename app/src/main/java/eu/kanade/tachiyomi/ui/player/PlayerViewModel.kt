@@ -189,6 +189,9 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _currentPlaylist = MutableStateFlow<List<Episode>>(emptyList())
     val currentPlaylist = _currentPlaylist.asStateFlow()
 
+    private val _isStopped = MutableStateFlow(false)
+    val isStopped = _isStopped.asStateFlow()
+
     private val _hasPreviousEpisode = MutableStateFlow(false)
     val hasPreviousEpisode = _hasPreviousEpisode.asStateFlow()
 
@@ -1519,6 +1522,32 @@ class PlayerViewModel @JvmOverloads constructor(
                 throw e
             }
         }
+    }
+
+    fun setIsStopped(value: Boolean) {
+        _isStopped.update { _ -> value }
+    }
+
+    fun setCurrentVideoError() {
+        val (hosterIdx, videoIdx) = selectedHosterVideoIndex.value
+        val currentHosterState = (hosterState.value[hosterIdx] as? HosterState.Ready) ?: return
+        val currentVideo = currentHosterState.videoList[videoIdx]
+
+        _hosterState.updateAt(
+            hosterIdx,
+            currentHosterState.getChangedAt(videoIdx, currentVideo, Video.State.ERROR),
+        )
+    }
+
+    fun loadBestVideo(): Boolean {
+        val source = currentSource.value ?: return false
+        val (hosterIdx, videoIdx) = HosterLoader.selectBestVideo(hosterState.value)
+        if (hosterIdx == -1) return false
+        val newVideo = (hosterState.value[hosterIdx] as HosterState.Ready).videoList[videoIdx]
+        viewModelScope.launchIO {
+            loadVideo(source, newVideo, hosterIdx, videoIdx)
+        }
+        return true
     }
 
     private suspend fun loadVideo(source: AnimeSource?, video: Video, hosterIndex: Int, videoIndex: Int): Boolean {

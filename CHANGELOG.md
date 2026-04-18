@@ -10,6 +10,13 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
+
+## [Unreleased]
+### Fixed
+- Fixed player crash when running out of available videos ([@Secozzi](https://github.com/Secozzi)) ([#150](https://github.com/quickdesh/Animiru/pull/150))
+### Improved
+- Allow options in mpv.conf to override options set by `AniyomiMPVView` ([@Secozzi](https://github.com/Secozzi)) ([#151](https://github.com/quickdesh/Animiru/pull/151))
+
 ## [v0.19.9.0] - 2026-04-12
 ### Added
 - MPV: Implement MpvConfig for file management and custom button setup ([#375](https://github.com/Dark25/animetail2/pull/375))
