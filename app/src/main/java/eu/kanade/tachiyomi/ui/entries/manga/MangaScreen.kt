@@ -74,8 +74,6 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.presentation.core.screens.LoadingScreen
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class MangaScreen(
     private val mangaId: Long,
