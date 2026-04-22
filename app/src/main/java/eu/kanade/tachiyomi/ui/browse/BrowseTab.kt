@@ -67,11 +67,11 @@ data object BrowseTab : Tab {
     private val switchToTabNumberChannel = Channel<Int>(1, BufferOverflow.DROP_OLDEST)
 
     fun showExtension() {
-        switchToTabNumberChannel.trySend(4) // Manga extensions: tab no. 4
+        switchToTabNumberChannel.trySend(3) // Manga extensions in hideFeedTab layout
     }
 
     fun showAnimeExtension() {
-        switchToTabNumberChannel.trySend(3) // Anime extensions: tab no. 3
+        switchToTabNumberChannel.trySend(2) // Anime extensions in hideFeedTab layout
     }
 
     @Composable
@@ -152,9 +152,12 @@ data object BrowseTab : Tab {
             // KMK <--
             scrollable = true,
         )
-        LaunchedEffect(Unit) {
+        LaunchedEffect(hideFeedTab, feedTabInFront) {
+            val tabOffset = if (hideFeedTab) 0 else 1
             switchToTabNumberChannel.receiveAsFlow()
-                .collectLatest { state.scrollToPage(it) }
+                .collectLatest { tab ->
+                    state.scrollToPage(tab + tabOffset)
+                }
         }
 
         LaunchedEffect(Unit) {
