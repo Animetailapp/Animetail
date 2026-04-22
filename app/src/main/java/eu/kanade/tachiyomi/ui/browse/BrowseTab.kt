@@ -64,14 +64,19 @@ data object BrowseTab : Tab {
         navigator.push(GlobalAnimeSearchScreen())
     }
 
-    private val switchToTabNumberChannel = Channel<Int>(1, BufferOverflow.DROP_OLDEST)
+    private enum class ExtensionTabTarget {
+        ANIME,
+        MANGA,
+    }
+
+    private val switchToExtensionTabChannel = Channel<ExtensionTabTarget>(1, BufferOverflow.DROP_OLDEST)
 
     fun showExtension() {
-        switchToTabNumberChannel.trySend(3) // Manga extensions in hideFeedTab layout
+        switchToExtensionTabChannel.trySend(ExtensionTabTarget.MANGA)
     }
 
     fun showAnimeExtension() {
-        switchToTabNumberChannel.trySend(2) // Anime extensions in hideFeedTab layout
+        switchToExtensionTabChannel.trySend(ExtensionTabTarget.ANIME)
     }
 
     @Composable
@@ -90,6 +95,9 @@ data object BrowseTab : Tab {
         val animeExtensionsScreenModel = rememberScreenModel { AnimeExtensionsScreenModel() }
         val animeExtensionsState by animeExtensionsScreenModel.state.collectAsState()
 
+        val animeExtensionsTabContent = animeExtensionsTab(animeExtensionsScreenModel)
+        val mangaExtensionsTabContent = mangaExtensionsTab(mangaExtensionsScreenModel)
+
         // KMK -->
         val feedScreenModel = rememberScreenModel { FeedScreenModel() }
         // KMK <--
@@ -99,8 +107,8 @@ data object BrowseTab : Tab {
                 persistentListOf(
                     animeSourcesTab(),
                     mangaSourcesTab(),
-                    animeExtensionsTab(animeExtensionsScreenModel),
-                    mangaExtensionsTab(mangaExtensionsScreenModel),
+                    animeExtensionsTabContent,
+                    mangaExtensionsTabContent,
                     migrateAnimeSourceTab(),
                     migrateMangaSourceTab(),
                 )
@@ -114,8 +122,8 @@ data object BrowseTab : Tab {
                     ),
                     animeSourcesTab(),
                     mangaSourcesTab(),
-                    animeExtensionsTab(animeExtensionsScreenModel),
-                    mangaExtensionsTab(mangaExtensionsScreenModel),
+                    animeExtensionsTabContent,
+                    mangaExtensionsTabContent,
                     migrateAnimeSourceTab(),
                     migrateMangaSourceTab(),
                 )
@@ -129,12 +137,19 @@ data object BrowseTab : Tab {
                         feedScreenModel,
                         // KMK <--
                     ),
-                    animeExtensionsTab(animeExtensionsScreenModel),
-                    mangaExtensionsTab(mangaExtensionsScreenModel),
+                    animeExtensionsTabContent,
+                    mangaExtensionsTabContent,
                     migrateAnimeSourceTab(),
                     migrateMangaSourceTab(),
                 )
             // SY <--
+        }
+
+        val animeExtensionsTabIndex = remember(tabs, animeExtensionsTabContent) {
+            tabs.indexOf(animeExtensionsTabContent)
+        }
+        val mangaExtensionsTabIndex = remember(tabs, mangaExtensionsTabContent) {
+            tabs.indexOf(mangaExtensionsTabContent)
         }
 
         val state = rememberPagerState { tabs.size }
@@ -152,11 +167,16 @@ data object BrowseTab : Tab {
             // KMK <--
             scrollable = true,
         )
-        LaunchedEffect(hideFeedTab, feedTabInFront) {
-            val tabOffset = if (hideFeedTab) 0 else 1
-            switchToTabNumberChannel.receiveAsFlow()
-                .collectLatest { tab ->
-                    state.scrollToPage(tab + tabOffset)
+        LaunchedEffect(animeExtensionsTabIndex, mangaExtensionsTabIndex) {
+            switchToExtensionTabChannel.receiveAsFlow()
+                .collectLatest { target ->
+                    val tabIndex = when (target) {
+                        ExtensionTabTarget.ANIME -> animeExtensionsTabIndex
+                        ExtensionTabTarget.MANGA -> mangaExtensionsTabIndex
+                    }
+                    if (tabIndex >= 0) {
+                        state.scrollToPage(tabIndex)
+                    }
                 }
         }
 
