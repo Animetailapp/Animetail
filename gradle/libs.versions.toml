@@ -38,7 +38,7 @@ firebase-bom = "34.12.0"
 firebase-crashlytics = "3.0.7"
 flexibleAdapter = "c8013533"
 google-services = "4.4.4"
-image-decoder = "41c059e540"
+image-decoder = "e03b81e18a"
 injekt = "91edab2317"
 jsoup = "1.22.2"
 junit = "6.0.3"
@@ -140,7 +140,7 @@ google-api-client-oauth = { module = "com.google.oauth-client:google-oauth-clien
 google-api-services-drive = { module = "com.google.apis:google-api-services-drive", version = "v3-rev197-1.25.0" }
 google-services-gradle = { module = "com.google.gms:google-services", version.ref = "google-services" }
 gradleversionsx = { module = "com.github.ben-manes:gradle-versions-plugin", version = "0.51.0" }
-image-decoder = { module = "com.github.tachiyomiorg:image-decoder", version.ref = "image-decoder" }
+image-decoder = { module = "com.github.mihonapp:image-decoder", version.ref = "image-decoder" }
 insetter = { module = "dev.chrisbanes.insetter:insetter", version = "0.6.1" }
 injekt = { module = "com.github.mihonapp:injekt", version.ref = "injekt" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
