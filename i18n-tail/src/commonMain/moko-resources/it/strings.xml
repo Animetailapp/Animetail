@@ -2,60 +2,60 @@
 <resources>
   <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Stato tracciamento</string>
   <string name="tag">Etichette</string>
-  <string name="ungrouped">Ungrouped</string>
+  <string name="ungrouped">Senza gruppo</string>
   <string name="not_tracked">Non tracciato</string>
   <string name="group" comment="group More Info Menu">Gruppo</string>
-  <string name="anime_library_group_updates" comment="anime_library_group_updates Library settings">Anime Libreria aggiornamenti categoria dinamica</string>
-  <string name="manga_library_group_updates">Aggiornamenti della categoria dinamica Manga Library</string>
-  <string name="library_group_updates_global">Lancia sempre aggiornamenti globali</string>
-  <string name="library_group_updates_all_but_ungrouped">Avvia gli aggiornamenti globali solo per gli aggiornamenti, categoria per gli altri</string>
-  <string name="library_group_updates_all">Avvia continuamente gli aggiornamenti delle categorie</string>
-  <string name="reset_tags" comment="reset_tags Entry Info Edit">Reimposta Etichette</string>
-  <string name="add_tag">Aggiungi Tag</string>
+  <string name="anime_library_group_updates" comment="anime_library_group_updates Library settings">Aggiornamenti categoria dinamici nella libreria Anime</string>
+  <string name="manga_library_group_updates">Aggiornamenti categoria dinamici nella libreria Manga</string>
+  <string name="library_group_updates_global">Esegui sempre aggiornamenti globali</string>
+  <string name="library_group_updates_all_but_ungrouped">Esegui gli aggiornamenti globali solo per gli elementi senza gruppo, mentre quelli per categoria per il resto</string>
+  <string name="library_group_updates_all">Esegui sempre gli aggiornamenti per categoria</string>
+  <string name="reset_tags" comment="reset_tags Entry Info Edit">Reimposta etichette</string>
+  <string name="add_tag">Aggiungi etichetta</string>
   <string name="title_hint">Titolo: %1$s</string>
   <string name="description_hint">Descrizione: %1$s</string>
   <string name="author_hint">Autore: %1$s</string>
   <string name="artist_hint">Artista: %1$s</string>
   <string name="custom_entry_info">Informazioni sulla voce personalizzata</string>
-  <string name="reset_info">Reset Info</string>
-  <string name="pref_category_cast" comment="pref_category_cast Cast">Impostazioni Trasmetti</string>
+  <string name="reset_info">Reimposta Info</string>
+  <string name="pref_category_cast" comment="pref_category_cast Cast">Impostazioni Cast</string>
   <string name="pref_enable_cast">Abilita o disabilita Cast</string>
   <string name="action_cast">Invia a Cast</string>
   <string name="pref_show_downloaded_episode_file_size" comment="pref_show_downloaded_episode_file_size Preferences">Mostra la dimensione del file dell\'episodio scaricato</string>
-  <string name="pref_category_fork" comment="pref_category_fork Subsections">Impostazioni Fork</string>
+  <string name="pref_category_fork" comment="pref_category_fork Subsections">Impostazioni del Fork</string>
   <string name="action_edit_info" comment="action_edit_info Actions">Modifica informazioni</string>
-  <string name="special_services" comment="special_services Connections section">Servizi Speciali</string>
-  <string name="pref_category_connections">Connections</string>
-  <string name="pref_connections_summary">Discord, più a venire..</string>
-  <string name="connections_info">Servizi speciali che sono unici per Animetail e migliorare il modo in cui si utilizza l\'app</string>
+  <string name="special_services" comment="special_services Connections section">Servizi speciali</string>
+  <string name="pref_category_connections">Connessioni</string>
+  <string name="pref_connections_summary">Discord, altri in arrivo..</string>
+  <string name="connections_info">Servizi speciali che sono unici per Animetail e migliorano il modo in cui si utilizza l\'app</string>
   <string name="connections_discord">Discord</string>
-  <string name="connections_discord_info">Questo servizio Discord funziona attraverso la registrazione dei token. Usa a tuo rischio. Il tuo token è memorizzato localmente e Animetail non lo condivide altrove.</string>
+  <string name="connections_discord_info">Questo servizio Discord funziona attraverso l\'autenticazione via token. Usa a tuo rischio. Il tuo token è memorizzato localmente e Animetail non lo condivide altrove</string>
   <string name="pref_discord_rpc">Discord Rich Presence</string>
-  <string name="show_chapters_titles_title">Mostra I Titoli Episodi/Capitoli</string>
+  <string name="show_chapters_titles_title">Mostra i titoli degli episodi/capitoli</string>
   <string name="show_chapters_titles_subtitle">Mostra il titolo dell\'episodio/capitolo che stai leggendo</string>
-  <string name="pref_enable_discord_rpc">Abilita Presenza Ricca Discord</string>
+  <string name="pref_enable_discord_rpc">Abilita Discord Rich Presence</string>
   <string name="pref_discord_status">Stato Discord</string>
   <string name="pref_discord_dnd">⛔ Non Disturbare</string>
   <string name="pref_discord_idle">🌙 Inattivo</string>
   <string name="pref_discord_online">🟢 Online</string>
   <string name="pref_category_discord_incognito">RPC Incognito</string>
-  <string name="pref_discord_incognito">Modalità discord in incognito</string>
+  <string name="pref_discord_incognito">Modalità incognito di Discord</string>
   <string name="pref_discord_incognito_summary">Sovrascrivi quando la modalità Incognito è abilitata</string>
   <string name="pref_discord_incognito_categories_details">Le voci nelle categorie incluse non verranno visualizzate in Discord</string>
-  <string name="browsing" comment="browsing Discord section">Navigazione</string>
+  <string name="browsing" comment="browsing Discord section">Sfoglia</string>
   <string name="scrolling">Scorrimento attraverso</string>
-  <string name="messing">Messaggiare con</string>
+  <string name="messing">Spulciando</string>
   <string name="video">Video</string>
   <string name="comic">Fumetto</string>
   <string name="install_amnis" comment="install_amnis Torrent">Amnis Player deve essere installato</string>
-  <string name="pref_category_torrentserver">Preferenze Di TorrentServer</string>
+  <string name="pref_category_torrentserver">Preferenze di TorrentServer</string>
   <string name="pref_torrentserver_port">Porta TorrentServer</string>
   <string name="torrentserver_is_running">Il server Torrent è in esecuzione</string>
-  <string name="pref_torrent_trackers">Tracker Torrent</string>
-  <string name="pref_reset_torrent_trackers_string">Ripristina stringa torrent trackers predefinita</string>
-  <string name="pref_page_preload_amount" comment="pref_page_preload_amount Prefs">Importo precarico pagina</string>
-  <string name="preserve_reading_position" comment="preserve_reading_position Reader Reader Settings">Conserva la posizione di lettura sulle voci di lettura</string>
-  <string name="reader_bottom_buttons">Pulsanti Inferiori Del Lettore</string>
+  <string name="pref_torrent_trackers">Tracker dei torrent</string>
+  <string name="pref_reset_torrent_trackers_string">Ripristina stringa tracker dei torrent predefinita</string>
+  <string name="pref_page_preload_amount" comment="pref_page_preload_amount Prefs">Numero di pagine precaricate</string>
+  <string name="preserve_reading_position" comment="preserve_reading_position Reader Reader Settings">Ricorda l\'ultima pagina letta nelle voci già lette</string>
+  <string name="reader_bottom_buttons">Pulsanti inferiori del lettore</string>
   <string name="reader_bottom_buttons_summary">Personalizza quali pulsanti appaiono nella parte inferiore del lettore</string>
   <string name="action_set_first_page_cover" comment="action_set_first_page_cover Reader Actions">Imposta la prima pagina come copertina</string>
   <string name="action_set_second_page_cover">Imposta la seconda pagina come copertina</string>
@@ -111,7 +111,7 @@
   <string name="success_reset_sync_timestamp">Ultima sincronizzazione timestamp reset</string>
   <string name="syncyomi">SyncYomi</string>
   <string name="sync_completed_message">Fatto in %1$s</string>
-  <string name="last_synchronization">Ultima Sincronizzazione: %1$s</string>
+  <string name="last_synchronization">Ultima sincronizzazione: %1$s</string>
   <string name="google_drive">Google Drive</string>
   <string name="pref_google_drive_sign_in">Accedi</string>
   <string name="google_drive_sign_in_success">Accesso effettuato con successo</string>
@@ -125,7 +125,7 @@
   <string name="google_drive_login_failed">Accesso a Google Drive non riuscito: %s</string>
   <string name="google_drive_not_signed_in">Accesso non effettuato a Google Drive</string>
   <string name="error_uploading_sync_data">Errore nel caricamento dei dati di sincronizzazione su Google Drive</string>
-  <string name="error_deleting_google_drive_lock_file">Errore Eliminazione File Di Blocco Unità Google</string>
+  <string name="error_deleting_google_drive_lock_file">Errore nell\'eliminare lock file di Google Drive</string>
   <string name="error_before_sync_gdrive">Errore prima della sincronizzazione: %s</string>
   <string name="pref_purge_confirmation_title">Ripulisci conferma</string>
   <string name="pref_purge_confirmation_message">Eliminare i dati di sincronizzazione eliminerà tutti i dati di sincronizzazione da Google Drive. Sei sicuro di voler continuare?</string>
@@ -152,7 +152,7 @@
   <string name="flare_solver_error_webview">Errore di risoluzione con WebView</string>
   <string name="pref_enable_flare_solverr">Abilita FlareSolverr</string>
   <string name="pref_enable_flare_solverr_summary">Usa FlareSolverr per aggirare la protezione anti-bot di Cloudflare</string>
-  <string name="pref_flare_solverr_url">Url FlareSolverr</string>
+  <string name="pref_flare_solverr_url">URL FlareSolverr</string>
   <string name="pref_flare_solverr_url_summary">URL dell\'istanza FlareSolverr da usare per esempio http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Prova FlareSolverr e aggiorna l\'user agent</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Prova FlareSolverr per aggiornare l\'user agent. Richiesto solo una volta, quindi attiva/disattiva quando necessario.</string>
@@ -223,12 +223,12 @@
   <string name="cast_media_info">Informazioni Sul Media</string>
   <string name="cast_previous_video">Video Precedente</string>
   <string name="cast_next_video">Video Successivo</string>
-  <string name="cast_play">Gioca</string>
+  <string name="cast_play">Riproduci</string>
   <string name="cast_pause">Pausa</string>
   <string name="cast_rewind_30s">Riavvolgi 30s</string>
   <string name="cast_forward_30s">Inoltra 30s</string>
   <string name="cast_volume">Volume</string>
-  <string name="cast_end_session">Termina Sessione Cast</string>
+  <string name="cast_end_session">Termina sessione Cast</string>
   <string name="empty_queue">La coda è vuota</string>
   <string name="cast_end_session_message">Sei sicuro di voler terminare la sessione di cast corrente?</string>
   <string name="cast_end_session_confirm">Termina Sessione</string>
@@ -238,14 +238,14 @@
     <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Impostazioni Sottotitoli</item>
     <item>Impostazioni Sottotitoli</item>
   </string-array>
-  <string name="cast_subtitle_font_size">Font Size</string>
-  <string name="cast_subtitle_text_color">Colore Del Testo</string>
+  <string name="cast_subtitle_font_size">Dimensioni Carattere</string>
+  <string name="cast_subtitle_text_color">Colore testo</string>
   <string name="cast_subtitle_background">Sfondo</string>
   <string name="cast_subtitle_shadow">Ombra</string>
   <string name="cast_subtitle_apply">Applica</string>
   <string name="cast_subtitle_reset">Ripristina predefinito</string>
   <string name="cast_subtitle_shadow_None">Nessuno</string>
-  <string name="cast_subtitle_shadow_Light">Chiaro</string>
+  <string name="cast_subtitle_shadow_Light">Leggero</string>
   <string name="cast_subtitle_shadow_Medium">Medio</string>
   <string name="cast_subtitle_shadow_Strong">Forte</string>
   <string name="cast_subtitle_preview">Anteprima Testo &lt;unk&gt; &lt;unk&gt;</string>
@@ -266,23 +266,23 @@
   <string name="cast_subtitle_border_depressed">Depressed</string>
   <string name="cast_connection_error">Errore Di Connessione</string>
   <string name="discord_accounts">Account Discord</string>
-  <string name="active_account">Account Attivo</string>
+  <string name="active_account">Account in uso</string>
   <string name="no_accounts_found">Nessun account trovato</string>
   <string name="login_failed">Accesso non riuscito</string>
   <string name="action_display_comfortable_grid_panorama">Griglia confortevole Panorama</string>
-  <string name="action_bulk_select">Modalità selezione Bulk</string>
-  <string name="action_move_up">Sposta In Alto</string>
-  <string name="action_move_down">Sposta In Basso</string>
+  <string name="action_bulk_select">Modalità selezione in blocco</string>
+  <string name="action_move_up">Sposta in alto</string>
+  <string name="action_move_down">Sposta in basso</string>
   <string name="too_many_in_feed" comment="too_many_in_feed Feed Tab">Troppe fonti nel tuo feed, non puoi aggiungere più di 20</string>
   <string name="action_sort_feed">Ordina feed</string>
   <string name="sort_feed_confirmation">Vuoi ordinare i feed in modo alfabetico?</string>
-  <string name="saved_searches_feeds">Ricerche Salvate &amp; Feeds</string>
-  <string name="saved_searches_add_feed">Ricerche salvate (Si prega di aggiungere al Feed)</string>
+  <string name="saved_searches_feeds">Ricerche Salvate &amp; Feed</string>
+  <string name="saved_searches_add_feed">Ricerche salvate (Tieni premuto per aggiungere al Feed)</string>
   <string name="pref_hide_feed">Nascondi scheda Feed</string>
   <string name="pref_feed_position">Posizione scheda feed</string>
-  <string name="pref_feed_position_summery">Vuoi che la scheda feed sia la prima scheda in scorrimento? Questo renderà la scheda predefinita quando si apre la navigazione, non è consigliabile se si è su dati o una rete a misura</string>
+  <string name="pref_feed_position_summery">Vuoi che la scheda feed sia la prima scheda in Sfoglia? Questo renderà la scheda predefinita quando si apre Sfoglia, non è consigliabile se si è su rete dati o una rete a consumo</string>
   <string name="feed">Feed</string>
-  <string name="feed_delete">Eliminare il feed item?</string>
+  <string name="feed_delete">Eliminare l\'elemento del feed?</string>
   <string name="feed_tab_empty">Non hai nessuna fonte nel tuo feed, vai in alto a destra per aggiungerne una</string>
   <string name="feed_add">Aggiungere %1$s al feed?</string>
   <string name="saved_searches" comment="saved_searches Saved Searches">Ricerche Salvate</string>
@@ -291,7 +291,7 @@
   <string name="save_search_failed_to_load">Impossibile caricare le ricerche salvate!</string>
   <string name="save_search_failed_to_load_message">Si è verificato un errore durante il caricamento delle ricerche salvate.</string>
   <string name="save_search_delete">Eliminare la query di ricerca salvata?</string>
-  <string name="save_search_delete_message">Are you sure you want to delete your saved search query: \'%1$s\'?</string>
+  <string name="save_search_delete_message">Sei sicuro di voler eliminare la tua query di ricerca salvata: \'%1$s\'?</string>
   <string name="save_search_invalid">Ricerca salvata non valida, i filtri sono stati modificati</string>
   <string name="save_search_invalid_name">Nome di ricerca salvato non valido</string>
   <string name="no_source_categories" comment="no_source_categories Source Categories">Nessuna categoria di origine disponibile</string>
@@ -299,16 +299,16 @@
   <string name="pref_source_related_mangas" comment="pref_source_related_mangas Browse settings">Suggerimenti</string>
   <string name="pref_source_related_mangas_summary">Mostra i suggerimenti del sito web durante la visualizzazione della voce</string>
   <string name="related_mangas_website_suggestions">Suggerimenti Sito Web</string>
-  <string name="related_mangas_more">Più come questi...</string>
-  <string name="saved_searches_delete">Ricerche salvate (Si prega di eliminare)</string>
+  <string name="related_mangas_more">Più simili a questi...</string>
+  <string name="saved_searches_delete">Ricerche salvate (Tieni premuto per eliminare)</string>
   <string name="pref_expand_related_animes">Espandi Suggerimenti</string>
   <string name="pref_expand_related_animes_summary">Se disattivato, i suggerimenti non caricheranno automaticamente &amp; mostra espansa</string>
-  <string name="put_related_animes_in_overflow">Suggerimenti in eccesso</string>
-  <string name="put_related_animes_in_overflow_summary">Metti il pulsante Suggerimenti nel menu di overflow invece che nella pagina di inserimento</string>
+  <string name="put_related_animes_in_overflow">Suggerimenti in overflow</string>
+  <string name="put_related_animes_in_overflow_summary">Metti il pulsante Suggerimenti nel menu di overflow invece che nella pagina della voce</string>
   <string name="pref_show_home_on_related_animes">Home da suggerimenti</string>
-  <string name="pref_show_home_on_related_animes_summary">Mostra un\'icona durante la navigazione dei suggerimenti per tornare direttamente alla Home</string>
+  <string name="pref_show_home_on_related_animes_summary">Mostra un\'icona mentre sfogli i suggerimenti per tornare direttamente alla Home</string>
   <string name="pref_source_related_animes">Suggerimenti</string>
-  <string name="pref_source_related_animes_summary">Mostra i suggerimenti del sito web durante la visualizzazione della voce</string>
-  <string name="pref_source_navigation">Sostituisci l\'ultimo pulsante</string>
-  <string name="pref_source_navigation_summery">Sostituisci l\'ultimo pulsante con una vista di navigazione personalizzata che include sia l\'ultima che la navigazione</string>
+  <string name="pref_source_related_animes_summary">Mostra i suggerimenti della fonte durante la visualizzazione della voce</string>
+  <string name="pref_source_navigation">Sostituisci il pulsante Ultimi</string>
+  <string name="pref_source_navigation_summery">Sostituisci il pulsante Ultimi con una vista di navigazione personalizzata che include sia Ultimi che Sfoglia</string>
 </resources>
