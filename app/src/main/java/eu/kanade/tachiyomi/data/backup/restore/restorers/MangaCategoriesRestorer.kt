@@ -27,7 +27,6 @@ class MangaCategoriesRestorer(
                     val order = nextOrder++
                     mangaHandler.awaitOneExecutable {
                         categoriesQueries.insert(it.name, order, it.flags)
-                        categoriesQueries.selectLastInsertedRowId()
                     }
                         .let { id -> it.toCategory(id).copy(order = order) }
                 }

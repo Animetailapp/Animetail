@@ -1,22 +1,24 @@
 package eu.kanade.domain.entries.manga.interactor
 
-import tachiyomi.data.handlers.manga.MangaDatabaseHandler
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import tachiyomi.data.Database
 
 class SetExcludedScanlators(
-    private val handler: MangaDatabaseHandler,
+    private val database: Database,
 ) {
 
     suspend fun await(mangaId: Long, excludedScanlators: Set<String>) {
-        handler.await(inTransaction = true) {
-            val currentExcluded = handler.awaitList {
-                excluded_scanlatorsQueries.getExcludedScanlatorsByMangaId(mangaId)
-            }.toSet()
+        database.transaction {
+            val currentExcluded = database.excluded_scanlatorsQueries
+                .getExcludedScanlatorsByMangaId(mangaId)
+                .executeAsList()
+                .toSet()
             val toAdd = excludedScanlators.minus(currentExcluded)
             for (scanlator in toAdd) {
-                excluded_scanlatorsQueries.insert(mangaId, scanlator)
+                database.excluded_scanlatorsQueries.insert(mangaId, scanlator)
             }
             val toRemove = currentExcluded.minus(excludedScanlators)
-            excluded_scanlatorsQueries.remove(mangaId, toRemove)
+            database.excluded_scanlatorsQueries.remove(mangaId, toRemove)
         }
     }
 }

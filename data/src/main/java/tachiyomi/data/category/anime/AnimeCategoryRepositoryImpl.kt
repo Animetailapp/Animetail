@@ -72,14 +72,12 @@ class AnimeCategoryRepositoryImpl(
     }
 
     override suspend fun updatePartialAnimeCategories(updates: List<CategoryUpdate>) {
-        handler.await(inTransaction = true) {
-            for (update in updates) {
-                updatePartialBlocking(update)
-            }
+        for (update in updates) {
+            updatePartialAnimeCategory(update)
         }
     }
 
-    private fun AnimeDatabase.updatePartialBlocking(update: CategoryUpdate) {
+    private suspend fun AnimeDatabase.updatePartialBlocking(update: CategoryUpdate) {
         categoriesQueries.update(
             name = update.name,
             order = update.order,

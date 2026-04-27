@@ -198,9 +198,12 @@ AND (
     )
 );
 
-insert:
-INSERT INTO mangas(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, notes)
-VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :notes);
+insert {
+    INSERT INTO mangas(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, notes)
+    VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :notes);
+
+    SELECT last_insert_rowid();
+}
 
 update:
 UPDATE mangas SET
@@ -228,5 +231,39 @@ UPDATE mangas SET
     notes = coalesce(:notes, notes)
 WHERE _id = :mangaId;
 
-selectLastInsertedRowId:
-SELECT last_insert_rowid();
+insertNetworkManga {
+    -- Insert the manga if it doesn't exist already
+    INSERT INTO mangas(
+        source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+        last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added,
+        update_strategy, calculate_interval, last_modified_at, version
+    )
+    SELECT
+        :source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite,
+        :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded,
+        :updateStrategy, :calculateInterval, 0, :version
+    WHERE NOT EXISTS(SELECT 0 FROM mangas WHERE source = :source AND url = :url);
+
+    -- Update the relevant details if applicable and not favorite
+    UPDATE mangas
+    SET
+        title = CASE WHEN :updateTitle THEN :title ELSE title END,
+        thumbnail_url = CASE WHEN :updateCover THEN :thumbnailUrl ELSE thumbnail_url END,
+        author = CASE WHEN :updateDetails THEN :author ELSE author END,
+        artist = CASE WHEN :updateDetails THEN :artist ELSE artist END,
+        description = CASE WHEN :updateDetails THEN :description ELSE description END,
+        genre = CASE WHEN :updateDetails THEN :genre ELSE genre END,
+        status = CASE WHEN :updateDetails THEN :status ELSE status END,
+        update_strategy = CASE WHEN :updateDetails THEN :updateStrategy ELSE update_strategy END,
+        initialized = :updateDetails
+    WHERE source = :source
+    AND url = :url
+    AND favorite = 0;
+
+    -- Finally return the manga
+    SELECT *
+    FROM mangas
+    WHERE source = :source
+    AND url = :url
+    LIMIT 1;
+}

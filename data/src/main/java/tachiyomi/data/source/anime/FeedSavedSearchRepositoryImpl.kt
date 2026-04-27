@@ -106,14 +106,12 @@ class FeedSavedSearchRepositoryImpl(
     }
 
     override suspend fun updatePartial(updates: List<FeedSavedSearchUpdate>) {
-        handler.await(inTransaction = true) {
-            for (update in updates) {
-                updatePartialBlocking(update)
-            }
+        for (update in updates) {
+            updatePartial(update)
         }
     }
 
-    private fun AnimeDatabase.updatePartialBlocking(update: FeedSavedSearchUpdate) {
+    private suspend fun AnimeDatabase.updatePartialBlocking(update: FeedSavedSearchUpdate) {
         feed_saved_searchQueries.update(
             source = update.source,
             saved_search = update.savedSearch,

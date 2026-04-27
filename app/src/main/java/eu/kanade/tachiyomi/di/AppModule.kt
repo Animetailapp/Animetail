@@ -84,7 +84,7 @@ class AppModule(val app: Application) : InjektModule {
         val sqlDriverManga =
             synchronized(mangaSqlDriverLock) {
                 mangaSqlDriverRef?.get() ?: AndroidxSqliteDriver(
-                    driver = BundledSQLiteDriver(),
+                    BundledSQLiteDriver(),
                     databaseType = AndroidxSqliteDatabaseType.FileProvider {
                         app.getDatabasePath("tachiyomi.db").absolutePath
                     },
@@ -98,7 +98,7 @@ class AppModule(val app: Application) : InjektModule {
         val sqlDriverAnime =
             synchronized(animeSqlDriverLock) {
                 animeSqlDriverRef?.get() ?: AndroidxSqliteDriver(
-                    driver = BundledSQLiteDriver(),
+                    BundledSQLiteDriver(),
                     databaseType = AndroidxSqliteDatabaseType.FileProvider {
                         app.getDatabasePath("tachiyomi.animedb").absolutePath
                     },

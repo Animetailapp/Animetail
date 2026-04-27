@@ -279,7 +279,6 @@ class MangaRestorer(
                 version = manga.version,
                 notes = manga.notes,
             )
-            mangasQueries.selectLastInsertedRowId()
         }
     }
 
