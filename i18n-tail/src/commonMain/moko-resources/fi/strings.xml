@@ -1,16 +1,16 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-  <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Seurannan tila</string>
+  <string name="tracking_status">Seurannan tila</string>
   <string name="tag">Tunnisteet</string>
   <string name="ungrouped">Ungrouped</string>
   <string name="not_tracked">Ei seurattu</string>
-  <string name="group" comment="group More Info Menu">Ryhmä</string>
-  <string name="anime_library_group_updates" comment="anime_library_group_updates Library settings">Anime Library dynaamiset kategoriapäivitykset</string>
+  <string name="group">Ryhmä</string>
+  <string name="anime_library_group_updates">Anime Library dynaamiset kategoriapäivitykset</string>
   <string name="manga_library_group_updates">Manga Kirjaston dynaamiset tuoteryhmäpäivitykset</string>
   <string name="library_group_updates_global">Käynnistä aina globaalit päivitykset</string>
   <string name="library_group_updates_all_but_ungrouped">Käynnistä maailmanlaajuiset päivitykset vain ryhmitämättömille, kategoriapäivityksille muille</string>
   <string name="library_group_updates_all">Käynnistä kategorian päivitykset koko ajan</string>
-  <string name="reset_tags" comment="reset_tags Entry Info Edit">Nollaa Tagit</string>
+  <string name="reset_tags">Nollaa Tagit</string>
   <string name="add_tag">Lisää Tagi</string>
   <string name="title_hint">Arvonimi: %1$s</string>
   <string name="description_hint">Kuvaus: %1$s</string>
@@ -18,13 +18,13 @@
   <string name="artist_hint">Esittäjä: %1$s</string>
   <string name="custom_entry_info">Mukautetut tietueen tiedot</string>
   <string name="reset_info">Reset Info</string>
-  <string name="pref_category_cast" comment="pref_category_cast Cast">Lähetyksen Asetukset</string>
+  <string name="pref_category_cast">Lähetyksen Asetukset</string>
   <string name="pref_enable_cast">Ota käyttöön tai poista käytöstä</string>
   <string name="action_cast">Lähetä lähetykseen</string>
-  <string name="pref_show_downloaded_episode_file_size" comment="pref_show_downloaded_episode_file_size Preferences">Näytä ladatun jakson tiedoston koko</string>
-  <string name="pref_category_fork" comment="pref_category_fork Subsections">Forkin Asetukset</string>
-  <string name="action_edit_info" comment="action_edit_info Actions">Muokkaa tietoja</string>
-  <string name="special_services" comment="special_services Connections section">Erityiset Palvelut</string>
+  <string name="pref_show_downloaded_episode_file_size">Näytä ladatun jakson tiedoston koko</string>
+  <string name="pref_category_fork">Forkin Asetukset</string>
+  <string name="action_edit_info">Muokkaa tietoja</string>
+  <string name="special_services">Erityiset Palvelut</string>
   <string name="pref_category_connections">Yhteydet</string>
   <string name="pref_connections_summary">Discord, lisää tullaan..</string>
   <string name="connections_info">Erikoispalvelut, jotka ovat ainutlaatuisia Animetail ja parantaa tapaa käyttää sovellusta</string>
@@ -42,22 +42,22 @@
   <string name="pref_discord_incognito">Discord Incognito -tila</string>
   <string name="pref_discord_incognito_summary">Ohita kun Incognito-tila on käytössä</string>
   <string name="pref_discord_incognito_categories_details">Sisällytettyjä kategorioita ei näytetä Discordissa</string>
-  <string name="browsing" comment="browsing Discord section">Selataan</string>
+  <string name="browsing">Selataan</string>
   <string name="scrolling">Vieritä läpi</string>
   <string name="messing">Messing noin kanssa</string>
   <string name="video">Video</string>
   <string name="comic">Sarjakuva</string>
-  <string name="install_amnis" comment="install_amnis Torrent">Amnis Player täytyy asentaa</string>
+  <string name="install_amnis">Amnis Player täytyy asentaa</string>
   <string name="pref_category_torrentserver">TorrentServer Asetukset</string>
   <string name="pref_torrentserver_port">TorrentServer Portti</string>
   <string name="torrentserver_is_running">Torrent- palvelin on käynnissä</string>
   <string name="pref_torrent_trackers">Torrent- Seurantapalvelimet</string>
   <string name="pref_reset_torrent_trackers_string">Palauta torrent-tiedosto merkkijono</string>
-  <string name="pref_page_preload_amount" comment="pref_page_preload_amount Prefs">Sivun esilatauksen määrä</string>
-  <string name="preserve_reading_position" comment="preserve_reading_position Reader Reader Settings">Säilytä lukemisen sijainti luetuissa merkinnöissä</string>
+  <string name="pref_page_preload_amount">Sivun esilatauksen määrä</string>
+  <string name="preserve_reading_position">Säilytä lukemisen sijainti luetuissa merkinnöissä</string>
   <string name="reader_bottom_buttons">Lukija Alapainikkeet</string>
   <string name="reader_bottom_buttons_summary">Mukauta mitä painikkeita lukijan alareunassa näkyy</string>
-  <string name="action_set_first_page_cover" comment="action_set_first_page_cover Reader Actions">Aseta ensimmäinen sivu kansiksi</string>
+  <string name="action_set_first_page_cover">Aseta ensimmäinen sivu kansiksi</string>
   <string name="action_set_second_page_cover">Aseta toinen sivu kansiksi</string>
   <string name="action_save_first_page">Tallenna ensimmäinen sivu</string>
   <string name="action_save_second_page">Tallenna toinen sivu</string>
@@ -65,22 +65,22 @@
   <string name="action_share_second_page">Jaa toinen sivu</string>
   <string name="action_save_combined_page">Tallenna yhdistetty sivu</string>
   <string name="action_share_combined_page">Jaa yhdistetty sivu</string>
-  <string name="share_pages_info" comment="share_pages_info Reader Sharing">%1$s: %2$s, sivut %3$s</string>
-  <string name="page_layout" comment="page_layout Double page spread">Sivun asettelu</string>
+  <string name="share_pages_info">%1$s: %2$s, sivut %3$s</string>
+  <string name="page_layout">Sivun asettelu</string>
   <string name="shift_double_pages">Siirrä yksi sivu yli</string>
   <string name="double_pages">Kaksinkertaiset sivut</string>
   <string name="single_page">Yksi sivu</string>
   <string name="automatic_orientation">Automaattinen (suuntautumisen perusteella)</string>
   <string name="automatic_can_still_switch">Kun käytät automaattista sivuasettelua, voit silti vaihtaa asettelujen välillä lukematta tätä asetusta</string>
   <string name="invert_double_pages">Käännä kaksoissivut </string>
-  <string name="center_margin" comment="center_margin Center margin">Keski- Marginaali</string>
+  <string name="center_margin">Keski- Marginaali</string>
   <string name="center_margin_none">Ei Mitään</string>
   <string name="center_margin_double_page">Lisää tuplasivulle</string>
   <string name="center_margin_wide_page">Lisää laajalle sivulle</string>
   <string name="center_margin_double_and_wide_page">Lisää molempiin</string>
   <string name="pref_center_margin">Keskelle marginaalin tyyppi</string>
   <string name="pref_center_margin_summary">Aseta välilyönti asentoon kokoontaitettavien laitteiden osalta.</string>
-  <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">Mukautettu Värivalitsin</string>
+  <string name="pref_custom_color">Mukautettu Värivalitsin</string>
   <string name="custom_color_description">Valitse väri mukautetulle teemalle</string>
   <string name="theme_custom">Muokattu Teema</string>
   <string name="label_sync">Synkronointi</string>
@@ -137,15 +137,15 @@
   <string name="sync_on_app_start">Synkronoi sovelluksen käynnistyessä</string>
   <string name="sync_on_app_resume">Synkronoi sovelluksen ollessa uudelleen</string>
   <string name="sync_library">Synkronoi kirjasto</string>
-  <string name="extensions_page_need_refresh" comment="extensions_page_need_refresh repo management">Päivitä lisäosa sivu päivitettäväksi.</string>
-  <string name="pref_category_navbar" comment="pref_category_navbar navigation">Navbar</string>
+  <string name="extensions_page_need_refresh">Päivitä lisäosa sivu päivitettäväksi.</string>
+  <string name="pref_category_navbar">Navbar</string>
   <string name="pref_hide_updates_button">Näytä päivitykset nav</string>
   <string name="pref_hide_history_button">Näytä historia navissa</string>
   <string name="pref_show_bottom_bar_labels">Näytä aina navigointitunnisteet</string>
-  <string name="select_tracker" comment="select_tracker tracker anime e manga details">Valitse seurantaohjelma</string>
+  <string name="select_tracker">Valitse seurantaohjelma</string>
   <string name="entry_not_tracked">Merkintää ei jäljitetä.</string>
   <string name="fill_from_tracker">Täytä seurantapalvelusta</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr toimii. Käyttäjäagentti päivitetty. Käynnistä sovellus uudelleen</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverr toimii. Käyttäjäagentti päivitetty. Käynnistä sovellus uudelleen</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverr ei toimi. Käyttäjäagenttia ei ole päivitetty. Tarkista asetuksesi</string>
   <string name="flare_solver_error">Virhe yhteyttä FlareSolverriin</string>
   <string name="flare_solver_error_webview">Virhe selvitettäessä WebView:ää</string>
@@ -155,22 +155,13 @@
   <string name="pref_flare_solverr_url_summary">FlareSolverrin ilmentymän URL-osoite, jota käytetään esimerkiksi http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Testaa FlareSolverr ja päivitä käyttäjä agentti</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Testaa FlareSolverr päivittääksesi käyttäjän agentin. Tarvittava vain kerran; ota sitten tarvittaessa käyttöön.</string>
-  <string-array name="title_cast_quality">
-    <item>Valitse Cast Quality/Provider</item>
-    <item>Valitse Laatu</item>
-  </string-array>
+  <string name="title_cast_quality">Valitse Cast Quality/Provider</string>
   <string name="cast_not_connected">Suora ei yhdistetty</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>Video lisätty jonoon</item>
-    <item>Video lisätty jonoon</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>Virhe ladattaessa videota Cast</item>
-    <item>Virhe ladattaessa videota</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">Video lisätty jonoon</string>
+  <string name="cast_error_loading">Virhe ladattaessa videota Cast</string>
   <string name="server_local_notification_casting">Paikallinen palvelin on käynnissä. Napauta pysäyttääksesi sen.</string>
   <string name="server_local_notification_channel_description">Paikallisen palvelimen ilmoituskanava</string>
-  <string name="eh_autoscroll" comment="eh_autoscroll Auto scroll">Automaattinen Vieritys</string>
+  <string name="eh_autoscroll">Automaattinen Vieritys</string>
   <string name="eh_retry_all">Yritä uudelleen</string>
   <string name="eh_boost_page">Tehosta sivu</string>
   <string name="eh_autoscroll_help">Automaattinen vieritysohje</string>
@@ -192,7 +183,7 @@
   </plurals>
   <string name="pref_category_castserver">Lähetä Palvelin</string>
   <string name="pref_cast_server_port">Lähetä Palvelimen Portti</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Discordin Mukauttaminen</string>
+  <string name="pref_category_discord_customization">Discordin Mukauttaminen</string>
   <string name="pref_discord_custom_message">Mukautettu Viesti</string>
   <string name="pref_discord_custom_message_summary">Mukautettu viesti, joka näytetään Discordissa</string>
   <string name="pref_discord_show_progress">Näytä Edistyminen</string>
@@ -205,7 +196,7 @@
   <string name="pref_discord_show_download_button_summary">Näyttää painikkeen, jolla sovellus ladataan</string>
   <string name="pref_discord_show_discord_button">Näytä Discord-painike</string>
   <string name="pref_discord_show_discord_button_summary">Näyttää painikkeen, jolla voit liittyä Discord-palvelimeen</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Soiton Jono</string>
+  <string name="cast_queue_title">Soiton Jono</string>
   <string name="action_clear_queue">Tyhjennä Jono</string>
   <string name="cast_remove_from_queue">Poista jonosta</string>
   <string name="move_to_top">Siirrä ylimmäksi</string>
@@ -218,7 +209,7 @@
   <string name="queue">Jono</string>
   <string name="move_to_bottom">Siirrä alimmaksi</string>
   <string name="action_end_session">Lopeta Cast Istunto</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Käytettävissä Olevat Laitteet</string>
+  <string name="cast_available_devices">Käytettävissä Olevat Laitteet</string>
   <string name="cast_media_info">Median Tiedot</string>
   <string name="cast_previous_video">Edellinen Video</string>
   <string name="cast_next_video">Seuraava Video</string>
@@ -233,10 +224,7 @@
   <string name="cast_end_session_confirm">Lopeta Istunto</string>
   <string name="cast_end_session_cancel">Peruuta</string>
   <string name="playback_speed">Toiston Nopeus</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Tekstityksen Asetukset</item>
-    <item>Tekstityksen Asetukset</item>
-  </string-array>
+  <string name="cast_subtitle_settings">Tekstityksen Asetukset</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">Tekstin Väri</string>
   <string name="cast_subtitle_background">Tausta</string>
@@ -272,7 +260,7 @@
   <string name="action_bulk_select">Bulk valintatila</string>
   <string name="action_move_up">Siirrä Ylös</string>
   <string name="action_move_down">Siirrä Alas</string>
-  <string name="too_many_in_feed" comment="too_many_in_feed Feed Tab">Liian monta lähdettä rehussa, ei voi lisätä enemmän kuin 20</string>
+  <string name="too_many_in_feed">Liian monta lähdettä rehussa, ei voi lisätä enemmän kuin 20</string>
   <string name="action_sort_feed">Lajittele syötteet</string>
   <string name="sort_feed_confirmation">Haluatko lajitella syötteet aakkosellisesti?</string>
   <string name="saved_searches_feeds">Tallennetut Haut &amp; Syötteet</string>
@@ -284,7 +272,7 @@
   <string name="feed_delete">Poista syötteen kohde?</string>
   <string name="feed_tab_empty">Sinulla ei ole mitään lähteitä syötteessäsi, siirry yläoikealle lisätäksesi yhden lähteen</string>
   <string name="feed_add">Lisää %1$s syötteeseen?</string>
-  <string name="saved_searches" comment="saved_searches Saved Searches">Tallennetut Haut</string>
+  <string name="saved_searches">Tallennetut Haut</string>
   <string name="save_search">Tallennetaanko nykyinen haku?</string>
   <string name="save_search_hint">Minun hakuni nimi</string>
   <string name="save_search_failed_to_load">Tallennetun haun lataaminen epäonnistui!</string>
@@ -293,9 +281,9 @@
   <string name="save_search_delete_message">Oletko varma, että haluat poistaa tallennetun hakukyselyn: \'%1$s\'?</string>
   <string name="save_search_invalid">Tallennetut hakutulokset eivät kelpaa, suodattimet ovat muuttuneet</string>
   <string name="save_search_invalid_name">Virheellinen tallennettu hakunimi</string>
-  <string name="no_source_categories" comment="no_source_categories Source Categories">Lähdekategorioita ei ole saatavilla</string>
+  <string name="no_source_categories">Lähdekategorioita ei ole saatavilla</string>
   <string name="invalid_category_name">Kategorian nimi ei kelpaa</string>
-  <string name="pref_source_related_mangas" comment="pref_source_related_mangas Browse settings">Ehdotukset</string>
+  <string name="pref_source_related_mangas">Ehdotukset</string>
   <string name="pref_source_related_mangas_summary">Näytä lähdesivuston ehdotukset katseltaessa merkintää</string>
   <string name="related_mangas_website_suggestions">Verkkosivujen Ehdotukset</string>
   <string name="related_mangas_more">Enemmän näiden...</string>
@@ -310,4 +298,52 @@
   <string name="pref_source_related_animes_summary">Näytä lähdesivuston ehdotukset katseltaessa merkintää</string>
   <string name="pref_source_navigation">Korvaa uusin painike</string>
   <string name="pref_source_navigation_summery">Korvaa uusin painike mukautetulla selausnäkymällä, joka sisältää sekä uusimman että selailun</string>
+  <string name="app_cast_id">F033F567</string>
+  <string name="media_route_menu_title">EXTEND</string>
+  <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
+  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
+  <string name="pref_show_cast">Show Cast</string>
+  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
+  <string name="login_error">Login error</string>
+  <string name="save">Save</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
+  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
+  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
+  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
+  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
+  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
+  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
+  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
+  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
+  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
+  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
+  <string name="network_stream_url_label">Stream URL</string>
+  <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
+  <string name="network_stream_invalid_url">Enter a valid URL</string>
+  <string name="network_stream_title_label">Title (optional)</string>
+  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
+  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
+  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
+  <string name="network_stream_referer_label">Referer header</string>
+  <string name="network_stream_user_agent_label">User-Agent header</string>
+  <string name="network_stream_headers_label">Additional headers</string>
+  <string name="network_stream_headers_hint">Header-Name: Header value</string>
+  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
+  <string name="network_stream_play">Play stream</string>
+  <string name="network_stream_reset">Clear fields</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
+  <string name="show_seek_icon">Show seek icon</string>
+  <string name="show_seek_time">Show seek time</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
+  <string name="player_sheets_subtitles_ass_yes">Yes</string>
+  <string name="player_sheets_subtitles_ass_scale">Scale</string>
+  <string name="player_sheets_subtitles_ass_force">Force</string>
+  <string name="player_sheets_subtitles_ass_strip">Strip</string>
+  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
+  <string name="action_set_date_title">Set upload date</string>
+  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
+  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
+  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
 </resources>
