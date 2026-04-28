@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Статус відстеження</string>
+  <string name="tracking_status">Статус відстеження</string>
   <string name="tag">Мітки</string>
   <string name="ungrouped">Ungrouped</string>
   <string name="not_tracked">Без відстеження</string>
-  <string name="group" comment="group More Info Menu">Група</string>
-  <string name="anime_library_group_updates" comment="anime_library_group_updates Library settings">Аніме оновлення динамічної бібліотеки</string>
+  <string name="group">Група</string>
+  <string name="anime_library_group_updates">Аніме оновлення динамічної бібліотеки</string>
   <string name="manga_library_group_updates">Оновлення динамічної категорії бібліотеки Манга</string>
   <string name="library_group_updates_global">Завжди запускати глобальні оновлення</string>
   <string name="library_group_updates_all_but_ungrouped">Запустити глобальні оновлення тільки для негрупих, оновлень категорій для інших</string>
   <string name="library_group_updates_all">Завантажувати оновлення категорії весь час</string>
-  <string name="reset_tags" comment="reset_tags Entry Info Edit">Скинути мітки</string>
+  <string name="reset_tags">Скинути мітки</string>
   <string name="add_tag">Добавити теґ</string>
   <string name="title_hint">Title: %1$s</string>
   <string name="description_hint">Description: %1$s</string>
@@ -18,13 +18,13 @@
   <string name="artist_hint">Artist: %1$s</string>
   <string name="custom_entry_info">Додаткова інформація</string>
   <string name="reset_info">Reset Info</string>
-  <string name="pref_category_cast" comment="pref_category_cast Cast">Налаштування трансляції</string>
+  <string name="pref_category_cast">Налаштування трансляції</string>
   <string name="pref_enable_cast">Увімкнути або вимкнути Cast</string>
   <string name="action_cast">Відправити в Cast</string>
-  <string name="pref_show_downloaded_episode_file_size" comment="pref_show_downloaded_episode_file_size Preferences">Показати завантажену серію розмір файлу</string>
-  <string name="pref_category_fork" comment="pref_category_fork Subsections">Налаштування Форка</string>
-  <string name="action_edit_info" comment="action_edit_info Actions">Редагувати інформацію</string>
-  <string name="special_services" comment="special_services Connections section">Спеціальні послуги</string>
+  <string name="pref_show_downloaded_episode_file_size">Показати завантажену серію розмір файлу</string>
+  <string name="pref_category_fork">Налаштування Форка</string>
+  <string name="action_edit_info">Редагувати інформацію</string>
+  <string name="special_services">Спеціальні послуги</string>
   <string name="pref_category_connections">З\'єднання</string>
   <string name="pref_connections_summary">Discord, ще більше...</string>
   <string name="connections_info">Спеціальні послуги, які унікальні для Animetail та підвищують спосіб використання додатку</string>
@@ -42,22 +42,22 @@
   <string name="pref_discord_incognito">Режим інкогніто Discord</string>
   <string name="pref_discord_incognito_summary">Перезаписувати, коли ввімкнено режим інкогніто</string>
   <string name="pref_discord_incognito_categories_details">Категорії у базі даних не будуть відображатися в Discord</string>
-  <string name="browsing" comment="browsing Discord section">Перегляд</string>
+  <string name="browsing">Перегляд</string>
   <string name="scrolling">Прокрутка</string>
   <string name="messing">Обмін інформацією з</string>
   <string name="video">Відео</string>
   <string name="comic">Комікс</string>
-  <string name="install_amnis" comment="install_amnis Torrent">Для роботи Amnis Player потрібно встановити</string>
+  <string name="install_amnis">Для роботи Amnis Player потрібно встановити</string>
   <string name="pref_category_torrentserver">Налаштування сервера TorrentServer</string>
   <string name="pref_torrentserver_port">Порт TorrentServer</string>
   <string name="torrentserver_is_running">Torrent Server працює</string>
   <string name="pref_torrent_trackers">Відслідковування торенту</string>
   <string name="pref_reset_torrent_trackers_string">Скинути рядок торрент трекерів за замовчуванням</string>
-  <string name="pref_page_preload_amount" comment="pref_page_preload_amount Prefs">Попередня сума завантаження сторінки</string>
-  <string name="preserve_reading_position" comment="preserve_reading_position Reader Reader Settings">Зберегти позицію зчитування під час читання</string>
+  <string name="pref_page_preload_amount">Попередня сума завантаження сторінки</string>
+  <string name="preserve_reading_position">Зберегти позицію зчитування під час читання</string>
   <string name="reader_bottom_buttons">Читач Кнопки внизу</string>
   <string name="reader_bottom_buttons_summary">Налаштуйте, які кнопки з’являються внизу читача</string>
-  <string name="action_set_first_page_cover" comment="action_set_first_page_cover Reader Actions">Встановити першу сторінку як обкладинку</string>
+  <string name="action_set_first_page_cover">Встановити першу сторінку як обкладинку</string>
   <string name="action_set_second_page_cover">Вказати другу сторінку як обкладинку</string>
   <string name="action_save_first_page">Зберегти першу сторінку</string>
   <string name="action_save_second_page">Зберегти другу сторінку</string>
@@ -65,25 +65,24 @@
   <string name="action_share_second_page">Поділитися другою сторінкою</string>
   <string name="action_save_combined_page">Зберегти комбіновану сторінку</string>
   <string name="action_share_combined_page">Поділитися комбінованою сторінкою</string>
-  <string name="share_pages_info" comment="share_pages_info Reader Sharing">%1$s: %2$s, сторінки %3$s</string>
-  <string name="page_layout" comment="page_layout Double page spread">Сторінка</string>
+  <string name="share_pages_info">%1$s: %2$s, сторінки %3$s</string>
+  <string name="page_layout">Сторінка</string>
   <string name="shift_double_pages">Пересунути на одну сторінку більше</string>
   <string name="double_pages">Подвійні сторінки</string>
   <string name="single_page">Одна сторінка</string>
   <string name="automatic_orientation">Автоматично (в залежності від орієнтації)</string>
   <string name="automatic_can_still_switch">Під час використання автоматичного макету сторінки ви можете переключитися між макетами під час читання без зміни цього налаштування</string>
   <string name="invert_double_pages">Інвертувати подвійні сторінки </string>
-  <string name="center_margin" comment="center_margin Center margin">Центральне поле</string>
+  <string name="center_margin">Центральне поле</string>
   <string name="center_margin_none">Без ефекту</string>
   <string name="center_margin_double_page">Додати на подвійну сторінку</string>
   <string name="center_margin_wide_page">Додати на всю сторінку</string>
   <string name="center_margin_double_and_wide_page">Додати до обох</string>
   <string name="pref_center_margin">Тип центру</string>
   <string name="pref_center_margin_summary">Вставте пробіл для розміщення у згорнутому вигляді кінцевого простору на пристроях.</string>
-  <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">Палітра кольорів</string>
+  <string name="pref_custom_color">Палітра кольорів</string>
   <string name="custom_color_description">Вибрати колір для власної теми</string>
   <string name="theme_custom">Задана тема</string>
-  <string name="label_backup" comment="label_backup Cross Device Sync">Резервне копіювання</string>
   <string name="label_sync">Синхр</string>
   <string name="label_triggers">Тріггери</string>
   <string name="pref_backup_and_sync_summary">Ручне &amp; автоматичне резервне копіювання і синхронізації</string>
@@ -138,15 +137,15 @@
   <string name="sync_on_app_start">Синхронізація при запуску додатку</string>
   <string name="sync_on_app_resume">Синхронізувати в резюме програми</string>
   <string name="sync_library">Синхронізація бібліотеки</string>
-  <string name="extensions_page_need_refresh" comment="extensions_page_need_refresh repo management">Оновити сторінку розширення для оновлення списку.</string>
-  <string name="pref_category_navbar" comment="pref_category_navbar navigation">Навігаційна панель</string>
+  <string name="extensions_page_need_refresh">Оновити сторінку розширення для оновлення списку.</string>
+  <string name="pref_category_navbar">Навігаційна панель</string>
   <string name="pref_hide_updates_button">Показувати оновлення в наv</string>
   <string name="pref_hide_history_button">Показати історію в наv</string>
   <string name="pref_show_bottom_bar_labels">Завжди відображати напроти міток</string>
-  <string name="select_tracker" comment="select_tracker tracker anime e manga details">Вибрати трекер</string>
+  <string name="select_tracker">Вибрати трекер</string>
   <string name="entry_not_tracked">Запис не відстежується.</string>
   <string name="fill_from_tracker">Заповнити з трекера</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr працює. User Agent оновлено. Будь ласка, перезапустіть програму</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverr працює. User Agent оновлено. Будь ласка, перезапустіть програму</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverr не працює. Користувацький агент не оновився. Будь ласка, перевірте ваші налаштування</string>
   <string name="flare_solver_error">Помилка під час звернення FlareSolverr</string>
   <string name="flare_solver_error_webview">Помилка вирішення проблеми з WebView</string>
@@ -156,22 +155,13 @@
   <string name="pref_flare_solverr_url_summary">URL-адреса екземпляра FlareSolverr, наприклад, http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Тест FlareSolverr та оновлення користувацького агента</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Тест FlareSolverr для оновлення користувацького агента. Потрібно лише один раз; потім ввімкнути як необхідно.</string>
-  <string-array name="title_cast_quality">
-    <item>Вибрати кількість запису і провайдера</item>
-    <item>Вибрати якість</item>
-  </string-array>
+  <string name="title_cast_quality">Вибрати кількість запису і провайдера</string>
   <string name="cast_not_connected">Трансляція не підключена</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>Відео додано в чергу</item>
-    <item>Відео додано в чергу</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>Помилка при завантаженні відео з Cast</item>
-    <item>Помилка при завантаженні відео</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">Відео додано в чергу</string>
+  <string name="cast_error_loading">Помилка при завантаженні відео з Cast</string>
   <string name="server_local_notification_casting">Локальний сервер працює. Торкніться, щоб зупинити його.</string>
   <string name="server_local_notification_channel_description">Канал сповіщень локального сервера</string>
-  <string name="eh_autoscroll" comment="eh_autoscroll Auto scroll">Автопрокрутка</string>
+  <string name="eh_autoscroll">Автопрокрутка</string>
   <string name="eh_retry_all">Повторити все</string>
   <string name="eh_boost_page">Підвищити сторінку</string>
   <string name="eh_autoscroll_help">Автопрокрутка допомога</string>
@@ -195,7 +185,7 @@
   </plurals>
   <string name="pref_category_castserver">Сервер Трансляції</string>
   <string name="pref_cast_server_port">Порт сервера Cast</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Налаштування Discord</string>
+  <string name="pref_category_discord_customization">Налаштування Discord</string>
   <string name="pref_discord_custom_message">Повідомлення при вимкненому сайті</string>
   <string name="pref_discord_custom_message_summary">Користувацькі повідомлення, які будуть відображатися в Discord</string>
   <string name="pref_discord_show_progress">Показувати поступ</string>
@@ -208,7 +198,7 @@
   <string name="pref_discord_show_download_button_summary">Відображає кнопку для завантаження програми</string>
   <string name="pref_discord_show_discord_button">Показувати кнопку Discord</string>
   <string name="pref_discord_show_discord_button_summary">Відображає кнопку для приєднання до серверу Discord</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Черга відтворення</string>
+  <string name="cast_queue_title">Черга відтворення</string>
   <string name="action_clear_queue">Очистити чергу</string>
   <string name="cast_remove_from_queue">Видалити з черги</string>
   <string name="move_to_top">Нагору</string>
@@ -221,7 +211,7 @@
   <string name="queue">Черга</string>
   <string name="move_to_bottom">Донизу</string>
   <string name="action_end_session">Кінцева сесія</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Доступні пристрої</string>
+  <string name="cast_available_devices">Доступні пристрої</string>
   <string name="cast_media_info">Інформація про медіа</string>
   <string name="cast_previous_video">Попереднє відео</string>
   <string name="cast_next_video">Наступне відео</string>
@@ -236,10 +226,7 @@
   <string name="cast_end_session_confirm">Завершити сеанс</string>
   <string name="cast_end_session_cancel">Скасувати</string>
   <string name="playback_speed">Швидкість відтворення</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Параметри субтитрів</item>
-    <item>Параметри субтитрів</item>
-  </string-array>
+  <string name="cast_subtitle_settings">Параметри субтитрів</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">Колір тексту</string>
   <string name="cast_subtitle_background">Фон</string>
@@ -275,7 +262,7 @@
   <string name="action_bulk_select">Масовий режим вибору</string>
   <string name="action_move_up">Підняти вгору</string>
   <string name="action_move_down">Донизу</string>
-  <string name="too_many_in_feed" comment="too_many_in_feed Feed Tab">Занадто багато джерел у вашій стрічці, не може додати більше 20</string>
+  <string name="too_many_in_feed">Занадто багато джерел у вашій стрічці, не може додати більше 20</string>
   <string name="action_sort_feed">Сортування каналів</string>
   <string name="sort_feed_confirmation">Бажаєте сортувати подачі по алфавіту?</string>
   <string name="saved_searches_feeds">Збережені пошукові запити &amp; Стрічки</string>
@@ -287,7 +274,7 @@
   <string name="feed_delete">Видалити елемент стрічки?</string>
   <string name="feed_tab_empty">У вас немає ніяких джерел на вашій стрічці, перейдіть до правого верхнього правого, щоб додати один</string>
   <string name="feed_add">Додати %1$s до каналу?</string>
-  <string name="saved_searches" comment="saved_searches Saved Searches">Збережені пошукові запити</string>
+  <string name="saved_searches">Збережені пошукові запити</string>
   <string name="save_search">Зберегти поточний пошуковий запит?</string>
   <string name="save_search_hint">Моє ім\'я пошуку</string>
   <string name="save_search_failed_to_load">Не вдалося завантажити збережені пошуки!</string>
@@ -296,9 +283,9 @@
   <string name="save_search_delete_message">Ви дійсно бажаєте видалити збережений пошуковий запит: \'%1$s\'?</string>
   <string name="save_search_invalid">Неправильно збережені умови пошуку, фільтри змінено</string>
   <string name="save_search_invalid_name">Неправильне ім\'я для пошуку</string>
-  <string name="no_source_categories" comment="no_source_categories Source Categories">Немає доступних категорій</string>
+  <string name="no_source_categories">Немає доступних категорій</string>
   <string name="invalid_category_name">Неправильна назва категорії</string>
-  <string name="pref_source_related_mangas" comment="pref_source_related_mangas Browse settings">Пропозиції</string>
+  <string name="pref_source_related_mangas">Пропозиції</string>
   <string name="pref_source_related_mangas_summary">Показати пропозиції сайта при перегляді матеріалу</string>
   <string name="related_mangas_website_suggestions">Пропозиції сайту</string>
   <string name="related_mangas_more">Подобається це...</string>
@@ -313,4 +300,52 @@
   <string name="pref_source_related_animes_summary">Показати пропозиції сайта при перегляді матеріалу</string>
   <string name="pref_source_navigation">Замінити останню кнопку</string>
   <string name="pref_source_navigation_summery">Замінити останню кнопку на користувальницький перегляд в тому числі й останній та перегляд</string>
+  <string name="app_cast_id">F033F567</string>
+  <string name="media_route_menu_title">EXTEND</string>
+  <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
+  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
+  <string name="pref_show_cast">Show Cast</string>
+  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
+  <string name="login_error">Login error</string>
+  <string name="save">Save</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
+  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
+  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
+  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
+  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
+  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
+  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
+  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
+  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
+  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
+  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
+  <string name="network_stream_url_label">Stream URL</string>
+  <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
+  <string name="network_stream_invalid_url">Enter a valid URL</string>
+  <string name="network_stream_title_label">Title (optional)</string>
+  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
+  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
+  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
+  <string name="network_stream_referer_label">Referer header</string>
+  <string name="network_stream_user_agent_label">User-Agent header</string>
+  <string name="network_stream_headers_label">Additional headers</string>
+  <string name="network_stream_headers_hint">Header-Name: Header value</string>
+  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
+  <string name="network_stream_play">Play stream</string>
+  <string name="network_stream_reset">Clear fields</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
+  <string name="show_seek_icon">Show seek icon</string>
+  <string name="show_seek_time">Show seek time</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
+  <string name="player_sheets_subtitles_ass_yes">Yes</string>
+  <string name="player_sheets_subtitles_ass_scale">Scale</string>
+  <string name="player_sheets_subtitles_ass_force">Force</string>
+  <string name="player_sheets_subtitles_ass_strip">Strip</string>
+  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
+  <string name="action_set_date_title">Set upload date</string>
+  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
+  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
+  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
 </resources>
