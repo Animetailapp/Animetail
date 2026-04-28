@@ -83,7 +83,19 @@ fun WebViewScreenContent(
     val filteredHeaders = remember(headers) {
         headers.filter { (key, value) ->
             val name = key.lowercase(java.util.Locale.ENGLISH)
-            if (name in listOf("user-agent", "content-length", "host", "trailer", "te", "upgrade", "cookie2", "keep-alive", "transfer-encoding", "set-cookie") || name.startsWith("proxy-")) return@filter false
+            val excludedHeaders = listOf(
+                "user-agent",
+                "content-length",
+                "host",
+                "trailer",
+                "te",
+                "upgrade",
+                "cookie2",
+                "keep-alive",
+                "transfer-encoding",
+                "set-cookie",
+            )
+            if (name in excludedHeaders || name.startsWith("proxy-")) return@filter false
             if (name == "connection" && value.lowercase(java.util.Locale.ENGLISH) == "upgrade") return@filter false
             true
         }.mapKeys { it.key.lowercase(java.util.Locale.ENGLISH) }
@@ -172,7 +184,9 @@ fun WebViewScreenContent(
 
                     // Continue with request, but with custom headers
                     val requestHeaders = it.requestHeaders ?: emptyMap()
-                    val requestHeaderKeys = requestHeaders.keys.map { it.lowercase(java.util.Locale.ENGLISH) }
+                    val requestHeaderKeys = requestHeaders.keys.map {
+                        it.lowercase(java.util.Locale.ENGLISH)
+                    }
                     val currentUrl = view?.url
                     if (it.isForMainFrame &&
                         !url.equals(currentUrl, ignoreCase = true) &&
@@ -351,7 +365,9 @@ fun WebViewScreenContent(
                         WebView.setWebContentsDebuggingEnabled(true)
                     }
 
-                    headers.entries.find { it.key.lowercase(java.util.Locale.ENGLISH) == "user-agent" }?.value?.let {
+                    headers.entries.find {
+                        it.key.lowercase(java.util.Locale.ENGLISH) == "user-agent"
+                    }?.value?.let {
                         webView.settings.userAgentString = it
                     }
                 },
