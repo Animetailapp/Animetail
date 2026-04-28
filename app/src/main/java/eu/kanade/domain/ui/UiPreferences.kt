@@ -1,5 +1,6 @@
 package eu.kanade.domain.ui
 
+import com.materialkolor.PaletteStyle
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.domain.ui.model.NavStyle
 import eu.kanade.domain.ui.model.StartScreen
@@ -68,6 +69,23 @@ class UiPreferences(
     val showHomeOnRelatedAnimes: Preference<Boolean> = preferenceStore.getBoolean("show_home_on_related_animes", true)
 
     val showCast: Preference<Boolean> = preferenceStore.getBoolean("show_cast", true)
+
+    // KMK - Cover-based theme -->
+    val customThemeStyle: Preference<PaletteStyle> =
+        preferenceStore.getEnum("pref_custom_theme_style_key", PaletteStyle.Fidelity)
+
+    val themeCoverBased: Preference<Boolean> =
+        preferenceStore.getBoolean("pref_theme_cover_based_key", true)
+
+    val themeCoverBasedStyle: Preference<PaletteStyle> =
+        preferenceStore.getEnum("pref_theme_cover_based_style_key", PaletteStyle.Vibrant)
+
+    val usePanoramaCoverMangaInfo: Preference<Boolean> =
+        preferenceStore.getBoolean("use_panorama_cover_manga_info", false)
+
+    val topAlignCover: Preference<Boolean> =
+        preferenceStore.getBoolean("top_align_cover", false)
+    // KMK <--
 
     companion object {
         fun dateFormat(format: String): DateTimeFormatter = when (format) {

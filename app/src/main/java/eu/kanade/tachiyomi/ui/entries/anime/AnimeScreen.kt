@@ -43,6 +43,7 @@ import eu.kanade.presentation.entries.components.DeleteItemsDialog
 import eu.kanade.presentation.entries.components.SetDateDialog
 import eu.kanade.presentation.entries.components.SetIntervalDialog
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsGesturesScreen.SkipIntroLengthDialog
+import eu.kanade.presentation.theme.CoverBasedTheme
 import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
@@ -155,7 +156,9 @@ class AnimeScreen(
             }
         }
         TachiyomiTheme {
-            content()
+            CoverBasedTheme(anime = successState.anime) {
+                content()
+            }
         }
     }
 

@@ -306,9 +306,9 @@
   <string name="put_related_animes_in_overflow_summary">Ponga el botón Sugerencias en el menú de desbordamiento en lugar de en la página de entrada</string>
   <string name="pref_show_home_on_related_animes">Inicio desde sugerencias</string>
   <string name="pref_show_home_on_related_animes_summary">Muestra un icono mientras se navega por las Sugerencias para volver directamente a Inicio</string>
-    <string name="pref_show_cast">Show Cast</string>
-    <string name="pref_show_cast_summary">Show cast information on anime details page</string>
-    <string name="pref_source_related_animes">Sugerencias</string>
+  <string name="pref_show_cast">Mostrar reparto</string>
+  <string name="pref_show_cast_summary">Mostrar información del reparto en la página de detalles del anime</string>
+  <string name="pref_source_related_animes">Sugerencias</string>
   <string name="pref_source_related_animes_summary">Mostrar sugerencias del sitio de origen mientras se ve la entrada</string>
   <string name="pref_source_navigation">Reemplazar el último botón</string>
   <string name="pref_source_navigation_summery">Reemplaza el último botón con una vista de navegación personalizada que incluye tanto la última como la última navegación</string>
@@ -316,10 +316,10 @@
   <string name="pref_sync_api_key_summ">Introduzca la clave API para sincronizar su biblioteca</string>
   <string name="login_error">Error de inicio de sesión</string>
   <string name="save">Guardar</string>
-    <string name="pref_doh_custom_url">URL de DoH personalizada</string>
-    <string name="pref_doh_custom_url_summary">Ejemplo: https://dns.example/dns-query</string>
-    <string name="error_doh_custom_invalid">URL de DoH no válida</string>
-    <string name="error_doh_custom_must_use_https">El DoH personalizado debe usar https</string>
+  <string name="pref_doh_custom_url">URL de DoH personalizada</string>
+  <string name="pref_doh_custom_url_summary">Ejemplo: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">URL de DoH no válida</string>
+  <string name="error_doh_custom_must_use_https">El DoH personalizado debe usar https</string>
     <string name="pref_doh_custom_bootstrap">Hosts de arranque de DoH personalizados</string>
     <string name="pref_doh_custom_bootstrap_summary">IP separadas por comas (opcional). Ejemplo: 1.1.1.1,8.8.8.8</string>
     <string name="error_doh_custom_bootstrap_invalid">Host de arranque no válido: %1$s</string>
@@ -343,15 +343,30 @@
     <string name="network_stream_header_error">El encabezado en la línea %1$d debe usar el formato "Nombre: Valor"</string>
     <string name="network_stream_play">Reproducir transmisión</string>
     <string name="network_stream_reset">Limpiar campos</string>
-
     <string name="player_sheets_subtitles_ass_no">No</string>
     <string name="player_sheets_subtitles_ass_yes">Sí</string>
     <string name="player_sheets_subtitles_ass_scale">Escalar</string>
     <string name="player_sheets_subtitles_ass_force">Forzar</string>
     <string name="player_sheets_subtitles_ass_strip">Eliminar</string>
-
     <string name="pref_tracking_sync_enhanced">Sincronizar progreso desde rastreadores mejorados</string>
     <string name="pref_smart_sync_tracker">Sincronización inteligente de temporadas</string>
     <string name="pref_smart_sync_tracker_summary">Omite elementos completados y se detiene en el elemento en curso</string>
+    <string name="pref_anime_info">Información de la entrada</string>
+    <string name="pref_theme_cover_based">Tema basado en portada</string>
+    <string name="pref_theme_cover_based_style">Estilo del tema basado en portada</string>
+    <string name="pref_custom_theme_style">Estilo de tema personalizado</string>
+    <string name="pref_theme_cover_based_style_tonalspot">Tono destacado</string>
+    <string name="pref_theme_cover_based_style_neutral">Neutro</string>
+    <string name="pref_theme_cover_based_style_vibrant">Vibrante</string>
+    <string name="pref_theme_cover_based_style_expressive">Expresivo</string>
+    <string name="pref_theme_cover_based_style_rainbow">Arcoíris</string>
+    <string name="pref_theme_cover_based_style_fruitsalad">Ensalada de frutas</string>
+    <string name="pref_theme_cover_based_style_monochrome">Monocromático</string>
+    <string name="pref_theme_cover_based_style_fidelity">Fidelidad</string>
+    <string name="pref_theme_cover_based_style_content">Contenido</string>
+    <string name="pref_panorama_cover">Portada panorámica</string>
+    <string name="pref_panorama_cover_summary">Mostrar portadas anchas completas sin recortarlas</string>
+    <string name="pref_top_align_cover">Alinear portada arriba</string>
+    <string name="pref_top_align_cover_summary">Alinear la imagen de portada en la parte superior en lugar de centrada</string>
 
 </resources>

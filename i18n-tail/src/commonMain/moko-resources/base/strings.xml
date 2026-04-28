@@ -421,4 +421,27 @@
     <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
     <string name="pref_smart_sync_tracker">Smart sync seasons</string>
     <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
+
+    <!-- Cover-based theme -->
+    <string name="pref_anime_info">Entry Info Theme</string>
+    <string name="pref_theme_cover_based">Cover-based theme</string>
+    <string name="pref_theme_cover_based_style">Cover-based theme style</string>
+    <string name="pref_custom_theme_style">Custom theme style</string>
+    <string name="pref_theme_cover_based_style_tonalspot">Tonal Spot</string>
+    <string name="pref_theme_cover_based_style_neutral">Neutral</string>
+    <string name="pref_theme_cover_based_style_vibrant">Vibrant</string>
+    <string name="pref_theme_cover_based_style_expressive">Expressive</string>
+    <string name="pref_theme_cover_based_style_rainbow">Rainbow</string>
+    <string name="pref_theme_cover_based_style_fruitsalad">Fruit Salad</string>
+    <string name="pref_theme_cover_based_style_monochrome">Monochrome</string>
+    <string name="pref_theme_cover_based_style_fidelity">Fidelity</string>
+    <string name="pref_theme_cover_based_style_content">Content</string>
+
+    <!-- Panoramic cover -->
+    <string name="pref_panorama_cover">Panoramic cover</string>
+    <string name="pref_panorama_cover_summary">Show wide covers in full without cropping</string>
+
+    <!-- Top align cover -->
+    <string name="pref_top_align_cover">Align cover to top</string>
+    <string name="pref_top_align_cover_summary">Align the cover image to the top instead of center</string>
 </resources>
