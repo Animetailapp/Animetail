@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">حالة التتبع</string>
+  <string name="tracking_status">حالة التتبع</string>
   <string name="tag">الوسوم</string>
   <string name="ungrouped">Ungrouped</string>
   <string name="not_tracked">لم يتتبع</string>
-  <string name="group" comment="group More Info Menu">مجموعة</string>
-  <string name="anime_library_group_updates" comment="anime_library_group_updates Library settings">تحديثات فئة أنيمي الديناميكية</string>
+  <string name="group">مجموعة</string>
+  <string name="anime_library_group_updates">تحديثات فئة أنيمي الديناميكية</string>
   <string name="manga_library_group_updates">تحديثات الفئة الديناميكية لمكتبة مانغا</string>
   <string name="library_group_updates_global">تشغيل التحديثات العالمية دائمًا</string>
   <string name="library_group_updates_all_but_ungrouped">تشغيل التحديثات العالمية فقط لتحديثات الفئات الغير مجمعة للآخرين</string>
   <string name="library_group_updates_all">تشغيل فئة التحديثات طوال الوقت</string>
-  <string name="reset_tags" comment="reset_tags Entry Info Edit">إعادة تعيين العلامات</string>
+  <string name="reset_tags">إعادة تعيين العلامات</string>
   <string name="add_tag">إضافة علامة</string>
   <string name="title_hint">العنوان: %1$s</string>
   <string name="description_hint">الوصف: %1$s</string>
@@ -18,13 +18,13 @@
   <string name="artist_hint">الفنان: %1$s</string>
   <string name="custom_entry_info">معلومات الإدخال المخصصة</string>
   <string name="reset_info">Reset Info</string>
-  <string name="pref_category_cast" comment="pref_category_cast Cast">إعدادات القصة</string>
+  <string name="pref_category_cast">إعدادات القصة</string>
   <string name="pref_enable_cast">تمكين أو تعطيل المشاهدة</string>
   <string name="action_cast">إرسال إلى الكشوف</string>
-  <string name="pref_show_downloaded_episode_file_size" comment="pref_show_downloaded_episode_file_size Preferences">إظهار حجم ملف الحلقة التي تم تنزيلها</string>
-  <string name="pref_category_fork" comment="pref_category_fork Subsections">إعدادات الفتح</string>
-  <string name="action_edit_info" comment="action_edit_info Actions">تعديل المعلومات</string>
-  <string name="special_services" comment="special_services Connections section">الخدمات الخاصة</string>
+  <string name="pref_show_downloaded_episode_file_size">إظهار حجم ملف الحلقة التي تم تنزيلها</string>
+  <string name="pref_category_fork">إعدادات الفتح</string>
+  <string name="action_edit_info">تعديل المعلومات</string>
+  <string name="special_services">الخدمات الخاصة</string>
   <string name="pref_category_connections">اتصالات</string>
   <string name="pref_connections_summary">ديسكورد، أكثر من ذلك..</string>
   <string name="connections_info">الخدمات الخاصة الفريدة من نوعها في Animetail وتعزيز طريقة استخدام التطبيق</string>
@@ -42,22 +42,22 @@
   <string name="pref_discord_incognito">وضع التخفي ديسكورد</string>
   <string name="pref_discord_incognito_summary">تم تجاوزها عند تمكين وضع التخفي</string>
   <string name="pref_discord_incognito_categories_details">المدخلات في الفئات المدرجة لن يتم عرضها في ديسكورد</string>
-  <string name="browsing" comment="browsing Discord section">تصفح</string>
+  <string name="browsing">تصفح</string>
   <string name="scrolling">التمرير عبر</string>
   <string name="messing">المراسلة مع</string>
   <string name="video">فيديو</string>
   <string name="comic">فكاهي</string>
-  <string name="install_amnis" comment="install_amnis Torrent">يجب تثبيت لاعب Amnis</string>
+  <string name="install_amnis">يجب تثبيت لاعب Amnis</string>
   <string name="pref_category_torrentserver">تفضيلات تورنتسيرفر</string>
   <string name="pref_torrentserver_port">منفذ تورنتسيرفر</string>
   <string name="torrentserver_is_running">خادم تورنت قيد التشغيل</string>
   <string name="pref_torrent_trackers">تعقب تورينت</string>
   <string name="pref_reset_torrent_trackers_string">إعادة تعيين سلسلة تعقب التورنت الافتراضية</string>
-  <string name="pref_page_preload_amount" comment="pref_page_preload_amount Prefs">كمية التحميل المسبق للصفحة</string>
-  <string name="preserve_reading_position" comment="preserve_reading_position Reader Reader Settings">الحفاظ على موضع القراءة عند قراءة المواد</string>
+  <string name="pref_page_preload_amount">كمية التحميل المسبق للصفحة</string>
+  <string name="preserve_reading_position">الحفاظ على موضع القراءة عند قراءة المواد</string>
   <string name="reader_bottom_buttons">أزرار القارئ السفلي</string>
   <string name="reader_bottom_buttons_summary">تخصيص الأزرار التي تظهر في أسفل القارئ</string>
-  <string name="action_set_first_page_cover" comment="action_set_first_page_cover Reader Actions">تعيين الصفحة الأولى كغطاء</string>
+  <string name="action_set_first_page_cover">تعيين الصفحة الأولى كغطاء</string>
   <string name="action_set_second_page_cover">تعيين الصفحة الثانية كغطاء</string>
   <string name="action_save_first_page">حفظ الصفحة الأولى</string>
   <string name="action_save_second_page">حفظ الصفحة الثانية</string>
@@ -65,25 +65,24 @@
   <string name="action_share_second_page">مشاركة الصفحة الثانية</string>
   <string name="action_save_combined_page">حفظ الصفحة مجتمعة</string>
   <string name="action_share_combined_page">مشاركة الصفحة المدمجة</string>
-  <string name="share_pages_info" comment="share_pages_info Reader Sharing">%1$s: %2$s، الصفحات %3$s</string>
-  <string name="page_layout" comment="page_layout Double page spread">تخطيط الصفحة</string>
+  <string name="share_pages_info">%1$s: %2$s، الصفحات %3$s</string>
+  <string name="page_layout">تخطيط الصفحة</string>
   <string name="shift_double_pages">تحويل صفحة واحدة فوق</string>
   <string name="double_pages">صفحات مزدوجة</string>
   <string name="single_page">صفحة واحدة</string>
   <string name="automatic_orientation">تلقائي (مبني على التوجيه)</string>
   <string name="automatic_can_still_switch">عند استخدام تخطيط الصفحات التلقائية، لا يزال بإمكانك التبديل بين المخططات أثناء القراءة دون تجاوز هذا الإعداد</string>
   <string name="invert_double_pages">عكس الصفحات المزدوجة </string>
-  <string name="center_margin" comment="center_margin Center margin">هامش الوسط</string>
+  <string name="center_margin">هامش الوسط</string>
   <string name="center_margin_none">لا</string>
   <string name="center_margin_double_page">إضافة إلى صفحة مزدوجة</string>
   <string name="center_margin_wide_page">إضافة إلى صفحة واسعة</string>
   <string name="center_margin_double_and_wide_page">إضافة إلى كليهما</string>
   <string name="pref_center_margin">نوع هامش الوسط</string>
   <string name="pref_center_margin_summary">إدراج مسافة لاستيعاب المساحة النهائية على الأجهزة القابلة للتكوين.</string>
-  <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">اختيار لون مخصص</string>
+  <string name="pref_custom_color">اختيار لون مخصص</string>
   <string name="custom_color_description">اختيار لون للسمة المخصصة</string>
   <string name="theme_custom">سمة مخصصة</string>
-  <string name="label_backup" comment="label_backup Cross Device Sync">النسخ الاحتياطي</string>
   <string name="label_sync">مزامنة</string>
   <string name="label_triggers">المحفزات</string>
   <string name="pref_backup_and_sync_summary">يدوياً &amp; النسخ الاحتياطي التلقائي والمزامنة</string>
@@ -138,15 +137,15 @@
   <string name="sync_on_app_start">المزامنة عند بدء التطبيق</string>
   <string name="sync_on_app_resume">المزامنة عند استئناف التطبيق</string>
   <string name="sync_library">مكتبة المزامنة</string>
-  <string name="extensions_page_need_refresh" comment="extensions_page_need_refresh repo management">تحديث صفحة الملحق لتحديث القائمة.</string>
-  <string name="pref_category_navbar" comment="pref_category_navbar navigation">شريط التنقل</string>
+  <string name="extensions_page_need_refresh">تحديث صفحة الملحق لتحديث القائمة.</string>
+  <string name="pref_category_navbar">شريط التنقل</string>
   <string name="pref_hide_updates_button">إظهار التحديثات في Nv</string>
   <string name="pref_hide_history_button">إظهار المحفوظات في Nv</string>
   <string name="pref_show_bottom_bar_labels">إظهار دائما تسميات Nv</string>
-  <string name="select_tracker" comment="select_tracker tracker anime e manga details">حدد متتبع</string>
+  <string name="select_tracker">حدد متتبع</string>
   <string name="entry_not_tracked">لم يتم تتبع الدخول.</string>
   <string name="fill_from_tracker">ملء من المتتبع</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr يعمل. تم تحديث وكيل المستخدم. يرجى إعادة تشغيل التطبيق</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverr يعمل. تم تحديث وكيل المستخدم. يرجى إعادة تشغيل التطبيق</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverr لا يعمل. لم يتم تحديث عميل المستخدم. الرجاء التحقق من الإعدادات الخاصة بك</string>
   <string name="flare_solver_error">خطأ في الاتصال بـ FlareSolverr</string>
   <string name="flare_solver_error_webview">خطأ في حل مع WebView</string>
@@ -156,22 +155,13 @@
   <string name="pref_flare_solverr_url_summary">عنوان URL لمثيل FlareSolverr للاستخدام على سبيل المثال http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">اختبار FlareSolverr وتحديث وكيل المستخدم</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">اختبار FlareSolverr لتحديث وكيل المستخدم. مطلوب مرة واحدة فقط؛ ثم قم بتبديل حسب الحاجة.</string>
-  <string-array name="title_cast_quality">
-    <item>اختيار جودة المسطح/المزود</item>
-    <item>حدد الجودة</item>
-  </string-array>
+  <string name="title_cast_quality">اختيار جودة المسطح/المزود</string>
   <string name="cast_not_connected">البث غير متصل</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>تم إضافة الفيديو إلى قائمة الانتظار</item>
-    <item>تم إضافة الفيديو إلى قائمة الانتظار</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>خطأ في تحميل الفيديو من القصة</item>
-    <item>خطأ في تحميل الفيديو</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">تم إضافة الفيديو إلى قائمة الانتظار</string>
+  <string name="cast_error_loading">خطأ في تحميل الفيديو من القصة</string>
   <string name="server_local_notification_casting">الخادم المحلي قيد التشغيل. انقر لإيقافه.</string>
   <string name="server_local_notification_channel_description">قناة إشعارات الخادم المحلية</string>
-  <string name="eh_autoscroll" comment="eh_autoscroll Auto scroll">تمرير تلقائي</string>
+  <string name="eh_autoscroll">تمرير تلقائي</string>
   <string name="eh_retry_all">إعادة المحاولة الكل</string>
   <string name="eh_boost_page">صفحة التعزيز</string>
   <string name="eh_autoscroll_help">مساعدة التمرير التلقائي</string>
@@ -197,7 +187,7 @@
   </plurals>
   <string name="pref_category_castserver">خادم القصة</string>
   <string name="pref_cast_server_port">منفذ الخادم المسقط</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">تخصيص ديسكورد</string>
+  <string name="pref_category_discord_customization">تخصيص ديسكورد</string>
   <string name="pref_discord_custom_message">رسالة مخصصة</string>
   <string name="pref_discord_custom_message_summary">رسالة مخصصة سيتم عرضها على ديسكورد</string>
   <string name="pref_discord_show_progress">إظهار التقدم</string>
@@ -210,7 +200,7 @@
   <string name="pref_discord_show_download_button_summary">يعرض زر لتنزيل التطبيق</string>
   <string name="pref_discord_show_discord_button">إظهار زر ديسكورد</string>
   <string name="pref_discord_show_discord_button_summary">يعرض زرًا للانضمام إلى خادم ديسكورد</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">قائمة انتظار التشغيل</string>
+  <string name="cast_queue_title">قائمة انتظار التشغيل</string>
   <string name="action_clear_queue">مسح قائمة الانتظار</string>
   <string name="cast_remove_from_queue">إزالة من قائمة الانتظار</string>
   <string name="move_to_top">الانتقال إلى الأعلى</string>
@@ -223,7 +213,7 @@
   <string name="queue">قائمة الانتظار</string>
   <string name="move_to_bottom">الانتقال إلى الأسفل</string>
   <string name="action_end_session">إنهاء الجلسة المسماة</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">الأجهزة المتاحة</string>
+  <string name="cast_available_devices">الأجهزة المتاحة</string>
   <string name="cast_media_info">معلومات الوسائط</string>
   <string name="cast_previous_video">الفيديو السابق</string>
   <string name="cast_next_video">الفيديو التالي</string>
@@ -238,10 +228,7 @@
   <string name="cast_end_session_confirm">إنهاء الجلسة</string>
   <string name="cast_end_session_cancel">إلغاء</string>
   <string name="playback_speed">سرعة التشغيل</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">إعدادات الترجمة</item>
-    <item>إعدادات الترجمة</item>
-  </string-array>
+  <string name="cast_subtitle_settings">إعدادات الترجمة</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">لون النص</string>
   <string name="cast_subtitle_background">الخلفية</string>
@@ -277,7 +264,7 @@
   <string name="action_bulk_select">وضع التحديد بالجملة</string>
   <string name="action_move_up">تحريك للأعلى</string>
   <string name="action_move_down">تحريك للأسفل</string>
-  <string name="too_many_in_feed" comment="too_many_in_feed Feed Tab">الكثير من المصادر في موجز الويب الخاص بك، لا يمكن إضافة أكثر من 20</string>
+  <string name="too_many_in_feed">الكثير من المصادر في موجز الويب الخاص بك، لا يمكن إضافة أكثر من 20</string>
   <string name="action_sort_feed">فرز الخلاصات</string>
   <string name="sort_feed_confirmation">هل ترغب في فرز التغذية أبجدياً؟</string>
   <string name="saved_searches_feeds">عمليات البحث المحفوظة &amp; موجز الويب</string>
@@ -289,7 +276,7 @@
   <string name="feed_delete">حذف عنصر الخلاصة؟</string>
   <string name="feed_tab_empty">ليس لديك أي مصادر في تغذيتك، انتقل إلى أعلى اليمين لإضافة واحد</string>
   <string name="feed_add">إضافة %1$s للتغذية؟</string>
-  <string name="saved_searches" comment="saved_searches Saved Searches">عمليات البحث المحفوظة</string>
+  <string name="saved_searches">عمليات البحث المحفوظة</string>
   <string name="save_search">حفظ استعلام البحث الحالي؟</string>
   <string name="save_search_hint">اسم البحث الخاص بي</string>
   <string name="save_search_failed_to_load">فشل في تحميل عمليات البحث المحفوظة!</string>
@@ -298,9 +285,9 @@
   <string name="save_search_delete_message">هل أنت متأكد من رغبتك في حذف استعلام البحث المحفوظ: \'%1$s\'؟</string>
   <string name="save_search_invalid">البحث المحفوظ غير صالح، الفلاتر تغيرت</string>
   <string name="save_search_invalid_name">اسم البحث المحفوظ غير صالح</string>
-  <string name="no_source_categories" comment="no_source_categories Source Categories">لا توجد فئات مصادر متاحة</string>
+  <string name="no_source_categories">لا توجد فئات مصادر متاحة</string>
   <string name="invalid_category_name">اسم الفئة غير صالح</string>
-  <string name="pref_source_related_mangas" comment="pref_source_related_mangas Browse settings">اقتراحات</string>
+  <string name="pref_source_related_mangas">اقتراحات</string>
   <string name="pref_source_related_mangas_summary">إظهار اقتراحات المصدر - الموقع أثناء عرض الإدخال</string>
   <string name="related_mangas_website_suggestions">اقتراحات الموقع</string>
   <string name="related_mangas_more">أكثر مثل هذه...</string>
@@ -315,4 +302,52 @@
   <string name="pref_source_related_animes_summary">إظهار اقتراحات المصدر - الموقع أثناء عرض الإدخال</string>
   <string name="pref_source_navigation">استبدال الزر الأخير</string>
   <string name="pref_source_navigation_summery">استبدل الزر الأحدث بعرض تصفح مخصص يتضمن الأحدث و التصفح</string>
+  <string name="app_cast_id">F033F567</string>
+  <string name="media_route_menu_title">EXTEND</string>
+  <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
+  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
+  <string name="pref_show_cast">Show Cast</string>
+  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
+  <string name="login_error">Login error</string>
+  <string name="save">Save</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
+  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
+  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
+  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
+  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
+  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
+  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
+  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
+  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
+  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
+  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
+  <string name="network_stream_url_label">Stream URL</string>
+  <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
+  <string name="network_stream_invalid_url">Enter a valid URL</string>
+  <string name="network_stream_title_label">Title (optional)</string>
+  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
+  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
+  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
+  <string name="network_stream_referer_label">Referer header</string>
+  <string name="network_stream_user_agent_label">User-Agent header</string>
+  <string name="network_stream_headers_label">Additional headers</string>
+  <string name="network_stream_headers_hint">Header-Name: Header value</string>
+  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
+  <string name="network_stream_play">Play stream</string>
+  <string name="network_stream_reset">Clear fields</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
+  <string name="show_seek_icon">Show seek icon</string>
+  <string name="show_seek_time">Show seek time</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
+  <string name="player_sheets_subtitles_ass_yes">Yes</string>
+  <string name="player_sheets_subtitles_ass_scale">Scale</string>
+  <string name="player_sheets_subtitles_ass_force">Force</string>
+  <string name="player_sheets_subtitles_ass_strip">Strip</string>
+  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
+  <string name="action_set_date_title">Set upload date</string>
+  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
+  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
+  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
 </resources>
