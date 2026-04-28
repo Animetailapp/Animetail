@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Stare urmărire</string>
+  <string name="tracking_status">Stare urmărire</string>
   <string name="tag">Etichete</string>
   <string name="ungrouped">Ungrouped</string>
   <string name="not_tracked">Nu sunt urmărite</string>
-  <string name="group" comment="group More Info Menu">Grup</string>
-  <string name="anime_library_group_updates" comment="anime_library_group_updates Library settings">Actualizări ale categoriilor dinamice ale bibliotecii Anime</string>
+  <string name="group">Grup</string>
+  <string name="anime_library_group_updates">Actualizări ale categoriilor dinamice ale bibliotecii Anime</string>
   <string name="manga_library_group_updates">Actualizări ale categoriilor dinamice ale bibliotecii Manga</string>
   <string name="library_group_updates_global">Lansează întotdeauna actualizări globale</string>
   <string name="library_group_updates_all_but_ungrouped">Lansați actualizări globale numai pentru negrupate, actualizări categorii pentru altele</string>
   <string name="library_group_updates_all">Lansează actualizări ale categoriei tot timpul</string>
-  <string name="reset_tags" comment="reset_tags Entry Info Edit">Resetare etichete</string>
+  <string name="reset_tags">Resetare etichete</string>
   <string name="add_tag">Adaugă etichetă</string>
   <string name="title_hint">Titlu: %1$s</string>
   <string name="description_hint">Descriere: %1$s</string>
@@ -18,13 +18,13 @@
   <string name="artist_hint">Artist: %1$s</string>
   <string name="custom_entry_info">Informații despre intrare personalizate</string>
   <string name="reset_info">Reset Info</string>
-  <string name="pref_category_cast" comment="pref_category_cast Cast">Setări de distribuție</string>
+  <string name="pref_category_cast">Setări de distribuție</string>
   <string name="pref_enable_cast">Activează sau dezactivează Cast</string>
   <string name="action_cast">Trimite în Cast</string>
-  <string name="pref_show_downloaded_episode_file_size" comment="pref_show_downloaded_episode_file_size Preferences">Arată dimensiunea episodului descărcat</string>
-  <string name="pref_category_fork" comment="pref_category_fork Subsections">Setări furcă</string>
-  <string name="action_edit_info" comment="action_edit_info Actions">Editare informaţii</string>
-  <string name="special_services" comment="special_services Connections section">Servicii speciale</string>
+  <string name="pref_show_downloaded_episode_file_size">Arată dimensiunea episodului descărcat</string>
+  <string name="pref_category_fork">Setări furcă</string>
+  <string name="action_edit_info">Editare informaţii</string>
+  <string name="special_services">Servicii speciale</string>
   <string name="pref_category_connections">Conexiuni</string>
   <string name="pref_connections_summary">Discord, mai multe de făcut.</string>
   <string name="connections_info">Servicii speciale care sunt unice pentru Animetail și îmbunătățesc modul în care utilizați aplicația</string>
@@ -42,22 +42,22 @@
   <string name="pref_discord_incognito">Modul Incognito Discord</string>
   <string name="pref_discord_incognito_summary">Suprascrie când modul Incognito este activat</string>
   <string name="pref_discord_incognito_categories_details">Intrările în categoriile incluse nu vor fi afișate în Discord</string>
-  <string name="browsing" comment="browsing Discord section">Navigare</string>
+  <string name="browsing">Navigare</string>
   <string name="scrolling">Defilare prin</string>
   <string name="messing">Mesaje în jur cu</string>
   <string name="video">Video</string>
   <string name="comic">Comă</string>
-  <string name="install_amnis" comment="install_amnis Torrent">Amnis Player trebuie să fie instalat</string>
+  <string name="install_amnis">Amnis Player trebuie să fie instalat</string>
   <string name="pref_category_torrentserver">Preferințe TorrentServer</string>
   <string name="pref_torrentserver_port">Port TorrentServer</string>
   <string name="torrentserver_is_running">Serverul Torent rulează</string>
   <string name="pref_torrent_trackers">Trackeri Torent</string>
   <string name="pref_reset_torrent_trackers_string">Resetează șirul implicit al torentelor</string>
-  <string name="pref_page_preload_amount" comment="pref_page_preload_amount Prefs">Sumă preîncărcare pagină</string>
-  <string name="preserve_reading_position" comment="preserve_reading_position Reader Reader Settings">Păstrează poziția de citire la citirea intrărilor</string>
+  <string name="pref_page_preload_amount">Sumă preîncărcare pagină</string>
+  <string name="preserve_reading_position">Păstrează poziția de citire la citirea intrărilor</string>
   <string name="reader_bottom_buttons">Butoane de citire</string>
   <string name="reader_bottom_buttons_summary">Personalizați ce butoane apar în partea de jos a cititorului</string>
-  <string name="action_set_first_page_cover" comment="action_set_first_page_cover Reader Actions">Setează prima pagină ca copertă</string>
+  <string name="action_set_first_page_cover">Setează prima pagină ca copertă</string>
   <string name="action_set_second_page_cover">Setează a doua pagină ca copertă</string>
   <string name="action_save_first_page">Salvează prima pagină</string>
   <string name="action_save_second_page">Salvează a doua pagină</string>
@@ -65,25 +65,24 @@
   <string name="action_share_second_page">Distribuie a doua pagină</string>
   <string name="action_save_combined_page">Salvează pagina combinată</string>
   <string name="action_share_combined_page">Distribuie pagina combinată</string>
-  <string name="share_pages_info" comment="share_pages_info Reader Sharing">%1$s: %2$s, pagini %3$s</string>
-  <string name="page_layout" comment="page_layout Double page spread">Aspect pagină</string>
+  <string name="share_pages_info">%1$s: %2$s, pagini %3$s</string>
+  <string name="page_layout">Aspect pagină</string>
   <string name="shift_double_pages">Schimbă o pagină peste</string>
   <string name="double_pages">Pagini duble</string>
   <string name="single_page">O singură pagină</string>
   <string name="automatic_orientation">Automat (pe baza orientării)</string>
   <string name="automatic_can_still_switch">În timp ce utilizați aspectul automat al paginii, încă puteți comuta între layout-uri în timp ce citiți fără a suprascrie această setare</string>
   <string name="invert_double_pages">Inversează pagini duble </string>
-  <string name="center_margin" comment="center_margin Center margin">Marginea centrului</string>
+  <string name="center_margin">Marginea centrului</string>
   <string name="center_margin_none">Niciunul</string>
   <string name="center_margin_double_page">Adaugă la pagina dublă</string>
   <string name="center_margin_wide_page">Adaugă la o pagină largă</string>
   <string name="center_margin_double_and_wide_page">Adaugă la ambele</string>
   <string name="pref_center_margin">Tip marjă centru</string>
   <string name="pref_center_margin_summary">Introduceți spațiul liber pe dispozitivele pliabile.</string>
-  <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">Selector de culori personalizat</string>
+  <string name="pref_custom_color">Selector de culori personalizat</string>
   <string name="custom_color_description">Alege o culoare pentru tema personalizată</string>
   <string name="theme_custom">Temă personalizată</string>
-  <string name="label_backup" comment="label_backup Cross Device Sync">Backup</string>
   <string name="label_sync">Sincronizare</string>
   <string name="label_triggers">Declanșatori</string>
   <string name="pref_backup_and_sync_summary">Manual &amp; Copii de rezervă automate şi sincronizare</string>
@@ -138,15 +137,15 @@
   <string name="sync_on_app_start">Sincronizare la pornirea aplicației</string>
   <string name="sync_on_app_resume">Sincronizare în reluarea aplicației</string>
   <string name="sync_library">Sincronizează biblioteca</string>
-  <string name="extensions_page_need_refresh" comment="extensions_page_need_refresh repo management">Reîmprospătează pagina extensiei pentru a actualiza lista.</string>
-  <string name="pref_category_navbar" comment="pref_category_navbar navigation">Navbar</string>
+  <string name="extensions_page_need_refresh">Reîmprospătează pagina extensiei pentru a actualiza lista.</string>
+  <string name="pref_category_navbar">Navbar</string>
   <string name="pref_hide_updates_button">Afișare actualizări în navigator</string>
   <string name="pref_hide_history_button">Arată istoricul în navigația</string>
   <string name="pref_show_bottom_bar_labels">Arată întotdeauna etichetele de navigație</string>
-  <string name="select_tracker" comment="select_tracker tracker anime e manga details">Selectează un tracker</string>
+  <string name="select_tracker">Selectează un tracker</string>
   <string name="entry_not_tracked">Intrarea nu este urmărită.</string>
   <string name="fill_from_tracker">Completează de la tracker</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr funcționează. Agentul utilizatorului a fost actualizat. Vă rugăm să reporniți aplicația</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverr funcționează. Agentul utilizatorului a fost actualizat. Vă rugăm să reporniți aplicația</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverr nu funcţionează. Agentul utilizatorului nu este actualizat. Vă rugăm să verificaţi setările</string>
   <string name="flare_solver_error">Eroare la contactarea FlareSolverr</string>
   <string name="flare_solver_error_webview">Eroare la rezolvarea cu WebView</string>
@@ -156,22 +155,13 @@
   <string name="pref_flare_solverr_url_summary">URL-ul instanţei FlareSolverr de utilizat, de exemplu, http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Testaţi FlareSolverr şi actualizaţi agentul utilizatorului</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Testează FlareSolverr pentru a actualiza agentul utilizator. Doar o singură dată; apoi comută după cum este necesar.</string>
-  <string-array name="title_cast_quality">
-    <item>Alegeți calitatea/furnizorul în distribuție</item>
-    <item>Selectaţi calitatea</item>
-  </string-array>
+  <string name="title_cast_quality">Alegeți calitatea/furnizorul în distribuție</string>
   <string name="cast_not_connected">Transmite neconectate</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>Video adăugat la coadă</item>
-    <item>Video adăugat la coadă</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>Eroare la încărcarea videoclipului din Cast</item>
-    <item>Eroare la încărcarea videoclipului</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">Video adăugat la coadă</string>
+  <string name="cast_error_loading">Eroare la încărcarea videoclipului din Cast</string>
   <string name="server_local_notification_casting">Serverul local rulează. Atingeți pentru a-l opri.</string>
   <string name="server_local_notification_channel_description">Canal de notificare local server</string>
-  <string name="eh_autoscroll" comment="eh_autoscroll Auto scroll">Autoscroll</string>
+  <string name="eh_autoscroll">Autoscroll</string>
   <string name="eh_retry_all">Reîncercați toate</string>
   <string name="eh_boost_page">Amplificare pagină</string>
   <string name="eh_autoscroll_help">Ajutor Autoscroll</string>
@@ -194,7 +184,7 @@
   </plurals>
   <string name="pref_category_castserver">Distribuie server</string>
   <string name="pref_cast_server_port">Port server trecut</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Personalizare Discord</string>
+  <string name="pref_category_discord_customization">Personalizare Discord</string>
   <string name="pref_discord_custom_message">Mesaj personalizat</string>
   <string name="pref_discord_custom_message_summary">Mesaj personalizat care va fi afișat pe Discord</string>
   <string name="pref_discord_show_progress">Arată progresul</string>
@@ -207,7 +197,7 @@
   <string name="pref_discord_show_download_button_summary">Afișează un buton pentru descărcarea aplicației</string>
   <string name="pref_discord_show_discord_button">Arată butonul Discord</string>
   <string name="pref_discord_show_discord_button_summary">Afișează un buton pentru a se alătura serverului Discord</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Lista de redare</string>
+  <string name="cast_queue_title">Lista de redare</string>
   <string name="action_clear_queue">Șterge coada</string>
   <string name="cast_remove_from_queue">Elimină din coadă</string>
   <string name="move_to_top">Mută sus</string>
@@ -220,7 +210,7 @@
   <string name="queue">Coadă</string>
   <string name="move_to_bottom">Mută în jos</string>
   <string name="action_end_session">Sfârșit sesiunea în distribuție</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Dispozitive disponibile</string>
+  <string name="cast_available_devices">Dispozitive disponibile</string>
   <string name="cast_media_info">Informații media</string>
   <string name="cast_previous_video">Videoclip anterior</string>
   <string name="cast_next_video">Următorul videoclip</string>
@@ -235,10 +225,7 @@
   <string name="cast_end_session_confirm">Sfârșit sesiune</string>
   <string name="cast_end_session_cancel">Anulează</string>
   <string name="playback_speed">Viteza de redare</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Setări subtitrare</item>
-    <item>Setări subtitrare</item>
-  </string-array>
+  <string name="cast_subtitle_settings">Setări subtitrare</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">Culoare text</string>
   <string name="cast_subtitle_background">Context</string>
@@ -274,7 +261,7 @@
   <string name="action_bulk_select">Mod selecţie în masă</string>
   <string name="action_move_up">Mută în sus</string>
   <string name="action_move_down">Mută jos</string>
-  <string name="too_many_in_feed" comment="too_many_in_feed Feed Tab">Prea multe surse în fluxul tău, nu pot adăuga mai mult de 20</string>
+  <string name="too_many_in_feed">Prea multe surse în fluxul tău, nu pot adăuga mai mult de 20</string>
   <string name="action_sort_feed">Sortare fluxuri</string>
   <string name="sort_feed_confirmation">Doriți să sortați feed-urile în mod alfabetic?</string>
   <string name="saved_searches_feeds">Căutări salvate &amp; Fluxuri</string>
@@ -286,7 +273,7 @@
   <string name="feed_delete">Ștergeți elementul de flux?</string>
   <string name="feed_tab_empty">Nu ai nicio sursă în flux, navighează la dreapta sus pentru a adăuga una</string>
   <string name="feed_add">Adaugă %1$s la feed?</string>
-  <string name="saved_searches" comment="saved_searches Saved Searches">Căutări salvate</string>
+  <string name="saved_searches">Căutări salvate</string>
   <string name="save_search">Salvați interogarea curentă?</string>
   <string name="save_search_hint">Numele meu de căutare</string>
   <string name="save_search_failed_to_load">Nu s-au putut încărca căutările salvate!</string>
@@ -295,9 +282,9 @@
   <string name="save_search_delete_message">Sunteţi sigur că doriţi să ştergeţi interogarea de căutare salvată: \'%1$s\'?</string>
   <string name="save_search_invalid">Căutare salvată invalidă, filtrele s-au schimbat</string>
   <string name="save_search_invalid_name">Nume de căutare salvat nevalid</string>
-  <string name="no_source_categories" comment="no_source_categories Source Categories">Nicio categorie de surse disponibilă</string>
+  <string name="no_source_categories">Nicio categorie de surse disponibilă</string>
   <string name="invalid_category_name">Nume categorie nevalid</string>
-  <string name="pref_source_related_mangas" comment="pref_source_related_mangas Browse settings">Sugestii</string>
+  <string name="pref_source_related_mangas">Sugestii</string>
   <string name="pref_source_related_mangas_summary">Arată sugestiile site-ului sursă în timpul vizualizării intrării</string>
   <string name="related_mangas_website_suggestions">Sugestii website</string>
   <string name="related_mangas_more">Mai asemănător cu acestea...</string>
@@ -312,4 +299,52 @@
   <string name="pref_source_related_animes_summary">Arată sugestiile site-ului sursă în timpul vizualizării intrării</string>
   <string name="pref_source_navigation">Înlocuiește cel mai recent buton</string>
   <string name="pref_source_navigation_summery">Înlocuiește cel mai recent buton cu o vizualizare de navigare personalizată care include atât ultima cât și cea mai recentă</string>
+  <string name="app_cast_id">F033F567</string>
+  <string name="media_route_menu_title">EXTEND</string>
+  <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
+  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
+  <string name="pref_show_cast">Show Cast</string>
+  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
+  <string name="login_error">Login error</string>
+  <string name="save">Save</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
+  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
+  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
+  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
+  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
+  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
+  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
+  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
+  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
+  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
+  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
+  <string name="network_stream_url_label">Stream URL</string>
+  <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
+  <string name="network_stream_invalid_url">Enter a valid URL</string>
+  <string name="network_stream_title_label">Title (optional)</string>
+  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
+  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
+  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
+  <string name="network_stream_referer_label">Referer header</string>
+  <string name="network_stream_user_agent_label">User-Agent header</string>
+  <string name="network_stream_headers_label">Additional headers</string>
+  <string name="network_stream_headers_hint">Header-Name: Header value</string>
+  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
+  <string name="network_stream_play">Play stream</string>
+  <string name="network_stream_reset">Clear fields</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
+  <string name="show_seek_icon">Show seek icon</string>
+  <string name="show_seek_time">Show seek time</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
+  <string name="player_sheets_subtitles_ass_yes">Yes</string>
+  <string name="player_sheets_subtitles_ass_scale">Scale</string>
+  <string name="player_sheets_subtitles_ass_force">Force</string>
+  <string name="player_sheets_subtitles_ass_strip">Strip</string>
+  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
+  <string name="action_set_date_title">Set upload date</string>
+  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
+  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
+  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
 </resources>
