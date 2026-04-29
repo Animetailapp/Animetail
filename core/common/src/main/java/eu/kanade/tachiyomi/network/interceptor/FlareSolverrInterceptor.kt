@@ -11,7 +11,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import logcat.logcat
@@ -65,7 +64,8 @@ class FlareSolverrInterceptor(private val preferences: NetworkPreferences) : Int
         private val json: Json by injectLazy()
         private val jsonMediaType = "application/json".toMediaType()
         private val networkPreferences: NetworkPreferences by injectLazy()
-        private val flareSolverrUrl = networkPreferences.flareSolverrUrl.get()
+        private val flareSolverrUrl get() = networkPreferences.flareSolverrUrl().get()
+        private val flareSolverrTimeout get() = networkPreferences.flareSolverrTimeout().get()
         private val mutex = Mutex()
 
         @Serializable
@@ -133,24 +133,38 @@ class FlareSolverrInterceptor(private val preferences: NetworkPreferences) : Int
             val flareSolverResponse =
                 with(json) {
                     mutex.withLock {
-                        network.client.newCall(
-                            POST(
-                                url = flareSolverrUrl,
-                                body =
-                                Json.encodeToString(
-                                    FlareSolverRequest(
-                                        "request.get",
-                                        originalRequest.url.toString(),
-                                        cookies =
-                                        network.cookieJar.get(originalRequest.url).map {
-                                            FlareSolverCookie(it.name, it.value)
-                                        },
-                                        returnOnlyCookies = true,
-                                        maxTimeout = 30000,
-                                    ),
-                                ).toRequestBody(jsonMediaType),
-                            ),
-                        ).awaitSuccess().parseAs<FlareSolverResponse>()
+                        network.client.newBuilder()
+                            .readTimeout(
+                                (flareSolverrTimeout + 10000).toLong(),
+                                java.util.concurrent.TimeUnit.MILLISECONDS,
+                            )
+                            .writeTimeout(
+                                (flareSolverrTimeout + 10000).toLong(),
+                                java.util.concurrent.TimeUnit.MILLISECONDS,
+                            )
+                            .connectTimeout(
+                                (flareSolverrTimeout + 10000).toLong(),
+                                java.util.concurrent.TimeUnit.MILLISECONDS,
+                            )
+                            .build()
+                            .newCall(
+                                POST(
+                                    url = flareSolverrUrl,
+                                    body =
+                                    Json.encodeToString(
+                                        FlareSolverRequest(
+                                            "request.get",
+                                            originalRequest.url.toString(),
+                                            cookies =
+                                            network.cookieJar.get(originalRequest.url).map {
+                                                FlareSolverCookie(it.name, it.value)
+                                            },
+                                            returnOnlyCookies = true,
+                                            maxTimeout = flareSolverrTimeout,
+                                        ),
+                                    ).toRequestBody(jsonMediaType),
+                                ),
+                            ).awaitSuccess().parseAs<FlareSolverResponse>()
                     }
                 }
 

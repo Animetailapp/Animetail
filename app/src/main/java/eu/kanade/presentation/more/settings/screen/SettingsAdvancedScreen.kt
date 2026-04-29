@@ -250,6 +250,7 @@ object SettingsAdvancedScreen : SearchableSettings {
 
         // TLMR -->
         val flareSolverrUrlPref = networkPreferences.flareSolverrUrl()
+        val flareSolverrTimeoutPref = networkPreferences.flareSolverrTimeout()
         val enableFlareSolverrPref = networkPreferences.enableFlareSolverr()
         val enableFlareSolverr by enableFlareSolverrPref.collectAsState()
         // <-- TLMR
@@ -390,13 +391,31 @@ object SettingsAdvancedScreen : SearchableSettings {
                     enabled = enableFlareSolverr,
                     subtitle = stringResource(TLMR.strings.pref_flare_solverr_url_summary),
                 ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = flareSolverrTimeoutPref,
+                    entries = persistentMapOf(
+                        10000 to "10s",
+                        30000 to "30s",
+                        60000 to "1m",
+                        90000 to "1.5m",
+                        120000 to "2m",
+                    ),
+                    title = stringResource(TLMR.strings.pref_flare_solverr_timeout),
+                    enabled = enableFlareSolverr,
+                    subtitle = stringResource(TLMR.strings.pref_flare_solverr_timeout_summary),
+                ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(TLMR.strings.pref_test_flare_solverr_and_update_user_agent),
                     enabled = enableFlareSolverr,
                     subtitle = stringResource(TLMR.strings.pref_test_flare_solverr_and_update_user_agent_summary),
                     onClick = {
                         scope.launch {
-                            testFlareSolverrAndUpdateUserAgent(flareSolverrUrlPref, userAgentPref, context)
+                            testFlareSolverrAndUpdateUserAgent(
+                                flareSolverrUrlPref,
+                                flareSolverrTimeoutPref,
+                                userAgentPref,
+                                context,
+                            )
                         }
                     },
                 ),
@@ -667,12 +686,18 @@ object SettingsAdvancedScreen : SearchableSettings {
     // TLMR -->
     private suspend fun testFlareSolverrAndUpdateUserAgent(
         flareSolverrUrlPref: BasePreference<String>,
+        flareSolverrTimeoutPref: BasePreference<Int>,
         userAgentPref: BasePreference<String>,
         context: android.content.Context,
     ) {
         val json: Json by injectLazy()
         val jsonMediaType = "application/json".toMediaType()
-        val client = OkHttpClient.Builder().build()
+        val timeout = flareSolverrTimeoutPref.get() + 10000
+        val client = OkHttpClient.Builder()
+            .readTimeout(timeout.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .writeTimeout(timeout.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .connectTimeout(timeout.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .build()
 
         try {
             withContext(Dispatchers.IO) {
@@ -687,7 +712,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                                     "request.get",
                                     "https://www.google.com/",
                                     returnOnlyCookies = true,
-                                    maxTimeout = 60000,
+                                    maxTimeout = flareSolverrTimeoutPref.get(),
                                 ),
                             ).toRequestBody(jsonMediaType),
                         ),

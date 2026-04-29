@@ -14,6 +14,8 @@ class NetworkPreferences(
     val enableFlareSolverr: Preference<Boolean> = preferenceStore.getBoolean("enable_flare_solverr", false)
 
     val flareSolverrUrl: Preference<String> = preferenceStore.getString("flare_solverr_url", "http://localhost:8191/v1")
+
+    val flareSolverrTimeout: Preference<Int> = preferenceStore.getInt("flare_solverr_timeout", 30000)
     // <-- TLMR
 
     val dohProvider: Preference<Int> = preferenceStore.getInt("doh_provider", -1)
@@ -32,6 +34,8 @@ class NetworkPreferences(
     fun enableFlareSolverr() = enableFlareSolverr
 
     fun flareSolverrUrl() = flareSolverrUrl
+
+    fun flareSolverrTimeout() = flareSolverrTimeout
 
     fun dohProvider() = dohProvider
 

@@ -80,10 +80,31 @@ fun WebViewScreenContent(
     headers: Map<String, String> = emptyMap(),
     onUrlChange: (String) -> Unit = {},
 ) {
+    val filteredHeaders = remember(headers) {
+        headers.filter { (key, value) ->
+            val name = key.lowercase(java.util.Locale.ENGLISH)
+            val excludedHeaders = listOf(
+                "user-agent",
+                "content-length",
+                "host",
+                "trailer",
+                "te",
+                "upgrade",
+                "cookie2",
+                "keep-alive",
+                "transfer-encoding",
+                "set-cookie",
+            )
+            if (name in excludedHeaders || name.startsWith("proxy-")) return@filter false
+            if (name == "connection" && value.lowercase(java.util.Locale.ENGLISH) == "upgrade") return@filter false
+            true
+        }.mapKeys { it.key.lowercase(java.util.Locale.ENGLISH) }
+    }
+
     val windowStack = remember {
         mutableStateStackOf(
             WebViewWindow(
-                WebContent.Url(url = url, additionalHttpHeaders = headers),
+                WebContent.Url(url = url, additionalHttpHeaders = filteredHeaders),
             ),
         )
     }
@@ -150,18 +171,30 @@ fun WebViewScreenContent(
                 request: WebResourceRequest?,
             ): Boolean {
                 request?.let {
+                    val url = it.url.toString()
                     // Don't attempt to open blobs as webpages
-                    if (it.url.toString().startsWith("blob:http")) {
+                    if (url.startsWith("blob:http")) {
                         return false
                     }
 
                     // Ignore intents urls
-                    if (it.url.toString().startsWith("intent://")) {
+                    if (url.startsWith("intent://")) {
                         return true
                     }
 
                     // Continue with request, but with custom headers
-                    view?.loadUrl(it.url.toString(), headers)
+                    val requestHeaders = it.requestHeaders ?: emptyMap()
+                    val requestHeaderKeys = requestHeaders.keys.map {
+                        it.lowercase(java.util.Locale.ENGLISH)
+                    }
+                    val currentUrl = view?.url
+                    if (it.isForMainFrame &&
+                        !url.equals(currentUrl, ignoreCase = true) &&
+                        !requestHeaderKeys.containsAll(filteredHeaders.keys)
+                    ) {
+                        view?.loadUrl(url, filteredHeaders)
+                        return true
+                    }
                 }
                 return super.shouldOverrideUrlLoading(view, request)
             }
@@ -332,7 +365,9 @@ fun WebViewScreenContent(
                         WebView.setWebContentsDebuggingEnabled(true)
                     }
 
-                    headers["user-agent"]?.let {
+                    headers.entries.find {
+                        it.key.lowercase(java.util.Locale.ENGLISH) == "user-agent"
+                    }?.value?.let {
                         webView.settings.userAgentString = it
                     }
                 },
