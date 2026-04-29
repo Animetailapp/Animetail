@@ -32,8 +32,11 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.EditCalendar
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.NewLabel
 import androidx.compose.material.icons.outlined.RemoveDone
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -306,6 +309,7 @@ fun LibraryBottomActionMenu(
     onMarkAsUnviewedClicked: () -> Unit,
     onDownloadClicked: ((DownloadAction) -> Unit)?,
     onDeleteClicked: () -> Unit,
+    onMigrateClicked: (() -> Unit)? = null,
     // SY -->
     onClickResetInfo: (() -> Unit)?,
     // SY <--
@@ -327,7 +331,7 @@ fun LibraryBottomActionMenu(
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             val haptic = LocalHapticFeedback.current
-            val confirm = remember { mutableStateListOf(false, false, false, false, false, false) }
+            val confirm = remember { mutableStateListOf(false, false, false, false, false, false, false) }
             var resetJob by remember { mutableStateOf<Job?>(null) }
             val onLongClickItem: (Int) -> Unit = { toConfirmIndex ->
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -338,7 +342,8 @@ fun LibraryBottomActionMenu(
                     if (isActive) confirm[toConfirmIndex] = false
                 }
             }
-            val showOverflow = onClickResetInfo != null
+            val showOverflow = onDeleteClicked != null || onMigrateClicked != null || onClickResetInfo != null
+            var overflowExpanded by remember { mutableStateOf(false) }
             Row(
                 modifier = Modifier
                     .windowInsetsPadding(
@@ -388,24 +393,50 @@ fun LibraryBottomActionMenu(
                         )
                     }
                 }
-                Button(
-                    title = stringResource(MR.strings.action_delete),
-                    icon = Icons.Outlined.Delete,
-                    toConfirm = confirm[4],
-                    onLongClick = { onLongClickItem(4) },
-                    onClick = onDeleteClicked,
-                )
-                // SY -->
                 if (showOverflow) {
                     Button(
-                        title = stringResource(TLMR.strings.reset_info),
-                        icon = Icons.Outlined.Delete,
-                        toConfirm = confirm[5],
-                        onLongClick = { onLongClickItem(5) },
-                        onClick = onClickResetInfo,
-                    )
+                        title = stringResource(MR.strings.label_more),
+                        icon = Icons.Outlined.MoreVert,
+                        toConfirm = false,
+                        onLongClick = {},
+                        onClick = { overflowExpanded = !overflowExpanded },
+                    ) {
+                        DropdownMenu(
+                            expanded = overflowExpanded,
+                            onDismissRequest = { overflowExpanded = false },
+                        ) {
+                            if (onMigrateClicked != null) {
+                                DropdownMenuItem(
+                                    text = { Text(text = stringResource(MR.strings.action_migrate)) },
+                                    onClick = {
+                                        onMigrateClicked()
+                                        overflowExpanded = false
+                                    },
+                                )
+                            }
+                            if (onDeleteClicked != null) {
+                                DropdownMenuItem(
+                                    text = { Text(text = stringResource(MR.strings.action_delete)) },
+                                    onClick = {
+                                        onDeleteClicked()
+                                        overflowExpanded = false
+                                    },
+                                )
+                            }
+                            // SY -->
+                            if (onClickResetInfo != null) {
+                                DropdownMenuItem(
+                                    text = { Text(text = stringResource(TLMR.strings.reset_info)) },
+                                    onClick = {
+                                        onClickResetInfo()
+                                        overflowExpanded = false
+                                    },
+                                )
+                            }
+                            // SY <--
+                        }
+                    }
                 }
-                // SY <--
             }
         }
     }
