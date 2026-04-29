@@ -529,4 +529,5 @@
     <string name="show_episode_summaries">Resúmenes de episodio</string>
     <string name="trakt_select_season">Seleccionar temporada de Trakt</string>
     <string name="trakt_season_episodes">%1$s (%2$d episodios)</string>
+    <string name="trakt_all_seasons">Todas las temporadas</string>
 </resources>

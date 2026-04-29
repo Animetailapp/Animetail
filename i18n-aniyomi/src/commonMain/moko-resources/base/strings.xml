@@ -584,4 +584,5 @@
     <string name="show_episode_summaries">Episode summaries</string>
     <string name="trakt_select_season">Select Trakt season</string>
     <string name="trakt_season_episodes">%1$s (%2$d episodes)</string>
+    <string name="trakt_all_seasons">All Seasons</string>
 </resources>

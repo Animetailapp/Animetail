@@ -14,7 +14,7 @@ data class TraktSearchResult(
 @Serializable
 data class TraktShow(
     val title: String,
-    val year: Int?,
+    val year: Int? = null,
     val ids: TraktIds,
     val overview: String? = null,
     val images: TraktImages? = null,
@@ -23,7 +23,7 @@ data class TraktShow(
 @Serializable
 data class TraktMovie(
     val title: String,
-    val year: Int?,
+    val year: Int? = null,
     val ids: TraktIds,
     val overview: String? = null,
     val images: TraktImages? = null,
