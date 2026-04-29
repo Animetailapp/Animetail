@@ -856,10 +856,14 @@ data class TrackServiceSearchScreen(
         }
 
         /** Called when the user picks a season from the Trakt season picker dialog. */
-        fun confirmSeasonSelection(seasonNumber: Int, episodeCount: Int) {
+        fun confirmSeasonSelection(seasonNumber: Int?, episodeCount: Int) {
             val pendingTrack = mutableState.value.seasonPickerData?.pendingTrack ?: return
             val baseUrl = pendingTrack.tracking_url.substringBefore("?")
-            pendingTrack.tracking_url = "$baseUrl?season=$seasonNumber"
+            pendingTrack.tracking_url = if (seasonNumber != null) {
+                "$baseUrl?season=$seasonNumber"
+            } else {
+                baseUrl
+            }
             pendingTrack.total_episodes = episodeCount.toLong()
             registerTracking(pendingTrack)
             mutableState.update { it.copy(seasonPickerData = null, navigateBack = true) }
@@ -1006,7 +1010,7 @@ private data class TrackerAnimeRemoveScreen(
 private fun TraktSeasonPickerDialog(
     seasons: List<Pair<Int, Int>>,
     isLoading: Boolean,
-    onSeasonSelected: (seasonNumber: Int, episodeCount: Int) -> Unit,
+    onSeasonSelected: (seasonNumber: Int?, episodeCount: Int) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     AlertDialog(
@@ -1022,6 +1026,17 @@ private fun TraktSeasonPickerDialog(
                 }
             } else {
                 LazyColumn {
+                    item {
+                        TextButton(
+                            onClick = { onSeasonSelected(null, seasons.sumOf { it.second }) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = stringResource(AYMR.strings.trakt_all_seasons),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
                     items(seasons) { (seasonNumber, episodeCount) ->
                         val seasonLabel = stringResource(AYMR.strings.display_mode_season, seasonNumber.toString())
                         val itemLabel = stringResource(AYMR.strings.trakt_season_episodes, seasonLabel, episodeCount)
