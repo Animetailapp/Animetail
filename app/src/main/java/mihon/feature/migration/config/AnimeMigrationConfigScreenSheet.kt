@@ -1,0 +1,216 @@
+package mihon.feature.migration.config
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.util.fastForEach
+import eu.kanade.domain.source.service.SourcePreferences
+import eu.kanade.presentation.components.AdaptiveSheet
+import mihon.domain.migration.models.MigrationFlag
+import mihon.feature.common.utils.getLabel
+import tachiyomi.core.common.preference.Preference
+import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.components.material.padding
+import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.util.collectAsState
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+
+@Composable
+fun AnimeMigrationConfigScreenSheet(
+    onDismissRequest: () -> Unit,
+    onStartMigration: (extraSearchQuery: String?) -> Unit,
+) {
+    val preferences: SourcePreferences = Injekt.get()
+    var extraSearchQuery by rememberSaveable { mutableStateOf("") }
+    val migrationFlagsBit by preferences.migrationFlags.collectAsState()
+    val migrationFlags = remember(migrationFlagsBit) { MigrationFlag.fromBit(migrationFlagsBit) }
+
+    AdaptiveSheet(onDismissRequest = onDismissRequest) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(top = MaterialTheme.padding.medium),
+            ) {
+                Text(
+                    text = stringResource(MR.strings.migrationConfigScreen_dataToMigrateHeader),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = MaterialTheme.padding.extraSmall)
+                        .padding(horizontal = MaterialTheme.padding.medium),
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.padding.extraSmall))
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = MaterialTheme.padding.medium)
+                        .padding(bottom = MaterialTheme.padding.extraSmall),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+                ) {
+                    MigrationFlag.entries
+                        .filterNot { it == MigrationFlag.REMOVE_DOWNLOAD }
+                        .fastForEach { flag ->
+                            val selected = flag in migrationFlags
+                            FilterChip(
+                                selected = selected,
+                                onClick = {
+                                    val newFlags = if (selected) migrationFlags - flag else migrationFlags + flag
+                                    preferences.migrationFlags.set(MigrationFlag.toBit(newFlags))
+                                },
+                                label = { Text(stringResource(flag.getLabel())) },
+                                leadingIcon = {
+                                    if (selected) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Check,
+                                            contentDescription = null,
+                                        )
+                                    }
+                                },
+                            )
+                        }
+                }
+                val removeDownloads = MigrationFlag.REMOVE_DOWNLOAD in migrationFlags
+                MigrationSheetSwitchItem(
+                    title = stringResource(MR.strings.migrationConfigScreen_removeDownloadsTitle),
+                    subtitle = null,
+                    checked = removeDownloads,
+                    onClick = {
+                        val newFlags = if (removeDownloads) {
+                            migrationFlags - MigrationFlag.REMOVE_DOWNLOAD
+                        } else {
+                            migrationFlags +
+                                MigrationFlag.REMOVE_DOWNLOAD
+                        }
+                        preferences.migrationFlags.set(MigrationFlag.toBit(newFlags))
+                    },
+                )
+                MigrationSheetDividerItem()
+                OutlinedTextField(
+                    value = extraSearchQuery,
+                    onValueChange = { extraSearchQuery = it },
+                    label = { Text(stringResource(MR.strings.migrationConfigScreen_additionalSearchQueryLabel)) },
+                    supportingText = {
+                        Text(stringResource(MR.strings.migrationConfigScreen_additionalSearchQuerySupportingText))
+                    },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = MaterialTheme.padding.medium,
+                            vertical = MaterialTheme.padding.extraSmall,
+                        ),
+                )
+            }
+            HorizontalDivider()
+            Button(
+                onClick = {
+                    val cleanedExtraSearchQuery = extraSearchQuery.trim().ifBlank { null }
+                    onStartMigration(cleanedExtraSearchQuery)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = MaterialTheme.padding.medium,
+                        vertical = MaterialTheme.padding.small,
+                    ),
+            ) {
+                Text(text = stringResource(MR.strings.migrationConfigScreen_continueButtonText))
+            }
+        }
+    }
+}
+
+@Composable
+private fun MigrationSheetSwitchItem(
+    title: String,
+    subtitle: String?,
+    preference: Preference<Boolean>,
+) {
+    MigrationSheetSwitchItem(
+        title = title,
+        subtitle = subtitle,
+        checked = preference.collectAsState().value,
+        onClick = { preference.set(!preference.get()) },
+    )
+}
+
+@Composable
+private fun MigrationSheetSwitchItem(
+    title: String,
+    subtitle: String?,
+    checked: Boolean,
+    onClick: () -> Unit,
+) {
+    ListItem(
+        headlineContent = { Text(text = title) },
+        supportingContent = subtitle?.let { { Text(text = subtitle) } },
+        trailingContent = {
+            Switch(
+                checked = checked,
+                onCheckedChange = null,
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier.clickable(onClick = onClick),
+    )
+}
+
+@Composable
+private fun MigrationSheetDividerItem() {
+    HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.padding.extraSmall))
+}
+
+@Composable
+private fun MigrationSheetWarningItem(
+    text: String,
+) {
+    ListItem(
+        leadingContent = {
+            Icon(
+                imageVector = Icons.Outlined.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+            )
+        },
+        headlineContent = {
+            Text(
+                text = text,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier,
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+    )
+}

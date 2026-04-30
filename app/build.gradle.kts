@@ -208,6 +208,7 @@ dependencies {
 
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.stringSimilarity)
 
     implementation(libs.bundles.kotlinx.coroutines)
 
