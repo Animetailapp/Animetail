@@ -546,8 +546,17 @@ class PlayerViewModel @JvmOverloads constructor(
                 }
             }
         }
-        activity.player.mpv?.setPropertyInt("secondary-sid", _selectedSubtitles.value.second)
-        activity.player.mpv?.setPropertyInt("sid", _selectedSubtitles.value.first)
+        val (primary, secondary) = _selectedSubtitles.value
+        if (secondary == -1) {
+            activity.player.mpv?.setPropertyBoolean("secondary-sid", false)
+        } else {
+            activity.player.mpv?.setPropertyInt("secondary-sid", secondary)
+        }
+        if (primary == -1) {
+            activity.player.mpv?.setPropertyBoolean("sid", false)
+        } else {
+            activity.player.mpv?.setPropertyInt("sid", primary)
+        }
     }
 
     fun updateSubtitle(sid: Int, secondarySid: Int) {
