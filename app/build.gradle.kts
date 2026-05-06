@@ -351,9 +351,3 @@ androidComponents {
         it.packaging.resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
     }
 }
-
-buildscript {
-    dependencies {
-        classpath(libs.kotlin.gradle)
-    }
-}
