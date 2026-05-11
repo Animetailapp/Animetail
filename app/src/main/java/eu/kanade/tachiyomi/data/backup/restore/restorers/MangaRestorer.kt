@@ -256,7 +256,7 @@ class MangaRestorer(
      */
     private suspend fun insertManga(manga: Manga): Long {
         return handler.awaitOneExecutable(true) {
-            mangasQueries.insert(
+            mangasQueries.insertReturningId(
                 source = manga.source,
                 url = manga.url,
                 artist = manga.artist,
@@ -280,7 +280,6 @@ class MangaRestorer(
                 notes = manga.notes,
             )
         }
-    }
 
     private suspend fun restoreMangaDetails(
         manga: Manga,
