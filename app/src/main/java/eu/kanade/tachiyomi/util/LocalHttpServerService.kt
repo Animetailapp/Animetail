@@ -13,6 +13,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService.Companion.applicationContext
+import eu.kanade.tachiyomi.network.NetworkHelper
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
@@ -41,13 +42,14 @@ class LocalHttpServerService : Service() {
         }
     }
     private val prefserver: LocalHttpServerHolder by injectLazy()
+    private val networkHelper: NetworkHelper by injectLazy()
     private var port = prefserver.port().get()
     var server: LocalHttpServer? = null
 
     override fun onCreate() {
         super.onCreate()
 
-        server = LocalHttpServer(port, contentResolver)
+        server = LocalHttpServer(port, contentResolver, networkHelper.client)
         try {
             server?.start()
             logcat(LogPriority.DEBUG) { "Local HTTP server started at $port" }

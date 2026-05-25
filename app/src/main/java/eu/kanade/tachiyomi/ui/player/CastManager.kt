@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.cast.CastMediaControlIntent
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaQueueItem
@@ -254,27 +255,35 @@ class CastManager(
                 val hosterState = viewModel!!.hosterState.value.getOrNull(selectedHosterIndex) as? HosterState.Ready
                 val video = hosterState?.videoList?.getOrNull(selectedVideoIndex) ?: return@launch
 
-                val mediaInfo = mediaBuilder!!.buildMediaInfo(video) // Ahora pasa el objeto `Video` directamente
+                val preparedMedia = mediaBuilder!!.buildMediaInfo(video)
                 val currentLocalPosition = (mpv?.getPropertyInt("time-pos") ?: 0).toLong()
 
                 updateQueueItems()
                 if (remoteMediaClient.mediaQueue.itemCount > 0) {
-                    val queueItem = MediaQueueItem.Builder(mediaInfo)
+                    val queueItemBuilder = MediaQueueItem.Builder(preparedMedia.mediaInfo)
                         .setAutoplay(autoplayEnabled)
-                        .build()
+
+                    if (preparedMedia.initialActiveTrackIds.isNotEmpty()) {
+                        queueItemBuilder.setActiveTrackIds(preparedMedia.initialActiveTrackIds)
+                    }
+
+                    val queueItem = queueItemBuilder.build()
 
                     mediaQueue.add(queueItem)
                     remoteMediaClient.queueAppendItem(queueItem, null)
                     updateQueueItems()
                     showAddedToQueueToast()
                 } else {
-                    remoteMediaClient.load(
-                        MediaLoadRequestData.Builder()
-                            .setMediaInfo(mediaInfo)
-                            .setAutoplay(autoplayEnabled)
-                            .setCurrentTime(currentLocalPosition * 1000)
-                            .build(),
-                    )
+                    val requestBuilder = MediaLoadRequestData.Builder()
+                        .setMediaInfo(preparedMedia.mediaInfo)
+                        .setAutoplay(autoplayEnabled)
+                        .setCurrentTime(currentLocalPosition * 1000)
+
+                    if (preparedMedia.initialActiveTrackIds.isNotEmpty()) {
+                        requestBuilder.setActiveTrackIds(preparedMedia.initialActiveTrackIds)
+                    }
+
+                    remoteMediaClient.load(requestBuilder.build())
                     updateQueueItems()
                 }
                 _castState.value = CastState.CONNECTED
@@ -306,6 +315,11 @@ class CastManager(
                 Toast.LENGTH_SHORT,
             ).show()
         }
+    }
+
+    fun supportsAudioTrackSelection(): Boolean {
+        val applicationId = castSession?.applicationMetadata?.applicationId ?: return false
+        return applicationId != CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID
     }
 
     private fun startTrackingCastProgress() {

@@ -938,6 +938,7 @@ private fun TracksSelectionDialog(
             LazyColumn {
                 val subtitleTracks = tracks.filter { it.type == MediaTrack.TYPE_TEXT }
                 val audioTracks = tracks.filter { it.type == MediaTrack.TYPE_AUDIO }
+                val supportsAudioTrackSelection = castManager.supportsAudioTrackSelection()
 
                 if (subtitleTracks.isNotEmpty()) {
                     item {
@@ -972,7 +973,10 @@ private fun TracksSelectionDialog(
                             isSelected = track.id in activeTrackIds,
                             onSelected = { selected ->
                                 val newTrackIds = if (selected) {
-                                    activeTrackIds.plus(track.id)
+                                    val otherSubtitleTracks = subtitleTracks.filter { it.id != track.id }
+                                    activeTrackIds
+                                        .minus(otherSubtitleTracks.map { it.id }.toSet())
+                                        .plus(track.id)
                                 } else {
                                     activeTrackIds.minus(track.id)
                                 }
@@ -986,7 +990,7 @@ private fun TracksSelectionDialog(
                     }
                 }
 
-                if (audioTracks.isNotEmpty()) {
+                if (supportsAudioTrackSelection && audioTracks.isNotEmpty()) {
                     item {
                         Text(
                             text = stringResource(TLMR.strings.cast_audio_tracks),
