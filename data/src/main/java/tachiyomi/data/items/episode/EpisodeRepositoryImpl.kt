@@ -16,7 +16,7 @@ class EpisodeRepositoryImpl(
         return try {
             handler.await(inTransaction = true) {
                 episodes.map { episode ->
-                    episodesQueries.insert(
+                    val lastInsertId = episodesQueries.insert(
                         episode.animeId,
                         episode.url,
                         episode.name,
@@ -34,8 +34,7 @@ class EpisodeRepositoryImpl(
                         episode.previewUrl,
                         episode.fillermark,
                         episode.dateUploadOverride,
-                    )
-                    val lastInsertId = episodesQueries.selectLastInsertedRowId().executeAsOne()
+                    ).executeAsOne()
                     episode.copy(id = lastInsertId)
                 }
             }

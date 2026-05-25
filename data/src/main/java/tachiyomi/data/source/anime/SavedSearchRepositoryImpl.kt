@@ -40,15 +40,12 @@ class SavedSearchRepositoryImpl(
 
             existedSavedSearchId
                 // KMK <--
-                ?: handler.awaitOneExecutable(true) {
-                    saved_searchQueries.insert(
-                        savedSearch.source,
-                        savedSearch.name,
-                        savedSearch.query,
-                        savedSearch.filtersJson,
-                    )
-                    saved_searchQueries.selectLastInsertedRowId()
-                }
+                ?: saved_searchQueries.insert(
+                    savedSearch.source,
+                    savedSearch.name,
+                    savedSearch.query,
+                    savedSearch.filtersJson,
+                ).executeAsOne()
         }
     }
 

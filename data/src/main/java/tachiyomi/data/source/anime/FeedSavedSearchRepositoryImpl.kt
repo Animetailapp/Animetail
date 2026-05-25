@@ -75,14 +75,11 @@ class FeedSavedSearchRepositoryImpl(
 
             existedFeedId
                 // KMK <--
-                ?: handler.awaitOneExecutable(true) {
-                    feed_saved_searchQueries.insert(
-                        feedSavedSearch.source,
-                        feedSavedSearch.savedSearch,
-                        feedSavedSearch.global,
-                    )
-                    feed_saved_searchQueries.selectLastInsertedRowId()
-                }
+                ?: feed_saved_searchQueries.insert(
+                    feedSavedSearch.source,
+                    feedSavedSearch.savedSearch,
+                    feedSavedSearch.global,
+                ).executeAsOne()
         }
     }
 
