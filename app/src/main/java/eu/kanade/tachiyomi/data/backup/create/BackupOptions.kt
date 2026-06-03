@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.data.backup.create
 
 import dev.icerock.moko.resources.StringResource
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 
@@ -43,7 +42,7 @@ data class BackupOptions(
         sourceSettings
 
     companion object {
-        val libraryOptions = persistentListOf(
+        val libraryOptions = listOf(
             Entry(
                 label = AYMR.strings.entries,
                 getter = BackupOptions::libraryEntries,
@@ -80,7 +79,7 @@ data class BackupOptions(
             ),
         )
 
-        val settingsOptions = persistentListOf(
+        val settingsOptions = listOf(
             Entry(
                 label = MR.strings.app_settings,
                 getter = BackupOptions::appSettings,

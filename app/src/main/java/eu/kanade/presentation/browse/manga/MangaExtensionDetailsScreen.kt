@@ -56,8 +56,6 @@ import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaExtensionDetailsScreenModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.copyToClipboard
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -95,7 +93,7 @@ fun MangaExtensionDetailsScreen(
                 navigateUp = navigateUp,
                 actions = {
                     AppBarActions(
-                        actions = persistentListOf<AppBar.AppBarAction>().builder()
+                        actions = listOf<AppBar.AppBarAction>().builder()
                             .apply {
                                 if (url != null) {
                                     add(
@@ -157,7 +155,7 @@ fun MangaExtensionDetailsScreen(
 private fun ExtensionDetails(
     contentPadding: PaddingValues,
     extension: MangaExtension.Installed,
-    sources: ImmutableList<MangaExtensionSourceItem>,
+    sources: List<MangaExtensionSourceItem>,
     incognitoMode: Boolean,
     onClickSourcePreferences: (sourceId: Long) -> Unit,
     onClickUninstall: () -> Unit,

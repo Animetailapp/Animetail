@@ -16,7 +16,6 @@ import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.authenticate
-import kotlinx.collections.immutable.persistentListOf
 import mihon.domain.extension.anime.interactor.GetAnimeExtensionStoreCountAsFlow
 import mihon.domain.extension.manga.interactor.GetMangaExtensionStoreCountAsFlow
 import tachiyomi.core.common.i18n.stringResource
@@ -55,7 +54,7 @@ object SettingsBrowseScreen : SearchableSettings {
         return listOf(
             Preference.PreferenceGroup(
                 title = stringResource(MR.strings.label_sources),
-                preferenceItems = persistentListOf(
+                preferenceItems = listOf(
                     // KMK -->
                     Preference.PreferenceItem.SwitchPreference(
                         preference = sourcePreferences.relatedAnimes,
@@ -87,7 +86,7 @@ object SettingsBrowseScreen : SearchableSettings {
             ),
             Preference.PreferenceGroup(
                 title = stringResource(TLMR.strings.feed),
-                preferenceItems = persistentListOf(
+                preferenceItems = listOf(
                     Preference.PreferenceItem.SwitchPreference(
                         preference = uiPreferences.hideFeedTab,
                         title = stringResource(TLMR.strings.pref_hide_feed),
@@ -110,7 +109,7 @@ object SettingsBrowseScreen : SearchableSettings {
 
             Preference.PreferenceGroup(
                 title = stringResource(MR.strings.label_sources),
-                preferenceItems = persistentListOf(
+                preferenceItems = listOf(
                     Preference.PreferenceItem.SwitchPreference(
                         preference = sourcePreferences.hideInAnimeLibraryItems,
                         title = stringResource(AYMR.strings.pref_hide_in_anime_library_items),
@@ -145,7 +144,7 @@ object SettingsBrowseScreen : SearchableSettings {
             ),
             Preference.PreferenceGroup(
                 title = stringResource(MR.strings.pref_category_nsfw_content),
-                preferenceItems = persistentListOf(
+                preferenceItems = listOf(
                     Preference.PreferenceItem.SwitchPreference(
                         preference = sourcePreferences.showNsfwSource,
                         title = stringResource(MR.strings.pref_show_nsfw_source),

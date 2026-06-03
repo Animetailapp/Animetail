@@ -69,8 +69,6 @@ import eu.kanade.tachiyomi.data.sync.service.GoogleDriveSyncService
 import eu.kanade.tachiyomi.ui.storage.StorageTab
 import eu.kanade.tachiyomi.util.system.DeviceUtil
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
@@ -123,7 +121,7 @@ object SettingsDataScreen : SearchableSettings {
         val syncPreferences = remember { Injekt.get<SyncPreferences>() }
         val syncService by syncPreferences.syncService().collectAsState()
 
-        return persistentListOf(
+        return listOf(
             getStorageLocationPref(storagePreferences = storagePreferences),
             Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.pref_storage_location_info)),
             getBackupAndRestoreGroup(backupPreferences = backupPreferences),
@@ -227,7 +225,7 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_backup),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 // Manual actions
                 Preference.PreferenceItem.CustomPreference(
                     title = stringResource(restorePreferenceKeyString),
@@ -275,7 +273,7 @@ object SettingsDataScreen : SearchableSettings {
                 // Automatic backups
                 Preference.PreferenceItem.ListPreference(
                     preference = backupPreferences.backupInterval,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         0 to stringResource(MR.strings.off),
                         6 to stringResource(MR.strings.update_6hour),
                         12 to stringResource(MR.strings.update_12hour),
@@ -322,7 +320,7 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_storage_usage),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.CustomPreference(
                     title = stringResource(MR.strings.pref_storage_usage),
                 ) {
@@ -435,7 +433,7 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.export),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.library_list),
                     onClick = { showDialog = true },
@@ -535,11 +533,11 @@ object SettingsDataScreen : SearchableSettings {
         return listOf(
             Preference.PreferenceGroup(
                 title = stringResource(TLMR.strings.pref_sync_service_category),
-                preferenceItems = persistentListOf(
+                preferenceItems = listOf(
                     Preference.PreferenceItem.ListPreference(
                         preference = syncPreferences.syncService(),
                         title = stringResource(TLMR.strings.pref_sync_service),
-                        entries = persistentMapOf(
+                        entries = mapOf(
                             SyncManager.SyncService.NONE.value to stringResource(MR.strings.off),
                             SyncManager.SyncService.SYNCYOMI.value to stringResource(TLMR.strings.syncyomi),
                             SyncManager.SyncService.GOOGLE_DRIVE.value to stringResource(TLMR.strings.google_drive),
@@ -696,7 +694,7 @@ object SettingsDataScreen : SearchableSettings {
         val navigator = LocalNavigator.currentOrThrow
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_sync_now_group_title),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 getSyncOptionsPref(),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(TLMR.strings.pref_sync_now),
@@ -728,11 +726,11 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_sync_automatic_category),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = syncIntervalPref,
                     title = stringResource(TLMR.strings.pref_sync_interval),
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         0 to stringResource(MR.strings.off),
                         30 to stringResource(TLMR.strings.update_30min),
                         60 to stringResource(TLMR.strings.update_1hour),

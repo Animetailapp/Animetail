@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.util.system.isReleaseBuildType
-import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.domain.entries.anime.interactor.AnimeFetchInterval
 import tachiyomi.domain.entries.manga.interactor.MangaFetchInterval
 import tachiyomi.i18n.MR
@@ -152,7 +151,7 @@ fun SetIntervalDialog(
                                     it.toString()
                                 }
                             }
-                            .toImmutableList()
+                            .toList()
                         WheelTextPicker(
                             items = items,
                             size = size,
@@ -216,12 +215,12 @@ fun SetDateDialog(
                 val locale = Locale.getDefault()
                 val monthNames = remember(locale) {
                     months.map { java.time.Month.of(it).getDisplayName(TextStyle.SHORT, locale) }
-                        .toImmutableList()
+                        .toList()
                 }
 
                 WheelTextPicker(
                     modifier = Modifier.weight(1f),
-                    items = remember { years.map { it.toString() }.toImmutableList() },
+                    items = remember { years.map { it.toString() }.toList() },
                     startIndex = years.indexOf(selectedYear),
                     size = DpSize(64.dp, 128.dp),
                     onSelectionChanged = { selectedYear = years[it] },
@@ -235,7 +234,7 @@ fun SetDateDialog(
                 )
                 WheelTextPicker(
                     modifier = Modifier.weight(1f),
-                    items = remember(daysInMonth) { (1..daysInMonth).map { it.toString() }.toImmutableList() },
+                    items = remember(daysInMonth) { (1..daysInMonth).map { it.toString() }.toList() },
                     startIndex = effectiveDay - 1,
                     size = DpSize(64.dp, 128.dp),
                     onSelectionChanged = { selectedDay = it + 1 },

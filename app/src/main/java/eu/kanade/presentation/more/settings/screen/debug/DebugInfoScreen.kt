@@ -24,8 +24,6 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.util.system.DeviceUtil
 import eu.kanade.tachiyomi.util.system.WebViewUtil
 import eu.kanade.tachiyomi.util.system.copyToClipboard
-import kotlinx.collections.immutable.mutate
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import mihon.core.common.FeatureFlags
@@ -69,7 +67,7 @@ class DebugInfoScreen : Screen() {
 
         return Preference.PreferenceGroup(
             title = "App info",
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = "Version",
                     subtitle = AboutScreen.getVersionName(false),
@@ -160,7 +158,7 @@ class DebugInfoScreen : Screen() {
     }
 
     private fun getDeviceInfoGroup(): Preference.PreferenceGroup {
-        val items = persistentListOf<Preference.PreferenceItem<out Any>>().mutate {
+        val items = listOf<Preference.PreferenceItem<out Any>>().mutate {
             it.add(
                 Preference.PreferenceItem.TextPreference(
                     title = "Model",

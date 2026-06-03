@@ -10,8 +10,6 @@ import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.authenticate
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.isAuthenticationSupported
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableMap
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.pluralStringResource
@@ -62,7 +60,7 @@ object SettingsSecurityScreen : SearchableSettings {
                             )
                         }
                     }
-                    .toImmutableMap(),
+                    .toMap(),
                 title = stringResource(MR.strings.lock_when_idle),
                 enabled = authSupported && useAuth,
                 onValueChanged = {
@@ -79,7 +77,7 @@ object SettingsSecurityScreen : SearchableSettings {
                 preference = securityPreferences.secureScreen(),
                 entries = SecurityPreferences.SecureScreenMode.entries
                     .associateWith { stringResource(it.titleRes) }
-                    .toImmutableMap(),
+                    .toMap(),
                 title = stringResource(MR.strings.secure_screen),
             ),
             Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.secure_screen_summary)),
@@ -87,7 +85,7 @@ object SettingsSecurityScreen : SearchableSettings {
     }
 }
 
-private val LockAfterValues = persistentListOf(
+private val LockAfterValues = listOf(
     0, // Always
     1,
     2,

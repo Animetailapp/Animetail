@@ -13,9 +13,6 @@ import eu.kanade.domain.source.service.SourcePreferences.DataSaver
 import eu.kanade.presentation.browse.manga.MangaSourceUiModel
 import eu.kanade.tachiyomi.util.system.LAST_USED_KEY
 import eu.kanade.tachiyomi.util.system.PINNED_KEY
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
@@ -101,7 +98,7 @@ class MangaSourcesScreenModel(
                             }.toTypedArray(),
                         )
                     }
-                    .toImmutableList(),
+                    .toList(),
             )
         }
     }
@@ -138,7 +135,7 @@ class MangaSourcesScreenModel(
     data class State(
         val dialog: Dialog? = null,
         val isLoading: Boolean = true,
-        val items: ImmutableList<MangaSourceUiModel> = persistentListOf(),
+        val items: List<MangaSourceUiModel> = listOf(),
         // SY -->
         val dataSaverEnabled: Boolean = false,
         // SY <--

@@ -26,7 +26,6 @@ import eu.kanade.presentation.browse.manga.components.BaseMangaSourceItem
 import eu.kanade.presentation.browse.manga.components.MangaSourceIcon
 import eu.kanade.tachiyomi.ui.browse.manga.migration.sources.MigrateMangaSourceScreenModel
 import eu.kanade.tachiyomi.util.system.copyToClipboard
-import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.source.manga.model.Source
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.Badge
@@ -78,7 +77,7 @@ fun MigrateMangaSourceScreen(
 
 @Composable
 private fun MigrateSourceList(
-    list: ImmutableList<Pair<Source, Long>>,
+    list: List<Pair<Source, Long>>,
     contentPadding: PaddingValues,
     onClickItem: (Source) -> Unit,
     onLongClickItem: (Source) -> Unit,

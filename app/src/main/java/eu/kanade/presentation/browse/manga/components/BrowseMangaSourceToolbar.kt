@@ -18,7 +18,6 @@ import eu.kanade.presentation.components.RadioMenuItem
 import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.MangaSource
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -54,7 +53,7 @@ fun BrowseMangaSourceToolbar(
         onClickCloseSearch = navigateUp,
         actions = {
             AppBarActions(
-                actions = persistentListOf<AppBar.AppBarAction>().builder()
+                actions = listOf<AppBar.AppBarAction>().builder()
                     .apply {
                         add(
                             AppBar.Action(

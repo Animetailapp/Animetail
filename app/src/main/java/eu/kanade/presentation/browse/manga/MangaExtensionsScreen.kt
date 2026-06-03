@@ -56,7 +56,6 @@ import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionUiModel
 import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionsScreenModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.material.PullRefresh
@@ -105,7 +104,7 @@ fun MangaExtensionScreen(
                 EmptyScreen(
                     stringRes = msg,
                     modifier = Modifier.padding(contentPadding),
-                    actions = persistentListOf(
+                    actions = listOf(
                         EmptyScreenAction(
                             stringRes = MR.strings.extensionStores,
                             icon = Icons.Outlined.Settings,

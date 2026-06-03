@@ -18,10 +18,6 @@ import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateJob
 import eu.kanade.tachiyomi.util.lang.toLocalDate
-import kotlinx.collections.immutable.PersistentList
-import kotlinx.collections.immutable.mutate
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -106,7 +102,7 @@ class MangaUpdatesScreenModel(
                 updates
                     .toUpdateItems()
                     .applyFilters(itemPreferences)
-                    .toPersistentList()
+                    .toList()
             }
                 .collectLatest { updateItems ->
                     mutableState.update {
@@ -384,7 +380,7 @@ class MangaUpdatesScreenModel(
                     }
                 }
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems.toList())
         }
     }
 
@@ -394,7 +390,7 @@ class MangaUpdatesScreenModel(
                 selectedChapterIds.addOrRemove(it.update.chapterId, selected)
                 it.copy(selected = selected)
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems.toList())
         }
 
         selectedPositions[0] = -1
@@ -407,7 +403,7 @@ class MangaUpdatesScreenModel(
                 selectedChapterIds.addOrRemove(it.update.chapterId, !it.selected)
                 it.copy(selected = !it.selected)
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems.toList())
         }
         selectedPositions[0] = -1
         selectedPositions[1] = -1
@@ -456,7 +452,7 @@ class MangaUpdatesScreenModel(
     data class State(
         val isLoading: Boolean = true,
         val hasActiveFilters: Boolean = false,
-        val items: PersistentList<MangaUpdatesItem> = persistentListOf(),
+        val items: List<MangaUpdatesItem> = listOf(),
         val dialog: Dialog? = null,
     ) {
         val selected = items.filter { it.selected }
