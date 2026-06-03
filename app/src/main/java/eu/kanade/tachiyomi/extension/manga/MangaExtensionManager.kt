@@ -179,11 +179,11 @@ class MangaExtensionManager(
                 installedExtensionsMap[pkgName] = if (extension.hasUpdate != hasUpdate) {
                     extension.copy(
                         hasUpdate = hasUpdate,
-                        repoUrl = availableExt.repoUrl,
+                        store = availableExt.store,
                     )
                 } else {
                     extension.copy(
-                        repoUrl = availableExt.repoUrl,
+                        store = availableExt.store,
                     )
                 }
                 changed = true
@@ -197,7 +197,7 @@ class MangaExtensionManager(
     }
 
     fun installExtension(extension: MangaExtension.Available): Flow<InstallStep> {
-        return installer.downloadAndInstall(api.getApkUrl(extension), extension)
+        return installer.downloadAndInstall(extension.apkUrl, extension)
     }
 
     fun updateExtension(extension: MangaExtension.Installed): Flow<InstallStep> {

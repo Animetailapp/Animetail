@@ -16,7 +16,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.manga.MangaExtensionScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
-import eu.kanade.presentation.more.settings.screen.browse.MangaExtensionReposScreen
+import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaExtensionDetailsScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
@@ -46,8 +46,8 @@ fun mangaExtensionsTab(
                 onClick = { navigator.push(MangaExtensionFilterScreen()) },
             ),
             AppBar.OverflowAction(
-                title = stringResource(MR.strings.label_extension_repos),
-                onClick = { navigator.push(MangaExtensionReposScreen()) },
+                title = stringResource(MR.strings.extensionStores),
+                onClick = { navigator.push(ExtensionStoresScreen(isManga = true)) },
             ),
         ),
         content = { contentPadding, _ ->

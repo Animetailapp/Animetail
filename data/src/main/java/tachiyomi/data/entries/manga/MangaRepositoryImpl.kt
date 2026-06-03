@@ -111,7 +111,7 @@ class MangaRepositoryImpl(
 
     override suspend fun insertManga(manga: Manga): Long? {
         return database.transactionWithResult {
-            database.mangasQueries.insert(
+            database.mangasQueries.insertReturningId(
                 source = manga.source,
                 url = manga.url,
                 artist = manga.artist,

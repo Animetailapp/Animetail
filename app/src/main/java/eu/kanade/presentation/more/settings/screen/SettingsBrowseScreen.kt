@@ -14,12 +14,11 @@ import eu.kanade.core.preference.asState
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.more.settings.Preference
-import eu.kanade.presentation.more.settings.screen.browse.AnimeExtensionReposScreen
-import eu.kanade.presentation.more.settings.screen.browse.MangaExtensionReposScreen
+import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.authenticate
 import kotlinx.collections.immutable.persistentListOf
-import mihon.domain.extensionrepo.anime.interactor.GetAnimeExtensionRepoCount
-import mihon.domain.extensionrepo.manga.interactor.GetMangaExtensionRepoCount
+import mihon.domain.extension.anime.interactor.GetAnimeExtensionStoreCountAsFlow
+import mihon.domain.extension.manga.interactor.GetMangaExtensionStoreCountAsFlow
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -41,11 +40,11 @@ object SettingsBrowseScreen : SearchableSettings {
         val navigator = LocalNavigator.currentOrThrow
 
         val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
-        val getMangaExtensionRepoCount = remember { Injekt.get<GetMangaExtensionRepoCount>() }
-        val getAnimeExtensionRepoCount = remember { Injekt.get<GetAnimeExtensionRepoCount>() }
+        val getMangaExtensionStoreCountAsFlow = remember { Injekt.get<GetMangaExtensionStoreCountAsFlow>() }
+        val getAnimeExtensionStoreCountAsFlow = remember { Injekt.get<GetAnimeExtensionStoreCountAsFlow>() }
 
-        val mangaReposCount by getMangaExtensionRepoCount.subscribe().collectAsState(0)
-        val animeReposCount by getAnimeExtensionRepoCount.subscribe().collectAsState(0)
+        val mangaReposCount by getMangaExtensionStoreCountAsFlow.subscribe().collectAsState(0)
+        val animeReposCount by getAnimeExtensionStoreCountAsFlow.subscribe().collectAsState(0)
 
         // SY -->
         val scope = rememberCoroutineScope()
@@ -124,22 +123,22 @@ object SettingsBrowseScreen : SearchableSettings {
                         title = stringResource(AYMR.strings.label_anime_extension_repos),
                         subtitle = pluralStringResource(
                             MR.plurals.num_repos,
-                            animeReposCount,
+                            animeReposCount.toInt(),
                             animeReposCount,
                         ),
                         onClick = {
-                            navigator.push(AnimeExtensionReposScreen())
+                            navigator.push(ExtensionStoresScreen(isManga = false))
                         },
                     ),
                     Preference.PreferenceItem.TextPreference(
                         title = stringResource(AYMR.strings.label_manga_extension_repos),
                         subtitle = pluralStringResource(
                             MR.plurals.num_repos,
-                            mangaReposCount,
+                            mangaReposCount.toInt(),
                             mangaReposCount,
                         ),
                         onClick = {
-                            navigator.push(MangaExtensionReposScreen())
+                            navigator.push(ExtensionStoresScreen(isManga = true))
                         },
                     ),
                 ),

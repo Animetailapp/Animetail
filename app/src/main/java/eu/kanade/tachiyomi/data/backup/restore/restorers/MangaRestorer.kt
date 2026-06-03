@@ -280,6 +280,7 @@ class MangaRestorer(
                 notes = manga.notes,
             )
         }
+    }
 
     private suspend fun restoreMangaDetails(
         manga: Manga,
