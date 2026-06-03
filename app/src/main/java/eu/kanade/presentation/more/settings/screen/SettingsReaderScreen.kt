@@ -91,8 +91,8 @@ object SettingsReaderScreen : SearchableSettings {
 
     @Composable
     private fun getDisplayGroup(readerPreferences: ReaderPreferences): Preference.PreferenceGroup {
-        val fullscreenPref = readerPreferences.fullscreen
-        val fullscreen by fullscreenPref.collectAsState()
+        val fullscreen by readerPreferences.fullscreen.collectAsState()
+        val verticalNavigatorForLongStrip by readerPreferences.verticalNavigatorForLongStrip.collectAsState()
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_display),
             preferenceItems = persistentListOf(
@@ -114,7 +114,7 @@ object SettingsReaderScreen : SearchableSettings {
                     title = stringResource(MR.strings.pref_reader_theme),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = fullscreenPref,
+                    preference = readerPreferences.fullscreen,
                     title = stringResource(MR.strings.pref_fullscreen),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
@@ -131,6 +131,15 @@ object SettingsReaderScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     preference = readerPreferences.showPageNumber,
                     title = stringResource(MR.strings.pref_show_page_number),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = readerPreferences.verticalNavigatorForLongStrip,
+                    title = stringResource(MR.strings.pref_webtoon_vertical_navigator),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = readerPreferences.verticalNavigatorOnLeft,
+                    title = stringResource(MR.strings.pref_webtoon_vertical_navigator_on_left),
+                    enabled = verticalNavigatorForLongStrip,
                 ),
             ),
         )
