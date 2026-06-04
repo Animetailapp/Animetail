@@ -139,7 +139,7 @@ class MangaLibraryScreenModel(
                     .applySort(tracks, sort.takeIf { groupType != MangaLibraryGroup.BY_DEFAULT }, trackingFilter.keys)
                     .mapValues { (_, value) ->
                         if (searchQuery != null) {
-                            value.filter { it.matches(searchQuery) }
+                            value.filter { it.matches(searchQuery, sourceManager) }
                         } else {
                             value
                         }
@@ -226,11 +226,7 @@ class MangaLibraryScreenModel(
         val trackFiltersIsIgnored = includedTracks.isEmpty() && excludedTracks.isEmpty()
 
         val filterFnDownloaded: (MangaLibraryItem) -> Boolean = {
-            applyFilter(filterDownloaded) {
-                it.libraryManga.manga.isLocal() ||
-                    it.downloadCount > 0 ||
-                    downloadManager.getDownloadCount(it.libraryManga.manga) > 0
-            }
+            applyFilter(filterDownloaded) { it.isLocal || it.downloadCount > 0 }
         }
 
         val filterFnUnread: (MangaLibraryItem) -> Boolean = {
@@ -428,19 +424,32 @@ class MangaLibraryScreenModel(
                 .map { libraryManga ->
                     // Display mode based on user preference: take it from global library setting or category
                     MangaLibraryItem(
-                        libraryManga,
-                        downloadCount = if (prefs.downloadBadge) {
-                            downloadManager.getDownloadCount(libraryManga.manga).toLong()
-                        } else {
-                            0
-                        },
-                        unreadCount = if (prefs.unreadBadge) libraryManga.unreadCount else 0,
-                        isLocal = if (prefs.localBadge) libraryManga.manga.isLocal() else false,
-                        sourceLanguage = if (prefs.languageBadge) {
-                            sourceManager.getOrStub(libraryManga.manga.source).lang
-                        } else {
-                            ""
-                        },
+                        libraryManga = libraryManga,
+                        downloadCount = downloadManager.getDownloadCount(libraryManga.manga),
+                        unreadCount = libraryManga.unreadCount,
+                        isLocal = libraryManga.manga.isLocal(),
+                        badges = MangaLibraryItem.Badges(
+                            downloadCount = if (prefs.downloadBadge) {
+                                downloadManager.getDownloadCount(libraryManga.manga)
+                            } else {
+                                0
+                            },
+                            unreadCount = if (prefs.unreadBadge) {
+                                libraryManga.unreadCount
+                            } else {
+                                0
+                            },
+                            isLocal = if (prefs.localBadge) {
+                                libraryManga.manga.isLocal()
+                            } else {
+                                false
+                            },
+                            sourceLanguage = if (prefs.languageBadge) {
+                                sourceManager.getOrStub(libraryManga.manga.source).lang
+                            } else {
+                                ""
+                            },
+                        ),
                     )
                 }
                 .groupBy { it.libraryManga.category }
