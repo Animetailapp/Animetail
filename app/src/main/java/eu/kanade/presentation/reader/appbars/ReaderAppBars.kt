@@ -15,7 +15,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -204,16 +209,19 @@ fun ReaderAppBars(
                         exit = slideOutHorizontally(readerBarsSlideAnimationSpec) { if (sliderOnLeft) -it else it } +
                             fadeOut(readerBarsFadeAnimationSpec),
                     ) {
-                        ChapterNavigator(
-                            type = chapterNavigatorType,
-                            onNextChapter = onNextChapter,
-                            enabledNext = enabledNext,
-                            onPreviousChapter = onPreviousChapter,
-                            enabledPrevious = enabledPrevious,
-                            currentPage = currentPage,
-                            totalPages = totalPages,
-                            onPageIndexChange = onPageIndexChange,
-                        )
+                        Row {
+                            Spacer(modifier = Modifier.width(MaterialTheme.padding.small))
+                            ChapterNavigator(
+                                type = chapterNavigatorType,
+                                onNextChapter = onNextChapter,
+                                enabledNext = enabledNext,
+                                onPreviousChapter = onPreviousChapter,
+                                enabledPrevious = enabledPrevious,
+                                currentPage = currentPage,
+                                totalPages = totalPages,
+                                onPageIndexChange = onPageIndexChange,
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.weight(1f))
                 }
