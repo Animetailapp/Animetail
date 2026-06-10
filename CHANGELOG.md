@@ -18,6 +18,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 
 ### Changed
 - Change all reference of extension repo to extension store ([@AntsyLich](https://github.com/AntsyLich)) ([#3349](https://github.com/mihonapp/mihon/pull/3349))
+- Change the term "Obsolete" to "Orphaned" for extensions ([@AntsyLich](https://github.com/AntsyLich)) ([#3383](https://github.com/mihonapp/mihon/pull/3383))
 
 ### Fixed
 - Fixed player crash when running out of available videos ([@Secozzi](https://github.com/Secozzi)) ([#150](https://github.com/quickdesh/Animiru/pull/150))
