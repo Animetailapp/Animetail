@@ -94,6 +94,11 @@ object SettingsDownloadScreen : SearchableSettings {
                 title = stringResource(MR.strings.save_chapter_as_cbz),
             ),
             Preference.PreferenceItem.SwitchPreference(
+                preference = downloadPreferences.includeHashInDownloadFilenames,
+                title = stringResource(MR.strings.pref_include_download_filename_hash),
+                subtitle = stringResource(MR.strings.pref_include_download_filename_hash_summary),
+            ),
+            Preference.PreferenceItem.SwitchPreference(
                 preference = downloadPreferences.splitTallImages,
                 title = stringResource(MR.strings.split_tall_images),
                 subtitle = stringResource(MR.strings.split_tall_images_summary),

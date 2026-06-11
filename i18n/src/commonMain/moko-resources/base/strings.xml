@@ -528,6 +528,8 @@
     <string name="pref_download_concurrent_sources">Concurrent source downloads</string>
     <string name="pref_download_concurrent_pages">Concurrent page downloads</string>
     <string name="pref_download_concurrent_pages_summary">Pages downloaded simultaneously per source</string>
+    <string name="pref_include_download_filename_hash">Include hash in filenames</string>
+    <string name="pref_include_download_filename_hash_summary">Appends a partial URL hash to downloaded folder/file names to resolve conflicts between duplicate names</string>
 
     <!-- Tracking section -->
     <string name="tracking_guide">Tracking guide</string>
