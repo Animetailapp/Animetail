@@ -110,7 +110,9 @@ class MangaExtensionStoreService(
                 versionCode = extension.versionCode,
                 versionName = extension.versionName,
                 lang = if (lang.size == 1) lang.first() else "all",
-                isNsfw = extension.sources.maxOfOrNull { it.contentRating } == NetworkExtensionStore.ContentRating.PORNOGRAPHIC,
+                isNsfw =
+                extension.sources.maxOfOrNull { it.contentRating } ==
+                    NetworkExtensionStore.ContentRating.PORNOGRAPHIC,
                 sources = extension.sources.map { source ->
                     MangaExtension.Available.MangaSource(
                         id = source.id,

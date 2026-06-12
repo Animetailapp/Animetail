@@ -57,8 +57,9 @@ class ExtensionStoresScreenModel(
                     when (it) {
                         ExtensionStoreScreenState.Loading -> ExtensionStoreScreenState.Success(
                             stores = stores,
-                            disabledRepos = sourcePreferences.disabledRepos.get()
+                            disabledRepos = sourcePreferences.disabledRepos.get(),
                         )
+
                         is ExtensionStoreScreenState.Success -> it.copy(stores = stores)
                     }
                 }
@@ -110,10 +111,12 @@ class ExtensionStoresScreenModel(
                                     processing = false,
                                     errorMessage = throwable.message ?: "unknown error",
                                 )
+
                                 is ExtensionStoreDialog.Confirm -> it.dialog.copy(
                                     processing = false,
                                     errorMessage = throwable.message ?: "unknown error",
                                 )
+
                                 else -> it.dialog
                             },
                         )

@@ -80,4 +80,5 @@ data class NetworkExtensionStore(
             ),
             isLegacy = false,
         )
-    }}
+    }
+}

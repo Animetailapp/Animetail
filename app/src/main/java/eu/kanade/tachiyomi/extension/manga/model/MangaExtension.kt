@@ -2,8 +2,8 @@ package eu.kanade.tachiyomi.extension.manga.model
 
 import android.graphics.drawable.Drawable
 import eu.kanade.tachiyomi.source.MangaSource
-import tachiyomi.domain.source.manga.model.StubMangaSource
 import mihon.domain.extension.model.ExtensionStore
+import tachiyomi.domain.source.manga.model.StubMangaSource
 
 sealed class MangaExtension {
 

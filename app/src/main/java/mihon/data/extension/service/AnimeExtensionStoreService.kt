@@ -110,7 +110,9 @@ class AnimeExtensionStoreService(
                 versionCode = extension.versionCode,
                 versionName = extension.versionName,
                 lang = if (lang.size == 1) lang.first() else "all",
-                isNsfw = extension.sources.maxOfOrNull { it.contentRating } == NetworkExtensionStore.ContentRating.PORNOGRAPHIC,
+                isNsfw =
+                extension.sources.maxOfOrNull { it.contentRating } ==
+                    NetworkExtensionStore.ContentRating.PORNOGRAPHIC,
                 isTorrent = false,
                 sources = extension.sources.map { source ->
                     AnimeExtension.Available.AnimeSource(

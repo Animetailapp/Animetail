@@ -64,6 +64,7 @@ class ExtensionStoresScreen(
 
         when (val dialog = successState.dialog) {
             null -> {}
+
             is ExtensionStoreDialog.Create -> {
                 ExtensionStoreCreateDialog(
                     onDismissRequest = screenModel::dismissDialog,
@@ -73,6 +74,7 @@ class ExtensionStoresScreen(
                     errorMessage = dialog.errorMessage,
                 )
             }
+
             is ExtensionStoreDialog.Delete -> {
                 ExtensionStoreDeleteDialog(
                     onDismissRequest = screenModel::dismissDialog,
@@ -81,6 +83,7 @@ class ExtensionStoresScreen(
                     storeIndexUrl = dialog.store.indexUrl,
                 )
             }
+
             is ExtensionStoreDialog.Confirm -> {
                 ExtensionStoreConfirmDialog(
                     onDismissRequest = screenModel::dismissDialog,

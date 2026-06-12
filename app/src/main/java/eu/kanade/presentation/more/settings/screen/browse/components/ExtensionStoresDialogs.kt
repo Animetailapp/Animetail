@@ -159,11 +159,13 @@ fun ExtensionStoreConfirmDialog(
                                 Text(text = stringResource(MR.strings.extensionStoresScreen_addStore_alreadyExists))
                             }
                         }
+
                         errorMessage != null -> {
                             {
                                 Text(text = errorMessage)
                             }
                         }
+
                         else -> null
                     },
                     isError = errorMessage != null || storeAlreadyExists,

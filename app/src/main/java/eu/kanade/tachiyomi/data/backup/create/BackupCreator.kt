@@ -11,9 +11,9 @@ import eu.kanade.tachiyomi.data.backup.create.creators.AnimeExtensionStoresBacku
 import eu.kanade.tachiyomi.data.backup.create.creators.AnimeSourcesBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.CustomButtonBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.ExtensionsBackupCreator
-import eu.kanade.tachiyomi.data.backup.create.creators.MangaExtensionStoresBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.MangaBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.MangaCategoriesBackupCreator
+import eu.kanade.tachiyomi.data.backup.create.creators.MangaExtensionStoresBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.MangaSourcesBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.PreferenceBackupCreator
 import eu.kanade.tachiyomi.data.backup.models.Backup
@@ -66,8 +66,10 @@ class BackupCreator(
     private val animeBackupCreator: AnimeBackupCreator = AnimeBackupCreator(),
     private val mangaBackupCreator: MangaBackupCreator = MangaBackupCreator(),
     private val preferenceBackupCreator: PreferenceBackupCreator = PreferenceBackupCreator(),
-    private val animeExtensionStoresBackupCreator: AnimeExtensionStoresBackupCreator = AnimeExtensionStoresBackupCreator(),
-    private val mangaExtensionStoresBackupCreator: MangaExtensionStoresBackupCreator = MangaExtensionStoresBackupCreator(),
+    private val animeExtensionStoresBackupCreator: AnimeExtensionStoresBackupCreator =
+        AnimeExtensionStoresBackupCreator(),
+    private val mangaExtensionStoresBackupCreator: MangaExtensionStoresBackupCreator =
+        MangaExtensionStoresBackupCreator(),
     private val customButtonBackupCreator: CustomButtonBackupCreator = CustomButtonBackupCreator(),
     private val animeSourcesBackupCreator: AnimeSourcesBackupCreator = AnimeSourcesBackupCreator(),
     private val mangaSourcesBackupCreator: MangaSourcesBackupCreator = MangaSourcesBackupCreator(),
