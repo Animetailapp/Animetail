@@ -3,16 +3,19 @@ package tachiyomi.data.handlers.manga
 import androidx.paging.PagingSource
 import app.cash.sqldelight.ExecutableQuery
 import app.cash.sqldelight.Query
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOne
-import app.cash.sqldelight.coroutines.mapToOneOrNull
 import app.cash.sqldelight.db.SqlDriver
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import tachiyomi.data.Database
+import tachiyomi.data.subscribeToList
+import tachiyomi.data.subscribeToOne
+import tachiyomi.data.subscribeToOneOrNull
 
 class AndroidMangaDatabaseHandler(
     val db: Database,
@@ -31,47 +34,47 @@ class AndroidMangaDatabaseHandler(
         inTransaction: Boolean,
         block: suspend Database.() -> Query<T>,
     ): List<T> {
-        return dispatch(inTransaction) { block(db).executeAsList() }
+        return dispatch(inTransaction) { block(db).awaitAsList() }
     }
 
     override suspend fun <T : Any> awaitOne(
         inTransaction: Boolean,
         block: suspend Database.() -> Query<T>,
     ): T {
-        return dispatch(inTransaction) { block(db).executeAsOne() }
+        return dispatch(inTransaction) { block(db).awaitAsOne() }
     }
 
     override suspend fun <T : Any> awaitOneExecutable(
         inTransaction: Boolean,
         block: suspend Database.() -> ExecutableQuery<T>,
     ): T {
-        return dispatch(inTransaction) { block(db).executeAsOne() }
+        return dispatch(inTransaction) { block(db).awaitAsOne() }
     }
 
     override suspend fun <T : Any> awaitOneOrNull(
         inTransaction: Boolean,
         block: suspend Database.() -> Query<T>,
     ): T? {
-        return dispatch(inTransaction) { block(db).executeAsOneOrNull() }
+        return dispatch(inTransaction) { block(db).awaitAsOneOrNull() }
     }
 
     override suspend fun <T : Any> awaitOneOrNullExecutable(
         inTransaction: Boolean,
         block: suspend Database.() -> ExecutableQuery<T>,
     ): T? {
-        return dispatch(inTransaction) { block(db).executeAsOneOrNull() }
+        return dispatch(inTransaction) { block(db).awaitAsOneOrNull() }
     }
 
     override fun <T : Any> subscribeToList(block: Database.() -> Query<T>): Flow<List<T>> {
-        return block(db).asFlow().mapToList(queryDispatcher)
+        return block(db).subscribeToList(queryDispatcher)
     }
 
     override fun <T : Any> subscribeToOne(block: Database.() -> Query<T>): Flow<T> {
-        return block(db).asFlow().mapToOne(queryDispatcher)
+        return block(db).subscribeToOne(queryDispatcher)
     }
 
     override fun <T : Any> subscribeToOneOrNull(block: Database.() -> Query<T>): Flow<T?> {
-        return block(db).asFlow().mapToOneOrNull(queryDispatcher)
+        return block(db).subscribeToOneOrNull(queryDispatcher)
     }
 
     override fun <T : Any> subscribeToPagingSource(

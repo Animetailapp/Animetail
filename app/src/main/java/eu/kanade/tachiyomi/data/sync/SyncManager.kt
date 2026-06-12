@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.data.sync
 
 import android.content.Context
 import android.net.Uri
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import data.Chapters
 import dataanime.Episodes
 import eu.kanade.domain.sync.SyncPreferences
@@ -267,7 +268,7 @@ class SyncManager(
             chaptersQueries.getChaptersByMangaId(
                 localManga.id,
                 0,
-            ).executeAsList()
+            ).awaitAsList()
         }
         val localCategories = getMangaCategories.await(localManga.id).map { it.order }
 
@@ -288,7 +289,7 @@ class SyncManager(
 
     @Suppress("ReturnCount")
     private suspend fun isAnimeDifferent(localAnime: Anime, remoteAnime: BackupAnime): Boolean {
-        val localEpisodes = animeHandler.await { episodesQueries.getEpisodesByAnimeId(localAnime.id).executeAsList() }
+        val localEpisodes = animeHandler.await { episodesQueries.getEpisodesByAnimeId(localAnime.id).awaitAsList() }
         val localCategories = getAnimeCategories.await(localAnime.id).map { it.order }
 
         if (areEpisodesDifferent(localEpisodes, remoteAnime.episodes)) {

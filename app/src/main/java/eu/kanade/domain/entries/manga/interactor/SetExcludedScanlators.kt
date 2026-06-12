@@ -11,7 +11,7 @@ class SetExcludedScanlators(
         database.transaction {
             val currentExcluded = database.excluded_scanlatorsQueries
                 .getExcludedScanlatorsByMangaId(mangaId)
-                .executeAsList()
+                .awaitAsList()
                 .toSet()
             val toAdd = excludedScanlators.minus(currentExcluded)
             for (scanlator in toAdd) {

@@ -1,5 +1,7 @@
 package tachiyomi.data.source.anime
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.source.anime.model.FeedSavedSearch
@@ -64,9 +66,7 @@ class FeedSavedSearchRepositoryImpl(
     override suspend fun insert(feedSavedSearch: FeedSavedSearch): Long {
         // KMK -->
         return handler.await(true) {
-            val currentFeeds = handler.awaitList {
-                feed_saved_searchQueries.selectAll(FeedSavedSearchMapper::map)
-            }
+            val currentFeeds = feed_saved_searchQueries.selectAll(FeedSavedSearchMapper::map).awaitAsList()
             val existedFeedId = currentFeeds.find { currentFeed ->
                 currentFeed.source == feedSavedSearch.source &&
                     currentFeed.savedSearch == feedSavedSearch.savedSearch &&
@@ -79,7 +79,7 @@ class FeedSavedSearchRepositoryImpl(
                     feedSavedSearch.source,
                     feedSavedSearch.savedSearch,
                     feedSavedSearch.global,
-                ).executeAsOne()
+                ).awaitAsOne()
         }
     }
 

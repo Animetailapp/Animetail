@@ -133,7 +133,7 @@ class MangaRepositoryImpl(
                 updateStrategy = manga.updateStrategy,
                 version = manga.version,
                 notes = manga.notes,
-            ).executeAsOneOrNull()
+            ).awaitAsOneOrNull()
         }
     }
 
