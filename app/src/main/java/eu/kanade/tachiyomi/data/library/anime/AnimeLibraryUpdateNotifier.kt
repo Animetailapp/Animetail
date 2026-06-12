@@ -29,9 +29,9 @@ import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.library.anime.LibraryAnime
@@ -46,7 +46,7 @@ import java.text.NumberFormat
 @OptIn(DelicateCoroutinesApi::class)
 class AnimeLibraryUpdateNotifier(
     private val context: Context,
-
+    private val scope: CoroutineScope = Injekt.get(),
     private val securityPreferences: SecurityPreferences = Injekt.get(),
     private val sourceManager: AnimeSourceManager = Injekt.get(),
 ) {
@@ -231,9 +231,8 @@ class AnimeLibraryUpdateNotifier(
             setAutoCancel(true)
         }
 
-        // Per-anime notification
         if (!securityPreferences.hideNotificationContent().get()) {
-            launchUI {
+            scope.launch {
                 context.notify(
                     updates.map { (anime, episodes) ->
                         NotificationManagerCompat.NotificationWithIdAndTag(

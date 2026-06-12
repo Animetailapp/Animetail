@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.source.anime.model.StubAnimeSource
 import tachiyomi.domain.source.anime.repository.AnimeStubSourceRepository
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
@@ -29,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class AndroidAnimeSourceManager(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val extensionManager: AnimeExtensionManager,
     private val sourceRepository: AnimeStubSourceRepository,
 ) : AnimeSourceManager {
@@ -37,8 +39,6 @@ class AndroidAnimeSourceManager(
     override val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
 
     private val downloadManager: AnimeDownloadManager by injectLazy()
-
-    private val scope = CoroutineScope(Job() + Dispatchers.IO)
 
     private val sourcesMapFlow = MutableStateFlow(ConcurrentHashMap<Long, AnimeSource>())
 
@@ -49,7 +49,7 @@ class AndroidAnimeSourceManager(
     }
 
     init {
-        scope.launch {
+        scope.launchIO {
             extensionManager.installedExtensionsFlow
                 .collectLatest { extensions ->
                     val mutableMap = ConcurrentHashMap<Long, AnimeSource>(
@@ -75,7 +75,7 @@ class AndroidAnimeSourceManager(
                 }
         }
 
-        scope.launch {
+        scope.launchIO {
             sourceRepository.subscribeAllAnime()
                 .collectLatest { sources ->
                     val mutableMap = stubSourcesMap.toMutableMap()
@@ -106,9 +106,9 @@ class AndroidAnimeSourceManager(
     }
 
     private fun registerStubSource(source: StubAnimeSource) {
-        scope.launch {
+        scope.launchIO {
             val dbSource = sourceRepository.getStubAnimeSource(source.id)
-            if (dbSource == source) return@launch
+            if (dbSource == source) return@launchIO
             sourceRepository.upsertStubAnimeSource(source.id, source.lang, source.name)
             if (dbSource != null) {
                 downloadManager.renameSource(dbSource, source)

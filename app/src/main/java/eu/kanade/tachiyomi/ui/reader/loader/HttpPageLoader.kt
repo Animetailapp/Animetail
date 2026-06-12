@@ -14,6 +14,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filter
@@ -35,14 +36,13 @@ import kotlin.math.min
 internal class HttpPageLoader(
     private val chapter: ReaderChapter,
     private val source: HttpSource,
+    scope: CoroutineScope,
     private val chapterCache: ChapterCache = Injekt.get(),
     // SY -->
     private val readerPreferences: ReaderPreferences = Injekt.get(),
     private val sourcePreferences: SourcePreferences = Injekt.get(),
     // SY <--
 ) : PageLoader() {
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
      * A queue used to manage requests one by one while allowing priorities.
@@ -141,14 +141,14 @@ internal class HttpPageLoader(
         queue.offer(PriorityPage(page, PriorityPage.RETRY))
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     override fun recycle() {
         super.recycle()
-        scope.cancel()
         queue.clear()
 
         // Cache current page list progress for online chapters to allow a faster reopen
         chapter.pages?.let { pages ->
-            launchIO {
+            GlobalScope.launchIO {
                 try {
                     // Convert to pages without reader information
                     val pagesToSave = pages.map { Page(it.index, it.url, it.imageUrl) }

@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.network.AndroidCookieJar
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.util.system.isOutdated
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CoroutineScope
 import okhttp3.Cookie
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
@@ -28,8 +29,9 @@ class CloudflareInterceptor(
     private val context: Context,
     private val cookieManager: AndroidCookieJar,
     private val preferences: NetworkPreferences,
+    scope: CoroutineScope,
     defaultUserAgentProvider: () -> String,
-) : WebViewInterceptor(context, defaultUserAgentProvider) {
+) : WebViewInterceptor(context, scope, defaultUserAgentProvider) {
 
     private val executor = ContextCompat.getMainExecutor(context)
 

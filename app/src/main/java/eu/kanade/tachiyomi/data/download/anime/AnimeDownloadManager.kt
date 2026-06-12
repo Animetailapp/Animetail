@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.util.size
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.onStart
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
-import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.download.service.DownloadPreferences
@@ -37,9 +37,9 @@ import uy.kohesive.injekt.api.get
  * and retrieved through dependency injection. You can use this class to queue new episodes or query
  * downloaded episodes.
  */
-@OptIn(DelicateCoroutinesApi::class)
 class AnimeDownloadManager(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val storageManager: StorageManager = Injekt.get(),
     private val provider: AnimeDownloadProvider = Injekt.get(),
     private val cache: AnimeDownloadCache = Injekt.get(),
@@ -51,7 +51,7 @@ class AnimeDownloadManager(
     /**
      * Downloader whose only task is to download episodes.
      */
-    private val downloader = AnimeDownloader(context, provider, cache, sourceManager)
+    private val downloader = AnimeDownloader(context, provider, cache, sourceManager, scope)
 
     val isRunning: Boolean
         get() = downloader.isRunning
@@ -271,7 +271,7 @@ class AnimeDownloadManager(
      * @param source the source of the episodes.
      */
     fun deleteEpisodes(episodes: List<Episode>, anime: Anime, source: AnimeSource) {
-        launchIO {
+        scope.launchIO {
             val filteredEpisodes = getEpisodesToDelete(episodes, anime)
             if (filteredEpisodes.isEmpty()) {
                 return@launchIO
@@ -301,7 +301,7 @@ class AnimeDownloadManager(
      * @param removeQueued whether to also remove queued downloads.
      */
     fun deleteAnime(anime: Anime, source: AnimeSource, removeQueued: Boolean = true) {
-        launchIO {
+        scope.launchIO {
             if (removeQueued) {
                 downloader.removeFromQueue(anime)
             }

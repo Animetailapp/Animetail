@@ -33,8 +33,10 @@ import java.io.File
  *
  * @param context The application context.
  */
-internal class AnimeExtensionInstaller(private val context: Context) {
-    private val scope = CoroutineScope(Dispatchers.IO)
+internal class AnimeExtensionInstaller(
+    private val context: Context,
+    private val scope: CoroutineScope,
+) {
     private val activeJobs = mutableMapOf<String, Job>()
     private val activeSteps = mutableMapOf<Long, MutableStateFlow<InstallStep>>()
     private val extensionInstaller = Injekt.get<BasePreferences>().extensionInstaller

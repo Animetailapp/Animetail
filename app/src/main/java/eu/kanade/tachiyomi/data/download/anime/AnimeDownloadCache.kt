@@ -64,17 +64,17 @@ import kotlin.time.Duration.Companion.seconds
  */
 class AnimeDownloadCache(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val provider: AnimeDownloadProvider = Injekt.get(),
     private val sourceManager: AnimeSourceManager = Injekt.get(),
     private val extensionManager: AnimeExtensionManager = Injekt.get(),
     private val storageManager: StorageManager = Injekt.get(),
 ) {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     private val _changes: Channel<Unit> = Channel(Channel.UNLIMITED)
     val changes = _changes.receiveAsFlow()
         .onStart { emit(Unit) }
+        .flowOn(Dispatchers.IO)
         .shareIn(scope, SharingStarted.Lazily, 1)
 
     /**

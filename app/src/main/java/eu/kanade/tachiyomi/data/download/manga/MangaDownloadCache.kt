@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
@@ -54,6 +55,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.File
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -64,17 +66,16 @@ import kotlin.time.Duration.Companion.seconds
  */
 class MangaDownloadCache(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val provider: MangaDownloadProvider = Injekt.get(),
     private val sourceManager: MangaSourceManager = Injekt.get(),
     private val extensionManager: MangaExtensionManager = Injekt.get(),
     private val storageManager: StorageManager = Injekt.get(),
 ) {
-
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     private val _changes: Channel<Unit> = Channel(Channel.UNLIMITED)
     val changes = _changes.receiveAsFlow()
         .onStart { emit(Unit) }
+        .flowOn(Dispatchers.IO)
         .shareIn(scope, SharingStarted.Lazily, 1)
 
     /**
@@ -102,7 +103,7 @@ class MangaDownloadCache(
 
     init {
         // Attempt to read cache file
-        scope.launch {
+        scope.launchIO {
             rootDownloadsDirMutex.withLock {
                 try {
                     if (diskCacheFile.exists()) {

@@ -2,6 +2,8 @@ package eu.kanade.tachiyomi.di
 
 import android.app.Application
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import animetail.feature.mpvfiles.MpvConfig
 import app.cash.sqldelight.db.SqlDriver
@@ -35,6 +37,9 @@ import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.anime.AndroidAnimeSourceManager
 import eu.kanade.tachiyomi.source.manga.AndroidMangaSourceManager
 import eu.kanade.tachiyomi.ui.player.ExternalIntents
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.plus
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import nl.adaptivity.xmlutil.XmlDeclMode.Charset
@@ -171,28 +176,30 @@ class AppModule(val app: Application) : InjektModule {
             ProtoBuf
         }
 
+        addSingletonFactory<CoroutineScope> { ProcessLifecycleOwner.get().lifecycleScope + SupervisorJob() }
+
         addSingletonFactory { ChapterCache(app, get()) }
 
         addSingletonFactory { MangaCoverCache(app) }
         addSingletonFactory { AnimeCoverCache(app) }
         addSingletonFactory { AnimeBackgroundCache(app) }
 
-        addSingletonFactory { NetworkHelper(app, get()) }
+        addSingletonFactory { NetworkHelper(app, get(), get()) }
         addSingletonFactory { JavaScriptEngine(app) }
 
-        addSingletonFactory<MangaSourceManager> { AndroidMangaSourceManager(app, get(), get()) }
-        addSingletonFactory<AnimeSourceManager> { AndroidAnimeSourceManager(app, get(), get()) }
+        addSingletonFactory<MangaSourceManager> { AndroidMangaSourceManager(app, get(), get(), get()) }
+        addSingletonFactory<AnimeSourceManager> { AndroidAnimeSourceManager(app, get(), get(), get()) }
 
-        addSingletonFactory { MangaExtensionManager(app) }
-        addSingletonFactory { AnimeExtensionManager(app) }
+        addSingletonFactory { MangaExtensionManager(app, get()) }
+        addSingletonFactory { AnimeExtensionManager(app, get()) }
 
         addSingletonFactory { MangaDownloadProvider(app) }
-        addSingletonFactory { MangaDownloadManager(app) }
-        addSingletonFactory { MangaDownloadCache(app) }
+        addSingletonFactory { MangaDownloadManager(app, get()) }
+        addSingletonFactory { MangaDownloadCache(app, get()) }
 
         addSingletonFactory { AnimeDownloadProvider(app) }
-        addSingletonFactory { AnimeDownloadManager(app) }
-        addSingletonFactory { AnimeDownloadCache(app) }
+        addSingletonFactory { AnimeDownloadManager(app, get()) }
+        addSingletonFactory { AnimeDownloadCache(app, get()) }
 
         addSingletonFactory { TrackerManager(app) }
         addSingletonFactory { DelayedAnimeTrackingStore(app) }
@@ -201,6 +208,7 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { ImageSaver(app) }
 
         addSingletonFactory { AndroidStorageFolderProvider(app) }
+<<<<<<< HEAD
 
         addSingletonFactory { LocalMangaSourceFileSystem(get()) }
         addSingletonFactory { LocalMangaCoverManager(app, get()) }
@@ -211,7 +219,7 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { LocalAnimeFetchTypeManager(app, get()) }
         addSingletonFactory { LocalEpisodeThumbnailManager(app, get()) }
 
-        addSingletonFactory { StorageManager(app, get(), get<AndroidStorageFolderProvider>()) }
+        addSingletonFactory { StorageManager(app, get(), get(), get<AndroidStorageFolderProvider>()) }
 
         addSingletonFactory { ExternalIntents() }
 

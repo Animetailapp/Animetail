@@ -82,6 +82,7 @@ class AnimeDownloader(
     private val provider: AnimeDownloadProvider,
     private val cache: AnimeDownloadCache,
     private val sourceManager: AnimeSourceManager = Injekt.get(),
+    private val scope: CoroutineScope,
 ) {
     /**
      * Store for persisting downloads across restarts.
@@ -99,10 +100,7 @@ class AnimeDownloader(
      */
     private val notifier by lazy { AnimeDownloadNotifier(context) }
 
-    /**
-     * Coroutine scope used for download job scheduling
-     */
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
 
     /**
      * Job object for download queue management
@@ -195,7 +193,7 @@ class AnimeDownloader(
     private fun launchDownloaderJob() {
         if (isRunning) return
 
-        downloaderJob = scope.launch {
+        downloaderJob = scope.launchIO {
             val activeDownloadsFlow = queueState.transformLatest { queue ->
                 while (true) {
                     val activeDownloads = queue.asSequence()
