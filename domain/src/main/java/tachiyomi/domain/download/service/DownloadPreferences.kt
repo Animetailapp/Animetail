@@ -23,7 +23,7 @@ class DownloadPreferences(
 
     val includeHashInDownloadFilenames: Preference<Boolean> = preferenceStore.getBoolean(
         "pref_download_filename_hash_key",
-        false,
+        true,
     )
 
     val splitTallImages: Preference<Boolean> = preferenceStore.getBoolean("split_tall_images", true)
