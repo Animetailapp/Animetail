@@ -69,7 +69,7 @@ class BrowseMangaSourceScreenModel(
     private val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
     private val updateManga: UpdateManga = Injekt.get(),
     private val addTracks: AddMangaTracks = Injekt.get(),
-    private val getIncognitoState: GetMangaIncognitoState = Injekt.get(),
+    getIncognitoState: GetMangaIncognitoState = Injekt.get(),
 ) : StateScreenModel<BrowseMangaSourceScreenModel.State>(State(Listing.valueOf(listingQuery))) {
 
     var displayMode by sourcePreferences.sourceDisplayMode.asState(screenModelScope)

@@ -92,7 +92,6 @@ object SettingsTrackingScreen : SearchableSettings {
         val trackerManager = remember { Injekt.get<TrackerManager>() }
         val mangaSourceManager = remember { Injekt.get<MangaSourceManager>() }
         val animeSourceManager = remember { Injekt.get<AnimeSourceManager>() }
-        val autoTrackStatePref = trackPreferences.autoUpdateTrackOnMarkRead
 
         var dialog by remember { mutableStateOf<Any?>(null) }
         dialog?.run {

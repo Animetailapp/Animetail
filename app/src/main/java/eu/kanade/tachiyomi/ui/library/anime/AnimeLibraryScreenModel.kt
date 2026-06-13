@@ -19,7 +19,6 @@ import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.items.episode.interactor.SetSeenStatus
 import eu.kanade.presentation.entries.DownloadAction
-import kotlin.time.Duration.Companion.seconds
 import eu.kanade.presentation.library.components.LibraryToolbarTitle
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.animesource.model.SAnime
@@ -84,6 +83,7 @@ import tachiyomi.source.local.entries.anime.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Typealias for the library anime, using the category as keys, and list of anime as values.

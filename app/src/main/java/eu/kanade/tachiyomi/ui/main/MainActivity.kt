@@ -472,7 +472,6 @@ class MainActivity : BaseActivity() {
             val uriHandler = LocalUriHandler.current
             val dismissSupportMessage = {
                 preferences.donationCampaignShown.set(true)
-                @Suppress("AssignedValueIsNeverRead")
                 showCampaign = false
             }
             AdaptiveSheet(
@@ -578,7 +577,6 @@ class MainActivity : BaseActivity() {
             try {
                 val firstInstallTime = packageManager.getPackageInfo(packageName, 0).firstInstallTime
                 val eligibleTime = Instant.fromEpochMilliseconds(firstInstallTime).plus(6 * 30.days)
-                @Suppress("AssignedValueIsNeverRead")
                 showCampaign = (Clock.System.now() >= eligibleTime && !preferences.donationCampaignShown.get())
             } catch (_: PackageManager.NameNotFoundException) {
             }

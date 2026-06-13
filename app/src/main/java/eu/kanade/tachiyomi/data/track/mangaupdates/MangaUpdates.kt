@@ -135,9 +135,7 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
     }
 
     override suspend fun login(username: String, password: String) {
-        val authenticated = api.authenticate(username, password) ?: throw Throwable(
-            "Unable to login",
-        )
+        val authenticated = api.authenticate(username, password)
         saveCredentials(authenticated.uid.toString(), authenticated.sessionToken)
         interceptor.newAuth(authenticated.sessionToken)
     }
