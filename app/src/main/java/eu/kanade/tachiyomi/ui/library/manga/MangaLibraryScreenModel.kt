@@ -18,8 +18,8 @@ import eu.kanade.core.util.fastPartition
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.items.chapter.interactor.SetReadStatus
-import eu.kanade.presentation.components.SEARCH_DEBOUNCE_MILLIS
 import eu.kanade.presentation.entries.DownloadAction
+import kotlin.time.Duration.Companion.seconds
 import eu.kanade.presentation.library.components.LibraryToolbarTitle
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
@@ -115,7 +115,7 @@ class MangaLibraryScreenModel(
     init {
         screenModelScope.launchIO {
             combine(
-                state.map { it.searchQuery }.debounce(SEARCH_DEBOUNCE_MILLIS),
+                state.map { it.searchQuery }.debounce(0.25.seconds),
                 getLibraryFlow(),
                 getTracksPerManga.subscribe(),
                 combine(
