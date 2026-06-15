@@ -4,10 +4,13 @@ import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.JsonObject
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.Database
+import tachiyomi.data.MemoColumnAdapter
+import tachiyomi.data.MemoColumnAdapter.encode
 import tachiyomi.data.subscribeToList
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.items.chapter.model.ChapterUpdate
@@ -35,6 +38,7 @@ class ChapterRepositoryImpl(
                         chapter.dateUpload,
                         chapter.version,
                         chapter.dateUploadOverride,
+                        chapter.memo,
                     )
                         .awaitAsOne()
                     chapter.copy(id = chapterId)
@@ -73,6 +77,7 @@ class ChapterRepositoryImpl(
                     version = chapterUpdate.version,
                     isSyncing = 0,
                     dateUploadOverride = chapterUpdate.dateUploadOverride,
+                    memo = chapterUpdate.memo?.let(MemoColumnAdapter::encode),
                 )
             }
         }
@@ -146,6 +151,7 @@ class ChapterRepositoryImpl(
         version: Long,
         isSyncing: Long,
         dateUploadOverride: Long,
+        memo: JsonObject,
     ): Chapter = Chapter(
         id = id,
         mangaId = mangaId,
@@ -162,5 +168,6 @@ class ChapterRepositoryImpl(
         lastModifiedAt = lastModifiedAt,
         version = version,
         dateUploadOverride = dateUploadOverride,
+        memo = memo,
     )
 }

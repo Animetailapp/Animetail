@@ -2,7 +2,9 @@ package eu.kanade.tachiyomi.data.backup.models
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.protobuf.ProtoNumber
+import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.domain.entries.manga.model.CustomMangaInfo
 import tachiyomi.domain.entries.manga.model.Manga
 
@@ -12,7 +14,7 @@ import tachiyomi.domain.entries.manga.model.Manga
     "MagicNumber",
 )
 @Serializable
-data class BackupManga(
+class BackupManga(
     // in 1.x some of these values have different names
     @ProtoNumber(1) var source: Long,
     // url is called key in 1.x
@@ -47,6 +49,8 @@ data class BackupManga(
     @ProtoNumber(108) var excludedScanlators: List<String> = emptyList(),
     @ProtoNumber(109) var version: Long = 0,
     @ProtoNumber(110) var notes: String = "",
+    @ProtoNumber(111) var initialized: Boolean = false,
+    @ProtoNumber(112) var memo: ByteArray = byteArrayOf(),
 
     @ProtoNumber(602) var customStatus: Int = 0,
 
@@ -80,6 +84,8 @@ data class BackupManga(
             favoriteModifiedAt = this@BackupManga.favoriteModifiedAt,
             version = this@BackupManga.version,
             notes = this@BackupManga.notes,
+            initialized = this@BackupManga.initialized,
+            memo = MemoColumnAdapter.decode(this@BackupManga.memo),
         )
     }
 
