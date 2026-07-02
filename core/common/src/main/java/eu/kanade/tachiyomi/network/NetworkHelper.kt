@@ -50,8 +50,6 @@ class NetworkHelper(
             builder.addNetworkInterceptor(httpLoggingInterceptor)
         }
 
-
-
         when (preferences.dohProvider.get()) {
             PREF_DOH_CLOUDFLARE -> builder.dohCloudflare()
 

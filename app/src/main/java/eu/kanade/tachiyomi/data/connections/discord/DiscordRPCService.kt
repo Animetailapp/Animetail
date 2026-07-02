@@ -21,6 +21,7 @@ import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.system.notificationBuilder
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.serialization.json.Json
 import tachiyomi.core.common.util.lang.launchIO
@@ -36,6 +37,7 @@ import kotlin.math.floor
 class DiscordRPCService : Service() {
 
     private val connectionsManager: ConnectionsManager by injectLazy()
+    private val scope: CoroutineScope by injectLazy()
 
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate() {
@@ -48,7 +50,7 @@ class DiscordRPCService : Service() {
         }
         rpc = if (token.isNotBlank()) DiscordRPC(token, status) else null
         if (rpc != null) {
-            launchIO {
+            scope.launchIO {
                 try { // Add a try-catch block here
                     if (lastUsedScreen == DiscordScreen.VIDEO) {
                         setAnimeScreen(this@DiscordRPCService, lastUsedScreen)

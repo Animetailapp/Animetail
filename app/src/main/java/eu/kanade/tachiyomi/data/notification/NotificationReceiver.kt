@@ -133,7 +133,7 @@ class NotificationReceiver : BroadcastReceiver() {
 
             ACTION_OPEN_EPISODE -> {
                 val pendingResult = goAsync()
-                launchIO {
+                scope.launchIO {
                     try {
                         openEpisode(
                             context,

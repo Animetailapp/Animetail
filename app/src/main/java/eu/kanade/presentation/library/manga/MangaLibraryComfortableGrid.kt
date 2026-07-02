@@ -47,6 +47,7 @@ internal fun MangaLibraryComfortableGrid(
                     mangaId = manga.id,
                     sourceId = manga.source,
                     isMangaFavorite = manga.favorite,
+                    url = manga.thumbnailUrl,
                     lastModified = manga.coverLastModified,
                 ),
                 coverBadgeStart = {

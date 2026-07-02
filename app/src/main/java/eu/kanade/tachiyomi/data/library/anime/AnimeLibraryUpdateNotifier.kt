@@ -43,7 +43,6 @@ import uy.kohesive.injekt.api.get
 import java.math.RoundingMode
 import java.text.NumberFormat
 
-@OptIn(DelicateCoroutinesApi::class)
 class AnimeLibraryUpdateNotifier(
     private val context: Context,
     private val scope: CoroutineScope = Injekt.get(),

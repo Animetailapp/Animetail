@@ -108,7 +108,7 @@ data class BackupOptions(
             ),
         )
 
-        val extensionOptions = persistentListOf(
+        val extensionOptions = listOf(
             Entry(
                 label = MR.strings.label_extensions,
                 getter = BackupOptions::extensions,

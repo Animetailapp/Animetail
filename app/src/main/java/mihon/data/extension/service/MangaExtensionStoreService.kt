@@ -57,8 +57,9 @@ class MangaExtensionStoreService(
                             }
                         }
 
-                        if (legacyIndex.indexV2 != null) {
-                            return fetch(legacyIndex.indexV2, forceV2 = true)
+                        val indexV2 = legacyIndex.indexV2
+                        if (indexV2 != null) {
+                            return fetch(indexV2, forceV2 = true)
                         } else {
                             legacyIndex
                         }

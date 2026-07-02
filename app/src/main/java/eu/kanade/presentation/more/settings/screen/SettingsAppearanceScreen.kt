@@ -133,7 +133,7 @@ object SettingsAppearanceScreen : SearchableSettings {
 
     // KMK -->
     @Composable
-    private fun paletteStyleEntries(): kotlinx.collections.immutable.ImmutableMap<PaletteStyle, String> {
+    private fun paletteStyleEntries(): Map<PaletteStyle, String> {
         return mapOf(
             PaletteStyle.TonalSpot to stringResource(TLMR.strings.pref_theme_cover_based_style_tonalspot),
             PaletteStyle.Neutral to stringResource(TLMR.strings.pref_theme_cover_based_style_neutral),
@@ -144,7 +144,7 @@ object SettingsAppearanceScreen : SearchableSettings {
             PaletteStyle.Monochrome to stringResource(TLMR.strings.pref_theme_cover_based_style_monochrome),
             PaletteStyle.Fidelity to stringResource(TLMR.strings.pref_theme_cover_based_style_fidelity),
             PaletteStyle.Content to stringResource(TLMR.strings.pref_theme_cover_based_style_content),
-        ).toImmutableMap()
+        )
     }
 
     @Composable
@@ -155,7 +155,7 @@ object SettingsAppearanceScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_anime_info),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.themeCoverBased,
                     title = stringResource(TLMR.strings.pref_theme_cover_based),
@@ -216,7 +216,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                     preference = uiPreferences.startScreen,
                     entries = StartScreen.entries
                         .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(AYMR.strings.pref_start_screen),
                     onValueChanged = {
                         context.toast(MR.strings.requires_app_restart)
@@ -227,7 +227,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                     preference = uiPreferences.navStyle,
                     entries = NavStyle.entries
                         .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
+                        .toMap(),
                     title = "Navigation Style",
                     onValueChanged = { true },
                 ),
@@ -279,7 +279,7 @@ object SettingsAppearanceScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             stringResource(TLMR.strings.pref_category_fork),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 // KMK -->
 //                Preference.PreferenceItem.SwitchPreference(
 //                    pref = uiPreferences.usePanoramaCoverFlow(),
@@ -353,7 +353,7 @@ object SettingsAppearanceScreen : SearchableSettings {
     fun getNavbarGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(
             stringResource(TLMR.strings.pref_category_navbar),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.showNavUpdates,
                     title = stringResource(TLMR.strings.pref_hide_updates_button),

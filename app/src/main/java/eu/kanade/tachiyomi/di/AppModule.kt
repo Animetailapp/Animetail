@@ -208,7 +208,6 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { ImageSaver(app) }
 
         addSingletonFactory { AndroidStorageFolderProvider(app) }
-<<<<<<< HEAD
 
         addSingletonFactory { LocalMangaSourceFileSystem(get()) }
         addSingletonFactory { LocalMangaCoverManager(app, get()) }

@@ -53,44 +53,42 @@ fun BrowseMangaSourceToolbar(
         onClickCloseSearch = navigateUp,
         actions = {
             AppBarActions(
-                actions = listOf<AppBar.AppBarAction>().builder()
-                    .apply {
+                actions = buildList {
+                    add(
+                        AppBar.Action(
+                            title = stringResource(MR.strings.action_display_mode),
+                            icon = if (displayMode == LibraryDisplayMode.List) {
+                                Icons.AutoMirrored.Filled.ViewList
+                            } else {
+                                Icons.Filled.ViewModule
+                            },
+                            onClick = { selectingDisplayMode = true },
+                        ),
+                    )
+                    if (isLocalSource) {
                         add(
-                            AppBar.Action(
-                                title = stringResource(MR.strings.action_display_mode),
-                                icon = if (displayMode == LibraryDisplayMode.List) {
-                                    Icons.AutoMirrored.Filled.ViewList
-                                } else {
-                                    Icons.Filled.ViewModule
-                                },
-                                onClick = { selectingDisplayMode = true },
+                            AppBar.OverflowAction(
+                                title = stringResource(MR.strings.label_help),
+                                onClick = onHelpClick,
                             ),
                         )
-                        if (isLocalSource) {
-                            add(
-                                AppBar.OverflowAction(
-                                    title = stringResource(MR.strings.label_help),
-                                    onClick = onHelpClick,
-                                ),
-                            )
-                        } else {
-                            add(
-                                AppBar.OverflowAction(
-                                    title = stringResource(MR.strings.action_open_in_web_view),
-                                    onClick = onWebViewClick,
-                                ),
-                            )
-                        }
-                        if (isConfigurableSource) {
-                            add(
-                                AppBar.OverflowAction(
-                                    title = stringResource(MR.strings.action_settings),
-                                    onClick = onSettingsClick,
-                                ),
-                            )
-                        }
+                    } else {
+                        add(
+                            AppBar.OverflowAction(
+                                title = stringResource(MR.strings.action_open_in_web_view),
+                                onClick = onWebViewClick,
+                            ),
+                        )
                     }
-                    .build(),
+                    if (isConfigurableSource) {
+                        add(
+                            AppBar.OverflowAction(
+                                title = stringResource(MR.strings.action_settings),
+                                onClick = onSettingsClick,
+                            ),
+                        )
+                    }
+                },
             )
 
             DropdownMenu(

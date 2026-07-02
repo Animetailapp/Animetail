@@ -237,7 +237,12 @@ class AnimeScreenModel(
 
     init {
         screenModelScope.launchIO {
-            combine(
+            combine<
+                Triple<Anime, List<Episode>, List<SeasonAnime>>,
+                Unit,
+                List<AnimeDownload>,
+                Triple<Anime, List<Episode>, List<SeasonAnime>>,
+                >(
                 getAnimeAndEpisodesAndSeasons.subscribe(animeId).distinctUntilChanged(),
                 downloadCache.changes,
                 downloadManager.queueState,

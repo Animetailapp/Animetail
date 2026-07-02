@@ -100,8 +100,6 @@ class AnimeDownloader(
      */
     private val notifier by lazy { AnimeDownloadNotifier(context) }
 
-
-
     /**
      * Job object for download queue management
      */

@@ -195,15 +195,15 @@ class MangaUpdatesScreenModel(
      */
     private fun updateDownloadState(download: MangaDownload) {
         mutableState.update { state ->
-            val newItems = state.items.mutate { list ->
-                val modifiedIndex = list.indexOfFirst { it.update.chapterId == download.chapter.id }
-                if (modifiedIndex < 0) return@mutate
-
-                val item = list[modifiedIndex]
-                list[modifiedIndex] = item.copy(
-                    downloadStateProvider = { download.status },
-                    downloadProgressProvider = { download.progress },
-                )
+            val newItems = state.items.toMutableList().apply {
+                val modifiedIndex = indexOfFirst { it.update.chapterId == download.chapter.id }
+                if (modifiedIndex >= 0) {
+                    val item = this[modifiedIndex]
+                    this[modifiedIndex] = item.copy(
+                        downloadStateProvider = { download.status },
+                        downloadProgressProvider = { download.progress },
+                    )
+                }
             }
             state.copy(items = newItems)
         }

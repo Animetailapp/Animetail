@@ -17,18 +17,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-<<<<<<< HEAD:app/src/main/java/eu/kanade/tachiyomi/source/manga/AndroidMangaSourceManager.kt
+import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.domain.source.manga.repository.MangaStubSourceRepository
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.source.local.entries.manga.LocalMangaSource
-=======
-import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.domain.source.model.StubSource
-import tachiyomi.domain.source.repository.StubSourceRepository
-import tachiyomi.domain.source.service.SourceManager
-import tachiyomi.source.local.LocalSource
->>>>>>> 509eee5dfb (Use app scoped CoroutineScope (#3403)):app/src/main/java/eu/kanade/tachiyomi/source/AndroidSourceManager.kt
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy

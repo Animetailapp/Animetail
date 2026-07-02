@@ -158,8 +158,8 @@ class DebugInfoScreen : Screen() {
     }
 
     private fun getDeviceInfoGroup(): Preference.PreferenceGroup {
-        val items = listOf<Preference.PreferenceItem<out Any>>().mutate {
-            it.add(
+        val items = buildList<Preference.PreferenceItem<out Any>> {
+            add(
                 Preference.PreferenceItem.TextPreference(
                     title = "Model",
                     subtitle = "${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE})",
@@ -167,14 +167,14 @@ class DebugInfoScreen : Screen() {
             )
 
             if (DeviceUtil.oneUiVersion != null) {
-                it.add(
+                add(
                     Preference.PreferenceItem.TextPreference(
                         title = "OneUI version",
                         subtitle = "${DeviceUtil.oneUiVersion}",
                     ),
                 )
             } else if (DeviceUtil.miuiMajorVersion != null) {
-                it.add(
+                add(
                     Preference.PreferenceItem.TextPreference(
                         title = "MIUI version",
                         subtitle = "${DeviceUtil.miuiMajorVersion}",
@@ -189,7 +189,7 @@ class DebugInfoScreen : Screen() {
             } else {
                 Build.VERSION.RELEASE
             }
-            it.add(
+            add(
                 Preference.PreferenceItem.TextPreference(
                     title = "Android version",
                     subtitle = "$androidVersion (${Build.DISPLAY})",

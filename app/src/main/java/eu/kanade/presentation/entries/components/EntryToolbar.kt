@@ -116,7 +116,7 @@ fun EntryToolbar(
 
             val filterTint = if (hasFilters) MaterialTheme.colorScheme.active else LocalContentColor.current
             AppBarActions(
-                actions = listOf<AppBar.AppBarAction>().builder().apply {
+                actions = buildList {
                     if (isActionMode) {
                         add(
                             AppBar.Action(
@@ -132,7 +132,7 @@ fun EntryToolbar(
                                 onClick = onInvertSelection,
                             ),
                         )
-                        return@apply
+                        return@buildList
                     }
                     if (onClickDownload != null) {
                         add(
@@ -224,8 +224,7 @@ fun EntryToolbar(
                             ),
                         )
                     }
-                }
-                    .build(),
+                },
             )
         },
         isActionMode = isActionMode,

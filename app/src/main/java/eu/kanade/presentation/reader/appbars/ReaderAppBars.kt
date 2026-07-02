@@ -218,6 +218,7 @@ fun ReaderAppBars(
                                 onPreviousChapter = onPreviousChapter,
                                 enabledPrevious = enabledPrevious,
                                 currentPage = currentPage,
+                                currentPageText = currentPageText,
                                 totalPages = totalPages,
                                 onPageIndexChange = onPageIndexChange,
                             )

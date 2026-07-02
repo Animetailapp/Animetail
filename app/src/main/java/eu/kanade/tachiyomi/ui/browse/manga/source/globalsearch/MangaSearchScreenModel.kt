@@ -186,8 +186,8 @@ abstract class MangaSearchScreenModel(
     }
 
     private fun updateItem(source: CatalogueSource, result: MangaSearchItemResult) {
-        val newItems = state.value.items.mutate {
-            it[source] = result
+        val newItems = state.value.items.toMutableMap().apply {
+            this[source] = result
         }
         updateItems(newItems)
     }

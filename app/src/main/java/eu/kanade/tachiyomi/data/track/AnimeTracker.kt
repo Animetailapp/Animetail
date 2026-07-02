@@ -9,7 +9,6 @@ import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.collections.immutable.ImmutableList
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
@@ -29,7 +28,7 @@ interface AnimeTracker {
     // Common functions
     fun getCompletionStatus(): Long
 
-    fun getScoreList(): ImmutableList<String>
+    fun getScoreList(): List<String>
 
     fun indexToScore(index: Int): Double {
         return index.toDouble()
