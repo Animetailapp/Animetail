@@ -473,7 +473,7 @@ class MangaDownloader(
 
         // Try to find the image file
         val imageFile = tmpDir.listFiles()?.firstOrNull {
-            isDownloadedPageImage(it.name.orEmpty(), filename)
+            isDownloadedPageImage(it.name ?: return@firstOrNull false, filename)
         }
 
         try {
