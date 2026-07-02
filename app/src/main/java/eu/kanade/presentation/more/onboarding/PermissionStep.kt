@@ -18,6 +18,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -156,6 +157,7 @@ internal class PermissionStep : OnboardingStep {
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             content = { Text(text = title) },
         )
+    }
 
     @Composable
     private fun PermissionSwitch(
