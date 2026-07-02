@@ -158,10 +158,10 @@ data object BrowseTab : Tab {
             titleRes = MR.strings.browse,
             tabs = tabs,
             state = state,
-            mangaSearchQuery = animeExtensionsState.searchQuery,
-            onChangeMangaSearchQuery = animeExtensionsScreenModel::search,
-            animeSearchQuery = mangaExtensionsState.searchQuery,
-            onChangeAnimeSearchQuery = mangaExtensionsScreenModel::search,
+            mangaSearchQuery = mangaExtensionsState.searchQuery,
+            onChangeMangaSearchQuery = mangaExtensionsScreenModel::search,
+            animeSearchQuery = animeExtensionsState.searchQuery,
+            onChangeAnimeSearchQuery = animeExtensionsScreenModel::search,
             // KMK -->
             feedScreenModel = feedScreenModel,
             // KMK <--
