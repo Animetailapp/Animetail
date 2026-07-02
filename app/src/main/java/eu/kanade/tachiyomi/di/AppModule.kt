@@ -45,7 +45,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.plus
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
-import nl.adaptivity.xmlutil.XmlDeclMode.Charset
+import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.core.XmlVersion
 import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
 import nl.adaptivity.xmlutil.serialization.XML
@@ -177,7 +177,7 @@ class AppModule(val app: Application) : InjektModule {
                     ignoreUnknownChildren()
                     autoPolymorphic = true
                 }
-                xmlDeclMode = Charset
+                xmlDeclMode = XmlDeclMode.Charset
                 xmlVersion = XmlVersion.XML10
                 setIndent(2)
             }
