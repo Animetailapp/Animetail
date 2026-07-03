@@ -389,7 +389,15 @@ class MangaScreen(
             onMigrateClicked = {
                 navigator.push(MigrateMangaSearchScreen(successState.manga.id))
             }.takeIf { successState.manga.favorite },
-            onEditNotesClicked = { navigator.push(MangaNotesScreen(manga = successState.manga)) },
+            onEditNotesClicked = {
+                navigator.push(
+                    MangaNotesScreen(
+                        mangaId = successState.manga.id,
+                        mangaTitle = successState.manga.title,
+                        mangaNotes = successState.manga.notes,
+                    ),
+                )
+            },
             getMangaState = { screenModel.getManga(initialManga = it) },
             onRelatedMangasScreenClick = {
                 if (successState.isRelatedMangasFetched == null) {

@@ -25,7 +25,7 @@ fun AnimeNotesScreen(
                 titleContent = {
                     AppBarTitle(
                         title = stringResource(MR.strings.action_edit_notes),
-                        subtitle = state.anime.title,
+                        subtitle = state.animeTitle,
                     )
                 },
                 navigateUp = navigateUp,
