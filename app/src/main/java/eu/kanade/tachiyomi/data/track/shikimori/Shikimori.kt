@@ -129,7 +129,7 @@ class Shikimori(id: Long) :
     }
 
     override suspend fun bind(track: AnimeTrack, hasSeenEpisodes: Boolean): AnimeTrack {
-        val remoteTrack = api.findLibAnime(track, getUsername())
+        val remoteTrack = api.findLibAnime(track)
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack)
             track.library_id = remoteTrack.library_id
@@ -166,7 +166,7 @@ class Shikimori(id: Long) :
     }
 
     override suspend fun refresh(track: AnimeTrack): AnimeTrack {
-        api.findLibAnime(track, getUsername())?.let { remoteTrack ->
+        api.findLibAnime(track, isRefresh = true)?.let { remoteTrack ->
             track.library_id = remoteTrack.library_id
             track.copyPersonalFrom(remoteTrack)
             track.total_episodes = remoteTrack.total_episodes
@@ -177,6 +177,7 @@ class Shikimori(id: Long) :
     override suspend fun getMangaMetadata(track: DomainMangaTrack): TrackMangaMetadata? {
         return api.getMangaMetadata(track)
     }
+
     override suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? {
         return api.getAnimeMetadata(track)
     }
