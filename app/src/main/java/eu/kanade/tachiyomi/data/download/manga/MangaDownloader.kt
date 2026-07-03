@@ -650,6 +650,8 @@ class MangaDownloader(
             fileName.startsWith("$pagePrefix.") ||
                 fileName.startsWith("${pagePrefix}__001.")
             )
+
+    /**
      * Archive the chapter pages as a CBZ.
      */
     private fun archiveChapter(
