@@ -56,8 +56,11 @@ object DiscordRpcManager {
     private const val AUTH_URL = "https://discord.com/oauth2/authorize"
 
     private val initialized = java.util.concurrent.atomic.AtomicBoolean(false)
-    @Volatile private var _authorized = false
-    @Volatile private var _ready = false
+
+    @Volatile private var authorizedInternal = false
+
+    @Volatile private var readyInternal = false
+
     @Volatile private var accessToken: String? = null
 
     private val _accessTokenFlow = MutableStateFlow<String?>(null)
@@ -87,8 +90,8 @@ object DiscordRpcManager {
     fun onNativeStatusChanged(statusCode: Int, ready: Boolean, authorized: Boolean) {
         synchronized(this) {
             Log.i(TAG, "onNativeStatusChanged: statusCode=$statusCode ready=$ready authorized=$authorized")
-            _ready = ready
-            _authorized = authorized
+            readyInternal = ready
+            authorizedInternal = authorized
             _connectionStatus.value = when {
                 ready && authorized -> Status.Connected
                 statusCode == 0 || (!ready && !authorized) -> Status.Disconnected
@@ -104,12 +107,19 @@ object DiscordRpcManager {
     private external fun nativeConnect()
     private external fun nativeSetActivity(
         activityType: Int,
-        name: String?, state: String?, details: String?,
-        startSecs: Long, endSecs: Long,
-        largeImage: String?, largeText: String?,
-        smallImage: String?, smallText: String?,
-        button1Label: String?, button1Url: String?,
-        button2Label: String?, button2Url: String?,
+        name: String?,
+        state: String?,
+        details: String?,
+        startSecs: Long,
+        endSecs: Long,
+        largeImage: String?,
+        largeText: String?,
+        smallImage: String?,
+        smallText: String?,
+        button1Label: String?,
+        button1Url: String?,
+        button2Label: String?,
+        button2Url: String?,
     )
     private external fun nativeSetOnlineStatus(statusType: Int)
     private external fun nativeClear()
@@ -120,8 +130,8 @@ object DiscordRpcManager {
     private external fun nativeIsReady(): Boolean
 
     fun isInitialized(): Boolean = initialized.get()
-    fun isAuthorized(): Boolean = _authorized
-    fun isReady(): Boolean = _ready
+    fun isAuthorized(): Boolean = authorizedInternal
+    fun isReady(): Boolean = readyInternal
 
     fun init(context: Context) {
         DiscordTokenStore.init(context.applicationContext)
@@ -282,7 +292,10 @@ object DiscordRpcManager {
                     val json = JSONObject(responseBody)
                     val newAccessToken = json.optString("access_token")
                     if (newAccessToken.isNotEmpty()) {
-                        Log.i(TAG, "exchange: got access_token (length=${newAccessToken.length}), calling nativeSetTokenAndConnect")
+                        Log.i(
+                            TAG,
+                            "exchange: got access_token (length=${newAccessToken.length}), calling nativeSetTokenAndConnect",
+                        )
                         this@DiscordRpcManager.accessToken = newAccessToken
                         _accessTokenFlow.value = newAccessToken
                         DiscordTokenStore.store(newAccessToken)
@@ -362,8 +375,8 @@ object DiscordRpcManager {
      */
     fun setActivity(activity: DiscordNativeActivity) {
         synchronized(this) {
-            if (!_ready) {
-                Log.w(TAG, "setActivity: skipping — _ready=false, activity name=${activity.name}")
+            if (!readyInternal) {
+                Log.w(TAG, "setActivity: skipping — ready=false, activity name=${activity.name}")
                 return
             }
         }
@@ -384,8 +397,8 @@ object DiscordRpcManager {
 
     fun setOnlineStatus(status: StatusType) {
         synchronized(this) {
-            if (!_ready) {
-                Log.w(TAG, "setOnlineStatus: skipping — _ready=false")
+            if (!readyInternal) {
+                Log.w(TAG, "setOnlineStatus: skipping — ready=false")
                 return
             }
         }
@@ -395,8 +408,8 @@ object DiscordRpcManager {
 
     fun clear() {
         synchronized(this) {
-            if (!_ready) {
-                Log.w(TAG, "clear: skipping — _ready=false")
+            if (!readyInternal) {
+                Log.w(TAG, "clear: skipping — ready=false")
                 return
             }
         }
@@ -430,9 +443,12 @@ object DiscordRpcManager {
                 Log.i(TAG, "destroy: skipping — not initialized")
                 return
             }
-            Log.i(TAG, "destroy: entering (_ready=$_ready, _authorized=$_authorized, initialized=$initialized)")
-            _ready = false
-            _authorized = false
+            Log.i(
+                TAG,
+                "destroy: entering (ready=$readyInternal, authorized=$authorizedInternal, initialized=$initialized)",
+            )
+            readyInternal = false
+            authorizedInternal = false
             initialized.set(false)
             callbackJob?.cancel()
             callbackJob = null
@@ -447,10 +463,10 @@ object DiscordRpcManager {
                 Log.i(TAG, "disconnect: skipping — not initialized")
                 return
             }
-            Log.i(TAG, "disconnect: entering (_ready=$_ready, _authorized=$_authorized)")
+            Log.i(TAG, "disconnect: entering (ready=$readyInternal, authorized=$authorizedInternal)")
             _connectionStatus.value = Status.Disconnected
-            _ready = false
-            _authorized = false
+            readyInternal = false
+            authorizedInternal = false
         }
         nativeDisconnect()
         Log.i(TAG, "disconnect: complete")
