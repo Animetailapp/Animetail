@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.data.backup.create
 
 import dev.icerock.moko.resources.StringResource
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 
@@ -13,7 +12,7 @@ data class BackupOptions(
     val history: Boolean = true,
     val readEntries: Boolean = true,
     val appSettings: Boolean = true,
-    val extensionRepoSettings: Boolean = true,
+    val extensionStores: Boolean = true,
     val customButton: Boolean = true,
     val sourceSettings: Boolean = true,
     val privateSettings: Boolean = false,
@@ -28,7 +27,7 @@ data class BackupOptions(
         history,
         readEntries,
         appSettings,
-        extensionRepoSettings,
+        extensionStores,
         customButton,
         sourceSettings,
         privateSettings,
@@ -38,12 +37,12 @@ data class BackupOptions(
     fun canCreate() = libraryEntries ||
         categories ||
         appSettings ||
-        extensionRepoSettings ||
+        extensionStores ||
         customButton ||
         sourceSettings
 
     companion object {
-        val libraryOptions = persistentListOf(
+        val libraryOptions = listOf(
             Entry(
                 label = AYMR.strings.entries,
                 getter = BackupOptions::libraryEntries,
@@ -80,16 +79,16 @@ data class BackupOptions(
             ),
         )
 
-        val settingsOptions = persistentListOf(
+        val settingsOptions = listOf(
             Entry(
                 label = MR.strings.app_settings,
                 getter = BackupOptions::appSettings,
                 setter = { options, enabled -> options.copy(appSettings = enabled) },
             ),
             Entry(
-                label = MR.strings.extensionRepo_settings,
-                getter = BackupOptions::extensionRepoSettings,
-                setter = { options, enabled -> options.copy(extensionRepoSettings = enabled) },
+                label = MR.strings.extensionStores,
+                getter = BackupOptions::extensionStores,
+                setter = { options, enabled -> options.copy(extensionStores = enabled) },
             ),
             Entry(
                 label = AYMR.strings.custom_button_settings,
@@ -109,7 +108,7 @@ data class BackupOptions(
             ),
         )
 
-        val extensionOptions = persistentListOf(
+        val extensionOptions = listOf(
             Entry(
                 label = MR.strings.label_extensions,
                 getter = BackupOptions::extensions,
@@ -125,7 +124,7 @@ data class BackupOptions(
             history = array[4],
             readEntries = array[5],
             appSettings = array[6],
-            extensionRepoSettings = array[7],
+            extensionStores = array[7],
             customButton = array[8],
             sourceSettings = array[9],
             privateSettings = array[10],

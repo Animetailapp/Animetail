@@ -2,6 +2,8 @@ package eu.kanade.tachiyomi.di
 
 import android.app.Application
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import animetail.feature.mpvfiles.MpvConfig
 import app.cash.sqldelight.db.SqlDriver
@@ -35,11 +37,16 @@ import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.anime.AndroidAnimeSourceManager
 import eu.kanade.tachiyomi.source.manga.AndroidMangaSourceManager
 import eu.kanade.tachiyomi.ui.player.ExternalIntents
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.plus
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import nl.adaptivity.xmlutil.XmlDeclMode.Charset
 import nl.adaptivity.xmlutil.core.XmlVersion
+import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
 import nl.adaptivity.xmlutil.serialization.XML
+import nl.adaptivity.xmlutil.serialization.XmlConfig
 import tachiyomi.core.common.storage.AndroidStorageFolderProvider
 import tachiyomi.data.AnimeUpdateStrategyColumnAdapter
 import tachiyomi.data.CastColumnAdapter
@@ -84,7 +91,7 @@ class AppModule(val app: Application) : InjektModule {
         val sqlDriverManga =
             synchronized(mangaSqlDriverLock) {
                 mangaSqlDriverRef?.get() ?: AndroidxSqliteDriver(
-                    driver = BundledSQLiteDriver(),
+                    BundledSQLiteDriver(),
                     databaseType = AndroidxSqliteDatabaseType.FileProvider {
                         app.getDatabasePath("tachiyomi.db").absolutePath
                     },
@@ -98,7 +105,7 @@ class AppModule(val app: Application) : InjektModule {
         val sqlDriverAnime =
             synchronized(animeSqlDriverLock) {
                 animeSqlDriverRef?.get() ?: AndroidxSqliteDriver(
-                    driver = BundledSQLiteDriver(),
+                    BundledSQLiteDriver(),
                     databaseType = AndroidxSqliteDatabaseType.FileProvider {
                         app.getDatabasePath("tachiyomi.animedb").absolutePath
                     },
@@ -156,20 +163,22 @@ class AppModule(val app: Application) : InjektModule {
                 explicitNulls = false
             }
         }
-        addSingletonFactory {
-            XML {
-                defaultPolicy {
+        addSingletonFactory<XML> {
+            XML.v1 {
+                policy {
                     ignoreUnknownChildren()
+                    autoPolymorphic = true
                 }
-                autoPolymorphic = true
                 xmlDeclMode = Charset
-                indent = 2
                 xmlVersion = XmlVersion.XML10
+                setIndent(2)
             }
         }
         addSingletonFactory<ProtoBuf> {
             ProtoBuf
         }
+
+        addSingletonFactory<CoroutineScope> { ProcessLifecycleOwner.get().lifecycleScope + SupervisorJob() }
 
         addSingletonFactory { ChapterCache(app, get()) }
 
@@ -177,22 +186,22 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { AnimeCoverCache(app) }
         addSingletonFactory { AnimeBackgroundCache(app) }
 
-        addSingletonFactory { NetworkHelper(app, get()) }
+        addSingletonFactory { NetworkHelper(app, get(), get()) }
         addSingletonFactory { JavaScriptEngine(app) }
 
-        addSingletonFactory<MangaSourceManager> { AndroidMangaSourceManager(app, get(), get()) }
-        addSingletonFactory<AnimeSourceManager> { AndroidAnimeSourceManager(app, get(), get()) }
+        addSingletonFactory<MangaSourceManager> { AndroidMangaSourceManager(app, get(), get(), get()) }
+        addSingletonFactory<AnimeSourceManager> { AndroidAnimeSourceManager(app, get(), get(), get()) }
 
-        addSingletonFactory { MangaExtensionManager(app) }
-        addSingletonFactory { AnimeExtensionManager(app) }
+        addSingletonFactory { MangaExtensionManager(app, get()) }
+        addSingletonFactory { AnimeExtensionManager(app, get()) }
 
         addSingletonFactory { MangaDownloadProvider(app) }
-        addSingletonFactory { MangaDownloadManager(app) }
-        addSingletonFactory { MangaDownloadCache(app) }
+        addSingletonFactory { MangaDownloadManager(app, get()) }
+        addSingletonFactory { MangaDownloadCache(app, get()) }
 
         addSingletonFactory { AnimeDownloadProvider(app) }
-        addSingletonFactory { AnimeDownloadManager(app) }
-        addSingletonFactory { AnimeDownloadCache(app) }
+        addSingletonFactory { AnimeDownloadManager(app, get()) }
+        addSingletonFactory { AnimeDownloadCache(app, get()) }
 
         addSingletonFactory { TrackerManager(app) }
         addSingletonFactory { DelayedAnimeTrackingStore(app) }
@@ -211,7 +220,7 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { LocalAnimeFetchTypeManager(app, get()) }
         addSingletonFactory { LocalEpisodeThumbnailManager(app, get()) }
 
-        addSingletonFactory { StorageManager(app, get(), get<AndroidStorageFolderProvider>()) }
+        addSingletonFactory { StorageManager(app, get(), get(), get<AndroidStorageFolderProvider>()) }
 
         addSingletonFactory { ExternalIntents() }
 

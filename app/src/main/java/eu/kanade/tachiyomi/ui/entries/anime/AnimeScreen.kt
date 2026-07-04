@@ -270,7 +270,15 @@ class AnimeScreen(
             onMigrateClicked = {
                 navigator.push(AnimeMigrationConfigScreen(successState.anime.id))
             }.takeIf { successState.anime.favorite },
-            onEditNotesClicked = { navigator.push(AnimeNotesScreen(anime = successState.anime)) },
+            onEditNotesClicked = {
+                navigator.push(
+                    AnimeNotesScreen(
+                        animeId = successState.anime.id,
+                        animeTitle = successState.anime.title,
+                        animeNotes = successState.anime.notes,
+                    ),
+                )
+            },
             changeAnimeSkipIntro = screenModel::showAnimeSkipIntroDialog
                 .takeIf { successState.anime.favorite && successState.anime.fetchType == FetchType.Episodes },
             onMultiBookmarkClicked = screenModel::bookmarkEpisodes,

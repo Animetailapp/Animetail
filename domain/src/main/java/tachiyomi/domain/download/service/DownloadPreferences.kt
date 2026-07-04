@@ -21,6 +21,11 @@ class DownloadPreferences(
 
     val saveChaptersAsCBZ: Preference<Boolean> = preferenceStore.getBoolean("save_chapter_as_cbz", true)
 
+    val includeHashInDownloadFilenames: Preference<Boolean> = preferenceStore.getBoolean(
+        "pref_download_filename_hash_key",
+        true,
+    )
+
     val splitTallImages: Preference<Boolean> = preferenceStore.getBoolean("split_tall_images", true)
 
     val autoDownloadWhileReading: Preference<Int> = preferenceStore.getInt("auto_download_while_reading", 0)

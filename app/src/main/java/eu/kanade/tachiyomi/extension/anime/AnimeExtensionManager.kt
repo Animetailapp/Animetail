@@ -45,11 +45,10 @@ import java.util.Locale
  */
 class AnimeExtensionManager(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val preferences: SourcePreferences = Injekt.get(),
     private val trustExtension: TrustAnimeExtension = Injekt.get(),
 ) {
-
-    val scope = CoroutineScope(SupervisorJob())
 
     private val _isInitialized = MutableStateFlow(false)
     val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
@@ -62,7 +61,7 @@ class AnimeExtensionManager(
     /**
      * The installer which installs, updates and uninstalls the anime extensions.
      */
-    private val installer by lazy { AnimeExtensionInstaller(context) }
+    private val installer by lazy { AnimeExtensionInstaller(context, scope) }
 
     private val iconMap = mutableMapOf<String, Drawable>()
 
@@ -226,11 +225,11 @@ class AnimeExtensionManager(
                 if (extension.hasUpdate != hasUpdate) {
                     installedExtensionsMap[pkgName] = extension.copy(
                         hasUpdate = hasUpdate,
-                        repoUrl = availableExt.repoUrl,
+                        store = availableExt.store,
                     )
                 } else {
                     installedExtensionsMap[pkgName] = extension.copy(
-                        repoUrl = availableExt.repoUrl,
+                        store = availableExt.store,
                     )
                 }
                 changed = true
@@ -250,7 +249,7 @@ class AnimeExtensionManager(
      * @param extension The anime extension to be installed.
      */
     fun installExtension(extension: AnimeExtension.Available): Flow<InstallStep> {
-        return installer.downloadAndInstall(api.getApkUrl(extension), extension)
+        return installer.downloadAndInstall(extension.apkUrl, extension)
     }
 
     /**

@@ -20,13 +20,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
@@ -64,17 +64,16 @@ import kotlin.time.Duration.Companion.seconds
  */
 class MangaDownloadCache(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val provider: MangaDownloadProvider = Injekt.get(),
     private val sourceManager: MangaSourceManager = Injekt.get(),
     private val extensionManager: MangaExtensionManager = Injekt.get(),
     private val storageManager: StorageManager = Injekt.get(),
 ) {
-
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     private val _changes: Channel<Unit> = Channel(Channel.UNLIMITED)
     val changes = _changes.receiveAsFlow()
         .onStart { emit(Unit) }
+        .flowOn(Dispatchers.IO)
         .shareIn(scope, SharingStarted.Lazily, 1)
 
     /**
@@ -91,7 +90,7 @@ class MangaDownloadCache(
 
     private val _isInitializing = MutableStateFlow(false)
     val isInitializing = _isInitializing
-        .debounce(1000L) // Don't notify if it finishes quickly enough
+        .debounce(1.seconds) // Don't notify if it finishes quickly enough
         .stateIn(scope, SharingStarted.WhileSubscribed(), false)
 
     private val diskCacheFile: File
@@ -102,7 +101,7 @@ class MangaDownloadCache(
 
     init {
         // Attempt to read cache file
-        scope.launch {
+        scope.launchIO {
             rootDownloadsDirMutex.withLock {
                 try {
                     if (diskCacheFile.exists()) {
@@ -444,7 +443,7 @@ class MangaDownloadCache(
     private fun updateDiskCache() {
         updateDiskCacheJob?.cancel()
         updateDiskCacheJob = scope.launchIO {
-            delay(1000)
+            delay(1.seconds)
             ensureActive()
             val bytes = ProtoBuf.encodeToByteArray(rootDownloadsDir)
             ensureActive()

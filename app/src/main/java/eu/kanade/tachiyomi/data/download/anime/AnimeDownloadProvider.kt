@@ -10,6 +10,7 @@ import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.displayablePath
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -33,6 +34,7 @@ class AnimeDownloadProvider(
     // AM (FILE_SIZE) -->
     private val localFileSystem: LocalAnimeSourceFileSystem = Injekt.get(),
     // <-- AM (FILE_SIZE)
+    private val downloadPreferences: DownloadPreferences = Injekt.get(),
 ) {
 
     private val downloadsDir: UniFile?
@@ -153,6 +155,7 @@ class AnimeDownloadProvider(
         episodeName: String,
         episodeScanlator: String?,
         episodeUrl: String,
+        includeHash: Boolean = downloadPreferences.includeHashInDownloadFilenames.get(),
         disallowNonAsciiFilenames: Boolean = libraryPreferences.disallowNonAsciiFilenames.get(),
     ): String {
         var dirName = sanitizeEpisodeName(episodeName)
@@ -161,7 +164,9 @@ class AnimeDownloadProvider(
         }
         // Subtract 7 bytes for hash and underscore, 4 bytes for .mkv/.mp4
         dirName = DiskUtil.buildValidFilename(dirName, DiskUtil.MAX_FILE_NAME_BYTES - 11, disallowNonAsciiFilenames)
-        dirName += "_" + md5(episodeUrl).take(6)
+        if (includeHash) {
+            dirName += "_" + md5(episodeUrl).take(6)
+        }
         return dirName
     }
 
@@ -196,15 +201,36 @@ class AnimeDownloadProvider(
                 episodeName,
                 episodeScanlator,
                 episodeUrl,
-                !libraryPreferences.disallowNonAsciiFilenames.get(),
+                disallowNonAsciiFilenames = !libraryPreferences.disallowNonAsciiFilenames.get(),
             )
 
-        return buildList(3) {
+        // Get the filename with the other value for including hash
+        val otherHashEpisodeDirName =
+            getEpisodeDirName(
+                episodeName,
+                episodeScanlator,
+                episodeUrl,
+                includeHash = !downloadPreferences.includeHashInDownloadFilenames.get(),
+            )
+
+        // Get the filename with both values inverted
+        val otherBothEpisodeDirName =
+            getEpisodeDirName(
+                episodeName,
+                episodeScanlator,
+                episodeUrl,
+                includeHash = !downloadPreferences.includeHashInDownloadFilenames.get(),
+                disallowNonAsciiFilenames = !libraryPreferences.disallowNonAsciiFilenames.get(),
+            )
+
+        return buildList(5) {
             // Episode name without hash (unable to handle duplicate episode names)
             add(episodeNameV1)
             // Old format without scanlator prefix sanitization
             add(oldEpisodeName)
             add(otherEpisodeDirName)
+            add(otherHashEpisodeDirName)
+            add(otherBothEpisodeDirName)
         }
     }
 

@@ -99,8 +99,13 @@ SET is_syncing = 0
 WHERE is_syncing = 1;
 
 insert:
-INSERT INTO chapters(manga_id, url, name, scanlator, read, bookmark, last_page_read, chapter_number, source_order,date_fetch, date_upload, last_modified_at, version, is_syncing, date_upload_override)
+INSERT INTO chapters(manga_id, url, name, scanlator, read, bookmark, last_page_read, chapter_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing, date_upload_override)
 VALUES (:mangaId, :url, :name, :scanlator, :read, :bookmark, :lastPageRead, :chapterNumber, :sourceOrder, :dateFetch, :dateUpload, 0, :version, 0, :dateUploadOverride);
+
+insertReturningId:
+INSERT INTO chapters(manga_id, url, name, scanlator, read, bookmark, last_page_read, chapter_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing, date_upload_override)
+VALUES (:mangaId, :url, :name, :scanlator, :read, :bookmark, :lastPageRead, :chapterNumber, :sourceOrder, :dateFetch, :dateUpload, 0, :version, 0, :dateUploadOverride)
+RETURNING _id;
 
 update:
 UPDATE chapters
@@ -119,6 +124,3 @@ SET manga_id = coalesce(:mangaId, manga_id),
     is_syncing = coalesce(:isSyncing, is_syncing),
     date_upload_override = coalesce(:dateUploadOverride, date_upload_override)
 WHERE _id = :chapterId;
-
-selectLastInsertedRowId:
-SELECT last_insert_rowid();

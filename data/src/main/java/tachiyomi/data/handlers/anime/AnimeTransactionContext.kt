@@ -43,9 +43,7 @@ internal suspend fun <T> AndroidAnimeDatabaseHandler.withAnimeTransaction(block:
         transactionElement.acquire()
         try {
             db.transactionWithResult {
-                runBlocking(transactionContext) {
-                    block()
-                }
+                block()
             }
         } finally {
             transactionElement.release()

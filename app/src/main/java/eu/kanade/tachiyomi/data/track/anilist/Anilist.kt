@@ -18,9 +18,6 @@ import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -120,22 +117,22 @@ class Anilist(id: Long) :
 
     override fun getCompletionStatus(): Long = COMPLETED
 
-    override fun getScoreList(): ImmutableList<String> {
+    override fun getScoreList(): List<String> {
         return when (scorePreference.get()) {
             // 10 point
-            POINT_10 -> IntRange(0, 10).map(Int::toString).toImmutableList()
+            POINT_10 -> IntRange(0, 10).map(Int::toString).toList()
 
             // 100 point
-            POINT_100 -> IntRange(0, 100).map(Int::toString).toImmutableList()
+            POINT_100 -> IntRange(0, 100).map(Int::toString).toList()
 
             // 5 stars
-            POINT_5 -> IntRange(0, 5).map { "$it ★" }.toImmutableList()
+            POINT_5 -> IntRange(0, 5).map { "$it ★" }.toList()
 
             // Smiley
-            POINT_3 -> persistentListOf("-", "😦", "😐", "😊")
+            POINT_3 -> listOf("-", "😦", "😐", "😊")
 
             // 10 point decimal
-            POINT_10_DECIMAL -> IntRange(0, 100).map { (it / 10f).toString() }.toImmutableList()
+            POINT_10_DECIMAL -> IntRange(0, 100).map { (it / 10f).toString() }.toList()
 
             else -> throw Exception("Unknown score type")
         }

@@ -34,7 +34,6 @@ import eu.kanade.tachiyomi.ui.browse.manga.extension.mangaExtensionsTab
 import eu.kanade.tachiyomi.ui.browse.manga.migration.sources.migrateMangaSourceTab
 import eu.kanade.tachiyomi.ui.browse.manga.source.mangaSourcesTab
 import eu.kanade.tachiyomi.ui.main.MainActivity
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
@@ -104,7 +103,7 @@ data object BrowseTab : Tab {
 
         val tabs = when {
             hideFeedTab ->
-                persistentListOf(
+                listOf(
                     animeSourcesTab(),
                     mangaSourcesTab(),
                     animeExtensionsTabContent,
@@ -114,7 +113,7 @@ data object BrowseTab : Tab {
                 )
 
             feedTabInFront ->
-                persistentListOf(
+                listOf(
                     feedTab(
                         // KMK -->
                         feedScreenModel,
@@ -129,7 +128,7 @@ data object BrowseTab : Tab {
                 )
 
             else ->
-                persistentListOf(
+                listOf(
                     animeSourcesTab(),
                     mangaSourcesTab(),
                     feedTab(
@@ -158,10 +157,10 @@ data object BrowseTab : Tab {
             titleRes = MR.strings.browse,
             tabs = tabs,
             state = state,
-            mangaSearchQuery = animeExtensionsState.searchQuery,
-            onChangeMangaSearchQuery = animeExtensionsScreenModel::search,
-            animeSearchQuery = mangaExtensionsState.searchQuery,
-            onChangeAnimeSearchQuery = mangaExtensionsScreenModel::search,
+            mangaSearchQuery = mangaExtensionsState.searchQuery,
+            onChangeMangaSearchQuery = mangaExtensionsScreenModel::search,
+            animeSearchQuery = animeExtensionsState.searchQuery,
+            onChangeAnimeSearchQuery = animeExtensionsScreenModel::search,
             // KMK -->
             feedScreenModel = feedScreenModel,
             // KMK <--

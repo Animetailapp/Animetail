@@ -35,18 +35,17 @@ import java.util.Locale
 
 class MangaExtensionManager(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val preferences: SourcePreferences = Injekt.get(),
     private val trustExtension: TrustMangaExtension = Injekt.get(),
 ) {
-
-    val scope = CoroutineScope(SupervisorJob())
 
     private val _isInitialized = MutableStateFlow(false)
     val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
 
     private val api = MangaExtensionApi()
 
-    private val installer by lazy { MangaExtensionInstaller(context) }
+    private val installer by lazy { MangaExtensionInstaller(context, scope) }
 
     private val iconMap = mutableMapOf<String, Drawable>()
 
@@ -179,11 +178,11 @@ class MangaExtensionManager(
                 installedExtensionsMap[pkgName] = if (extension.hasUpdate != hasUpdate) {
                     extension.copy(
                         hasUpdate = hasUpdate,
-                        repoUrl = availableExt.repoUrl,
+                        store = availableExt.store,
                     )
                 } else {
                     extension.copy(
-                        repoUrl = availableExt.repoUrl,
+                        store = availableExt.store,
                     )
                 }
                 changed = true
@@ -197,7 +196,7 @@ class MangaExtensionManager(
     }
 
     fun installExtension(extension: MangaExtension.Available): Flow<InstallStep> {
-        return installer.downloadAndInstall(api.getApkUrl(extension), extension)
+        return installer.downloadAndInstall(extension.apkUrl, extension)
     }
 
     fun updateExtension(extension: MangaExtension.Installed): Flow<InstallStep> {

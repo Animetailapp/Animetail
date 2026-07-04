@@ -37,7 +37,6 @@ import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.tachiyomi.data.database.models.manga.toDomainChapter
 import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
-import kotlinx.collections.immutable.persistentMapOf
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.items.chapter.service.calculateChapterGap
 import tachiyomi.i18n.MR
@@ -240,7 +239,7 @@ private fun ChapterText(
             maxLines = 5,
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.titleLarge,
-            inlineContent = persistentMapOf(
+            inlineContent = mapOf(
                 DOWNLOADED_ICON_ID to InlineTextContent(
                     Placeholder(
                         width = 22.sp,

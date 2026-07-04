@@ -108,7 +108,7 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
      * Returns the package name of the installed, updated or removed application.
      */
     private fun getPackageNameFromIntent(intent: Intent?): String? {
-        return intent?.data?.encodedSchemeSpecificPart ?: return null
+        return intent?.data?.encodedSchemeSpecificPart
     }
 
     /**

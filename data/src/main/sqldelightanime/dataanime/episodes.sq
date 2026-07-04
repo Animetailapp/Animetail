@@ -90,9 +90,12 @@ UPDATE episodes
 SET is_syncing = 0
 WHERE is_syncing = 1;
 
-insert:
+insert {
 INSERT INTO episodes(anime_id, url, name, scanlator, seen, bookmark, last_second_seen, total_seconds, episode_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing, summary, preview_url, fillermark, date_upload_override)
 VALUES (:animeId, :url, :name, :scanlator, :seen, :bookmark, :lastSecondSeen, :totalSeconds, :episodeNumber, :sourceOrder, :dateFetch, :dateUpload, 0, :version, 0, :summary, :previewUrl, :fillermark, :dateUploadOverride);
+
+SELECT last_insert_rowid();
+}
 
 update:
 UPDATE episodes
@@ -116,5 +119,3 @@ SET anime_id = coalesce(:animeId, anime_id),
     date_upload_override = coalesce(:dateUploadOverride, date_upload_override)
 WHERE _id = :episodeId;
 
-selectLastInsertedRowId:
-SELECT last_insert_rowid();

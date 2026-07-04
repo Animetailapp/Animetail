@@ -9,6 +9,7 @@ import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.displayablePath
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -27,6 +28,7 @@ class MangaDownloadProvider(
     private val context: Context,
     private val storageManager: StorageManager = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
+    private val downloadPreferences: DownloadPreferences = Injekt.get(),
 ) {
 
     private val downloadsDir: UniFile?
@@ -147,6 +149,7 @@ class MangaDownloadProvider(
         chapterName: String,
         chapterScanlator: String?,
         chapterUrl: String,
+        includeHash: Boolean = downloadPreferences.includeHashInDownloadFilenames.get(),
         disallowNonAsciiFilenames: Boolean = libraryPreferences.disallowNonAsciiFilenames.get(),
     ): String {
         var dirName = sanitizeChapterName(chapterName)
@@ -155,7 +158,9 @@ class MangaDownloadProvider(
         }
         // Subtract 7 bytes for hash and underscore, 4 bytes for .cbz
         dirName = DiskUtil.buildValidFilename(dirName, DiskUtil.MAX_FILE_NAME_BYTES - 11, disallowNonAsciiFilenames)
-        dirName += "_" + md5(chapterUrl).take(6)
+        if (includeHash) {
+            dirName += "_" + md5(chapterUrl).take(6)
+        }
         return dirName
     }
 
@@ -190,14 +195,35 @@ class MangaDownloadProvider(
                 chapterName,
                 chapterScanlator,
                 chapterUrl,
-                !libraryPreferences.disallowNonAsciiFilenames.get(),
+                disallowNonAsciiFilenames = !libraryPreferences.disallowNonAsciiFilenames.get(),
             )
 
-        return buildList(2) {
+        // Get the filename with the other value for including hash
+        val otherHashChapterDirName =
+            getChapterDirName(
+                chapterName,
+                chapterScanlator,
+                chapterUrl,
+                includeHash = !downloadPreferences.includeHashInDownloadFilenames.get(),
+            )
+
+        // Get the filename with both values inverted
+        val otherBothChapterDirName =
+            getChapterDirName(
+                chapterName,
+                chapterScanlator,
+                chapterUrl,
+                includeHash = !downloadPreferences.includeHashInDownloadFilenames.get(),
+                disallowNonAsciiFilenames = !libraryPreferences.disallowNonAsciiFilenames.get(),
+            )
+
+        return buildList(4) {
             // Chapter name without hash (unable to handle duplicate
             // chapter names)
             add(chapterNameV1)
             add(otherChapterDirName)
+            add(otherHashChapterDirName)
+            add(otherBothChapterDirName)
         }
     }
 

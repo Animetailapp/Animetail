@@ -337,7 +337,6 @@ class AnimeRestorer(
                 cast = anime.cast,
                 backgroundLastModified = anime.backgroundLastModified,
             )
-            animesQueries.selectLastInsertedRowId()
         }
     }
 

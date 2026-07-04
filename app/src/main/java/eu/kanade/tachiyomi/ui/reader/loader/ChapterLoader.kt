@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import kotlinx.coroutines.CoroutineScope
 import mihon.core.archive.archiveReader
 import mihon.core.archive.epubReader
 import tachiyomi.core.common.i18n.stringResource
@@ -24,6 +25,7 @@ import uy.kohesive.injekt.injectLazy
  */
 class ChapterLoader(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val downloadManager: MangaDownloadManager,
     private val downloadProvider: MangaDownloadProvider,
     private val manga: Manga,
@@ -106,7 +108,7 @@ class ChapterLoader(
                 }
             }
 
-            source is HttpSource -> HttpPageLoader(chapter, source)
+            source is HttpSource -> HttpPageLoader(chapter, source, scope)
 
             source is StubMangaSource -> error(
                 context.stringResource(MR.strings.source_not_installed, source.toString()),

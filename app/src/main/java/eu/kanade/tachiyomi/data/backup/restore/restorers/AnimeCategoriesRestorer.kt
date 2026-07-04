@@ -28,7 +28,6 @@ class AnimeCategoriesRestorer(
                     val order = nextOrder++
                     animeHandler.awaitOneExecutable {
                         categoriesQueries.insert(it.name, order, it.flags)
-                        categoriesQueries.selectLastInsertedRowId()
                     }
                         .let { id -> it.toCategory(id).copy(order = order) }
                 }

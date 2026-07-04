@@ -1104,7 +1104,7 @@ class PlayerActivity : BaseActivity() {
             video.videoUrl.startsWith("magnet") ||
             video.videoUrl.endsWith(".torrent")
         ) {
-            launchIO {
+            lifecycleScope.launchIO {
                 TorrentServerService.start()
                 TorrentServerService.wait(10)
                 torrentLinkHandler(video.videoUrl, video.videoTitle)

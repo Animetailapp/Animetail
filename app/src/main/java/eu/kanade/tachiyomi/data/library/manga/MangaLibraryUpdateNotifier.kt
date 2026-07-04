@@ -29,9 +29,9 @@ import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.library.manga.LibraryManga
@@ -42,10 +42,9 @@ import uy.kohesive.injekt.api.get
 import java.math.RoundingMode
 import java.text.NumberFormat
 
-@OptIn(DelicateCoroutinesApi::class)
 class MangaLibraryUpdateNotifier(
     private val context: Context,
-
+    private val scope: CoroutineScope = Injekt.get(),
     private val securityPreferences: SecurityPreferences = Injekt.get(),
     private val sourceManager: MangaSourceManager = Injekt.get(),
 ) {
@@ -215,7 +214,7 @@ class MangaLibraryUpdateNotifier(
 
         // Per-manga notification
         if (!securityPreferences.hideNotificationContent.get()) {
-            launchUI {
+            scope.launch {
                 context.notify(
                     updates.map { (manga, chapters) ->
                         NotificationManagerCompat.NotificationWithIdAndTag(

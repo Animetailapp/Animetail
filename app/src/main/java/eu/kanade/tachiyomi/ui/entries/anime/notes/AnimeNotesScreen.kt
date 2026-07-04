@@ -12,20 +12,29 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.entries.anime.AnimeNotesScreen
 import eu.kanade.presentation.util.Screen
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.domain.entries.anime.interactor.UpdateAnimeNotes
-import tachiyomi.domain.entries.anime.model.Anime
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+@Serializable
 class AnimeNotesScreen(
-    private val anime: Anime,
+    private val animeId: Long,
+    private val animeTitle: String,
+    private val animeNotes: String,
 ) : Screen() {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { Model(anime) }
+        val screenModel = rememberScreenModel {
+            Model(
+                animeId = animeId,
+                animeTitle = animeTitle,
+                animeNotes = animeNotes,
+            )
+        }
         val state by screenModel.state.collectAsState()
 
         AnimeNotesScreen(
@@ -36,9 +45,11 @@ class AnimeNotesScreen(
     }
 
     private class Model(
-        private val anime: Anime,
+        animeTitle: String,
+        animeNotes: String,
+        private val animeId: Long,
         private val updateAnimeNotes: UpdateAnimeNotes = Injekt.get(),
-    ) : StateScreenModel<State>(State(anime, anime.notes)) {
+    ) : StateScreenModel<State>(State(animeId, animeTitle, animeNotes)) {
 
         fun updateNotes(content: String) {
             if (content == state.value.notes) return
@@ -48,14 +59,15 @@ class AnimeNotesScreen(
             }
 
             screenModelScope.launchNonCancellable {
-                updateAnimeNotes(anime.id, content)
+                updateAnimeNotes(animeId, content)
             }
         }
     }
 
     @Immutable
     data class State(
-        val anime: Anime,
+        val animeId: Long,
+        val animeTitle: String,
         val notes: String,
     )
 }

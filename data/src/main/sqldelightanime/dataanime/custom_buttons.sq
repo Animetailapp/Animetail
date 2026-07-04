@@ -34,9 +34,12 @@ SELECT *
 FROM custom_buttons
 ORDER BY sortIndex;
 
-insert:
+insert {
 INSERT INTO custom_buttons(name, isFavorite, sortIndex, content, longPressContent, onStartup)
 VALUES (:name, :isFavorite, :sortIndex, :content, :longPressContent, :onStartup);
+
+SELECT last_insert_rowid();
+}
 
 delete:
 DELETE FROM custom_buttons
@@ -52,5 +55,3 @@ SET name = coalesce(:name, name),
     onStartup = coalesce(:onStartup, onStartup)
 WHERE _id = :customButtonId;
 
-selectLastInsertedRowId:
-SELECT last_insert_rowid();
