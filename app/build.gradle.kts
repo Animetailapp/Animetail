@@ -240,6 +240,9 @@ dependencies {
     implementation(libs.jsoup)
     implementation(libs.re2j)
 
+    // String similarity (used in smart search / migration)
+    implementation(libs.stringSimilarity)
+
     // Disk
     implementation(libs.diskLruCache)
     implementation(libs.unifile)

@@ -55,6 +55,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import mihon.feature.migration.config.AnimeMigrationConfigScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.category.model.Category
@@ -207,6 +208,10 @@ data object AnimeLibraryTab : Tab {
                     onDownloadClicked = screenModel::runDownloadActionSelection
                         .takeIf { state.selection.fastAll { !it.anime.isLocal() } },
                     onDeleteClicked = screenModel::openDeleteAnimeDialog,
+                    onMigrateClicked = {
+                        val selection = state.selection.map { it.anime.id }
+                        navigator.push(AnimeMigrationConfigScreen(selection))
+                    },
                     onClickResetInfo = screenModel::resetInfo.takeIf { state.showResetInfo },
                     isManga = false,
                 )

@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.util.system.LocaleHelper
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
+import tachiyomi.core.common.preference.getLongArray
 import tachiyomi.core.common.preference.getObjectFromString
 import tachiyomi.domain.library.model.LibraryDisplayMode
 
@@ -123,4 +124,16 @@ class SourcePreferences(
     // KMK -->
     val relatedAnimes = preferenceStore.getBoolean("related_animes", true)
     // KMK <--
+
+    val migrationAnimeSources: Preference<List<Long>> = preferenceStore.getLongArray(
+        "migration_anime_sources",
+        emptyList(),
+    )
+    val migrationMangaSources: Preference<List<Long>> = preferenceStore.getLongArray(
+        "migration_manga_sources",
+        emptyList(),
+    )
+    val migrationSources: Preference<List<Long>> = migrationMangaSources
+
+    val migrationFlags: Preference<Int> = preferenceStore.getInt("migration_flags", 0b11111)
 }

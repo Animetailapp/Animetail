@@ -67,6 +67,8 @@ import mihon.domain.extension.manga.interactor.UpdateMangaExtensionStores
 import mihon.domain.extension.manga.repository.MangaExtensionStoreRepository
 import mihon.domain.items.chapter.interactor.FilterChaptersForDownload
 import mihon.domain.items.episode.interactor.FilterEpisodesForDownload
+import mihon.domain.migration.usecases.MigrateAnimeUseCase
+import mihon.domain.migration.usecases.MigrateMangaUseCase
 import mihon.domain.upcoming.anime.interactor.GetUpcomingAnime
 import mihon.domain.upcoming.manga.interactor.GetUpcomingManga
 import tachiyomi.data.category.anime.AnimeCategoryRepositoryImpl
@@ -448,5 +450,16 @@ class DomainModule : InjektModule {
         // KMK -->
         addFactory { ReorderFeed(get()) }
         // KMK <--
+
+        addFactory {
+            MigrateAnimeUseCase(
+                get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
+            )
+        }
+        addFactory {
+            MigrateMangaUseCase(
+                get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
+            )
+        }
     }
 }
