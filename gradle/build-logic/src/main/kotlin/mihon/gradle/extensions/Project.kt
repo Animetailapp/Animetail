@@ -1,7 +1,6 @@
 package mihon.gradle.extensions
 
 import com.android.build.api.dsl.CommonExtension
-import com.android.build.gradle.BaseExtension
 import org.gradle.accessors.dm.LibrariesForLibs
 import org.gradle.accessors.dm.LibrariesForMihonx
 import org.gradle.api.Project
@@ -20,10 +19,8 @@ internal fun Project.plugins(block: PluginManager.() -> Unit) {
     pluginManager.apply(block)
 }
 
-internal fun Project.android(block: CommonExtension<*, *, *, *, *, *>.() -> Unit) {
-    extensions.configure<BaseExtension> {
-        if (this is CommonExtension<*, *, *, *, *, *>) apply(block)
-    }
+internal fun Project.android(block: CommonExtension.() -> Unit) {
+    extensions.configure(block)
 }
 
 fun Project.configureTest() {

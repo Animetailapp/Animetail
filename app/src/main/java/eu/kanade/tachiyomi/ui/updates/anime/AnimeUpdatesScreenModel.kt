@@ -17,10 +17,6 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
 import eu.kanade.tachiyomi.util.lang.toLocalDate
-import kotlinx.collections.immutable.PersistentList
-import kotlinx.collections.immutable.mutate
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -78,7 +74,7 @@ class AnimeUpdatesScreenModel(
             // Set date limit for recent episodes
 
             val limit = ZonedDateTime.now().minusMonths(3).toInstant()
-            combine(
+            combine<List<AnimeUpdatesWithRelations>, Unit, List<AnimeDownload>, List<AnimeUpdatesWithRelations>>(
                 getUpdates.subscribe(limit).distinctUntilChanged(),
                 downloadCache.changes,
                 downloadManager.queueState,
@@ -104,7 +100,7 @@ class AnimeUpdatesScreenModel(
         }
     }
 
-    private fun List<AnimeUpdatesWithRelations>.toUpdateItems(): PersistentList<AnimeUpdatesItem> {
+    private fun List<AnimeUpdatesWithRelations>.toUpdateItems(): List<AnimeUpdatesItem> {
         return this
             .map { update ->
                 val activeDownload = downloadManager.getQueuedDownloadOrNull(update.episodeId)
@@ -130,7 +126,7 @@ class AnimeUpdatesScreenModel(
                     // <-- AM (FILE_SIZE)
                 )
             }
-            .toPersistentList()
+            .toList()
     }
 
     fun updateLibrary(): Boolean {
@@ -148,15 +144,15 @@ class AnimeUpdatesScreenModel(
      */
     private fun updateDownloadState(download: AnimeDownload) {
         mutableState.update { state ->
-            val newItems = state.items.mutate { list ->
-                val modifiedIndex = list.indexOfFirst { it.update.episodeId == download.episode.id }
-                if (modifiedIndex < 0) return@mutate
-
-                val item = list[modifiedIndex]
-                list[modifiedIndex] = item.copy(
-                    downloadStateProvider = { download.status },
-                    downloadProgressProvider = { download.progress },
-                )
+            val newItems = state.items.toMutableList().apply {
+                val modifiedIndex = indexOfFirst { it.update.episodeId == download.episode.id }
+                if (modifiedIndex >= 0) {
+                    val item = this[modifiedIndex]
+                    this[modifiedIndex] = item.copy(
+                        downloadStateProvider = { download.status },
+                        downloadProgressProvider = { download.progress },
+                    )
+                }
             }
             state.copy(items = newItems)
         }
@@ -364,7 +360,7 @@ class AnimeUpdatesScreenModel(
                     }
                 }
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems.toList())
         }
     }
 
@@ -374,7 +370,7 @@ class AnimeUpdatesScreenModel(
                 selectedEpisodeIds.addOrRemove(it.update.episodeId, selected)
                 it.copy(selected = selected)
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems.toList())
         }
 
         selectedPositions[0] = -1
@@ -387,7 +383,7 @@ class AnimeUpdatesScreenModel(
                 selectedEpisodeIds.addOrRemove(it.update.episodeId, !it.selected)
                 it.copy(selected = !it.selected)
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems.toList())
         }
         selectedPositions[0] = -1
         selectedPositions[1] = -1
@@ -404,7 +400,7 @@ class AnimeUpdatesScreenModel(
     @Immutable
     data class State(
         val isLoading: Boolean = true,
-        val items: PersistentList<AnimeUpdatesItem> = persistentListOf(),
+        val items: List<AnimeUpdatesItem> = listOf(),
         val dialog: Dialog? = null,
     ) {
         val selected = items.filter { it.selected }

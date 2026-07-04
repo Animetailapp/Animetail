@@ -22,7 +22,6 @@ import eu.kanade.presentation.browse.manga.components.BrowseMangaSourceList
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.formattedMessage
 import eu.kanade.tachiyomi.source.MangaSource
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.StateFlow
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.entries.manga.model.Manga
@@ -80,7 +79,7 @@ fun BrowseSourceContent(
             modifier = Modifier.padding(contentPadding),
             message = getErrorMessage(errorState),
             actions = if (source is LocalMangaSource) {
-                persistentListOf(
+                listOf(
                     EmptyScreenAction(
                         stringRes = MR.strings.local_source_help_guide,
                         icon = Icons.AutoMirrored.Outlined.HelpOutline,
@@ -88,7 +87,7 @@ fun BrowseSourceContent(
                     ),
                 )
             } else {
-                persistentListOf(
+                listOf(
                     EmptyScreenAction(
                         stringRes = MR.strings.action_retry,
                         icon = Icons.Outlined.Refresh,

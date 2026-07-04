@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.net.toUri
+import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.data.backup.restore.BackupRestoreJob
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
@@ -22,7 +24,11 @@ import eu.kanade.tachiyomi.util.system.getParcelableExtraCompat
 import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
@@ -44,6 +50,8 @@ import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import eu.kanade.tachiyomi.BuildConfig.APPLICATION_ID as ID
 
 /**
@@ -62,6 +70,7 @@ class NotificationReceiver : BroadcastReceiver() {
     private val updateEpisode: UpdateEpisode by injectLazy()
     private val mangaDownloadManager: MangaDownloadManager by injectLazy()
     private val animeDownloadManager: AnimeDownloadManager by injectLazy()
+    private val scope: CoroutineScope by injectLazy()
 
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
@@ -124,7 +133,7 @@ class NotificationReceiver : BroadcastReceiver() {
 
             ACTION_OPEN_EPISODE -> {
                 val pendingResult = goAsync()
-                launchIO {
+                scope.launchIO {
                     try {
                         openEpisode(
                             context,
@@ -298,7 +307,7 @@ class NotificationReceiver : BroadcastReceiver() {
         val downloadPreferences: DownloadPreferences = Injekt.get()
         val sourceManager: MangaSourceManager = Injekt.get()
 
-        launchIO {
+        async(scope, Dispatchers.IO) {
             val toUpdate = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
                 .map {
                     val chapter = it.copy(read = true)
@@ -324,15 +333,15 @@ class NotificationReceiver : BroadcastReceiver() {
      * @param mangaId id of manga
      */
     private fun downloadChapters(chapterUrls: Array<String>, mangaId: Long) {
-        launchIO {
-            val manga = getManga.await(mangaId) ?: return@launchIO
+        async(scope, Dispatchers.IO) {
+            val manga = getManga.await(mangaId) ?: return@async
             val chapters = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
             mangaDownloadManager.downloadChapters(manga, chapters)
         }
     }
 
     private fun markAsViewed(episodeUrls: Array<String>, animeId: Long) {
-        launchIO {
+        async(scope, Dispatchers.IO) {
             val toUpdate = episodeUrls.mapNotNull { getEpisode.await(it, animeId) }
                 .map { it.copy(seen = true).toEpisodeUpdate() }
             updateEpisode.awaitAll(toUpdate)
@@ -340,10 +349,24 @@ class NotificationReceiver : BroadcastReceiver() {
     }
 
     private fun downloadEpisodes(episodeUrls: Array<String>, animeId: Long) {
-        launchIO {
-            val anime = getAnime.await(animeId) ?: return@launchIO
+        async(scope, Dispatchers.IO) {
+            val anime = getAnime.await(animeId) ?: return@async
             val episodes = episodeUrls.mapNotNull { getEpisode.await(it, animeId) }
             animeDownloadManager.downloadEpisodes(anime, episodes)
+        }
+    }
+
+    private fun BroadcastReceiver.async(
+        scope: CoroutineScope,
+        context: CoroutineContext = EmptyCoroutineContext,
+        start: CoroutineStart = CoroutineStart.DEFAULT,
+        block: suspend CoroutineScope.() -> Unit,
+    ) {
+        val result = goAsync()
+        try {
+            scope.launch(context, start, block)
+        } finally {
+            result.finish()
         }
     }
 

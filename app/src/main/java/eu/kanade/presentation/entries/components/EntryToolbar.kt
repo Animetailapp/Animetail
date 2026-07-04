@@ -26,7 +26,6 @@ import eu.kanade.presentation.entries.DownloadAction
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
 import eu.kanade.tachiyomi.ui.browse.anime.source.feed.SourceFeedScreen
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
@@ -117,7 +116,7 @@ fun EntryToolbar(
 
             val filterTint = if (hasFilters) MaterialTheme.colorScheme.active else LocalContentColor.current
             AppBarActions(
-                actions = persistentListOf<AppBar.AppBarAction>().builder().apply {
+                actions = buildList {
                     if (isActionMode) {
                         add(
                             AppBar.Action(
@@ -133,7 +132,7 @@ fun EntryToolbar(
                                 onClick = onInvertSelection,
                             ),
                         )
-                        return@apply
+                        return@buildList
                     }
                     if (onClickDownload != null) {
                         add(
@@ -225,8 +224,7 @@ fun EntryToolbar(
                             ),
                         )
                     }
-                }
-                    .build(),
+                },
             )
         },
         isActionMode = isActionMode,

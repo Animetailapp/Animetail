@@ -33,8 +33,6 @@ import coil3.size.Scale
 import coil3.transform.RoundedCornersTransformation
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.util.system.dpToPx
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.map
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.entries.anime.model.AnimeCover
@@ -113,7 +111,7 @@ abstract class BaseAnimeUpdatesGridGlanceWidget(
     private suspend fun List<AnimeUpdatesWithRelations>.prepareData(
         rowCount: Int,
         columnCount: Int,
-    ): ImmutableList<Pair<Long, Bitmap?>> {
+    ): List<Pair<Long, Bitmap?>> {
         // Resize to cover size
         val widthPx = CoverWidth.value.toInt().dpToPx
         val heightPx = CoverHeight.value.toInt().dpToPx
@@ -151,7 +149,6 @@ abstract class BaseAnimeUpdatesGridGlanceWidget(
                         ?.toBitmap()
                     Pair(updatesView.animeId, bitmap)
                 }
-                .toImmutableList()
         }
     }
 

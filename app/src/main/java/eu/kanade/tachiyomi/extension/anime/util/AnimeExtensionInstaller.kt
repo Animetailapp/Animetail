@@ -33,8 +33,10 @@ import java.io.File
  *
  * @param context The application context.
  */
-internal class AnimeExtensionInstaller(private val context: Context) {
-    private val scope = CoroutineScope(Dispatchers.IO)
+internal class AnimeExtensionInstaller(
+    private val context: Context,
+    private val scope: CoroutineScope,
+) {
     private val activeJobs = mutableMapOf<String, Job>()
     private val activeSteps = mutableMapOf<Long, MutableStateFlow<InstallStep>>()
     private val extensionInstaller = Injekt.get<BasePreferences>().extensionInstaller
@@ -54,7 +56,7 @@ internal class AnimeExtensionInstaller(private val context: Context) {
         val step = MutableStateFlow(InstallStep.Pending)
         activeSteps[downloadId] = step
 
-        val job = scope.launch {
+        val job = scope.launch(Dispatchers.IO) {
             val tmpFile = File(context.cacheDir, "extension_${extension.pkgName}.apk")
             try {
                 step.value = InstallStep.Downloading

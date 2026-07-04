@@ -14,9 +14,6 @@ import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.system.LocaleHelper
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -81,10 +78,10 @@ class MangaExtensionDetailsScreenModel(
                         }
                         .catch { throwable ->
                             logcat(LogPriority.ERROR, throwable)
-                            mutableState.update { it.copy(_sources = persistentListOf()) }
+                            mutableState.update { it.copy(_sources = listOf()) }
                         }
                         .collectLatest { sources ->
-                            mutableState.update { it.copy(_sources = sources.toImmutableList()) }
+                            mutableState.update { it.copy(_sources = sources.toList()) }
                         }
                 }
             }
@@ -145,11 +142,11 @@ class MangaExtensionDetailsScreenModel(
     data class State(
         val extension: MangaExtension.Installed? = null,
         val isIncognito: Boolean = false,
-        private val _sources: ImmutableList<MangaExtensionSourceItem>? = null,
+        private val _sources: List<MangaExtensionSourceItem>? = null,
     ) {
 
-        val sources: ImmutableList<MangaExtensionSourceItem>
-            get() = _sources ?: persistentListOf()
+        val sources: List<MangaExtensionSourceItem>
+            get() = _sources ?: listOf()
 
         val isLoading: Boolean
             get() = extension == null || _sources == null

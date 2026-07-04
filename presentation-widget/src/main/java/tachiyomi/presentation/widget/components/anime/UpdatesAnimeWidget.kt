@@ -22,14 +22,13 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import eu.kanade.tachiyomi.core.common.Constants
-import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.widget.util.calculateRowAndColumnCount
 
 @Composable
 fun UpdatesAnimeWidget(
-    data: ImmutableList<Pair<Long, Bitmap?>>?,
+    data: List<Pair<Long, Bitmap?>>?,
     contentColor: ColorProvider,
     topPadding: Dp,
     bottomPadding: Dp,

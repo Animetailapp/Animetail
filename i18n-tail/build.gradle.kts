@@ -27,13 +27,6 @@ kotlin {
     }
 }
 
-android {
-    lint {
-        disable += "MissingTranslation"
-        disable += "ExtraTranslation"
-    }
-}
-
 multiplatformResources {
     resourcesClassName.set("TLMR")
     resourcesPackage.set("tachiyomi.i18n.tail")

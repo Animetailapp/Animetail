@@ -10,10 +10,6 @@ import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.source.CatalogueSource
-import kotlinx.collections.immutable.PersistentMap
-import kotlinx.collections.immutable.mutate
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
@@ -141,13 +137,13 @@ abstract class MangaSearchScreenModel(
             updateItems(
                 sources
                     .associateWith { existingResults[it] ?: MangaSearchItemResult.Loading }
-                    .toPersistentMap(),
+                    .toMap(),
             )
         } else {
             updateItems(
                 sources
                     .associateWith { MangaSearchItemResult.Loading }
-                    .toPersistentMap(),
+                    .toMap(),
             )
         }
         searchJob = ioCoroutineScope.launch {
@@ -179,19 +175,19 @@ abstract class MangaSearchScreenModel(
         }
     }
 
-    private fun updateItems(items: PersistentMap<CatalogueSource, MangaSearchItemResult>) {
+    private fun updateItems(items: Map<CatalogueSource, MangaSearchItemResult>) {
         mutableState.update {
             it.copy(
                 items = items
                     .toSortedMap(sortComparator(items))
-                    .toPersistentMap(),
+                    .toMap(),
             )
         }
     }
 
     private fun updateItem(source: CatalogueSource, result: MangaSearchItemResult) {
-        val newItems = state.value.items.mutate {
-            it[source] = result
+        val newItems = state.value.items.toMutableMap().apply {
+            this[source] = result
         }
         updateItems(newItems)
     }
@@ -202,7 +198,7 @@ abstract class MangaSearchScreenModel(
         val searchQuery: String? = null,
         val sourceFilter: MangaSourceFilter = MangaSourceFilter.PinnedOnly,
         val onlyShowHasResults: Boolean = false,
-        val items: PersistentMap<CatalogueSource, MangaSearchItemResult> = persistentMapOf(),
+        val items: Map<CatalogueSource, MangaSearchItemResult> = mapOf(),
     ) {
         val progress: Int = items.count { it.value !is MangaSearchItemResult.Loading }
         val total: Int = items.size

@@ -96,7 +96,7 @@ class BrowseAnimeSourceScreenModel(
     private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
     private val updateAnime: UpdateAnime = Injekt.get(),
     private val addTracks: AddAnimeTracks = Injekt.get(),
-    private val getIncognitoState: GetAnimeIncognitoState = Injekt.get(),
+    getIncognitoState: GetAnimeIncognitoState = Injekt.get(),
     // SY -->
     uiPreferences: UiPreferences = Injekt.get(),
     private val deleteSavedSearchById: DeleteSavedSearchById = Injekt.get(),

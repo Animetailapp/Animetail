@@ -57,7 +57,7 @@ internal fun AnimeLibraryComfortableGrid(
                 coverBadgeEnd = {
                     LanguageBadge(
                         isLocal = libraryItem.isLocal,
-                        sourceLanguage = libraryItem.sourceLanguage,
+                        sourceLanguage = libraryItem.badges.sourceLanguage,
                     )
                 },
                 onLongClick = { onLongClick(libraryItem.libraryAnime) },

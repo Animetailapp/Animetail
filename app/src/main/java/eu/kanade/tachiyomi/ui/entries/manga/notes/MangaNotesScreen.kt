@@ -12,20 +12,28 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.entries.manga.MangaNotesScreen
 import eu.kanade.presentation.util.Screen
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.domain.entries.manga.interactor.UpdateMangaNotes
-import tachiyomi.domain.entries.manga.model.Manga
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 class MangaNotesScreen(
-    private val manga: Manga,
+    private val mangaId: Long,
+    private val mangaTitle: String,
+    private val mangaNotes: String,
 ) : Screen() {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { Model(manga) }
+        val screenModel = rememberScreenModel {
+            Model(
+                mangaId = mangaId,
+                mangaTitle = mangaTitle,
+                mangaNotes = mangaNotes,
+            )
+        }
         val state by screenModel.state.collectAsState()
 
         MangaNotesScreen(
@@ -36,9 +44,11 @@ class MangaNotesScreen(
     }
 
     private class Model(
-        private val manga: Manga,
+        mangaTitle: String,
+        mangaNotes: String,
+        private val mangaId: Long,
         private val updateMangaNotes: UpdateMangaNotes = Injekt.get(),
-    ) : StateScreenModel<State>(State(manga, manga.notes)) {
+    ) : StateScreenModel<State>(State(mangaId, mangaTitle, mangaNotes)) {
 
         fun updateNotes(content: String) {
             if (content == state.value.notes) return
@@ -48,14 +58,15 @@ class MangaNotesScreen(
             }
 
             screenModelScope.launchNonCancellable {
-                updateMangaNotes(manga.id, content)
+                updateMangaNotes(mangaId, content)
             }
         }
     }
 
     @Immutable
     data class State(
-        val manga: Manga,
+        val mangaId: Long,
+        val mangaTitle: String,
         val notes: String,
     )
 }

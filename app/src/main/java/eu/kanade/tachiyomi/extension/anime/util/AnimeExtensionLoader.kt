@@ -22,9 +22,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
-import mihon.domain.extensionrepo.anime.interactor.CreateAnimeExtensionRepo.Companion.ANIMETAIL_SIGNATURE
-import mihon.domain.extensionrepo.anime.interactor.GetAnimeExtensionRepo
-import mihon.domain.extensionrepo.model.ExtensionRepo
+import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
+import mihon.domain.extension.model.ExtensionStore
+import mihon.domain.extension.model.ExtensionStore.Companion.ANIMETAIL_SIGNATURE
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
 import java.io.File
@@ -39,7 +39,7 @@ internal object AnimeExtensionLoader {
     private val trustExtension: TrustAnimeExtension by injectLazy()
 
     // KMK -->
-    private val getExtensionRepo: GetAnimeExtensionRepo by injectLazy()
+    private val getExtensionStores: GetAnimeExtensionStores by injectLazy()
     // KMK <--
 
     private val loadNsfwSource by lazy {
@@ -176,7 +176,7 @@ internal object AnimeExtensionLoader {
         // KMK -->
         // Pre-fetch repos outside runBlocking to avoid nested runBlocking deadlock
         // with the SQLDelight driver's connection pool
-        val repos = runBlocking { getExtensionRepo.getAll() }
+        val repos = runBlocking { getExtensionStores.await() }
         // KMK <--
 
         // Load each extension concurrently and wait for completion
@@ -253,11 +253,11 @@ internal object AnimeExtensionLoader {
         context: Context,
         extensionInfo: AnimeExtensionInfo,
         // KMK -->
-        extRepos: List<ExtensionRepo>? = null,
+        extRepos: List<ExtensionStore>? = null,
         // KMK <--
     ): AnimeLoadResult {
         // KMK -->
-        val repos = extRepos ?: getExtensionRepo.getAll()
+        val repos = extRepos ?: getExtensionStores.await()
         // KMK <--
         val pkgManager = context.packageManager
 
@@ -301,7 +301,7 @@ internal object AnimeExtensionLoader {
                     isOfficiallySigned(signatures) -> "Animetail"
 
                     else -> repos.firstOrNull { repo ->
-                        signatures.all { it == repo.signingKeyFingerprint }
+                        signatures.all { it == repo.signingKey }
                     }?.name
                 },
                 // KMK <--
@@ -398,7 +398,7 @@ internal object AnimeExtensionLoader {
                 isOfficiallySigned(signatures) -> "Animetail"
 
                 else -> repos.firstOrNull { repo ->
-                    signatures.all { it == repo.signingKeyFingerprint }
+                    signatures.all { it == repo.signingKey }
                 }?.name
             },
             // KMK <--

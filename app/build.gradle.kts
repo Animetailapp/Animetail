@@ -74,8 +74,8 @@ android {
     }
 
     sourceSets {
-        getByName("preview").res.srcDirs("src/debug/res")
-        getByName("benchmark").res.srcDirs("src/debug/res")
+        getByName("preview").res.directories.add("src/debug/res")
+        getByName("benchmark").res.directories.add("src/debug/res")
     }
 
     splits {
@@ -139,10 +139,6 @@ android {
         viewBinding = true
         buildConfig = true
         aidl = true
-
-        // Disable some unused things
-        renderScript = false
-        shaders = false
     }
 
     lint {
@@ -166,7 +162,6 @@ kotlin {
             "-opt-in=kotlinx.coroutines.FlowPreview",
             "-opt-in=kotlinx.coroutines.InternalCoroutinesApi",
             "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
-            "-Xannotation-default-target=param-property",
         )
     }
 }
@@ -207,9 +202,10 @@ dependencies {
     implementation(libs.androidx.sqlite.bundled)
 
     implementation(libs.kotlin.reflect)
-    implementation(libs.kotlinx.collections.immutable)
 
     implementation(libs.bundles.kotlinx.coroutines)
+
+    implementation(libs.sqldelight.async)
 
     // AndroidX libraries
     implementation(libs.androidx.annotation)
@@ -351,11 +347,5 @@ androidComponents {
         // Layout Inspector's Compose tree
         it.packaging.resources.excludes.add("META-INF/*.version")
         it.packaging.resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
-    }
-}
-
-buildscript {
-    dependencies {
-        classpath(libs.kotlin.gradle)
     }
 }

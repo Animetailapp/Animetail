@@ -8,7 +8,6 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.extension.manga.interactor.GetMangaExtensionsByType
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.presentation.components.SEARCH_DEBOUNCE_MILLIS
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
@@ -56,7 +55,7 @@ class MangaExtensionsScreenModel(
             combine(
                 state.map { it.searchQuery }
                     .distinctUntilChanged()
-                    .debounce(SEARCH_DEBOUNCE_MILLIS)
+                    .debounce(0.25.seconds)
                     .map { searchQueryPredicate(it ?: "") },
                 currentDownloads,
                 getExtensions.subscribe(),

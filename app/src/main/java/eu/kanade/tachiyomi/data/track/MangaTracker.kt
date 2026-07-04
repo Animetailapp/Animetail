@@ -8,7 +8,6 @@ import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.collections.immutable.ImmutableList
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
@@ -27,7 +26,7 @@ interface MangaTracker {
     // Common functions
     fun getCompletionStatus(): Long
 
-    fun getScoreList(): ImmutableList<String>
+    fun getScoreList(): List<String>
 
     fun indexToScore(index: Int): Double {
         return index.toDouble()

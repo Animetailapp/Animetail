@@ -30,13 +30,6 @@ kotlin {
     }
 }
 
-android {
-    lint {
-        disable += "MissingTranslation"
-        disable += "ExtraTranslation"
-    }
-}
-
 multiplatformResources {
     resourcesClassName.set("AYMR")
     resourcesPackage.set("tachiyomi.i18n.aniyomi")
@@ -46,10 +39,6 @@ tasks {
     val generatedAndroidResourceDir = layout.buildDirectory.dir("generated/android/res")
     val localesConfigTask = register<GenerateLocalesConfigTask>("generateLocalesConfig") {
         outputDir.set(generatedAndroidResourceDir)
-    }
-
-    named("preBuild") {
-        dependsOn(localesConfigTask)
     }
 }
 

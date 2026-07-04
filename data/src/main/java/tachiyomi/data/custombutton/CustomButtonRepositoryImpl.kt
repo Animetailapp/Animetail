@@ -41,10 +41,8 @@ class CustomButtonRepositoryImpl(
     }
 
     override suspend fun updatePartialCustomButtons(updates: List<CustomButtonUpdate>) {
-        handler.await(inTransaction = true) {
-            for (update in updates) {
-                updatePartialBlocking(update)
-            }
+        for (update in updates) {
+            updatePartialCustomButton(update)
         }
     }
 
@@ -52,7 +50,7 @@ class CustomButtonRepositoryImpl(
         return handler.await { custom_buttonsQueries.delete(customButtonId) }
     }
 
-    private fun AnimeDatabase.updatePartialBlocking(update: CustomButtonUpdate) {
+    private suspend fun AnimeDatabase.updatePartialBlocking(update: CustomButtonUpdate) {
         custom_buttonsQueries.update(
             name = update.name,
             isFavorite = update.isFavorite,

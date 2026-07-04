@@ -59,6 +59,7 @@ import eu.kanade.presentation.reader.ReaderContentOverlay
 import eu.kanade.presentation.reader.ReaderPageActionsDialog
 import eu.kanade.presentation.reader.ReadingModeSelectDialog
 import eu.kanade.presentation.reader.appbars.ReaderAppBars
+import eu.kanade.presentation.reader.components.ChapterNavigatorType
 import eu.kanade.presentation.reader.settings.ReaderSettingsDialog
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.core.common.Constants
@@ -86,6 +87,7 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerConfig
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerViewer
+import eu.kanade.tachiyomi.ui.reader.viewer.pager.R2LPagerViewer
 import eu.kanade.tachiyomi.ui.reader.viewer.webtoon.WebtoonViewer
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
 import eu.kanade.tachiyomi.util.system.hasDisplayCutout
@@ -439,6 +441,8 @@ class ReaderActivity : BaseActivity() {
                 .collectAsState(persistentSetOf())
             val dualPageSplitPaged by readerPreferences.dualPageSplitPaged.collectAsState()
             // SY <--
+            val verticalNavigatorForLongStrip by readerPreferences.verticalNavigatorForLongStrip.collectAsState()
+            val verticalNavigatorOnLeft by readerPreferences.verticalNavigatorOnLeft.collectAsState()
 
             ReaderContentOverlay(
                 brightness = state.brightnessOverlayValue,
@@ -460,7 +464,19 @@ class ReaderActivity : BaseActivity() {
                 onOpenInBrowser = ::openChapterInBrowser.takeIf { isHttpSource },
                 onShare = ::shareChapter.takeIf { isHttpSource },
 
-                viewer = state.viewer,
+                chapterNavigatorType = if (isPagerType || !verticalNavigatorForLongStrip) {
+                    if (state.viewer is R2LPagerViewer) {
+                        ChapterNavigatorType.HORIZONTAL_RTL
+                    } else {
+                        ChapterNavigatorType.HORIZONTAL_LTR
+                    }
+                } else {
+                    if (verticalNavigatorOnLeft) {
+                        ChapterNavigatorType.VERTICAL_LEFT
+                    } else {
+                        ChapterNavigatorType.VERTICAL_RIGHT
+                    }
+                },
                 onNextChapter = ::loadNextChapter,
                 enabledNext = state.viewerChapters?.nextChapter != null,
                 onPreviousChapter = ::loadPreviousChapter,
@@ -1293,7 +1309,7 @@ class ReaderActivity : BaseActivity() {
         private fun setCustomBrightness(enabled: Boolean) {
             if (enabled) {
                 readerPreferences.customBrightnessValue.changes()
-                    .sample(100)
+                    .sample(0.1.seconds)
                     .onEach(::setCustomBrightnessValue)
                     .launchIn(lifecycleScope)
             } else {

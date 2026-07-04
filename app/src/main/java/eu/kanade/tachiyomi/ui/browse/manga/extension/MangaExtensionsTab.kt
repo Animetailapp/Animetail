@@ -16,12 +16,11 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.manga.MangaExtensionScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
-import eu.kanade.presentation.more.settings.screen.browse.MangaExtensionReposScreen
+import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaExtensionDetailsScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.isPackageInstalled
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -40,14 +39,14 @@ fun mangaExtensionsTab(
         titleRes = AYMR.strings.label_manga_extensions,
         badgeNumber = state.updates.takeIf { it > 0 },
         searchEnabled = true,
-        actions = persistentListOf(
+        actions = listOf(
             AppBar.OverflowAction(
                 title = stringResource(MR.strings.action_filter),
                 onClick = { navigator.push(MangaExtensionFilterScreen()) },
             ),
             AppBar.OverflowAction(
-                title = stringResource(MR.strings.label_extension_repos),
-                onClick = { navigator.push(MangaExtensionReposScreen()) },
+                title = stringResource(MR.strings.extensionStores),
+                onClick = { navigator.push(ExtensionStoresScreen(isManga = true)) },
             ),
         ),
         content = { contentPadding, _ ->

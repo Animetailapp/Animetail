@@ -22,9 +22,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
-import mihon.domain.extensionrepo.anime.interactor.CreateAnimeExtensionRepo.Companion.KEIYOUSHI_SIGNATURE
-import mihon.domain.extensionrepo.manga.interactor.GetMangaExtensionRepo
-import mihon.domain.extensionrepo.model.ExtensionRepo
+import mihon.domain.extension.manga.interactor.GetMangaExtensionStores
+import mihon.domain.extension.model.ExtensionStore
+import mihon.domain.extension.model.ExtensionStore.Companion.KEIYOUSHI_SIGNATURE
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
 import java.io.File
@@ -50,7 +50,7 @@ internal object MangaExtensionLoader {
     private val trustExtension: TrustMangaExtension by injectLazy()
 
     // KMK -->
-    private val getExtensionRepo: GetMangaExtensionRepo by injectLazy()
+    private val getExtensionStores: GetMangaExtensionStores by injectLazy()
 
     // KMK <--
     private val loadNsfwSource by lazy {
@@ -184,7 +184,7 @@ internal object MangaExtensionLoader {
         // KMK -->
         // Pre-fetch repos outside runBlocking to avoid nested runBlocking deadlock
         // with the SQLDelight driver's connection pool
-        val repos = runBlocking { getExtensionRepo.getAll() }
+        val repos = runBlocking { getExtensionStores.await() }
         // KMK <--
 
         // Load each extension concurrently and wait for completion
@@ -261,11 +261,11 @@ internal object MangaExtensionLoader {
         context: Context,
         extensionInfo: MangaExtensionInfo,
         // KMK -->
-        extRepos: List<ExtensionRepo>? = null,
+        extRepos: List<ExtensionStore>? = null,
         // KMK <--
     ): MangaLoadResult {
         // KMK -->
-        val repos = extRepos ?: getExtensionRepo.getAll()
+        val repos = extRepos ?: getExtensionStores.await()
         // KMK <--
         val pkgManager = context.packageManager
         val pkgInfo = extensionInfo.packageInfo
@@ -310,7 +310,7 @@ internal object MangaExtensionLoader {
                     isKeiyoushiSigned(signatures) -> "Keiyoushi"
 
                     else -> repos.firstOrNull { repo ->
-                        signatures.all { it == repo.signingKeyFingerprint }
+                        signatures.all { it == repo.signingKey }
                     }?.name
                 },
                 // KMK <--
@@ -404,7 +404,7 @@ internal object MangaExtensionLoader {
                 isKeiyoushiSigned(signatures) -> "Keiyoushi"
 
                 else -> repos.firstOrNull { repo ->
-                    signatures.all { it == repo.signingKeyFingerprint }
+                    signatures.all { it == repo.signingKey }
                 }?.name
             },
             // KMK <--

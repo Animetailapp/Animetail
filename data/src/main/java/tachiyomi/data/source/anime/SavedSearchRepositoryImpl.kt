@@ -1,5 +1,7 @@
 package tachiyomi.data.source.anime
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.source.anime.model.SavedSearch
@@ -28,9 +30,7 @@ class SavedSearchRepositoryImpl(
     override suspend fun insert(savedSearch: SavedSearch): Long {
         // KMK -->
         return handler.await(true) {
-            val currentSavedSearches = handler.awaitList {
-                saved_searchQueries.selectAll(SavedSearchMapper::map)
-            }
+            val currentSavedSearches = saved_searchQueries.selectAll(SavedSearchMapper::map).awaitAsList()
             val existedSavedSearchId = currentSavedSearches.find { currentSavedSearch ->
                 currentSavedSearch.source == savedSearch.source &&
                     currentSavedSearch.name == savedSearch.name &&
@@ -40,15 +40,12 @@ class SavedSearchRepositoryImpl(
 
             existedSavedSearchId
                 // KMK <--
-                ?: handler.awaitOneExecutable(true) {
-                    saved_searchQueries.insert(
-                        savedSearch.source,
-                        savedSearch.name,
-                        savedSearch.query,
-                        savedSearch.filtersJson,
-                    )
-                    saved_searchQueries.selectLastInsertedRowId()
-                }
+                ?: saved_searchQueries.insert(
+                    savedSearch.source,
+                    savedSearch.name,
+                    savedSearch.query,
+                    savedSearch.filtersJson,
+                ).awaitAsOne()
         }
     }
 

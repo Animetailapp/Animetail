@@ -30,6 +30,7 @@ import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.isOnline
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -59,6 +60,8 @@ import java.io.File
 import java.util.Date
 
 class ExternalIntents {
+
+    private val scope: CoroutineScope by injectLazy()
 
     /**
      * The common variables
@@ -446,7 +449,7 @@ class ExternalIntents {
         }
 
         // Update the episode's progress and history
-        launchIO {
+        scope.launchIO {
             // AM (DISCORD) -->
             DiscordRPCService.setAnimeScreen(context, DiscordRPCService.lastUsedScreen)
             // <-- AM (DISCORD)

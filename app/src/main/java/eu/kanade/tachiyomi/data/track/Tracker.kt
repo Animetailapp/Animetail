@@ -5,7 +5,6 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
 import okhttp3.OkHttpClient
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
@@ -32,7 +31,7 @@ interface Tracker {
 
     fun getCompletionStatus(): Long
 
-    fun getScoreList(): ImmutableList<String>
+    fun getScoreList(): List<String>
 
     suspend fun login(username: String, password: String)
 

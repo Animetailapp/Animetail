@@ -18,7 +18,6 @@ import eu.kanade.core.util.fastPartition
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.items.episode.interactor.SetSeenStatus
-import eu.kanade.presentation.components.SEARCH_DEBOUNCE_MILLIS
 import eu.kanade.presentation.entries.DownloadAction
 import eu.kanade.presentation.library.components.LibraryToolbarTitle
 import eu.kanade.tachiyomi.R
@@ -84,6 +83,7 @@ import tachiyomi.source.local.entries.anime.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Typealias for the library anime, using the category as keys, and list of anime as values.
@@ -119,17 +119,24 @@ class AnimeLibraryScreenModel(
 
     init {
         screenModelScope.launchIO {
-            combine(
-                state.map { it.searchQuery }.debounce(SEARCH_DEBOUNCE_MILLIS),
+            combine<
+                String?,
+                AnimeLibraryMap,
+                Map<Long, List<AnimeTrack>>,
+                Pair<Map<Long, TriState>, Unit>,
+                Pair<Int, AnimeLibrarySort>,
+                AnimeLibraryMap,
+                >(
+                state.map { it.searchQuery }.debounce(0.25.seconds),
                 getLibraryFlow(),
                 getTracksPerAnime.subscribe(),
-                combine(
+                combine<Map<Long, TriState>, Unit, Pair<Map<Long, TriState>, Unit>>(
                     getTrackingFilterFlow(),
                     downloadCache.changes,
                     ::Pair,
                 ),
                 // SY -->
-                combine(
+                combine<Int, AnimeLibrarySort, Pair<Int, AnimeLibrarySort>>(
                     state.map { it.groupType }.distinctUntilChanged(),
                     libraryPreferences.animeSortingMode.changes(),
                     ::Pair,
@@ -144,7 +151,7 @@ class AnimeLibraryScreenModel(
                     .applySort(tracks, sort.takeIf { groupType != AnimeLibraryGroup.BY_DEFAULT }, trackingFilter.keys)
                     .mapValues { (_, value) ->
                         if (searchQuery != null) {
-                            value.filter { it.matches(searchQuery) }
+                            value.filter { it.matches(searchQuery, sourceManager) }
                         } else {
                             value
                         }
@@ -231,11 +238,7 @@ class AnimeLibraryScreenModel(
         val trackFiltersIsIgnored = includedTracks.isEmpty() && excludedTracks.isEmpty()
 
         val filterFnDownloaded: (AnimeLibraryItem) -> Boolean = {
-            applyFilter(filterDownloaded) {
-                it.libraryAnime.anime.isLocal() ||
-                    it.downloadCount > 0 ||
-                    downloadManager.getDownloadCount(it.libraryAnime.anime) > 0
-            }
+            applyFilter(filterDownloaded) { it.isLocal || it.downloadCount > 0 }
         }
 
         val filterFnUnseen: (AnimeLibraryItem) -> Boolean = {
@@ -440,7 +443,7 @@ class AnimeLibraryScreenModel(
      * Get the categories and all its anime from the database.
      */
     private fun getLibraryFlow(): Flow<AnimeLibraryMap> {
-        val animelibAnimesFlow = combine(
+        val animelibAnimesFlow = combine<List<LibraryAnime>, ItemPreferences, Unit, Map<Long, List<AnimeLibraryItem>>>(
             getLibraryAnime.subscribe(),
             getAnimelibItemPreferencesFlow(),
             downloadCache.changes,
@@ -449,25 +452,41 @@ class AnimeLibraryScreenModel(
                 .map { animelibAnime ->
                     // Display mode based on user preference: take it from global library setting or category
                     AnimeLibraryItem(
-                        animelibAnime,
-                        downloadCount = if (prefs.downloadBadge) {
-                            downloadManager.getDownloadCount(animelibAnime.anime).toLong()
-                        } else {
-                            0
-                        },
-                        unseenCount = if (prefs.unseenBadge) animelibAnime.unseenCount else 0,
-                        isLocal = if (prefs.localBadge) animelibAnime.anime.isLocal() else false,
-                        sourceLanguage = if (prefs.languageBadge) {
-                            sourceManager.getOrStub(animelibAnime.anime.source).lang
-                        } else {
-                            ""
-                        },
+                        libraryAnime = animelibAnime,
+                        downloadCount = downloadManager.getDownloadCount(animelibAnime.anime),
+                        unseenCount = animelibAnime.unseenCount,
+                        isLocal = animelibAnime.anime.isLocal(),
+                        badges = AnimeLibraryItem.Badges(
+                            downloadCount = if (prefs.downloadBadge) {
+                                downloadManager.getDownloadCount(animelibAnime.anime)
+                            } else {
+                                0
+                            },
+                            unseenCount = if (prefs.unseenBadge) {
+                                animelibAnime.unseenCount
+                            } else {
+                                0L
+                            },
+                            isLocal = if (prefs.localBadge) {
+                                animelibAnime.anime.isLocal()
+                            } else {
+                                false
+                            },
+                            sourceLanguage = if (prefs.languageBadge) {
+                                sourceManager.getOrStub(animelibAnime.anime.source).lang
+                            } else {
+                                ""
+                            },
+                        ),
                     )
                 }
                 .groupBy { it.libraryAnime.category }
         }
 
-        return combine(getCategories.subscribe(), animelibAnimesFlow) { categories, animelibAnime ->
+        return combine<List<Category>, Map<Long, List<AnimeLibraryItem>>, AnimeLibraryMap>(
+            getCategories.subscribe(),
+            animelibAnimesFlow,
+        ) { categories, animelibAnime ->
             val displayCategories = if (animelibAnime.isNotEmpty() && !animelibAnime.containsKey(0)) {
                 categories.fastFilterNot { it.isSystemCategory }
             } else {

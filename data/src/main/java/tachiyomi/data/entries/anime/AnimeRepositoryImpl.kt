@@ -134,7 +134,6 @@ class AnimeRepositoryImpl(
                 seasonSourceOrder = anime.seasonSourceOrder,
                 cast = anime.cast,
             )
-            animesQueries.selectLastInsertedRowId()
         }
     }
 

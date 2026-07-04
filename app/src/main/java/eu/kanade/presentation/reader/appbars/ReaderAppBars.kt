@@ -2,27 +2,41 @@ package eu.kanade.presentation.reader.appbars
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.reader.components.ChapterNavigator
+import eu.kanade.presentation.reader.components.ChapterNavigatorType
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
@@ -33,6 +47,8 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 private val animationSpec = tween<IntOffset>(200)
+private val readerBarsSlideAnimationSpec = tween<IntOffset>(200)
+private val readerBarsFadeAnimationSpec = tween<Float>(150)
 
 @Composable
 @Suppress("LongMethod")
@@ -50,7 +66,7 @@ fun ReaderAppBars(
     onOpenInBrowser: (() -> Unit)?,
     onShare: (() -> Unit)?,
 
-    viewer: Viewer?,
+    chapterNavigatorType: ChapterNavigatorType,
     onNextChapter: () -> Unit,
     enabledNext: Boolean,
     onPreviousChapter: () -> Unit,
@@ -85,7 +101,6 @@ fun ReaderAppBars(
     onClickShiftPage: () -> Unit,
     // SY <--
 ) {
-    val isRtl = viewer is R2LPagerViewer
     val backgroundColor = MaterialTheme.colorScheme
         .surfaceColorAtElevation(3.dp)
         .copy(alpha = if (isSystemInDarkTheme()) 0.9f else 0.95f)
@@ -102,14 +117,8 @@ fun ReaderAppBars(
     ) {
         AnimatedVisibility(
             visible = visible,
-            enter = slideInVertically(
-                initialOffsetY = { -it },
-                animationSpec = animationSpec,
-            ),
-            exit = slideOutVertically(
-                targetOffsetY = { -it },
-                animationSpec = animationSpec,
-            ),
+            enter = slideInVertically(readerBarsSlideAnimationSpec) { -it } + fadeIn(readerBarsFadeAnimationSpec),
+            exit = slideOutVertically(readerBarsSlideAnimationSpec) { -it } + fadeOut(readerBarsFadeAnimationSpec),
         ) {
             // SY -->
             Column(modifier = modifierWithInsetsPadding.clickable(onClick = onClickTopAppBar)) {
@@ -187,34 +196,63 @@ fun ReaderAppBars(
             } // SY <--
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        if (!chapterNavigatorType.isHorizontal()) {
+            val sliderOnLeft = chapterNavigatorType == ChapterNavigatorType.VERTICAL_LEFT
+            CompositionLocalProvider(
+                LocalLayoutDirection provides if (sliderOnLeft) LayoutDirection.Ltr else LayoutDirection.Rtl,
+            ) {
+                Row(modifier = Modifier.weight(1f)) {
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = slideInHorizontally(readerBarsSlideAnimationSpec) { if (sliderOnLeft) -it else it } +
+                            fadeIn(readerBarsFadeAnimationSpec),
+                        exit = slideOutHorizontally(readerBarsSlideAnimationSpec) { if (sliderOnLeft) -it else it } +
+                            fadeOut(readerBarsFadeAnimationSpec),
+                    ) {
+                        Row {
+                            Spacer(modifier = Modifier.width(MaterialTheme.padding.small))
+                            ChapterNavigator(
+                                type = chapterNavigatorType,
+                                onNextChapter = onNextChapter,
+                                enabledNext = enabledNext,
+                                onPreviousChapter = onPreviousChapter,
+                                enabledPrevious = enabledPrevious,
+                                currentPage = currentPage,
+                                currentPageText = currentPageText,
+                                totalPages = totalPages,
+                                onPageIndexChange = onPageIndexChange,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        } else {
+            Spacer(Modifier.weight(1f))
+        }
 
         AnimatedVisibility(
             visible = visible,
-            enter = slideInVertically(
-                initialOffsetY = { it },
-                animationSpec = animationSpec,
-            ),
-            exit = slideOutVertically(
-                targetOffsetY = { it },
-                animationSpec = animationSpec,
-            ),
+            enter = slideInVertically(readerBarsSlideAnimationSpec) { it } + fadeIn(readerBarsFadeAnimationSpec),
+            exit = slideOutVertically(readerBarsSlideAnimationSpec) { it } + fadeOut(readerBarsFadeAnimationSpec),
         ) {
             Column(
                 modifier = modifierWithInsetsPadding,
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
             ) {
-                ChapterNavigator(
-                    isRtl = isRtl,
-                    onNextChapter = onNextChapter,
-                    enabledNext = enabledNext,
-                    onPreviousChapter = onPreviousChapter,
-                    enabledPrevious = enabledPrevious,
-                    currentPage = currentPage,
-                    totalPages = totalPages,
-                    onPageIndexChange = onPageIndexChange,
-                    currentPageText = currentPageText,
-                )
+                if (chapterNavigatorType.isHorizontal()) {
+                    ChapterNavigator(
+                        type = chapterNavigatorType,
+                        onNextChapter = onNextChapter,
+                        enabledNext = enabledNext,
+                        onPreviousChapter = onPreviousChapter,
+                        enabledPrevious = enabledPrevious,
+                        currentPage = currentPage,
+                        currentPageText = currentPageText,
+                        totalPages = totalPages,
+                        onPageIndexChange = onPageIndexChange,
+                    )
+                }
                 BottomReaderBar(
                     // SY -->
                     enabledButtons = enabledButtons,

@@ -1,5 +1,7 @@
 package tachiyomi.data.source.anime
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.source.anime.model.FeedSavedSearch
@@ -64,9 +66,7 @@ class FeedSavedSearchRepositoryImpl(
     override suspend fun insert(feedSavedSearch: FeedSavedSearch): Long {
         // KMK -->
         return handler.await(true) {
-            val currentFeeds = handler.awaitList {
-                feed_saved_searchQueries.selectAll(FeedSavedSearchMapper::map)
-            }
+            val currentFeeds = feed_saved_searchQueries.selectAll(FeedSavedSearchMapper::map).awaitAsList()
             val existedFeedId = currentFeeds.find { currentFeed ->
                 currentFeed.source == feedSavedSearch.source &&
                     currentFeed.savedSearch == feedSavedSearch.savedSearch &&
@@ -75,14 +75,11 @@ class FeedSavedSearchRepositoryImpl(
 
             existedFeedId
                 // KMK <--
-                ?: handler.awaitOneExecutable(true) {
-                    feed_saved_searchQueries.insert(
-                        feedSavedSearch.source,
-                        feedSavedSearch.savedSearch,
-                        feedSavedSearch.global,
-                    )
-                    feed_saved_searchQueries.selectLastInsertedRowId()
-                }
+                ?: feed_saved_searchQueries.insert(
+                    feedSavedSearch.source,
+                    feedSavedSearch.savedSearch,
+                    feedSavedSearch.global,
+                ).awaitAsOne()
         }
     }
 
@@ -106,14 +103,12 @@ class FeedSavedSearchRepositoryImpl(
     }
 
     override suspend fun updatePartial(updates: List<FeedSavedSearchUpdate>) {
-        handler.await(inTransaction = true) {
-            for (update in updates) {
-                updatePartialBlocking(update)
-            }
+        for (update in updates) {
+            updatePartial(update)
         }
     }
 
-    private fun AnimeDatabase.updatePartialBlocking(update: FeedSavedSearchUpdate) {
+    private suspend fun AnimeDatabase.updatePartialBlocking(update: FeedSavedSearchUpdate) {
         feed_saved_searchQueries.update(
             source = update.source,
             saved_search = update.savedSearch,
