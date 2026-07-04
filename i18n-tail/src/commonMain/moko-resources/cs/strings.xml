@@ -301,51 +301,51 @@
   <string name="pref_source_navigation">Nahradit poslední tlačítko</string>
   <string name="pref_source_navigation_summery">Nahradit poslední tlačítko vlastním zobrazením, které zahrnuje nejnovější a prochází</string>
   <string name="app_cast_id">F033F567</string>
-  <string name="media_route_menu_title">EXTEND</string>
-  <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
-  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
-  <string name="pref_show_cast">Show Cast</string>
-  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
-  <string name="login_error">Login error</string>
-  <string name="save">Save</string>
-  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
-  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
-  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
-  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
-  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
-  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
-  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
-  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
-  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
-  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
-  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
-  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
-  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
-  <string name="network_stream_url_label">Stream URL</string>
+  <string name="media_route_menu_title">ROZŠÍŘENÍ</string>
+  <string name="pref_flare_solverr_timeout">Časový limit FlareSolverr</string>
+  <string name="pref_flare_solverr_timeout_summary">Maximální doba čekání na řešení</string>
+  <string name="pref_show_cast">Zobrazit obsazení</string>
+  <string name="pref_show_cast_summary">Zobrazit informace o vysílání na stránce s podrobnostmi</string>
+  <string name="login_error">Chyba přihlášení</string>
+  <string name="save">Uložit</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Vlastní DoH URL</string>
+  <string name="pref_doh_custom_url_summary">Příklad: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">Neplatná URL DoH</string>
+  <string name="error_doh_custom_must_use_https">Vlastní DoH musí používat https</string>
+  <string name="pref_doh_custom_bootstrap">Vlastní DoH bootstrap hostitelé</string>
+  <string name="pref_doh_custom_bootstrap_summary">IP oddělené čárkou (volitelné). Příklad: 1.1.1.1,8.8.8</string>
+  <string name="error_doh_custom_bootstrap_invalid">Neplatný bootstrap host: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Zobrazit časové značky epizody</string>
+  <string name="pref_show_episode_timestamp_summary">Zobrazit datum/čas vydání v seznamu epizod. Zakažte tuto možnost, pokud nespolehlivá data rozšíření</string>
+  <string name="pref_show_chapter_timestamp">Zobrazit časové značky kapitol</string>
+  <string name="pref_show_chapter_timestamp_summary">Zobrazit datum/čas vydání v seznamu kapitol. Zakažte tuto možnost, pokud jsou zprávy o rozšíření nespolehlivé</string>
+  <string name="network_stream" comment="network_stream Network Stream">Síťový stream</string>
+  <string name="network_stream_summary">Přehrát přímý odkaz uvnitř vestavěného přehrávače</string>
+  <string name="network_stream_url_label">URL streamu</string>
   <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
-  <string name="network_stream_invalid_url">Enter a valid URL</string>
-  <string name="network_stream_title_label">Title (optional)</string>
-  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
-  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
-  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
-  <string name="network_stream_referer_label">Referer header</string>
-  <string name="network_stream_user_agent_label">User-Agent header</string>
-  <string name="network_stream_headers_label">Additional headers</string>
-  <string name="network_stream_headers_hint">Header-Name: Header value</string>
-  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
-  <string name="network_stream_play">Play stream</string>
-  <string name="network_stream_reset">Clear fields</string>
-  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
-  <string name="show_seek_icon">Show seek icon</string>
-  <string name="show_seek_time">Show seek time</string>
-  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
-  <string name="player_sheets_subtitles_ass_yes">Yes</string>
-  <string name="player_sheets_subtitles_ass_scale">Scale</string>
-  <string name="player_sheets_subtitles_ass_force">Force</string>
-  <string name="player_sheets_subtitles_ass_strip">Strip</string>
-  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
-  <string name="action_set_date_title">Set upload date</string>
-  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
-  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
-  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
+  <string name="network_stream_invalid_url">Zadejte platnou URL</string>
+  <string name="network_stream_title_label">Název (volitelné)</string>
+  <string name="network_stream_subtitle_label">URL titulků (volitelné)</string>
+  <string name="network_stream_invalid_subtitle">Zadejte platnou URL titulku</string>
+  <string name="network_stream_subtitle_language_label">Štítek titulků (volitelné)</string>
+  <string name="network_stream_referer_label">Záhlaví indikátoru</string>
+  <string name="network_stream_user_agent_label">Záhlaví User-Agent</string>
+  <string name="network_stream_headers_label">Další záhlaví</string>
+  <string name="network_stream_headers_hint">Název záhlaví: hodnota záhlaví</string>
+  <string name="network_stream_header_error">Hlavička na řádku %1$d musí používat formát \"Název: Hodnota\"</string>
+  <string name="network_stream_play">Přehrát stream</string>
+  <string name="network_stream_reset">Vymazat pole</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Zobrazit zvlnění při hledání dvojitým poklepáním</string>
+  <string name="show_seek_icon">Zobrazit ikonu hledání</string>
+  <string name="show_seek_time">Zobrazit čas hledání</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">Ne</string>
+  <string name="player_sheets_subtitles_ass_yes">Ano</string>
+  <string name="player_sheets_subtitles_ass_scale">Měřítko</string>
+  <string name="player_sheets_subtitles_ass_force">Síla</string>
+  <string name="player_sheets_subtitles_ass_strip">Proužek</string>
+  <string name="action_set_date" comment="action_set_date Tracking">Nastavit datum</string>
+  <string name="action_set_date_title">Nastavit datum nahrávání</string>
+  <string name="pref_tracking_sync_enhanced">Synchronizovat pokrok z vylepšených trackerů</string>
+  <string name="pref_smart_sync_tracker">Chytrá synchronizace sezón</string>
+  <string name="pref_smart_sync_tracker_summary">Přeskočit dokončené položky a zastavit probíhající záznam</string>
 </resources>
