@@ -298,51 +298,51 @@
   <string name="pref_source_navigation">最新ボタンを置き換え</string>
   <string name="pref_source_navigation_summery">最新のボタンを、最新と閲覧の両方を含むカスタムブラウズビューに置き換えます。</string>
   <string name="app_cast_id">F033F567</string>
-  <string name="media_route_menu_title">EXTEND</string>
-  <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
-  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
-  <string name="pref_show_cast">Show Cast</string>
-  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
-  <string name="login_error">Login error</string>
-  <string name="save">Save</string>
-  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
-  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
-  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
-  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
-  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
-  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
-  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
-  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
-  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
-  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
-  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
-  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
-  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
-  <string name="network_stream_url_label">Stream URL</string>
+  <string name="media_route_menu_title">拡張</string>
+  <string name="pref_flare_solverr_timeout">FlareSolverr タイムアウト</string>
+  <string name="pref_flare_solverr_timeout_summary">解答を待つ最大時間</string>
+  <string name="pref_show_cast">キャストを表示</string>
+  <string name="pref_show_cast_summary">キャスト情報をアニメ詳細ページに表示する</string>
+  <string name="login_error">ログインエラー</string>
+  <string name="save">保存</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">DoH URLのカスタマイズ</string>
+  <string name="pref_doh_custom_url_summary">例: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">DoH URLが無効です</string>
+  <string name="error_doh_custom_must_use_https">カスタムDoHはhttpsを使用する必要があります</string>
+  <string name="pref_doh_custom_bootstrap">DoHブートストラップのカスタム ホスト</string>
+  <string name="pref_doh_custom_bootstrap_summary">カンマ区切りIP (任意) 例: 1.1.1.1,8.8.8</string>
+  <string name="error_doh_custom_bootstrap_invalid">ブートストラップのホストが無効です: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">エピソードタイムスタンプを表示</string>
+  <string name="pref_show_episode_timestamp_summary">エピソードリストに公開日時を表示します。拡張機能が信頼性の低いデータを報告する場合は無効にします。</string>
+  <string name="pref_show_chapter_timestamp">チャプタータイムスタンプを表示</string>
+  <string name="pref_show_chapter_timestamp_summary">チャプターリストに公開日時を表示します。拡張機能が信頼性の低いデータを報告する場合は無効にします。</string>
+  <string name="network_stream" comment="network_stream Network Stream">ネットワークストリーム</string>
+  <string name="network_stream_summary">内蔵プレイヤー内のダイレクトリンクを再生する</string>
+  <string name="network_stream_url_label">ストリーム URL</string>
   <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
-  <string name="network_stream_invalid_url">Enter a valid URL</string>
-  <string name="network_stream_title_label">Title (optional)</string>
-  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
-  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
-  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
-  <string name="network_stream_referer_label">Referer header</string>
-  <string name="network_stream_user_agent_label">User-Agent header</string>
-  <string name="network_stream_headers_label">Additional headers</string>
-  <string name="network_stream_headers_hint">Header-Name: Header value</string>
-  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
-  <string name="network_stream_play">Play stream</string>
-  <string name="network_stream_reset">Clear fields</string>
-  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
-  <string name="show_seek_icon">Show seek icon</string>
-  <string name="show_seek_time">Show seek time</string>
-  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
-  <string name="player_sheets_subtitles_ass_yes">Yes</string>
-  <string name="player_sheets_subtitles_ass_scale">Scale</string>
-  <string name="player_sheets_subtitles_ass_force">Force</string>
-  <string name="player_sheets_subtitles_ass_strip">Strip</string>
-  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
-  <string name="action_set_date_title">Set upload date</string>
-  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
-  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
-  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
+  <string name="network_stream_invalid_url">有効な URL を入力してください</string>
+  <string name="network_stream_title_label">タイトル (オプション)</string>
+  <string name="network_stream_subtitle_label">字幕URL (任意)</string>
+  <string name="network_stream_invalid_subtitle">有効な字幕URLを入力してください</string>
+  <string name="network_stream_subtitle_language_label">字幕ラベル (オプション)</string>
+  <string name="network_stream_referer_label">リファラーヘッダー</string>
+  <string name="network_stream_user_agent_label">User-Agent ヘッダー</string>
+  <string name="network_stream_headers_label">追加ヘッダー</string>
+  <string name="network_stream_headers_hint">Header-Name: ヘッダー値</string>
+  <string name="network_stream_header_error">%1$d 行のヘッダーには、\"Name: Value\" という形式を使用する必要があります</string>
+  <string name="network_stream_play">再生ストリーム</string>
+  <string name="network_stream_reset">フィールドをクリア</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">ダブルタップシーク時に波紋を表示する</string>
+  <string name="show_seek_icon">シークアイコンを表示</string>
+  <string name="show_seek_time">シーク時間を表示</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">いいえ</string>
+  <string name="player_sheets_subtitles_ass_yes">はい</string>
+  <string name="player_sheets_subtitles_ass_scale">拡大縮小</string>
+  <string name="player_sheets_subtitles_ass_force">力</string>
+  <string name="player_sheets_subtitles_ass_strip">ストリップ</string>
+  <string name="action_set_date" comment="action_set_date Tracking">日付を設定</string>
+  <string name="action_set_date_title">アップロード日を設定</string>
+  <string name="pref_tracking_sync_enhanced">強化されたトラッカーからの進行状況を同期</string>
+  <string name="pref_smart_sync_tracker">スマート同期シーズン</string>
+  <string name="pref_smart_sync_tracker_summary">完了した項目をスキップして進行中のエントリで停止</string>
 </resources>
