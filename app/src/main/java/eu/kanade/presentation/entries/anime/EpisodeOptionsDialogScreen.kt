@@ -1,5 +1,6 @@
 package eu.kanade.presentation.entries.anime
 
+import android.content.ClipData
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
@@ -23,7 +24,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import android.content.ClipData
 import androidx.compose.material.icons.automirrored.outlined.Input
 import androidx.compose.material.icons.automirrored.outlined.NavigateNext
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
