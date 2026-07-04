@@ -299,51 +299,51 @@
   <string name="pref_source_navigation">Ersätt senaste knappen</string>
   <string name="pref_source_navigation_summery">Ersätt senaste knappen med en anpassad bläddringsvy som innehåller både senaste och bläddra</string>
   <string name="app_cast_id">F033F567</string>
-  <string name="media_route_menu_title">EXTEND</string>
+  <string name="media_route_menu_title">UTFÖRD</string>
   <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
-  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
-  <string name="pref_show_cast">Show Cast</string>
-  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
-  <string name="login_error">Login error</string>
-  <string name="save">Save</string>
-  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
-  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
-  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
-  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
-  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
-  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
-  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
-  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
-  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
-  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
-  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
-  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
-  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
-  <string name="network_stream_url_label">Stream URL</string>
+  <string name="pref_flare_solverr_timeout_summary">Maximal tid att vänta på en lösning</string>
+  <string name="pref_show_cast">Visa gjuten</string>
+  <string name="pref_show_cast_summary">Visa information om anime detaljer sida</string>
+  <string name="login_error">Fel vid inloggning</string>
+  <string name="save">Spara</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Anpassad DoH-URL</string>
+  <string name="pref_doh_custom_url_summary">Exempel: https://dns.exempel/dns-query</string>
+  <string name="error_doh_custom_invalid">Ogiltig DoH URL</string>
+  <string name="error_doh_custom_must_use_https">Anpassad DoH måste använda https</string>
+  <string name="pref_doh_custom_bootstrap">Anpassade DoH bootstrap värdar</string>
+  <string name="pref_doh_custom_bootstrap_summary">Kommaseparerade IP-adresser (valfritt). Exempel: 1.1.1,8.8.8.8</string>
+  <string name="error_doh_custom_bootstrap_invalid">Ogiltig bootstrap värd: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Visa tidsstämplar för avsnitt</string>
+  <string name="pref_show_episode_timestamp_summary">Visa releasedatum/tid på avsnittslistan. Inaktivera detta när ett tillägg rapporterar opålitliga data</string>
+  <string name="pref_show_chapter_timestamp">Visa tidsstämplar för kapitel</string>
+  <string name="pref_show_chapter_timestamp_summary">Visa releasedatum/tid på kapitellistan. Inaktivera detta när ett tillägg rapporterar opålitliga data</string>
+  <string name="network_stream" comment="network_stream Network Stream">Nätverksström</string>
+  <string name="network_stream_summary">Spela en direkt länk inuti den inbyggda spelaren</string>
+  <string name="network_stream_url_label">Strömma URL</string>
   <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
-  <string name="network_stream_invalid_url">Enter a valid URL</string>
-  <string name="network_stream_title_label">Title (optional)</string>
-  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
-  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
-  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
-  <string name="network_stream_referer_label">Referer header</string>
-  <string name="network_stream_user_agent_label">User-Agent header</string>
-  <string name="network_stream_headers_label">Additional headers</string>
-  <string name="network_stream_headers_hint">Header-Name: Header value</string>
-  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
-  <string name="network_stream_play">Play stream</string>
-  <string name="network_stream_reset">Clear fields</string>
-  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
-  <string name="show_seek_icon">Show seek icon</string>
-  <string name="show_seek_time">Show seek time</string>
-  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
-  <string name="player_sheets_subtitles_ass_yes">Yes</string>
-  <string name="player_sheets_subtitles_ass_scale">Scale</string>
-  <string name="player_sheets_subtitles_ass_force">Force</string>
-  <string name="player_sheets_subtitles_ass_strip">Strip</string>
-  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
-  <string name="action_set_date_title">Set upload date</string>
-  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
-  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
-  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
+  <string name="network_stream_invalid_url">Ange en giltig URL</string>
+  <string name="network_stream_title_label">Titel (valfritt)</string>
+  <string name="network_stream_subtitle_label">Undertext URL (valfritt)</string>
+  <string name="network_stream_invalid_subtitle">Ange en giltig undertext-URL</string>
+  <string name="network_stream_subtitle_language_label">Undertextsedel (valfritt)</string>
+  <string name="network_stream_referer_label">Referens sidhuvud</string>
+  <string name="network_stream_user_agent_label">Användaragent sidhuvud</string>
+  <string name="network_stream_headers_label">Ytterligare rubriker</string>
+  <string name="network_stream_headers_hint">Header-Namn: Header-värde</string>
+  <string name="network_stream_header_error">Rubrik på rad %1$d måste använda formatet \"Namn: Värde\"</string>
+  <string name="network_stream_play">Spela upp ström</string>
+  <string name="network_stream_reset">Rensa fält</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Visa krusning när du dubbeltrycker söker</string>
+  <string name="show_seek_icon">Visa sök-ikon</string>
+  <string name="show_seek_time">Visa söktid</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">Nej</string>
+  <string name="player_sheets_subtitles_ass_yes">Ja</string>
+  <string name="player_sheets_subtitles_ass_scale">Skala</string>
+  <string name="player_sheets_subtitles_ass_force">Tvinga</string>
+  <string name="player_sheets_subtitles_ass_strip">Ta bort</string>
+  <string name="action_set_date" comment="action_set_date Tracking">Ange datum</string>
+  <string name="action_set_date_title">Ange uppladdningsdatum</string>
+  <string name="pref_tracking_sync_enhanced">Synkronisera framsteg från förbättrade trackers</string>
+  <string name="pref_smart_sync_tracker">Säsonger för smart synkronisering</string>
+  <string name="pref_smart_sync_tracker_summary">Hoppa över slutförda objekt och stanna vid pågående inlägg</string>
 </resources>
