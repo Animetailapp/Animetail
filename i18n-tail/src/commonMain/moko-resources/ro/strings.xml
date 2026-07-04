@@ -300,51 +300,51 @@
   <string name="pref_source_navigation">Înlocuiește cel mai recent buton</string>
   <string name="pref_source_navigation_summery">Înlocuiește cel mai recent buton cu o vizualizare de navigare personalizată care include atât ultima cât și cea mai recentă</string>
   <string name="app_cast_id">F033F567</string>
-  <string name="media_route_menu_title">EXTEND</string>
-  <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
-  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
-  <string name="pref_show_cast">Show Cast</string>
-  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
-  <string name="login_error">Login error</string>
-  <string name="save">Save</string>
-  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
-  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
-  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
-  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
-  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
-  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
-  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
-  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
-  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
-  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
-  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
-  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
-  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
-  <string name="network_stream_url_label">Stream URL</string>
+  <string name="media_route_menu_title">ÎNCHIDE</string>
+  <string name="pref_flare_solverr_timeout">Timpi de rezolvare</string>
+  <string name="pref_flare_solverr_timeout_summary">Timpul maxim de aşteptare pentru o soluţie</string>
+  <string name="pref_show_cast">Arată transmisia</string>
+  <string name="pref_show_cast_summary">Afișează informații pe pagina cu detalii anime</string>
+  <string name="login_error">Eroare de autentificare</string>
+  <string name="save">Salvează</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">URL personalizat DoH</string>
+  <string name="pref_doh_custom_url_summary">Exemplu: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">URL DoH invalid</string>
+  <string name="error_doh_custom_must_use_https">DoH personalizat trebuie să folosească https</string>
+  <string name="pref_doh_custom_bootstrap">Tastaturi personalizate pentru bootstrap DoH</string>
+  <string name="pref_doh_custom_bootstrap_summary">IP separate prin virgulă (opţional). Exemplu: 1.1.1.1,8.8.8</string>
+  <string name="error_doh_custom_bootstrap_invalid">Gazdă bootstrap invalidă: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Arată marcajul de timp al episodului</string>
+  <string name="pref_show_episode_timestamp_summary">Arată data/ora lansării în lista de episoade. Dezactivați acest lucru atunci când o extensie raportează date de neîncredere</string>
+  <string name="pref_show_chapter_timestamp">Afișați marcajele de timp ale capitolului</string>
+  <string name="pref_show_chapter_timestamp_summary">Arată data/ora lansării în lista de capitole. Dezactivați acest lucru atunci când o extensie raportează date de neîncredere</string>
+  <string name="network_stream" comment="network_stream Network Stream">Flux rețea</string>
+  <string name="network_stream_summary">Redă un link direct în interiorul player-ului încorporat</string>
+  <string name="network_stream_url_label">URL stream</string>
   <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
-  <string name="network_stream_invalid_url">Enter a valid URL</string>
-  <string name="network_stream_title_label">Title (optional)</string>
-  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
-  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
-  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
-  <string name="network_stream_referer_label">Referer header</string>
-  <string name="network_stream_user_agent_label">User-Agent header</string>
-  <string name="network_stream_headers_label">Additional headers</string>
-  <string name="network_stream_headers_hint">Header-Name: Header value</string>
-  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
-  <string name="network_stream_play">Play stream</string>
-  <string name="network_stream_reset">Clear fields</string>
-  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
-  <string name="show_seek_icon">Show seek icon</string>
-  <string name="show_seek_time">Show seek time</string>
-  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
-  <string name="player_sheets_subtitles_ass_yes">Yes</string>
-  <string name="player_sheets_subtitles_ass_scale">Scale</string>
-  <string name="player_sheets_subtitles_ass_force">Force</string>
-  <string name="player_sheets_subtitles_ass_strip">Strip</string>
-  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
-  <string name="action_set_date_title">Set upload date</string>
-  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
-  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
-  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
+  <string name="network_stream_invalid_url">Introduceți un URL valid</string>
+  <string name="network_stream_title_label">Titlu (opţional)</string>
+  <string name="network_stream_subtitle_label">URL subtitrare (opţional)</string>
+  <string name="network_stream_invalid_subtitle">Introduceți un URL valid de subtitrare</string>
+  <string name="network_stream_subtitle_language_label">Etichetă subtitrare (opțional)</string>
+  <string name="network_stream_referer_label">Antet arbitru</string>
+  <string name="network_stream_user_agent_label">Antet User-Agent</string>
+  <string name="network_stream_headers_label">Antete suplimentare</string>
+  <string name="network_stream_headers_hint">Nume antet: valoare antet</string>
+  <string name="network_stream_header_error">Antetul de pe linia %1$d trebuie să folosească formatul \"Nume: Valoare\"</string>
+  <string name="network_stream_play">Redă stream-ul</string>
+  <string name="network_stream_reset">Ștergeți câmpurile</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Arată culoarea atunci când apasă de două ori</string>
+  <string name="show_seek_icon">Arată pictograma de căutare</string>
+  <string name="show_seek_time">Arată timpul de căutare</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">Nr</string>
+  <string name="player_sheets_subtitles_ass_yes">Da</string>
+  <string name="player_sheets_subtitles_ass_scale">Scala</string>
+  <string name="player_sheets_subtitles_ass_force">Forțează</string>
+  <string name="player_sheets_subtitles_ass_strip">Bandă</string>
+  <string name="action_set_date" comment="action_set_date Tracking">Setează data</string>
+  <string name="action_set_date_title">Setează data încărcării</string>
+  <string name="pref_tracking_sync_enhanced">Sincronizare progres de la trackere îmbunătățite</string>
+  <string name="pref_smart_sync_tracker">Sezonuri sincronizare inteligentă</string>
+  <string name="pref_smart_sync_tracker_summary">Omite elementele finalizate și se oprește la intrarea în curs</string>
 </resources>
