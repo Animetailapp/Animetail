@@ -299,51 +299,51 @@
   <string name="pref_source_navigation">Erstat seneste knap</string>
   <string name="pref_source_navigation_summery">Erstat nyeste knap med en brugerdefineret browse visning, der indeholder både nyeste og gennemse</string>
   <string name="app_cast_id">F033F567</string>
-  <string name="media_route_menu_title">EXTEND</string>
+  <string name="media_route_menu_title">UDVIDELSE</string>
   <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
-  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
-  <string name="pref_show_cast">Show Cast</string>
-  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
-  <string name="login_error">Login error</string>
-  <string name="save">Save</string>
-  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
-  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
-  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
-  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
-  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
-  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
-  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
-  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
-  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
-  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
-  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
-  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
-  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
+  <string name="pref_flare_solverr_timeout_summary">Maksimal tid til at vente på en opløsning</string>
+  <string name="pref_show_cast">Vis Cast</string>
+  <string name="pref_show_cast_summary">Vis cast information på anime detaljeside</string>
+  <string name="login_error">Login fejl</string>
+  <string name="save">Gem</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Brugerdefineret DoH URL</string>
+  <string name="pref_doh_custom_url_summary">Eksempel: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">Ugyldig DoH URL</string>
+  <string name="error_doh_custom_must_use_https">Brugerdefineret DoH skal bruge https</string>
+  <string name="pref_doh_custom_bootstrap">Brugerdefineret DoH bootstrap værter</string>
+  <string name="pref_doh_custom_bootstrap_summary">Kommaseparerede IP\'er (valgfrit). Eksempel: 1.1.1.1,8.8.8.8</string>
+  <string name="error_doh_custom_bootstrap_invalid">Ugyldig bootstrap vært: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Vis episode tidsstempler</string>
+  <string name="pref_show_episode_timestamp_summary">Vis udgivelsesdato/-tid på episode listen. Deaktivér dette, når en udvidelse rapporterer upålidelige data</string>
+  <string name="pref_show_chapter_timestamp">Vis kapiteltidsstempler</string>
+  <string name="pref_show_chapter_timestamp_summary">Vis udgivelsesdato/-tid på kapitellisten. Deaktivér dette, når en udvidelse rapporterer upålidelige data</string>
+  <string name="network_stream" comment="network_stream Network Stream">Netværk stream</string>
+  <string name="network_stream_summary">Afspil et direkte link inde i den indbyggede spiller</string>
   <string name="network_stream_url_label">Stream URL</string>
   <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
-  <string name="network_stream_invalid_url">Enter a valid URL</string>
-  <string name="network_stream_title_label">Title (optional)</string>
-  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
-  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
-  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
-  <string name="network_stream_referer_label">Referer header</string>
-  <string name="network_stream_user_agent_label">User-Agent header</string>
-  <string name="network_stream_headers_label">Additional headers</string>
-  <string name="network_stream_headers_hint">Header-Name: Header value</string>
-  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
-  <string name="network_stream_play">Play stream</string>
-  <string name="network_stream_reset">Clear fields</string>
-  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
-  <string name="show_seek_icon">Show seek icon</string>
-  <string name="show_seek_time">Show seek time</string>
-  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
-  <string name="player_sheets_subtitles_ass_yes">Yes</string>
-  <string name="player_sheets_subtitles_ass_scale">Scale</string>
-  <string name="player_sheets_subtitles_ass_force">Force</string>
-  <string name="player_sheets_subtitles_ass_strip">Strip</string>
-  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
-  <string name="action_set_date_title">Set upload date</string>
-  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
-  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
-  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
+  <string name="network_stream_invalid_url">Angiv en gyldig URL</string>
+  <string name="network_stream_title_label">Titel (valgfrit)</string>
+  <string name="network_stream_subtitle_label">Undertekst URL (valgfri)</string>
+  <string name="network_stream_invalid_subtitle">Angiv en gyldig undertekst-URL</string>
+  <string name="network_stream_subtitle_language_label">Undertekstetiket (valgfri)</string>
+  <string name="network_stream_referer_label">Henviser header</string>
+  <string name="network_stream_user_agent_label">Bruger-Agent header</string>
+  <string name="network_stream_headers_label">Yderligere overskrifter</string>
+  <string name="network_stream_headers_hint">Header-Name: Header værdi</string>
+  <string name="network_stream_header_error">Header på linje %1$d skal bruge formatet \"Navn: Værdi\"</string>
+  <string name="network_stream_play">Afspil stream</string>
+  <string name="network_stream_reset">Ryd felter</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Vis krukke, når dobbelttryk søger</string>
+  <string name="show_seek_icon">Vis søgeikon</string>
+  <string name="show_seek_time">Vis søgetid</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">Nej</string>
+  <string name="player_sheets_subtitles_ass_yes">Ja</string>
+  <string name="player_sheets_subtitles_ass_scale">Skaler</string>
+  <string name="player_sheets_subtitles_ass_force">Gennemtving</string>
+  <string name="player_sheets_subtitles_ass_strip">Fjern</string>
+  <string name="action_set_date" comment="action_set_date Tracking">Angiv dato</string>
+  <string name="action_set_date_title">Angiv uploaddato</string>
+  <string name="pref_tracking_sync_enhanced">Synkroniser fremskridt fra forbedrede trackers</string>
+  <string name="pref_smart_sync_tracker">Smart synkroniseringssæsoner</string>
+  <string name="pref_smart_sync_tracker_summary">Spring udførte elementer over og stop ved indgangen i gang</string>
 </resources>
