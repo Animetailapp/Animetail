@@ -299,51 +299,51 @@
   <string name="pref_source_navigation">Laatste knop vervangen</string>
   <string name="pref_source_navigation_summery">Vervang de nieuwste knop door een aangepaste bladerweergave die zowel nieuwste als browse bevat</string>
   <string name="app_cast_id">F033F567</string>
-  <string name="media_route_menu_title">EXTEND</string>
-  <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
-  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
-  <string name="pref_show_cast">Show Cast</string>
-  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
-  <string name="login_error">Login error</string>
-  <string name="save">Save</string>
-  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
-  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
-  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
-  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
-  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
-  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
-  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
-  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
-  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
-  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
-  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
-  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
-  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
+  <string name="media_route_menu_title">UITVOEREN</string>
+  <string name="pref_flare_solverr_timeout">FlareSolverr Time-out</string>
+  <string name="pref_flare_solverr_timeout_summary">Maximale tijd om te wachten op een oplossing</string>
+  <string name="pref_show_cast">Toon Cast</string>
+  <string name="pref_show_cast_summary">Toon cast-informatie op anime detailpagina</string>
+  <string name="login_error">Login fout</string>
+  <string name="save">Opslaan</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Aangepaste DoH URL</string>
+  <string name="pref_doh_custom_url_summary">Voorbeeld: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">Ongeldige DoH URL</string>
+  <string name="error_doh_custom_must_use_https">Aangepaste DoH moet https gebruiken</string>
+  <string name="pref_doh_custom_bootstrap">Aangepaste DoH bootstrap hosts</string>
+  <string name="pref_doh_custom_bootstrap_summary">Komma\'s gescheiden IP\'s (optioneel). Voorbeeld: 1.1.1.1,8.8.8</string>
+  <string name="error_doh_custom_bootstrap_invalid">Ongeldige bootstrap host: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Toon aflevering tijdstempels</string>
+  <string name="pref_show_episode_timestamp_summary">Toon de uitgiftedatum/tijd op de afleveringslijst. Schakel dit uit wanneer een extensie onbetrouwbare gegevens rapporteert</string>
+  <string name="pref_show_chapter_timestamp">Toon hoofdstuk tijdstempels</string>
+  <string name="pref_show_chapter_timestamp_summary">Toon de releasedatum/tijd in het hoofdstuk lijst. Schakel dit uit wanneer een extensie onbetrouwbare gegevens rapporteert</string>
+  <string name="network_stream" comment="network_stream Network Stream">Netwerk stream</string>
+  <string name="network_stream_summary">Speel een directe link af in de ingebouwde speler</string>
   <string name="network_stream_url_label">Stream URL</string>
-  <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
-  <string name="network_stream_invalid_url">Enter a valid URL</string>
-  <string name="network_stream_title_label">Title (optional)</string>
-  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
-  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
-  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
-  <string name="network_stream_referer_label">Referer header</string>
-  <string name="network_stream_user_agent_label">User-Agent header</string>
-  <string name="network_stream_headers_label">Additional headers</string>
-  <string name="network_stream_headers_hint">Header-Name: Header value</string>
-  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
-  <string name="network_stream_play">Play stream</string>
-  <string name="network_stream_reset">Clear fields</string>
-  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
-  <string name="show_seek_icon">Show seek icon</string>
-  <string name="show_seek_time">Show seek time</string>
-  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
-  <string name="player_sheets_subtitles_ass_yes">Yes</string>
-  <string name="player_sheets_subtitles_ass_scale">Scale</string>
-  <string name="player_sheets_subtitles_ass_force">Force</string>
-  <string name="player_sheets_subtitles_ass_strip">Strip</string>
-  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
-  <string name="action_set_date_title">Set upload date</string>
-  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
-  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
-  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
+  <string name="network_stream_url_placeholder">https://voorbeeld.com/video.m3u8</string>
+  <string name="network_stream_invalid_url">Voer een geldige URL in</string>
+  <string name="network_stream_title_label">Titel (optioneel)</string>
+  <string name="network_stream_subtitle_label">Ondertiteling-URL (optioneel)</string>
+  <string name="network_stream_invalid_subtitle">Voer een geldige ondertitelings-URL in</string>
+  <string name="network_stream_subtitle_language_label">Label ondertiteling (optioneel)</string>
+  <string name="network_stream_referer_label">Verwijs koptekst</string>
+  <string name="network_stream_user_agent_label">User-Agent kop</string>
+  <string name="network_stream_headers_label">Extra headers</string>
+  <string name="network_stream_headers_hint">Header-Naam: Header waarde</string>
+  <string name="network_stream_header_error">Koptekst op lijn %1$d moet het formaat \"Naam: Waarde\" gebruiken</string>
+  <string name="network_stream_play">Stream Afspelen</string>
+  <string name="network_stream_reset">Velden wissen</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Toon rimpel bij dubbeltikken op zoeken</string>
+  <string name="show_seek_icon">Zoek icoon weergeven</string>
+  <string name="show_seek_time">Zoektijd weergeven</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">Neen</string>
+  <string name="player_sheets_subtitles_ass_yes">ja</string>
+  <string name="player_sheets_subtitles_ass_scale">Schaal</string>
+  <string name="player_sheets_subtitles_ass_force">Kracht</string>
+  <string name="player_sheets_subtitles_ass_strip">Verwijder</string>
+  <string name="action_set_date" comment="action_set_date Tracking">Datum instellen</string>
+  <string name="action_set_date_title">Upload datum instellen</string>
+  <string name="pref_tracking_sync_enhanced">Synchroniseer voortgang van verbeterde trackers</string>
+  <string name="pref_smart_sync_tracker">Slimme synchronisatie seizoenen</string>
+  <string name="pref_smart_sync_tracker_summary">Voltooide items overslaan en bij entry in progress stoppen</string>
 </resources>
