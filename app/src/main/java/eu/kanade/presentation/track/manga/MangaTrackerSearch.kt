@@ -56,11 +56,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.ClipboardManager
-import androidx.compose.ui.platform.LocalClipboardManager
+import android.content.ClipData
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.intl.Locale
@@ -241,7 +243,7 @@ private fun SearchResultItem(
     onClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    val clipboardManager: ClipboardManager = LocalClipboardManager.current
+    val clipboard: Clipboard = LocalClipboard.current
     val focusManager = LocalFocusManager.current
     val type = trackSearch.publishing_type.toLowerCase(Locale.current).capitalize(Locale.current)
     val status = trackSearch.publishing_status.toLowerCase(Locale.current).capitalize(Locale.current)
@@ -249,6 +251,7 @@ private fun SearchResultItem(
     val shape = RoundedCornerShape(16.dp)
     val borderColor = if (selected) MaterialTheme.colorScheme.outline else Color.Transparent
     var dropDownMenuExpanded by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -296,7 +299,13 @@ private fun SearchResultItem(
                         expanded = dropDownMenuExpanded,
                         onCollapseMenu = { dropDownMenuExpanded = false },
                         onCopyName = {
-                            clipboardManager.setText(AnnotatedString(trackSearch.title))
+                            scope.launch {
+                                val clipEntry = ClipData.newPlainText(
+                                    trackSearch.title,
+                                    trackSearch.title,
+                                ).toClipEntry()
+                                clipboard.setClipEntry(clipEntry)
+                            }
                         },
                         onOpenInBrowser = {
                             val url = trackSearch.tracking_url

@@ -7,6 +7,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.mikepenz.aboutlibraries.Libs
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
+import com.mikepenz.aboutlibraries.ui.compose.m3.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.util.htmlReadyLicenseContent
 import com.mikepenz.aboutlibraries.util.withContext
 import eu.kanade.presentation.components.AppBar
@@ -28,12 +29,13 @@ class OpenSourceLicensesScreen : Screen() {
                 )
             },
         ) { contentPadding ->
+            val libraries = produceLibraries { context ->
+                Libs.Builder()
+                    .withContext(context)
+                    .build()
+            }
             LibrariesContainer(
-                librariesBlock = { context ->
-                    Libs.Builder()
-                        .withContext(context)
-                        .build()
-                },
+                libs = libraries.value,
                 modifier = Modifier
                     .fillMaxSize(),
                 contentPadding = contentPadding,
