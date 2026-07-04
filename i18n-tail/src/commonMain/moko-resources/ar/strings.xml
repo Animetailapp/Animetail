@@ -303,51 +303,51 @@
   <string name="pref_source_navigation">استبدال الزر الأخير</string>
   <string name="pref_source_navigation_summery">استبدل الزر الأحدث بعرض تصفح مخصص يتضمن الأحدث و التصفح</string>
   <string name="app_cast_id">F033F567</string>
-  <string name="media_route_menu_title">EXTEND</string>
-  <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
-  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
-  <string name="pref_show_cast">Show Cast</string>
-  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
-  <string name="login_error">Login error</string>
-  <string name="save">Save</string>
-  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
-  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
-  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
-  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
-  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
-  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
-  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
-  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
-  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
-  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
-  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
-  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
-  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
-  <string name="network_stream_url_label">Stream URL</string>
+  <string name="media_route_menu_title">مجد</string>
+  <string name="pref_flare_solverr_timeout">مهلة FlareSolverr</string>
+  <string name="pref_flare_solverr_timeout_summary">الحد الأقصى لوقت الانتظار للحصول على حل</string>
+  <string name="pref_show_cast">إظهار القصة</string>
+  <string name="pref_show_cast_summary">إظهار معلومات الإرسال على صفحة تفاصيل أنيمي</string>
+  <string name="login_error">خطأ في تسجيل الدخول</string>
+  <string name="save">حفظ</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">رابط DoH مخصص</string>
+  <string name="pref_doh_custom_url_summary">مثال: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">رابط DoH غير صالح</string>
+  <string name="error_doh_custom_must_use_https">يجب أن يستخدم DoH مخصص مراتب</string>
+  <string name="pref_doh_custom_bootstrap">مضيفات DoH مخصصة</string>
+  <string name="pref_doh_custom_bootstrap_summary">عناوين IP مفصولة بفاصلة (اختيارية). مثال: 1-1-1-1-1، 8-8-8-8</string>
+  <string name="error_doh_custom_bootstrap_invalid">مضيف التمهيد غير صالح: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">إظهار الطوابع الزمنية للحلقة</string>
+  <string name="pref_show_episode_timestamp_summary">إظهار تاريخ / وقت الإصدار في قائمة الحلقة. قم بتعطيل هذا عندما يبلغ ملحق عن بيانات غير موثوقة</string>
+  <string name="pref_show_chapter_timestamp">إظهار الفصول الزمنية</string>
+  <string name="pref_show_chapter_timestamp_summary">إظهار تاريخ / وقت الإصدار على قائمة الفصل. قم بتعطيل هذا عندما يبلغ ملحق عن بيانات غير موثوقة</string>
+  <string name="network_stream" comment="network_stream Network Stream">بث الشبكة</string>
+  <string name="network_stream_summary">تشغيل رابط مباشر داخل المشغل المدمج</string>
+  <string name="network_stream_url_label">رابط البث</string>
   <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
-  <string name="network_stream_invalid_url">Enter a valid URL</string>
-  <string name="network_stream_title_label">Title (optional)</string>
-  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
-  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
-  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
-  <string name="network_stream_referer_label">Referer header</string>
-  <string name="network_stream_user_agent_label">User-Agent header</string>
-  <string name="network_stream_headers_label">Additional headers</string>
-  <string name="network_stream_headers_hint">Header-Name: Header value</string>
-  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
-  <string name="network_stream_play">Play stream</string>
-  <string name="network_stream_reset">Clear fields</string>
-  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
-  <string name="show_seek_icon">Show seek icon</string>
-  <string name="show_seek_time">Show seek time</string>
-  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
-  <string name="player_sheets_subtitles_ass_yes">Yes</string>
-  <string name="player_sheets_subtitles_ass_scale">Scale</string>
-  <string name="player_sheets_subtitles_ass_force">Force</string>
-  <string name="player_sheets_subtitles_ass_strip">Strip</string>
-  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
-  <string name="action_set_date_title">Set upload date</string>
-  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
-  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
-  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
+  <string name="network_stream_invalid_url">أدخل عنوان URL صالح</string>
+  <string name="network_stream_title_label">العنوان (اختياري)</string>
+  <string name="network_stream_subtitle_label">رابط الترجمة (اختياري)</string>
+  <string name="network_stream_invalid_subtitle">أدخل عنوان URL للترجمة صالح</string>
+  <string name="network_stream_subtitle_language_label">تسمية الترجمة (اختياري)</string>
+  <string name="network_stream_referer_label">ترويسة الحكام</string>
+  <string name="network_stream_user_agent_label">رأس وكيل المستخدم</string>
+  <string name="network_stream_headers_label">رؤوس إضافية</string>
+  <string name="network_stream_headers_hint">اسم الرأس: قيمة الرأس</string>
+  <string name="network_stream_header_error">العنوان على السطر %1$d يجب أن يستخدم تنسيق \"الاسم: القيمة\"</string>
+  <string name="network_stream_play">تشغيل البث</string>
+  <string name="network_stream_reset">مسح الحقول</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">إظهار التسلسل عند النقر المزدوج للبحث</string>
+  <string name="show_seek_icon">إظهار أيقونة البحث</string>
+  <string name="show_seek_time">إظهار وقت البحث</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">لا</string>
+  <string name="player_sheets_subtitles_ass_yes">نعم</string>
+  <string name="player_sheets_subtitles_ass_scale">المقياس</string>
+  <string name="player_sheets_subtitles_ass_force">إجبار</string>
+  <string name="player_sheets_subtitles_ass_strip">قطاع</string>
+  <string name="action_set_date" comment="action_set_date Tracking">تعيين التاريخ</string>
+  <string name="action_set_date_title">تعيين تاريخ التحميل</string>
+  <string name="pref_tracking_sync_enhanced">مزامنة التقدم من التتبع المحسن</string>
+  <string name="pref_smart_sync_tracker">مواسم المزامنة الذكية</string>
+  <string name="pref_smart_sync_tracker_summary">تخطي العناصر المكتملة والتوقف عند قيد الدخول</string>
 </resources>
