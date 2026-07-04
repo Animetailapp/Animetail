@@ -424,19 +424,21 @@ object DiscordRpcManager {
         }
     }
 
-    fun destroy() = synchronized(this) {
-        if (!initialized.get()) {
-            Log.i(TAG, "destroy: skipping — not initialized")
-            return
+    fun destroy() {
+        synchronized(this) {
+            if (!initialized.get()) {
+                Log.i(TAG, "destroy: skipping — not initialized")
+                return
+            }
+            Log.i(TAG, "destroy: entering (_ready=$_ready, _authorized=$_authorized, initialized=$initialized)")
+            _ready = false
+            _authorized = false
+            initialized.set(false)
+            callbackJob?.cancel()
+            callbackJob = null
+            nativeDestroy()
+            Log.i(TAG, "destroy: complete")
         }
-        Log.i(TAG, "destroy: entering (_ready=$_ready, _authorized=$_authorized, initialized=$initialized)")
-        _ready = false
-        _authorized = false
-        initialized.set(false)
-        callbackJob?.cancel()
-        callbackJob = null
-        nativeDestroy()
-        Log.i(TAG, "destroy: complete")
     }
 
     fun disconnect() {

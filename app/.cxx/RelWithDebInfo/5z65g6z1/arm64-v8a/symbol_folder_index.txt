@@ -1,0 +1,1 @@
+C:\repos\repo test\aniyomi\app\build\intermediates\cxx\RelWithDebInfo\5z65g6z1\obj\arm64-v8a
