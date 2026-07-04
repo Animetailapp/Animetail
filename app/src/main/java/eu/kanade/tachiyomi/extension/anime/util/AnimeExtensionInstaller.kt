@@ -56,7 +56,7 @@ internal class AnimeExtensionInstaller(
         val step = MutableStateFlow(InstallStep.Pending)
         activeSteps[downloadId] = step
 
-        val job = scope.launch {
+        val job = scope.launch(Dispatchers.IO) {
             val tmpFile = File(context.cacheDir, "extension_${extension.pkgName}.apk")
             try {
                 step.value = InstallStep.Downloading
