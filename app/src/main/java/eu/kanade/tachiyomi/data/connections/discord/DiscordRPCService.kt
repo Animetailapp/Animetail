@@ -18,12 +18,10 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
-import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.serialization.json.Json
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
@@ -42,16 +40,22 @@ class DiscordRPCService : Service() {
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate() {
         super.onCreate()
-        val token = connectionsPreferences.connectionsToken(connectionsManager.discord).get()
-        val status = when (connectionsPreferences.discordRPCStatus().get()) {
-            -1 -> "dnd"
-            0 -> "idle"
-            else -> "online"
+        // Initialize the native SDK if not already done
+        if (!DiscordRpcManager.isInitialized()) {
+            DiscordRpcManager.init(applicationContext)
         }
-        rpc = if (token.isNotBlank()) DiscordRPC(token, status) else null
-        if (rpc != null) {
+
+        // Get stored token and connect
+        val token = connectionsPreferences.connectionsToken(connectionsManager.discord).get()
+        val discordTokenStoreToken = DiscordTokenStore.retrieve()
+        val effectiveToken = discordTokenStoreToken ?: token
+
+        if (effectiveToken.isNotBlank()) {
+            if (!DiscordRpcManager.isAuthorized()) {
+                DiscordRpcManager.reconnectWithToken(effectiveToken)
+            }
             scope.launchIO {
-                try { // Add a try-catch block here
+                try {
                     if (lastUsedScreen == DiscordScreen.VIDEO) {
                         setAnimeScreen(this@DiscordRPCService, lastUsedScreen)
                     } else if (lastUsedScreen == DiscordScreen.MANGA) {
@@ -69,8 +73,7 @@ class DiscordRPCService : Service() {
 
     override fun onDestroy() {
         NotificationReceiver.dismissNotification(this, Notifications.ID_DISCORD_RPC)
-        rpc?.closeRPC() // Check for null before closing
-        rpc = null
+        DiscordRpcManager.clear()
         super.onDestroy()
     }
 
@@ -79,7 +82,6 @@ class DiscordRPCService : Service() {
     }
 
     private fun notification(context: Context) {
-        val appName = context.getString(R.string.app_name) // Get app name once
         val builder = context.notificationBuilder(Notifications.CHANNEL_DISCORD_RPC) {
             setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
             setSmallIcon(R.drawable.ic_discord_24dp)
@@ -95,8 +97,6 @@ class DiscordRPCService : Service() {
     companion object {
 
         private val connectionsPreferences: ConnectionsPreferences by injectLazy()
-
-        private var rpc: DiscordRPC? = null // Consider making private
 
         private val handler = Handler(Looper.getMainLooper())
         private val playerPreferences: PlayerPreferences by injectLazy()
@@ -116,9 +116,9 @@ class DiscordRPCService : Service() {
             )
         }
 
-        private var since = 0L // Consider making private
+        private var since = 0L
 
-        internal var lastUsedScreen = DiscordScreen.APP // Consider making private
+        internal var lastUsedScreen = DiscordScreen.APP
             set(value) {
                 field = if ((
                         value == DiscordScreen.VIDEO ||
@@ -131,21 +131,14 @@ class DiscordRPCService : Service() {
                     value
                 }
             }
-        private const val RICH_PRESENCE_APPLICATION_ID = "1173423931865170070"
         private const val MP_PREFIX = "mp:"
-        private const val EXTERNAL_PREFIX = "external/"
-        private val json = Json {
-            encodeDefaults = true
-            allowStructuredMapKeys = true
-            ignoreUnknownKeys = true
-        }
         private const val TAG = "DiscordRPCService"
 
         /**
          * Sets the appropriate screen (anime or manga) based on the last used screen context
          */
         internal suspend fun setScreen(context: Context, discordScreen: DiscordScreen) {
-            if (rpc == null) return
+            if (!DiscordRpcManager.isReady()) return
             when (lastUsedScreen) {
                 DiscordScreen.VIDEO -> {
                     setAnimeScreen(context, discordScreen)
@@ -166,11 +159,12 @@ class DiscordRPCService : Service() {
             discordScreen: DiscordScreen,
             playerData: PlayerData = PlayerData(),
         ) {
-            lastUsedScreen = discordScreen // Update last used screen
+            lastUsedScreen = discordScreen
 
-            if (rpc == null) return
+            if (!DiscordRpcManager.isReady()) return
             updateDiscordRPC(context, playerData, discordScreen)
         }
+
         private suspend fun updateDiscordRPC(
             context: Context,
             playerData: PlayerData,
@@ -201,49 +195,40 @@ class DiscordRPCService : Service() {
 
             val imageUrl = playerData.thumbnailUrl ?: discordScreen.imageUrl
 
-            val timestamps = if (showTimestamp) {
-                Activity.Timestamps(
-                    start = playerData.startTimestamp ?: since,
-                    end = playerData.endTimestamp,
-                )
+            val startTimestamp = if (showTimestamp) {
+                playerData.startTimestamp ?: since
+            } else {
+                0L
+            }
+
+            val endTimestamp = if (showTimestamp) {
+                playerData.endTimestamp
             } else {
                 null
             }
 
-            val buttons = if (showButtons) {
-                buildList {
-                    if (showDownloadButton) add(DOWNLOAD_BUTTON_LABEL)
-                    if (showDiscordButton) add(DISCORD_BUTTON_LABEL)
-                }.takeIf { it.isNotEmpty() }
-            } else {
-                null
-            }
+            val button1Label = if (showButtons && showDownloadButton) DOWNLOAD_BUTTON_LABEL else null
+            val button1Url = if (showButtons && showDownloadButton) DOWNLOAD_BUTTON_URL else null
+            val button2Label = if (showButtons && showDiscordButton) DISCORD_BUTTON_LABEL else null
+            val button2Url = if (showButtons && showDiscordButton) DISCORD_BUTTON_URL else null
 
-            val metadata = buttons?.let {
-                Activity.Metadata(
-                    buttonUrls = buildList {
-                        if (showDownloadButton) add(DOWNLOAD_BUTTON_URL)
-                        if (showDiscordButton) add(DISCORD_BUTTON_URL)
-                    },
-                )
-            }
-
-            rpc!!.updateRPC(
-                activity = Activity(
+            DiscordRpcManager.setActivity(
+                DiscordNativeActivity(
+                    activityType = DiscordNativeActivity.TYPE_WATCHING,
                     name = name,
                     details = details,
                     state = state,
-                    type = 3,
-                    timestamps = timestamps,
-                    assets = Activity.Assets(
-                        largeImage = "$MP_PREFIX$imageUrl",
-                        smallImage = "$MP_PREFIX${DiscordScreen.APP.imageUrl}",
-                        smallText = context.getString(DiscordScreen.APP.text),
-                    ),
-                    buttons = buttons,
-                    metadata = metadata,
+                    startTimestamp = startTimestamp,
+                    endTimestamp = endTimestamp,
+                    largeImage = "$MP_PREFIX$imageUrl",
+                    largeText = name,
+                    smallImage = "$MP_PREFIX${DiscordScreen.APP.imageUrl}",
+                    smallText = context.getString(DiscordScreen.APP.text),
+                    button1Label = button1Label,
+                    button1Url = button1Url,
+                    button2Label = button2Label,
+                    button2Url = button2Url,
                 ),
-                since = sinceTime,
             )
         }
 
@@ -252,8 +237,8 @@ class DiscordRPCService : Service() {
             discordScreen: DiscordScreen,
             readerData: ReaderData = ReaderData(),
         ) {
-            lastUsedScreen = discordScreen // Update last used screen
-            if (rpc == null) return
+            lastUsedScreen = discordScreen
+            if (!DiscordRpcManager.isReady()) return
             updateDiscordRPC(context, readerData, discordScreen)
         }
 
@@ -273,40 +258,27 @@ class DiscordRPCService : Service() {
             val showDownloadButton = connectionsPreferences.discordShowDownloadButton().get()
             val showDiscordButton = connectionsPreferences.discordShowDiscordButton().get()
 
-            val buttons = if (showButtons) {
-                buildList {
-                    if (showDownloadButton) add(DOWNLOAD_BUTTON_LABEL)
-                    if (showDiscordButton) add(DISCORD_BUTTON_LABEL)
-                }.takeIf { it.isNotEmpty() }
-            } else {
-                null
-            }
+            val button1Label = if (showButtons && showDownloadButton) DOWNLOAD_BUTTON_LABEL else null
+            val button1Url = if (showButtons && showDownloadButton) DOWNLOAD_BUTTON_URL else null
+            val button2Label = if (showButtons && showDiscordButton) DISCORD_BUTTON_LABEL else null
+            val button2Url = if (showButtons && showDiscordButton) DISCORD_BUTTON_URL else null
 
-            val metadata = buttons?.let {
-                Activity.Metadata(
-                    buttonUrls = buildList {
-                        if (showDownloadButton) add(DOWNLOAD_BUTTON_URL)
-                        if (showDiscordButton) add(DISCORD_BUTTON_URL)
-                    },
-                )
-            }
-
-            rpc!!.updateRPC(
-                activity = Activity(
+            DiscordRpcManager.setActivity(
+                DiscordNativeActivity(
+                    activityType = DiscordNativeActivity.TYPE_WATCHING,
                     name = name,
                     details = details,
                     state = state,
-                    type = 3,
-                    timestamps = Activity.Timestamps(start = sinceTime),
-                    assets = Activity.Assets(
-                        largeImage = "$MP_PREFIX$imageUrl",
-                        smallImage = "$MP_PREFIX${DiscordScreen.APP.imageUrl}",
-                        smallText = context.getString(DiscordScreen.APP.text),
-                    ),
-                    buttons = buttons,
-                    metadata = metadata,
+                    startTimestamp = sinceTime,
+                    largeImage = "$MP_PREFIX$imageUrl",
+                    largeText = name,
+                    smallImage = "$MP_PREFIX${DiscordScreen.APP.imageUrl}",
+                    smallText = context.getString(DiscordScreen.APP.text),
+                    button1Label = button1Label,
+                    button1Url = button1Url,
+                    button2Label = button2Label,
+                    button2Url = button2Url,
                 ),
-                since = since,
             )
         }
 
@@ -315,9 +287,9 @@ class DiscordRPCService : Service() {
             context: Context,
             playerData: PlayerData = PlayerData(),
         ) {
-            if (rpc == null || playerData.thumbnailUrl == null || playerData.animeId == null) return
+            if (!DiscordRpcManager.isReady() || playerData.thumbnailUrl == null || playerData.animeId == null) return
 
-            try { // Wrap in try-catch
+            try {
                 val categories = getCategories(playerData.animeId)
                 val discordIncognito = isIncognito(categories, playerData.incognitoMode)
 
@@ -326,9 +298,7 @@ class DiscordRPCService : Service() {
                 val (startTime, end) = getTimestamps(playerData)
 
                 withIOContext {
-                    val rpcExternalAsset = getRPCExternalAsset() // Get RPCExternalAsset
-                    val animeThumbnail =
-                        getDiscordThumbnail(rpcExternalAsset, playerData.thumbnailUrl, discordIncognito)
+                    val animeThumbnail = if (discordIncognito) null else playerData.thumbnailUrl
 
                     setAnimeScreen(
                         context = context,
@@ -352,7 +322,7 @@ class DiscordRPCService : Service() {
             context: Context,
             readerData: ReaderData = ReaderData(),
         ) {
-            if (rpc == null || readerData.thumbnailUrl == null || readerData.mangaId == null) return
+            if (!DiscordRpcManager.isReady() || readerData.thumbnailUrl == null || readerData.mangaId == null) return
             try {
                 val categories = getCategories(readerData.mangaId)
                 val discordIncognito = isIncognito(categories, readerData.incognitoMode)
@@ -361,9 +331,7 @@ class DiscordRPCService : Service() {
                 val chapterNumber = getFormattedChapterNumber(readerData, discordIncognito)
 
                 withIOContext {
-                    val rpcExternalAsset = getRPCExternalAsset() // Get rpcExternalAsset
-                    val mangaThumbnail =
-                        getDiscordThumbnail(rpcExternalAsset, readerData.thumbnailUrl, discordIncognito)
+                    val mangaThumbnail = if (discordIncognito) null else readerData.thumbnailUrl
 
                     setMangaScreen(
                         context = context,
@@ -428,38 +396,6 @@ class DiscordRPCService : Service() {
             val startTime = playerData.startTimestamp ?: System.currentTimeMillis()
             val end = playerData.endTimestamp
             return Pair(startTime, end)
-        }
-
-        private suspend fun getRPCExternalAsset(): RPCExternalAsset {
-            val connectionsManager: ConnectionsManager by injectLazy()
-            val networkService: NetworkHelper by injectLazy()
-            val client = networkService.client
-            return RPCExternalAsset(
-                applicationId = RICH_PRESENCE_APPLICATION_ID,
-                token = connectionsPreferences.connectionsToken(connectionsManager.discord).get(),
-                client = client,
-                json = json,
-            )
-        }
-        private suspend fun getDiscordThumbnail(
-            rpcExternalAsset: RPCExternalAsset,
-            thumbnailUrl: String?,
-            incognito: Boolean,
-        ): String? {
-            if (incognito || thumbnailUrl == null) return null
-
-            return try {
-                rpcExternalAsset.getDiscordUri(thumbnailUrl)
-                    ?.takeIf { !it.contains("external/Not Found") }
-                    ?.substringAfter("\"id\": \"")
-                    ?.substringBefore("\"}")
-                    ?.split(EXTERNAL_PREFIX)
-                    ?.getOrNull(1)
-                    ?.let { "$EXTERNAL_PREFIX$it" }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error getting Discord URI: ${e.message}", e)
-                null
-            }
         }
     }
 }

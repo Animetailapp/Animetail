@@ -26,6 +26,7 @@ android {
         buildConfigField("String", "COMMIT_SHA", "\"${getLatestCommitSha()}\"")
         buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLatestCommitTime = false)}\"")
         buildConfigField("boolean", "UPDATER_ENABLED", "${Config.enableUpdater}")
+        buildConfigField("Long", "DISCORD_APP_ID", "1173423931865170070L")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -99,6 +100,7 @@ android {
                 "libavutil",
                 "libconscrypt_jni",
                 "libc++_shared",
+                "libdiscord_partner_sdk",
                 "libffmpegkit_abidetect",
                 "libffmpegkit",
                 "libimagedecoder",
@@ -139,6 +141,13 @@ android {
         viewBinding = true
         buildConfig = true
         aidl = true
+        prefab = true
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
     }
 
     lint {
@@ -321,6 +330,8 @@ dependencies {
     implementation(libs.bundles.cast)
     // nanohttpd server
     implementation(libs.nanohttpd)
+    // Discord Partner SDK
+    implementation(files("libs/discord_partner_sdk.aar"))
 }
 
 androidComponents {

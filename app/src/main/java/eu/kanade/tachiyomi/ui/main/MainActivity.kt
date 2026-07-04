@@ -94,6 +94,7 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
+import eu.kanade.tachiyomi.data.connections.discord.DiscordRpcManager
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
@@ -197,6 +198,11 @@ class MainActivity : BaseActivity() {
             finish()
             return
         }
+
+        // AM (DISCORD) -->
+        // Initialize Discord RPC Manager early so native library is loaded
+        DiscordRpcManager.init(applicationContext)
+        // <-- AM (DISCORD)
 
         setComposeContent {
             val context = LocalContext.current
