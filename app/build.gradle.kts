@@ -202,8 +202,6 @@ dependencies {
     implementation(libs.androidx.sqlite.bundled)
 
     implementation(libs.kotlin.reflect)
-    implementation(libs.kotlinx.collections.immutable)
-    implementation(libs.stringSimilarity)
 
     implementation(libs.bundles.kotlinx.coroutines)
 
