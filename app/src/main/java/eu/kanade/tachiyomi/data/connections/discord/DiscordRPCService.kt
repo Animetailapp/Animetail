@@ -218,6 +218,23 @@ class DiscordRPCService : Service() {
             val button2Label = if (showButtons && showDiscordButton) DISCORD_BUTTON_LABEL else null
             val button2Url = if (showButtons && showDiscordButton) DISCORD_BUTTON_URL else null
 
+            val largeImage = if (imageUrl.startsWith(
+                    "http",
+                )
+            ) {
+                "mp:${imageUrl.replace("://", "/")}"
+            } else {
+                "$MP_PREFIX$imageUrl"
+            }
+            val smallImage = if (DiscordScreen.APP.imageUrl.startsWith(
+                    "http",
+                )
+            ) {
+                "mp:${DiscordScreen.APP.imageUrl.replace("://", "/")}"
+            } else {
+                "$MP_PREFIX${DiscordScreen.APP.imageUrl}"
+            }
+
             DiscordRpcManager.setActivity(
                 DiscordNativeActivity(
                     activityType = DiscordNativeActivity.TYPE_WATCHING,
@@ -226,9 +243,9 @@ class DiscordRPCService : Service() {
                     state = state,
                     startTimestamp = startTimestamp,
                     endTimestamp = endTimestamp,
-                    largeImage = "$MP_PREFIX$imageUrl",
+                    largeImage = largeImage,
                     largeText = name,
-                    smallImage = "$MP_PREFIX${DiscordScreen.APP.imageUrl}",
+                    smallImage = smallImage,
                     smallText = context.getString(DiscordScreen.APP.text),
                     button1Label = button1Label,
                     button1Url = button1Url,
@@ -269,6 +286,23 @@ class DiscordRPCService : Service() {
             val button2Label = if (showButtons && showDiscordButton) DISCORD_BUTTON_LABEL else null
             val button2Url = if (showButtons && showDiscordButton) DISCORD_BUTTON_URL else null
 
+            val largeImage = if (imageUrl.startsWith(
+                    "http",
+                )
+            ) {
+                "mp:${imageUrl.replace("://", "/")}"
+            } else {
+                "$MP_PREFIX$imageUrl"
+            }
+            val smallImage = if (DiscordScreen.APP.imageUrl.startsWith(
+                    "http",
+                )
+            ) {
+                "mp:${DiscordScreen.APP.imageUrl.replace("://", "/")}"
+            } else {
+                "$MP_PREFIX${DiscordScreen.APP.imageUrl}"
+            }
+
             DiscordRpcManager.setActivity(
                 DiscordNativeActivity(
                     activityType = DiscordNativeActivity.TYPE_WATCHING,
@@ -276,9 +310,9 @@ class DiscordRPCService : Service() {
                     details = details,
                     state = state,
                     startTimestamp = sinceTime,
-                    largeImage = "$MP_PREFIX$imageUrl",
+                    largeImage = largeImage,
                     largeText = name,
-                    smallImage = "$MP_PREFIX${DiscordScreen.APP.imageUrl}",
+                    smallImage = smallImage,
                     smallText = context.getString(DiscordScreen.APP.text),
                     button1Label = button1Label,
                     button1Url = button1Url,
