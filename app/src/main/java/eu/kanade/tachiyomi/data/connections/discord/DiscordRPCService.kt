@@ -45,24 +45,30 @@ class DiscordRPCService : Service() {
             DiscordRpcManager.init(applicationContext)
         }
 
-        // Get stored token and connect
-        val token = connectionsPreferences.connectionsToken(connectionsManager.discord).get()
-        val discordTokenStoreToken = DiscordTokenStore.retrieve()
-        val effectiveToken = discordTokenStoreToken ?: token
+        // Get stored OAuth token for the native SDK
+        val effectiveToken = DiscordTokenStore.retrieve()
 
-        if (effectiveToken.isNotBlank()) {
+        if (!effectiveToken.isNullOrBlank()) {
             if (!DiscordRpcManager.isAuthorized()) {
                 DiscordRpcManager.reconnectWithToken(effectiveToken)
             }
+
+            // Listen for connection ready state and update RPC automatically when established
             scope.launchIO {
-                try {
-                    if (lastUsedScreen == DiscordScreen.VIDEO) {
-                        setAnimeScreen(this@DiscordRPCService, lastUsedScreen)
-                    } else if (lastUsedScreen == DiscordScreen.MANGA) {
-                        setMangaScreen(this@DiscordRPCService, lastUsedScreen)
+                DiscordRpcManager.connectionStatus.collect { status ->
+                    if (status == DiscordRpcManager.Status.Connected) {
+                        try {
+                            if (lastUsedScreen == DiscordScreen.VIDEO) {
+                                setAnimeScreen(this@DiscordRPCService, lastUsedScreen)
+                            } else if (lastUsedScreen == DiscordScreen.MANGA) {
+                                setMangaScreen(this@DiscordRPCService, lastUsedScreen)
+                            } else {
+                                setScreen(this@DiscordRPCService, lastUsedScreen)
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error updating presence on connection ready: ${e.message}", e)
+                        }
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error setting screen: ${e.message}", e)
                 }
             }
             notification(this)

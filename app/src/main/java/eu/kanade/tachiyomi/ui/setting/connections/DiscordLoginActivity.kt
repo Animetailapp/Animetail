@@ -7,6 +7,7 @@ import android.util.Log
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.connections.discord.DiscordAccount
+import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRpcManager
 import eu.kanade.tachiyomi.data.connections.discord.DiscordTokenStore
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
@@ -109,6 +110,9 @@ class DiscordLoginActivity : BaseActivity() {
     private fun handleLoginSuccess() {
         toast(MR.strings.login_success)
         setResult(RESULT_OK)
+        if (connectionsPreferences.enableDiscordRPC().get()) {
+            DiscordRPCService.start(applicationContext)
+        }
         finish()
     }
 

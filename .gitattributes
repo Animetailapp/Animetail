@@ -22,3 +22,8 @@
 *.woff binary
 *.pyc binary
 *.swp binary
+
+# Android build binaries
+*.aar binary
+*.so binary
+
