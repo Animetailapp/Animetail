@@ -191,6 +191,10 @@ class MainActivity : BaseActivity() {
 
         super.onCreate(savedInstanceState)
 
+        try {
+            com.discord.socialsdk.DiscordSocialSdkInit.setEngineActivity(this)
+        } catch (_: Exception) {}
+
         val didMigration = Migrator.awaitAndRelease()
 
         // Do not let the launcher create a new activity http://stackoverflow.com/questions/16283079
@@ -780,6 +784,13 @@ class MainActivity : BaseActivity() {
         super.onResume()
         mpvConfig.copyFiles()
     }
+    override fun onDestroy() {
+        try {
+            com.discord.socialsdk.DiscordSocialSdkInit.setEngineActivity(null)
+        } catch (_: Exception) {}
+        super.onDestroy()
+    }
+
     // <-- AM
 
     private fun Intent.isAddMangaExtensionStoreIntent(): Boolean {

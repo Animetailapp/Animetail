@@ -117,3 +117,7 @@
 -keep class * extends org.apache.commons.compress.archivers.zip.ZipExtraField { <init>(); }
 
 -keep public enum nl.adaptivity.xmlutil.EventType { *; }
+
+# Discord RPC Manager JNI Calls
+-keep class eu.kanade.tachiyomi.data.connections.discord.DiscordRpcManager { *; }
+-keep class com.discord.socialsdk.** { *; }

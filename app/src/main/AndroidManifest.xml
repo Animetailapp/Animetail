@@ -291,29 +291,25 @@
         <activity android:label="Discord Login"
             android:name=".ui.setting.connections.DiscordLoginActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
-            android:exported="false"
-            tools:ignore="AppLinkUrlError">
+            android:exported="false" />
+
+        <activity
+            android:name="com.discord.socialsdk.AuthenticationActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
             <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="account.samsung.com" android:path="/accounts/oauth/callback"/>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="discord-1173423931865170070" />
             </intent-filter>
         </activity>
+
         <service
             android:name=".data.connections.discord.DiscordRPCService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https"
-                    android:host="account.samsung.com"
-                    android:path="/accounts/oauth/callback"/>
-            </intent-filter>
-        </service>
+            android:foregroundServiceType="dataSync" />
 
         <receiver
             android:name=".data.notification.NotificationReceiver"
