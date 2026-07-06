@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
@@ -21,6 +22,7 @@ class OpenSourceLicensesScreen : Screen() {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val context = LocalContext.current
         Scaffold(
             topBar = { scrollBehavior ->
                 AppBar(
@@ -30,7 +32,9 @@ class OpenSourceLicensesScreen : Screen() {
                 )
             },
         ) { contentPadding ->
-            val libraries by produceLibraries(R.raw.aboutlibraries)
+            val libraries by produceLibraries {
+                context.resources.openRawResource(R.raw.aboutlibraries).bufferedReader().use { it.readText() }
+            }
             LibrariesContainer(
                 libraries = libraries,
                 modifier = Modifier.fillMaxSize(),
