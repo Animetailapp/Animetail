@@ -64,10 +64,12 @@ class DiscordRPCService : Service() {
                                     val data = activePlayerData ?: PlayerData()
                                     setAnimeScreen(this@DiscordRPCService, currentScreen, data)
                                 }
+
                                 DiscordScreen.MANGA -> {
                                     val data = activeReaderData ?: ReaderData()
                                     setMangaScreen(this@DiscordRPCService, currentScreen, data)
                                 }
+
                                 else -> {
                                     setScreen(this@DiscordRPCService, currentScreen)
                                 }
@@ -159,7 +161,9 @@ class DiscordRPCService : Service() {
         internal suspend fun setScreen(context: Context, discordScreen: DiscordScreen) {
             if (!connectionsPreferences.enableDiscordRPC().get()) return
             currentScreen = discordScreen
-            if (discordScreen != DiscordScreen.VIDEO && discordScreen != DiscordScreen.MANGA && discordScreen != DiscordScreen.WEBVIEW) {
+            if (discordScreen != DiscordScreen.VIDEO && discordScreen != DiscordScreen.MANGA &&
+                discordScreen != DiscordScreen.WEBVIEW
+            ) {
                 lastUsedScreen = discordScreen
                 activePlayerData = null
                 activeReaderData = null
@@ -221,7 +225,7 @@ class DiscordRPCService : Service() {
                     customMessage.isNotBlank() -> customMessage
                     playerData.animeTitle != null -> playerData.animeTitle
                     else -> context.getString(discordScreen.details)
-                }
+                },
             )
 
             val state = sanitizeField(
@@ -229,7 +233,7 @@ class DiscordRPCService : Service() {
                     !showProgress -> null
                     playerData.episodeNumber != null -> playerData.episodeNumber
                     else -> context.getString(discordScreen.text)
-                }
+                },
             )
 
             val imageUrl = playerData.thumbnailUrl.takeUnless { it.isNullOrBlank() } ?: discordScreen.imageUrl
@@ -352,7 +356,13 @@ class DiscordRPCService : Service() {
                 val animeTitle = playerData.animeTitle.takeUnless { discordIncognito }
                 val episodeNumber = getFormattedEpisodeNumber(playerData, discordIncognito)
                 val (startTime, end) = getTimestamps(playerData)
-                val animeThumbnail = if (discordIncognito) null else playerData.thumbnailUrl.takeUnless { it.isNullOrBlank() }
+                val animeThumbnail = if (discordIncognito) {
+                    null
+                } else {
+                    playerData.thumbnailUrl.takeUnless {
+                        it.isNullOrBlank()
+                    }
+                }
 
                 val data = PlayerData(
                     incognitoMode = discordIncognito,
@@ -396,7 +406,13 @@ class DiscordRPCService : Service() {
 
                 val mangaTitle = readerData.mangaTitle.takeUnless { discordIncognito }
                 val chapterNumber = getFormattedChapterNumber(readerData, discordIncognito)
-                val mangaThumbnail = if (discordIncognito) null else readerData.thumbnailUrl.takeUnless { it.isNullOrBlank() }
+                val mangaThumbnail = if (discordIncognito) {
+                    null
+                } else {
+                    readerData.thumbnailUrl.takeUnless {
+                        it.isNullOrBlank()
+                    }
+                }
 
                 val data = ReaderData(
                     incognitoMode = discordIncognito,
@@ -485,7 +501,13 @@ class DiscordRPCService : Service() {
                     } else {
                         val doubleVal = episodeNumber.toDoubleOrNull()
                         val epNumText = if (doubleVal != null) {
-                            if (ceil(doubleVal) == floor(doubleVal)) doubleVal.toInt().toString() else doubleVal.toString()
+                            if (ceil(doubleVal) ==
+                                floor(doubleVal)
+                            ) {
+                                doubleVal.toInt().toString()
+                            } else {
+                                doubleVal.toString()
+                            }
                         } else {
                             episodeNumber
                         }
@@ -529,7 +551,13 @@ class DiscordRPCService : Service() {
 
             val doubleVal = chapterNumber.toDoubleOrNull()
             return if (doubleVal != null) {
-                val chapNumText = if (ceil(doubleVal) == floor(doubleVal)) doubleVal.toInt().toString() else doubleVal.toString()
+                val chapNumText = if (ceil(doubleVal) ==
+                    floor(doubleVal)
+                ) {
+                    doubleVal.toInt().toString()
+                } else {
+                    doubleVal.toString()
+                }
                 "$chapterText $chapNumText ($pageProgress)"
             } else {
                 "$chapterText $chapterNumber ($pageProgress)"
