@@ -534,7 +534,7 @@ class DiscordRPCService : Service() {
 
         private fun getFormattedChapterNumber(readerData: ReaderData, discordIncognito: Boolean): String? {
             val chapterNumber = readerData.chapterNumber ?: return null
-            val chapterProgress = readerData.chapterProgress ?: Pair(0, 0)
+            val chapterProgress = readerData.chapterProgress
             if (discordIncognito) return null
 
             val isSpanish = java.util.Locale.getDefault().language == "es"

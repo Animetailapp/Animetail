@@ -81,18 +81,6 @@ fun CastSheet(
                 ) {
                     items(devices) { device ->
                         ListItem(
-                            headlineContent = {
-                                Text(
-                                    text = device.name,
-                                    style = if (device.isConnected) {
-                                        MaterialTheme.typography.bodyLarge.copy(
-                                            color = MaterialTheme.colorScheme.primary,
-                                        )
-                                    } else {
-                                        MaterialTheme.typography.bodyLarge
-                                    },
-                                )
-                            },
                             leadingContent = {
                                 Icon(
                                     if (device.isConnected) {
@@ -115,7 +103,18 @@ fun CastSheet(
                                     castManager.connectToDevice(device.id)
                                 }
                             },
-                        )
+                        ) {
+                            Text(
+                                text = device.name,
+                                style = if (device.isConnected) {
+                                    MaterialTheme.typography.bodyLarge.copy(
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                } else {
+                                    MaterialTheme.typography.bodyLarge
+                                },
+                            )
+                        }
                     }
                 }
 

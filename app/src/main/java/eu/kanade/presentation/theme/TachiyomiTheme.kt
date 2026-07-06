@@ -104,6 +104,7 @@ private const val RIPPLE_FOCUSED_ALPHA = .1f
 private const val RIPPLE_HOVERED_ALPHA = .1f
 private const val RIPPLE_PRESSED_ALPHA = .1f
 
+@Suppress("DEPRECATION")
 val playerRippleConfiguration
     @Composable get() = RippleConfiguration(
         color = if (isSystemInDarkTheme()) Color.White else Color.Black,

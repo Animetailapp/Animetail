@@ -144,6 +144,7 @@ private const val NETWORK_STREAM_EPISODE_ID = Long.MIN_VALUE + 102
 class PlayerViewModelProviderFactory(
     private val activity: PlayerActivity,
 ) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
         return PlayerViewModel(activity, extras.createSavedStateHandle()) as T
     }
@@ -929,11 +930,13 @@ class PlayerViewModel @JvmOverloads constructor(
 
     private val inputMethodManager = activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
     private fun forceShowSoftwareKeyboard() {
-        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
+        val view = activity.currentFocus ?: activity.window.decorView
+        inputMethodManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
     }
 
     private fun forceHideSoftwareKeyboard() {
-        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0)
+        val view = activity.currentFocus ?: activity.window.decorView
+        inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     private val doubleTapToSeekDuration = gesturePreferences.skipLengthPreference().get()

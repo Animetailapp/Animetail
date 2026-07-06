@@ -24,6 +24,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.AnchoredDraggableDefaults
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
@@ -102,10 +103,14 @@ fun PlayerSheet(
     val anchoredDraggableState = remember {
         AnchoredDraggableState(
             initialValue = 1,
-            snapAnimationSpec = sheetAnimationSpec,
+        )
+    }
+    val flingBehavior = remember(anchoredDraggableState, decayAnimationSpec) {
+        AnchoredDraggableDefaults.flingBehavior(
+            state = anchoredDraggableState,
             decayAnimationSpec = decayAnimationSpec,
+            snapAnimationSpec = sheetAnimationSpec,
             positionalThreshold = { with(density) { 56.dp.toPx() } },
-            velocityThreshold = { with(density) { 125.dp.toPx() } },
         )
     }
 
@@ -169,6 +174,7 @@ fun PlayerSheet(
                 .anchoredDraggable(
                     state = anchoredDraggableState,
                     orientation = Orientation.Vertical,
+                    flingBehavior = flingBehavior,
                 )
                 .windowInsetsPadding(
                     WindowInsets.systemBars
@@ -224,7 +230,7 @@ private fun <T> AnchoredDraggableState<T>.preUpPostDownNestedScrollConnection() 
     override suspend fun onPreFling(available: Velocity): Velocity {
         val toFling = available.toFloat()
         return if (toFling < 0 && offset > 0f) {
-            settle(toFling)
+            performFling(toFling)
             available
         } else {
             Velocity.Zero
@@ -234,7 +240,7 @@ private fun <T> AnchoredDraggableState<T>.preUpPostDownNestedScrollConnection() 
     override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
         val toFling = available.toFloat()
         return if (toFling > 0) {
-            settle(toFling)
+            performFling(toFling)
             available
         } else {
             Velocity.Zero

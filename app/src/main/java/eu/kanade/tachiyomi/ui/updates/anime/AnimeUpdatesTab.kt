@@ -95,7 +95,6 @@ fun Screen.animeUpdatesTab(
                     scope.launchIO {
                         openEpisode(updateItem, altPlayer)
                     }
-                    Unit
                 },
             )
 
