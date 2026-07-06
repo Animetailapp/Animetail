@@ -1,0 +1,260 @@
+The target system is: Android - 1 - i686
+The host system is: Windows - 10.0.26200 - AMD64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/clang.exe 
+Build flags: -g;-DANDROID;-fdata-sections;-ffunction-sections;-funwind-tables;-fstack-protector-strong;-no-canonical-prefixes;-D_FORTIFY_SOURCE=2;-Wformat;-Werror=format-security;
+Id flags: -c;--target=i686-none-linux-android26 
+
+The output was:
+0
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.o"
+
+The C compiler identification is Clang, found in "C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/3.22.1-g37088a8-dirty/CompilerIdC/CMakeCCompilerId.o"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/clang++.exe 
+Build flags: -g;-DANDROID;-fdata-sections;-ffunction-sections;-funwind-tables;-fstack-protector-strong;-no-canonical-prefixes;-D_FORTIFY_SOURCE=2;-Wformat;-Werror=format-security;;
+Id flags: -c;--target=i686-none-linux-android26 
+
+The output was:
+0
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.o"
+
+The CXX compiler identification is Clang, found in "C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/3.22.1-g37088a8-dirty/CompilerIdCXX/CMakeCXXCompilerId.o"
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp
+
+Run Build Command(s):C:\Users\amaur\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe cmTC_aeedd && [1/2] Building C object CMakeFiles/cmTC_aeedd.dir/CMakeCCompilerABI.c.o
+Android (13989888, based on r563880c) clang version 21.0.0 (https://android.googlesource.com/toolchain/llvm-project 5e96669f06077099aa41290cdb4c5e6fa0f59349)
+Target: i686-none-linux-android26
+Thread model: posix
+InstalledDir: C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin
+ (in-process)
+ "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/clang.exe" -cc1 -triple i686-none-linux-android26 -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCCompilerABI.c -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=non-leaf -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu i686 -target-feature +ssse3 -tune-cpu generic -debug-info-kind=constructor -dwarf-version=4 -debugger-tuning=gdb "-fdebug-compilation-dir=C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp" -v -ffunction-sections -fdata-sections "-fcoverage-compilation-dir=C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp" -resource-dir C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21 -dependency-file "CMakeFiles\\cmTC_aeedd.dir\\CMakeCCompilerABI.c.o.d" -MT CMakeFiles/cmTC_aeedd.dir/CMakeCCompilerABI.c.o -sys-header-deps -D ANDROID -D _FORTIFY_SOURCE=2 -isysroot C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot -internal-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include -internal-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/local/include -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/include -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include -Wformat -ferror-limit 19 -femulated-tls -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_aeedd.dir/CMakeCCompilerABI.c.o -x c C:/Users/amaur/AppData/Local/Android/Sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCCompilerABI.c
+clang -cc1 version 21.0.0 based upon LLVM 21.0.0 default target x86_64-w64-windows-gnu
+ignoring nonexistent directory "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/local/include"
+ignoring nonexistent directory "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include
+ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android
+ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include
+End of search list.
+[2/2] Linking C executable cmTC_aeedd
+Android (13989888, based on r563880c) clang version 21.0.0 (https://android.googlesource.com/toolchain/llvm-project 5e96669f06077099aa41290cdb4c5e6fa0f59349)
+Target: i686-none-linux-android26
+Thread model: posix
+InstalledDir: C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin
+ "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/ld.lld" --sysroot=C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot -z now -z relro --no-rosegment --hash-style=gnu --eh-frame-hdr -m elf_i386 -pie -dynamic-linker /system/bin/linker -o cmTC_aeedd C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtbegin_dynamic.o -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386 -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26 -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib --build-id=sha1 --no-rosegment --no-undefined-version --fatal-warnings --no-undefined CMakeFiles/cmTC_aeedd.dir/CMakeCCompilerABI.c.o C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a -l:libunwind.a -ldl -lc C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a -l:libunwind.a -ldl C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtend_android.o
+
+
+
+Parsed C implicit include dir info from above output: rv=done
+  found start of include info
+  found start of implicit include info
+    add: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include]
+    add: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android]
+    add: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include]
+  end of search list found
+  collapse include dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include]
+  collapse include dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android]
+  collapse include dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include]
+  implicit include dirs: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include]
+
+
+Parsed C implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld\.lld\.exe|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command(s):C:\Users\amaur\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe cmTC_aeedd && [1/2] Building C object CMakeFiles/cmTC_aeedd.dir/CMakeCCompilerABI.c.o]
+  ignore line: [Android (13989888  based on r563880c) clang version 21.0.0 (https://android.googlesource.com/toolchain/llvm-project 5e96669f06077099aa41290cdb4c5e6fa0f59349)]
+  ignore line: [Target: i686-none-linux-android26]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin]
+  ignore line: [ (in-process)]
+  ignore line: [ "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/clang.exe" -cc1 -triple i686-none-linux-android26 -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCCompilerABI.c -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=non-leaf -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu i686 -target-feature +ssse3 -tune-cpu generic -debug-info-kind=constructor -dwarf-version=4 -debugger-tuning=gdb "-fdebug-compilation-dir=C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp" -v -ffunction-sections -fdata-sections "-fcoverage-compilation-dir=C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp" -resource-dir C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21 -dependency-file "CMakeFiles\\cmTC_aeedd.dir\\CMakeCCompilerABI.c.o.d" -MT CMakeFiles/cmTC_aeedd.dir/CMakeCCompilerABI.c.o -sys-header-deps -D ANDROID -D _FORTIFY_SOURCE=2 -isysroot C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot -internal-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include -internal-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/local/include -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/include -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include -Wformat -ferror-limit 19 -femulated-tls -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_aeedd.dir/CMakeCCompilerABI.c.o -x c C:/Users/amaur/AppData/Local/Android/Sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCCompilerABI.c]
+  ignore line: [clang -cc1 version 21.0.0 based upon LLVM 21.0.0 default target x86_64-w64-windows-gnu]
+  ignore line: [ignoring nonexistent directory "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/local/include"]
+  ignore line: [ignoring nonexistent directory "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/include"]
+  ignore line: [#include "..." search starts here:]
+  ignore line: [#include <...> search starts here:]
+  ignore line: [ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include]
+  ignore line: [ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android]
+  ignore line: [ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include]
+  ignore line: [End of search list.]
+  ignore line: [[2/2] Linking C executable cmTC_aeedd]
+  ignore line: [Android (13989888  based on r563880c) clang version 21.0.0 (https://android.googlesource.com/toolchain/llvm-project 5e96669f06077099aa41290cdb4c5e6fa0f59349)]
+  ignore line: [Target: i686-none-linux-android26]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin]
+  link line: [ "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/ld.lld" --sysroot=C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot -z now -z relro --no-rosegment --hash-style=gnu --eh-frame-hdr -m elf_i386 -pie -dynamic-linker /system/bin/linker -o cmTC_aeedd C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtbegin_dynamic.o -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386 -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26 -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib --build-id=sha1 --no-rosegment --no-undefined-version --fatal-warnings --no-undefined CMakeFiles/cmTC_aeedd.dir/CMakeCCompilerABI.c.o C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a -l:libunwind.a -ldl -lc C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a -l:libunwind.a -ldl C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtend_android.o]
+    arg [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/ld.lld] ==> ignore
+    arg [--sysroot=C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot] ==> ignore
+    arg [-znow] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [--no-rosegment] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_i386] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/system/bin/linker] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_aeedd] ==> ignore
+    arg [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtbegin_dynamic.o] ==> obj [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtbegin_dynamic.o]
+    arg [-LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386] ==> dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386]
+    arg [-LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26] ==> dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26]
+    arg [-LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android] ==> dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android]
+    arg [-LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib] ==> dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib]
+    arg [--build-id=sha1] ==> ignore
+    arg [--no-rosegment] ==> ignore
+    arg [--no-undefined-version] ==> ignore
+    arg [--fatal-warnings] ==> ignore
+    arg [--no-undefined] ==> ignore
+    arg [CMakeFiles/cmTC_aeedd.dir/CMakeCCompilerABI.c.o] ==> ignore
+    arg [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a] ==> lib [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a]
+    arg [-l:libunwind.a] ==> lib [-l:libunwind.a]
+    arg [-ldl] ==> lib [dl]
+    arg [-lc] ==> lib [c]
+    arg [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a] ==> lib [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a]
+    arg [-l:libunwind.a] ==> lib [-l:libunwind.a]
+    arg [-ldl] ==> lib [dl]
+    arg [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtend_android.o] ==> obj [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtend_android.o]
+  remove lib [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a]
+  remove lib [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a]
+  collapse library dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386]
+  collapse library dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26]
+  collapse library dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android]
+  collapse library dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib]
+  implicit libs: [-l:libunwind.a;dl;c;-l:libunwind.a;dl]
+  implicit objs: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtbegin_dynamic.o;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtend_android.o]
+  implicit dirs: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib]
+  implicit fwks: []
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp
+
+Run Build Command(s):C:\Users\amaur\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe cmTC_291db && [1/2] Building CXX object CMakeFiles/cmTC_291db.dir/CMakeCXXCompilerABI.cpp.o
+Android (13989888, based on r563880c) clang version 21.0.0 (https://android.googlesource.com/toolchain/llvm-project 5e96669f06077099aa41290cdb4c5e6fa0f59349)
+Target: i686-none-linux-android26
+Thread model: posix
+InstalledDir: C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin
+ (in-process)
+ "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/clang++.exe" -cc1 -triple i686-none-linux-android26 -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=non-leaf -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu i686 -target-feature +ssse3 -tune-cpu generic -debug-info-kind=constructor -dwarf-version=4 -debugger-tuning=gdb "-fdebug-compilation-dir=C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp" -v -ffunction-sections -fdata-sections "-fcoverage-compilation-dir=C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp" -resource-dir C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21 -dependency-file "CMakeFiles\\cmTC_291db.dir\\CMakeCXXCompilerABI.cpp.o.d" -MT CMakeFiles/cmTC_291db.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -D ANDROID -D _FORTIFY_SOURCE=2 -isysroot C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot -internal-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/c++/v1 -internal-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include -internal-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/local/include -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/include -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include -Wformat -fdeprecated-macro -ferror-limit 19 -femulated-tls -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_291db.dir/CMakeCXXCompilerABI.cpp.o -x c++ C:/Users/amaur/AppData/Local/Android/Sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCXXCompilerABI.cpp
+clang -cc1 version 21.0.0 based upon LLVM 21.0.0 default target x86_64-w64-windows-gnu
+ignoring nonexistent directory "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/local/include"
+ignoring nonexistent directory "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/c++/v1
+ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include
+ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android
+ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include
+End of search list.
+[2/2] Linking CXX executable cmTC_291db
+Android (13989888, based on r563880c) clang version 21.0.0 (https://android.googlesource.com/toolchain/llvm-project 5e96669f06077099aa41290cdb4c5e6fa0f59349)
+Target: i686-none-linux-android26
+Thread model: posix
+InstalledDir: C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin
+ "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/ld.lld" --sysroot=C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot -z now -z relro --no-rosegment --hash-style=gnu --eh-frame-hdr -m elf_i386 -pie -dynamic-linker /system/bin/linker -o cmTC_291db C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtbegin_dynamic.o -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386 -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26 -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib --build-id=sha1 --no-rosegment --no-undefined-version --fatal-warnings --no-undefined CMakeFiles/cmTC_291db.dir/CMakeCXXCompilerABI.cpp.o -Bstatic -lc++ -Bdynamic -lm C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a -l:libunwind.a -ldl -lc C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a -l:libunwind.a -ldl C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtend_android.o
+
+
+
+Parsed CXX implicit include dir info from above output: rv=done
+  found start of include info
+  found start of implicit include info
+    add: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/c++/v1]
+    add: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include]
+    add: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android]
+    add: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include]
+  end of search list found
+  collapse include dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/c++/v1] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/c++/v1]
+  collapse include dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include]
+  collapse include dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android]
+  collapse include dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include]
+  implicit include dirs: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/c++/v1;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include]
+
+
+Parsed CXX implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld\.lld\.exe|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command(s):C:\Users\amaur\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe cmTC_291db && [1/2] Building CXX object CMakeFiles/cmTC_291db.dir/CMakeCXXCompilerABI.cpp.o]
+  ignore line: [Android (13989888  based on r563880c) clang version 21.0.0 (https://android.googlesource.com/toolchain/llvm-project 5e96669f06077099aa41290cdb4c5e6fa0f59349)]
+  ignore line: [Target: i686-none-linux-android26]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin]
+  ignore line: [ (in-process)]
+  ignore line: [ "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/clang++.exe" -cc1 -triple i686-none-linux-android26 -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=non-leaf -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu i686 -target-feature +ssse3 -tune-cpu generic -debug-info-kind=constructor -dwarf-version=4 -debugger-tuning=gdb "-fdebug-compilation-dir=C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp" -v -ffunction-sections -fdata-sections "-fcoverage-compilation-dir=C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/CMakeTmp" -resource-dir C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21 -dependency-file "CMakeFiles\\cmTC_291db.dir\\CMakeCXXCompilerABI.cpp.o.d" -MT CMakeFiles/cmTC_291db.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -D ANDROID -D _FORTIFY_SOURCE=2 -isysroot C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot -internal-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/c++/v1 -internal-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include -internal-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/local/include -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/include -internal-externc-isystem C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include -Wformat -fdeprecated-macro -ferror-limit 19 -femulated-tls -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_291db.dir/CMakeCXXCompilerABI.cpp.o -x c++ C:/Users/amaur/AppData/Local/Android/Sdk/cmake/3.22.1/share/cmake-3.22/Modules/CMakeCXXCompilerABI.cpp]
+  ignore line: [clang -cc1 version 21.0.0 based upon LLVM 21.0.0 default target x86_64-w64-windows-gnu]
+  ignore line: [ignoring nonexistent directory "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/local/include"]
+  ignore line: [ignoring nonexistent directory "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/include"]
+  ignore line: [#include "..." search starts here:]
+  ignore line: [#include <...> search starts here:]
+  ignore line: [ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/c++/v1]
+  ignore line: [ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/include]
+  ignore line: [ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/i686-linux-android]
+  ignore line: [ C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include]
+  ignore line: [End of search list.]
+  ignore line: [[2/2] Linking CXX executable cmTC_291db]
+  ignore line: [Android (13989888  based on r563880c) clang version 21.0.0 (https://android.googlesource.com/toolchain/llvm-project 5e96669f06077099aa41290cdb4c5e6fa0f59349)]
+  ignore line: [Target: i686-none-linux-android26]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin]
+  link line: [ "C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/ld.lld" --sysroot=C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot -z now -z relro --no-rosegment --hash-style=gnu --eh-frame-hdr -m elf_i386 -pie -dynamic-linker /system/bin/linker -o cmTC_291db C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtbegin_dynamic.o -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386 -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26 -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android -LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib --build-id=sha1 --no-rosegment --no-undefined-version --fatal-warnings --no-undefined CMakeFiles/cmTC_291db.dir/CMakeCXXCompilerABI.cpp.o -Bstatic -lc++ -Bdynamic -lm C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a -l:libunwind.a -ldl -lc C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a -l:libunwind.a -ldl C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtend_android.o]
+    arg [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/bin/ld.lld] ==> ignore
+    arg [--sysroot=C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot] ==> ignore
+    arg [-znow] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [--no-rosegment] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_i386] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/system/bin/linker] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_291db] ==> ignore
+    arg [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtbegin_dynamic.o] ==> obj [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtbegin_dynamic.o]
+    arg [-LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386] ==> dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386]
+    arg [-LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26] ==> dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26]
+    arg [-LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android] ==> dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android]
+    arg [-LC:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib] ==> dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib]
+    arg [--build-id=sha1] ==> ignore
+    arg [--no-rosegment] ==> ignore
+    arg [--no-undefined-version] ==> ignore
+    arg [--fatal-warnings] ==> ignore
+    arg [--no-undefined] ==> ignore
+    arg [CMakeFiles/cmTC_291db.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+    arg [-Bstatic] ==> search static
+    arg [-lc++] ==> lib [c++]
+    arg [-Bdynamic] ==> search dynamic
+    arg [-lm] ==> lib [m]
+    arg [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a] ==> lib [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a]
+    arg [-l:libunwind.a] ==> lib [-l:libunwind.a]
+    arg [-ldl] ==> lib [dl]
+    arg [-lc] ==> lib [c]
+    arg [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a] ==> lib [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a]
+    arg [-l:libunwind.a] ==> lib [-l:libunwind.a]
+    arg [-ldl] ==> lib [dl]
+    arg [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtend_android.o] ==> obj [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtend_android.o]
+  remove lib [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a]
+  remove lib [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/libclang_rt.builtins-i686-android.a]
+  collapse library dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386]
+  collapse library dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26]
+  collapse library dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android]
+  collapse library dir [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib] ==> [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib]
+  implicit libs: [c++;m;-l:libunwind.a;dl;c;-l:libunwind.a;dl]
+  implicit objs: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtbegin_dynamic.o;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26/crtend_android.o]
+  implicit dirs: [C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/lib/clang/21/lib/linux/i386;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android/26;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/i686-linux-android;C:/Users/amaur/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib]
+  implicit fwks: []
+
+

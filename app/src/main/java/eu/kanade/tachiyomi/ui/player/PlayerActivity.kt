@@ -406,11 +406,12 @@ class PlayerActivity : BaseActivity() {
         if (isPipSupportedAndEnabled && mpv.getPropertyBoolean("pause") == false &&
             playerPreferences.pipOnExit().get()
         ) {
-            enterPictureInPictureMode()
+            enterPictureInPictureMode(android.app.PictureInPictureParams.Builder().build())
         }
         super.onUserLeaveHint()
     }
 
+    @Suppress("DEPRECATION")
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (isPipSupportedAndEnabled && mpv.getPropertyBoolean("pause") == false &&
@@ -420,7 +421,7 @@ class PlayerActivity : BaseActivity() {
                 viewModel.panelShown.value == Panels.None &&
                 viewModel.dialogShown.value == Dialogs.None
             ) {
-                enterPictureInPictureMode()
+                enterPictureInPictureMode(android.app.PictureInPictureParams.Builder().build())
             }
         } else {
             super.onBackPressed()
@@ -436,11 +437,6 @@ class PlayerActivity : BaseActivity() {
             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
         )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        binding.root.systemUiVisibility =
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-            View.SYSTEM_UI_FLAG_LOW_PROFILE
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
         windowInsetsController.hide(WindowInsetsCompat.Type.navigationBars())
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -1429,6 +1425,10 @@ class PlayerActivity : BaseActivity() {
                             } else {
                                 episode.episode_number.toString()
                             },
+                            episodeProgress = Pair(
+                                viewModel.getCurrentEpisodeIndex() + 1,
+                                viewModel.currentPlaylist.value.size,
+                            ),
                             startTimestamp = startTimestamp.timeInMillis,
                             endTimestamp = endTimestamp.timeInMillis,
                         ),

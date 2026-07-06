@@ -21,7 +21,6 @@ import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.AnchoredDraggableState
@@ -98,14 +97,9 @@ fun PlayerSheet(
         label = "alpha",
     )
 
-    val decayAnimationSpec = rememberSplineBasedDecay<Float>()
     val anchoredDraggableState = remember {
         AnchoredDraggableState(
             initialValue = 1,
-            snapAnimationSpec = sheetAnimationSpec,
-            decayAnimationSpec = decayAnimationSpec,
-            positionalThreshold = { with(density) { 56.dp.toPx() } },
-            velocityThreshold = { with(density) { 125.dp.toPx() } },
         )
     }
 
@@ -199,6 +193,7 @@ fun PlayerSheet(
     }
 }
 
+@Suppress("DEPRECATION")
 private fun <T> AnchoredDraggableState<T>.preUpPostDownNestedScrollConnection() = object : NestedScrollConnection {
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
         val delta = available.toFloat()

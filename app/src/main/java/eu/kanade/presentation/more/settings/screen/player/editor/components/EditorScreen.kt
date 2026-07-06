@@ -179,13 +179,12 @@ private fun FileListItem(
                 Icon(Icons.Filled.MoreHoriz, null)
             }
         },
-        headlineContent = {
-            Text(text = item.name)
-        },
         supportingContent = {
             Text(
                 text = listOfNotNull(item.size, item.lastModified).joinToString(" - "),
             )
         },
-    )
+    ) {
+        Text(text = item.name)
+    }
 }

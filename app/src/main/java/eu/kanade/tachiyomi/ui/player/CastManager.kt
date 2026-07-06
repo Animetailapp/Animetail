@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaQueueItem
+import com.google.android.gms.cast.MediaSeekOptions
 import com.google.android.gms.cast.TextTrackStyle
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
@@ -575,7 +576,11 @@ class CastManager(
     fun seekRelative(offset: Int) {
         castSession?.remoteMediaClient?.let { client ->
             val newPosition = client.approximateStreamPosition + (offset * 1000)
-            client.seek(newPosition)
+            client.seek(
+                MediaSeekOptions.Builder()
+                    .setPosition(newPosition)
+                    .build(),
+            )
         }
     }
 

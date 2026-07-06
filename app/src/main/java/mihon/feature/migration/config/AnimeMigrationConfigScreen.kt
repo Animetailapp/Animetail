@@ -286,13 +286,6 @@ private fun ReorderableCollectionItemScope.MigrationSourceItem(
     onSelect: () -> Unit,
 ) {
     ListItem(
-        headlineContent = {
-            Text(
-                text = source.name,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
         supportingContent = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -330,7 +323,13 @@ private fun ReorderableCollectionItemScope.MigrationSourceItem(
             containerColor = if (isSelected) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
         ),
         modifier = Modifier.clickable(onClick = onSelect),
-    )
+    ) {
+        Text(
+            text = source.name,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 private fun AnimeHttpSource.toDomainSource(): AnimeSource {

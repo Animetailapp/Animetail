@@ -342,7 +342,7 @@ fun LibraryBottomActionMenu(
                     if (isActive) confirm[toConfirmIndex] = false
                 }
             }
-            val showOverflow = onDeleteClicked != null || onMigrateClicked != null || onClickResetInfo != null
+            val showOverflow = true
             var overflowExpanded by remember { mutableStateOf(false) }
             Row(
                 modifier = Modifier
@@ -414,15 +414,13 @@ fun LibraryBottomActionMenu(
                                     },
                                 )
                             }
-                            if (onDeleteClicked != null) {
-                                DropdownMenuItem(
-                                    text = { Text(text = stringResource(MR.strings.action_delete)) },
-                                    onClick = {
-                                        onDeleteClicked()
-                                        overflowExpanded = false
-                                    },
-                                )
-                            }
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(MR.strings.action_delete)) },
+                                onClick = {
+                                    onDeleteClicked()
+                                    overflowExpanded = false
+                                },
+                            )
                             // SY -->
                             if (onClickResetInfo != null) {
                                 DropdownMenuItem(

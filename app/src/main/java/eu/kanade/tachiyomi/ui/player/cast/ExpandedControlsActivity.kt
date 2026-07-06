@@ -36,10 +36,19 @@ class ExpandedControlsActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this) {
             minimizePlayer()
         }
-        overridePendingTransition(
-            R.anim.slide_in_up,
-            R.anim.player_fade_out,
-        )
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(
+                android.app.Activity.OVERRIDE_TRANSITION_OPEN,
+                R.anim.slide_in_up,
+                R.anim.player_fade_out,
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(
+                R.anim.slide_in_up,
+                R.anim.player_fade_out,
+            )
+        }
 
         setContent {
             TachiyomiTheme {
@@ -65,10 +74,19 @@ class ExpandedControlsActivity : ComponentActivity() {
 
     private fun minimizePlayer() {
         finish()
-        overridePendingTransition(
-            R.anim.fade_in,
-            R.anim.slide_out_down,
-        )
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(
+                android.app.Activity.OVERRIDE_TRANSITION_CLOSE,
+                R.anim.fade_in,
+                R.anim.slide_out_down,
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(
+                R.anim.fade_in,
+                R.anim.slide_out_down,
+            )
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
