@@ -26,6 +26,7 @@ data class PlayerData(
     val animeId: Long? = null,
     val animeTitle: String? = null,
     val episodeNumber: String? = null,
+    val episodeProgress: Pair<Int, Int>? = null,
     val thumbnailUrl: String? = null,
     val startTimestamp: Long? = null,
     val endTimestamp: Long? = null,
@@ -69,10 +70,10 @@ private val ANIMETAIL_IMAGE = if (isPreviewBuildType) {
 }
 private const val LIBRARY_IMAGE_URL = "${BASE_URL}1235353629867638924.webp?quality=lossless"
 private const val UPDATES_IMAGE_URL = "${BASE_URL}1235354596570955917.webp?quality=lossless"
-private const val HISTORY_IMAGE_URL = "${BASE_URL}1235354822325215384.webp?quality=lossless"
-private const val BROWSE_IMAGE_URL = "${BASE_URL}1235355097609859205.webp?quality=lossless"
-private const val MORE_IMAGE_URL = "${BASE_URL}1235355459330519173.webp?quality=lossless"
-private const val WEBVIEW_IMAGE_URL = "${BASE_URL}1235355612980535326.webp?quality=lossless"
-private const val VIDEO_IMAGE_URL = "${BASE_URL}1235355831822557184.webp?quality=lossless"
-private const val MANGA_IMAGE_URL = "${BASE_URL}1235356064849567886.webp?quality=lossless"
+private const val HISTORY_IMAGE_URL = "${BASE_URL}1235354299089817671.webp?quality=lossless"
+private const val BROWSE_IMAGE_URL = "${BASE_URL}1235354864419344455.webp?quality=lossless"
+private const val MORE_IMAGE_URL = "${BASE_URL}1235355169752088706.webp?quality=lossless"
+private const val WEBVIEW_IMAGE_URL = "${BASE_URL}1235355362169851996.webp?quality=lossless"
+private const val VIDEO_IMAGE_URL = "${BASE_URL}1235355607201218660.webp?quality=lossless"
+private const val MANGA_IMAGE_URL = "${BASE_URL}1235355804274659390.webp?quality=lossless"
 // <-- AM (DISCORD)

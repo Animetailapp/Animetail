@@ -25,6 +25,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
+import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.model.Category.Companion.UNCATEGORIZED_ID
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -58,12 +59,18 @@ class DiscordRPCService : Service() {
                 DiscordRpcManager.connectionStatus.collect { status ->
                     if (status == DiscordRpcManager.Status.Connected) {
                         try {
-                            if (lastUsedScreen == DiscordScreen.VIDEO) {
-                                setAnimeScreen(this@DiscordRPCService, lastUsedScreen)
-                            } else if (lastUsedScreen == DiscordScreen.MANGA) {
-                                setMangaScreen(this@DiscordRPCService, lastUsedScreen)
-                            } else {
-                                setScreen(this@DiscordRPCService, lastUsedScreen)
+                            when (currentScreen) {
+                                DiscordScreen.VIDEO -> {
+                                    val data = activePlayerData ?: PlayerData()
+                                    setAnimeScreen(this@DiscordRPCService, currentScreen, data)
+                                }
+                                DiscordScreen.MANGA -> {
+                                    val data = activeReaderData ?: ReaderData()
+                                    setMangaScreen(this@DiscordRPCService, currentScreen, data)
+                                }
+                                else -> {
+                                    setScreen(this@DiscordRPCService, currentScreen)
+                                }
                             }
                         } catch (e: Exception) {
                             Log.e(TAG, "Error updating presence on connection ready: ${e.message}", e)
@@ -79,7 +86,7 @@ class DiscordRPCService : Service() {
 
     override fun onDestroy() {
         NotificationReceiver.dismissNotification(this, Notifications.ID_DISCORD_RPC)
-        DiscordRpcManager.clear()
+        DiscordRpcManager.destroy()
         super.onDestroy()
     }
 
@@ -137,6 +144,12 @@ class DiscordRPCService : Service() {
                     value
                 }
             }
+
+        internal var currentScreen = DiscordScreen.APP
+
+        private var activePlayerData: PlayerData? = null
+        private var activeReaderData: ReaderData? = null
+
         private const val MP_PREFIX = "mp:"
         private const val TAG = "DiscordRPCService"
 
@@ -144,6 +157,13 @@ class DiscordRPCService : Service() {
          * Sets the appropriate screen (anime or manga) based on the last used screen context
          */
         internal suspend fun setScreen(context: Context, discordScreen: DiscordScreen) {
+            if (!connectionsPreferences.enableDiscordRPC().get()) return
+            currentScreen = discordScreen
+            if (discordScreen != DiscordScreen.VIDEO && discordScreen != DiscordScreen.MANGA && discordScreen != DiscordScreen.WEBVIEW) {
+                lastUsedScreen = discordScreen
+                activePlayerData = null
+                activeReaderData = null
+            }
             if (!DiscordRpcManager.isReady()) return
             when (lastUsedScreen) {
                 DiscordScreen.VIDEO -> {
@@ -165,7 +185,16 @@ class DiscordRPCService : Service() {
             discordScreen: DiscordScreen,
             playerData: PlayerData = PlayerData(),
         ) {
-            lastUsedScreen = discordScreen
+            if (!connectionsPreferences.enableDiscordRPC().get()) return
+            currentScreen = discordScreen
+            if (discordScreen == DiscordScreen.VIDEO) {
+                activePlayerData = playerData
+                activeReaderData = null
+            } else if (discordScreen != DiscordScreen.MANGA && discordScreen != DiscordScreen.WEBVIEW) {
+                lastUsedScreen = discordScreen
+                activePlayerData = null
+                activeReaderData = null
+            }
 
             if (!DiscordRpcManager.isReady()) return
             updateDiscordRPC(context, playerData, discordScreen)
@@ -186,29 +215,33 @@ class DiscordRPCService : Service() {
             val showDownloadButton = connectionsPreferences.discordShowDownloadButton().get()
             val showDiscordButton = connectionsPreferences.discordShowDiscordButton().get()
 
-            val name = playerData.animeTitle ?: appName
-            val details = when {
-                customMessage.isNotBlank() -> customMessage
-                playerData.animeTitle != null -> playerData.animeTitle
-                else -> context.getString(discordScreen.details)
-            }
+            val name = appName
+            val details = sanitizeField(
+                when {
+                    customMessage.isNotBlank() -> customMessage
+                    playerData.animeTitle != null -> playerData.animeTitle
+                    else -> context.getString(discordScreen.details)
+                }
+            )
 
-            val state = when {
-                !showProgress -> null
-                playerData.episodeNumber != null -> playerData.episodeNumber
-                else -> context.getString(discordScreen.text)
-            }
+            val state = sanitizeField(
+                when {
+                    !showProgress -> null
+                    playerData.episodeNumber != null -> playerData.episodeNumber
+                    else -> context.getString(discordScreen.text)
+                }
+            )
 
-            val imageUrl = playerData.thumbnailUrl ?: discordScreen.imageUrl
+            val imageUrl = playerData.thumbnailUrl.takeUnless { it.isNullOrBlank() } ?: discordScreen.imageUrl
 
             val startTimestamp = if (showTimestamp) {
-                playerData.startTimestamp ?: since
+                (playerData.startTimestamp ?: since) / 1000L
             } else {
                 0L
             }
 
             val endTimestamp = if (showTimestamp) {
-                playerData.endTimestamp
+                playerData.endTimestamp?.let { it / 1000L }
             } else {
                 null
             }
@@ -218,22 +251,8 @@ class DiscordRPCService : Service() {
             val button2Label = if (showButtons && showDiscordButton) DISCORD_BUTTON_LABEL else null
             val button2Url = if (showButtons && showDiscordButton) DISCORD_BUTTON_URL else null
 
-            val largeImage = if (imageUrl.startsWith(
-                    "http",
-                )
-            ) {
-                "mp:${imageUrl.replace("://", "/")}"
-            } else {
-                "$MP_PREFIX$imageUrl"
-            }
-            val smallImage = if (DiscordScreen.APP.imageUrl.startsWith(
-                    "http",
-                )
-            ) {
-                "mp:${DiscordScreen.APP.imageUrl.replace("://", "/")}"
-            } else {
-                "$MP_PREFIX${DiscordScreen.APP.imageUrl}"
-            }
+            val largeImage = imageUrl
+            val smallImage = DiscordScreen.APP.imageUrl
 
             DiscordRpcManager.setActivity(
                 DiscordNativeActivity(
@@ -260,7 +279,16 @@ class DiscordRPCService : Service() {
             discordScreen: DiscordScreen,
             readerData: ReaderData = ReaderData(),
         ) {
-            lastUsedScreen = discordScreen
+            if (!connectionsPreferences.enableDiscordRPC().get()) return
+            currentScreen = discordScreen
+            if (discordScreen == DiscordScreen.MANGA) {
+                activeReaderData = readerData
+                activePlayerData = null
+            } else if (discordScreen != DiscordScreen.VIDEO && discordScreen != DiscordScreen.WEBVIEW) {
+                lastUsedScreen = discordScreen
+                activeReaderData = null
+                activePlayerData = null
+            }
             if (!DiscordRpcManager.isReady()) return
             updateDiscordRPC(context, readerData, discordScreen)
         }
@@ -272,11 +300,12 @@ class DiscordRPCService : Service() {
             sinceTime: Long = since,
         ) {
             val appName = context.getString(R.string.app_name)
-            val name = readerData.mangaTitle ?: appName
-            val details = readerData.mangaTitle ?: context.getString(discordScreen.details)
-            val state = readerData.chapterNumber ?: context.getString(discordScreen.text)
-            val imageUrl = readerData.thumbnailUrl ?: discordScreen.imageUrl
+            val name = appName
+            val details = sanitizeField(readerData.mangaTitle ?: context.getString(discordScreen.details))
+            val state = sanitizeField(readerData.chapterNumber ?: context.getString(discordScreen.text))
+            val imageUrl = readerData.thumbnailUrl.takeUnless { it.isNullOrBlank() } ?: discordScreen.imageUrl
 
+            val showTimestamp = connectionsPreferences.discordShowTimestamp().get()
             val showButtons = connectionsPreferences.discordShowButtons().get()
             val showDownloadButton = connectionsPreferences.discordShowDownloadButton().get()
             val showDiscordButton = connectionsPreferences.discordShowDiscordButton().get()
@@ -286,22 +315,8 @@ class DiscordRPCService : Service() {
             val button2Label = if (showButtons && showDiscordButton) DISCORD_BUTTON_LABEL else null
             val button2Url = if (showButtons && showDiscordButton) DISCORD_BUTTON_URL else null
 
-            val largeImage = if (imageUrl.startsWith(
-                    "http",
-                )
-            ) {
-                "mp:${imageUrl.replace("://", "/")}"
-            } else {
-                "$MP_PREFIX$imageUrl"
-            }
-            val smallImage = if (DiscordScreen.APP.imageUrl.startsWith(
-                    "http",
-                )
-            ) {
-                "mp:${DiscordScreen.APP.imageUrl.replace("://", "/")}"
-            } else {
-                "$MP_PREFIX${DiscordScreen.APP.imageUrl}"
-            }
+            val largeImage = imageUrl
+            val smallImage = DiscordScreen.APP.imageUrl
 
             DiscordRpcManager.setActivity(
                 DiscordNativeActivity(
@@ -309,7 +324,7 @@ class DiscordRPCService : Service() {
                     name = name,
                     details = details,
                     state = state,
-                    startTimestamp = sinceTime,
+                    startTimestamp = if (showTimestamp) sinceTime / 1000L else 0L,
                     largeImage = largeImage,
                     largeText = name,
                     smallImage = smallImage,
@@ -327,29 +342,40 @@ class DiscordRPCService : Service() {
             context: Context,
             playerData: PlayerData = PlayerData(),
         ) {
-            if (!DiscordRpcManager.isReady() || playerData.thumbnailUrl == null || playerData.animeId == null) return
+            if (!connectionsPreferences.enableDiscordRPC().get()) return
+            if (playerData.animeId == null) return
 
             try {
-                val categories = getCategories(playerData.animeId)
+                val categories = getAnimeCategories(playerData.animeId)
                 val discordIncognito = isIncognito(categories, playerData.incognitoMode)
 
                 val animeTitle = playerData.animeTitle.takeUnless { discordIncognito }
                 val episodeNumber = getFormattedEpisodeNumber(playerData, discordIncognito)
                 val (startTime, end) = getTimestamps(playerData)
+                val animeThumbnail = if (discordIncognito) null else playerData.thumbnailUrl.takeUnless { it.isNullOrBlank() }
+
+                val data = PlayerData(
+                    incognitoMode = discordIncognito,
+                    animeId = playerData.animeId,
+                    animeTitle = animeTitle,
+                    episodeNumber = episodeNumber,
+                    thumbnailUrl = animeThumbnail,
+                    startTimestamp = startTime,
+                    endTimestamp = end,
+                )
+
+                // Update current state
+                currentScreen = DiscordScreen.VIDEO
+                activePlayerData = data
+                activeReaderData = null
+
+                if (!DiscordRpcManager.isReady()) return
 
                 withIOContext {
-                    val animeThumbnail = if (discordIncognito) null else playerData.thumbnailUrl
-
                     setAnimeScreen(
                         context = context,
                         discordScreen = DiscordScreen.VIDEO,
-                        playerData = PlayerData(
-                            animeTitle = animeTitle,
-                            episodeNumber = episodeNumber,
-                            thumbnailUrl = animeThumbnail,
-                            startTimestamp = startTime,
-                            endTimestamp = end,
-                        ),
+                        playerData = data,
                     )
                 }
             } catch (e: Exception) {
@@ -362,25 +388,37 @@ class DiscordRPCService : Service() {
             context: Context,
             readerData: ReaderData = ReaderData(),
         ) {
-            if (!DiscordRpcManager.isReady() || readerData.thumbnailUrl == null || readerData.mangaId == null) return
+            if (!connectionsPreferences.enableDiscordRPC().get()) return
+            if (readerData.mangaId == null) return
             try {
-                val categories = getCategories(readerData.mangaId)
+                val categories = getMangaCategories(readerData.mangaId)
                 val discordIncognito = isIncognito(categories, readerData.incognitoMode)
 
                 val mangaTitle = readerData.mangaTitle.takeUnless { discordIncognito }
                 val chapterNumber = getFormattedChapterNumber(readerData, discordIncognito)
+                val mangaThumbnail = if (discordIncognito) null else readerData.thumbnailUrl.takeUnless { it.isNullOrBlank() }
+
+                val data = ReaderData(
+                    incognitoMode = discordIncognito,
+                    mangaId = readerData.mangaId,
+                    mangaTitle = mangaTitle,
+                    chapterProgress = readerData.chapterProgress,
+                    chapterNumber = chapterNumber,
+                    thumbnailUrl = mangaThumbnail,
+                )
+
+                // Update current state
+                currentScreen = DiscordScreen.MANGA
+                activeReaderData = data
+                activePlayerData = null
+
+                if (!DiscordRpcManager.isReady()) return
 
                 withIOContext {
-                    val mangaThumbnail = if (discordIncognito) null else readerData.thumbnailUrl
-
                     setMangaScreen(
                         context = context,
                         discordScreen = DiscordScreen.MANGA,
-                        readerData = ReaderData(
-                            mangaTitle = mangaTitle,
-                            chapterNumber = chapterNumber,
-                            thumbnailUrl = mangaThumbnail,
-                        ),
+                        readerData = data,
                     )
                 }
             } catch (e: Exception) {
@@ -390,8 +428,24 @@ class DiscordRPCService : Service() {
 
         // Helper functions
 
-        private suspend fun getCategories(id: Long?): List<String> {
+        private fun sanitizeField(value: String?): String? {
+            if (value == null) return null
+            val trimmed = value.trim()
+            if (trimmed.isEmpty()) return null
+            if (trimmed.length < 2) return "$trimmed " // Pad with space to satisfy length >= 2
+            if (trimmed.length > 128) return trimmed.take(128)
+            return trimmed
+        }
+
+        private suspend fun getAnimeCategories(id: Long?): List<String> {
             return Injekt.get<GetAnimeCategories>()
+                .await(id!!)
+                .map { it.id.toString() }
+                .run { ifEmpty { plus(UNCATEGORIZED_ID.toString()) } }
+        }
+
+        private suspend fun getMangaCategories(id: Long?): List<String> {
+            return Injekt.get<GetMangaCategories>()
                 .await(id!!)
                 .map { it.id.toString() }
                 .run { ifEmpty { plus(UNCATEGORIZED_ID.toString()) } }
@@ -405,30 +459,80 @@ class DiscordRPCService : Service() {
         }
 
         private fun getFormattedEpisodeNumber(playerData: PlayerData, discordIncognito: Boolean): String? {
-            return playerData.episodeNumber?.let {
-                when {
-                    discordIncognito -> null
-                    connectionsPreferences.useChapterTitles().get() -> it
-                    ceil(it.toDouble()) == floor(it.toDouble()) -> "Episode ${it.toInt()}"
-                    else -> "Episode $it"
+            val episodeNumber = playerData.episodeNumber ?: return null
+            if (discordIncognito) return null
+
+            val isSpanish = java.util.Locale.getDefault().language == "es"
+            val movieText = if (isSpanish) "Película" else "Movie"
+            val episodeText = if (isSpanish) "Episodio" else "Episode"
+
+            val progress = playerData.episodeProgress
+            if (progress != null) {
+                val current = progress.first
+                val total = progress.second
+                if (total == 1) {
+                    // It's a Movie
+                    return if (connectionsPreferences.useChapterTitles().get()) {
+                        episodeNumber
+                    } else {
+                        movieText
+                    }
+                } else {
+                    // It's a Series / Episode
+                    val progressText = "$current/$total"
+                    return if (connectionsPreferences.useChapterTitles().get()) {
+                        "$episodeNumber ($progressText)"
+                    } else {
+                        val doubleVal = episodeNumber.toDoubleOrNull()
+                        val epNumText = if (doubleVal != null) {
+                            if (ceil(doubleVal) == floor(doubleVal)) doubleVal.toInt().toString() else doubleVal.toString()
+                        } else {
+                            episodeNumber
+                        }
+                        "$episodeText $epNumText ($progressText)"
+                    }
+                }
+            } else {
+                // Fallback (e.g. from External Intents)
+                if (connectionsPreferences.useChapterTitles().get()) {
+                    return episodeNumber
+                }
+                val doubleVal = episodeNumber.toDoubleOrNull()
+                return if (doubleVal != null) {
+                    if (ceil(doubleVal) == floor(doubleVal)) {
+                        "$episodeText ${doubleVal.toInt()}"
+                    } else {
+                        "$episodeText $doubleVal"
+                    }
+                } else {
+                    "$episodeText $episodeNumber"
                 }
             }
         }
+
         private fun getFormattedChapterNumber(readerData: ReaderData, discordIncognito: Boolean): String? {
-            val chapterNumber = readerData.chapterNumber
-            val chapterProgress = readerData.chapterProgress
-            return chapterNumber?.let {
-                when {
-                    discordIncognito -> null
+            val chapterNumber = readerData.chapterNumber ?: return null
+            val chapterProgress = readerData.chapterProgress ?: Pair(0, 0)
+            if (discordIncognito) return null
 
-                    connectionsPreferences.useChapterTitles().get() ->
-                        "$it (${chapterProgress.first}/${chapterProgress.second})"
+            val isSpanish = java.util.Locale.getDefault().language == "es"
+            val chapterText = if (isSpanish) "Capítulo" else "Chapter"
+            val pageProgress = if (isSpanish) {
+                "Pág. ${chapterProgress.first}/${chapterProgress.second}"
+            } else {
+                "Page ${chapterProgress.first}/${chapterProgress.second}"
+            }
 
-                    ceil(it.toDouble()) == floor(it.toDouble()) -> "Chapter ${it.toInt()}" + " " +
-                        "(${chapterProgress.first}/${chapterProgress.second})"
+            if (connectionsPreferences.useChapterTitles().get()) {
+                return "$chapterNumber ($pageProgress)"
+            }
 
-                    else -> "Chapter $it (${chapterProgress.first}/${chapterProgress.second}"
-                }
+            val doubleVal = chapterNumber.toDoubleOrNull()
+            return if (doubleVal != null) {
+                val chapNumText = if (ceil(doubleVal) == floor(doubleVal)) doubleVal.toInt().toString() else doubleVal.toString()
+                "$chapterText $chapNumText ($pageProgress)"
+            } else {
+                "$chapterText $chapterNumber ($pageProgress)"
             }
         }
 

@@ -58,6 +58,8 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.entries.manga.model.Manga
+import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
+import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.domain.library.manga.model.MangaLibraryGroup
 import tachiyomi.i18n.MR
@@ -350,6 +352,9 @@ data object MangaLibraryTab : Tab {
         LaunchedEffect(state.isLoading) {
             if (!state.isLoading) {
                 (context as? MainActivity)?.ready = true
+                // AM (DISCORD) -->
+                DiscordRPCService.setScreen(context, DiscordScreen.LIBRARY)
+                // <-- AM (DISCORD)
             }
         }
 

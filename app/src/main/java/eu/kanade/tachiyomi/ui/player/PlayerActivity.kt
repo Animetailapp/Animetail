@@ -1429,6 +1429,10 @@ class PlayerActivity : BaseActivity() {
                             } else {
                                 episode.episode_number.toString()
                             },
+                            episodeProgress = Pair(
+                                viewModel.getCurrentEpisodeIndex() + 1,
+                                viewModel.currentPlaylist.value.size,
+                            ),
                             startTimestamp = startTimestamp.timeInMillis,
                             endTimestamp = endTimestamp.timeInMillis,
                         ),
