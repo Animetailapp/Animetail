@@ -15,6 +15,7 @@ class TrackLoginActivity : BaseOAuthLoginActivity() {
             "simkl-auth" -> handleSimkl(data)
             "trakt-auth" -> handleTrakt(data)
             "tmdb-auth" -> handleTmdb(data)
+            "hikka-auth" -> handleHikka(data)
         }
     }
 
@@ -113,6 +114,19 @@ class TrackLoginActivity : BaseOAuthLoginActivity() {
             }
         } else {
             trackerManager.tmdb.logout()
+            returnToSettings()
+        }
+    }
+
+    private fun handleHikka(data: Uri) {
+        val reference = data.getQueryParameter("reference")
+        if (reference != null) {
+            lifecycleScope.launchIO {
+                trackerManager.hikka.login(reference)
+                returnToSettings()
+            }
+        } else {
+            trackerManager.hikka.logout()
             returnToSettings()
         }
     }

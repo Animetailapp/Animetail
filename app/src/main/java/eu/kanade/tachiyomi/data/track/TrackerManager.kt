@@ -4,6 +4,7 @@ import android.content.Context
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.bangumi.Bangumi
 import eu.kanade.tachiyomi.data.track.jellyfin.Jellyfin
+import eu.kanade.tachiyomi.data.track.hikka.Hikka
 import eu.kanade.tachiyomi.data.track.kavita.Kavita
 import eu.kanade.tachiyomi.data.track.kitsu.Kitsu
 import eu.kanade.tachiyomi.data.track.komga.Komga
@@ -40,11 +41,12 @@ class TrackerManager(context: Context) {
     val jellyfin = Jellyfin(JELLYFIN)
     val tmdb = Tmdb(200L)
     val trakt = Trakt(TRAKT)
+    val hikka = Hikka(10L)
 
     val trackers = listOf(
         myAnimeList, aniList, kitsu, shikimori, bangumi,
         komga, mangaUpdates, kavita, suwayomi, simkl, jellyfin,
-        tmdb, trakt,
+        tmdb, trakt, hikka,
     )
 
     fun loggedInTrackers() = trackers.filter { it.isLoggedIn }

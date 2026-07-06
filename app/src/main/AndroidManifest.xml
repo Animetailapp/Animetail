@@ -271,6 +271,7 @@
                 <data android:host="simkl-auth"/>
                 <data android:host="tmdb-auth"/>
                 <data android:host="trakt-auth"/>
+                <data android:host="hikka-auth" />
             </intent-filter>
         </activity>
         <activity
