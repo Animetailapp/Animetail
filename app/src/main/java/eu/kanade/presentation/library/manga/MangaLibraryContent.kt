@@ -54,7 +54,7 @@ fun MangaLibraryContent(
             end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
         ),
     ) {
-        val coercedCurrentPage = remember { currentPage().coerceAtMost(categories.lastIndex) }
+        val coercedCurrentPage = remember { currentPage().coerceIn(0, categories.lastIndex) }
         val pagerState = rememberPagerState(coercedCurrentPage) { categories.size }
 
         val scope = rememberCoroutineScope()

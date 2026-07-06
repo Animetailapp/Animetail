@@ -57,17 +57,18 @@ fun TabbedScreen(
     Scaffold(
         topBar = {
             if (titleRes != null) {
-                val tab = tabs[state.currentPage]
+                val currentPage = state.currentPage.coerceIn(0, tabs.lastIndex)
+                val tab = tabs[currentPage]
                 val searchEnabled = tab.searchEnabled
 
-                val actualQuery = when (state.currentPage % 2) {
+                val actualQuery = when (currentPage % 2) {
                     1 -> mangaSearchQuery
 
                     // History and Browse
                     else -> animeSearchQuery
                 }
 
-                val actualOnChange = when (state.currentPage % 2) {
+                val actualOnChange = when (currentPage % 2) {
                     1 -> onChangeMangaSearchQuery
 
                     // History and Browse
@@ -102,7 +103,7 @@ fun TabbedScreen(
         ) {
             FlexibleTabRow(
                 scrollable = scrollable,
-                selectedTabIndex = state.currentPage,
+                selectedTabIndex = state.currentPage.coerceIn(0, tabs.lastIndex),
             ) {
                 tabs.forEachIndexed { index, tab ->
                     Tab(
