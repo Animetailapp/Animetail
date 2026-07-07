@@ -5,6 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.core.net.toUri
+import aniyomi.core.common.torrent.TorrentPreferences
+import aniyomi.core.common.torrent.TorrentServerApi
+import aniyomi.core.common.torrent.TorrentServerUtils
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegKitConfig
 import com.arthenica.ffmpegkit.FFprobeKit
@@ -20,9 +23,7 @@ import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateNotifier
 import eu.kanade.tachiyomi.data.notification.NotificationHandler
-import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
-import eu.kanade.tachiyomi.torrentServer.TorrentServerApi
-import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
+import eu.kanade.tachiyomi.data.torrent.service.TorrentServerService
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.util.storage.DiskUtil
@@ -83,6 +84,9 @@ class AnimeDownloader(
     private val cache: AnimeDownloadCache,
     private val sourceManager: AnimeSourceManager = Injekt.get(),
     private val scope: CoroutineScope,
+    private val torrentServerApi: TorrentServerApi = Injekt.get(),
+    private val torrentServerUtils: TorrentServerUtils = Injekt.get(),
+    private val torrentPreferences: TorrentPreferences = Injekt.get(),
 ) {
     /**
      * Store for persisting downloads across restarts.
@@ -479,8 +483,8 @@ class AnimeDownloader(
             tmpDir.findFile("$filename.tmp")?.delete()
             val videoFile = tmpDir.createFile("$filename.tmp")!!
             try {
-                if (isTor(download.video!!)) {
-                    torrentDownload(download, tmpDir, filename)
+                if (torrentPreferences.torrServerEnable().get() && isTorrent(download.video)) {
+                    torrentDownload(download, tmpDir, videoFile, filename)
                 } else {
                     ffmpegDownload(download, tmpDir, videoFile, filename)
                 }
@@ -504,19 +508,26 @@ class AnimeDownloader(
             .first()
     }
 
-    private fun isTor(video: Video): Boolean {
-        return video.videoUrl.startsWith("magnet") || video.videoUrl.endsWith(".torrent")
+    private fun isTorrent(video: Video?): Boolean {
+        val url = video?.videoUrl ?: return false
+        return url.startsWith("magnet") || url.endsWith(".torrent") || url.startsWith(torrentServerApi.hostUrl)
     }
 
     private suspend fun torrentDownload(
         download: AnimeDownload,
         tmpDir: UniFile,
+        videoFile: UniFile,
         filename: String,
     ) {
         val video = download.video!!
         TorrentServerService.start()
-        TorrentServerService.wait(10)
-        val currentTorrent = TorrentServerApi.addTorrent(video.videoUrl, video.videoTitle, "", "", false)
+        if (video.videoUrl.startsWith(torrentServerApi.hostUrl)) {
+            val hash = video.videoUrl.substringAfter("link=").substringBefore("&")
+            val index = video.videoUrl.substringAfter("index=").substringBefore("&").toInt()
+            val magnet = "magnet:?xt=urn:btih:$hash&index=$index"
+            video.videoUrl = magnet
+        }
+        val currentTorrent = torrentServerApi.addTorrent(video.videoUrl, video.videoTitle, "", "", false)
         var index = 0
         if (video.videoUrl.contains("index=")) {
             index = try {
@@ -526,14 +537,9 @@ class AnimeDownloader(
                 0
             }
         }
-        val torrentUrl = TorrentServerUtils.getTorrentPlayLink(currentTorrent, index)
+        val torrentUrl = torrentServerUtils.getTorrentPlayLink(currentTorrent, index)
         video.videoUrl = torrentUrl
-
-        // Crear el videoFile antes de llamar a ffmpegDownload
-        tmpDir.findFile("$filename.tmp")?.delete()
-        val videoFile = tmpDir.createFile("$filename.tmp")!!
-
-        return ffmpegDownload(download, tmpDir, videoFile, filename)
+        ffmpegDownload(download, tmpDir, videoFile, filename)
     }
 
     // ffmpeg is always on safe mode

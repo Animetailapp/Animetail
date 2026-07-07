@@ -345,6 +345,10 @@
             />
 
         <service
+            android:name=".data.torrent.service.TorrentServerService"
+            android:foregroundServiceType="dataSync" />
+
+        <service
             android:name=".util.LocalHttpServerService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />

@@ -6,6 +6,8 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import animetail.feature.mpvfiles.MpvConfig
+import aniyomi.core.common.torrent.TorrentServerApi
+import aniyomi.core.common.torrent.TorrentServerUtils
 import app.cash.sqldelight.db.SqlDriver
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConfiguration
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDatabaseType
@@ -239,6 +241,9 @@ class AppModule(val app: Application) : InjektModule {
         // AM (CONNECTIONS) -->
         addSingletonFactory { ConnectionsManager() }
         // <-- AM (CONNECTIONS)
+
+        addSingletonFactory { TorrentServerApi(get(), get()) }
+        addSingletonFactory { TorrentServerUtils(get(), get()) }
 
         // Asynchronously init expensive components for a faster cold start
         ContextCompat.getMainExecutor(app).execute {

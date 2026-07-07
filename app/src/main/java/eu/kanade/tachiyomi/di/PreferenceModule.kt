@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.di
 
 import android.app.Application
+import aniyomi.core.common.torrent.TorrentPreferences
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.domain.source.service.SourcePreferences
@@ -73,6 +74,9 @@ class PreferenceModule(val app: Application) : InjektModule {
         }
         addSingletonFactory {
             AudioPreferences(get())
+        }
+        addSingletonFactory {
+            TorrentPreferences(get())
         }
         addSingletonFactory {
             AdvancedPlayerPreferences(get())

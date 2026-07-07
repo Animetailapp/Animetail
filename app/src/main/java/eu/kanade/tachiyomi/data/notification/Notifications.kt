@@ -85,7 +85,6 @@ object Notifications {
     const val CHANNEL_DISCORD_RPC = "${RICH_PRESENCE_TAG}_channel"
     const val ID_DISCORD_RPC = -1701
     // <-- AM (DISCORD)
-
     /**
      * Notification channel and ids used for app and extension updates.
      */
@@ -182,7 +181,7 @@ object Notifications {
                     setName(context.stringResource(MR.strings.pref_incognito_mode))
                 },
                 buildNotificationChannel(CHANNEL_TORRENT_SERVER, IMPORTANCE_LOW) {
-                    setName("Torrent server")
+                    setName(context.stringResource(AYMR.strings.pref_category_torrentserver))
                     setShowBadge(false)
                 },
                 // AM (DISCORD) -->
