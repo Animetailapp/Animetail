@@ -361,9 +361,10 @@ class Anilist(id: Long) :
         try {
             val oauth = api.createOAuth(token)
             interceptor.setAuth(oauth)
-            val (username, scoreType) = api.getCurrentUser()
-            scorePreference.set(scoreType)
-            saveCredentials(username.toString(), oauth.accessToken)
+            val currentUser = api.getCurrentUser()
+            scorePreference.set(currentUser.mediaListOptions.scoreFormat)
+            saveDisplayUsername(currentUser.name)
+            saveCredentials(currentUser.id.toString(), oauth.accessToken)
         } catch (e: Throwable) {
             logout()
         }
