@@ -1,3 +1,0 @@
-C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/animetail_discord.dir
-C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/edit_cache.dir
-C:/repos/repo test/aniyomi/app/.cxx/Debug/r6k4k2o1/x86/CMakeFiles/rebuild_cache.dir
