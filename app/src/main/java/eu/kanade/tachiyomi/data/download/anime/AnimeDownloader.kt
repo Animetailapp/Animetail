@@ -415,6 +415,7 @@ class AnimeDownloader(
         video.status = Video.State.LOAD_VIDEO
 
         var progressJob: Job? = null
+        var isExternal = false
 
         // Get filename from download info
         val filename = DiskUtil.buildValidFilename(download.episode.name)
@@ -447,6 +448,7 @@ class AnimeDownloader(
 
                         downloadVideo(download, tmpDir, filename)
                     } else {
+                        isExternal = true
                         val betterFileName = DiskUtil.buildValidFilename(
                             "${download.anime.title} - ${download.episode.name}",
                         )
@@ -458,8 +460,12 @@ class AnimeDownloader(
             video.videoUrl = file.uri.path ?: ""
             download.progress = 100
             video.status = Video.State.READY
+            if (!isExternal) {
+                stopHttpServer(download)
+            }
             progressJob?.cancel()
         } catch (e: Exception) {
+            stopHttpServer(download)
             if (e is CancellationException) throw e
             video.status = Video.State.ERROR
             notifier.onError(e.message, download.episode.name, download.anime.title, download.anime.id)
@@ -676,6 +682,13 @@ class AnimeDownloader(
             }
             continuation.invokeOnCancellation { session.cancel() }
         }.output.toFloatOrNull()
+    }
+
+    private fun stopHttpServer(download: AnimeDownload) {
+        val server = download.source.server ?: return
+        if (server.isRunning()) {
+            server.stop()
+        }
     }
 
     /**

@@ -29,6 +29,7 @@ kotlin {
         api(libs.rxJava)
         api(libs.jsoup)
         api(libs.re2j)
+        api(aniyomilibs.nanohttpd)
         // TAIL
         api(projects.i18nTail)
         // TAIL

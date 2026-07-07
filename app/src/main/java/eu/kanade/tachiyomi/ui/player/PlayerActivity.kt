@@ -359,6 +359,7 @@ class PlayerActivity : BaseActivity() {
         mpv.removeObserver(playerObserver)
         Thread { runCatching { mpv.close() } }.start()
         castManager.cleanup()
+        viewModel.stopHttpServer()
 
         // AM (DISCORD) -->
         updateDiscordRPC(exitingPlayer = true)
