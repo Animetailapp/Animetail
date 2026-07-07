@@ -11,8 +11,9 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import android.app.Application
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService.Companion.applicationContext
+import uy.kohesive.injekt.Injekt
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
@@ -30,6 +31,7 @@ class LocalHttpServerService : Service() {
         const val ACTION_STOP = "eu.kanade.tachiyomi.ACTION_STOP_SERVER"
         fun stop() {
             try {
+                val applicationContext = Injekt.get<Application>()
                 val intent =
                     Intent(applicationContext, LocalHttpServerService::class.java).apply {
                         action = ACTION_STOP

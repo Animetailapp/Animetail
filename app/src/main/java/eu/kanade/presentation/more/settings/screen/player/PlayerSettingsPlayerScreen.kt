@@ -10,9 +10,6 @@ import androidx.compose.ui.platform.LocalContext
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.presentation.more.settings.Preference
-import eu.kanade.presentation.more.settings.screen.SearchableSettings
-import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
-import eu.kanade.tachiyomi.torrentServer.TorrentServerPreferences
 import eu.kanade.tachiyomi.ui.player.AMNIS
 import eu.kanade.tachiyomi.ui.player.JUST_PLAYER
 import eu.kanade.tachiyomi.ui.player.MPV_KT
@@ -53,7 +50,6 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
     override fun getPreferences(): List<Preference> {
         val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
         val basePreferences = remember { Injekt.get<BasePreferences>() }
-        val torrentServerPreferences = remember { Injekt.get<TorrentServerPreferences>() }
         val deviceSupportsPip = basePreferences.deviceHasPip
         val localHttpServerHolder = remember { Injekt.get<LocalHttpServerHolder>() }
 
@@ -92,7 +88,6 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
                 playerPreferences = playerPreferences,
                 basePreferences = basePreferences,
             ),
-            getTorrentServerGroup(torrentServerPreferences),
             geCastServerGroup(localHttpServerHolder),
         )
     }
@@ -359,57 +354,6 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
         )
     }
 
-    @Suppress("SwallowedException", "TooGenericExceptionCaught")
-    @Composable
-    private fun getTorrentServerGroup(
-        torrentServerPreferences: TorrentServerPreferences,
-    ): Preference.PreferenceGroup {
-        val scope = rememberCoroutineScope()
-        val context = LocalContext.current
-        val trackersPref = torrentServerPreferences.trackers()
-        val trackers by trackersPref.collectAsState()
-
-        return Preference.PreferenceGroup(
-            title = stringResource(TLMR.strings.pref_category_torrentserver),
-            preferenceItems = persistentListOf(
-                Preference.PreferenceItem.EditTextPreference(
-                    preference = torrentServerPreferences.port(),
-                    title = stringResource(TLMR.strings.pref_torrentserver_port),
-                    onValueChanged = {
-                        try {
-                            Integer.parseInt(it)
-                            TorrentServerService.stop()
-                            true
-                        } catch (e: Exception) {
-                            false
-                        }
-                    },
-                ),
-                Preference.PreferenceItem.MultiLineEditTextPreference(
-                    preference = torrentServerPreferences.trackers(),
-                    title = context.stringResource(TLMR.strings.pref_torrent_trackers),
-                    subtitle = trackersPref.asState(scope).value
-                        .lines().take(2)
-                        .joinToString(
-                            separator = "\n",
-                            postfix = if (trackersPref.asState(scope).value.lines().size > 2) "\n..." else "",
-                        ),
-                    onValueChanged = {
-                        TorrentServerService.stop()
-                        true
-                    },
-                ),
-                Preference.PreferenceItem.TextPreference(
-                    title = stringResource(TLMR.strings.pref_reset_torrent_trackers_string),
-                    enabled = remember(trackers) { trackers != trackersPref.defaultValue() },
-                    onClick = {
-                        trackersPref.delete()
-                        context.stringResource(MR.strings.requires_app_restart)
-                    },
-                ),
-            ),
-        )
-    }
 
     @Composable
     private fun geCastServerGroup(

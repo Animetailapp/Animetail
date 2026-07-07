@@ -9,8 +9,6 @@ import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
-import eu.kanade.tachiyomi.network.NetworkPreferences
-import eu.kanade.tachiyomi.torrentServer.TorrentServerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.CastSubtitlePreferences
@@ -80,9 +78,6 @@ class PreferenceModule(val app: Application) : InjektModule {
         }
         addSingletonFactory {
             AdvancedPlayerPreferences(get())
-        }
-        addSingletonFactory {
-            TorrentServerPreferences(get())
         }
         addSingletonFactory {
             TrackPreferences(get())
