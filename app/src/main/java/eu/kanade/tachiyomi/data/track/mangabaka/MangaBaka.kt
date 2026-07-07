@@ -63,14 +63,19 @@ class MangaBaka(id: Long) :
         return when (scorePreference.get()) {
             // 1, 2, ..., 99, 100
             STEP_1 -> IntRange(0, 100).map(Int::toString).toImmutableList()
+
             // 5, 10, ..., 95, 100
             STEP_5 -> IntRange(0, 100).step(5).map(Int::toString).toImmutableList()
+
             // 10, 20, ..., 90, 100
             STEP_10 -> IntRange(0, 100).step(10).map(Int::toString).toImmutableList()
+
             // 20, 40, ..., 80, 100
             STEP_20 -> IntRange(0, 100).step(20).map(Int::toString).toImmutableList()
+
             // 25, 50, 75, 100
             STEP_25 -> IntRange(0, 100).step(25).map(Int::toString).toImmutableList()
+
             else -> throw Exception("Unknown score type")
         }
     }

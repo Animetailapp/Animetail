@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.player
 
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
@@ -19,7 +20,6 @@ import com.google.android.gms.cast.TextTrackStyle
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
-import android.content.pm.PackageManager
 import eu.kanade.tachiyomi.ui.player.cast.CastMediaBuilder
 import eu.kanade.tachiyomi.ui.player.cast.CastSessionListener
 import eu.kanade.tachiyomi.ui.player.cast.components.BorderStyle
