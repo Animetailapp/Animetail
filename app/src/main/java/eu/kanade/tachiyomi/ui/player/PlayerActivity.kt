@@ -1153,6 +1153,17 @@ class PlayerActivity : BaseActivity() {
     private suspend fun torrentLinkHandler(videoUrl: String, title: String, videoOptions: String) {
         var index = 0
 
+        // Wait for torrent server to be ready
+        if (!TorrentServerService.wait(20)) {
+            withUIContext<Unit> { toast(MR.strings.unknown_error) }
+            return
+        }
+
+        if (torrentServerApi.getPort() == 0) {
+            val preferredPort = torrentPreferences.torrServerPort().get().toIntOrNull() ?: 8090
+            torrentServerApi.setPort(preferredPort)
+        }
+
         // check if link is from localSource
         if (videoUrl.startsWith("content://")) {
             val videoInputStream = applicationContext.contentResolver.openInputStream(videoUrl.toUri())

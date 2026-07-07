@@ -63,6 +63,11 @@ class TorrentServerService : Service() {
 
     private fun startServer() {
         serviceScope.launch {
+            val preferredPortStr = torrentPreferences.torrServerPort().get()
+            val preferredPort = preferredPortStr.toIntOrNull() ?: 8090
+            if (api.getPort() == 0) {
+                api.setPort(preferredPort)
+            }
             if (api.echo() == "") {
                 if (networkPreferences.verboseLogging().get()) {
                     TorrServer.registerLogCallback()
@@ -70,14 +75,14 @@ class TorrentServerService : Service() {
 
                 val proxyMode = torrentPreferences.torrServerProxyMode().get()
                 val port = TorrServer.startServer(
-                    port = torrentPreferences.torrServerPort().get(),
+                    port = preferredPortStr,
                     path = filesDir.absolutePath,
                     proxyMode = proxyMode.value,
                     proxyUrl = if (proxyMode == ProxyMode.None) "" else torrentPreferences.torrServerProxyUrl().get(),
                 )
                 if (port != -1) {
                     api.setPort(port)
-                    wait(10)
+                    wait(20)
                     torrentServerUtils.setTrackersList()
                 }
             }
@@ -146,12 +151,16 @@ class TorrentServerService : Service() {
 
         suspend fun start() {
             try {
+                val preferredPort = Injekt.get<TorrentPreferences>().torrServerPort().get().toIntOrNull() ?: 8090
+                if (api.getPort() == 0) {
+                    api.setPort(preferredPort)
+                }
                 val intent =
                     Intent(applicationContext, TorrentServerService::class.java).apply {
                         action = ACTION_START
                     }
                 applicationContext.startService(intent)
-                wait(10)
+                wait(20)
             } catch (e: Exception) {
                 logcat(LogPriority.DEBUG, e) { "Failed to start torrent service" }
                 e.printStackTrace()
@@ -173,13 +182,18 @@ class TorrentServerService : Service() {
 
         suspend fun wait(timeout: Int = -1): Boolean {
             var count = 0
-            if (timeout < 0) {
-                count = -20
+            val timeoutCount = if (timeout < 0) 20 else timeout
+
+            // Ensure API has a port set before checking echo
+            if (api.getPort() == 0) {
+                val preferredPort = Injekt.get<TorrentPreferences>().torrServerPort().get().toIntOrNull() ?: 8090
+                api.setPort(preferredPort)
             }
+
             while (api.echo() == "") {
                 delay(1.seconds)
                 count++
-                if (count > timeout) {
+                if (count > timeoutCount) {
                     return false
                 }
             }
