@@ -19,8 +19,7 @@ import com.google.android.gms.cast.TextTrackStyle
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
+import android.content.pm.PackageManager
 import eu.kanade.tachiyomi.ui.player.cast.CastMediaBuilder
 import eu.kanade.tachiyomi.ui.player.cast.CastSessionListener
 import eu.kanade.tachiyomi.ui.player.cast.components.BorderStyle
@@ -105,7 +104,14 @@ class CastManager(
     private var mediaRouterCallback: androidx.mediarouter.media.MediaRouter.Callback? = null
 
     private val isCastApiAvailable: Boolean
-        get() = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS
+        get() = try {
+            context.packageManager
+                .getPackageInfo("com.google.android.gms", PackageManager.GET_META_DATA)
+                .applicationInfo
+                ?.enabled == true
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        }
 
     private val mediaQueue = LinkedList<MediaQueueItem>()
     private var isLoadingMedia = false
