@@ -49,6 +49,7 @@ data class Manga(
 ) : JavaSerializable {
 
     // SY -->
+    @kotlinx.serialization.Transient
     private val customMangaInfo = if (favorite) {
         getCustomMangaInfo.get(id)
     } else {

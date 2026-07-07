@@ -301,7 +301,7 @@ class AnimeScreenModel(
             if (animeSource.isSourceForTorrents()) {
                 TorrentServerService.start()
                 TorrentServerService.wait(10)
-                TorrentServerUtils.setTrackersList()
+                torrentServerUtils.setTrackersList()
             }
             // <-- (Torrent)
 

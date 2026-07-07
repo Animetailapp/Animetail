@@ -12,6 +12,7 @@ import app.cash.sqldelight.db.SqlDriver
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConfiguration
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDatabaseType
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDriver
+import data.Chapters
 import data.History
 import data.Mangas
 import dataanime.Animehistory
@@ -52,12 +53,9 @@ import nl.adaptivity.xmlutil.serialization.XmlConfig
 import tachiyomi.core.common.storage.AndroidStorageFolderProvider
 import tachiyomi.data.AnimeUpdateStrategyColumnAdapter
 import tachiyomi.data.CastColumnAdapter
-import tachiyomi.data.Chapters
 import tachiyomi.data.Database
 import tachiyomi.data.DateColumnAdapter
 import tachiyomi.data.FetchTypeColumnAdapter
-import tachiyomi.data.History
-import tachiyomi.data.Mangas
 import tachiyomi.data.MangaUpdateStrategyColumnAdapter
 import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.StringListColumnAdapter

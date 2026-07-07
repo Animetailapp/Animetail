@@ -2,19 +2,23 @@ package eu.kanade.tachiyomi.data.track.hikka
 
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.data.database.models.Track
+import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.BaseTracker
-import eu.kanade.tachiyomi.data.track.DeletableTracker
+import eu.kanade.tachiyomi.data.track.DeletableMangaTracker
+import eu.kanade.tachiyomi.data.track.MangaTracker
 import eu.kanade.tachiyomi.data.track.hikka.dto.HKOAuth
-import eu.kanade.tachiyomi.data.track.model.TrackSearch
+import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
+import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
+import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
-import tachiyomi.domain.track.model.Track as DomainTrack
+import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
+import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
-class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
+class Hikka(id: Long) : BaseTracker(id, "Hikka"), MangaTracker, DeletableMangaTracker {
 
     companion object {
         const val READING = 0L
@@ -39,7 +43,7 @@ class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
 
     override fun getLogo(): Int = R.drawable.brand_hikka
 
-    override fun getStatusList(): List<Long> {
+    override fun getStatusListManga(): List<Long> {
         return listOf(
             READING,
             COMPLETED,
@@ -50,7 +54,7 @@ class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
         )
     }
 
-    override fun getStatus(status: Long): StringResource? = when (status) {
+    override fun getStatusForManga(status: Long): StringResource? = when (status) {
         READING -> MR.strings.reading
         PLAN_TO_READ -> MR.strings.plan_to_read
         COMPLETED -> MR.strings.completed
@@ -68,14 +72,20 @@ class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
 
     override fun getScoreList(): ImmutableList<String> = SCORE_LIST
 
-    override fun displayScore(track: DomainTrack): String {
+    override fun displayScore(track: DomainMangaTrack): String {
         return track.score.toInt().toString()
     }
 
+    override fun getLogoColor(): Int = 0xFF2A2C31.toInt()
+
+    override suspend fun getMangaMetadata(track: DomainMangaTrack): TrackMangaMetadata? = null
+
+    override suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? = null
+
     override suspend fun update(
-        track: Track,
+        track: MangaTrack,
         didReadChapter: Boolean,
-    ): Track {
+    ): MangaTrack {
         if (track.status != COMPLETED) {
             if (didReadChapter) {
                 if (track.last_chapter_read.toLong() == track.total_chapters && track.total_chapters > 0) {
@@ -92,7 +102,7 @@ class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
         return api.updateUserManga(track)
     }
 
-    override suspend fun bind(track: Track, hasReadChapters: Boolean): Track {
+    override suspend fun bind(track: MangaTrack, hasReadChapters: Boolean): MangaTrack {
         val readContent = api.getRead(track)
         val remoteTrack = api.getManga(track)
 
@@ -118,9 +128,9 @@ class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
         }
     }
 
-    override suspend fun search(query: String): List<TrackSearch> = api.searchManga(query)
+    override suspend fun searchManga(query: String): List<MangaTrackSearch> = api.searchManga(query)
 
-    override suspend fun refresh(track: Track): Track {
+    override suspend fun refresh(track: MangaTrack): MangaTrack {
         val remoteTrack = api.getManga(track)
         track.copyPersonalFrom(remoteTrack)
         track.total_chapters = remoteTrack.total_chapters
@@ -151,7 +161,7 @@ class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
         }
     }
 
-    override suspend fun delete(track: DomainTrack) = api.deleteUserManga(track)
+    override suspend fun delete(track: DomainMangaTrack) = api.deleteUserManga(track)
 
     override fun logout() {
         super.logout()

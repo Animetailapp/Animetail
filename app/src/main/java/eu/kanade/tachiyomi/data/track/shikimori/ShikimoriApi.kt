@@ -13,8 +13,8 @@ import eu.kanade.tachiyomi.data.track.shikimori.dto.SMEntry
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMMetadata
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMOAuth
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMSearchResult
-import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUserListEntry
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUser
+import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUserListEntry
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUserListResult
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUserResult
 import eu.kanade.tachiyomi.network.DELETE

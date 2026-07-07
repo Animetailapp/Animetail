@@ -251,5 +251,4 @@ object MangaMapper {
         chapterFetchedAt = chapterFetchedAt,
         lastRead = lastRead,
     )
-
 }

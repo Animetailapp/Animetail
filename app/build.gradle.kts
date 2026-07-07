@@ -225,7 +225,6 @@ dependencies {
     implementation(libs.androidx.constraintLayout)
     implementation(aniyomilibs.compose.constraintlayout)
     implementation(libs.androidx.core)
-    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
     implementation(libs.androidx.coreSplashScreen)
     implementation(libs.androidx.recyclerView)
     implementation(libs.androidx.viewPager)

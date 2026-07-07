@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.data.track.hikka.dto
 import eu.kanade.tachiyomi.data.track.hikka.HikkaApi
 import eu.kanade.tachiyomi.data.track.hikka.stringToNumber
 import eu.kanade.tachiyomi.data.track.hikka.toTrackStatus
-import eu.kanade.tachiyomi.data.track.model.TrackSearch
+import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -24,8 +24,8 @@ data class HKRead(
     val endDate: Long? = null,
     val content: HKManga? = null,
 ) {
-    fun toTrack(trackId: Long): TrackSearch {
-        return TrackSearch.create(trackId).apply {
+    fun toTrack(trackId: Long): MangaTrackSearch {
+        return MangaTrackSearch.create(trackId).apply {
             val mangaContent = this@HKRead.content
             if (mangaContent != null) {
                 title = mangaContent.titleUa ?: mangaContent.titleEn ?: mangaContent.titleOriginal

@@ -1,9 +1,9 @@
 package eu.kanade.tachiyomi.data.track.hikka
 
-import eu.kanade.tachiyomi.data.database.models.Track
+import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import java.util.UUID
 
-fun Track.toApiStatus() = when (status) {
+fun MangaTrack.toApiStatus() = when (status) {
     Hikka.READING -> "reading"
     Hikka.COMPLETED -> "completed"
     Hikka.ON_HOLD -> "on_hold"

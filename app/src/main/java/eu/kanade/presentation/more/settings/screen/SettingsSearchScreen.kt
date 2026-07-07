@@ -321,7 +321,7 @@ private fun getLocalizedBreadcrumb(nodes: List<String>, isLtr: Boolean): String 
     }
 }
 
-private val playerSettingScreens = listOf(
+private val playerSettingScreens: List<SearchableSettings> = listOf(
     PlayerSettingsPlayerScreen,
     PlayerSettingsGesturesScreen,
     PlayerSettingsDecoderScreen,
@@ -331,7 +331,7 @@ private val playerSettingScreens = listOf(
     PlayerSettingsAdvancedScreen,
 )
 
-private val settingScreens = listOf(
+private val settingScreens: List<SearchableSettings> = listOf(
     SettingsAppearanceScreen,
     SettingsLibraryScreen,
     SettingsReaderScreen,

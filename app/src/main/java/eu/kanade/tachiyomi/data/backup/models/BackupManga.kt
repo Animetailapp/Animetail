@@ -14,7 +14,7 @@ import tachiyomi.domain.entries.manga.model.Manga
     "MagicNumber",
 )
 @Serializable
-class BackupManga(
+data class BackupManga(
     // in 1.x some of these values have different names
     @ProtoNumber(1) var source: Long,
     // url is called key in 1.x

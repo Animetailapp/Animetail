@@ -98,11 +98,13 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
+import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.Injekt
@@ -123,14 +125,14 @@ class PlayerActivity : BaseActivity() {
     private var mediaSession: MediaSession? = null
     private val gesturePreferences: GesturePreferences by lazy { viewModel.gesturePreferences }
     private val playerPreferences: PlayerPreferences by lazy { viewModel.playerPreferences }
-    private val audioPreferences: AudioPreferences = Injekt.get()
-    private val advancedPlayerPreferences: AdvancedPlayerPreferences = Injekt.get()
-    private val networkPreferences: NetworkPreferences = Injekt.get()
-    val castManager: CastManager by lazy { CastManager(this, Injekt.get()) }
-    private val storageManager: StorageManager = Injekt.get()
-    private val torrentServerApi: TorrentServerApi = Injekt.get()
-    private val torrentServerUtils: TorrentServerUtils = Injekt.get()
-    private val torrentPreferences: TorrentPreferences = Injekt.get()
+    private val audioPreferences: AudioPreferences = Injekt.get<AudioPreferences>()
+    private val advancedPlayerPreferences: AdvancedPlayerPreferences = Injekt.get<AdvancedPlayerPreferences>()
+    private val networkPreferences: NetworkPreferences = Injekt.get<NetworkPreferences>()
+    val castManager: CastManager by lazy { CastManager(this, Injekt.get<PreferenceStore>()) }
+    private val storageManager: StorageManager = Injekt.get<StorageManager>()
+    private val torrentServerApi: TorrentServerApi = Injekt.get<TorrentServerApi>()
+    private val torrentServerUtils: TorrentServerUtils = Injekt.get<TorrentServerUtils>()
+    private val torrentPreferences: TorrentPreferences = Injekt.get<TorrentPreferences>()
 
     private var audioFocusRequest: AudioFocusRequestCompat? = null
     private var restoreAudioFocus: () -> Unit = {}

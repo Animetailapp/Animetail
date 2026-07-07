@@ -2,13 +2,13 @@ package eu.kanade.tachiyomi.ui.player.cast
 
 import android.content.Intent
 import android.net.Uri
+import aniyomi.core.common.torrent.TorrentServerApi
+import aniyomi.core.common.torrent.TorrentServerUtils
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaTrack
 import com.google.android.gms.common.images.WebImage
 import eu.kanade.tachiyomi.animesource.model.Video
-import aniyomi.core.common.torrent.TorrentServerApi
-import aniyomi.core.common.torrent.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder

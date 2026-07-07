@@ -228,21 +228,12 @@ object SettingsTrackingScreen : SearchableSettings {
                         logout = { dialog = LogoutDialog(trackerManager.simkl) },
                     ),
                     Preference.PreferenceItem.TrackerPreference(
-                        tracker = trackerManager.bangumi,
-                        login = {
-                            context.openInBrowser(
-                                BangumiApi.authUrl(),
-                                forceDefaultBrowser = true,
-                            )
-                        },
-                        logout = { dialog = LogoutDialog(trackerManager.bangumi) },
-                    ),
                         tracker = trackerManager.tmdb,
                         login = {
                             // If API key not set, ask user to provide it first
                             val currentApiKey = trackPreferences.trackApiKey(trackerManager.tmdb).get()
                             if (currentApiKey.isBlank()) {
-                                dialog = ApiKeyDialog(trackerManager.tmdb)
+                                dialog = LoginDialog(trackerManager.tmdb, MR.strings.username)
                             } else {
                                 scope.launchIO {
                                     try {

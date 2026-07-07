@@ -2,13 +2,13 @@ package eu.kanade.tachiyomi.data.track.hikka
 
 import android.net.Uri
 import androidx.core.net.toUri
-import eu.kanade.tachiyomi.data.database.models.Track
+import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.hikka.dto.HKManga
 import eu.kanade.tachiyomi.data.track.hikka.dto.HKMangaPagination
 import eu.kanade.tachiyomi.data.track.hikka.dto.HKOAuth
 import eu.kanade.tachiyomi.data.track.hikka.dto.HKRead
 import eu.kanade.tachiyomi.data.track.hikka.dto.HKUser
-import eu.kanade.tachiyomi.data.track.model.TrackSearch
+import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.network.DELETE
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
@@ -27,7 +27,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
 import uy.kohesive.injekt.injectLazy
-import tachiyomi.domain.track.model.Track as DomainTrack
+import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
 class HikkaApi(
     private val trackId: Long,
@@ -58,7 +58,7 @@ class HikkaApi(
         }
     }
 
-    suspend fun searchManga(query: String): List<TrackSearch> {
+    suspend fun searchManga(query: String): List<MangaTrackSearch> {
         return withIOContext {
             val url = "$BASE_API_URL/manga".toUri().buildUpon()
                 .appendQueryParameter("page", "1")
@@ -98,7 +98,7 @@ class HikkaApi(
         }
     }
 
-    suspend fun getRead(track: Track): HKRead? {
+    suspend fun getRead(track: MangaTrack): HKRead? {
         return withIOContext {
             val slug = track.tracking_url.split("/")[4]
             val url = "$BASE_API_URL/read/manga/$slug".toUri().buildUpon().build()
@@ -114,7 +114,7 @@ class HikkaApi(
         }
     }
 
-    suspend fun getManga(track: Track): TrackSearch {
+    suspend fun getManga(track: MangaTrack): MangaTrackSearch {
         return withIOContext {
             val slug = track.tracking_url.split("/")[4]
             val url = "$BASE_API_URL/manga/$slug".toUri().buildUpon()
@@ -129,7 +129,7 @@ class HikkaApi(
         }
     }
 
-    suspend fun deleteUserManga(track: DomainTrack) {
+    suspend fun deleteUserManga(track: DomainMangaTrack) {
         return withIOContext {
             val slug = track.remoteUrl.split("/")[4]
 
@@ -141,7 +141,7 @@ class HikkaApi(
         }
     }
 
-    suspend fun addUserManga(track: Track): Track {
+    suspend fun addUserManga(track: MangaTrack): MangaTrack {
         return withIOContext {
             val slug = track.tracking_url.split("/")[4]
 
@@ -173,7 +173,7 @@ class HikkaApi(
         }
     }
 
-    suspend fun updateUserManga(track: Track): Track = addUserManga(track)
+    suspend fun updateUserManga(track: MangaTrack): MangaTrack = addUserManga(track)
 
     private val json: Json by injectLazy()
     private val authClient = client.newBuilder().addInterceptor(interceptor).build()

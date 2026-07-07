@@ -10,6 +10,8 @@ import androidx.compose.ui.platform.LocalContext
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.presentation.more.settings.Preference
+import eu.kanade.presentation.more.settings.screen.SearchableSettings
+import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.player.AMNIS
 import eu.kanade.tachiyomi.ui.player.JUST_PLAYER
 import eu.kanade.tachiyomi.ui.player.MPV_KT
@@ -40,7 +42,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.NumberFormat
 
-object PlayerSettingsPlayerScreen : SearchableSettings {
+object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
 
     @ReadOnlyComposable
     @Composable
@@ -353,7 +355,6 @@ object PlayerSettingsPlayerScreen : SearchableSettings {
             ),
         )
     }
-
 
     @Composable
     private fun geCastServerGroup(
