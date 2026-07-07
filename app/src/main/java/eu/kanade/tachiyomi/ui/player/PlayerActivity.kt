@@ -1017,7 +1017,7 @@ class PlayerActivity : BaseActivity() {
         viewModel.panelShown.update { _ -> Panels.None }
         viewModel.pause()
         viewModel.isLoading.update { _ -> true }
-        viewModel.resetHosterState()
+        viewModel.resetState()
 
         lifecycleScope.launch {
             viewModel.updateIsLoadingEpisode(true)
