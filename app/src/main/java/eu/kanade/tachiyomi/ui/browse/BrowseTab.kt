@@ -161,6 +161,8 @@ data object BrowseTab : Tab {
             onChangeMangaSearchQuery = mangaExtensionsScreenModel::search,
             animeSearchQuery = animeExtensionsState.searchQuery,
             onChangeAnimeSearchQuery = animeExtensionsScreenModel::search,
+            animeExtensionsTabIndex = animeExtensionsTabIndex,
+            mangaExtensionsTabIndex = mangaExtensionsTabIndex,
             // KMK -->
             feedScreenModel = feedScreenModel,
             // KMK <--

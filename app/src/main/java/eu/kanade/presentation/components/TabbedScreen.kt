@@ -43,6 +43,8 @@ fun TabbedScreen(
     animeSearchQuery: String? = null,
     scrollable: Boolean = false,
     onChangeAnimeSearchQuery: (String?) -> Unit = {},
+    animeExtensionsTabIndex: Int = -1,
+    mangaExtensionsTabIndex: Int = -1,
     // KMK -->
     feedScreenModel: FeedScreenModel,
     // KMK <--
@@ -61,18 +63,16 @@ fun TabbedScreen(
                 val tab = tabs[currentPage]
                 val searchEnabled = tab.searchEnabled
 
-                val actualQuery = when (currentPage % 2) {
-                    1 -> mangaSearchQuery
-
-                    // History and Browse
-                    else -> animeSearchQuery
+                val actualQuery = when (currentPage) {
+                    mangaExtensionsTabIndex -> mangaSearchQuery
+                    animeExtensionsTabIndex -> animeSearchQuery
+                    else -> null
                 }
 
-                val actualOnChange = when (currentPage % 2) {
-                    1 -> onChangeMangaSearchQuery
-
-                    // History and Browse
-                    else -> onChangeAnimeSearchQuery
+                val actualOnChange = when (currentPage) {
+                    mangaExtensionsTabIndex -> onChangeMangaSearchQuery
+                    animeExtensionsTabIndex -> onChangeAnimeSearchQuery
+                    else -> ({})
                 }
 
                 SearchToolbar(
