@@ -18,6 +18,7 @@
 -keep,allowoptimization class rx.** { public protected *; }
 -keep,allowoptimization class app.cash.quickjs.** { public protected *; }
 -keep,allowoptimization class uy.kohesive.injekt.** { public protected *; }
+-keep,allowoptimization class com.squareup.zstd.** { public protected *; }
 -keep,allowoptimization class is.xyz.mpv.** { *; }
 -keep,allowoptimization class com.arthenica.** { public protected *; }
 

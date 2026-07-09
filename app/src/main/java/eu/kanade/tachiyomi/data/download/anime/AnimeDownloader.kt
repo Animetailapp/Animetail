@@ -420,9 +420,6 @@ class AnimeDownloader(
         // Get filename from download info
         val filename = DiskUtil.buildValidFilename(download.episode.name)
 
-        // Delete temp file if it exists
-        tmpDir.findFile("$filename.tmp")?.delete()
-
         // Try to find the video file
         val videoFile = tmpDir.listFiles()?.firstOrNull { it.name!!.startsWith("$filename.mkv") }
 
@@ -486,8 +483,8 @@ class AnimeDownloader(
         filename: String,
     ): UniFile {
         return flow {
-            tmpDir.findFile("$filename.tmp")?.delete()
-            val videoFile = tmpDir.createFile("$filename.tmp")!!
+            val videoFile = tmpDir.findFile("$filename.tmp")
+                ?: tmpDir.createFile("$filename.tmp")!!
             try {
                 if (torrentPreferences.torrServerEnable().get() && isTorrent(download.video)) {
                     torrentDownload(download, tmpDir, videoFile, filename)
@@ -651,6 +648,7 @@ class AnimeDownloader(
 
         val videoInput = buildList {
             if (video.videoUrl.startsWith("http")) {
+                add("-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2")
                 add(headerOptions)
             }
             add(sourceStreamOptions)

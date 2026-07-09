@@ -476,7 +476,10 @@ object SettingsReaderScreen : SearchableSettings {
                     valueRange = 65..100,
                     steps = 6,
                     title = stringResource(MR.strings.pref_vertical_navigator_height),
-                    onValueChanged = { verticalNavigatorHeightPref.set(it) },
+                    onValueChanged = {
+                        verticalNavigatorHeightPref.set(it)
+                        true
+                    },
                     enabled = verticalNavigator.isNotEmpty(),
                 ),
             ),
