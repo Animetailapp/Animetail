@@ -54,10 +54,35 @@ class MigrateMangaScreenModel(
         }
     }
 
+    fun toggleSelection(manga: Manga) {
+        mutableState.update { state ->
+            val selected = state.selectedMangaIds.toMutableSet()
+            if (manga.id in selected) {
+                selected.remove(manga.id)
+            } else {
+                selected.add(manga.id)
+            }
+            state.copy(selectedMangaIds = selected)
+        }
+    }
+
+    fun selectAll() {
+        mutableState.update { state ->
+            state.copy(selectedMangaIds = state.titles.map { it.id }.toSet())
+        }
+    }
+
+    fun clearSelection() {
+        mutableState.update { state ->
+            state.copy(selectedMangaIds = emptySet())
+        }
+    }
+
     @Immutable
     data class State(
         val source: MangaSource? = null,
         private val titleList: List<Manga>? = null,
+        val selectedMangaIds: Set<Long> = emptySet(),
     ) {
 
         val titles: List<Manga>

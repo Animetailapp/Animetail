@@ -36,7 +36,7 @@ class AnimeMigrationListScreen(
 
         LaunchedEffect(matchOverride) {
             val (current, target) = matchOverride ?: return@LaunchedEffect
-            // screenModel.useAnimeForMigration(...)
+            screenModel.useAnimeForMigration(current, target)
             matchOverride = null
         }
 

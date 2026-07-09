@@ -41,10 +41,16 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
                     AnimeSourceSearchScreen(dialogState.anime!!, it.id, state.searchQuery),
                 )
             },
-            onClickItem = {
-                dialogScreenModel.setDialog(
-                    (AnimeMigrateSearchScreenDialogScreenModel.Dialog.Migrate(it)),
-                )
+            onClickItem = { targetAnime ->
+                val migrationListScreen = navigator.items.filterIsInstance<mihon.feature.migration.list.AnimeMigrationListScreen>().firstOrNull()
+                if (migrationListScreen != null) {
+                    migrationListScreen.addMatchOverride(animeId, targetAnime.id)
+                    navigator.pop()
+                } else {
+                    dialogScreenModel.setDialog(
+                        (AnimeMigrateSearchScreenDialogScreenModel.Dialog.Migrate(targetAnime)),
+                    )
+                }
             },
             onLongClickItem = { navigator.push(AnimeScreen(it.id, true)) },
         )

@@ -40,10 +40,16 @@ class MigrateMangaSearchScreen(private val mangaId: Long) : Screen() {
                     MangaSourceSearchScreen(dialogState.manga!!, it.id, state.searchQuery),
                 )
             },
-            onClickItem = {
-                dialogScreenModel.setDialog(
-                    MangaMigrateSearchScreenDialogScreenModel.Dialog.Migrate(it),
-                )
+            onClickItem = { targetManga ->
+                val migrationListScreen = navigator.items.filterIsInstance<mihon.feature.migration.list.MangaMigrationListScreen>().firstOrNull()
+                if (migrationListScreen != null) {
+                    migrationListScreen.addMatchOverride(mangaId, targetManga.id)
+                    navigator.pop()
+                } else {
+                    dialogScreenModel.setDialog(
+                        MangaMigrateSearchScreenDialogScreenModel.Dialog.Migrate(targetManga),
+                    )
+                }
             },
             onLongClickItem = { navigator.push(MangaScreen(it.id, true)) },
         )

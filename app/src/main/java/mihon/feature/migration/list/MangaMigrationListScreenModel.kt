@@ -255,6 +255,22 @@ class MangaMigrationListScreenModel(
         updateMigrationProgress()
     }
 
+    fun useMangaForMigration(mangaId: Long, targetMangaId: Long) {
+        val item = items.find { it.manga.id == mangaId } ?: return
+        screenModelScope.launchIO {
+            item.searchResult.value = SearchResult.Searching
+            updateMigrationProgress()
+            val targetManga = getManga.await(targetMangaId)
+            if (targetManga != null) {
+                val successResult = targetManga.toSuccessSearchResult()
+                item.searchResult.value = successResult
+            } else {
+                item.searchResult.value = SearchResult.NotFound
+            }
+            updateMigrationProgress()
+        }
+    }
+
     private suspend fun navigateBack() {
         navigateBackChannel.send(Unit)
     }
