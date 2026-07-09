@@ -74,6 +74,7 @@ fun ChapterNavigator(
     // SY <--
     totalPages: Int,
     onPageIndexChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
 
@@ -108,7 +109,7 @@ fun ChapterNavigator(
     )
 
     if (type.isHorizontal()) {
-        ChapterNavigator(
+        HorizontalChapterNavigator(
             isRtl = type == ChapterNavigatorType.HORIZONTAL_RTL,
             state = state,
             onNextChapter = onNextChapter,
@@ -122,6 +123,7 @@ fun ChapterNavigator(
             mainAxisPadding = mainAxisPadding,
             backgroundColor = backgroundColor,
             buttonColor = buttonColor,
+            modifier = modifier,
         )
     } else {
         VerticalChapterNavigator(
@@ -137,12 +139,13 @@ fun ChapterNavigator(
             mainAxisPadding = mainAxisPadding,
             backgroundColor = backgroundColor,
             buttonColor = buttonColor,
+            modifier = modifier,
         )
     }
 }
 
 @Composable
-fun ChapterNavigator(
+fun HorizontalChapterNavigator(
     isRtl: Boolean,
     state: SliderState,
     onNextChapter: () -> Unit,
@@ -156,13 +159,14 @@ fun ChapterNavigator(
     mainAxisPadding: Dp,
     backgroundColor: Color,
     buttonColor: IconButtonColors,
+    modifier: Modifier = Modifier,
 ) {
     val layoutDirection = if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
 
     // We explicitly handle direction based on the reader viewer rather than the system direction
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .padding(horizontal = mainAxisPadding),
             verticalAlignment = Alignment.CenterVertically,
@@ -243,9 +247,10 @@ fun VerticalChapterNavigator(
     mainAxisPadding: Dp,
     backgroundColor: Color,
     buttonColor: IconButtonColors,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxHeight()
             .padding(vertical = mainAxisPadding),
         horizontalAlignment = Alignment.CenterHorizontally,

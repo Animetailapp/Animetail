@@ -23,6 +23,8 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Add support for `tachiyomix` extension index format ([@AntsyLich](https://github.com/AntsyLich)) ([#3349](https://github.com/mihonapp/mihon/pull/3349))
 - Added a description for the horizontal seek gesture setting ([@kenkoro](https://github.com/kenkoro)) ([#2224](https://github.com/aniyomiorg/aniyomi/pull/2224))
 - Add vertical chapter navigator for long strip mode ([@AntsyLich](https://github.com/AntsyLich)) ([#3377](https://github.com/mihonapp/mihon/pull/3377))
+- Add setting to control vertical chapter navigator height ([@AntsyLich](https://github.com/AntsyLich)) ([#3528](https://github.com/mihonapp/mihon/pull/3528))
+- Add option to set which readers use vertical chapter navigator ([@AntsyLich](https://github.com/AntsyLich)) ([#3528](https://github.com/mihonapp/mihon/pull/3528))
 
 ### Changed
 - Change all reference of extension repo to extension store ([@AntsyLich](https://github.com/AntsyLich)) ([#3349](https://github.com/mihonapp/mihon/pull/3349))
@@ -191,7 +193,7 @@ Same as v0.19.6
 ## [v0.18.0.0] - 2025-07-05
 ### Added
 
-- Set mpv\u0027s media-title property ([@Secozzi](https://github.com/Secozzi)) ([#1672](https://github.com/aniyomiorg/aniyomi/pull/1672))
+- Set mpv's media-title property ([@Secozzi](https://github.com/Secozzi)) ([#1672](https://github.com/aniyomiorg/aniyomi/pull/1672))
 - Add mpvKt to external players ([@Secozzi](https://github.com/Secozzi)) ([#1674](https://github.com/aniyomiorg/aniyomi/pull/1674))
 - Add video filters ([@abdallahmehiz](https://github.com/abdallahmehiz)) ([#1698](https://github.com/aniyomiorg/aniyomi/pull/1698))
 - Show hours and minutes in relative time strings ([@jmir1](https://github.com/jmir1)) ([`1f3be7b`](https://github.com/aniyomiorg/aniyomi/commit/1f3be7b523136039b3b60213f2cee7959a9367d7))
@@ -201,18 +203,18 @@ Same as v0.19.6
 - Replace player with mpvKt ([@Secozzi](https://github.com/Secozzi)) ([#1834](https://github.com/aniyomiorg/aniyomi/pull/1834), [#1855](https://github.com/aniyomiorg/aniyomi/pull/1855), [#1859](https://github.com/aniyomiorg/aniyomi/pull/1859), [#1860](https://github.com/aniyomiorg/aniyomi/pull/1860))
   - Move player preferences to separate section ([@Secozzi](https://github.com/Secozzi)) ([#1819](https://github.com/aniyomiorg/aniyomi/pull/1819))
 - Implement video hosters ([@Secozzi](https://github.com/Secozzi)) ([#1892](https://github.com/aniyomiorg/aniyomi/pull/1892))
-- Add size slider for the \"List Display\" Mode ([@MavikBow](https://github.com/MavikBow)) ([#1906](https://github.com/aniyomiorg/aniyomi/pull/1906))
+- Add size slider for the "List Display" Mode ([@MavikBow](https://github.com/MavikBow)) ([#1906](https://github.com/aniyomiorg/aniyomi/pull/1906))
   - Make the default list a set size and make browse list scale ([@MavikBow](https://github.com/MavikBow)) ([#1914](https://github.com/aniyomiorg/aniyomi/pull/1914))
 - Allow negative brightness values (dimming) ([@jmir1](https://github.com/jmir1)) ([#1915](https://github.com/aniyomiorg/aniyomi/pull/1915))
 - Add new lua functions for custom buttons ([@Secozzi](https://github.com/Secozzi)) ([#1980](https://github.com/aniyomiorg/aniyomi/pull/1980))
 - Use timestamps provided by extensions ([@Secozzi](https://github.com/Secozzi)) ([#1983](https://github.com/aniyomiorg/aniyomi/pull/1983))
 - Add titles to player sheets + consistency with More sheet ([@quickdesh](https://github.com/quickdesh)) ([#2015](https://github.com/aniyomiorg/aniyomi/pull/2015))
-- Add script \u0026 script-opts editor to player settings ([@Secozzi](https://github.com/Secozzi)) ([#2019](https://github.com/aniyomiorg/aniyomi/pull/2019))
+- Add script & script-opts editor to player settings ([@Secozzi](https://github.com/Secozzi)) ([#2019](https://github.com/aniyomiorg/aniyomi/pull/2019))
 - feat: Get manga and Anime info from tracker ([#188](https://github.com/aniyomiorg/aniyomi/pull/1674))
 
 ### Improved
 
-- Show \"Now\" instead of \"0 minutes ago\" ([@Secozzi](https://github.com/Secozzi)) ([#1715](https://github.com/aniyomiorg/aniyomi/pull/1715))
+- Show "Now" instead of "0 minutes ago" ([@Secozzi](https://github.com/Secozzi)) ([#1715](https://github.com/aniyomiorg/aniyomi/pull/1715))
 - Add headers when using 1dm as external player ([@Secozzi](https://github.com/Secozzi)) ([#2032](https://github.com/aniyomiorg/aniyomi/pull/2032))
 - feat: add navbar preferences for updates, history, and label visibility ([#189](https://github.com/aniyomiorg/aniyomi/pull/1674))
 - feat: implement repository hide/show functionality
@@ -225,7 +227,7 @@ Same as v0.19.6
 - Fix Shikimori tracking for anime ([@jmir1](https://github.com/jmir1)) ([`58817c7`](https://github.com/aniyomiorg/aniyomi/commit/58817c724e2808072ff273329cee261d12084927))
 - Group updates by date and not time ([@jmir1](https://github.com/jmir1)) ([`c83ebf3`](https://github.com/aniyomiorg/aniyomi/commit/c83ebf322f48d41ca1ad0105262160ecb7cde991))
 - Fix airing time not showing ([@Secozzi](https://github.com/Secozzi)) ([#1720](https://github.com/aniyomiorg/aniyomi/pull/1720))
-- Don\u0027t invalidate anime downloads on startup ([@Secozzi](https://github.com/Secozzi)) ([#1753](https://github.com/aniyomiorg/aniyomi/pull/1753))
+- Don't invalidate anime downloads on startup ([@Secozzi](https://github.com/Secozzi)) ([#1753](https://github.com/aniyomiorg/aniyomi/pull/1753))
 - Fix hidden categories getting reset after delete/reorder ([@cuong-tran](https://github.com/cuong-tran)) ([#1780](https://github.com/aniyomiorg/aniyomi/pull/1780))
 - Fix episode progress not being saved and duplicate tracks ([@perokhe](https://github.com/perokhe)) ([#1784](https://github.com/aniyomiorg/aniyomi/pull/1784), [#1785](https://github.com/aniyomiorg/aniyomi/pull/1785))
 - Fix subtitle select not matching two letter language codes ([@Secozzi](https://github.com/Secozzi)) ([#1805](https://github.com/aniyomiorg/aniyomi/pull/1805))
@@ -235,13 +237,13 @@ Same as v0.19.6
 - Fix various issues due to replacing the player with mpvKt
   - Fix gesture seeking not seeking to start and end ([@perokhe](https://github.com/perokhe)) ([#1865](https://github.com/aniyomiorg/aniyomi/pull/1865))
   - Fix crash when opening player settings in tablet ui ([@Secozzi](https://github.com/Secozzi)) ([#1868](https://github.com/aniyomiorg/aniyomi/pull/1868))
-  - Fix episode list in player not respecting filters \u0026 crash when exiting while stuff is loading ([@Secozzi](https://github.com/Secozzi)) ([#1869](https://github.com/aniyomiorg/aniyomi/pull/1869))
+  - Fix episode list in player not respecting filters & crash when exiting while stuff is loading ([@Secozzi](https://github.com/Secozzi)) ([#1869](https://github.com/aniyomiorg/aniyomi/pull/1869))
   - Fix episode being marked as seen at start ([@perokhe](https://github.com/perokhe)) ([#1871](https://github.com/aniyomiorg/aniyomi/pull/1871))
   - Fix player not being paused when loading tracks after changing quality ([@Secozzi](https://github.com/Secozzi)) ([#1878](https://github.com/aniyomiorg/aniyomi/pull/1878))
   - Fix lag when toggling player ui ([@Secozzi](https://github.com/Secozzi)) ([#1887](https://github.com/aniyomiorg/aniyomi/pull/1887))
   - Fix audio selection not working on external audio tracks ([@Secozzi](https://github.com/Secozzi)) ([#1901](https://github.com/aniyomiorg/aniyomi/pull/1901))
-  - Reset \"hide player controls time\" when pressing custom button ([@Secozzi](https://github.com/Secozzi)) ([#1902](https://github.com/aniyomiorg/aniyomi/pull/1902))
-  - Don\u0027t unpause on share and save ([@Secozzi](https://github.com/Secozzi)) ([#1905](https://github.com/aniyomiorg/aniyomi/pull/1905))
+  - Reset "hide player controls time" when pressing custom button ([@Secozzi](https://github.com/Secozzi)) ([#1902](https://github.com/aniyomiorg/aniyomi/pull/1902))
+  - Don't unpause on share and save ([@Secozzi](https://github.com/Secozzi)) ([#1905](https://github.com/aniyomiorg/aniyomi/pull/1905))
   - Fix player pausing with gesture seek ([@perokhe](https://github.com/perokhe)) ([#1916](https://github.com/aniyomiorg/aniyomi/pull/1916))
   - Fix potential npe issues with mpv-lib ([@Secozzi](https://github.com/Secozzi)) ([#1921](https://github.com/aniyomiorg/aniyomi/pull/1921))
   - Dismiss chapter sheet on chapter select ([@Secozzi](https://github.com/Secozzi)) ([#1976](https://github.com/aniyomiorg/aniyomi/pull/1976))
@@ -251,16 +253,16 @@ Same as v0.19.6
 - Open correct tab from extension update notifications ([@jmir1](https://github.com/jmir1)) ([`161471d`](https://github.com/aniyomiorg/aniyomi/commit/161471d94a2350c0c983eeeccd3b7ac0dc66d429))
 - Fix sub-auto not loading all external subtitle files ([@perokhe](https://github.com/perokhe)) ([#1866](https://github.com/aniyomiorg/aniyomi/pull/1866))
 - Fix `ALSearchItem.format` nullability ([@Secozzi](https://github.com/Secozzi)) ([#1910](https://github.com/aniyomiorg/aniyomi/pull/1910))
-- Don\u0027t format mpv preferences ([@Secozzi](https://github.com/Secozzi)) ([#1939](https://github.com/aniyomiorg/aniyomi/pull/1939))
+- Don't format mpv preferences ([@Secozzi](https://github.com/Secozzi)) ([#1939](https://github.com/aniyomiorg/aniyomi/pull/1939))
 - Prevent crash on app death when watching in external player ([@Secozzi](https://github.com/Secozzi)) ([#1945](https://github.com/aniyomiorg/aniyomi/pull/1945))
-- Don\u0027t run unnecessary stuff when exiting the player ([@Secozzi](https://github.com/Secozzi)) ([#1961](https://github.com/aniyomiorg/aniyomi/pull/1961))
+- Don't run unnecessary stuff when exiting the player ([@Secozzi](https://github.com/Secozzi)) ([#1961](https://github.com/aniyomiorg/aniyomi/pull/1961))
 - Fix some downloader issues ([@Secozzi](https://github.com/Secozzi)) ([#1964](https://github.com/aniyomiorg/aniyomi/pull/1964))
-  - Fix downloader not working for certain types of tracks \u0026 duration sometimes not being logged ([@Secozzi](https://github.com/Secozzi)) ([#2001](https://github.com/aniyomiorg/aniyomi/pull/2001))
+  - Fix downloader not working for certain types of tracks & duration sometimes not being logged ([@Secozzi](https://github.com/Secozzi)) ([#2001](https://github.com/aniyomiorg/aniyomi/pull/2001))
 - Fix some issues with intro skip length ([@jmir1](https://github.com/jmir1)) ([`72cac57`](https://github.com/aniyomiorg/aniyomi/commit/72cac57d8e66366cbc0f3106eb351c82250c460b), [`25dd3ea`](https://github.com/aniyomiorg/aniyomi/commit/25dd3ea69fb217de7b0485c29e4a9b970737fd45))
 - Force clipboard to use UI thread when copying path for external players ([@quickdesh](https://github.com/quickdesh)) ([#1994](https://github.com/aniyomiorg/aniyomi/pull/1994))
 - Use application directory for storing files used by mpv ([@Secozzi](https://github.com/Secozzi)) ([#1995](https://github.com/aniyomiorg/aniyomi/pull/1995))
 - Update backup warning string (follow Mihon) ([@cuong-tran](https://github.com/cuong-tran)) ([#2012](https://github.com/aniyomiorg/aniyomi/pull/2012))
-- Fix issues with episode deletion \u0026 more ([@quickdesh](https://github.com/quickdesh)) ([#2017](https://github.com/aniyomiorg/aniyomi/pull/2017))
+- Fix issues with episode deletion & more ([@quickdesh](https://github.com/quickdesh)) ([#2017](https://github.com/aniyomiorg/aniyomi/pull/2017))
 - Fix vertical slider width issues and shift boost volume value to slider ([@quickdesh](https://github.com/quickdesh)) ([#2018](https://github.com/aniyomiorg/aniyomi/pull/2018))
 - Fix MyAnimeList login ([@choppeh](https://github.com/choppeh)) ([#2035](https://github.com/aniyomiorg/aniyomi/pull/2035))
 - Call sort methods for videos and hosters ([@cuong-tran](https://github.com/cuong-tran)) ([#2058](https://github.com/aniyomiorg/aniyomi/pull/2058))
@@ -294,11 +296,11 @@ Same as v0.19.6
 ### Fixed
 
 - Fix pip not broadcasting intent in A14+ ([@quickdesh](https://github.com/quickdesh)) ([#1603](https://github.com/aniyomiorg/aniyomi/pull/1603))
-- Fix advanced player settings crash in android \u2264 10 ([@perokhe](https://github.com/perokhe)) ([#1627](https://github.com/aniyomiorg/aniyomi/pull/1627))
+- Fix advanced player settings crash in android ≤ 10 ([@perokhe](https://github.com/perokhe)) ([#1627](https://github.com/aniyomiorg/aniyomi/pull/1627))
 
 ### Improved
 
-- Hide the skip intro button if the skipped amount \u003d\u003d 0 ([@abdallahmehiz](https://github.com/abdallahmehiz)) ([#1598](https://github.com/aniyomiorg/aniyomi/pull/1598))
+- Hide the skip intro button if the skipped amount == 0 ([@abdallahmehiz](https://github.com/abdallahmehiz)) ([#1598](https://github.com/aniyomiorg/aniyomi/pull/1598))
 
 ### Other
 
@@ -324,12 +326,12 @@ Same as v0.19.6
   - Reorder reader menu overflow items ([@AntsyLich](https://github.com/AntsyLich)) ([`788235f`](https://github.com/mihonapp/mihon/commit/788235feeca241228eac0561339dd07b5ea0b77d))
 - Option to skip downloading duplicate read chapters ([@shabnix](https://github.com/shabnix)) ([#1125](https://github.com/mihonapp/mihon/pull/1125))
 - Add confirmation dialog when adding repo via URI ([@Animeboynz](https://github.com/Animeboynz)) ([#1158](https://github.com/mihonapp/mihon/pull/1158))
-- Add \"show entry\" action to download notifications ([@mm12](https://github.com/mm12), [@AntsyLich](https://github.com/AntsyLich)) ([#1159](https://github.com/mihonapp/mihon/pull/1159))
+- Add "show entry" action to download notifications ([@mm12](https://github.com/mm12), [@AntsyLich](https://github.com/AntsyLich)) ([#1159](https://github.com/mihonapp/mihon/pull/1159))
 - Option to update trackers when chapter marked as read ([@Animeboynz](https://github.com/Animeboynz), [@AntsyLich](https://github.com/AntsyLich)) ([#1177](https://github.com/mihonapp/mihon/pull/1177), [#1365](https://github.com/mihonapp/mihon/pull/1365), [#1374](https://github.com/mihonapp/mihon/pull/1374))
 - Toast to restart app when User-Agent is changed ([@NGB-Was-Taken](https://github.com/NGB-Was-Taken)) ([#1204](https://github.com/mihonapp/mihon/pull/1204))
 - Added more profile compilation status (p) ([`c8bb78d`](https://github.com/mihonapp/mihon/commit/c8bb78d91afc2824baaca999f0095559c49d1306))
 - Add option to opt out of Analytics and Crashlytics ([@Animeboynz](https://github.com/Animeboynz)) ([#1237](https://github.com/mihonapp/mihon/pull/1237))
-  - Rework Firebase setup ([@AntsyLich](https://github.com/AntsyLich)) ([`15e3f28`](https://github.com/mihonapp/mihon/commit/15e3f28aa36bec3c31f212c572ab57ce960cc862))
+  - Rework Firebase setup ([@AntsyLich](https://github.com/AntsyLich)) ([`15e3f28`](https://github.com/mihonapp/mihon/commit/15e3f28aa36bec3c31f212c572ab57ce960ead182f7ca))
 - Added random library sort ([@jackhamilton](https://github.com/jackhamilton)) ([#1317](https://github.com/mihonapp/mihon/pull/1317))
   - Make sure random library sort is at the bottom ([@AntsyLich](https://github.com/AntsyLich)) ([`2e2c8d3`](https://github.com/mihonapp/mihon/commit/2e2c8d36c1e23bf274c7c19f1242e14b0c7afbc1))
 - Confirmation dialog when removing privately installed extensions ([@Animeboynz](https://github.com/Animeboynz), [@AntsyLich](https://github.com/AntsyLich)) ([#1320](https://github.com/mihonapp/mihon/pull/1320))
@@ -352,7 +354,7 @@ Same as v0.19.6
   - Trust extension by repo ([@AntsyLich](https://github.com/AntsyLich)) ([#570](https://github.com/mihonapp/mihon/pull/570))
 - From M2 ripple to M3 ([@FooIbar](https://github.com/FooIbar)) ([#675](https://github.com/mihonapp/mihon/pull/675))
 - Increased continue reading button size ([@AntsyLich](https://github.com/AntsyLich), [@Animeboynz](https://github.com/Animeboynz)) ([`e17f70f`](https://github.com/mihonapp/mihon/commit/e17f70f7226ea031fc1f962c9dfea3e404ba53ad))
-- Global search \"Has result\" choice is now sticky ([@AntsyLich](https://github.com/AntsyLich)) ([`5a61ca5`](https://github.com/mihonapp/mihon/commit/5a61ca5535fe0d9e8e7bcb9e665ba2f9cb0cf649))
+- Global search "Has result" choice is now sticky ([@AntsyLich](https://github.com/AntsyLich)) ([`5a61ca5`](https://github.com/mihonapp/mihon/commit/5a61ca5535fe0d9e8e7bcb9e665ba2f9cb0cf649))
 - Make category backup/restore not dependant on library backup ([@AntsyLich](https://github.com/AntsyLich)) ([`56fb4f6`](https://github.com/mihonapp/mihon/commit/56fb4f62a152e87a71892aa68c78cac51a2c8596))
 - Rename backup restore error log file ([@AntsyLich](https://github.com/AntsyLich)) ([`2858ef8`](https://github.com/mihonapp/mihon/commit/2858ef835fec8d7278b1d0cad1b5664104d1e4b0))
 - Keyboard type in add extension repo dialog ([@xbjfk](https://github.com/xbjfk)) ([#764](https://github.com/mihonapp/mihon/pull/764))
@@ -360,14 +362,14 @@ Same as v0.19.6
 - Kitsu domain to `kitsu.app` ([@MajorTanya](https://github.com/MajorTanya)) ([#1106](https://github.com/mihonapp/mihon/pull/1106))
 - Respect privacy settings in extension update notification ([@Animeboynz](https://github.com/Animeboynz)) ([#1156](https://github.com/mihonapp/mihon/pull/1156))
 - Hide keyboard when a Tracker SearchResultItem is clicked ([@Animeboynz](https://github.com/Animeboynz)) ([#1168](https://github.com/mihonapp/mihon/pull/1168))
-- Enable \u0027Split Tall Images\u0027 by default ([@Smol-Ame](https://github.com/Smol-Ame)) ([#1185](https://github.com/mihonapp/mihon/pull/1185))
-- Ignore \"intent://\" urls on webview ([@bapeey](https://github.com/bapeey)) ([#1193](https://github.com/mihonapp/mihon/pull/1193))
+- Enable 'Split Tall Images' by default ([@Smol-Ame](https://github.com/Smol-Ame)) ([#1185](https://github.com/mihonapp/mihon/pull/1185))
+- Ignore "intent://" urls on webview ([@bapeey](https://github.com/bapeey)) ([#1193](https://github.com/mihonapp/mihon/pull/1193))
 - Make reader chapter navigator slightly wider on small screens (p) ([#1202](https://github.com/mihonapp/mihon/pull/1202))
 - Re-enable fetching chapters list for entries with licenced status ([@Animeboynz](https://github.com/Animeboynz)) ([#1230](https://github.com/mihonapp/mihon/pull/1230))
 - Change casing for Extention Repos String ([@Animeboynz](https://github.com/Animeboynz)) ([#1248](https://github.com/mihonapp/mihon/pull/1248))
-- Retain remote last chapter read if it\u0027s higher than the local one for EnhancedTracker ([@brewkunz](https://github.com/brewkunz)) ([#1301](https://github.com/mihonapp/mihon/pull/1301))
+- Retain remote last chapter read if it's higher than the local one for EnhancedTracker ([@brewkunz](https://github.com/brewkunz)) ([#1301](https://github.com/mihonapp/mihon/pull/1301))
 - Adjust expandable fab animation (p) ([`eb6092b`](https://github.com/mihonapp/mihon/commit/eb6092bd0cfa09694985a8bafdd8bbf2815190a1))
-- \"Invalidate downloads index\" to \"Reindex downloads\" ([@AntsyLich](https://github.com/AntsyLich)) ([`d2afbfe`](https://github.com/mihonapp/mihon/commit/d2afbfe4ede283076aae40633c79c3f90b4390e7))
+- "Invalidate downloads index" to "Reindex downloads" ([@AntsyLich](https://github.com/AntsyLich)) ([`d2afbfe`](https://github.com/mihonapp/mihon/commit/d2afbfe4ede283076aae40633c79c3f90b4390e7))
 
 ### Improved
 - Reader performance
@@ -389,19 +391,19 @@ Same as v0.19.6
 - Extracting `ComicInfo.xml` from local source archives ([@FooIbar](https://github.com/FooIbar)) ([#325](https://github.com/mihonapp/mihon/pull/325))
 - Chapter download indicator ([@ivaniskandar](https://github.com/ivaniskandar)) ([`d8b9a9f`](https://github.com/mihonapp/mihon/commit/d8b9a9f593911569ff2bceb49b4f020978d0d2e1))
 - Issues with shizuku in a multi user setup ([@Redjard](https://github.com/Redjard)) ([#494](https://github.com/mihonapp/mihon/pull/494))
-- Fix reader page image not being decoded until it\u0027s visible ([@FooIbar](https://github.com/FooIbar)) ([#563](https://github.com/mihonapp/mihon/pull/563))
+- Fix reader page image not being decoded until it's visible ([@FooIbar](https://github.com/FooIbar)) ([#563](https://github.com/mihonapp/mihon/pull/563))
 - Reader chapter progress slider visuals ([@FooIbar](https://github.com/FooIbar)) ([#674](https://github.com/mihonapp/mihon/pull/674))
 - Extension being marked as not installed instead of untrusted after updating with private installer ([@AntsyLich](https://github.com/AntsyLich)) ([`2114514`](https://github.com/mihonapp/mihon/commit/21145144cdf550aa775047603e06e261951ebc42))
 - Extension update counter not updating due to extension being marked as untrusted ([@AntsyLich](https://github.com/AntsyLich)) ([`2114514`](https://github.com/mihonapp/mihon/commit/21145144cdf550aa775047603e06e261951ebc42))
-- `Key \"extension-XXX-YYY\" was already used` crash ([@AntsyLich](https://github.com/AntsyLich)) ([`2114514`](https://github.com/mihonapp/mihon/commit/21145144cdf550aa775047603e06e261951ebc42))
+- `Key "extension-XXX-YYY" was already used` crash ([@AntsyLich](https://github.com/AntsyLich)) ([`2114514`](https://github.com/mihonapp/mihon/commit/21145144cdf550aa775047603e06e261951ebc42))
 - Navigation layout tap zones shifting after zooming out in webtoon readers ([@FooIbar](https://github.com/FooIbar)) ([#767](https://github.com/mihonapp/mihon/pull/767))
 - Some extension not loading due to missing classes ([@AwkwardPeak7](https://github.com/AwkwardPeak7)) ([#783](https://github.com/mihonapp/mihon/pull/783))
 - Theme colors in accordance to upstream changes ([@CrepeTF](https://github.com/CrepeTF), [@AntsyLich](https://github.com/AntsyLich)) ([#766](https://github.com/mihonapp/mihon/pull/766), [#963](https://github.com/mihonapp/mihon/pull/963), [#976](https://github.com/mihonapp/mihon/pull/976), [9a34ace](https://github.com/mihonapp/mihon/commit/9a34ace09c66274e6c2b3f9446058a0fa99d4bd0))
 - Crash when requesting folder access on non-conforming devices ([@mainrs](https://github.com/mainrs)) ([#726](https://github.com/mihonapp/mihon/pull/726))
 - Fix unexpected skips in strong skipping mode ([@FooIbar](https://github.com/FooIbar)) ([#940](https://github.com/mihonapp/mihon/pull/940))
-- Bugged color for Date/Scanlator in chapter list for read chapters ([@ivaniskandar](https://github.com/ivaniskandar)) ([`15d9992`](https://github.com/mihonapp/mihon/commit/15d999229fcce865001d5fa77d0163e6e80e38db))
+- Bugged color for Date/Scanlator in chapter list for read chapters ([@ivaniskandar](https://github.com/ivaniskandar)) ([`15d9992`](https://github.com/mihonapp/mihon/commit/15d999229fcce865001d5fa77d0163e8e6e1af))
 - Categories having same `order` after restoring backup ([@Cologler](https://github.com/Cologler)) ([`119bcbf`](https://github.com/mihonapp/mihon/commit/119bcbf8ed2415664922ea77fadf0da1165d1732))
-- Filter by \"Tracking\" temporarily stuck after signing out of tracker ([@AntsyLich](https://github.com/AntsyLich)) ([#987](https://github.com/mihonapp/mihon/pull/987))
+- Filter by "Tracking" temporarily stuck after signing out of tracker ([@AntsyLich](https://github.com/AntsyLich)) ([#987](https://github.com/mihonapp/mihon/pull/987))
   - Fix login prompts despite being logged in to trackers in Manga screen ([@AntsyLich](https://github.com/AntsyLich)) ([`cbcd8bd`](https://github.com/mihonapp/mihon/commit/cbcd8bd6682023f728568f2b44da26124618aed7))
 - JXL image downloading and loading ([@FooIbar](https://github.com/FooIbar)) ([#993](https://github.com/mihonapp/mihon/pull/993))
 - Crash when using `%` in category name ([@Animeboynz](https://github.com/Animeboynz), [@FooIbar](https://github.com/FooIbar)) ([#1030](https://github.com/mihonapp/mihon/pull/1030))
@@ -473,7 +475,7 @@ Same as v0.19.6
 - Run PR check when base strings are changed ([@AntsyLich](https://github.com/AntsyLich)) ([`4051f18`](https://github.com/mihonapp/mihon/commit/4051f180a2e36e8a2cde6c55f0bea7952fdc4704))
   - Fix PR build check ([@AntsyLich](https://github.com/AntsyLich)) ([`9503082`](https://github.com/mihonapp/mihon/commit/9503082d44b5bd868ee1bfc42741dc978d1d9047))
 - Cleanup .gitignore files ([@AntsyLich](https://github.com/AntsyLich)) ([`afa5002`](https://github.com/mihonapp/mihon/commit/afa50029882655af8d5eea40aed7644fce4564d8))
-- Pass uncaught exception to default handler in GlobalExceptionHandler (so it\u0027s reported to crashlytics) ([@AntsyLich](https://github.com/AntsyLich)) ([`f3a2f56`](https://github.com/mihonapp/mihon/commit/f3a2f566c8a09ab862758ae69b43da2a2cd8f1db))
+- Pass uncaught exception to default handler in GlobalExceptionHandler (so it's reported to crashlytics) ([@AntsyLich](https://github.com/AntsyLich)) ([`f3a2f56`](https://github.com/mihonapp/mihon/commit/f3a2f566c8a09ab862758ae69b43da2a2cd8f1db))
 
 ## [v0.16.5] - 2024-04-09
 ### Added
@@ -496,7 +498,7 @@ Same as v0.19.6
 
 ## [v0.16.4] - 2024-02-27
 ### Changed
-- Don\u0027t include custom user agent for MAL (circumvents MAL block) ([@AntsyLich](https://github.com/AntsyLich)) ([`085ad8d`](https://github.com/mihonapp/mihon/commit/085ad8d44637c375a8ed24aba3a6f75f5b0cc9ee))
+- Don't include custom user agent for MAL (circumvents MAL block) ([@AntsyLich](https://github.com/AntsyLich)) ([`085ad8d`](https://github.com/mihonapp/mihon/commit/085ad8d44637c375a8ed24aba3a6f75f5b0cc9ee))
 
 ## [v0.16.3] - 2024-01-30
 ### Added
@@ -519,16 +521,16 @@ Same as v0.19.6
 ### Changed
 - Backup now contains scanlator filter of a series ([@jobobby04](https://github.com/jobobby04)) ([#166](https://github.com/mihonapp/mihon/pull/166))
 - App icon scaling ([@AntsyLich](https://github.com/AntsyLich)) ([`26815c7`](https://github.com/mihonapp/mihon/commit/26815c7356111394665467c1e81255ac9ee33c1a))
-- Tracker OAuth client to Mihon\u0027s (fixes login issue for Shikimori tracker) ([@AntsyLich](https://github.com/AntsyLich)) ([`e3f33e2`](https://github.com/mihonapp/mihon/commit/e3f33e24f5e928ac8a85d1f500fd42d4715fc6b5))
+- Tracker OAuth client to Mihon's (fixes login issue for Shikimori tracker) ([@AntsyLich](https://github.com/AntsyLich)) ([`e3f33e2`](https://github.com/mihonapp/mihon/commit/e3f33e24f5e928ac8a85d1f500fd42d4715fc6b5))
 - Tracker user agents ([@AntsyLich](https://github.com/AntsyLich), [@kitsumed](https://github.com/kitsumed)) ([`e3f33e2`](https://github.com/mihonapp/mihon/commit/e3f33e24f5e928ac8a85d1f500fd42d4715fc6b5))
 - Crash log filename to `mihon_crash_logs.txt` from `tachiyomi_crash_logs.txt` ([@MajorTanya](https://github.com/MajorTanya)) ([#234](https://github.com/mihonapp/mihon/pull/234))
-- Don\u0027t try to refresh MAL token after refresh token expires ([@AntsyLich](https://github.com/AntsyLich)) ([`32188f9`](https://github.com/mihonapp/mihon/commit/32188f9f65009a18250674ef1bd6e57d351c1fba))
+- Don't try to refresh MAL token after refresh token expires ([@AntsyLich](https://github.com/AntsyLich)) ([`32188f9`](https://github.com/mihonapp/mihon/commit/32188f9f65009a18250674ef1bd6e57d351c1fba))
 
 ### Fixed
-- \"Flash screen on page change\" making the screen full black ([@AntsyLich](https://github.com/AntsyLich)) ([`38d6ab8`](https://github.com/mihonapp/mihon/commit/38d6ab80ce868707829dbc81de4170afe3c2f2a5))
+- "Flash screen on page change" making the screen full black ([@AntsyLich](https://github.com/AntsyLich)) ([`38d6ab8`](https://github.com/mihonapp/mihon/commit/38d6ab80ce868707829dbc81de4170afe3c2f2a5))
 - Faulty MangaUpdates score in database ([@AntsyLich](https://github.com/AntsyLich)) ([`a024218`](https://github.com/mihonapp/mihon/commit/a024218410953a389b8af4880fa7ae6cc30124a2))
 - Updating extension not reflecting correctly ([@AntsyLich](https://github.com/AntsyLich)) ([`cb06898`](https://github.com/mihonapp/mihon/commit/cb068984303f811692531bf6f14902ae118d8ac7))
-- Inconsistent button height in \"Data and storage\" for some languages ([@theolm](https://github.com/theolm)) ([#202](https://github.com/mihonapp/mihon/pull/202))
+- Inconsistent button height in "Data and storage" for some languages ([@theolm](https://github.com/theolm)) ([#202](https://github.com/mihonapp/mihon/pull/202))
 - Chapter not being marked as read locally when refreshing Enhanced Trackers ([@Secozzi](https://github.com/Secozzi)) ([#219](https://github.com/mihonapp/mihon/pull/219))
 
 ### Other
