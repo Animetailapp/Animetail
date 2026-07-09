@@ -37,9 +37,9 @@ android {
             versionNameSuffix = "-${getLatestCommitCount()}"
             isPseudoLocalesEnabled = true
         }
-        val release by getting {
-            isMinifyEnabled = Config.enableCodeShrink
-            isShrinkResources = Config.enableCodeShrink
+        val release = getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
 
             proguardFiles("proguard-android-optimize.txt", "proguard-rules.pro")
 
