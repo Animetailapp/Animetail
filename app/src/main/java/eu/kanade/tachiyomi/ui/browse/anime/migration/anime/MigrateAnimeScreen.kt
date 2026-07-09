@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.browse.anime.migration.anime
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,17 +30,46 @@ data class MigrateAnimeScreen(
 
         val state by screenModel.state.collectAsState()
 
+        val isSelectionMode = state.selectedAnimeIds.isNotEmpty()
+        BackHandler(enabled = isSelectionMode) {
+            screenModel.clearSelection()
+        }
+
         if (state.isLoading) {
             LoadingScreen()
             return
         }
 
         MigrateAnimeScreen(
-            navigateUp = navigator::pop,
+            navigateUp = {
+                if (isSelectionMode) {
+                    screenModel.clearSelection()
+                } else {
+                    navigator.pop()
+                }
+            },
             title = state.source!!.name,
             state = state,
-            onClickItem = { navigator.push(MigrateAnimeSearchScreen(it.id)) },
-            onClickCover = { navigator.push(AnimeScreen(it.id)) },
+            onClickItem = { anime ->
+                if (isSelectionMode) {
+                    screenModel.toggleSelection(anime)
+                } else {
+                    navigator.push(MigrateAnimeSearchScreen(anime.id))
+                }
+            },
+            onClickCover = { anime ->
+                if (isSelectionMode) {
+                    screenModel.toggleSelection(anime)
+                } else {
+                    navigator.push(AnimeScreen(anime.id))
+                }
+            },
+            onLongClickItem = screenModel::toggleSelection,
+            onSelectAll = screenModel::selectAll,
+            onClearSelection = screenModel::clearSelection,
+            onClickMigrate = {
+                navigator.push(mihon.feature.migration.config.AnimeMigrationConfigScreen(state.selectedAnimeIds))
+            },
         )
 
         LaunchedEffect(Unit) {

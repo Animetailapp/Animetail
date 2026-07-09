@@ -13,6 +13,7 @@ import androidx.compose.material.icons.outlined.Deselect
 import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -305,7 +306,16 @@ private fun ReorderableCollectionItemScope.MigrationSourceItem(
             }
         },
         leadingContent = {
-            MangaSourceIcon(source = source)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.medium),
+            ) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = null,
+                )
+                MangaSourceIcon(source = source)
+            }
         },
         trailingContent = {
             Row(

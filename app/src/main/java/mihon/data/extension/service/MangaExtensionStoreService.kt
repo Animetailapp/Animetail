@@ -13,6 +13,8 @@ import mihon.data.extension.model.NetworkExtensionStore
 import mihon.data.extension.model.NetworkLegacyExtension
 import mihon.data.extension.model.NetworkLegacyExtensionRepo
 import mihon.domain.extension.model.ExtensionStore
+import okio.buffer
+import okio.gzip
 import tachiyomi.core.common.util.system.logcat
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -28,44 +30,42 @@ class MangaExtensionStoreService(
     private suspend fun fetch(indexUrl: String, forceV2: Boolean): Result<ExtensionStore> {
         var updatedIndexUrl: String = indexUrl
         return try {
-            val store = network.client.newCall(GET(indexUrl)).awaitSuccess().body.source().use { source ->
-                try {
-                    protoBuf.decodeFromByteArray<NetworkExtensionStore>(source.peek().readByteArray())
-                } catch (e: IllegalArgumentException) {
-                    logcat(LogPriority.ERROR, e) {
-                        "Failed to add extension store '$updatedIndexUrl'"
+            val response = network.client.newCall(GET(indexUrl)).awaitSuccess()
+            val store = response.body.source().decompressIfGzipped().use { source ->
+                source.stripBom()
+                val networkStore = when (source.peek().readByte()) {
+                    // "[..."
+                    0x5B.toByte() -> run {
+                        if (!indexUrl.endsWith("/index.min.json")) {
+                            throw IllegalArgumentException("Provided legacy store url is not valid")
+                        }
+                        updatedIndexUrl = indexUrl.replace("/index.min.json", "/repo.json")
+                        network.client.newCall(
+                            GET(updatedIndexUrl),
+                        ).awaitSuccess().body.source().decompressIfGzipped().use {
+                            it.stripBom()
+                            json.decodeFromBufferedSource<NetworkLegacyExtensionRepo>(it)
+                        }
                     }
-                    try {
-                        json.decodeFromBufferedSource<NetworkExtensionStore>(source.peek())
-                    } catch (e: IllegalArgumentException) {
-                        if (forceV2) throw e
-                        logcat(LogPriority.ERROR, e) {
-                            "Failed to add extension store '$updatedIndexUrl'"
-                        }
-                        val legacyIndex = try {
-                            json.decodeFromBufferedSource<NetworkLegacyExtensionRepo>(source.peek())
-                        } catch (e: IllegalArgumentException) {
-                            if (!indexUrl.endsWith("/index.min.json")) {
-                                throw e
-                            }
-                            logcat(LogPriority.ERROR, e) {
-                                "Failed to add extension store '$updatedIndexUrl'"
-                            }
-                            updatedIndexUrl = indexUrl.replace("/index.min.json", "/repo.json")
-                            network.client.newCall(GET(updatedIndexUrl)).awaitSuccess().body.source().use {
-                                json.decodeFromBufferedSource<NetworkLegacyExtensionRepo>(it)
-                            }
-                        }
 
-                        val indexV2 = legacyIndex.indexV2
-                        if (indexV2 != null) {
-                            return fetch(indexV2, forceV2 = true)
-                        } else {
-                            legacyIndex
-                        }
+                    // "{..."
+                    0x7B.toByte() -> try {
+                        json.decodeFromBufferedSource<NetworkLegacyExtensionRepo>(source.peek())
+                    } catch (_: Exception) {
+                        json.decodeFromBufferedSource<NetworkExtensionStore>(source)
+                    }
+
+                    else -> protoBuf.decodeFromByteArray<NetworkExtensionStore>(source.readByteArray())
+                }
+
+                if (networkStore is NetworkLegacyExtensionRepo) {
+                    val indexV2 = networkStore.indexV2
+                    if (indexV2 != null) {
+                        return fetch(indexV2, forceV2 = true)
                     }
                 }
-                    .toExtensionStore(updatedIndexUrl)
+
+                networkStore.toExtensionStore(updatedIndexUrl)
             }
             Result.success(store)
         } catch (e: CancellationException) {
@@ -82,19 +82,21 @@ class MangaExtensionStoreService(
         return try {
             val extensions = if (!store.isLegacy) {
                 val response = network.client.newCall(GET(store.indexUrl)).awaitSuccess()
-                response.body.source().use { source ->
-                    try {
-                        protoBuf.decodeFromByteArray<NetworkExtensionStore>(source.peek().readByteArray())
-                            .let { toAvailableExtensions(it, store) }
-                    } catch (_: IllegalArgumentException) {
-                        json.decodeFromBufferedSource<NetworkExtensionStore>(source.peek())
-                            .let { toAvailableExtensions(it, store) }
+                response.body.source().decompressIfGzipped().use { source ->
+                    source.stripBom()
+                    when (source.peek().readByte()) {
+                        // "{..."
+                        0x7B.toByte() -> json.decodeFromBufferedSource<NetworkExtensionStore>(source)
+
+                        else -> protoBuf.decodeFromByteArray<NetworkExtensionStore>(source.readByteArray())
                     }
+                        .let { toAvailableExtensions(it, store) }
                 }
             } else {
                 val storeBaseUrl = store.indexUrl.removeSuffix("/repo.json")
                 val response = network.client.newCall(GET("$storeBaseUrl/index.min.json")).awaitSuccess()
                 response.body.source().use { source ->
+                    source.stripBom()
                     json.decodeFromBufferedSource<List<NetworkLegacyExtension>>(source)
                         .map { toAvailableExtension(it, store, storeBaseUrl) }
                 }
@@ -181,5 +183,24 @@ class MangaExtensionStoreService(
             signatureHash = "NO_SIGNING_KEY",
             repoName = store.name,
         )
+    }
+}
+
+private fun okio.BufferedSource.decompressIfGzipped(): okio.BufferedSource {
+    val isGzip = peek().use { peeked ->
+        try {
+            peeked.readShort().toInt() == 0x1f8b
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    return if (isGzip) gzip().buffer() else this
+}
+
+private fun okio.BufferedSource.stripBom() {
+    val bom = okio.ByteString.of(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte())
+    if (rangeEquals(0, bom)) {
+        skip(bom.size.toLong())
     }
 }

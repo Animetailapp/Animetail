@@ -36,8 +36,7 @@ class MangaMigrationListScreen(
 
         LaunchedEffect(matchOverride) {
             val (current, target) = matchOverride ?: return@LaunchedEffect
-            // Use manga for migration might need update if I want to support it
-            // screenModel.useMangaForMigration(...)
+            screenModel.useMangaForMigration(current, target)
             matchOverride = null
         }
 

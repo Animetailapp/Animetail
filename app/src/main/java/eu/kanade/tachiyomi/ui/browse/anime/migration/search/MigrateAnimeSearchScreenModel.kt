@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.browse.anime.migration.search
 
 import cafe.adriel.voyager.core.model.screenModelScope
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSearchScreenModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSourceFilter
@@ -14,6 +15,7 @@ class MigrateAnimeSearchScreenModel(
     val animeId: Long,
     initialExtensionFilter: String = "",
     getAnime: GetAnime = Injekt.get(),
+    private val sourcePreferences: SourcePreferences = Injekt.get(),
 ) : AnimeSearchScreenModel() {
 
     init {
@@ -32,7 +34,9 @@ class MigrateAnimeSearchScreenModel(
     }
 
     override fun getEnabledSources(): List<AnimeCatalogueSource> {
+        val migrationSources = sourcePreferences.migrationAnimeSources.get()
         return super.getEnabledSources()
+            .filter { migrationSources.isEmpty() || it.id in migrationSources }
             .filter { state.value.sourceFilter != AnimeSourceFilter.PinnedOnly || "${it.id}" in pinnedSources }
             .sortedWith(
                 compareBy(

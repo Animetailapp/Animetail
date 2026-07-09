@@ -255,6 +255,22 @@ class AnimeMigrationListScreenModel(
         updateMigrationProgress()
     }
 
+    fun useAnimeForMigration(animeId: Long, targetAnimeId: Long) {
+        val item = items.find { it.anime.id == animeId } ?: return
+        screenModelScope.launchIO {
+            item.searchResult.value = SearchResult.Searching
+            updateMigrationProgress()
+            val targetAnime = getAnime.await(targetAnimeId)
+            if (targetAnime != null) {
+                val successResult = targetAnime.toSuccessSearchResult()
+                item.searchResult.value = successResult
+            } else {
+                item.searchResult.value = SearchResult.NotFound
+            }
+            updateMigrationProgress()
+        }
+    }
+
     private suspend fun navigateBack() {
         navigateBackChannel.send(Unit)
     }
