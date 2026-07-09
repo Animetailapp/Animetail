@@ -147,7 +147,9 @@ fun PlayerSheet(
                 )
                 .nestedScroll(
                     remember(anchoredDraggableState) {
-                        anchoredDraggableState.preUpPostDownNestedScrollConnection()
+                        anchoredDraggableState.preUpPostDownNestedScrollConnection {
+                            scope.launch { anchoredDraggableState.settle(sheetAnimationSpec) }
+                        }
                     },
                 )
                 .then(modifier)
@@ -193,8 +195,9 @@ fun PlayerSheet(
     }
 }
 
-@Suppress("DEPRECATION")
-private fun <T> AnchoredDraggableState<T>.preUpPostDownNestedScrollConnection() = object : NestedScrollConnection {
+private fun <T> AnchoredDraggableState<T>.preUpPostDownNestedScrollConnection(
+    onFling: suspend (velocity: Float) -> Unit,
+) = object : NestedScrollConnection {
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
         val delta = available.toFloat()
         return if (delta < 0 && source == NestedScrollSource.UserInput) {
@@ -219,7 +222,7 @@ private fun <T> AnchoredDraggableState<T>.preUpPostDownNestedScrollConnection() 
     override suspend fun onPreFling(available: Velocity): Velocity {
         val toFling = available.toFloat()
         return if (toFling < 0 && offset > 0f) {
-            settle(toFling)
+            onFling(toFling)
             available
         } else {
             Velocity.Zero
@@ -227,9 +230,8 @@ private fun <T> AnchoredDraggableState<T>.preUpPostDownNestedScrollConnection() 
     }
 
     override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-        val toFling = available.toFloat()
-        return if (toFling > 0) {
-            settle(toFling)
+        onFling(available.toFloat())
+        return if (targetValue != settledValue) {
             available
         } else {
             Velocity.Zero
