@@ -2,12 +2,14 @@ package eu.kanade.tachiyomi.data.track.hikka
 
 import android.net.Uri
 import androidx.core.net.toUri
+import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.hikka.dto.HKManga
 import eu.kanade.tachiyomi.data.track.hikka.dto.HKMangaPagination
 import eu.kanade.tachiyomi.data.track.hikka.dto.HKOAuth
 import eu.kanade.tachiyomi.data.track.hikka.dto.HKRead
 import eu.kanade.tachiyomi.data.track.hikka.dto.HKUser
+import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.network.DELETE
 import eu.kanade.tachiyomi.network.GET
@@ -28,6 +30,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
 import uy.kohesive.injekt.injectLazy
+import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
 class HikkaApi(
@@ -67,7 +70,7 @@ class HikkaApi(
                 .build()
 
             val payload = buildJsonObject {
-                put("media_type", buildJsonArray { })
+                put("media_type", buildJsonArray { add("manga") })
                 put("status", buildJsonArray { })
                 put("only_translated", false)
                 put("magazines", buildJsonArray { })
@@ -99,10 +102,70 @@ class HikkaApi(
         }
     }
 
+    suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
+        return withIOContext {
+            val url = "$BASE_API_URL/anime".toUri().buildUpon()
+                .appendQueryParameter("page", "1")
+                .appendQueryParameter("size", "50")
+                .build()
+
+            val payload = buildJsonObject {
+                put("media_type", buildJsonArray { add("anime") })
+                put("status", buildJsonArray { })
+                put("only_translated", false)
+                put("magazines", buildJsonArray { })
+                put("genres", buildJsonArray { })
+                put(
+                    "score",
+                    buildJsonArray {
+                        add(0)
+                        add(10)
+                    },
+                )
+                put("query", query)
+                put(
+                    "sort",
+                    buildJsonArray {
+                        add("score:desc")
+                        add("scored_by:desc")
+                    },
+                )
+            }
+
+            with(json) {
+                authClient.newCall(POST(url.toString(), body = payload.toString().toRequestBody(jsonMime)))
+                    .awaitSuccess()
+                    .parseAs<HKMangaPagination>()
+                    .list
+                    .map { it.toAnimeTrack(trackId) }
+            }
+        }
+    }
+
     suspend fun getRead(track: MangaTrack): HKRead? {
         return withIOContext {
             val slug = track.tracking_url.split("/")[4]
             val url = "$BASE_API_URL/read/manga/$slug".toUri().buildUpon().build()
+            with(json) {
+                try {
+                    authClient.newCall(GET(url.toString()))
+                        .awaitSuccess()
+                        .parseAs<HKRead>()
+                } catch (e: HttpException) {
+                    if (e.code == 404) {
+                        null
+                    } else {
+                        throw e
+                    }
+                }
+            }
+        }
+    }
+
+    suspend fun getWatch(track: AnimeTrack): HKRead? {
+        return withIOContext {
+            val slug = track.tracking_url.split("/")[4]
+            val url = "$BASE_API_URL/read/anime/$slug".toUri().buildUpon().build()
             with(json) {
                 try {
                     authClient.newCall(GET(url.toString()))
@@ -134,11 +197,38 @@ class HikkaApi(
         }
     }
 
+    suspend fun getAnime(track: AnimeTrack): AnimeTrackSearch {
+        return withIOContext {
+            val slug = track.tracking_url.split("/")[4]
+            val url = "$BASE_API_URL/anime/$slug".toUri().buildUpon()
+                .build()
+
+            with(json) {
+                authClient.newCall(GET(url.toString()))
+                    .awaitSuccess()
+                    .parseAs<HKManga>()
+                    .toAnimeTrack(trackId)
+            }
+        }
+    }
+
     suspend fun deleteUserManga(track: DomainMangaTrack) {
         return withIOContext {
             val slug = track.remoteUrl.split("/")[4]
 
             val url = "$BASE_API_URL/read/manga/$slug".toUri().buildUpon()
+                .build()
+
+            authClient.newCall(DELETE(url.toString()))
+                .awaitSuccess()
+        }
+    }
+
+    suspend fun deleteUserAnime(track: DomainAnimeTrack) {
+        return withIOContext {
+            val slug = track.remoteUrl.split("/")[4]
+
+            val url = "$BASE_API_URL/read/anime/$slug".toUri().buildUpon()
                 .build()
 
             authClient.newCall(DELETE(url.toString()))
@@ -178,7 +268,41 @@ class HikkaApi(
         }
     }
 
+    suspend fun addUserAnime(track: AnimeTrack): AnimeTrack {
+        return withIOContext {
+            val slug = track.tracking_url.split("/")[4]
+
+            val url = "$BASE_API_URL/read/anime/$slug".toUri().buildUpon()
+                .build()
+
+            var rereads = getWatch(track)?.rereads ?: 0
+            if (track.status == Hikka.REWATCHING && rereads == 0) {
+                rereads = 1
+            }
+
+            val payload = buildJsonObject {
+                put("note", "")
+                put("chapters", track.last_episode_seen.toInt())
+                put("volumes", 0)
+                put("rereads", rereads)
+                put("score", track.score.toInt())
+                put("status", track.toApiStatus())
+                put("start_date", if (track.started_watching_date > 0L) track.started_watching_date / 1000 else null)
+                put("end_date", if (track.finished_watching_date > 0L) track.finished_watching_date / 1000 else null)
+            }
+
+            with(json) {
+                authClient.newCall(PUT(url.toString(), body = payload.toString().toRequestBody(jsonMime)))
+                    .awaitSuccess()
+                    .parseAs<HKRead>()
+                    .toAnimeTrack(trackId)
+            }
+        }
+    }
+
     suspend fun updateUserManga(track: MangaTrack): MangaTrack = addUserManga(track)
+
+    suspend fun updateUserAnime(track: AnimeTrack): AnimeTrack = addUserAnime(track)
 
     private val json: Json by injectLazy()
     private val authClient = client.newBuilder().addInterceptor(interceptor).build()

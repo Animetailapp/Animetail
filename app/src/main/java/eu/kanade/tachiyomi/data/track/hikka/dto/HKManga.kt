@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.data.track.hikka.dto
 import eu.kanade.tachiyomi.data.track.hikka.HikkaApi
 import eu.kanade.tachiyomi.data.track.hikka.stringToNumber
 import eu.kanade.tachiyomi.data.track.hikka.toTrackStatus
+import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -63,6 +64,37 @@ data class HKManga(
                 score = userProgress.score.toDouble()
                 started_reading_date = (userProgress.startDate ?: 0L) * 1000
                 finished_reading_date = (userProgress.endDate ?: 0L) * 1000
+            }
+        }
+    }
+
+    fun toAnimeTrack(trackId: Long): AnimeTrackSearch {
+        return AnimeTrackSearch.create(trackId).apply {
+            remote_id = stringToNumber(this@HKManga.slug)
+            title = this@HKManga.titleUa ?: this@HKManga.titleEn ?: this@HKManga.titleOriginal
+            total_episodes = this@HKManga.chapters?.toLong() ?: 0
+            cover_url = this@HKManga.image
+            score = this@HKManga.score
+            tracking_url = "${HikkaApi.BASE_URL}/anime/${this@HKManga.slug}"
+            publishing_status = this@HKManga.status
+            publishing_type = this@HKManga.mediaType
+
+            startDate?.takeIf { it != 0L }?.let {
+                val outputDf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                start_date = try {
+                    outputDf.format(it * 1000)
+                } catch (_: Exception) {
+                    ""
+                }
+            }
+
+            val userProgress = read?.firstOrNull()
+            if (userProgress != null) {
+                status = toTrackStatus(userProgress.status)
+                last_episode_seen = userProgress.chapters.toDouble()
+                score = userProgress.score.toDouble()
+                started_watching_date = (userProgress.startDate ?: 0L) * 1000
+                finished_watching_date = (userProgress.endDate ?: 0L) * 1000
             }
         }
     }

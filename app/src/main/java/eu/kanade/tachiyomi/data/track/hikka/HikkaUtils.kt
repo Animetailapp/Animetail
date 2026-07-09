@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.data.track.hikka
 
+import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import java.util.UUID
 
@@ -10,6 +11,16 @@ fun MangaTrack.toApiStatus() = when (status) {
     Hikka.DROPPED -> "dropped"
     Hikka.PLAN_TO_READ -> "planned"
     Hikka.REREADING -> "reading"
+    else -> throw NotImplementedError("Hikka: Unknown status: $status")
+}
+
+fun AnimeTrack.toApiStatus() = when (status) {
+    Hikka.WATCHING -> "reading"
+    Hikka.COMPLETED -> "completed"
+    Hikka.ON_HOLD -> "on_hold"
+    Hikka.DROPPED -> "dropped"
+    Hikka.PLAN_TO_WATCH -> "planned"
+    Hikka.REWATCHING -> "reading"
     else -> throw NotImplementedError("Hikka: Unknown status: $status")
 }
 
