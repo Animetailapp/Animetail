@@ -17,13 +17,21 @@ import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.json.Json
-import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
-import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.injectLazy
+import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
+import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
-class Hikka(id: Long) : BaseTracker(id, "Hikka"), MangaTracker, AnimeTracker, DeletableMangaTracker, DeletableAnimeTracker {
+class Hikka(id: Long) :
+    BaseTracker(
+        id,
+        "Hikka",
+    ),
+    MangaTracker,
+    AnimeTracker,
+    DeletableMangaTracker,
+    DeletableAnimeTracker {
 
     companion object {
         const val READING = 0L
