@@ -58,8 +58,11 @@ class MangaExtensionStoreService(
                     else -> protoBuf.decodeFromByteArray<NetworkExtensionStore>(source.readByteArray())
                 }
 
-                if (networkStore is NetworkLegacyExtensionRepo && networkStore.indexV2 != null) {
-                    return fetch(networkStore.indexV2, forceV2 = true)
+                if (networkStore is NetworkLegacyExtensionRepo) {
+                    val indexV2 = networkStore.indexV2
+                    if (indexV2 != null) {
+                        return fetch(indexV2, forceV2 = true)
+                    }
                 }
 
                 networkStore.toExtensionStore(updatedIndexUrl)
