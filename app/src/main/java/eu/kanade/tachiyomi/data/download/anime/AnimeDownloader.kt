@@ -25,6 +25,7 @@ import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateNotifier
 import eu.kanade.tachiyomi.data.notification.NotificationHandler
 import eu.kanade.tachiyomi.data.torrent.service.TorrentServerService
+import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
@@ -512,8 +513,10 @@ class AnimeDownloader(
                 } else {
                     ffmpegDownload(download, tmpDir, videoFile, filename)
                 }
-            } catch (e: Exception) {
-                videoFile.delete()
+            } catch (e: HttpException) {
+                if (e.code == 416) {
+                    videoFile.delete()
+                }
                 throw e
             }
 
