@@ -41,7 +41,9 @@ class MigrateMangaSearchScreen(private val mangaId: Long) : Screen() {
                 )
             },
             onClickItem = { targetManga ->
-                val migrationListScreen = navigator.items.filterIsInstance<mihon.feature.migration.list.MangaMigrationListScreen>().firstOrNull()
+                val migrationListScreen = navigator.items
+                    .filterIsInstance<mihon.feature.migration.list.MangaMigrationListScreen>()
+                    .firstOrNull()
                 if (migrationListScreen != null) {
                     migrationListScreen.addMatchOverride(mangaId, targetManga.id)
                     navigator.pop()

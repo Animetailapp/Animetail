@@ -63,7 +63,7 @@ fun MigrateMangaScreen(
                                     icon = Icons.Outlined.Deselect,
                                     onClick = onClearSelection,
                                 ),
-                            )
+                            ),
                         )
                     }
                 },
@@ -157,6 +157,6 @@ private fun MigrateMangaItem(
                 data = manga,
                 onClick = { onClickCover(manga) },
             )
-        }
+        },
     )
 }

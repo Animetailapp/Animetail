@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.ui.browse.anime.migration.search
 
-import eu.kanade.domain.source.service.SourcePreferences
 import cafe.adriel.voyager.core.model.screenModelScope
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSearchScreenModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSourceFilter

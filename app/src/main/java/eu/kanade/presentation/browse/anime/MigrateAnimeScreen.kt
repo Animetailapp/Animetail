@@ -19,8 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
-import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.presentation.entries.anime.components.BaseAnimeListItem
+import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.MigrateAnimeScreenModel
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.entries.anime.model.Anime
@@ -63,7 +63,7 @@ fun MigrateAnimeScreen(
                                     icon = Icons.Outlined.Deselect,
                                     onClick = onClearSelection,
                                 ),
-                            )
+                            ),
                         )
                     }
                 },
@@ -157,6 +157,6 @@ private fun MigrateAnimeItem(
                 data = anime,
                 onClick = { onClickCover(anime) },
             )
-        }
+        },
     )
 }

@@ -42,7 +42,9 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
                 )
             },
             onClickItem = { targetAnime ->
-                val migrationListScreen = navigator.items.filterIsInstance<mihon.feature.migration.list.AnimeMigrationListScreen>().firstOrNull()
+                val migrationListScreen = navigator.items
+                    .filterIsInstance<mihon.feature.migration.list.AnimeMigrationListScreen>()
+                    .firstOrNull()
                 if (migrationListScreen != null) {
                     migrationListScreen.addMatchOverride(animeId, targetAnime.id)
                     navigator.pop()
