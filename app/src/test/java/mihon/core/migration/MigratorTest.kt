@@ -26,8 +26,8 @@ class MigratorTest {
     lateinit var migrationStrategyFactory: MigrationStrategyFactory
 
     @BeforeEach
-    fun initilize() {
-        migrationContext = MigrationContext(false)
+    fun initialize() {
+        migrationContext = MigrationContext(false, 0)
         migrationJobFactory = spyk(MigrationJobFactory(migrationContext, CoroutineScope(Dispatchers.Main + Job())))
         migrationCompletedListener = spyk<MigrationCompletedListener>(block = {})
         migrationStrategyFactory = spyk(MigrationStrategyFactory(migrationJobFactory, migrationCompletedListener))

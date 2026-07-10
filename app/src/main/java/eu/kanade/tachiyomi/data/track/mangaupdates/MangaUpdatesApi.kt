@@ -4,6 +4,7 @@ import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.mangaupdates.MangaUpdates.Companion.READING_LIST
 import eu.kanade.tachiyomi.data.track.mangaupdates.MangaUpdates.Companion.WISH_LIST
 import eu.kanade.tachiyomi.data.track.mangaupdates.dto.MUContext
+import eu.kanade.tachiyomi.data.track.mangaupdates.dto.MUCurrentUser
 import eu.kanade.tachiyomi.data.track.mangaupdates.dto.MUListItem
 import eu.kanade.tachiyomi.data.track.mangaupdates.dto.MULoginResponse
 import eu.kanade.tachiyomi.data.track.mangaupdates.dto.MURating
@@ -195,6 +196,14 @@ class MangaUpdatesApi(
             client.newCall(GET("$BASE_URL/v1/series/${track.remoteId}"))
                 .awaitSuccess()
                 .parseAs<MURecord>()
+        }
+    }
+
+    suspend fun getCurrentUser(): MUCurrentUser {
+        return with(json) {
+            authClient.newCall(GET("$BASE_URL/v1/account/profile"))
+                .awaitSuccess()
+                .parseAs<MUCurrentUser>()
         }
     }
 

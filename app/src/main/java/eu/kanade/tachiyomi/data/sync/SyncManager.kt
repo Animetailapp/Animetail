@@ -466,7 +466,7 @@ class SyncManager(
             localMangaMap[key]?.let { localManga ->
                 if (localManga.favorite != nonFavorite.favorite) {
                     val updatedManga = localManga.copy(favorite = nonFavorite.favorite)
-                    mangaRestorer.updateManga(updatedManga)
+                    mangaRestorer.updateMangaInDb(updatedManga)
                 }
             }
         }

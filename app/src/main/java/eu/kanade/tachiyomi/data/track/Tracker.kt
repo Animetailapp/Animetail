@@ -46,6 +46,10 @@ interface Tracker {
 
     fun getPassword(): String
 
+    fun getDisplayUsername(): String
+
+    fun saveDisplayUsername(displayName: String)
+
     fun saveCredentials(username: String, password: String)
 
     val animeService: AnimeTracker

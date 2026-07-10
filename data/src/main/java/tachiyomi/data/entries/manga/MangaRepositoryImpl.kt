@@ -8,6 +8,7 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.Database
 import tachiyomi.data.MangaUpdateStrategyColumnAdapter
+import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.StringListColumnAdapter
 import tachiyomi.data.subscribeToList
 import tachiyomi.data.subscribeToOne
@@ -133,6 +134,7 @@ class MangaRepositoryImpl(
                 updateStrategy = manga.updateStrategy,
                 version = manga.version,
                 notes = manga.notes,
+                memo = manga.memo,
             ).awaitAsOneOrNull()
         }
     }
@@ -184,6 +186,7 @@ class MangaRepositoryImpl(
                     version = value.version,
                     isSyncing = 0,
                     notes = value.notes,
+                    memo = value.memo?.let(MemoColumnAdapter::encode),
                 )
             }
         }

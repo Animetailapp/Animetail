@@ -50,4 +50,5 @@ val migrations: List<Migration>
         InstallationIdMigration(),
         PrefLangMigration(),
         SubtitleAssEnumMigration(),
+        VerticalNavigatorMigration(),
     )

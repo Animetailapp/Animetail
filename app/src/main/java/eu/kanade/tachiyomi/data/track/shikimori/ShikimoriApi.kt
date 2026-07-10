@@ -9,15 +9,15 @@ import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMAddEntryResponse
-import eu.kanade.tachiyomi.data.track.shikimori.dto.SMEntry
+import eu.kanade.tachiyomi.data.track.shikimori.dto.SMAnimeSearchResult
+import eu.kanade.tachiyomi.data.track.shikimori.dto.SMAnimeUserListResult
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMMetadata
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMOAuth
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMSearchResult
-import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUserListEntry
+import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUser
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUserListResult
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUserResult
 import eu.kanade.tachiyomi.network.DELETE
-import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.jsonMime
@@ -177,16 +177,49 @@ class ShikimoriApi(
 
     suspend fun searchAnime(search: String): List<AnimeTrackSearch> {
         return withIOContext {
-            val url = "$API_URL/animes".toUri().buildUpon()
-                .appendQueryParameter("order", "popularity")
-                .appendQueryParameter("search", search)
-                .appendQueryParameter("limit", "20")
-                .build()
+            val query = $$"""
+            |query($query: String) {
+                |animes(search: $query, limit: 20) {
+                    |id
+                    |name
+                    |episodes
+                    |kind
+                    |poster {
+                        |mainUrl
+                    |}
+                    |score
+                    |url
+                    |status
+                    |airedOn {
+                        |date
+                    |}
+                    |description
+                    |personRoles {
+                        |person {
+                            |name
+                        |}
+                        |rolesEn
+                    |}
+                |}
+            |}
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("query", search)
+                }
+            }
             with(json) {
-                authClient.newCall(GET(url.toString()))
+                authClient.newCall(
+                    POST(
+                        GRAPHQL_API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
                     .awaitSuccess()
-                    .parseAs<List<SMEntry>>()
-                    .map { it.toAnimeTrack(trackId) }
+                    .parseAs<SMAnimeSearchResult>()
+                    .data.animes
+                    .map { it.toTrack(trackId) }
             }
         }
     }
@@ -239,44 +272,57 @@ class ShikimoriApi(
         }
     }
 
-    suspend fun findLibAnime(track: AnimeTrack, user_id: String): AnimeTrack? {
+    suspend fun findLibAnime(track: AnimeTrack, isRefresh: Boolean = false): AnimeTrack? {
         return withIOContext {
-            val urlAnimes = "$API_URL/animes".toUri().buildUpon()
-                .appendPath(track.remote_id.toString())
-                .build()
-            val anime = with(json) {
-                authClient.newCall(GET(urlAnimes.toString()))
-                    .awaitSuccess()
-                    .parseAs<SMEntry>()
-            }
+            val query = $$"""
+                |query($id: String) {
+                    |animes(ids: $id, limit: 1) {
+                        |id
+                        |url
+                        |name
+                        |episodes
+                        |userRate {
+                            |id
+                            |episodes
+                            |status
+                            |score
+                        |}
+                    |}
+                |}
+            """.trimMargin()
 
-            val url = "$API_URL/v2/user_rates".toUri().buildUpon()
-                .appendQueryParameter("user_id", user_id)
-                .appendQueryParameter("target_id", track.remote_id.toString())
-                .appendQueryParameter("target_type", "Anime")
-                .build()
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("id", track.remote_id.toString())
+                }
+            }
             with(json) {
-                authClient.newCall(GET(url.toString()))
+                val listResult = authClient.newCall(
+                    POST(
+                        GRAPHQL_API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
                     .awaitSuccess()
-                    .parseAs<List<SMUserListEntry>>()
-                    .let { entries ->
-                        if (entries.size > 1) {
-                            throw Exception("Too many manga in response")
-                        }
-                        entries
-                            .map { it.toAnimeTrack(trackId, anime) }
-                            .firstOrNull()
-                    }
+                    .parseAs<SMAnimeUserListResult>()
+                    .data.animes
+                    .firstOrNull()
+
+                if (isRefresh && listResult?.userRate == null) return@with null
+
+                listResult?.toTrack(trackId)
             }
         }
     }
 
-    suspend fun getCurrentUser(): Int {
+    suspend fun getCurrentUser(): SMUser {
         return with(json) {
             val query = """
             |{
                 |currentUser {
                     |id
+                    |nickname
                 |}
             |}
             """.trimMargin()
@@ -291,8 +337,7 @@ class ShikimoriApi(
             )
                 .awaitSuccess()
                 .parseAs<SMUserResult>()
-                .data.currentUser.id
-                .toInt()
+                .data.currentUser
         }
     }
 
@@ -325,7 +370,7 @@ class ShikimoriApi(
             with(json) {
                 authClient.newCall(
                     POST(
-                        "https://shikimori.one/api/graphql",
+                        GRAPHQL_API_URL,
                         body = payload.toString().toRequestBody(jsonMime),
                     ),
                 )
@@ -340,15 +385,15 @@ class ShikimoriApi(
                             thumbnailUrl = manga.poster.originalUrl,
                             description = manga.description,
                             authors = manga.personRoles
-                                .filter { it.rolesEn.contains("Story") || it.rolesEn.contains("Story & Art") }
-                                .map { it.person.name }
-                                .joinToString(", ")
-                                .ifEmpty { null },
+                                ?.filter { it.rolesEn.contains("Story") || it.rolesEn.contains("Story & Art") }
+                                ?.map { it.person.name }
+                                ?.joinToString(", ")
+                                ?.ifEmpty { null },
                             artists = manga.personRoles
-                                .filter { it.rolesEn.contains("Art") || it.rolesEn.contains("Story & Art") }
-                                .map { it.person.name }
-                                .joinToString(", ")
-                                .ifEmpty { null },
+                                ?.filter { it.rolesEn.contains("Art") || it.rolesEn.contains("Story & Art") }
+                                ?.map { it.person.name }
+                                ?.joinToString(", ")
+                                ?.ifEmpty { null },
                         )
                     }
             }
@@ -384,30 +429,30 @@ class ShikimoriApi(
             with(json) {
                 authClient.newCall(
                     POST(
-                        "https://shikimori.one/api/graphql",
+                        GRAPHQL_API_URL,
                         body = payload.toString().toRequestBody(jsonMime),
                     ),
                 )
                     .awaitSuccess()
                     .parseAs<SMMetadata>()
                     .let {
-                        if (it.data.mangas.isEmpty()) throw Exception("Could not get metadata from Shikimori")
-                        val anime = it.data.mangas[0]
+                        if (it.data.animes.isEmpty()) throw Exception("Could not get metadata from Shikimori")
+                        val anime = it.data.animes[0]
                         TrackAnimeMetadata(
                             remoteId = anime.id.toLong(),
                             title = anime.name,
                             thumbnailUrl = anime.poster.originalUrl,
                             description = anime.description,
                             authors = anime.personRoles
-                                .filter { it.rolesEn.contains("Story") || it.rolesEn.contains("Story & Art") }
-                                .map { it.person.name }
-                                .joinToString(", ")
-                                .ifEmpty { null },
+                                ?.filter { it.rolesEn.contains("Story") || it.rolesEn.contains("Story & Art") }
+                                ?.map { it.person.name }
+                                ?.joinToString(", ")
+                                ?.ifEmpty { null },
                             artists = anime.personRoles
-                                .filter { it.rolesEn.contains("Art") || it.rolesEn.contains("Story & Art") }
-                                .map { it.person.name }
-                                .joinToString(", ")
-                                .ifEmpty { null },
+                                ?.filter { it.rolesEn.contains("Art") || it.rolesEn.contains("Story & Art") }
+                                ?.map { it.person.name }
+                                ?.joinToString(", ")
+                                ?.ifEmpty { null },
                         )
                     }
             }

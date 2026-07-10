@@ -3,10 +3,12 @@ package eu.kanade.tachiyomi.data.track
 import android.content.Context
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.bangumi.Bangumi
+import eu.kanade.tachiyomi.data.track.hikka.Hikka
 import eu.kanade.tachiyomi.data.track.jellyfin.Jellyfin
 import eu.kanade.tachiyomi.data.track.kavita.Kavita
 import eu.kanade.tachiyomi.data.track.kitsu.Kitsu
 import eu.kanade.tachiyomi.data.track.komga.Komga
+import eu.kanade.tachiyomi.data.track.mangabaka.MangaBaka
 import eu.kanade.tachiyomi.data.track.mangaupdates.MangaUpdates
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
 import eu.kanade.tachiyomi.data.track.shikimori.Shikimori
@@ -22,6 +24,7 @@ class TrackerManager(context: Context) {
         const val ANILIST = 2L
         const val KITSU = 3L
         const val KAVITA = 8L
+        const val MANGABAKA = 11L
         const val SIMKL = 101L
         const val JELLYFIN = 102L
         const val TRAKT = 201L
@@ -40,11 +43,13 @@ class TrackerManager(context: Context) {
     val jellyfin = Jellyfin(JELLYFIN)
     val tmdb = Tmdb(200L)
     val trakt = Trakt(TRAKT)
+    val hikka = Hikka(10L)
+    val mangaBaka = MangaBaka(MANGABAKA)
 
     val trackers = listOf(
         myAnimeList, aniList, kitsu, shikimori, bangumi,
         komga, mangaUpdates, kavita, suwayomi, simkl, jellyfin,
-        tmdb, trakt,
+        tmdb, trakt, hikka, mangaBaka,
     )
 
     fun loggedInTrackers() = trackers.filter { it.isLoggedIn }

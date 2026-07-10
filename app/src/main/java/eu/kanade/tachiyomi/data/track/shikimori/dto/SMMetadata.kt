@@ -9,16 +9,17 @@ data class SMMetadata(
 
 @Serializable
 data class SMMetadataData(
-    val mangas: List<SMMetadataResult>,
+    val mangas: List<SMMetadataResult> = emptyList(),
+    val animes: List<SMMetadataResult> = emptyList(),
 )
 
 @Serializable
 data class SMMetadataResult(
     val id: String,
     val name: String,
-    val description: String,
+    val description: String?,
     val poster: SMMangaPoster,
-    val personRoles: List<SMMangaPersonRoles>,
+    val personRoles: List<SMMangaPersonRoles>? = emptyList(),
 )
 
 @Serializable
@@ -30,9 +31,4 @@ data class SMMangaPoster(
 data class SMMangaPersonRoles(
     val person: SMPerson,
     val rolesEn: List<String>,
-)
-
-@Serializable
-data class SMPerson(
-    val name: String,
 )

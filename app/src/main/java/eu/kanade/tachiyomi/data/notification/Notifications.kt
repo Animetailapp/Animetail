@@ -182,7 +182,7 @@ object Notifications {
                     setName(context.stringResource(MR.strings.pref_incognito_mode))
                 },
                 buildNotificationChannel(CHANNEL_TORRENT_SERVER, IMPORTANCE_LOW) {
-                    setName("Torrent server")
+                    setName(context.stringResource(AYMR.strings.pref_category_torrentserver))
                     setShowBadge(false)
                 },
                 // AM (DISCORD) -->

@@ -1,4 +1,5 @@
 import kotlin.Boolean;
+import kotlinx.serialization.json.JsonObject;
 
 CREATE TABLE chapters(
     _id INTEGER NOT NULL PRIMARY KEY,
@@ -17,6 +18,7 @@ CREATE TABLE chapters(
     version INTEGER NOT NULL DEFAULT 0,
     is_syncing INTEGER NOT NULL DEFAULT 0,
     date_upload_override INTEGER NOT NULL DEFAULT 0,
+    memo BLOB AS JsonObject NOT NULL DEFAULT '{}',
     FOREIGN KEY(manga_id) REFERENCES mangas (_id)
     ON DELETE CASCADE
 );
@@ -99,12 +101,12 @@ SET is_syncing = 0
 WHERE is_syncing = 1;
 
 insert:
-INSERT INTO chapters(manga_id, url, name, scanlator, read, bookmark, last_page_read, chapter_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing, date_upload_override)
-VALUES (:mangaId, :url, :name, :scanlator, :read, :bookmark, :lastPageRead, :chapterNumber, :sourceOrder, :dateFetch, :dateUpload, 0, :version, 0, :dateUploadOverride);
+INSERT INTO chapters(manga_id, url, name, scanlator, read, bookmark, last_page_read, chapter_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing, date_upload_override, memo)
+VALUES (:mangaId, :url, :name, :scanlator, :read, :bookmark, :lastPageRead, :chapterNumber, :sourceOrder, :dateFetch, :dateUpload, 0, :version, 0, :dateUploadOverride, :memo);
 
 insertReturningId:
-INSERT INTO chapters(manga_id, url, name, scanlator, read, bookmark, last_page_read, chapter_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing, date_upload_override)
-VALUES (:mangaId, :url, :name, :scanlator, :read, :bookmark, :lastPageRead, :chapterNumber, :sourceOrder, :dateFetch, :dateUpload, 0, :version, 0, :dateUploadOverride)
+INSERT INTO chapters(manga_id, url, name, scanlator, read, bookmark, last_page_read, chapter_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing, date_upload_override, memo)
+VALUES (:mangaId, :url, :name, :scanlator, :read, :bookmark, :lastPageRead, :chapterNumber, :sourceOrder, :dateFetch, :dateUpload, 0, :version, 0, :dateUploadOverride, :memo)
 RETURNING _id;
 
 update:
@@ -122,5 +124,6 @@ SET manga_id = coalesce(:mangaId, manga_id),
     date_upload = coalesce(:dateUpload, date_upload),
     version = coalesce(:version, version),
     is_syncing = coalesce(:isSyncing, is_syncing),
-    date_upload_override = coalesce(:dateUploadOverride, date_upload_override)
+    date_upload_override = coalesce(:dateUploadOverride, date_upload_override),
+    memo = coalesce(:memo, memo)
 WHERE _id = :chapterId;

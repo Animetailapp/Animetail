@@ -41,9 +41,8 @@ fun AnimeSource?.isNsfw(): Boolean {
         .find { ext -> ext.sources.any { it.id == this.id } }!!
     return sourceUsed.isNsfw
 }
-// <-- AM (DISCORD)
 
-// (TORRENT) -->
+// <-- AM (DISCORD)
 fun AnimeSource?.isSourceForTorrents(): Boolean {
     if (this == null || this.isLocalOrStub()) return false
     val sourceUsed = Injekt.get<AnimeExtensionManager>().installedExtensionsFlow.value

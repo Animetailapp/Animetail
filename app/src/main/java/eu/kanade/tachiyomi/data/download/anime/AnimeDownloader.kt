@@ -5,6 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.core.net.toUri
+import aniyomi.core.common.torrent.TorrentPreferences
+import aniyomi.core.common.torrent.TorrentServerApi
+import aniyomi.core.common.torrent.TorrentServerUtils
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegKitConfig
 import com.arthenica.ffmpegkit.FFprobeKit
@@ -20,9 +23,7 @@ import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateNotifier
 import eu.kanade.tachiyomi.data.notification.NotificationHandler
-import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
-import eu.kanade.tachiyomi.torrentServer.TorrentServerApi
-import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
+import eu.kanade.tachiyomi.data.torrent.service.TorrentServerService
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.util.storage.DiskUtil
@@ -83,6 +84,9 @@ class AnimeDownloader(
     private val cache: AnimeDownloadCache,
     private val sourceManager: AnimeSourceManager = Injekt.get(),
     private val scope: CoroutineScope,
+    private val torrentServerApi: TorrentServerApi = Injekt.get(),
+    private val torrentServerUtils: TorrentServerUtils = Injekt.get(),
+    private val torrentPreferences: TorrentPreferences = Injekt.get(),
 ) {
     /**
      * Store for persisting downloads across restarts.
@@ -411,12 +415,10 @@ class AnimeDownloader(
         video.status = Video.State.LOAD_VIDEO
 
         var progressJob: Job? = null
+        var isExternal = false
 
         // Get filename from download info
         val filename = DiskUtil.buildValidFilename(download.episode.name)
-
-        // Delete temp file if it exists
-        tmpDir.findFile("$filename.tmp")?.delete()
 
         // Try to find the video file
         val videoFile = tmpDir.listFiles()?.firstOrNull { it.name!!.startsWith("$filename.mkv") }
@@ -443,6 +445,7 @@ class AnimeDownloader(
 
                         downloadVideo(download, tmpDir, filename)
                     } else {
+                        isExternal = true
                         val betterFileName = DiskUtil.buildValidFilename(
                             "${download.anime.title} - ${download.episode.name}",
                         )
@@ -454,8 +457,12 @@ class AnimeDownloader(
             video.videoUrl = file.uri.path ?: ""
             download.progress = 100
             video.status = Video.State.READY
+            if (!isExternal) {
+                stopHttpServer(download)
+            }
             progressJob?.cancel()
         } catch (e: Exception) {
+            stopHttpServer(download)
             if (e is CancellationException) throw e
             video.status = Video.State.ERROR
             notifier.onError(e.message, download.episode.name, download.anime.title, download.anime.id)
@@ -476,11 +483,11 @@ class AnimeDownloader(
         filename: String,
     ): UniFile {
         return flow {
-            tmpDir.findFile("$filename.tmp")?.delete()
-            val videoFile = tmpDir.createFile("$filename.tmp")!!
+            val videoFile = tmpDir.findFile("$filename.tmp")
+                ?: tmpDir.createFile("$filename.tmp")!!
             try {
-                if (isTor(download.video!!)) {
-                    torrentDownload(download, tmpDir, filename)
+                if (torrentPreferences.torrServerEnable().get() && isTorrent(download.video)) {
+                    torrentDownload(download, tmpDir, videoFile, filename)
                 } else {
                     ffmpegDownload(download, tmpDir, videoFile, filename)
                 }
@@ -504,19 +511,26 @@ class AnimeDownloader(
             .first()
     }
 
-    private fun isTor(video: Video): Boolean {
-        return video.videoUrl.startsWith("magnet") || video.videoUrl.endsWith(".torrent")
+    private fun isTorrent(video: Video?): Boolean {
+        val url = video?.videoUrl ?: return false
+        return url.startsWith("magnet") || url.endsWith(".torrent") || url.startsWith(torrentServerApi.hostUrl)
     }
 
     private suspend fun torrentDownload(
         download: AnimeDownload,
         tmpDir: UniFile,
+        videoFile: UniFile,
         filename: String,
     ) {
         val video = download.video!!
         TorrentServerService.start()
-        TorrentServerService.wait(10)
-        val currentTorrent = TorrentServerApi.addTorrent(video.videoUrl, video.videoTitle, "", "", false)
+        if (video.videoUrl.startsWith(torrentServerApi.hostUrl)) {
+            val hash = video.videoUrl.substringAfter("link=").substringBefore("&")
+            val index = video.videoUrl.substringAfter("index=").substringBefore("&").toInt()
+            val magnet = "magnet:?xt=urn:btih:$hash&index=$index"
+            video.videoUrl = magnet
+        }
+        val currentTorrent = torrentServerApi.addTorrent(video.videoUrl, video.videoTitle, "", "", false)
         var index = 0
         if (video.videoUrl.contains("index=")) {
             index = try {
@@ -526,14 +540,9 @@ class AnimeDownloader(
                 0
             }
         }
-        val torrentUrl = TorrentServerUtils.getTorrentPlayLink(currentTorrent, index)
+        val torrentUrl = torrentServerUtils.getTorrentPlayLink(currentTorrent, index)
         video.videoUrl = torrentUrl
-
-        // Crear el videoFile antes de llamar a ffmpegDownload
-        tmpDir.findFile("$filename.tmp")?.delete()
-        val videoFile = tmpDir.createFile("$filename.tmp")!!
-
-        return ffmpegDownload(download, tmpDir, videoFile, filename)
+        ffmpegDownload(download, tmpDir, videoFile, filename)
     }
 
     // ffmpeg is always on safe mode
@@ -639,6 +648,7 @@ class AnimeDownloader(
 
         val videoInput = buildList {
             if (video.videoUrl.startsWith("http")) {
+                add("-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2")
                 add(headerOptions)
             }
             add(sourceStreamOptions)
@@ -670,6 +680,13 @@ class AnimeDownloader(
             }
             continuation.invokeOnCancellation { session.cancel() }
         }.output.toFloatOrNull()
+    }
+
+    private fun stopHttpServer(download: AnimeDownload) {
+        val server = download.source.server ?: return
+        if (server.isRunning()) {
+            server.stop()
+        }
     }
 
     /**

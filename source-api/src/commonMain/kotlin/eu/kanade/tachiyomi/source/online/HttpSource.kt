@@ -370,7 +370,19 @@ abstract class HttpSource : CatalogueSource {
      * @param page the page whose source image has to be downloaded.
      */
     open suspend fun getImage(page: Page): Response {
-        return client.newCachelessCallWithProgress(imageRequest(page), page)
+        return getImage(page, 0L)
+    }
+
+    /**
+     * Returns the response of the source image.
+     * Typically does not need to be overridden.
+     *
+     * @since extensions-lib 1.5
+     * @param page the page whose source image has to be downloaded.
+     * @param existingSize the size of the existing file in bytes.
+     */
+    open suspend fun getImage(page: Page, existingSize: Long): Response {
+        return client.newCachelessCallWithProgress(imageRequest(page, existingSize), page, existingSize)
             .awaitSuccess()
     }
 
@@ -381,7 +393,23 @@ abstract class HttpSource : CatalogueSource {
      * @param page the chapter whose page list has to be fetched
      */
     protected open fun imageRequest(page: Page): Request {
-        return GET(page.imageUrl!!, headers)
+        return imageRequest(page, 0L)
+    }
+
+    /**
+     * Returns the request for getting the source image. Override only if it's needed to override
+     * the url, send different headers or request method like POST.
+     *
+     * @param page the chapter whose page list has to be fetched
+     * @param existingSize the size of the existing file in bytes.
+     */
+    protected open fun imageRequest(page: Page, existingSize: Long): Request {
+        val requestHeaders = if (existingSize > 0) {
+            headers.newBuilder().add("Range", "bytes=$existingSize-").build()
+        } else {
+            headers
+        }
+        return GET(page.imageUrl!!, requestHeaders)
     }
 
     /**

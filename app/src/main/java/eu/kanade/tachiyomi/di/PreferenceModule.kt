@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.di
 
 import android.app.Application
+import aniyomi.core.common.torrent.TorrentPreferences
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.domain.source.service.SourcePreferences
@@ -9,7 +10,6 @@ import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.network.NetworkPreferences
-import eu.kanade.tachiyomi.torrentServer.TorrentServerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.CastSubtitlePreferences
@@ -75,10 +75,10 @@ class PreferenceModule(val app: Application) : InjektModule {
             AudioPreferences(get())
         }
         addSingletonFactory {
-            AdvancedPlayerPreferences(get())
+            TorrentPreferences(get())
         }
         addSingletonFactory {
-            TorrentServerPreferences(get())
+            AdvancedPlayerPreferences(get())
         }
         addSingletonFactory {
             TrackPreferences(get())

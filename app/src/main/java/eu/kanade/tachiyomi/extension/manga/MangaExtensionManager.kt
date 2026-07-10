@@ -16,9 +16,11 @@ import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
@@ -57,6 +59,9 @@ class MangaExtensionManager(
 
     private val untrustedExtensionsMapFlow = MutableStateFlow(emptyMap<String, MangaExtension.Untrusted>())
     val untrustedExtensionsFlow = untrustedExtensionsMapFlow.mapExtensions(scope)
+
+    private val _installerCancelEvents = MutableSharedFlow<Long>()
+    val installerCancelEvents = _installerCancelEvents.asSharedFlow()
 
     init {
         initMangaExtensions()
@@ -206,6 +211,10 @@ class MangaExtensionManager(
 
     fun cancelInstallUpdateExtension(extension: MangaExtension) {
         installer.cancelInstall(extension.pkgName)
+    }
+
+    fun cancelInstallerQueue(downloadId: Long) {
+        scope.launch { _installerCancelEvents.emit(downloadId) }
     }
 
     fun setInstalling(downloadId: Long) {

@@ -266,11 +266,13 @@
 
                 <data android:host="anilist-auth" />
                 <data android:host="bangumi-auth" />
+                <data android:host="mangabaka-auth" />
                 <data android:host="myanimelist-auth" />
                 <data android:host="shikimori-auth" />
                 <data android:host="simkl-auth"/>
                 <data android:host="tmdb-auth"/>
                 <data android:host="trakt-auth"/>
+                <data android:host="hikka-auth" />
             </intent-filter>
         </activity>
         <activity
@@ -338,10 +340,10 @@
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
 
+
         <service
-            android:name=".data.torrentServer.service.TorrentServerService"
-            android:foregroundServiceType="dataSync"
-            />
+            android:name=".data.torrent.service.TorrentServerService"
+            android:foregroundServiceType="dataSync" />
 
         <service
             android:name=".util.LocalHttpServerService"

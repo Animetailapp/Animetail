@@ -2,13 +2,13 @@ package eu.kanade.tachiyomi.ui.player.cast
 
 import android.content.Intent
 import android.net.Uri
+import aniyomi.core.common.torrent.TorrentServerApi
+import aniyomi.core.common.torrent.TorrentServerUtils
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaTrack
 import com.google.android.gms.common.images.WebImage
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.torrentServer.TorrentServerApi
-import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
@@ -30,6 +30,8 @@ class CastMediaBuilder(
     private val player by lazy { activity.player }
     private val prefserver: LocalHttpServerHolder by injectLazy()
     private val port = prefserver.port().get()
+    private val torrentServerApi: TorrentServerApi by injectLazy()
+    private val torrentServerUtils: TorrentServerUtils by injectLazy()
 
     suspend fun buildMediaInfo(video: Video): MediaInfo = withContext(Dispatchers.IO) {
         var videoUrl = video.videoUrl
@@ -61,27 +63,27 @@ class CastMediaBuilder(
             .build()
     }
 
-    private fun torrentLinkHandler(videoUrl: String, quality: String): String {
+    private suspend fun torrentLinkHandler(videoUrl: String, quality: String): String {
         var index = 0
 
         if (videoUrl.startsWith("content://")) {
             val videoInputStream = activity.applicationContext.contentResolver.openInputStream(Uri.parse(videoUrl))
                 ?: throw IllegalStateException("Unable to open InputStream for content: $videoUrl")
-            val torrent = TorrentServerApi.uploadTorrent(videoInputStream, quality, "", "", false)
-            return TorrentServerUtils.getTorrentPlayLink(torrent, 0)
+            val torrent = torrentServerApi.uploadTorrent(videoInputStream, quality, false)
+            return torrentServerUtils.getTorrentPlayLink(torrent, 0)
         }
 
         if (videoUrl.startsWith("magnet") && videoUrl.contains("index=")) {
             index = try {
-                videoUrl.substringAfter("index=").toInt()
+                videoUrl.substringAfter("index=").substringBefore("&").toInt()
             } catch (e: NumberFormatException) {
                 0
             }
         }
 
-        val currentTorrent = TorrentServerApi.addTorrent(videoUrl, quality, "", "", false)
+        val currentTorrent = torrentServerApi.addTorrent(videoUrl, quality, "", "", false)
         logcat(LogPriority.DEBUG) { "Torrent URL: $videoUrl" }
-        return TorrentServerUtils.getTorrentPlayLink(currentTorrent, index)
+        return torrentServerUtils.getTorrentPlayLink(currentTorrent, index)
     }
 
     private fun MediaInfo.Builder.addMetadata(video: Video): MediaInfo.Builder {

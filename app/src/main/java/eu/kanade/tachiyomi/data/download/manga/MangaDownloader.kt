@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateNotifier
 import eu.kanade.tachiyomi.data.notification.NotificationHandler
+import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.source.UnmeteredSource
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.online.HttpSource
@@ -466,14 +467,10 @@ class MangaDownloader(
 
         val digitCount = (download.pages?.size ?: 0).toString().length.coerceAtLeast(3)
         val filename = "%0${digitCount}d".format(Locale.ENGLISH, page.number)
-        val tmpFile = tmpDir.findFile("$filename.tmp")
-
-        // Delete temp file if it exists
-        tmpFile?.delete()
 
         // Try to find the image file
         val imageFile = tmpDir.listFiles()?.firstOrNull {
-            isDownloadedPageImage(it.name.orEmpty(), filename)
+            isDownloadedPageImage(it.name ?: return@firstOrNull false, filename)
         }
 
         try {
@@ -522,20 +519,28 @@ class MangaDownloader(
         page.status = Page.State.DOWNLOAD_IMAGE
         page.progress = 0
         return flow {
-            val response = source.getImage(page, dataSaver)
-            val file = tmpDir.createFile("$filename.tmp")!!
+            val file = tmpDir.findFile("$filename.tmp")
+                ?: tmpDir.createFile("$filename.tmp")!!
+
             try {
-                throttler.apply {
-                    bytesPerSecond(downloadPreferences.downloadSpeedLimit.get().toLong() * 1024)
+                source.getImage(page, dataSaver, file.length()).use {
+                    throttler.apply {
+                        bytesPerSecond(downloadPreferences.downloadSpeedLimit.get().toLong() * 1024)
+                    }
+                    val throttledSource = throttler.source(it.body.source()).buffer()
+                    throttledSource.saveTo(
+                        // If the server supports partial downloads (HTTP 206),
+                        // append to the existing file.
+                        // Otherwise, start from scratch and overwrite the file.
+                        stream = file.openOutputStream(it.code == 206),
+                    )
+                    val extension = getImageExtension(it, file)
+                    file.renameTo("$filename.$extension")
                 }
-                val throttledSource = throttler.source(response.body.source()).buffer()
-                throttledSource.saveTo(file.openOutputStream())
-                throttledSource.close()
-                val extension = getImageExtension(response, file)
-                file.renameTo("$filename.$extension")
-            } catch (e: Exception) {
-                response.close()
-                file.delete()
+            } catch (e: HttpException) {
+                if (e.code == 416) {
+                    file.delete()
+                }
                 throw e
             }
             emit(file)

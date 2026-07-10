@@ -40,6 +40,7 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.theme.active
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -174,18 +175,17 @@ private fun MigrationSheetSwitchItem(
     onClick: () -> Unit,
 ) {
     ListItem(
-        supportingContent = subtitle?.let { { Text(text = subtitle) } },
+        modifier = Modifier.clickable(onClick = onClick),
         trailingContent = {
             Switch(
                 checked = checked,
                 onCheckedChange = null,
             )
         },
+        supportingContent = subtitle?.let { { Text(text = subtitle) } },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier.clickable(onClick = onClick),
-    ) {
-        Text(text = title)
-    }
+        content = { Text(text = title) },
+    )
 }
 
 @Composable
@@ -202,15 +202,16 @@ private fun MigrationSheetWarningItem(
             Icon(
                 imageVector = Icons.Outlined.Warning,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
+                tint = MaterialTheme.colorScheme.active,
             )
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-    ) {
-        Text(
-            text = text,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier,
-        )
-    }
+        content = {
+            Text(
+                text = text,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier,
+            )
+        },
+    )
 }

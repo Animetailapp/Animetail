@@ -1,8 +1,10 @@
 package tachiyomi.data.entries.manga
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
+import kotlinx.serialization.json.JsonObject
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.library.manga.LibraryManga
+
 object MangaMapper {
     @Suppress("LongParameterList")
     fun mapManga(
@@ -32,6 +34,7 @@ object MangaMapper {
         @Suppress("UNUSED_PARAMETER")
         isSyncing: Long,
         notes: String,
+        memo: JsonObject,
     ): Manga = Manga(
         id = id,
         source = source,
@@ -59,6 +62,7 @@ object MangaMapper {
         favoriteModifiedAt = favoriteModifiedAt,
         version = version,
         notes = notes,
+        memo = memo,
     )
 
     @Suppress("LongParameterList", "UNUSED_PARAMETER")
@@ -87,6 +91,7 @@ object MangaMapper {
         favoriteModifiedAt: Long?,
         version: Long,
         isSyncing: Long,
+        memo: JsonObject,
         chapterCount: Long,
     ): Manga = mapManga(
         id = id,
@@ -114,6 +119,7 @@ object MangaMapper {
         version = version,
         isSyncing = isSyncing,
         notes = "",
+        memo = memo,
     )
 
     @Suppress("LongParameterList", "UNUSED_PARAMETER")
@@ -143,6 +149,7 @@ object MangaMapper {
         version: Long,
         isSyncing: Long,
         notes: String,
+        memo: JsonObject,
         chapterCount: Long,
     ): Manga = mapManga(
         id = id,
@@ -170,6 +177,7 @@ object MangaMapper {
         version = version,
         isSyncing = isSyncing,
         notes = notes,
+        memo = memo,
     )
 
     fun mapLibraryManga(
@@ -198,6 +206,7 @@ object MangaMapper {
         version: Long,
         isSyncing: Long,
         notes: String,
+        memo: JsonObject,
         totalCount: Long,
         readCount: Double,
         latestUpload: Long,
@@ -232,6 +241,7 @@ object MangaMapper {
             version,
             isSyncing,
             notes,
+            memo,
         ),
         category = category,
         totalChapters = totalCount,

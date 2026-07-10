@@ -67,8 +67,8 @@ dependencies {
     implementation(libs.exifinterface)
     // SY <--
 
-    // TAIL
-    implementation(libs.torrentserver)
+    // TorrServer
+    implementation(aniyomilibs.torrserver)
 
     // Tests
     testImplementation(libs.bundles.test)
