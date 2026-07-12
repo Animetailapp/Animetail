@@ -84,17 +84,26 @@ class AddAnimeTracks(
                     // TODO: merge into [SyncChapterProgressWithTrack]?
                     // Update chapter progress if newer chapters marked read locally
                     if (hasSeenEpisodes) {
-                        val latestLocalReadChapterNumber = allChapters
+                        val sortedEpisodes = allChapters
+                            .filter { it.isRecognizedNumber }
+                            .sortedBy { it.episodeNumber }
+
+                        val latestLocalReadEpisode = allChapters
                             .sortedBy { it.episodeNumber }
                             .takeWhile { it.seen }
                             .lastOrNull()
-                            ?.episodeNumber ?: -1.0
 
-                        if (latestLocalReadChapterNumber > track.lastEpisodeSeen) {
+                        val absoluteEpisodeNumber = if (latestLocalReadEpisode != null) {
+                            sortedEpisodes.indexOf(latestLocalReadEpisode) + 1
+                        } else {
+                            -1
+                        }
+
+                        if (absoluteEpisodeNumber > track.lastEpisodeSeen) {
                             track = track.copy(
-                                lastEpisodeSeen = latestLocalReadChapterNumber,
+                                lastEpisodeSeen = absoluteEpisodeNumber.toDouble(),
                             )
-                            tracker.setRemoteLastEpisodeSeen(track.toDbTrack(), latestLocalReadChapterNumber.toInt())
+                            tracker.setRemoteLastEpisodeSeen(track.toDbTrack(), absoluteEpisodeNumber)
                         }
 
                         if (track.startDate <= 0) {

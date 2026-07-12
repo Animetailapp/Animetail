@@ -32,13 +32,21 @@ class SyncEpisodeProgressWithTrack(
             .filter { it.isRecognizedNumber }
 
         val episodeUpdates = sortedEpisodes
-            .filter { episode -> episode.episodeNumber <= remoteTrack.lastEpisodeSeen && !episode.seen }
+            .filter { episode ->
+                val absoluteNumber = sortedEpisodes.indexOf(episode) + 1
+                absoluteNumber <= remoteTrack.lastEpisodeSeen && !episode.seen
+            }
             .map { it.copy(seen = true).toEpisodeUpdate() }
 
         // only take into account continuous watching
-        val localLastSeen = sortedEpisodes.takeWhile { it.seen }.lastOrNull()?.episodeNumber ?: 0F
-        val lastSeen = max(remoteTrack.lastEpisodeSeen, localLastSeen.toDouble())
-        val updatedTrack = remoteTrack.copy(lastEpisodeSeen = lastSeen)
+        val localLastSeenEpisode = sortedEpisodes.takeWhile { it.seen }.lastOrNull()
+        val localLastSeenAbsolute = if (localLastSeenEpisode != null) {
+            sortedEpisodes.indexOf(localLastSeenEpisode) + 1
+        } else {
+            0
+        }
+        val lastSeenAbsolute = max(remoteTrack.lastEpisodeSeen, localLastSeenAbsolute.toDouble())
+        val updatedTrack = remoteTrack.copy(lastEpisodeSeen = lastSeenAbsolute)
 
         try {
             service.update(updatedTrack.toDbTrack())

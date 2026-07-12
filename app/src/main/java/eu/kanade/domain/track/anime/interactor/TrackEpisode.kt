@@ -12,6 +12,7 @@ import kotlinx.coroutines.awaitAll
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
 
@@ -20,6 +21,7 @@ class TrackEpisode(
     private val trackerManager: TrackerManager,
     private val insertTrack: InsertAnimeTrack,
     private val delayedTrackingStore: DelayedAnimeTrackingStore,
+    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
 ) {
 
     suspend fun await(context: Context, animeId: Long, episodeNumber: Double, setupJobOnFailure: Boolean = true) {
@@ -27,9 +29,20 @@ class TrackEpisode(
             val tracks = getTracks.await(animeId)
             if (tracks.isEmpty()) return@withNonCancellableContext
 
+            val sortedEpisodes = getEpisodesByAnimeId.await(animeId)
+                .sortedBy { it.episodeNumber }
+                .filter { it.isRecognizedNumber }
+
+            val currentEpisode = sortedEpisodes.find { it.episodeNumber == episodeNumber }
+            val absoluteEpisodeNumber = if (currentEpisode != null) {
+                sortedEpisodes.indexOf(currentEpisode) + 1
+            } else {
+                episodeNumber.toInt()
+            }
+
             tracks.mapNotNull { track ->
                 val service = trackerManager.get(track.trackerId)
-                if (service == null || !service.isLoggedIn || episodeNumber <= track.lastEpisodeSeen) {
+                if (service == null || !service.isLoggedIn || absoluteEpisodeNumber <= track.lastEpisodeSeen) {
                     return@mapNotNull null
                 }
 
@@ -38,12 +51,12 @@ class TrackEpisode(
                         if (context.isOnline()) {
                             val updatedTrack = service.animeService.refresh(track.toDbTrack())
                                 .toDomainTrack(idRequired = true)!!
-                                .copy(lastEpisodeSeen = episodeNumber)
+                                .copy(lastEpisodeSeen = absoluteEpisodeNumber.toDouble())
                             service.animeService.update(updatedTrack.toDbTrack(), true)
                             insertTrack.await(updatedTrack)
                             delayedTrackingStore.removeAnimeItem(track.id)
                         } else {
-                            delayedTrackingStore.addAnime(track.id, episodeNumber)
+                            delayedTrackingStore.addAnime(track.id, absoluteEpisodeNumber.toDouble())
                             if (setupJobOnFailure) {
                                 DelayedAnimeTrackingUpdateJob.setupTask(context)
                             }

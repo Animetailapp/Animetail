@@ -103,7 +103,9 @@ object EpisodeRecognition {
      */
     private fun checkForDecimal(decimal: String?, alpha: String?): Double {
         if (!decimal.isNullOrEmpty()) {
-            return decimal.toDouble()
+            val decimalString = decimal.trimStart('.')
+            val decimalValue = decimalString.toDoubleOrNull() ?: 0.0
+            return decimalValue / 1000.0
         }
 
         if (!alpha.isNullOrEmpty()) {
