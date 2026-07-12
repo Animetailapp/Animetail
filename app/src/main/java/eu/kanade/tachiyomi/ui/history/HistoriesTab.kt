@@ -89,6 +89,8 @@ data object HistoriesTab : Tab {
             onChangeMangaSearchQuery = mangaHistoryScreenModel::search,
             animeSearchQuery = animeSearchQuery,
             onChangeAnimeSearchQuery = animeHistoryScreenModel::search,
+            animeExtensionsTabIndex = TAB_ANIME,
+            mangaExtensionsTabIndex = TAB_MANGA,
             // KMK -->
             feedScreenModel = feedScreenModel,
             // KMK <--
