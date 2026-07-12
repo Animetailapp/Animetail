@@ -356,67 +356,69 @@ class AnimeDownloadCache(
                 _isInitializing.emit(true)
             }
 
-            // Try to wait until extensions and sources have loaded
-            var sources = emptyList<AnimeSource>()
-            withTimeoutOrNull(30.seconds) {
-                extensionManager.isInitialized.first { it }
-                sourceManager.isInitialized.first { it }
+            try {
+                // Try to wait until extensions and sources have loaded
+                var sources = emptyList<AnimeSource>()
+                withTimeoutOrNull(30.seconds) {
+                    extensionManager.isInitialized.first { it }
+                    sourceManager.isInitialized.first { it }
 
-                sources = getSources()
-            }
+                    sources = getSources()
+                }
 
-            val sourceMap = sources.associate {
-                provider.getSourceDirName(it).lowercase() to it.id
-            }
+                val sourceMap = sources.associate {
+                    provider.getSourceDirName(it).lowercase() to it.id
+                }
 
-            rootDownloadsDirMutex.withLock {
-                val updatedRootDir = RootDirectory(storageManager.getDownloadsDirectory())
+                rootDownloadsDirMutex.withLock {
+                    val updatedRootDir = RootDirectory(storageManager.getDownloadsDirectory())
 
-                updatedRootDir.sourceDirs = updatedRootDir.dir?.listFiles().orEmpty()
-                    .filter { it.isDirectory && !it.name.isNullOrBlank() }
-                    .mapNotNull { dir ->
-                        val sourceId = sourceMap[dir.name!!.lowercase()]
-                        sourceId?.let { it to SourceDirectory(dir) }
-                    }
-                    .toMap()
+                    updatedRootDir.sourceDirs = updatedRootDir.dir?.listFiles().orEmpty()
+                        .filter { it.isDirectory && !it.name.isNullOrBlank() }
+                        .mapNotNull { dir ->
+                            val sourceId = sourceMap[dir.name!!.lowercase()]
+                            sourceId?.let { it to SourceDirectory(dir) }
+                        }
+                        .toMap()
 
-                updatedRootDir.sourceDirs.values.map { sourceDir ->
-                    async {
-                        sourceDir.animeDirs = sourceDir.dir?.listFiles().orEmpty()
-                            .filter { it.isDirectory && !it.name.isNullOrBlank() }
-                            .associate { it.name!! to AnimeDirectory(it) }
-                        sourceDir.animeDirs.values.forEach { animeDir ->
-                            val episodeDirs = animeDir.dir?.listFiles().orEmpty()
-                                .mapNotNull {
-                                    when {
-                                        // Ignore incomplete downloads
-                                        it.name?.endsWith(AnimeDownloader.TMP_DIR_SUFFIX) == true -> null
+                    updatedRootDir.sourceDirs.values.map { sourceDir ->
+                        async {
+                            sourceDir.animeDirs = sourceDir.dir?.listFiles().orEmpty()
+                                .filter { it.isDirectory && !it.name.isNullOrBlank() }
+                                .associate { it.name!! to AnimeDirectory(it) }
+                            sourceDir.animeDirs.values.forEach { animeDir ->
+                                val episodeDirs = animeDir.dir?.listFiles().orEmpty()
+                                    .mapNotNull {
+                                        when {
+                                            // Ignore incomplete downloads
+                                            it.name?.endsWith(AnimeDownloader.TMP_DIR_SUFFIX) == true -> null
 
-                                        // Folder of videos
-                                        it.isDirectory -> it.name
+                                            // Folder of videos
+                                            it.isDirectory -> it.name
 
-                                        // MP4 files
-                                        it.isFile && it.extension == "mp4" -> it.nameWithoutExtension
+                                            // MP4 files
+                                            it.isFile && it.extension == "mp4" -> it.nameWithoutExtension
 
-                                        // MKV files
-                                        it.isFile && it.extension == "mkv" -> it.nameWithoutExtension
+                                            // MKV files
+                                            it.isFile && it.extension == "mkv" -> it.nameWithoutExtension
 
-                                        // Anything else is irrelevant
-                                        else -> null
+                                            // Anything else is irrelevant
+                                            else -> null
+                                        }
                                     }
-                                }
-                                .toMutableSet()
+                                    .toMutableSet()
 
-                            animeDir.episodeDirs = episodeDirs
+                                animeDir.episodeDirs = episodeDirs
+                            }
                         }
                     }
+                        .awaitAll()
+
+                    rootDownloadsDir = updatedRootDir
                 }
-                    .awaitAll()
-
-                rootDownloadsDir = updatedRootDir
+            } finally {
+                _isInitializing.value = false
             }
-
-            _isInitializing.emit(false)
         }.also {
             it.invokeOnCompletion(onCancelling = true) { exception ->
                 if (exception != null && exception !is CancellationException) {
