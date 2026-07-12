@@ -413,9 +413,9 @@ class MangaDownloadCache(
 
                     rootDownloadsDir = updatedRootDir
                 }
-} finally {
-    _isInitializing.value = false
-}
+            } finally {
+                _isInitializing.value = false
+            }
         }.also {
             it.invokeOnCompletion(onCancelling = true) { exception ->
                 if (exception != null && exception !is CancellationException) {
