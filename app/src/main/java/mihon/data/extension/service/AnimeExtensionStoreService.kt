@@ -87,7 +87,10 @@ class AnimeExtensionStoreService(
                     when (source.peek().readByte()) {
                         // "{..."
                         0x7B.toByte() -> json.decodeFromBufferedSource<NetworkExtensionStore.ExtensionList>(source)
-                        else -> protoBuf.decodeFromByteArray<NetworkExtensionStore.ExtensionList>(source.readByteArray())
+
+                        else -> protoBuf.decodeFromByteArray<NetworkExtensionStore.ExtensionList>(
+                            source.readByteArray(),
+                        )
                     }
                         .let { toAvailableExtensions(it, store) }
                 }
@@ -98,6 +101,7 @@ class AnimeExtensionStoreService(
                     val netStore = when (source.peek().readByte()) {
                         // "{..."
                         0x7B.toByte() -> json.decodeFromBufferedSource<NetworkExtensionStore>(source)
+
                         else -> protoBuf.decodeFromByteArray<NetworkExtensionStore>(source.readByteArray())
                     }
                     val extensionList = netStore.extensionList
