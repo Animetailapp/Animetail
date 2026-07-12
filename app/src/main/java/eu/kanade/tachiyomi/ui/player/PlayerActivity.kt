@@ -81,6 +81,7 @@ import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
 import eu.kanade.tachiyomi.util.system.powerManager
@@ -128,6 +129,7 @@ class PlayerActivity : BaseActivity() {
     private val audioPreferences: AudioPreferences = Injekt.get<AudioPreferences>()
     private val advancedPlayerPreferences: AdvancedPlayerPreferences = Injekt.get<AdvancedPlayerPreferences>()
     private val networkPreferences: NetworkPreferences = Injekt.get<NetworkPreferences>()
+    private val subtitlePreferences: SubtitlePreferences = Injekt.get<SubtitlePreferences>()
     val castManager: CastManager by lazy { CastManager(this, Injekt.get<PreferenceStore>()) }
     private val storageManager: StorageManager = Injekt.get<StorageManager>()
     private val torrentServerApi: TorrentServerApi = Injekt.get<TorrentServerApi>()
@@ -490,15 +492,12 @@ class PlayerActivity : BaseActivity() {
         val mpvInputFile = mpvDir.createFile("input.conf")!!
         advancedPlayerPreferences.mpvInput().get().let { mpvInputFile.writeText(it) }
 
-        val fontsDirectory = mpvDir.createDirectory(MPV_FONTS_DIR)!!
-
-        mpv.setOptionString("sub-ass-force-margins", "yes")
-        mpv.setOptionString("sub-use-margins", "yes")
+        val showBlackBars = if (subtitlePreferences.subtitleBlackBars().get()) "yes" else "no"
+        mpv.setOptionString("sub-ass-force-margins", showBlackBars)
+        mpv.setOptionString("sub-use-margins", showBlackBars)
 
         player.init(mpv)
 
-        mpv.setPropertyString("sub-fonts-dir", fontsDirectory.filePath!!)
-        mpv.setPropertyString("osd-fonts-dir", fontsDirectory.filePath!!)
         mpv.addLogObserver(playerObserver)
         mpv.addObserver(playerObserver)
     }

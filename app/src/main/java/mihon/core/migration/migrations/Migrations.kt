@@ -50,5 +50,6 @@ val migrations: List<Migration>
         InstallationIdMigration(),
         PrefLangMigration(),
         SubtitleAssEnumMigration(),
+        ForceSubtitleAssOverrideMigration(),
         VerticalNavigatorMigration(),
     )

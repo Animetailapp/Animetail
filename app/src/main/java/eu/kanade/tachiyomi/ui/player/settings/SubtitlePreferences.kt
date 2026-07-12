@@ -25,7 +25,7 @@ class SubtitlePreferences(
 
     fun screenshotSubtitles() = preferenceStore.getBoolean("pref_screenshot_subtitles", false)
 
-    fun subtitleFont() = preferenceStore.getString("pref_subtitle_font", "Sans Serif")
+    fun subtitleFont() = preferenceStore.getString("pref_subtitle_font", "sans-serif")
     fun subtitleFontSize() = preferenceStore.getInt("pref_subtitles_font_size", 55)
     fun subtitleFontScale() = preferenceStore.getFloat("pref_sub_scale", 1f)
     fun subtitleBorderSize() = preferenceStore.getInt("pref_sub_border_size", 3)
@@ -48,7 +48,8 @@ class SubtitlePreferences(
     fun subtitleJustification() = preferenceStore.getEnum("pref_sub_justify", SubtitleJustification.Auto)
     fun subtitlePos() = preferenceStore.getInt("pref_sub_pos", 100)
 
-    fun overrideSubsASS() = preferenceStore.getEnum("pref_override_subtitles_ass_enum", SubtitleAssOverride.No)
+    fun overrideSubsASS() = preferenceStore.getEnum("pref_override_subtitles_ass_enum", SubtitleAssOverride.Force)
+    fun subtitleBlackBars() = preferenceStore.getBoolean("pref_subtitle_black_bars", false)
 
     fun subtitlesDelay() = preferenceStore.getInt("pref_subtitles_delay", 0)
     fun subtitlesSpeed() = preferenceStore.getFloat("pref_subtitles_speed", 1f)

@@ -36,7 +36,7 @@ class MpvConfig(
             val mpvDir = getMpvDir()
             copyUserFiles(mpvDir)
             copyFontsDirectory(mpvDir)
-            copyAssets(mpvDir)
+            writeFontsConf(mpvDir)
         }
     }
 
@@ -142,30 +142,27 @@ class MpvConfig(
         }
     }
 
-    private fun copyAssets(mpvDir: UniFile) {
-        val assetManager = context.assets
-        val files = arrayOf("subfont.ttf", "cacert.pem")
-        for (filename in files) {
-            var ins: InputStream? = null
-            var out: OutputStream? = null
-            try {
-                ins = assetManager.open(filename, AssetManager.ACCESS_STREAMING)
-                val outFile = mpvDir.createFile(filename)!!
-                // Note that .available() officially returns an *estimated* number of bytes available
-                // this is only true for generic streams, asset streams return the full file size
-                if (outFile.length() == ins.available().toLong()) {
-                    logcat(LogPriority.VERBOSE) { "Skipping copy of asset file (exists same size): $filename" }
-                    continue
-                }
-                out = outFile.openOutputStream()
-                ins.copyTo(out)
-                logcat(LogPriority.WARN) { "Copied asset file: $filename" }
-            } catch (e: IOException) {
-                logcat(LogPriority.ERROR, e) { "Failed to copy asset file: $filename" }
-            } finally {
-                ins?.close()
-                out?.close()
+    private fun writeFontsConf(mpvDir: UniFile) {
+        val fontsDirectory = mpvDir.createDirectory(MPV_FONTS_DIR)!!.filePath!!
+        val content = listOf(
+            "<fontconfig>",
+            "<dir>/system/fonts/</dir>",
+            "<dir>/product/fonts/</dir>",
+            "<dir>$fontsDirectory</dir>",
+            "<cachedir>${context.cacheDir.path}</cachedir>",
+            "<alias><family>serif</family><prefer><family>Noto Serif</family></prefer></alias>",
+            "<alias><family>sans-serif</family><prefer><family>Roboto</family><family>Noto Sans</family></prefer></alias>",
+            "<alias><family>Sans Serif</family><prefer><family>Roboto</family><family>Noto Sans</family></prefer></alias>",
+            "<alias><family>monospace</family><prefer><family>Droid Sans Mono</family></prefer></alias>",
+            "</fontconfig>",
+        ).joinToString("\n")
+
+        try {
+            mpvDir.createFile("fonts.conf")?.openOutputStream()?.bufferedWriter()?.use {
+                it.write(content)
             }
+        } catch (e: IOException) {
+            logcat(LogPriority.ERROR, e) { "Failed to write fonts.conf" }
         }
     }
 

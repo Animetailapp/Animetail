@@ -168,7 +168,7 @@ enum class SubColorType(
     ),
     Border(
         AYMR.strings.player_sheets_subtitles_color_border,
-        "sub-border-color",
+        "sub-outline-color",
         preference = SubtitlePreferences::borderColorSubtitles,
     ),
     Background(
@@ -186,7 +186,7 @@ fun resetColors(mpv: MPV, preferences: SubtitlePreferences, type: SubColorType) 
 
         SubColorType.Border -> {
             mpv.setPropertyString(
-                "sub-border-color",
+                "sub-outline-color",
                 preferences.borderColorSubtitles().deleteAndGet().toColorHexString(),
             )
         }

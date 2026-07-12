@@ -27,6 +27,7 @@ object PlayerSettingsSubtitleScreen : Screen(), SearchableSettings {
         val langPref = subtitlePreferences.preferredSubLanguages()
         val whitelist = subtitlePreferences.subtitleWhitelist()
         val blacklist = subtitlePreferences.subtitleBlacklist()
+        val blackBars = subtitlePreferences.subtitleBlackBars()
 
         return listOf(
             Preference.PreferenceItem.EditTextInfoPreference(
@@ -79,6 +80,11 @@ object PlayerSettingsSubtitleScreen : Screen(), SearchableSettings {
                 preference = blacklist,
                 dialogSubtitle = stringResource(AYMR.strings.pref_player_subtitle_blacklist_info),
                 title = stringResource(AYMR.strings.pref_player_subtitle_blacklist),
+            ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = blackBars,
+                title = stringResource(AYMR.strings.pref_player_subtitle_black_bars),
+                subtitle = stringResource(AYMR.strings.pref_player_subtitle_black_bars_summary),
             ),
         )
     }

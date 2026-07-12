@@ -114,6 +114,16 @@ fun SubtitlesMiscellaneousCard(mpv: MPV, modifier: Modifier = Modifier) {
                                 overrideAssSubs = option
                                 preferences.overrideSubsASS().set(option)
                                 mpv.setPropertyString("sub-ass-override", option.value)
+                                mpv.setPropertyString(
+                                    "sub-ass-justify",
+                                    if (option ==
+                                        SubtitleAssOverride.No
+                                    ) {
+                                        "no"
+                                    } else {
+                                        "yes"
+                                    },
+                                )
                                 selectingOverrideAss = false
                             },
                             trailingIcon = {
@@ -184,8 +194,11 @@ fun SubtitlesMiscellaneousCard(mpv: MPV, modifier: Modifier = Modifier) {
                             subScale = it
                             mpv.setPropertyDouble("sub-scale", it.toDouble())
                         }
-                        preferences.overrideSubsASS().deleteAndGet().let { overrideAssSubs = it }
-                        mpv.setPropertyString("sub-ass-override", "scale") // mpv's default is 'scale'
+                        preferences.overrideSubsASS().deleteAndGet().let {
+                            overrideAssSubs = it
+                            mpv.setPropertyString("sub-ass-override", it.value)
+                            mpv.setPropertyString("sub-ass-justify", if (it == SubtitleAssOverride.No) "no" else "yes")
+                        }
                     },
                 ) {
                     Row {
