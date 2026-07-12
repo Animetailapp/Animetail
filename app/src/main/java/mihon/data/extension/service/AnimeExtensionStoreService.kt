@@ -80,17 +80,32 @@ class AnimeExtensionStoreService(
 
     suspend fun getExtensions(store: ExtensionStore): Result<List<AnimeExtension.Available>> {
         return try {
-            val extensions = if (!store.isLegacy) {
-                val response = network.client.newCall(GET(store.indexUrl)).awaitSuccess()
+            val extensions = if (store.extensionListUrl != null) {
+                val response = network.client.newCall(GET(store.extensionListUrl!!)).awaitSuccess()
                 response.body.source().decompressIfGzipped().use { source ->
                     source.stripBom()
                     when (source.peek().readByte()) {
                         // "{..."
-                        0x7B.toByte() -> json.decodeFromBufferedSource<NetworkExtensionStore>(source)
-
-                        else -> protoBuf.decodeFromByteArray<NetworkExtensionStore>(source.readByteArray())
+                        0x7B.toByte() -> json.decodeFromBufferedSource<NetworkExtensionStore.ExtensionList>(source)
+                        else -> protoBuf.decodeFromByteArray<NetworkExtensionStore.ExtensionList>(source.readByteArray())
                     }
                         .let { toAvailableExtensions(it, store) }
+                }
+            } else if (!store.isLegacy) {
+                val response = network.client.newCall(GET(store.indexUrl)).awaitSuccess()
+                response.body.source().decompressIfGzipped().use { source ->
+                    source.stripBom()
+                    val netStore = when (source.peek().readByte()) {
+                        // "{..."
+                        0x7B.toByte() -> json.decodeFromBufferedSource<NetworkExtensionStore>(source)
+                        else -> protoBuf.decodeFromByteArray<NetworkExtensionStore>(source.readByteArray())
+                    }
+                    val extensionList = netStore.extensionList
+                    if (extensionList != null) {
+                        toAvailableExtensions(extensionList, store)
+                    } else {
+                        emptyList()
+                    }
                 }
             } else {
                 val storeBaseUrl = store.indexUrl.removeSuffix("/repo.json")
@@ -110,10 +125,10 @@ class AnimeExtensionStoreService(
     }
 
     private fun toAvailableExtensions(
-        netStore: NetworkExtensionStore,
+        extensionList: NetworkExtensionStore.ExtensionList,
         store: ExtensionStore,
     ): List<AnimeExtension.Available> {
-        return netStore.extensions.map { extension ->
+        return extensionList.extensions.map { extension ->
             val lang = extension.sources.map { it.language }.toSet()
             AnimeExtension.Available(
                 name = extension.name,
@@ -124,9 +139,7 @@ class AnimeExtensionStoreService(
                 versionCode = extension.versionCode,
                 versionName = extension.versionName,
                 lang = if (lang.size == 1) lang.first() else "all",
-                isNsfw =
-                extension.sources.maxOfOrNull { it.contentRating } ==
-                    NetworkExtensionStore.ContentRating.PORNOGRAPHIC,
+                isNsfw = extension.contentWarning >= NetworkExtensionStore.ContentWarning.MIXED,
                 isTorrent = false,
                 sources = extension.sources.map { source ->
                     AnimeExtension.Available.AnimeSource(
