@@ -27,6 +27,7 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -85,14 +86,18 @@ data object CategoriesTab : Tab {
         }
 
         LaunchedEffect(Unit) {
-            mangaCategoryScreenModel.events.collectLatest { event ->
-                if (event is MangaCategoryEvent.LocalizedMessage) {
-                    context.toast(event.stringRes)
+            launch {
+                mangaCategoryScreenModel.events.collectLatest { event ->
+                    if (event is MangaCategoryEvent.LocalizedMessage) {
+                        context.toast(event.stringRes)
+                    }
                 }
             }
-            animeCategoryScreenModel.events.collectLatest { event ->
-                if (event is AnimeCategoryEvent.LocalizedMessage) {
-                    context.toast(event.stringRes)
+            launch {
+                animeCategoryScreenModel.events.collectLatest { event ->
+                    if (event is AnimeCategoryEvent.LocalizedMessage) {
+                        context.toast(event.stringRes)
+                    }
                 }
             }
         }

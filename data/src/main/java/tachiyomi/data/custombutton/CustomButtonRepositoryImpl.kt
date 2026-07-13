@@ -1,6 +1,7 @@
 package tachiyomi.data.custombutton
 
 import android.database.sqlite.SQLiteException
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.custombuttons.exception.SaveCustomButtonException
@@ -28,7 +29,7 @@ class CustomButtonRepositoryImpl(
         onStartup: String,
     ) {
         try {
-            handler.await { custom_buttonsQueries.insert(name, false, sortIndex, content, longPressContent, onStartup) }
+            handler.await { custom_buttonsQueries.insert(name, false, sortIndex, content, longPressContent, onStartup).awaitAsOne() }
         } catch (ex: SQLiteException) {
             throw SaveCustomButtonException(ex)
         }

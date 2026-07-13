@@ -1,5 +1,6 @@
 package tachiyomi.data.category.anime
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.category.anime.repository.AnimeCategoryRepository
@@ -61,7 +62,7 @@ class AnimeCategoryRepositoryImpl(
                 name = category.name,
                 order = category.order,
                 flags = category.flags,
-            )
+            ).awaitAsOne()
         }
     }
 
