@@ -124,21 +124,24 @@ class BackupRestorer(
         }
 
         coroutineScope {
+            // Categories must be fully written to DB before library entries are restored,
+            // otherwise manga/anime won't have their categories assigned (race condition).
             if (options.categories) {
                 restoreCategories(
                     backupAnimeCategories = backup.backupAnimeCategories,
                     backupMangaCategories = backup.backupCategories,
-                )
+                ).join()
+            }
+
+            if (options.libraryEntries) {
+                restoreAnime(backup.backupAnime, if (options.categories) backup.backupAnimeCategories else emptyList())
+                restoreManga(backup.backupManga, if (options.categories) backup.backupCategories else emptyList())
             }
             if (options.appSettings) {
                 restoreAppPreferences(backup.backupPreferences, backup.backupCategories.takeIf { options.categories })
             }
             if (options.sourceSettings) {
                 restoreSourcePreferences(backup.backupSourcePreferences)
-            }
-            if (options.libraryEntries) {
-                restoreAnime(backup.backupAnime, if (options.categories) backup.backupAnimeCategories else emptyList())
-                restoreManga(backup.backupManga, if (options.categories) backup.backupCategories else emptyList())
             }
             if (options.extensionStores) {
                 restoreExtensionStores(backup.backupAnimeExtensionStore, backup.backupMangaExtensionStore)
