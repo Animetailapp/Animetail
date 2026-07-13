@@ -29,7 +29,9 @@ class CustomButtonRepositoryImpl(
         onStartup: String,
     ) {
         try {
-            handler.await { custom_buttonsQueries.insert(name, false, sortIndex, content, longPressContent, onStartup).awaitAsOne() }
+            handler.await {
+                custom_buttonsQueries.insert(name, false, sortIndex, content, longPressContent, onStartup).awaitAsOne()
+            }
         } catch (ex: SQLiteException) {
             throw SaveCustomButtonException(ex)
         }
