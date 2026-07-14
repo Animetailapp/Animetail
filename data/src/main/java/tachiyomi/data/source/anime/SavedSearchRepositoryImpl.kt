@@ -57,7 +57,7 @@ class SavedSearchRepositoryImpl(
                     it.name,
                     it.query,
                     it.filtersJson,
-                )
+                ).awaitAsOne()
             }
         }
     }

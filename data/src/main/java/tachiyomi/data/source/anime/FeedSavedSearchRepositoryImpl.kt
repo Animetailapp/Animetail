@@ -90,7 +90,7 @@ class FeedSavedSearchRepositoryImpl(
                     it.source,
                     it.savedSearch,
                     it.global,
-                )
+                ).awaitAsOne()
             }
         }
     }
