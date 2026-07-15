@@ -9,9 +9,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -68,18 +68,18 @@ data object MoreTab : Tab {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
-        val screenModel = rememberScreenModel { MoreScreenModel() }
-        val downloadQueueState by screenModel.downloadQueueState.collectAsState()
+        val viewModel = viewModel<MoreViewModel>()
+        val downloadQueueState by viewModel.downloadQueueState.collectAsState()
         val navStyle = currentNavigationStyle()
         MoreScreen(
             downloadQueueStateProvider = { downloadQueueState },
-            downloadedOnly = screenModel.downloadedOnly,
-            onDownloadedOnlyChange = { screenModel.downloadedOnly = it },
-            incognitoMode = screenModel.incognitoMode,
-            onIncognitoModeChange = { screenModel.incognitoMode = it },
+            downloadedOnly = viewModel.downloadedOnly,
+            onDownloadedOnlyChange = { viewModel.downloadedOnly = it },
+            incognitoMode = viewModel.incognitoMode,
+            onIncognitoModeChange = { viewModel.incognitoMode = it },
             // SY -->
-            showNavUpdates = screenModel.showNavUpdates,
-            showNavHistory = screenModel.showNavHistory,
+            showNavUpdates = viewModel.showNavUpdates,
+            showNavHistory = viewModel.showNavHistory,
             // SY <--
             navStyle = navStyle,
             onClickAlt = { navigator.push(navStyle.moreTab) },
@@ -104,21 +104,21 @@ data object MoreTab : Tab {
     }
 }
 
-private class MoreScreenModel(
+private class MoreViewModel(
     private val downloadManager: MangaDownloadManager = Injekt.get(),
     private val animeDownloadManager: AnimeDownloadManager = Injekt.get(),
     preferences: BasePreferences = Injekt.get(),
     // SY -->
     uiPreferences: UiPreferences = Injekt.get(),
     // SY <--
-) : ScreenModel {
+) : ViewModel() {
 
-    var downloadedOnly by preferences.downloadedOnly.asState(screenModelScope)
-    var incognitoMode by preferences.incognitoMode.asState(screenModelScope)
+    var downloadedOnly by preferences.downloadedOnly.asState(viewModelScope)
+    var incognitoMode by preferences.incognitoMode.asState(viewModelScope)
 
     // SY -->
-    val showNavUpdates by uiPreferences.showNavUpdates.asState(screenModelScope)
-    val showNavHistory by uiPreferences.showNavHistory.asState(screenModelScope)
+    val showNavUpdates by uiPreferences.showNavUpdates.asState(viewModelScope)
+    val showNavHistory by uiPreferences.showNavHistory.asState(viewModelScope)
     // SY <--
 
     private var _downloadQueueState: MutableStateFlow<DownloadQueueState> = MutableStateFlow(
@@ -128,7 +128,7 @@ private class MoreScreenModel(
 
     init {
         // Handle running/paused status change and queue progress updating
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             combine(
                 downloadManager.isDownloaderRunning,
                 downloadManager.queueState,

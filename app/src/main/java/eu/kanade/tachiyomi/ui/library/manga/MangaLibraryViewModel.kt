@@ -9,8 +9,7 @@ import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapNotNull
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import eu.kanade.core.preference.PreferenceMutableState
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.fastFilterNot
@@ -48,6 +47,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.util.lang.compareToWithCollator
@@ -87,7 +87,7 @@ import kotlin.time.Duration.Companion.seconds
 typealias MangaLibraryMap = Map<Category, List<MangaLibraryItem>>
 
 @Suppress("LargeClass")
-class MangaLibraryScreenModel(
+class MangaLibraryViewModel(
     private val getLibraryManga: GetLibraryManga = Injekt.get(),
     private val getCategories: GetVisibleMangaCategories = Injekt.get(),
     private val getTracksPerManga: GetTracksPerManga = Injekt.get(),
@@ -106,14 +106,14 @@ class MangaLibraryScreenModel(
     // SY -->
     private val getTracks: GetMangaTracks = Injekt.get(),
     // SY <--
-) : StateScreenModel<MangaLibraryScreenModel.State>(State()) {
+) : StateViewModel<MangaLibraryViewModel.State>(State()) {
 
     var activeCategoryIndex: Int by libraryPreferences.lastUsedCategory.asState(
-        screenModelScope,
+        viewModelScope,
     )
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             combine(
                 state.map { it.searchQuery }.debounce(0.25.seconds),
                 getLibraryFlow(),
@@ -169,7 +169,7 @@ class MangaLibraryScreenModel(
                     )
                 }
             }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
 
         combine(
             getLibraryItemPreferencesFlow(),
@@ -192,7 +192,7 @@ class MangaLibraryScreenModel(
                     state.copy(hasActiveFilters = it)
                 }
             }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
 
         // SY -->
         libraryPreferences.groupMangaLibraryBy.changes()
@@ -201,7 +201,7 @@ class MangaLibraryScreenModel(
                     state.copy(groupType = it)
                 }
             }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
         // SY <--
     }
 
@@ -565,7 +565,7 @@ class MangaLibraryScreenModel(
      * @param amount the amount to queue or null to queue all
      */
     private fun downloadUnreadChapters(mangas: List<Manga>, amount: Int?) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             mangas.forEach { manga ->
                 val chapters = getNextChapters.await(manga.id)
                     .fastFilterNot { chapter ->
@@ -590,7 +590,7 @@ class MangaLibraryScreenModel(
      */
     fun markReadSelection(read: Boolean) {
         val mangas = state.value.selection.toList()
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             mangas.forEach { manga ->
                 setReadStatus.await(
                     manga = manga.manga,
@@ -615,7 +615,7 @@ class MangaLibraryScreenModel(
                 status = null,
             )
 
-            screenModelScope.launchNonCancellable {
+            viewModelScope.launchNonCancellable {
                 updateManga.await(mangaInfo)
             }
         }
@@ -631,7 +631,7 @@ class MangaLibraryScreenModel(
      * @param deleteChapters whether to delete downloaded chapters.
      */
     fun removeMangas(mangaList: List<Manga>, deleteFromLibrary: Boolean, deleteChapters: Boolean) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             val mangaToDelete = mangaList.distinctBy { it.id }
 
             if (deleteFromLibrary) {
@@ -668,7 +668,7 @@ class MangaLibraryScreenModel(
         addCategories: List<Long>,
         removeCategories: List<Long>,
     ) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             mangaList.forEach { manga ->
                 val categoryIds = getCategories.await(manga.id)
                     .map { it.id }
@@ -682,7 +682,7 @@ class MangaLibraryScreenModel(
     }
 
     fun getDisplayMode(): PreferenceMutableState<LibraryDisplayMode> {
-        return libraryPreferences.displayMode.asState(screenModelScope)
+        return libraryPreferences.displayMode.asState(viewModelScope)
     }
 
     fun getColumnsPreferenceForCurrentOrientation(isLandscape: Boolean): PreferenceMutableState<Int> {
@@ -693,7 +693,7 @@ class MangaLibraryScreenModel(
                 libraryPreferences.mangaPortraitColumns
             }
             ).asState(
-            screenModelScope,
+            viewModelScope,
         )
     }
 
@@ -799,7 +799,7 @@ class MangaLibraryScreenModel(
     }
 
     fun openChangeCategoryDialog() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             // Create a copy of selected manga
             val mangaList = state.value.selection.map { it.manga }
 

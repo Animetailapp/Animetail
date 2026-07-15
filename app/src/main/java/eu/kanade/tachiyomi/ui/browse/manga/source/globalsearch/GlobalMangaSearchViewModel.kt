@@ -1,15 +1,32 @@
 package eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch
 
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import eu.kanade.tachiyomi.source.CatalogueSource
 
-class GlobalMangaSearchScreenModel(
+class GlobalMangaSearchViewModel(
     initialQuery: String = "",
     initialExtensionFilter: String? = null,
-) : MangaSearchScreenModel(
+) : MangaSearchViewModel(
     State(
         searchQuery = initialQuery,
     ),
 ) {
+
+    companion object {
+        val INITIAL_QUERY_KEY = CreationExtras.Key<String>()
+        val INITIAL_EXTENSION_FILTER_KEY = CreationExtras.Key<String?>()
+
+        val Factory = viewModelFactory {
+            initializer {
+                GlobalMangaSearchViewModel(
+                    initialQuery = get(INITIAL_QUERY_KEY) ?: "",
+                    initialExtensionFilter = get(INITIAL_EXTENSION_FILTER_KEY),
+                )
+            }
+        }
+    }
 
     init {
         extensionFilter = initialExtensionFilter

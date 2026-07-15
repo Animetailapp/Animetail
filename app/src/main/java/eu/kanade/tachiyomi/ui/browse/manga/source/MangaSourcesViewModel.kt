@@ -1,8 +1,7 @@
 package eu.kanade.tachiyomi.ui.browse.manga.source
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.source.manga.interactor.GetEnabledMangaSources
 import eu.kanade.domain.source.manga.interactor.ToggleExcludeFromMangaDataSaver
@@ -21,6 +20,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import logcat.LogPriority
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.manga.model.Pin
@@ -29,7 +29,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.TreeMap
 
-class MangaSourcesScreenModel(
+class MangaSourcesViewModel(
     private val preferences: BasePreferences = Injekt.get(),
     private val sourcePreferences: SourcePreferences = Injekt.get(),
     private val getEnabledSources: GetEnabledMangaSources = Injekt.get(),
@@ -38,13 +38,13 @@ class MangaSourcesScreenModel(
     // SY -->
     private val toggleExcludeFromMangaDataSaver: ToggleExcludeFromMangaDataSaver = Injekt.get(),
     // SY <--
-) : StateScreenModel<MangaSourcesScreenModel.State>(State()) {
+) : StateViewModel<MangaSourcesViewModel.State>(State()) {
 
     private val _events = Channel<Event>(Int.MAX_VALUE)
     val events = _events.receiveAsFlow()
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             getEnabledSources.subscribe()
                 .catch {
                     logcat(LogPriority.ERROR, it)
@@ -61,7 +61,7 @@ class MangaSourcesScreenModel(
                     )
                 }
             }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
         // SY <--
     }
 

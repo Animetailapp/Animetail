@@ -5,7 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.manga.MangaExtensionFilterScreen
@@ -21,8 +21,8 @@ class MangaExtensionFilterScreen : Screen() {
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { MangaExtensionFilterScreenModel() }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<MangaExtensionFilterViewModel>()
+        val state by viewModel.state.collectAsState()
 
         if (state is MangaExtensionFilterState.Loading) {
             LoadingScreen()
@@ -34,11 +34,11 @@ class MangaExtensionFilterScreen : Screen() {
         MangaExtensionFilterScreen(
             navigateUp = navigator::pop,
             state = successState,
-            onClickToggle = screenModel::toggle,
+            onClickToggle = viewModel::toggle,
         )
 
         LaunchedEffect(Unit) {
-            screenModel.events.collectLatest {
+            viewModel.events.collectLatest {
                 when (it) {
                     MangaExtensionFilterEvent.FailedFetchingLanguages -> {
                         context.toast(MR.strings.internal_error)
@@ -48,3 +48,4 @@ class MangaExtensionFilterScreen : Screen() {
         }
     }
 }
+

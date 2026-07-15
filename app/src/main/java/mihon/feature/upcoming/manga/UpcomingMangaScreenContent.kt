@@ -41,7 +41,7 @@ import java.time.YearMonth
 
 @Composable
 fun UpcomingMangaScreenContent(
-    state: UpcomingMangaScreenModel.State,
+    state: UpcomingMangaViewModel.State,
     setSelectedYearMonth: (YearMonth) -> Unit,
     onClickUpcoming: (manga: Manga) -> Unit,
     modifier: Modifier = Modifier,
@@ -236,3 +236,4 @@ private fun UpcomingMangaScreenLargeImpl(
         },
     )
 }
+

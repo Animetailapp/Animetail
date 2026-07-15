@@ -5,8 +5,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.util.fastFilter
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
@@ -33,6 +32,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
@@ -51,7 +51,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.time.ZonedDateTime
 
-class MangaUpdatesScreenModel(
+class MangaUpdatesViewModel(
     private val sourceManager: MangaSourceManager = Injekt.get(),
     private val downloadManager: MangaDownloadManager = Injekt.get(),
     private val downloadCache: MangaDownloadCache = Injekt.get(),
@@ -63,19 +63,19 @@ class MangaUpdatesScreenModel(
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     private val updatesPreferences: UpdatesPreferences = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
-) : StateScreenModel<MangaUpdatesScreenModel.State>(State()) {
+) : StateViewModel<MangaUpdatesViewModel.State>(State()) {
 
     private val _events: Channel<Event> = Channel(Int.MAX_VALUE)
     val events: Flow<Event> = _events.receiveAsFlow()
 
-    val lastUpdated by libraryPreferences.lastUpdatedTimestamp.asState(screenModelScope)
+    val lastUpdated by libraryPreferences.lastUpdatedTimestamp.asState(viewModelScope)
 
     // First and last selected index in list
     private val selectedPositions: Array<Int> = arrayOf(-1, -1)
     private val selectedChapterIds: HashSet<Long> = HashSet()
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             // Set date limit for recent chapters
             val limit = ZonedDateTime.now().minusMonths(3).toInstant()
 
@@ -114,10 +114,10 @@ class MangaUpdatesScreenModel(
                 }
         }
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             merge(downloadManager.statusFlow(), downloadManager.progressFlow())
                 .catch { logcat(LogPriority.ERROR, it) }
-                .collect(this@MangaUpdatesScreenModel::updateDownloadState)
+                .collect(this@MangaUpdatesViewModel::updateDownloadState)
         }
 
         getUpdatesItemPreferenceFlow()
@@ -136,7 +136,7 @@ class MangaUpdatesScreenModel(
                     state.copy(hasActiveFilters = it)
                 }
             }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
     }
 
     private fun List<MangaUpdatesItem>.applyFilters(
@@ -182,7 +182,7 @@ class MangaUpdatesScreenModel(
 
     fun updateLibrary(): Boolean {
         val started = MangaLibraryUpdateJob.startNow(Injekt.get<Application>())
-        screenModelScope.launch {
+        viewModelScope.launch {
             _events.send(Event.LibraryUpdateTriggered(started))
         }
         return started
@@ -211,7 +211,7 @@ class MangaUpdatesScreenModel(
 
     fun downloadChapters(items: List<MangaUpdatesItem>, action: ChapterDownloadAction) {
         if (items.isEmpty()) return
-        screenModelScope.launch {
+        viewModelScope.launch {
             when (action) {
                 ChapterDownloadAction.START -> {
                     downloadChapters(items)
@@ -254,7 +254,7 @@ class MangaUpdatesScreenModel(
      * @param read whether to mark chapters as read or unread.
      */
     fun markUpdatesRead(updates: List<MangaUpdatesItem>, read: Boolean) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             setReadStatus.await(
                 read = read,
                 chapters = updates
@@ -270,7 +270,7 @@ class MangaUpdatesScreenModel(
      * @param updates the list of chapters to bookmark.
      */
     fun bookmarkUpdates(updates: List<MangaUpdatesItem>, bookmark: Boolean) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             updates
                 .filterNot { it.update.bookmark == bookmark }
                 .map { ChapterUpdate(id = it.update.chapterId, bookmark = bookmark) }
@@ -284,7 +284,7 @@ class MangaUpdatesScreenModel(
      * @param updatesItem the list of chapters to download.
      */
     private fun downloadChapters(updatesItem: List<MangaUpdatesItem>) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             val groupedUpdates = updatesItem.groupBy { it.update.mangaId }.values
             for (updates in groupedUpdates) {
                 val mangaId = updates.first().update.mangaId
@@ -303,7 +303,7 @@ class MangaUpdatesScreenModel(
      * @param updatesItem list of chapters
      */
     fun deleteChapters(updatesItem: List<MangaUpdatesItem>) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             updatesItem
                 .groupBy { it.update.mangaId }
                 .entries

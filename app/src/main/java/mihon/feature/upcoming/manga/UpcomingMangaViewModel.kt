@@ -2,13 +2,13 @@ package mihon.feature.upcoming.manga
 
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapIndexedNotNull
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import eu.kanade.core.util.insertSeparatorsReversed
 import eu.kanade.tachiyomi.util.lang.toLocalDate
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mihon.core.viewmodel.StateViewModel
 import mihon.domain.upcoming.manga.interactor.GetUpcomingManga
 import tachiyomi.domain.entries.manga.model.Manga
 import uy.kohesive.injekt.Injekt
@@ -16,12 +16,12 @@ import uy.kohesive.injekt.api.get
 import java.time.LocalDate
 import java.time.YearMonth
 
-class UpcomingMangaScreenModel(
+class UpcomingMangaViewModel(
     private val getUpcomingManga: GetUpcomingManga = Injekt.get(),
-) : StateScreenModel<UpcomingMangaScreenModel.State>(State()) {
+) : StateViewModel<UpcomingMangaViewModel.State>(State()) {
 
     init {
-        screenModelScope.launch {
+        viewModelScope.launch {
             getUpcomingManga.subscribe().collectLatest {
                 mutableState.update { state ->
                     val upcomingItems = it.toUpcomingMangaUIModels()
@@ -67,7 +67,6 @@ class UpcomingMangaScreenModel(
                 null
             }
         }
-            .toMap()
             .toMap()
     }
 

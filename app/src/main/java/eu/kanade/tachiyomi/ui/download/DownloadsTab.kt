@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -64,7 +65,7 @@ import eu.kanade.tachiyomi.ui.download.anime.AnimeDownloadHeaderItem
 import eu.kanade.tachiyomi.ui.download.anime.AnimeDownloadQueueScreenModel
 import eu.kanade.tachiyomi.ui.download.anime.animeDownloadTab
 import eu.kanade.tachiyomi.ui.download.manga.MangaDownloadHeaderItem
-import eu.kanade.tachiyomi.ui.download.manga.MangaDownloadQueueScreenModel
+import eu.kanade.tachiyomi.ui.download.manga.MangaDownloadQueueViewModel
 import eu.kanade.tachiyomi.ui.download.manga.mangaDownloadTab
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
@@ -94,7 +95,7 @@ data object DownloadsTab : Tab {
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
         val animeScreenModel = rememberScreenModel { AnimeDownloadQueueScreenModel() }
-        val mangaScreenModel = rememberScreenModel { MangaDownloadQueueScreenModel() }
+        val mangaScreenModel = viewModel<MangaDownloadQueueViewModel>()
         val animeDownloadList by animeScreenModel.state.collectAsState()
         val mangaDownloadList by mangaScreenModel.state.collectAsState()
         val animeDownloadCount by remember {
@@ -392,7 +393,7 @@ data object DownloadsTab : Tab {
 
     @Composable
     private fun MangaActions(
-        mangaScreenModel: MangaDownloadQueueScreenModel,
+        mangaScreenModel: MangaDownloadQueueViewModel,
         mangaDownloadList: List<MangaDownloadHeaderItem>,
     ) {
         if (mangaDownloadList.isNotEmpty()) {

@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.entries.manga
 
+import android.app.Application
 import android.content.Context
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -11,10 +12,12 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import aniyomi.util.nullIfEmpty
 import aniyomi.util.trimOrNull
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
@@ -63,6 +66,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.core.viewmodel.StateViewModel
 import mihon.domain.items.chapter.interactor.FilterChaptersForDownload
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
@@ -107,9 +111,8 @@ import uy.kohesive.injekt.api.get
 import kotlin.math.floor
 import androidx.compose.runtime.State as RuntimeState
 
-class MangaScreenModel(
+class MangaViewModel(
     private val context: Context,
-    private val lifecycle: Lifecycle,
     private val mangaId: Long,
     private val isFromSource: Boolean,
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
@@ -147,7 +150,23 @@ class MangaScreenModel(
     val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
     // KMK <--
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
-) : StateScreenModel<MangaScreenModel.State>(State.Loading) {
+) : StateViewModel<MangaViewModel.State>(State.Loading) {
+
+    companion object {
+        val MANGA_ID_KEY = CreationExtras.Key<Long>()
+
+        val IS_FROM_SOURCE_KEY = CreationExtras.Key<Boolean>()
+
+        val Factory = viewModelFactory {
+            initializer {
+                MangaViewModel(
+                    context = Injekt.get<Application>(),
+                    mangaId = get(MANGA_ID_KEY)!!,
+                    isFromSource = get(IS_FROM_SOURCE_KEY)!!,
+                )
+            }
+        }
+    }
 
     private val successState: State.Success?
         get() = state.value as? State.Success
@@ -171,7 +190,7 @@ class MangaScreenModel(
     val chapterSwipeEndAction = libraryPreferences.swipeChapterStartAction.get()
     var autoTrackState = trackPreferences.autoUpdateTrackOnMarkRead.get()
 
-    private val skipFiltered by readerPreferences.skipFiltered.asState(screenModelScope)
+    private val skipFiltered by readerPreferences.skipFiltered.asState(viewModelScope)
 
     val isUpdateIntervalEnabled =
         LibraryPreferences.ENTRY_OUTSIDE_RELEASE_PERIOD in libraryPreferences.autoUpdateMangaRestrictions.get()
@@ -197,13 +216,12 @@ class MangaScreenModel(
     }
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             combine(
                 getMangaAndChapters.subscribe(mangaId, applyScanlatorFilter = true).distinctUntilChanged(),
                 downloadCache.changes,
                 downloadManager.queueState,
             ) { mangaAndChapters, _, _ -> mangaAndChapters }
-                .flowWithLifecycle(lifecycle)
                 .collectLatest { (manga, chapters) ->
                     updateSuccessState {
                         it.copy(
@@ -214,9 +232,8 @@ class MangaScreenModel(
                 }
         }
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             getExcludedScanlators.subscribe(mangaId)
-                .flowWithLifecycle(lifecycle)
                 .distinctUntilChanged()
                 .collectLatest { excludedScanlators ->
                     updateSuccessState {
@@ -225,9 +242,8 @@ class MangaScreenModel(
                 }
         }
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             getAvailableScanlators.subscribe(mangaId)
-                .flowWithLifecycle(lifecycle)
                 .distinctUntilChanged()
                 .collectLatest { availableScanlators ->
                     updateSuccessState {
@@ -238,7 +254,7 @@ class MangaScreenModel(
 
         observeDownloads()
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val manga = getMangaAndChapters.awaitManga(mangaId)
             val chapters = getMangaAndChapters.awaitChapters(mangaId, applyScanlatorFilter = true)
                 .toChapterListItems(manga)
@@ -268,7 +284,7 @@ class MangaScreenModel(
             observeTrackers()
 
             // Fetch info-chapters when needed
-            if (screenModelScope.isActive) {
+            if (viewModelScope.isActive) {
                 val fetchFromSourceTasks = listOf(
                     async { if (needRefreshInfo) fetchMangaFromSource() },
                     async { if (needRefreshChapter) fetchChaptersFromSource() },
@@ -287,7 +303,7 @@ class MangaScreenModel(
     }
 
     fun fetchAllFromSource(manualFetch: Boolean = true) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             updateSuccessState { it.copy(isRefreshingData = true) }
             val fetchFromSourceTasks = listOf(
                 async { fetchMangaFromSource(manualFetch) },
@@ -324,7 +340,7 @@ class MangaScreenModel(
             logcat(LogPriority.ERROR, e)
             val message = with(context) { e.formattedMessage }
 
-            screenModelScope.launch {
+            viewModelScope.launch {
                 snackbarHostState.showSnackbar(message = message)
             }
         }
@@ -364,6 +380,7 @@ class MangaScreenModel(
 
     @Composable
     fun getManga(initialManga: Manga): RuntimeState<Manga> {
+        val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
         return produceState(initialValue = initialManga) {
             getMangaInteractor.subscribe(initialManga.url, initialManga.source)
                 .flowWithLifecycle(lifecycle)
@@ -391,7 +408,7 @@ class MangaScreenModel(
             if (e is HttpException && e.code == 103) return
 
             logcat(LogPriority.ERROR, e)
-            screenModelScope.launch {
+            viewModelScope.launch {
                 snackbarHostState.showSnackbar(message = with(context) { e.formattedMessage })
             }
         }
@@ -426,7 +443,7 @@ class MangaScreenModel(
             (sourceManager.get(LocalMangaSource.ID) as LocalMangaSource).updateMangaInfo(
                 manga.toSManga(),
             )
-            screenModelScope.launchNonCancellable {
+            viewModelScope.launchNonCancellable {
                 updateManga.await(
                     MangaUpdate(
                         manga.id,
@@ -468,7 +485,7 @@ class MangaScreenModel(
     fun toggleFavorite() {
         toggleFavorite(
             onRemoved = {
-                screenModelScope.launch {
+                viewModelScope.launch {
                     if (!hasDownloads()) return@launch
                     val result = snackbarHostState.showSnackbar(
                         message = context.stringResource(MR.strings.delete_downloads_for_manga),
@@ -491,7 +508,7 @@ class MangaScreenModel(
         checkDuplicate: Boolean = true,
     ) {
         val state = successState ?: return
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val manga = state.manga
 
             if (isFavorited) {
@@ -556,7 +573,7 @@ class MangaScreenModel(
 
     fun showChangeCategoryDialog() {
         val manga = successState?.manga ?: return
-        screenModelScope.launch {
+        viewModelScope.launch {
             val categories = getCategories()
             val selection = getMangaCategoryIds(manga)
             updateSuccessState { successState ->
@@ -578,7 +595,7 @@ class MangaScreenModel(
     }
 
     fun setFetchInterval(manga: Manga, interval: Int) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             if (
                 updateManga.awaitUpdateFetchInterval(
                     // Custom intervals are negative
@@ -631,7 +648,7 @@ class MangaScreenModel(
         moveMangaToCategory(categories)
         if (manga.favorite) return
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             updateManga.awaitUpdateFavorite(manga.id, true)
         }
     }
@@ -647,7 +664,7 @@ class MangaScreenModel(
     }
 
     private fun moveMangaToCategory(categoryIds: List<Long>) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             setMangaCategories.await(mangaId, categoryIds)
         }
     }
@@ -666,11 +683,10 @@ class MangaScreenModel(
     // Chapters list - start
 
     private fun observeDownloads() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             downloadManager.statusFlow()
                 .filter { it.manga.id == successState?.manga?.id }
                 .catch { error -> logcat(LogPriority.ERROR, error) }
-                .flowWithLifecycle(lifecycle)
                 .collect {
                     withUIContext {
                         updateDownloadState(it)
@@ -678,11 +694,10 @@ class MangaScreenModel(
                 }
         }
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             downloadManager.progressFlow()
                 .filter { it.manga.id == successState?.manga?.id }
                 .catch { error -> logcat(LogPriority.ERROR, error) }
-                .flowWithLifecycle(lifecycle)
                 .collect {
                     withUIContext {
                         updateDownloadState(it)
@@ -767,7 +782,7 @@ class MangaScreenModel(
                 with(context) { e.formattedMessage }
             }
 
-            screenModelScope.launch {
+            viewModelScope.launch {
                 snackbarHostState.showSnackbar(message = message)
             }
             val newManga = mangaRepository.getMangaById(mangaId)
@@ -779,7 +794,7 @@ class MangaScreenModel(
      * @throws IllegalStateException if the swipe action is [LibraryPreferences.ChapterSwipeAction.Disabled]
      */
     fun chapterSwipe(chapterItem: ChapterList.Item, swipeAction: LibraryPreferences.ChapterSwipeAction) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             executeChapterSwipeAction(chapterItem, swipeAction)
         }
     }
@@ -857,7 +872,7 @@ class MangaScreenModel(
     ) {
         val successState = successState ?: return
 
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             if (startNow) {
                 val chapterId = chapters.singleOrNull()?.id ?: return@launchNonCancellable
                 downloadManager.startDownloadNow(chapterId)
@@ -945,7 +960,7 @@ class MangaScreenModel(
     fun markChaptersRead(chapters: List<Chapter>, read: Boolean) {
         toggleAllSelection(false)
         if (chapters.isEmpty()) return
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             setReadStatus.await(
                 read = read,
                 chapters = chapters.toTypedArray(),
@@ -1025,7 +1040,7 @@ class MangaScreenModel(
     }
 
     fun setChapterDateOverride(chapters: List<Chapter>, dateOverride: Long) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             chapters
                 .map { ChapterUpdate(id = it.id, dateUploadOverride = dateOverride) }
                 .let { updateChapter.awaitAll(it) }
@@ -1034,7 +1049,7 @@ class MangaScreenModel(
     }
 
     fun bookmarkChapters(chapters: List<Chapter>, bookmarked: Boolean) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             chapters
                 .filterNot { it.bookmark == bookmarked }
                 .map { ChapterUpdate(id = it.id, bookmark = bookmarked) }
@@ -1049,7 +1064,7 @@ class MangaScreenModel(
      * @param chapters the list of chapters to delete.
      */
     fun deleteChapters(chapters: List<Chapter>) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             try {
                 successState?.let { state ->
                     downloadManager.deleteChapters(
@@ -1065,7 +1080,7 @@ class MangaScreenModel(
     }
 
     private fun downloadNewChapters(chapters: List<Chapter>) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             val manga = successState?.manga ?: return@launchNonCancellable
             val chaptersToDownload = filterChaptersForDownload.await(manga, chapters)
 
@@ -1087,7 +1102,7 @@ class MangaScreenModel(
             TriState.ENABLED_IS -> Manga.CHAPTER_SHOW_UNREAD
             TriState.ENABLED_NOT -> Manga.CHAPTER_SHOW_READ
         }
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             setMangaChapterFlags.awaitSetUnreadFilter(manga, flag)
         }
     }
@@ -1105,7 +1120,7 @@ class MangaScreenModel(
             TriState.ENABLED_NOT -> Manga.CHAPTER_SHOW_NOT_DOWNLOADED
         }
 
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             setMangaChapterFlags.awaitSetDownloadedFilter(manga, flag)
         }
     }
@@ -1123,7 +1138,7 @@ class MangaScreenModel(
             TriState.ENABLED_NOT -> Manga.CHAPTER_SHOW_NOT_BOOKMARKED
         }
 
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             setMangaChapterFlags.awaitSetBookmarkFilter(manga, flag)
         }
     }
@@ -1135,7 +1150,7 @@ class MangaScreenModel(
     fun setDisplayMode(mode: Long) {
         val manga = successState?.manga ?: return
 
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             setMangaChapterFlags.awaitSetDisplayMode(manga, mode)
         }
     }
@@ -1147,14 +1162,14 @@ class MangaScreenModel(
     fun setSorting(sort: Long) {
         val manga = successState?.manga ?: return
 
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             setMangaChapterFlags.awaitSetSortingModeOrFlipOrder(manga, sort)
         }
     }
 
     fun setCurrentSettingsAsDefault(applyToExisting: Boolean) {
         val manga = successState?.manga ?: return
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             libraryPreferences.setChapterSettingsDefault(manga)
             if (applyToExisting) {
                 setMangaDefaultChapterFlags.awaitAll()
@@ -1167,7 +1182,7 @@ class MangaScreenModel(
 
     fun resetToDefaultSettings() {
         val manga = successState?.manga ?: return
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             setMangaDefaultChapterFlags.await(manga)
         }
     }
@@ -1266,7 +1281,7 @@ class MangaScreenModel(
     private fun observeTrackers() {
         val manga = successState?.manga ?: return
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             combine(
                 getTracks.subscribe(manga.id).catch { logcat(LogPriority.ERROR, it) },
                 trackerManager.loggedInTrackersFlow(),
@@ -1279,7 +1294,6 @@ class MangaScreenModel(
                 val supportedTrackerTracks = mangaTracks.filter { it.trackerId in supportedTrackerIds }
                 supportedTrackerTracks.size to supportedTrackers.isNotEmpty()
             }
-                .flowWithLifecycle(lifecycle)
                 .distinctUntilChanged()
                 .collectLatest { (trackingCount, hasLoggedInTrackers) ->
                     updateSuccessState {
@@ -1340,7 +1354,7 @@ class MangaScreenModel(
     }
 
     fun setExcludedScanlators(excludedScanlators: Set<String>) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             setExcludedScanlators.await(mangaId, excludedScanlators)
         }
     }

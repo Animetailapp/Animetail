@@ -1,8 +1,10 @@
 package mihon.feature.migration.list
 
 import androidx.annotation.FloatRange
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.entries.manga.model.toSManga
 import eu.kanade.domain.items.chapter.interactor.SyncChaptersWithSource
@@ -25,6 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
+import mihon.core.viewmodel.StateViewModel
 import mihon.domain.migration.usecases.MigrateMangaUseCase
 import mihon.feature.migration.list.models.MigratingManga
 import mihon.feature.migration.list.models.MigratingManga.SearchResult
@@ -39,7 +42,7 @@ import tachiyomi.domain.source.manga.service.MangaSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class MangaMigrationListScreenModel(
+class MangaMigrationListViewModel(
     mangaIds: Collection<Long>,
     extraSearchQuery: String?,
     private val preferences: SourcePreferences = Injekt.get(),
@@ -50,7 +53,22 @@ class MangaMigrationListScreenModel(
     private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get(),
     private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
     private val migrateManga: MigrateMangaUseCase = Injekt.get(),
-) : StateScreenModel<MangaMigrationListScreenModel.State>(State()) {
+) : StateViewModel<MangaMigrationListViewModel.State>(State()) {
+
+    companion object {
+        val MANGA_IDS_KEY = CreationExtras.Key<Collection<Long>>()
+
+        val EXTRA_SEARCH_QUERY_KEY = CreationExtras.Key<String?>()
+
+        val Factory = viewModelFactory {
+            initializer {
+                MangaMigrationListViewModel(
+                    mangaIds = get(MANGA_IDS_KEY)!!,
+                    extraSearchQuery = get(EXTRA_SEARCH_QUERY_KEY),
+                )
+            }
+        }
+    }
 
     private val smartSearchEngine = SmartSourceSearchEngine(extraSearchQuery)
 
@@ -66,7 +84,7 @@ class MangaMigrationListScreenModel(
     private var migrateJob: Job? = null
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val manga = mangaIds
                 .map {
                     async {
@@ -77,7 +95,7 @@ class MangaMigrationListScreenModel(
                             chapterCount = chapterInfo.chapterCount,
                             latestChapter = chapterInfo.latestChapter,
                             source = sourceManager.getOrStub(manga.source).getNameForMangaInfo(),
-                            parentContext = screenModelScope.coroutineContext,
+                            parentContext = viewModelScope.coroutineContext,
                         )
                     }
                 }
@@ -137,7 +155,7 @@ class MangaMigrationListScreenModel(
 
         return if (prioritizeByChapters) {
             val results = sources.map { source ->
-                screenModelScope.async { searchSource(manga, source, deepSearchMode) }
+                viewModelScope.async { searchSource(manga, source, deepSearchMode) }
             }
                 .awaitAll()
                 .filterNotNull()
@@ -193,7 +211,7 @@ class MangaMigrationListScreenModel(
     private fun migrationComplete() = items.all { it.searchResult.value != SearchResult.Searching } &&
         items.any { it.searchResult.value is SearchResult.Success }
 
-    fun migrateNow() {
+    fun migrateMangas() {
         migrateMangas(replace = true)
     }
 
@@ -208,7 +226,7 @@ class MangaMigrationListScreenModel(
     fun migrateNow(mangaId: Long, replace: Boolean) {
         val item = items.find { it.manga.id == mangaId } ?: return
         val target = (item.searchResult.value as? SearchResult.Success)?.manga ?: return
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             try {
                 migrateManga(current = item.manga, target = target, replace = replace)
                 removeManga(mangaId)
@@ -220,7 +238,7 @@ class MangaMigrationListScreenModel(
     }
 
     fun migrateMangas(replace: Boolean) {
-        migrateJob = screenModelScope.launchIO {
+        migrateJob = viewModelScope.launchIO {
             mutableState.update { it.copy(dialog = Dialog.Progress(0f)) }
             val items = items
             try {
@@ -257,7 +275,7 @@ class MangaMigrationListScreenModel(
 
     fun useMangaForMigration(mangaId: Long, targetMangaId: Long) {
         val item = items.find { it.manga.id == mangaId } ?: return
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             item.searchResult.value = SearchResult.Searching
             updateMigrationProgress()
             val targetManga = getManga.await(targetMangaId)
@@ -285,8 +303,7 @@ class MangaMigrationListScreenModel(
         )
     }
 
-    override fun onDispose() {
-        super.onDispose()
+    override fun onCleared() {
         items.forEach {
             it.migrationScope.cancel()
         }

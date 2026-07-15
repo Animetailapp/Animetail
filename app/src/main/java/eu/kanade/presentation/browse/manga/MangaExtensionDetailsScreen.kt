@@ -53,7 +53,7 @@ import eu.kanade.presentation.more.settings.widget.TrailingWidgetBuffer
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.source.ConfigurableSource
-import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaExtensionDetailsScreenModel
+import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaExtensionDetailsViewModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import tachiyomi.i18n.MR
@@ -66,7 +66,7 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 @Composable
 fun MangaExtensionDetailsScreen(
     navigateUp: () -> Unit,
-    state: MangaExtensionDetailsScreenModel.State,
+    state: MangaExtensionDetailsViewModel.State,
     onClickSourcePreferences: (sourceId: Long) -> Unit,
     onClickEnableAll: () -> Unit,
     onClickDisableAll: () -> Unit,
@@ -468,3 +468,4 @@ fun NsfwWarningDialog(
         onDismissRequest = onClickConfirm,
     )
 }
+

@@ -1,9 +1,12 @@
 package eu.kanade.tachiyomi.ui.browse.manga.extension.details
 
+import android.app.Application
 import android.content.Context
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import eu.kanade.domain.extension.manga.interactor.GetExtensionSources
 import eu.kanade.domain.extension.manga.interactor.MangaExtensionSourceItem
 import eu.kanade.domain.source.manga.interactor.ToggleMangaIncognito
@@ -24,12 +27,13 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.core.viewmodel.StateViewModel
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class MangaExtensionDetailsScreenModel(
+class MangaExtensionDetailsViewModel(
     pkgName: String,
     context: Context,
     private val network: NetworkHelper = Injekt.get(),
@@ -38,13 +42,26 @@ class MangaExtensionDetailsScreenModel(
     private val toggleSource: ToggleMangaSource = Injekt.get(),
     private val toggleIncognito: ToggleMangaIncognito = Injekt.get(),
     private val preferences: SourcePreferences = Injekt.get(),
-) : StateScreenModel<MangaExtensionDetailsScreenModel.State>(State()) {
+) : StateViewModel<MangaExtensionDetailsViewModel.State>(State()) {
+
+    companion object {
+        val PKG_NAME_KEY = CreationExtras.Key<String>()
+
+        val Factory = viewModelFactory {
+            initializer {
+                MangaExtensionDetailsViewModel(
+                    pkgName = get(PKG_NAME_KEY)!!,
+                    context = Injekt.get<Application>(),
+                )
+            }
+        }
+    }
 
     private val _events: Channel<MangaExtensionDetailsEvent> = Channel()
     val events: Flow<MangaExtensionDetailsEvent> = _events.receiveAsFlow()
 
     init {
-        screenModelScope.launch {
+        viewModelScope.launch {
             launch {
                 extensionManager.installedExtensionsFlow
                     .map { it.firstOrNull { extension -> extension.pkgName == pkgName } }

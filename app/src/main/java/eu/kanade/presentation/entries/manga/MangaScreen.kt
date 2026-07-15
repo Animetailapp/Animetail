@@ -74,7 +74,7 @@ import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.manga.getNameForMangaInfo
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaSourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.entries.manga.ChapterList
-import eu.kanade.tachiyomi.ui.entries.manga.MangaScreenModel
+import eu.kanade.tachiyomi.ui.entries.manga.MangaViewModel
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
@@ -99,7 +99,7 @@ import java.time.Instant
 @Composable
 @Suppress("ParameterNaming", "LongMethod")
 fun MangaScreen(
-    state: MangaScreenModel.State.Success,
+    state: MangaViewModel.State.Success,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
     isTabletUi: Boolean,
@@ -269,7 +269,7 @@ fun MangaScreen(
 @Composable
 @Suppress("ParameterNaming", "LongMethod")
 private fun MangaScreenSmallImpl(
-    state: MangaScreenModel.State.Success,
+    state: MangaViewModel.State.Success,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
     chapterSwipeStartAction: LibraryPreferences.ChapterSwipeAction,
@@ -593,7 +593,7 @@ private fun MangaScreenSmallImpl(
 @Composable
 @Suppress("ParameterNaming", "LongMethod")
 fun MangaScreenLargeImpl(
-    state: MangaScreenModel.State.Success,
+    state: MangaViewModel.State.Success,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
     chapterSwipeStartAction: LibraryPreferences.ChapterSwipeAction,
@@ -1038,3 +1038,4 @@ private fun onChapterItemClick(
         else -> onChapterClicked(chapterItem.chapter)
     }
 }
+

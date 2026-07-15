@@ -27,12 +27,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 fun mangaExtensionsTab(
-    extensionsScreenModel: MangaExtensionsScreenModel,
+    extensionsViewModel: MangaExtensionsViewModel,
 ): TabContent {
     val navigator = LocalNavigator.currentOrThrow
     val context = LocalContext.current
 
-    val state by extensionsScreenModel.state.collectAsState()
+    val state by extensionsViewModel.state.collectAsState()
     var privateExtensionToUninstall by remember { mutableStateOf<MangaExtension?>(null) }
 
     return TabContent(
@@ -51,7 +51,7 @@ fun mangaExtensionsTab(
         ),
         content = { contentPadding, _ ->
             BackHandler(enabled = state.searchQuery != null) {
-                extensionsScreenModel.search(null)
+                extensionsViewModel.search(null)
             }
 
             MangaExtensionScreen(
@@ -60,21 +60,21 @@ fun mangaExtensionsTab(
                 searchQuery = state.searchQuery,
                 onLongClickItem = { extension ->
                     when (extension) {
-                        is MangaExtension.Available -> extensionsScreenModel.installExtension(
+                        is MangaExtension.Available -> extensionsViewModel.installExtension(
                             extension,
                         )
 
                         else -> {
                             if (context.isPackageInstalled(extension.pkgName)) {
-                                extensionsScreenModel.uninstallExtension(extension)
+                                extensionsViewModel.uninstallExtension(extension)
                             } else {
                                 privateExtensionToUninstall = extension
                             }
                         }
                     }
                 },
-                onClickItemCancel = extensionsScreenModel::cancelInstallUpdateExtension,
-                onClickUpdateAll = extensionsScreenModel::updateAllExtensions,
+                onClickItemCancel = extensionsViewModel::cancelInstallUpdateExtension,
+                onClickUpdateAll = extensionsViewModel::updateAllExtensions,
                 onOpenWebView = { extension ->
                     extension.sources.getOrNull(0)?.let {
                         navigator.push(
@@ -86,19 +86,19 @@ fun mangaExtensionsTab(
                         )
                     }
                 },
-                onInstallExtension = extensionsScreenModel::installExtension,
+                onInstallExtension = extensionsViewModel::installExtension,
                 onOpenExtension = { navigator.push(MangaExtensionDetailsScreen(it.pkgName)) },
-                onTrustExtension = { extensionsScreenModel.trustExtension(it) },
-                onUninstallExtension = { extensionsScreenModel.uninstallExtension(it) },
-                onUpdateExtension = extensionsScreenModel::updateExtension,
-                onRefresh = extensionsScreenModel::findAvailableExtensions,
+                onTrustExtension = { extensionsViewModel.trustExtension(it) },
+                onUninstallExtension = { extensionsViewModel.uninstallExtension(it) },
+                onUpdateExtension = extensionsViewModel::updateExtension,
+                onRefresh = extensionsViewModel::findAvailableExtensions,
             )
 
             privateExtensionToUninstall?.let { extension ->
                 MangaExtensionUninstallConfirmation(
                     extensionName = extension.name,
                     onClickConfirm = {
-                        extensionsScreenModel.uninstallExtension(extension)
+                        extensionsViewModel.uninstallExtension(extension)
                     },
                     onDismissRequest = {
                         privateExtensionToUninstall = null
@@ -140,3 +140,4 @@ private fun MangaExtensionUninstallConfirmation(
         onDismissRequest = onDismissRequest,
     )
 }
+

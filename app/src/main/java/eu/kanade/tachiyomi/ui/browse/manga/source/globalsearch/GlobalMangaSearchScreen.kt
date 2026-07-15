@@ -7,7 +7,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.core.util.ifMangaSourcesLoaded
@@ -31,13 +32,14 @@ class GlobalMangaSearchScreen(
 
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel {
-            GlobalMangaSearchScreenModel(
-                initialQuery = searchQuery,
-                initialExtensionFilter = extensionFilter,
-            )
-        }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<GlobalMangaSearchViewModel>(
+            factory = GlobalMangaSearchViewModel.Factory,
+            extras = CreationExtras {
+                set(GlobalMangaSearchViewModel.INITIAL_QUERY_KEY, searchQuery)
+                set(GlobalMangaSearchViewModel.INITIAL_EXTENSION_FILTER_KEY, extensionFilter)
+            },
+        )
+        val state by viewModel.state.collectAsState()
         var showSingleLoadingScreen by remember {
             mutableStateOf(
                 searchQuery.isNotEmpty() && !extensionFilter.isNullOrEmpty() && state.total == 1,
@@ -68,11 +70,11 @@ class GlobalMangaSearchScreen(
             GlobalMangaSearchScreen(
                 state = state,
                 navigateUp = navigator::pop,
-                onChangeSearchQuery = screenModel::updateSearchQuery,
-                onSearch = { screenModel.search() },
-                getManga = { screenModel.getManga(it) },
-                onChangeSearchFilter = screenModel::setSourceFilter,
-                onToggleResults = screenModel::toggleFilterResults,
+                onChangeSearchQuery = viewModel::updateSearchQuery,
+                onSearch = { viewModel.search() },
+                getManga = { viewModel.getManga(it) },
+                onChangeSearchFilter = viewModel::setSourceFilter,
+                onToggleResults = viewModel::toggleFilterResults,
                 onClickSource = {
                     navigator.push(BrowseMangaSourceScreen(it.id, state.searchQuery))
                 },
@@ -82,3 +84,4 @@ class GlobalMangaSearchScreen(
         }
     }
 }
+

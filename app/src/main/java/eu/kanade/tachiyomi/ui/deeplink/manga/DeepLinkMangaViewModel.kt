@@ -1,8 +1,10 @@
 package eu.kanade.tachiyomi.ui.deeplink.manga
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import eu.kanade.domain.entries.manga.model.toDomainManga
 import eu.kanade.domain.entries.manga.model.toSManga
 import eu.kanade.domain.items.chapter.interactor.SyncChaptersWithSource
@@ -12,6 +14,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ResolvableSource
 import eu.kanade.tachiyomi.source.online.UriType
 import kotlinx.coroutines.flow.update
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.entries.manga.interactor.GetMangaByUrlAndSourceId
 import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
@@ -22,17 +25,29 @@ import tachiyomi.domain.source.manga.service.MangaSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class DeepLinkMangaScreenModel(
-    query: String = "",
+class DeepLinkMangaViewModel(
+    query: String,
     private val sourceManager: MangaSourceManager = Injekt.get(),
     private val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
     private val getChapterByUrlAndMangaId: GetChapterByUrlAndMangaId = Injekt.get(),
     private val getMangaByUrlAndSourceId: GetMangaByUrlAndSourceId = Injekt.get(),
     private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get(),
-) : StateScreenModel<DeepLinkMangaScreenModel.State>(State.Loading) {
+) : StateViewModel<DeepLinkMangaViewModel.State>(State.Loading) {
+
+    companion object {
+        val QUERY_KEY = CreationExtras.Key<String>()
+
+        val Factory = viewModelFactory {
+            initializer {
+                DeepLinkMangaViewModel(
+                    query = get(QUERY_KEY)!!,
+                )
+            }
+        }
+    }
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val source = sourceManager.getCatalogueSources()
                 .filterIsInstance<ResolvableSource>()
                 .firstOrNull { it.getUriType(query) != UriType.Unknown }

@@ -1,8 +1,8 @@
 package eu.kanade.tachiyomi.ui.download.manga
 
 import android.view.MenuItem
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
@@ -25,9 +25,9 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.milliseconds
 
-class MangaDownloadQueueScreenModel(
+class MangaDownloadQueueViewModel(
     private val downloadManager: MangaDownloadManager = Injekt.get(),
-) : ScreenModel {
+) : ViewModel() {
 
     private val _state = MutableStateFlow(emptyList<MangaDownloadHeaderItem>())
     val state = _state.asStateFlow()
@@ -120,7 +120,7 @@ class MangaDownloadQueueScreenModel(
     }
 
     init {
-        screenModelScope.launch {
+        viewModelScope.launch {
             downloadManager.queueState
                 .map { downloads ->
                     downloads
@@ -135,7 +135,7 @@ class MangaDownloadQueueScreenModel(
         }
     }
 
-    override fun onDispose() {
+    override fun onCleared() {
         for (job in progressJobs.values) {
             job.cancel()
         }
@@ -144,7 +144,7 @@ class MangaDownloadQueueScreenModel(
     }
 
     val isDownloaderRunning = downloadManager.isDownloaderRunning
-        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun getDownloadStatusFlow() = downloadManager.statusFlow()
     fun getDownloadProgressFlow() = downloadManager.progressFlow()
@@ -220,7 +220,7 @@ class MangaDownloadQueueScreenModel(
      * @param download the download to observe its progress.
      */
     private fun launchProgressJob(download: MangaDownload) {
-        val job = screenModelScope.launch {
+        val job = viewModelScope.launch {
             while (download.pages == null) {
                 delay(50.milliseconds)
             }

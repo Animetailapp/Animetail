@@ -1,8 +1,10 @@
 package eu.kanade.presentation.more.settings.screen.browse
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mihon.core.viewmodel.StateViewModel
 import mihon.domain.extension.anime.interactor.AddAnimeExtensionStore
 import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
 import mihon.domain.extension.anime.interactor.RemoveAnimeExtensionStore
@@ -24,10 +27,22 @@ import tachiyomi.core.common.util.lang.launchIO
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class ExtensionStoresScreenModel(
+class ExtensionStoresViewModel(
     val isManga: Boolean,
     private val sourcePreferences: SourcePreferences = Injekt.get(),
-) : StateScreenModel<ExtensionStoreScreenState>(ExtensionStoreScreenState.Loading) {
+) : StateViewModel<ExtensionStoreScreenState>(ExtensionStoreScreenState.Loading) {
+
+    companion object {
+        val IS_MANGA_KEY = CreationExtras.Key<Boolean>()
+
+        val Factory = viewModelFactory {
+            initializer {
+                ExtensionStoresViewModel(
+                    isManga = get(IS_MANGA_KEY)!!,
+                )
+            }
+        }
+    }
 
     private val getMangaExtensionStores: GetMangaExtensionStores by lazy { Injekt.get() }
     private val getAnimeExtensionStores: GetAnimeExtensionStores by lazy { Injekt.get() }
@@ -51,7 +66,7 @@ class ExtensionStoresScreenModel(
 
     init {
         val storesFlow = if (isManga) getMangaExtensionStores.subscribe() else getAnimeExtensionStores.subscribe()
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             storesFlow.collectLatest { stores ->
                 mutableState.update {
                     when (it) {
@@ -75,7 +90,7 @@ class ExtensionStoresScreenModel(
                     }
                 }
             }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
     }
 
     /**
@@ -84,7 +99,7 @@ class ExtensionStoresScreenModel(
      * @param baseUrl The baseUrl of the repo to create.
      */
     fun createRepo(baseUrl: String) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             updateSuccessState {
                 it.copy(
                     dialog = when (it.dialog) {
@@ -132,7 +147,7 @@ class ExtensionStoresScreenModel(
         val status = state.value
 
         if (status is ExtensionStoreScreenState.Success) {
-            screenModelScope.launchIO {
+            viewModelScope.launchIO {
                 if (isManga) {
                     updateMangaExtensionStores()
                 } else {
@@ -147,7 +162,7 @@ class ExtensionStoresScreenModel(
      */
     fun deleteRepo(baseUrl: String) {
         enableRepo(baseUrl)
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             if (isManga) {
                 removeMangaExtensionStore(baseUrl)
                 Injekt.get<MangaExtensionManager>().findAvailableExtensions()

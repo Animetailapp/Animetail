@@ -6,20 +6,21 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.entries.manga.model.toDomainManga
 import eu.kanade.domain.source.manga.interactor.GetMangaIncognitoState
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.manga.interactor.AddMangaTracks
-import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -33,6 +34,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
@@ -53,7 +55,7 @@ import uy.kohesive.injekt.api.get
 import java.time.Instant
 import eu.kanade.tachiyomi.source.model.Filter as SourceModelFilter
 
-class BrowseMangaSourceScreenModel(
+class BrowseMangaSourceViewModel(
     private val sourceId: Long,
     listingQuery: String?,
     sourceManager: MangaSourceManager = Injekt.get(),
@@ -70,9 +72,23 @@ class BrowseMangaSourceScreenModel(
     private val updateManga: UpdateManga = Injekt.get(),
     private val addTracks: AddMangaTracks = Injekt.get(),
     getIncognitoState: GetMangaIncognitoState = Injekt.get(),
-) : StateScreenModel<BrowseMangaSourceScreenModel.State>(State(Listing.valueOf(listingQuery))) {
+) : StateViewModel<BrowseMangaSourceViewModel.State>(State(Listing.valueOf(listingQuery))) {
 
-    var displayMode by sourcePreferences.sourceDisplayMode.asState(screenModelScope)
+    companion object {
+        val SOURCE_ID_KEY = CreationExtras.Key<Long>()
+        val LISTING_QUERY_KEY = CreationExtras.Key<String?>()
+
+        val Factory = viewModelFactory {
+            initializer {
+                BrowseMangaSourceViewModel(
+                    sourceId = get(SOURCE_ID_KEY)!!,
+                    listingQuery = get(LISTING_QUERY_KEY),
+                )
+            }
+        }
+    }
+
+    var displayMode by sourcePreferences.sourceDisplayMode.asState(viewModelScope)
 
     val source = sourceManager.getOrStub(sourceId)
 
@@ -114,13 +130,13 @@ class BrowseMangaSourceScreenModel(
                     networkToLocalManga.await(it.toDomainManga(sourceId))
                         .let { localManga -> getManga.subscribe(localManga.url, localManga.source) }
                         .filterNotNull()
-                        .stateIn(ioCoroutineScope)
+                        .stateIn(viewModelScope)
                 }
                     .filter { !hideInLibraryItems || !it.value.favorite }
             }
-                .cachedIn(ioCoroutineScope)
+                .cachedIn(viewModelScope)
         }
-        .stateIn(ioCoroutineScope, SharingStarted.Lazily, emptyFlow())
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyFlow())
 
     fun getColumnsPreference(orientation: Int): GridCells {
         val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -230,7 +246,7 @@ class BrowseMangaSourceScreenModel(
      * @param manga the manga to update.
      */
     fun changeMangaFavorite(manga: Manga) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             var new = manga.copy(
                 favorite = !manga.favorite,
                 dateAdded = when (manga.favorite) {
@@ -251,7 +267,7 @@ class BrowseMangaSourceScreenModel(
     }
 
     fun addFavorite(manga: Manga) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             val categories = getCategories()
             val defaultCategoryId = libraryPreferences.defaultCategory.get()
             val defaultCategory = categories.find { it.id == defaultCategoryId.toLong() }
@@ -306,7 +322,7 @@ class BrowseMangaSourceScreenModel(
     }
 
     fun moveMangaToCategories(manga: Manga, categoryIds: List<Long>) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             setMangaCategories.await(
                 mangaId = manga.id,
                 categoryIds = categoryIds.toList(),

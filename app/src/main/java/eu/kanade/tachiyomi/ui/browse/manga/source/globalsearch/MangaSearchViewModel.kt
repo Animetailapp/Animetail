@@ -3,11 +3,9 @@ package eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.produceState
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import eu.kanade.domain.entries.manga.model.toDomainManga
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.source.CatalogueSource
 import kotlinx.coroutines.Job
@@ -20,6 +18,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.toggle
 import tachiyomi.domain.entries.manga.interactor.GetManga
 import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
@@ -28,8 +27,9 @@ import tachiyomi.domain.source.manga.service.MangaSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.concurrent.Executors
+import tachiyomi.core.common.util.lang.launchIO
 
-abstract class MangaSearchScreenModel(
+abstract class MangaSearchViewModel(
     initialState: State = State(),
     sourcePreferences: SourcePreferences = Injekt.get(),
     private val sourceManager: MangaSourceManager = Injekt.get(),
@@ -37,7 +37,7 @@ abstract class MangaSearchScreenModel(
     private val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
     private val getManga: GetManga = Injekt.get(),
     private val preferences: SourcePreferences = Injekt.get(),
-) : StateScreenModel<MangaSearchScreenModel.State>(initialState) {
+) : StateViewModel<MangaSearchViewModel.State>(initialState) {
 
     private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
     private var searchJob: Job? = null
@@ -60,7 +60,7 @@ abstract class MangaSearchScreenModel(
     }
 
     init {
-        screenModelScope.launch {
+        viewModelScope.launch {
             preferences.globalSearchFilterState.changes().collectLatest { state ->
                 mutableState.update { it.copy(onlyShowHasResults = state) }
             }
@@ -146,7 +146,8 @@ abstract class MangaSearchScreenModel(
                     .toMap(),
             )
         }
-        searchJob = ioCoroutineScope.launch {
+
+        searchJob = viewModelScope.launchIO {
             sources.map { source ->
                 async {
                     if (state.value.items[source] !is MangaSearchItemResult.Loading) {
@@ -199,10 +200,15 @@ abstract class MangaSearchScreenModel(
         val sourceFilter: MangaSourceFilter = MangaSourceFilter.PinnedOnly,
         val onlyShowHasResults: Boolean = false,
         val items: Map<CatalogueSource, MangaSearchItemResult> = mapOf(),
+        val dialog: Dialog? = null,
     ) {
         val progress: Int = items.count { it.value !is MangaSearchItemResult.Loading }
         val total: Int = items.size
         val filteredItems = items.filter { (_, result) -> result.isVisible(onlyShowHasResults) }
+    }
+
+    sealed interface Dialog {
+        data class Migrate(val target: Manga, val current: Manga) : Dialog
     }
 }
 

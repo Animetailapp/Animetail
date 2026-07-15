@@ -53,7 +53,7 @@ import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionUiModel
-import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionsScreenModel
+import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionsViewModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
 import tachiyomi.i18n.MR
@@ -71,7 +71,7 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 @Composable
 fun MangaExtensionScreen(
-    state: MangaExtensionsScreenModel.State,
+    state: MangaExtensionsViewModel.State,
     contentPadding: PaddingValues,
     searchQuery: String?,
     onLongClickItem: (MangaExtension) -> Unit,
@@ -135,7 +135,7 @@ fun MangaExtensionScreen(
 
 @Composable
 private fun ExtensionContent(
-    state: MangaExtensionsScreenModel.State,
+    state: MangaExtensionsViewModel.State,
     contentPadding: PaddingValues,
     onLongClickItem: (MangaExtension) -> Unit,
     onOpenWebView: (MangaExtension.Available) -> Unit,
@@ -557,3 +557,4 @@ fun ExtensionTrustDialog(
         onDismissRequest = onDismissRequest,
     )
 }
+

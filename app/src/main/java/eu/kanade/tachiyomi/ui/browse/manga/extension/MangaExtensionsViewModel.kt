@@ -2,8 +2,7 @@ package eu.kanade.tachiyomi.ui.browse.manga.extension
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.extension.manga.interactor.GetMangaExtensionsByType
@@ -28,18 +27,19 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
-class MangaExtensionsScreenModel(
+class MangaExtensionsViewModel(
     preferences: SourcePreferences = Injekt.get(),
     basePreferences: BasePreferences = Injekt.get(),
     private val extensionManager: MangaExtensionManager = Injekt.get(),
     private val getExtensions: GetMangaExtensionsByType = Injekt.get(),
-) : StateScreenModel<MangaExtensionsScreenModel.State>(State()) {
+) : StateViewModel<MangaExtensionsViewModel.State>(State()) {
 
     private val currentDownloads = MutableStateFlow<Map<String, InstallStep>>(hashMapOf())
 
@@ -51,7 +51,7 @@ class MangaExtensionsScreenModel(
             }
         }
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             combine(
                 state.map { it.searchQuery }
                     .distinctUntilChanged()
@@ -95,15 +95,15 @@ class MangaExtensionsScreenModel(
                 }
         }
 
-        screenModelScope.launchIO { findAvailableExtensions() }
+        viewModelScope.launchIO { findAvailableExtensions() }
 
         preferences.extensionUpdatesCount.changes()
             .onEach { mutableState.update { state -> state.copy(updates = it) } }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
 
         basePreferences.extensionInstaller.changes()
             .onEach { mutableState.update { state -> state.copy(installer = it) } }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
     }
 
     fun searchQueryPredicate(query: String): (MangaExtension) -> Boolean {
@@ -143,7 +143,7 @@ class MangaExtensionsScreenModel(
     }
 
     fun updateAllExtensions() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             state.value.items.values.flatten()
                 .map { it.extension }
                 .filterIsInstance<MangaExtension.Installed>()
@@ -153,13 +153,13 @@ class MangaExtensionsScreenModel(
     }
 
     fun installExtension(extension: MangaExtension.Available) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             extensionManager.installExtension(extension).collectToInstallUpdate(extension)
         }
     }
 
     fun updateExtension(extension: MangaExtension.Installed) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             extensionManager.updateExtension(extension).collectToInstallUpdate(extension)
         }
     }
@@ -188,7 +188,7 @@ class MangaExtensionsScreenModel(
     }
 
     fun findAvailableExtensions() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             mutableState.update { it.copy(isRefreshing = true) }
 
             extensionManager.findAvailableExtensions()
@@ -201,7 +201,7 @@ class MangaExtensionsScreenModel(
     }
 
     fun trustExtension(extension: MangaExtension.Untrusted) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             extensionManager.trust(extension)
         }
     }

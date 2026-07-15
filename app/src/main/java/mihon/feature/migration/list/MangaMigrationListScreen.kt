@@ -6,7 +6,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.util.Screen
@@ -30,18 +31,24 @@ class MangaMigrationListScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { MangaMigrationListScreenModel(mangaIds, extraSearchQuery) }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<MangaMigrationListViewModel>(
+            factory = MangaMigrationListViewModel.Factory,
+            extras = CreationExtras {
+                set(MangaMigrationListViewModel.MANGA_IDS_KEY, mangaIds)
+                set(MangaMigrationListViewModel.EXTRA_SEARCH_QUERY_KEY, extraSearchQuery)
+            },
+        )
+        val state by viewModel.state.collectAsState()
         val context = LocalContext.current
 
         LaunchedEffect(matchOverride) {
             val (current, target) = matchOverride ?: return@LaunchedEffect
-            screenModel.useMangaForMigration(current, target)
+            viewModel.useMangaForMigration(current, target)
             matchOverride = null
         }
 
-        LaunchedEffect(screenModel) {
-            screenModel.navigateBackEvent.collect {
+        LaunchedEffect(viewModel) {
+            viewModel.navigateBackEvent.collect {
                 navigator.pop()
             }
         }
@@ -55,39 +62,39 @@ class MangaMigrationListScreen(
             onSearchManually = { migrationItem ->
                 navigator.push(MigrateMangaSearchScreen(migrationItem.manga.id))
             },
-            onSkip = { screenModel.removeManga(it) },
-            onMigrate = { screenModel.migrateNow(mangaId = it, replace = true) },
-            onCopy = { screenModel.migrateNow(mangaId = it, replace = false) },
-            openMigrationDialog = screenModel::showMigrateDialog,
+            onSkip = { viewModel.removeManga(it) },
+            onMigrate = { viewModel.migrateNow(mangaId = it, replace = true) },
+            onCopy = { viewModel.migrateNow(mangaId = it, replace = false) },
+            openMigrationDialog = viewModel::showMigrateDialog,
         )
 
         when (val dialog = state.dialog) {
-            is MangaMigrationListScreenModel.Dialog.Migrate -> {
+            is MangaMigrationListViewModel.Dialog.Migrate -> {
                 MigrationEntryDialog(
-                    onDismissRequest = screenModel::dismissDialog,
+                    onDismissRequest = viewModel::dismissDialog,
                     copy = dialog.copy,
                     totalCount = dialog.totalCount,
                     skippedCount = dialog.skippedCount,
                     onMigrate = {
                         if (dialog.copy) {
-                            screenModel.copyMangas()
+                            viewModel.copyMangas()
                         } else {
-                            screenModel.migrateMangas(true)
+                            viewModel.migrateMangas(true)
                         }
                     },
                 )
             }
 
-            is MangaMigrationListScreenModel.Dialog.Progress -> {
+            is MangaMigrationListViewModel.Dialog.Progress -> {
                 MigrationProgressDialog(
                     progress = dialog.progress,
-                    exitMigration = screenModel::cancelMigrate,
+                    exitMigration = viewModel::cancelMigrate,
                 )
             }
 
-            MangaMigrationListScreenModel.Dialog.Exit -> {
+            MangaMigrationListViewModel.Dialog.Exit -> {
                 MigrationExitDialog(
-                    onDismissRequest = screenModel::dismissDialog,
+                    onDismissRequest = viewModel::dismissDialog,
                     exitMigration = navigator::pop,
                 )
             }
@@ -96,7 +103,8 @@ class MangaMigrationListScreen(
         }
 
         BackHandler(true) {
-            screenModel.showExitDialog()
+            viewModel.showExitDialog()
         }
     }
 }
+

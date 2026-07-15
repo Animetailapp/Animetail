@@ -2,8 +2,7 @@ package eu.kanade.tachiyomi.ui.history.manga
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.track.manga.interactor.AddMangaTracks
@@ -18,12 +17,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
@@ -45,7 +46,7 @@ import tachiyomi.domain.source.manga.service.MangaSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class MangaHistoryScreenModel(
+class MangaHistoryViewModel(
     private val addTracks: AddMangaTracks = Injekt.get(),
     private val getCategories: GetMangaCategories = Injekt.get(),
     private val getDuplicateLibraryManga: GetDuplicateLibraryManga = Injekt.get(),
@@ -56,35 +57,28 @@ class MangaHistoryScreenModel(
     private val removeHistory: RemoveMangaHistory = Injekt.get(),
     private val setMangaCategories: SetMangaCategories = Injekt.get(),
     private val updateManga: UpdateManga = Injekt.get(),
-    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     private val sourceManager: MangaSourceManager = Injekt.get(),
-) : StateScreenModel<MangaHistoryScreenModel.State>(State()) {
+    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
+) : StateViewModel<MangaHistoryViewModel.State>(State()) {
 
     private val _events: Channel<Event> = Channel(Channel.UNLIMITED)
     val events: Flow<Event> = _events.receiveAsFlow()
 
-    private val _query: MutableStateFlow<String?> = MutableStateFlow(null)
-    val query: StateFlow<String?> = _query.asStateFlow()
-
     init {
-        screenModelScope.launch {
-            _query.collectLatest { query ->
-                getHistory.subscribe(query ?: "")
-                    .distinctUntilChanged()
-                    .catch { error ->
-                        logcat(LogPriority.ERROR, error)
-                        _events.send(Event.InternalError)
-                    }
-                    .map { it.toHistoryUiModels() }
-                    .flowOn(Dispatchers.IO)
-                    .collect { newList -> mutableState.update { it.copy(list = newList) } }
-            }
-        }
-    }
-
-    fun search(query: String?) {
-        screenModelScope.launchIO {
-            _query.emit(query)
+        viewModelScope.launch {
+            state.map { it.searchQuery }
+                .distinctUntilChanged()
+                .flatMapLatest { query ->
+                    getHistory.subscribe(query ?: "")
+                        .distinctUntilChanged()
+                        .catch { error ->
+                            logcat(LogPriority.ERROR, error)
+                            _events.send(Event.InternalError)
+                        }
+                        .map { it.toHistoryUiModels() }
+                        .flowOn(Dispatchers.IO)
+                }
+                .collect { newList -> mutableState.update { it.copy(list = newList) } }
         }
     }
 
@@ -107,7 +101,7 @@ class MangaHistoryScreenModel(
     }
 
     fun getNextChapterForManga(mangaId: Long, chapterId: Long) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             sendNextChapterEvent(getNextChapters.await(mangaId, chapterId, onlyUnread = false))
         }
     }
@@ -118,19 +112,19 @@ class MangaHistoryScreenModel(
     }
 
     fun removeFromHistory(history: MangaHistoryWithRelations) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             removeHistory.await(history)
         }
     }
 
     fun removeAllFromHistory(mangaId: Long) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             removeHistory.await(mangaId)
         }
     }
 
     fun removeAllHistory() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val result = removeHistory.awaitAll()
             if (!result) return@launchIO
             _events.send(Event.HistoryCleared)
@@ -160,7 +154,7 @@ class MangaHistoryScreenModel(
     }
 
     private fun moveMangaToCategory(mangaId: Long, categoryIds: List<Long>) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             setMangaCategories.await(mangaId, categoryIds)
         }
     }
@@ -170,7 +164,7 @@ class MangaHistoryScreenModel(
 
         if (manga.favorite) return
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             updateManga.awaitUpdateFavorite(manga.id, true)
         }
     }
@@ -181,7 +175,7 @@ class MangaHistoryScreenModel(
     }
 
     fun addFavorite(mangaId: Long) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val manga = getManga.await(mangaId) ?: return@launchIO
 
             val duplicate = getDuplicateLibraryManga.await(manga).getOrNull(0)
@@ -195,7 +189,7 @@ class MangaHistoryScreenModel(
     }
 
     fun addFavorite(manga: Manga) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             // Move to default category if applicable
             val categories = getCategories()
             val defaultCategoryId = libraryPreferences.defaultCategory.get().toLong()
@@ -232,7 +226,7 @@ class MangaHistoryScreenModel(
     }
 
     fun showChangeCategoryDialog(manga: Manga) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             val categories = getCategories()
             val selection = getMangaCategoryIds(manga)
             mutableState.update { currentState ->
