@@ -1,8 +1,8 @@
 package eu.kanade.tachiyomi
 
 import android.annotation.SuppressLint
-import android.app.Application
 import android.app.ActivityManager
+import android.app.Application
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
