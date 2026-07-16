@@ -268,7 +268,7 @@ class MangaBakaApi(
     fun verifyOAuthState(state: String): Boolean = state == oauthStateParam
 
     companion object {
-        private const val CLIENT_ID = "zEZYMHXLWsLsafgbvJHXqzGvqQNOdkpo"
+        private const val CLIENT_ID = "qHfLySYDKrngmdqtuUZOvUCicAVybGeT"
 
         private const val BASE_URL = "https://mangabaka.org"
         private const val API_BASE_URL = "https://api.mangabaka.org"
