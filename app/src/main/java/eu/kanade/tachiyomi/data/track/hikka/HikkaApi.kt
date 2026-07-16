@@ -313,7 +313,7 @@ class HikkaApi(
         private const val SCOPE = "readlist,read:user-details"
         private const val CLIENT_REFERENCE = "56bd4306-e440-4307-864a-8c702d580cd2"
         private const val CLIENT_SECRET = "pSg-GAnsKRdZS-EZZmV-dk27Vp5Yes3P9Lrd9a2qzWut" +
-            "jNJTWIHr4Ll2sD8kzOKcFJFl" + 
+            "jNJTWIHr4Ll2sD8kzOKcFJFl" +
             "_KhFg5C0Tjq9pU4dqWo4vKkWsZpaue71ZOXt" +
             "-nAx1mrytoPOdG6nVV1pCJWf"
 
