@@ -214,7 +214,7 @@ class ReaderActivity : BaseActivity() {
                 Notifications.ID_NEW_CHAPTERS,
             )
 
-            lifecycleScope.launchNonCancellable {
+            lifecycleScope.launch {
                 val initResult = viewModel.init(manga, chapter, page)
                 if (!initResult.getOrDefault(false)) {
                     val exception = initResult.exceptionOrNull() ?: IllegalStateException(
