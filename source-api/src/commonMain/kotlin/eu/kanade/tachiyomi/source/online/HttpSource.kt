@@ -393,7 +393,7 @@ abstract class HttpSource : CatalogueSource {
      * @param page the chapter whose page list has to be fetched
      */
     protected open fun imageRequest(page: Page): Request {
-        return imageRequest(page, 0L)
+        return GET(page.imageUrl!!, headers)
     }
 
     /**
@@ -403,13 +403,19 @@ abstract class HttpSource : CatalogueSource {
      * @param page the chapter whose page list has to be fetched
      * @param existingSize the size of the existing file in bytes.
      */
+    @Deprecated("Use the non-existingSize version instead")
     protected open fun imageRequest(page: Page, existingSize: Long): Request {
-        val requestHeaders = if (existingSize > 0) {
-            headers.newBuilder().add("Range", "bytes=$existingSize-").build()
+        val request = imageRequest(page)
+        return if (existingSize > 0) {
+            val newHeaders = request.headers.newBuilder()
+                .set("Range", "bytes=$existingSize-")
+                .build()
+            request.newBuilder()
+                .headers(newHeaders)
+                .build()
         } else {
-            headers
+            request
         }
-        return GET(page.imageUrl!!, requestHeaders)
     }
 
     /**
