@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.app.ActivityManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -106,6 +107,10 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         // SY -->
         Injekt.importModule(SYDomainModule())
         // SY <--
+
+        if (!isMainProcess()) {
+            return
+        }
 
         setupNotificationChannels()
 
@@ -302,6 +307,17 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                 unregisterReceiver(this)
                 registered = false
             }
+        }
+    }
+
+    private fun isMainProcess(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageName == getProcessName()
+        } else {
+            val pid = android.os.Process.myPid()
+            val am = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            val processName = am?.runningAppProcesses?.firstOrNull { it.pid == pid }?.processName
+            processName == null || packageName == processName
         }
     }
 }
