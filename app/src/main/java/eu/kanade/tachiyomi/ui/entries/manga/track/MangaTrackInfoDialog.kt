@@ -206,7 +206,7 @@ data class MangaTrackInfoDialogHomeScreen(
         }
     }
 
-    private class Model(
+    class Model(
         private val mangaId: Long,
         private val sourceId: Long,
         private val getTracks: GetMangaTracks = Injekt.get(),
@@ -334,7 +334,7 @@ private data class TrackStatusSelectorScreen(
         )
     }
 
-    private class Model(
+    class Model(
         private val track: DbMangaTrack,
         private val tracker: Tracker,
     ) : StateViewModel<Model.State>(State(track.status)) {
@@ -406,7 +406,7 @@ private data class TrackChapterSelectorScreen(
         )
     }
 
-    private class Model(
+    class Model(
         private val track: DbMangaTrack,
         private val tracker: Tracker,
     ) : StateViewModel<Model.State>(State(track.lastChapterRead.toInt())) {
@@ -483,7 +483,7 @@ private data class TrackScoreSelectorScreen(
         )
     }
 
-    private class Model(
+    class Model(
         private val track: DbMangaTrack,
         private val tracker: Tracker,
     ) : StateViewModel<Model.State>(State(tracker.mangaService.displayScore(track))) {
@@ -620,7 +620,7 @@ private data class TrackDateSelectorScreen(
         )
     }
 
-    private class Model(
+    class Model(
         private val track: DbMangaTrack,
         private val tracker: Tracker,
         private val start: Boolean,
@@ -741,7 +741,7 @@ private data class TrackDateRemoverScreen(
         )
     }
 
-    private class Model(
+    class Model(
         private val track: DbMangaTrack,
         private val tracker: Tracker,
         private val start: Boolean,
@@ -817,7 +817,7 @@ data class TrackServiceSearchScreen(
         )
     }
 
-    private class Model(
+    class Model(
         private val mangaId: Long,
         private val currentUrl: String?,
         initialQuery: String,
@@ -967,7 +967,7 @@ private data class TrackerMangaRemoveScreen(
         )
     }
 
-    private class Model(
+    class Model(
         private val mangaId: Long,
         private val track: DbMangaTrack,
         private val tracker: Tracker,

@@ -46,7 +46,7 @@ class MangaNotesScreen(
         )
     }
 
-    private class Model(
+    class Model(
         private val mangaId: Long,
         mangaTitle: String,
         mangaNotes: String,
