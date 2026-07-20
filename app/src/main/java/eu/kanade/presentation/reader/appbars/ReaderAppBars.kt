@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -15,13 +16,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -108,12 +109,6 @@ fun ReaderAppBars(
         .surfaceColorAtElevation(3.dp)
         .copy(alpha = if (isSystemInDarkTheme()) 0.9f else 0.95f)
 
-    val modifierWithInsetsPadding = if (fullscreen) {
-        Modifier.systemBarsPadding()
-    } else {
-        Modifier
-    }
-
     Column(
         modifier = Modifier.fillMaxHeight(),
         verticalArrangement = Arrangement.SpaceBetween,
@@ -123,8 +118,16 @@ fun ReaderAppBars(
             enter = slideInVertically(readerBarsSlideAnimationSpec) { -it } + fadeIn(readerBarsFadeAnimationSpec),
             exit = slideOutVertically(readerBarsSlideAnimationSpec) { -it } + fadeOut(readerBarsFadeAnimationSpec),
         ) {
-            // SY -->
-            Column(modifier = modifierWithInsetsPadding.clickable(onClick = onClickTopAppBar)) {
+            Column {
+                if (fullscreen) {
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(backgroundColor)
+                    )
+                }
+                Column(modifier = Modifier.clickable(onClick = onClickTopAppBar)) {
+                // SY -->
                 AppBar(
                     modifier = Modifier,
                     backgroundColor = backgroundColor,
@@ -194,7 +197,7 @@ fun ReaderAppBars(
                     onClickAutoScrollHelp = onClickAutoScrollHelp,
                     onClickRetryAll = onClickRetryAll,
                     onClickRetryAllHelp = onClickRetryAllHelp,
-                )
+                )}
                 // SY <--
             } // SY <--
         }
@@ -245,10 +248,7 @@ fun ReaderAppBars(
             enter = slideInVertically(readerBarsSlideAnimationSpec) { it } + fadeIn(readerBarsFadeAnimationSpec),
             exit = slideOutVertically(readerBarsSlideAnimationSpec) { it } + fadeOut(readerBarsFadeAnimationSpec),
         ) {
-            Column(
-                modifier = modifierWithInsetsPadding,
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
-            ) {
+            Column{
                 if (chapterNavigatorType.isHorizontal()) {
                     ChapterNavigator(
                         type = chapterNavigatorType,
@@ -261,6 +261,7 @@ fun ReaderAppBars(
                         totalPages = totalPages,
                         onPageIndexChange = onPageIndexChange,
                     )
+                    Spacer(Modifier.height(MaterialTheme.padding.small))
                 }
                 BottomReaderBar(
                     // SY -->
@@ -282,6 +283,16 @@ fun ReaderAppBars(
                     onClickPageLayout = onClickPageLayout,
                     onClickShiftPage = onClickShiftPage,
                 )
+                if (fullscreen) {
+                    Column {
+                        Spacer(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .windowInsetsBottomHeight(WindowInsets.navigationBars)
+                                .background(backgroundColor)
+                        )
+                    }
+                }
             }
         }
     }
