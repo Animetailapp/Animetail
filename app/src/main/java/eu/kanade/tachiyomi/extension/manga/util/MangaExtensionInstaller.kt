@@ -121,6 +121,7 @@ internal class MangaExtensionInstaller(
 
                 context.startActivity(intent)
             }
+
             BasePreferences.ExtensionInstaller.PRIVATE -> {
                 installApkPrivately(downloadId, tempFile)
             }
@@ -139,7 +140,7 @@ internal class MangaExtensionInstaller(
 
     private fun installApkPrivately(downloadId: Long, tempFile: File) {
         try {
-            if (ExtensionLoader.installPrivateExtensionFile(context, tempFile)) {
+            if (MangaExtensionLoader.installPrivateExtensionFile(context, tempFile)) {
                 updateInstallStep(downloadId, InstallStep.Installed)
             } else {
                 updateInstallStep(downloadId, InstallStep.Error)
