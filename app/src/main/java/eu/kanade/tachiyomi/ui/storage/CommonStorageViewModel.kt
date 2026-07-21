@@ -1,8 +1,7 @@
 package eu.kanade.tachiyomi.ui.storage
 
 import androidx.compose.ui.graphics.Color
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import eu.kanade.presentation.more.storage.StorageItem
 import eu.kanade.presentation.more.storage.StorageScreenState
 import kotlinx.coroutines.flow.Flow
@@ -12,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -19,7 +19,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.random.Random
 
-abstract class CommonStorageScreenModel<T>(
+abstract class CommonStorageViewModel<T>(
     private val downloadCacheChanges: SharedFlow<Unit>,
     private val downloadCacheIsInitializing: StateFlow<Boolean>,
     private val libraries: Flow<List<T>>,
@@ -31,12 +31,12 @@ abstract class CommonStorageScreenModel<T>(
     private val getTitle: T.() -> String,
     private val getThumbnail: T.() -> String?,
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
-) : StateScreenModel<StorageScreenState>(StorageScreenState.Loading) {
+) : StateViewModel<StorageScreenState>(StorageScreenState.Loading) {
 
     private val selectedCategory = MutableStateFlow(AllCategory)
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val hideHiddenCategories = libraryPreferences.hideHiddenCategoriesSettings.get()
 
             combine(

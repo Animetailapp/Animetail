@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.toggle
+import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.entries.manga.interactor.GetManga
 import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.entries.manga.model.Manga
@@ -27,7 +28,6 @@ import tachiyomi.domain.source.manga.service.MangaSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.concurrent.Executors
-import tachiyomi.core.common.util.lang.launchIO
 
 abstract class MangaSearchViewModel(
     initialState: State = State(),

@@ -306,6 +306,7 @@ data object MangaLibraryTab : Tab {
                     // SY <--
                 )
             }
+
             is MangaLibraryViewModel.Dialog.ChangeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -321,6 +322,7 @@ data object MangaLibraryTab : Tab {
                     },
                 )
             }
+
             is MangaLibraryViewModel.Dialog.DeleteManga -> {
                 DeleteLibraryEntryDialog(
                     containsLocalEntry = dialog.manga.any(Manga::isLocal),

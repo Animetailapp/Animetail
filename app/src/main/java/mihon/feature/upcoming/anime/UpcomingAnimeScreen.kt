@@ -3,7 +3,7 @@ package mihon.feature.upcoming.anime
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.util.Screen
@@ -15,12 +15,12 @@ class UpcomingAnimeScreen : Screen() {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { UpcomingAnimeScreenModel() }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<UpcomingAnimeViewModel>()
+        val state by viewModel.state.collectAsState()
 
         UpcomingAnimeScreenContent(
             state = state,
-            setSelectedYearMonth = screenModel::setSelectedYearMonth,
+            setSelectedYearMonth = viewModel::setSelectedYearMonth,
             onClickUpcoming = { navigator.push(AnimeScreen(it.id)) },
         )
     }

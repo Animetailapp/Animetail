@@ -13,7 +13,7 @@ import eu.kanade.presentation.components.relativeDateText
 import eu.kanade.presentation.history.anime.components.AnimeHistoryItem
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.util.animateItemFastScroll
-import eu.kanade.tachiyomi.ui.history.anime.AnimeHistoryScreenModel
+import eu.kanade.tachiyomi.ui.history.anime.AnimeHistoryViewModel
 import tachiyomi.domain.history.anime.model.AnimeHistoryWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -26,12 +26,12 @@ import java.time.LocalDate
 
 @Composable
 fun AnimeHistoryScreen(
-    state: AnimeHistoryScreenModel.State,
+    state: AnimeHistoryViewModel.State,
     snackbarHostState: SnackbarHostState,
     onClickCover: (animeId: Long) -> Unit,
     onClickResume: (animeId: Long, episodeId: Long) -> Unit,
     onClickFavorite: (animeId: Long) -> Unit,
-    onDialogChange: (AnimeHistoryScreenModel.Dialog?) -> Unit,
+    onDialogChange: (AnimeHistoryViewModel.Dialog?) -> Unit,
     searchQuery: String? = null,
 ) {
     Scaffold(
@@ -56,7 +56,7 @@ fun AnimeHistoryScreen(
                     contentPadding = contentPadding,
                     onClickCover = { history -> onClickCover(history.animeId) },
                     onClickResume = { history -> onClickResume(history.animeId, history.episodeId) },
-                    onClickDelete = { item -> onDialogChange(AnimeHistoryScreenModel.Dialog.Delete(item)) },
+                    onClickDelete = { item -> onDialogChange(AnimeHistoryViewModel.Dialog.Delete(item)) },
                     onClickFavorite = { history -> onClickFavorite(history.animeId) },
                 )
             }
@@ -118,8 +118,8 @@ sealed interface AnimeHistoryUiModel {
 @PreviewLightDark
 @Composable
 internal fun HistoryScreenPreviews(
-    @PreviewParameter(AnimeHistoryScreenModelStateProvider::class)
-    historyState: AnimeHistoryScreenModel.State,
+    @PreviewParameter(AnimeHistoryViewModelStateProvider::class)
+    historyState: AnimeHistoryViewModel.State,
 ) {
     TachiyomiPreviewTheme {
         AnimeHistoryScreen(

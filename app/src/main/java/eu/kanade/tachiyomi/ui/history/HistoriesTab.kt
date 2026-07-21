@@ -22,7 +22,7 @@ import eu.kanade.presentation.components.TabbedScreen
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenModel
-import eu.kanade.tachiyomi.ui.history.anime.AnimeHistoryScreenModel
+import eu.kanade.tachiyomi.ui.history.anime.AnimeHistoryViewModel
 import eu.kanade.tachiyomi.ui.history.anime.animeHistoryTab
 import eu.kanade.tachiyomi.ui.history.anime.resumeLastEpisodeSeenEvent
 import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryViewModel
@@ -78,8 +78,9 @@ data object HistoriesTab : Tab {
         // KMK -->
         val feedScreenModel = rememberScreenModel { FeedScreenModel() }
         // KMK <--
-        val animeHistoryScreenModel = rememberScreenModel { AnimeHistoryScreenModel() }
-        val animeSearchQuery by animeHistoryScreenModel.query.collectAsState()
+        val animeHistoryViewModel = viewModel<AnimeHistoryViewModel>()
+        val animeHistoryState by animeHistoryViewModel.state.collectAsState()
+        val animeSearchQuery = animeHistoryState.searchQuery
 
         TabbedScreen(
             titleRes = MR.strings.label_recent_manga,
@@ -90,7 +91,7 @@ data object HistoriesTab : Tab {
             mangaSearchQuery = mangaSearchQuery,
             onChangeMangaSearchQuery = mangaHistoryViewModel::updateSearchQuery,
             animeSearchQuery = animeSearchQuery,
-            onChangeAnimeSearchQuery = animeHistoryScreenModel::search,
+            onChangeAnimeSearchQuery = animeHistoryViewModel::search,
             animeExtensionsTabIndex = TAB_ANIME,
             mangaExtensionsTabIndex = TAB_MANGA,
             // KMK -->

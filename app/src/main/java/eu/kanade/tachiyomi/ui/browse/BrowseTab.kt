@@ -190,4 +190,3 @@ data object BrowseTab : Tab {
         }
     }
 }
-

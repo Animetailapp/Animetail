@@ -2,8 +2,7 @@ package mihon.feature.upcoming.anime
 
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapIndexedNotNull
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import eu.kanade.core.util.insertSeparatorsReversed
 import eu.kanade.tachiyomi.util.lang.toLocalDate
 import kotlinx.collections.immutable.ImmutableList
@@ -15,6 +14,7 @@ import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mihon.core.viewmodel.StateViewModel
 import mihon.domain.upcoming.anime.interactor.GetUpcomingAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import uy.kohesive.injekt.Injekt
@@ -22,12 +22,12 @@ import uy.kohesive.injekt.api.get
 import java.time.LocalDate
 import java.time.YearMonth
 
-class UpcomingAnimeScreenModel(
+class UpcomingAnimeViewModel(
     private val getUpcomingAnime: GetUpcomingAnime = Injekt.get(),
-) : StateScreenModel<UpcomingAnimeScreenModel.State>(State()) {
+) : StateViewModel<UpcomingAnimeViewModel.State>(State()) {
 
     init {
-        screenModelScope.launch {
+        viewModelScope.launch {
             getUpcomingAnime.subscribe().collectLatest {
                 mutableState.update { state ->
                     val upcomingItems = it.toUpcomingAnimeUIModels()

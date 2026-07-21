@@ -22,6 +22,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
@@ -108,17 +110,22 @@ class AnimeScreen(
         val haptic = LocalHapticFeedback.current
         val scope = rememberCoroutineScope()
         val lifecycleOwner = LocalLifecycleOwner.current
-        val screenModel =
-            rememberScreenModel { AnimeScreenModel(context, lifecycleOwner.lifecycle, animeId, fromSource) }
+        val viewModel = viewModel<AnimeViewModel>(
+            factory = AnimeViewModel.Factory,
+            extras = CreationExtras {
+                set(AnimeViewModel.ANIME_ID_KEY, animeId)
+                set(AnimeViewModel.IS_FROM_SOURCE_KEY, fromSource)
+            },
+        )
 
-        val state by screenModel.state.collectAsStateWithLifecycle()
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
-        if (state is AnimeScreenModel.State.Loading) {
+        if (state is AnimeViewModel.State.Loading) {
             LoadingScreen()
             return
         }
 
-        val successState = state as AnimeScreenModel.State.Success
+        val successState = state as AnimeViewModel.State.Success
         // KMK -->
 
         val showingRelatedMangasScreen = rememberSaveable { mutableStateOf(false) }
@@ -136,7 +143,7 @@ class AnimeScreen(
             ) { showRelatedMangasScreen ->
                 when (showRelatedMangasScreen) {
                     true -> RelatedAnimesScreen(
-                        screenModel = screenModel,
+                        viewModel = viewModel,
                         successState = successState,
                         navigateUp = { showingRelatedMangasScreen.value = false },
                         navigator = navigator,
@@ -145,7 +152,7 @@ class AnimeScreen(
 
                     false -> MangaDetailContent(
                         context = context,
-                        screenModel = screenModel,
+                        viewModel = viewModel,
                         successState = successState,
                         showRelatedMangasScreen = { showingRelatedMangasScreen.value = true },
                         navigator = navigator,
@@ -164,8 +171,8 @@ class AnimeScreen(
     @Composable
     fun MangaDetailContent(
         context: Context,
-        screenModel: AnimeScreenModel,
-        successState: AnimeScreenModel.State.Success,
+        viewModel: AnimeViewModel,
+        successState: AnimeViewModel.State.Success,
         showRelatedMangasScreen: () -> Unit,
         navigator: Navigator,
         scope: CoroutineScope,
@@ -173,11 +180,11 @@ class AnimeScreen(
         // KMK <--
         val isAnimeHttpSource = remember { successState.source is AnimeHttpSource }
 
-        LaunchedEffect(successState.anime, screenModel.source) {
+        LaunchedEffect(successState.anime, viewModel.source) {
             if (isAnimeHttpSource) {
                 try {
                     withIOContext {
-                        assistUrl = getAnimeUrl(screenModel.anime, screenModel.source)
+                        assistUrl = getAnimeUrl(viewModel.anime, viewModel.source)
                     }
                 } catch (e: Exception) {
                     logcat(LogPriority.ERROR, e) { "Failed to get anime URL" }
@@ -188,80 +195,80 @@ class AnimeScreen(
         AnimeScreen(
 
             state = successState,
-            snackbarHostState = screenModel.snackbarHostState,
+            snackbarHostState = viewModel.snackbarHostState,
             nextUpdate = successState.anime.expectedNextUpdate,
             isTabletUi = isTabletUi(),
-            episodeSwipeStartAction = screenModel.episodeSwipeStartAction,
-            episodeSwipeEndAction = screenModel.episodeSwipeEndAction,
-            showNextEpisodeAirTime = screenModel.showNextEpisodeAirTime,
-            alwaysUseExternalPlayer = screenModel.alwaysUseExternalPlayer,
+            episodeSwipeStartAction = viewModel.episodeSwipeStartAction,
+            episodeSwipeEndAction = viewModel.episodeSwipeEndAction,
+            showNextEpisodeAirTime = viewModel.showNextEpisodeAirTime,
+            alwaysUseExternalPlayer = viewModel.alwaysUseExternalPlayer,
             // AM (FILE_SIZE) -->
-            showFileSize = screenModel.showFileSize,
+            showFileSize = viewModel.showFileSize,
             // <-- AM (FILE_SIZE)
             navigateUp = navigator::pop,
             onEpisodeClicked = { episode, alt ->
                 scope.launchIO {
-                    if (screenModel.isTorrentEnabled() && successState.source.isSourceForTorrents()) {
+                    if (viewModel.isTorrentEnabled() && successState.source.isSourceForTorrents()) {
                         TorrentServerService.start()
                     }
-                    val extPlayer = screenModel.alwaysUseExternalPlayer != alt
+                    val extPlayer = viewModel.alwaysUseExternalPlayer != alt
                     openEpisode(context, episode, extPlayer)
                 }
             },
-            onDownloadEpisode = screenModel::runEpisodeDownloadActions.takeIf {
+            onDownloadEpisode = viewModel::runEpisodeDownloadActions.takeIf {
                 !successState.source.isLocalOrStub() && successState.anime.fetchType == FetchType.Episodes
             },
             onAddToLibraryClicked = {
-                screenModel.toggleFavorite()
+                viewModel.toggleFavorite()
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             },
             onWebViewClicked = {
                 openAnimeInWebView(
                     navigator,
-                    screenModel.anime,
-                    screenModel.source,
+                    viewModel.anime,
+                    viewModel.source,
                 )
             }.takeIf { isAnimeHttpSource },
             onWebViewLongClicked = {
                 copyAnimeUrl(
                     context,
-                    screenModel.anime,
-                    screenModel.source,
+                    viewModel.anime,
+                    viewModel.source,
                 )
             }.takeIf { isAnimeHttpSource },
             onTrackingClicked = {
                 if (!successState.hasLoggedInTrackers) {
                     navigator.push(SettingsScreen(SettingsScreen.Destination.Tracking))
                 } else {
-                    screenModel.showTrackDialog()
+                    viewModel.showTrackDialog()
                 }
             },
-            onTagSearch = { scope.launch { performGenreSearch(navigator, it, screenModel.source!!) } },
-            onFilterButtonClicked = screenModel::showSettingsDialog,
-            onRefresh = screenModel::fetchAllFromSource,
+            onTagSearch = { scope.launch { performGenreSearch(navigator, it, viewModel.source!!) } },
+            onFilterButtonClicked = viewModel::showSettingsDialog,
+            onRefresh = viewModel::fetchAllFromSource,
             onContinueWatching = {
                 scope.launchIO {
-                    val extPlayer = screenModel.alwaysUseExternalPlayer
-                    continueWatching(context, screenModel.getNextUnseenEpisode(), extPlayer)
+                    val extPlayer = viewModel.alwaysUseExternalPlayer
+                    continueWatching(context, viewModel.getNextUnseenEpisode(), extPlayer)
                 }
             },
             onSearch = { query, global -> scope.launch { performSearch(navigator, query, global) } },
-            onCoverClicked = screenModel::showImagesDialog,
+            onCoverClicked = viewModel::showImagesDialog,
             onShareClicked = {
                 shareAnime(
                     context,
-                    screenModel.anime,
-                    screenModel.source,
+                    viewModel.anime,
+                    viewModel.source,
                 )
             }.takeIf { isAnimeHttpSource },
-            onDownloadActionClicked = screenModel::runDownloadAction.takeIf {
+            onDownloadActionClicked = viewModel::runDownloadAction.takeIf {
                 !successState.source.isLocalOrStub() && successState.anime.fetchType == FetchType.Episodes
             },
-            onEditCategoryClicked = screenModel::showChangeCategoryDialog.takeIf { successState.anime.favorite },
+            onEditCategoryClicked = viewModel::showChangeCategoryDialog.takeIf { successState.anime.favorite },
             // SY -->
-            onEditInfoClicked = screenModel::showEditAnimeInfoDialog,
+            onEditInfoClicked = viewModel::showEditAnimeInfoDialog,
             // SY <--
-            onEditFetchIntervalClicked = screenModel::showSetAnimeFetchIntervalDialog.takeIf {
+            onEditFetchIntervalClicked = viewModel::showSetAnimeFetchIntervalDialog.takeIf {
                 successState.anime.favorite
             },
             onMigrateClicked = {
@@ -276,92 +283,92 @@ class AnimeScreen(
                     ),
                 )
             },
-            changeAnimeSkipIntro = screenModel::showAnimeSkipIntroDialog
+            changeAnimeSkipIntro = viewModel::showAnimeSkipIntroDialog
                 .takeIf { successState.anime.favorite && successState.anime.fetchType == FetchType.Episodes },
-            onMultiBookmarkClicked = screenModel::bookmarkEpisodes,
-            onMultiFillermarkClicked = screenModel::fillermarkEpisodes,
-            onMultiMarkAsSeenClicked = screenModel::markEpisodesSeen,
-            onMarkPreviousAsSeenClicked = screenModel::markPreviousEpisodeSeen,
-            onMultiDeleteClicked = screenModel::showDeleteEpisodeDialog,
-            onSetDateClicked = screenModel::showSetEpisodeDateDialog,
-            onEpisodeSwipe = screenModel::episodeSwipe,
-            onEpisodeSelected = screenModel::toggleSelection,
-            onAllEpisodeSelected = screenModel::toggleAllSelection,
-            onInvertSelection = screenModel::invertSelection,
+            onMultiBookmarkClicked = viewModel::bookmarkEpisodes,
+            onMultiFillermarkClicked = viewModel::fillermarkEpisodes,
+            onMultiMarkAsSeenClicked = viewModel::markEpisodesSeen,
+            onMarkPreviousAsSeenClicked = viewModel::markPreviousEpisodeSeen,
+            onMultiDeleteClicked = viewModel::showDeleteEpisodeDialog,
+            onSetDateClicked = viewModel::showSetEpisodeDateDialog,
+            onEpisodeSwipe = viewModel::episodeSwipe,
+            onEpisodeSelected = viewModel::toggleSelection,
+            onAllEpisodeSelected = viewModel::toggleAllSelection,
+            onInvertSelection = viewModel::invertSelection,
             onSeasonClicked = {
                 navigator.push(AnimeScreen(it.id))
             },
             onContinueWatchingClicked = {
                 scope.launchIO {
-                    val episode = screenModel.getNextUnseenEpisode(it.anime)
+                    val episode = viewModel.getNextUnseenEpisode(it.anime)
                     episode?.let { ep ->
-                        openEpisode(context, ep, screenModel.alwaysUseExternalPlayer)
+                        openEpisode(context, ep, viewModel.alwaysUseExternalPlayer)
                     }
                 }
             },
             // KMK -->
-            getAnimeState = { screenModel.getManga(initialManga = it) },
+            getAnimeState = { viewModel.getManga(initialManga = it) },
             onRelatedAnimesScreenClick = {
                 if (successState.isRelatedMangasFetched == null) {
-                    scope.launchIO { screenModel.fetchRelatedMangasFromSource(onDemand = true) }
+                    scope.launchIO { viewModel.fetchRelatedMangasFromSource(onDemand = true) }
                 }
                 showRelatedMangasScreen()
             },
             onRelatedAnimeClick = {
                 scope.launchIO {
-                    val manga = screenModel.networkToLocalAnime.getLocal(it)
+                    val manga = viewModel.networkToLocalAnime.getLocal(it)
                     navigator.push(AnimeScreen(manga.id, true))
                 }
             },
             onRelatedAnimeLongClick = {
                 scope.launchIO {
-                    val manga = screenModel.networkToLocalAnime.getLocal(it)
+                    val manga = viewModel.networkToLocalAnime.getLocal(it)
                 }
             },
         )
 
         val onDismissRequest = {
-            screenModel.dismissDialog()
-            if (screenModel.autoOpenTrack && screenModel.isFromChangeCategory) {
-                screenModel.isFromChangeCategory = false
-                screenModel.showTrackDialog()
+            viewModel.dismissDialog()
+            if (viewModel.autoOpenTrack && viewModel.isFromChangeCategory) {
+                viewModel.isFromChangeCategory = false
+                viewModel.showTrackDialog()
             }
         }
         when (val dialog = successState.dialog) {
             null -> {}
 
-            is AnimeScreenModel.Dialog.ChangeCategory -> {
+            is AnimeViewModel.Dialog.ChangeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
                     onDismissRequest = onDismissRequest,
                     onEditCategories = { navigator.push(CategoriesTab) },
                     onConfirm = { include, _ ->
-                        screenModel.moveAnimeToCategoriesAndAddToLibrary(dialog.anime, include)
+                        viewModel.moveAnimeToCategoriesAndAddToLibrary(dialog.anime, include)
                     },
                 )
             }
 
-            is AnimeScreenModel.Dialog.DeleteEpisodes -> {
+            is AnimeViewModel.Dialog.DeleteEpisodes -> {
                 DeleteItemsDialog(
                     onDismissRequest = onDismissRequest,
                     onConfirm = {
-                        screenModel.toggleAllSelection(false)
-                        screenModel.deleteEpisodes(dialog.episodes)
+                        viewModel.toggleAllSelection(false)
+                        viewModel.deleteEpisodes(dialog.episodes)
                     },
                     isManga = false,
                 )
             }
 
-            is AnimeScreenModel.Dialog.SetEpisodeDate -> {
+            is AnimeViewModel.Dialog.SetEpisodeDate -> {
                 SetDateDialog(
                     onDismissRequest = onDismissRequest,
                     onConfirm = { dateMillis ->
-                        screenModel.setEpisodeDateOverride(dialog.episodes, dateMillis)
-                        screenModel.dismissDialog()
+                        viewModel.setEpisodeDateOverride(dialog.episodes, dateMillis)
+                        viewModel.dismissDialog()
                     },
                     onRemove = {
-                        screenModel.setEpisodeDateOverride(dialog.episodes, 0)
-                        screenModel.dismissDialog()
+                        viewModel.setEpisodeDateOverride(dialog.episodes, 0)
+                        viewModel.dismissDialog()
                     },
                     initialDateMillis = dialog.episodes.firstOrNull()?.let {
                         it.dateUploadOverride.takeIf { d -> d > 0 } ?: it.dateUpload
@@ -369,18 +376,18 @@ class AnimeScreen(
                 )
             }
 
-            is AnimeScreenModel.Dialog.DuplicateAnime -> {
+            is AnimeViewModel.Dialog.DuplicateAnime -> {
                 DuplicateAnimeDialog(
                     onDismissRequest = onDismissRequest,
-                    onConfirm = { screenModel.toggleFavorite(onRemoved = {}, checkDuplicate = false) },
+                    onConfirm = { viewModel.toggleFavorite(onRemoved = {}, checkDuplicate = false) },
                     onOpenAnime = { navigator.push(AnimeScreen(dialog.duplicate.id)) },
                     onMigrate = {
-                        screenModel.showMigrateDialog(dialog.duplicate)
+                        viewModel.showMigrateDialog(dialog.duplicate)
                     },
                 )
             }
 
-            is AnimeScreenModel.Dialog.Migrate -> {
+            is AnimeViewModel.Dialog.Migrate -> {
                 MigrateAnimeDialog(
                     oldAnime = dialog.oldAnime,
                     newAnime = dialog.newAnime,
@@ -392,42 +399,42 @@ class AnimeScreen(
                 )
             }
 
-            AnimeScreenModel.Dialog.EpisodeSettingsSheet -> EpisodeSettingsDialog(
+            AnimeViewModel.Dialog.EpisodeSettingsSheet -> EpisodeSettingsDialog(
                 onDismissRequest = onDismissRequest,
                 anime = successState.anime,
-                onDownloadFilterChanged = screenModel::setDownloadedFilter,
-                onUnseenFilterChanged = screenModel::setUnseenFilter,
-                onBookmarkedFilterChanged = screenModel::setBookmarkedFilter,
-                onFillermarkedFilterChanged = screenModel::setFillermarkedFilter,
-                onSortModeChanged = screenModel::setSorting,
-                onDisplayModeChanged = screenModel::setDisplayMode,
-                onShowPreviewsEnabled = screenModel::showEpisodePreviews,
-                onShowSummariesEnabled = screenModel::showEpisodeSummaries,
-                onSetAsDefault = screenModel::setCurrentSettingsAsDefault,
+                onDownloadFilterChanged = viewModel::setDownloadedFilter,
+                onUnseenFilterChanged = viewModel::setUnseenFilter,
+                onBookmarkedFilterChanged = viewModel::setBookmarkedFilter,
+                onFillermarkedFilterChanged = viewModel::setFillermarkedFilter,
+                onSortModeChanged = viewModel::setSorting,
+                onDisplayModeChanged = viewModel::setDisplayMode,
+                onShowPreviewsEnabled = viewModel::showEpisodePreviews,
+                onShowSummariesEnabled = viewModel::showEpisodeSummaries,
+                onSetAsDefault = viewModel::setCurrentSettingsAsDefault,
             )
 
-            AnimeScreenModel.Dialog.SeasonSettingsSheet -> SeasonSettingsDialog(
+            AnimeViewModel.Dialog.SeasonSettingsSheet -> SeasonSettingsDialog(
                 onDismissRequest = onDismissRequest,
                 anime = successState.anime,
-                onDownloadFilterChanged = screenModel::setSeasonDownloadedFilter,
-                onUnseenFilterChanged = screenModel::setSeasonUnseenFilter,
-                onStartedFilterChanged = screenModel::setSeasonStartedFilter,
-                onCompletedFilterChanged = screenModel::setSeasonCompletedFilter,
-                onBookmarkedFilterChanged = screenModel::setSeasonBookmarkedFilter,
-                onFillermarkedFilterChanged = screenModel::setSeasonFillermarkedFilter,
-                onSortModeChanged = screenModel::setSeasonSorting,
-                onDisplayGridModeChanged = screenModel::setSeasonDisplayGridMode,
-                onDisplayGridSizeChanged = screenModel::setSeasonDisplayGridSize,
-                onOverlayDownloadedChanged = screenModel::setSeasonDownloadOverlay,
-                onOverlayUnseenChanged = screenModel::setSeasonUnseenOverlay,
-                onOverlayLocalChanged = screenModel::setSeasonLocalOverlay,
-                onOverlayLangChanged = screenModel::setSeasonLangOverlay,
-                onOverlayContinueChanged = screenModel::setSeasonContinueOverlay,
-                onDisplayModeChanged = screenModel::setSeasonDisplayMode,
-                onSetAsDefault = screenModel::setSeasonCurrentSettingsAsDefault,
+                onDownloadFilterChanged = viewModel::setSeasonDownloadedFilter,
+                onUnseenFilterChanged = viewModel::setSeasonUnseenFilter,
+                onStartedFilterChanged = viewModel::setSeasonStartedFilter,
+                onCompletedFilterChanged = viewModel::setSeasonCompletedFilter,
+                onBookmarkedFilterChanged = viewModel::setSeasonBookmarkedFilter,
+                onFillermarkedFilterChanged = viewModel::setSeasonFillermarkedFilter,
+                onSortModeChanged = viewModel::setSeasonSorting,
+                onDisplayGridModeChanged = viewModel::setSeasonDisplayGridMode,
+                onDisplayGridSizeChanged = viewModel::setSeasonDisplayGridSize,
+                onOverlayDownloadedChanged = viewModel::setSeasonDownloadOverlay,
+                onOverlayUnseenChanged = viewModel::setSeasonUnseenOverlay,
+                onOverlayLocalChanged = viewModel::setSeasonLocalOverlay,
+                onOverlayLangChanged = viewModel::setSeasonLangOverlay,
+                onOverlayContinueChanged = viewModel::setSeasonContinueOverlay,
+                onDisplayModeChanged = viewModel::setSeasonDisplayMode,
+                onSetAsDefault = viewModel::setSeasonCurrentSettingsAsDefault,
             )
 
-            AnimeScreenModel.Dialog.TrackSheet -> {
+            AnimeViewModel.Dialog.TrackSheet -> {
                 NavigatorAdaptiveSheet(
                     screen = AnimeTrackInfoDialogHomeScreen(
                         animeId = successState.anime.id,
@@ -442,7 +449,7 @@ class AnimeScreen(
                 )
             }
 
-            AnimeScreenModel.Dialog.FullImages -> {
+            AnimeViewModel.Dialog.FullImages -> {
                 val sm = rememberScreenModel { AnimeImageScreenModel(successState.anime.id) }
                 val anime by sm.state.collectAsState()
                 if (anime != null) {
@@ -474,37 +481,37 @@ class AnimeScreen(
             }
 
             // SY -->
-            is AnimeScreenModel.Dialog.EditAnimeInfo -> {
+            is AnimeViewModel.Dialog.EditAnimeInfo -> {
                 EditAnimeDialog(
                     anime = dialog.anime,
-                    onDismissRequest = screenModel::dismissDialog,
-                    onPositiveClick = screenModel::updateAnimeInfo,
+                    onDismissRequest = viewModel::dismissDialog,
+                    onPositiveClick = viewModel::updateAnimeInfo,
                 )
             }
 
             // SY <--
-            is AnimeScreenModel.Dialog.SetAnimeFetchInterval -> {
+            is AnimeViewModel.Dialog.SetAnimeFetchInterval -> {
                 SetIntervalDialog(
                     interval = dialog.anime.fetchInterval,
                     nextUpdate = dialog.anime.expectedNextUpdate,
                     onDismissRequest = onDismissRequest,
                     isManga = false,
-                    onValueChanged = { interval: Int -> screenModel.setFetchInterval(dialog.anime, interval) }
-                        .takeIf { screenModel.isUpdateIntervalEnabled },
+                    onValueChanged = { interval: Int -> viewModel.setFetchInterval(dialog.anime, interval) }
+                        .takeIf { viewModel.isUpdateIntervalEnabled },
                 )
             }
 
-            AnimeScreenModel.Dialog.ChangeAnimeSkipIntro -> {
+            AnimeViewModel.Dialog.ChangeAnimeSkipIntro -> {
                 fun updateSkipIntroLength(newLength: Long) {
                     scope.launchIO {
-                        screenModel.setAnimeViewerFlags.awaitSetSkipIntroLength(animeId, newLength)
+                        viewModel.setAnimeViewerFlags.awaitSetSkipIntroLength(animeId, newLength)
                     }
                 }
                 SkipIntroLengthDialog(
                     initialSkipIntroLength = if (!successState.anime.skipIntroDisable &&
                         successState.anime.skipIntroLength == 0
                     ) {
-                        screenModel.gesturePreferences.defaultIntroLength().get()
+                        viewModel.gesturePreferences.defaultIntroLength().get()
                     } else {
                         successState.anime.skipIntroLength
                     },
@@ -516,7 +523,7 @@ class AnimeScreen(
                 )
             }
 
-            is AnimeScreenModel.Dialog.ShowQualities -> {
+            is AnimeViewModel.Dialog.ShowQualities -> {
                 EpisodeOptionsDialogScreen.onDismissDialog = onDismissRequest
                 val episodeTitle = if (dialog.anime.displayMode == Anime.EPISODE_DISPLAY_NUMBER) {
                     stringResource(
@@ -528,7 +535,7 @@ class AnimeScreen(
                 }
                 NavigatorAdaptiveSheet(
                     screen = EpisodeOptionsDialogScreen(
-                        useExternalDownloader = screenModel.useExternalDownloader,
+                        useExternalDownloader = viewModel.useExternalDownloader,
                         episodeTitle = episodeTitle,
                         episodeId = dialog.episode.id,
                         animeId = dialog.anime.id,
@@ -621,7 +628,7 @@ class AnimeScreen(
 
             is BrowseAnimeSourceScreen -> {
                 navigator.pop()
-                previousController.search(query)
+                (previousController as BrowseAnimeSourceScreen).search(query)
             }
         }
     }
@@ -643,7 +650,7 @@ class AnimeScreen(
         val previousController = navigator.items[navigator.size - 2]
         if (previousController is BrowseAnimeSourceScreen && source is AnimeHttpSource) {
             navigator.pop()
-            previousController.searchGenre(genreName)
+            (previousController as BrowseAnimeSourceScreen).searchGenre(genreName)
         } else {
             performSearch(navigator, genreName, global = false)
         }

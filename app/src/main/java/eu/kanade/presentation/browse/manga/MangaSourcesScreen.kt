@@ -227,4 +227,3 @@ sealed interface MangaSourceUiModel {
     data class Item(val source: Source) : MangaSourceUiModel
     data class Header(val language: String) : MangaSourceUiModel
 }
-

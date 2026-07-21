@@ -105,4 +105,3 @@ internal fun GlobalSearchContent(
         }
     }
 }
-

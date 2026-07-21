@@ -165,4 +165,3 @@ internal fun ColumnScope.GeneralPage(viewModel: ReaderSettingsViewModel) {
         }
     }
 }
-

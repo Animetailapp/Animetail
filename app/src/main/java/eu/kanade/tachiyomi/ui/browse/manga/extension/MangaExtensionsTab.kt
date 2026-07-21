@@ -140,4 +140,3 @@ private fun MangaExtensionUninstallConfirmation(
         onDismissRequest = onDismissRequest,
     )
 }
-

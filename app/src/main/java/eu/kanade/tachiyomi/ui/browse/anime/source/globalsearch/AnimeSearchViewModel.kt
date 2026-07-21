@@ -3,8 +3,8 @@ package eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.produceState
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import eu.kanade.domain.entries.anime.model.toDomainAnime
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.toggle
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
@@ -29,7 +30,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.concurrent.Executors
 
-abstract class AnimeSearchScreenModel(
+abstract class AnimeSearchViewModel(
     initialState: State = State(),
     sourcePreferences: SourcePreferences = Injekt.get(),
     private val sourceManager: AnimeSourceManager = Injekt.get(),
@@ -37,7 +38,7 @@ abstract class AnimeSearchScreenModel(
     private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
     private val getAnime: GetAnime = Injekt.get(),
     private val preferences: SourcePreferences = Injekt.get(),
-) : StateScreenModel<AnimeSearchScreenModel.State>(initialState) {
+) : StateViewModel<AnimeSearchViewModel.State>(initialState) {
 
     private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
     private var searchJob: Job? = null
@@ -60,7 +61,7 @@ abstract class AnimeSearchScreenModel(
     }
 
     init {
-        screenModelScope.launch {
+        viewModelScope.launch {
             preferences.globalSearchFilterState.changes().collectLatest { state ->
                 mutableState.update { it.copy(onlyShowHasResults = state) }
             }
@@ -146,7 +147,7 @@ abstract class AnimeSearchScreenModel(
             )
         }
 
-        searchJob = ioCoroutineScope.launch {
+        searchJob = viewModelScope.launch {
             sources.map { source ->
                 async {
                     if (state.value.items[source] !is AnimeSearchItemResult.Loading) {

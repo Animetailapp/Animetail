@@ -296,8 +296,6 @@ class ReaderActivity : BaseActivity() {
         }
     }
 
-
-
     /**
      * Called when the activity is destroyed. Cleans up the viewer, configuration and any view.
      */

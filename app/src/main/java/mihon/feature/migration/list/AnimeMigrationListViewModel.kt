@@ -1,8 +1,10 @@
 package mihon.feature.migration.list
 
 import androidx.annotation.FloatRange
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.toSAnime
 import eu.kanade.domain.items.episode.interactor.SyncEpisodesWithSource
@@ -25,6 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
+import mihon.core.viewmodel.StateViewModel
 import mihon.domain.migration.usecases.MigrateAnimeUseCase
 import mihon.feature.migration.list.models.MigratingAnime
 import mihon.feature.migration.list.models.MigratingAnime.SearchResult
@@ -39,7 +42,7 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class AnimeMigrationListScreenModel(
+class AnimeMigrationListViewModel(
     animeIds: Collection<Long>,
     extraSearchQuery: String?,
     private val preferences: SourcePreferences = Injekt.get(),
@@ -50,7 +53,22 @@ class AnimeMigrationListScreenModel(
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
     private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
     private val migrateAnime: MigrateAnimeUseCase = Injekt.get(),
-) : StateScreenModel<AnimeMigrationListScreenModel.State>(State()) {
+) : StateViewModel<AnimeMigrationListViewModel.State>(State()) {
+
+    companion object {
+        val ANIME_IDS_KEY = CreationExtras.Key<Collection<Long>>()
+
+        val EXTRA_SEARCH_QUERY_KEY = CreationExtras.Key<String?>()
+
+        val Factory = viewModelFactory {
+            initializer {
+                AnimeMigrationListViewModel(
+                    animeIds = get(ANIME_IDS_KEY)!!,
+                    extraSearchQuery = get(EXTRA_SEARCH_QUERY_KEY),
+                )
+            }
+        }
+    }
 
     private val smartSearchEngine = SmartAnimeSourceSearchEngine(extraSearchQuery)
 
@@ -66,7 +84,7 @@ class AnimeMigrationListScreenModel(
     private var migrateJob: Job? = null
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val anime = animeIds
                 .map {
                     async {
@@ -77,7 +95,7 @@ class AnimeMigrationListScreenModel(
                             episodeCount = episodeInfo.episodeCount,
                             latestEpisode = episodeInfo.latestEpisode,
                             source = sourceManager.getOrStub(anime.source).getNameForAnimeInfo(),
-                            parentContext = screenModelScope.coroutineContext,
+                            parentContext = viewModelScope.coroutineContext,
                         )
                     }
                 }
@@ -137,7 +155,7 @@ class AnimeMigrationListScreenModel(
 
         return if (prioritizeByEpisodes) {
             val results = sources.map { source ->
-                screenModelScope.async { searchSource(anime, source, deepSearchMode) }
+                viewModelScope.async { searchSource(anime, source, deepSearchMode) }
             }
                 .awaitAll()
                 .filterNotNull()
@@ -208,7 +226,7 @@ class AnimeMigrationListScreenModel(
     fun migrateNow(animeId: Long, replace: Boolean) {
         val item = items.find { it.anime.id == animeId } ?: return
         val target = (item.searchResult.value as? SearchResult.Success)?.anime ?: return
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             try {
                 migrateAnime(current = item.anime, target = target, replace = replace)
                 removeAnime(animeId)
@@ -220,7 +238,7 @@ class AnimeMigrationListScreenModel(
     }
 
     fun migrateAnimes(replace: Boolean) {
-        migrateJob = screenModelScope.launchIO {
+        migrateJob = viewModelScope.launchIO {
             mutableState.update { it.copy(dialog = Dialog.Progress(0f)) }
             val items = items
             try {
@@ -257,7 +275,7 @@ class AnimeMigrationListScreenModel(
 
     fun useAnimeForMigration(animeId: Long, targetAnimeId: Long) {
         val item = items.find { it.anime.id == animeId } ?: return
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             item.searchResult.value = SearchResult.Searching
             updateMigrationProgress()
             val targetAnime = getAnime.await(targetAnimeId)
@@ -285,8 +303,8 @@ class AnimeMigrationListScreenModel(
         )
     }
 
-    override fun onDispose() {
-        super.onDispose()
+    override fun onCleared() {
+        super.onCleared()
         items.forEach {
             it.migrationScope.cancel()
         }

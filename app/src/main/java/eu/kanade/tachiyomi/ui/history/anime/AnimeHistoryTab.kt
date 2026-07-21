@@ -9,7 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -52,9 +52,9 @@ fun Screen.animeHistoryTab(
     val snackbarHostState = SnackbarHostState()
 
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { AnimeHistoryScreenModel() }
-    val state by screenModel.state.collectAsState()
-    val searchQuery by screenModel.query.collectAsState()
+    val viewModel = viewModel<AnimeHistoryViewModel>()
+    val state by viewModel.state.collectAsState()
+    val searchQuery by viewModel.query.collectAsState()
 
     suspend fun openEpisode(context: Context, episode: Episode?) {
         val playerPreferences: PlayerPreferences by injectLazy()
@@ -93,59 +93,59 @@ fun Screen.animeHistoryTab(
                 searchQuery = searchQuery,
                 snackbarHostState = snackbarHostState,
                 onClickCover = { navigator.push(AnimeScreen(it)) },
-                onClickResume = screenModel::getNextEpisodeForAnime,
-                onDialogChange = screenModel::setDialog,
-                onClickFavorite = screenModel::addFavorite,
+                onClickResume = viewModel::getNextEpisodeForAnime,
+                onDialogChange = viewModel::setDialog,
+                onClickFavorite = viewModel::addFavorite,
             )
 
-            val onDismissRequest = { screenModel.setDialog(null) }
+            val onDismissRequest = { viewModel.setDialog(null) }
             when (val dialog = state.dialog) {
-                is AnimeHistoryScreenModel.Dialog.Delete -> {
+                is AnimeHistoryViewModel.Dialog.Delete -> {
                     HistoryDeleteDialog(
                         onDismissRequest = onDismissRequest,
                         onDelete = { all ->
                             if (all) {
-                                screenModel.removeAllFromHistory(dialog.history.animeId)
+                                viewModel.removeAllFromHistory(dialog.history.animeId)
                             } else {
-                                screenModel.removeFromHistory(dialog.history)
+                                viewModel.removeFromHistory(dialog.history)
                             }
                         },
                         isManga = false,
                     )
                 }
 
-                is AnimeHistoryScreenModel.Dialog.DeleteAll -> {
+                is AnimeHistoryViewModel.Dialog.DeleteAll -> {
                     HistoryDeleteAllDialog(
                         onDismissRequest = onDismissRequest,
-                        onDelete = screenModel::removeAllHistory,
+                        onDelete = viewModel::removeAllHistory,
                     )
                 }
 
-                is AnimeHistoryScreenModel.Dialog.DuplicateAnime -> {
+                is AnimeHistoryViewModel.Dialog.DuplicateAnime -> {
                     DuplicateAnimeDialog(
                         onDismissRequest = onDismissRequest,
                         onConfirm = {
-                            screenModel.addFavorite(dialog.anime)
+                            viewModel.addFavorite(dialog.anime)
                         },
                         onOpenAnime = { navigator.push(AnimeScreen(dialog.duplicate.id)) },
                         onMigrate = {
-                            screenModel.showMigrateDialog(dialog.anime, dialog.duplicate)
+                            viewModel.showMigrateDialog(dialog.anime, dialog.duplicate)
                         },
                     )
                 }
 
-                is AnimeHistoryScreenModel.Dialog.ChangeCategory -> {
+                is AnimeHistoryViewModel.Dialog.ChangeCategory -> {
                     ChangeCategoryDialog(
                         initialSelection = dialog.initialSelection,
                         onDismissRequest = onDismissRequest,
                         onEditCategories = { navigator.push(CategoriesTab) },
                         onConfirm = { include, _ ->
-                            screenModel.moveAnimeToCategoriesAndAddToLibrary(dialog.anime, include)
+                            viewModel.moveAnimeToCategoriesAndAddToLibrary(dialog.anime, include)
                         },
                     )
                 }
 
-                is AnimeHistoryScreenModel.Dialog.Migrate -> {
+                is AnimeHistoryViewModel.Dialog.Migrate -> {
                     MigrateAnimeDialog(
                         oldAnime = dialog.oldAnime,
                         newAnime = dialog.newAnime,
@@ -172,22 +172,22 @@ fun Screen.animeHistoryTab(
                 // AM (DISCORD) -->
                 DiscordRPCService.setScreen(context, DiscordScreen.HISTORY)
                 // <-- AM (DISCORD)
-                screenModel.events.collectLatest { e ->
+                viewModel.events.collectLatest { e ->
                     when (e) {
-                        AnimeHistoryScreenModel.Event.InternalError ->
+                        AnimeHistoryViewModel.Event.InternalError ->
                             snackbarHostState.showSnackbar(context.stringResource(MR.strings.internal_error))
 
-                        AnimeHistoryScreenModel.Event.HistoryCleared ->
+                        AnimeHistoryViewModel.Event.HistoryCleared ->
                             snackbarHostState.showSnackbar(context.stringResource(MR.strings.clear_history_completed))
 
-                        is AnimeHistoryScreenModel.Event.OpenEpisode -> openEpisode(context, e.episode)
+                        is AnimeHistoryViewModel.Event.OpenEpisode -> openEpisode(context, e.episode)
                     }
                 }
             }
 
             LaunchedEffect(Unit) {
                 resumeLastEpisodeSeenEvent.receiveAsFlow().collectLatest {
-                    openEpisode(context, screenModel.getNextEpisode())
+                    openEpisode(context, viewModel.getNextEpisode())
                 }
             }
         },
@@ -196,7 +196,7 @@ fun Screen.animeHistoryTab(
             AppBar.Action(
                 title = stringResource(MR.strings.pref_clear_history),
                 icon = Icons.Outlined.DeleteSweep,
-                onClick = { screenModel.setDialog(AnimeHistoryScreenModel.Dialog.DeleteAll) },
+                onClick = { viewModel.setDialog(AnimeHistoryViewModel.Dialog.DeleteAll) },
             ),
         ),
         navigateUp = navigateUp,

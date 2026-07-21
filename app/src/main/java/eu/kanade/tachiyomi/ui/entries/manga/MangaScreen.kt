@@ -542,4 +542,3 @@ class MangaScreen(
         context.copyToClipboard(url, url)
     }
 }
-

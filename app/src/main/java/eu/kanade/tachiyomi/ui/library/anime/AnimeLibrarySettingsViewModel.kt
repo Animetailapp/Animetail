@@ -1,8 +1,8 @@
 package eu.kanade.tachiyomi.ui.library.anime
 
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.tachiyomi.data.track.TrackerManager
@@ -22,23 +22,23 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
-class AnimeLibrarySettingsScreenModel(
+class AnimeLibrarySettingsViewModel(
     val preferences: BasePreferences = Injekt.get(),
     val libraryPreferences: LibraryPreferences = Injekt.get(),
     private val setAnimeDisplayMode: SetAnimeDisplayMode = Injekt.get(),
     private val setSortModeForCategory: SetSortModeForAnimeCategory = Injekt.get(),
     trackerManager: TrackerManager = Injekt.get(),
-) : ScreenModel {
+) : ViewModel() {
 
     val trackersFlow = trackerManager.loggedInTrackersFlow()
         .stateIn(
-            scope = screenModelScope,
+            scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5.seconds.inWholeMilliseconds),
             initialValue = trackerManager.loggedInTrackers(),
         )
 
     // SY -->
-    val grouping by libraryPreferences.groupAnimeLibraryBy.asState(screenModelScope)
+    val grouping by libraryPreferences.groupAnimeLibraryBy.asState(viewModelScope)
 
     // SY <--
 
@@ -61,14 +61,14 @@ class AnimeLibrarySettingsScreenModel(
         mode: AnimeLibrarySort.Type,
         direction: AnimeLibrarySort.Direction,
     ) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             setSortModeForCategory.await(category, mode, direction)
         }
     }
 
     // SY -->
     fun setGrouping(grouping: Int) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             libraryPreferences.groupAnimeLibraryBy.set(grouping)
         }
     }

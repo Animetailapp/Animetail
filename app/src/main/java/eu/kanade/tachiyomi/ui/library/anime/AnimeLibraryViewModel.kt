@@ -9,8 +9,7 @@ import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapNotNull
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import eu.kanade.core.preference.PreferenceMutableState
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.fastFilterNot
@@ -50,6 +49,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
@@ -91,7 +91,7 @@ import kotlin.time.Duration.Companion.seconds
 typealias AnimeLibraryMap = Map<Category, List<AnimeLibraryItem>>
 
 @Suppress("LargeClass")
-class AnimeLibraryScreenModel(
+class AnimeLibraryViewModel(
     private val getLibraryAnime: GetLibraryAnime = Injekt.get(),
     private val getCategories: GetVisibleAnimeCategories = Injekt.get(),
     private val getTracksPerAnime: GetTracksPerAnime = Injekt.get(),
@@ -111,14 +111,14 @@ class AnimeLibraryScreenModel(
     // SY -->
     private val getTracks: GetAnimeTracks = Injekt.get(),
     // SY <--
-) : StateScreenModel<AnimeLibraryScreenModel.State>(State()) {
+) : StateViewModel<AnimeLibraryViewModel.State>(State()) {
 
     var activeCategoryIndex: Int by libraryPreferences.lastUsedAnimeCategory.asState(
-        screenModelScope,
+        viewModelScope,
     )
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             combine<
                 String?,
                 AnimeLibraryMap,
@@ -181,7 +181,7 @@ class AnimeLibraryScreenModel(
                     )
                 }
             }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
 
         combine(
             getAnimelibItemPreferencesFlow(),
@@ -204,7 +204,7 @@ class AnimeLibraryScreenModel(
                     state.copy(hasActiveFilters = it)
                 }
             }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
 
         // SY -->
         libraryPreferences.groupAnimeLibraryBy.changes()
@@ -213,7 +213,7 @@ class AnimeLibraryScreenModel(
                     state.copy(groupType = it)
                 }
             }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
         // SY <--
     }
 
@@ -596,7 +596,7 @@ class AnimeLibraryScreenModel(
      * @param amount the amount to queue or null to queue all
      */
     private fun downloadUnseenEpisodes(animes: List<Anime>, amount: Int?) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             animes.forEach { anime ->
                 val episodes = getNextEpisodes.await(anime.id)
                     .fastFilterNot { episode ->
@@ -628,7 +628,7 @@ class AnimeLibraryScreenModel(
                 genre = null,
                 status = null,
             )
-            screenModelScope.launchNonCancellable {
+            viewModelScope.launchNonCancellable {
                 updateAnime.await(animeInfo)
             }
         }
@@ -640,7 +640,7 @@ class AnimeLibraryScreenModel(
      */
     fun markSeenSelection(seen: Boolean) {
         val animes = state.value.selection.toList()
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             animes.forEach { anime ->
                 setSeenStatus.await(
                     anime = anime.anime,
@@ -659,7 +659,7 @@ class AnimeLibraryScreenModel(
      * @param deleteEpisodes whether to delete downloaded episodes.
      */
     fun removeAnimes(animeList: List<Anime>, deleteFromLibrary: Boolean, deleteEpisodes: Boolean) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             val animeToDelete = animeList.distinctBy { it.id }
 
             if (deleteFromLibrary) {
@@ -697,7 +697,7 @@ class AnimeLibraryScreenModel(
         addCategories: List<Long>,
         removeCategories: List<Long>,
     ) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             animeList.forEach { anime ->
                 val categoryIds = getCategories.await(anime.id)
                     .map { it.id }
@@ -711,7 +711,7 @@ class AnimeLibraryScreenModel(
     }
 
     fun getDisplayMode(): PreferenceMutableState<LibraryDisplayMode> {
-        return libraryPreferences.displayMode.asState(screenModelScope)
+        return libraryPreferences.displayMode.asState(viewModelScope)
     }
 
     fun getColumnsPreferenceForCurrentOrientation(isLandscape: Boolean): PreferenceMutableState<Int> {
@@ -722,7 +722,7 @@ class AnimeLibraryScreenModel(
                 libraryPreferences.animePortraitColumns
             }
             ).asState(
-            screenModelScope,
+            viewModelScope,
         )
     }
 
@@ -828,7 +828,7 @@ class AnimeLibraryScreenModel(
     }
 
     fun openChangeCategoryDialog() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             // Create a copy of selected anime
             val animeList = state.value.selection.map { it.anime }
 

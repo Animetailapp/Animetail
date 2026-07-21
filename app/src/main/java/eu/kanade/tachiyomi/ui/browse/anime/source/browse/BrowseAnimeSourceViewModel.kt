@@ -6,13 +6,16 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
@@ -48,6 +51,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
@@ -75,7 +79,7 @@ import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 import java.time.Instant
 import eu.kanade.tachiyomi.animesource.model.AnimeFilter as AnimeSourceModelFilter
 
-class BrowseAnimeSourceScreenModel(
+class BrowseAnimeSourceViewModel(
     private val sourceId: Long,
     listingQuery: String?,
     // SY -->
@@ -103,21 +107,39 @@ class BrowseAnimeSourceScreenModel(
     private val insertSavedSearch: InsertSavedSearch = Injekt.get(),
     private val getExhSavedSearch: GetExhSavedSearch = Injekt.get(),
     // SY <--
-) : StateScreenModel<BrowseAnimeSourceScreenModel.State>(State(Listing.valueOf(listingQuery))) {
+) : StateViewModel<BrowseAnimeSourceViewModel.State>(State(Listing.valueOf(listingQuery))) {
 
-    var displayMode by sourcePreferences.sourceDisplayMode.asState(screenModelScope)
+    companion object {
+        val SOURCE_ID_KEY = CreationExtras.Key<Long>()
+        val LISTING_QUERY_KEY = CreationExtras.Key<String?>()
+        val FILTERS_KEY = CreationExtras.Key<String?>()
+        val SAVED_SEARCH_KEY = CreationExtras.Key<Long?>()
+
+        val Factory = viewModelFactory {
+            initializer {
+                BrowseAnimeSourceViewModel(
+                    sourceId = this[SOURCE_ID_KEY]!!,
+                    listingQuery = this[LISTING_QUERY_KEY],
+                    filtersJson = this[FILTERS_KEY],
+                    savedSearch = this[SAVED_SEARCH_KEY],
+                )
+            }
+        }
+    }
+
+    var displayMode by sourcePreferences.sourceDisplayMode.asState(viewModelScope)
 
     var source = sourceManager.getOrStub(sourceId)
 
     // SY -->
-    val startExpanded by uiPreferences.expandFilters.asState(screenModelScope)
+    val startExpanded by uiPreferences.expandFilters.asState(viewModelScope)
 
     private val filterSerializer = FilterSerializer()
 
     // SY <--
     init {
         // KMK -->
-        screenModelScope.launch {
+        viewModelScope.launch {
             var retry = 10
             while (source !is AnimeCatalogueSource && retry-- > 0) {
                 // Sometime source is late to load, so we need to wait a bit
@@ -128,7 +150,7 @@ class BrowseAnimeSourceScreenModel(
             if (source !is AnimeCatalogueSource) return@launch
             // KMK <--
 
-            screenModelScope.launchIO {
+            viewModelScope.launchIO {
                 mutableState.update {
                     var query: String? = null
                     var listing = it.listing
@@ -178,7 +200,7 @@ class BrowseAnimeSourceScreenModel(
                 .onEach { savedSearches ->
                     mutableState.update { it.copy(savedSearches = savedSearches.toImmutableList()) }
                 }
-                .launchIn(screenModelScope)
+                .launchIn(viewModelScope)
             // SY <--
         }
     }
@@ -197,13 +219,13 @@ class BrowseAnimeSourceScreenModel(
                     networkToLocalAnime.await(it.toDomainAnime(sourceId))
                         .let { localAnime -> getAnime.subscribe(localAnime.url, localAnime.source) }
                         .filterNotNull()
-                        .stateIn(ioCoroutineScope)
+                        .stateIn(viewModelScope)
                 }
                     .filter { !hideInLibraryItems || !it.value.favorite }
             }
-                .cachedIn(ioCoroutineScope)
+                .cachedIn(viewModelScope)
         }
-        .stateIn(ioCoroutineScope, SharingStarted.Lazily, emptyFlow())
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyFlow())
 
     fun getColumnsPreference(orientation: Int): GridCells {
         val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -342,7 +364,7 @@ class BrowseAnimeSourceScreenModel(
      * @param anime the anime to update.
      */
     fun changeAnimeFavorite(anime: Anime) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             var new = anime.copy(
                 favorite = !anime.favorite,
                 dateAdded = when (anime.favorite) {
@@ -364,7 +386,7 @@ class BrowseAnimeSourceScreenModel(
     }
 
     fun addFavorite(anime: Anime) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             val categories = getCategories()
             val defaultCategoryId = libraryPreferences.defaultAnimeCategory.get()
             val defaultCategory = categories.find { it.id == defaultCategoryId.toLong() }
@@ -419,7 +441,7 @@ class BrowseAnimeSourceScreenModel(
     }
 
     fun moveAnimeToCategories(anime: Anime, categoryIds: List<Long>) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             setAnimeCategories.await(
                 animeId = anime.id,
                 categoryIds = categoryIds.toList(),
@@ -502,7 +524,7 @@ class BrowseAnimeSourceScreenModel(
 
     // KMK -->
     private fun reloadSavedSearches() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             getExhSavedSearch.await(source.id, (source as AnimeCatalogueSource)::getFilterList)
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, EXHSavedSearch::name))
                 .let { savedSearches ->
@@ -516,7 +538,7 @@ class BrowseAnimeSourceScreenModel(
 
     /** Show a dialog to enter name for new saved search */
     fun onSaveSearch() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val names = state.value.savedSearches.map { it.name }.toImmutableList()
             mutableState.update { it.copy(dialog = Dialog.CreateSavedSearch(names)) }
         }
@@ -532,7 +554,7 @@ class BrowseAnimeSourceScreenModel(
         // KMK -->
         resetFilters()
         // KMK <--
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             // KMK -->
             val source = source
             // KMK <--
@@ -585,7 +607,7 @@ class BrowseAnimeSourceScreenModel(
         val source = source
         // KMK <--
         if (source !is AnimeCatalogueSource) return
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             val query = state.value.toolbarQuery?.takeUnless {
                 it.isBlank() || it == GetRemoteAnime.QUERY_POPULAR || it == GetRemoteAnime.QUERY_LATEST
             }?.trim()
@@ -605,7 +627,7 @@ class BrowseAnimeSourceScreenModel(
     }
 
     fun deleteSearch(savedSearchId: Long) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             deleteSavedSearchById.await(savedSearchId)
         }
     }

@@ -2,8 +2,11 @@ package eu.kanade.tachiyomi.ui.browse.anime.source
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.source.anime.interactor.GetEnabledAnimeSources
@@ -21,6 +24,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import logcat.LogPriority
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.anime.model.AnimeSource
@@ -29,22 +33,22 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.TreeMap
 
-class AnimeSourcesScreenModel(
+class AnimeSourcesViewModel(
+    val smartSearchConfig: SourcesScreen.SmartSearchConfig? = null,
     private val preferences: BasePreferences = Injekt.get(),
     private val sourcePreferences: SourcePreferences = Injekt.get(),
     private val uiPreferences: UiPreferences = Injekt.get(),
     private val getEnabledAnimeSources: GetEnabledAnimeSources = Injekt.get(),
     private val toggleSource: ToggleAnimeSource = Injekt.get(),
     private val toggleSourcePin: ToggleAnimeSourcePin = Injekt.get(),
-    val smartSearchConfig: SourcesScreen.SmartSearchConfig?,
-) : StateScreenModel<AnimeSourcesScreenModel.State>(State()) {
+) : StateViewModel<AnimeSourcesViewModel.State>(State()) {
 
     private val _events = Channel<Event>(Int.MAX_VALUE)
     val events = _events.receiveAsFlow()
-    val useNewSourceNavigation by uiPreferences.useNewSourceNavigation.asState(screenModelScope)
+    val useNewSourceNavigation by uiPreferences.useNewSourceNavigation.asState(viewModelScope)
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             getEnabledAnimeSources.subscribe()
                 .catch {
                     logcat(LogPriority.ERROR, it)
@@ -137,6 +141,16 @@ class AnimeSourcesScreenModel(
     }
 
     companion object {
+        val SMART_SEARCH_CONFIG_KEY = CreationExtras.Key<SourcesScreen.SmartSearchConfig?>()
+
+        val Factory = viewModelFactory {
+            initializer {
+                AnimeSourcesViewModel(
+                    smartSearchConfig = this[SMART_SEARCH_CONFIG_KEY],
+                )
+            }
+        }
+
         const val PINNED_KEY = "pinned"
         const val LAST_USED_KEY = "last_used"
 

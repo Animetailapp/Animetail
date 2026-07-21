@@ -2,8 +2,7 @@ package eu.kanade.tachiyomi.ui.history.anime
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
@@ -26,6 +25,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
@@ -47,7 +47,7 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class AnimeHistoryScreenModel(
+class AnimeHistoryViewModel(
     private val addTracks: AddAnimeTracks = Injekt.get(),
     private val getCategories: GetAnimeCategories = Injekt.get(),
     private val getDuplicateLibraryAnime: GetDuplicateLibraryAnime = Injekt.get(),
@@ -60,7 +60,7 @@ class AnimeHistoryScreenModel(
     private val updateAnime: UpdateAnime = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     private val sourceManager: AnimeSourceManager = Injekt.get(),
-) : StateScreenModel<AnimeHistoryScreenModel.State>(State()) {
+) : StateViewModel<AnimeHistoryViewModel.State>(State()) {
 
     private val _events: Channel<Event> = Channel(Channel.UNLIMITED)
     val events: Flow<Event> = _events.receiveAsFlow()
@@ -69,7 +69,7 @@ class AnimeHistoryScreenModel(
     val query: StateFlow<String?> = _query.asStateFlow()
 
     init {
-        screenModelScope.launch {
+        viewModelScope.launch {
             _query.collectLatest { query ->
                 getHistory.subscribe(query ?: "")
                     .distinctUntilChanged()
@@ -85,7 +85,7 @@ class AnimeHistoryScreenModel(
     }
 
     fun search(query: String?) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             _query.emit(query)
         }
     }
@@ -109,7 +109,7 @@ class AnimeHistoryScreenModel(
     }
 
     fun getNextEpisodeForAnime(animeId: Long, episodeId: Long) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             sendNextEpisodeEvent(getNextEpisodes.await(animeId, episodeId, onlyUnseen = false))
         }
     }
@@ -120,19 +120,19 @@ class AnimeHistoryScreenModel(
     }
 
     fun removeFromHistory(history: AnimeHistoryWithRelations) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             removeHistory.await(history)
         }
     }
 
     fun removeAllFromHistory(animeId: Long) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             removeHistory.await(animeId)
         }
     }
 
     fun removeAllHistory() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val result = removeHistory.awaitAll()
             if (!result) return@launchIO
             _events.send(Event.HistoryCleared)
@@ -158,7 +158,7 @@ class AnimeHistoryScreenModel(
     }
 
     private fun moveAnimeToCategory(animeId: Long, categoryIds: List<Long>) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             setAnimeCategories.await(animeId, categoryIds)
         }
     }
@@ -167,7 +167,7 @@ class AnimeHistoryScreenModel(
         moveAnimeToCategory(anime.id, categories)
         if (anime.favorite) return
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             updateAnime.awaitUpdateFavorite(anime.id, true)
         }
     }
@@ -178,7 +178,7 @@ class AnimeHistoryScreenModel(
     }
 
     fun addFavorite(animeId: Long) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val anime = getAnime.await(animeId) ?: return@launchIO
 
             val duplicate = getDuplicateLibraryAnime.await(anime).getOrNull(0)
@@ -192,7 +192,7 @@ class AnimeHistoryScreenModel(
     }
 
     fun addFavorite(anime: Anime) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             // Move to default category if applicable
             val categories = getCategories()
             val defaultCategoryId = libraryPreferences.defaultAnimeCategory.get().toLong()
@@ -229,7 +229,7 @@ class AnimeHistoryScreenModel(
     }
 
     fun showChangeCategoryDialog(anime: Anime) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             val categories = getCategories()
             val selection = getAnimeCategoryIds(anime)
             mutableState.update { currentState ->

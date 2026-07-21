@@ -62,7 +62,7 @@ import eu.kanade.presentation.components.NestedMenuItem
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.download.anime.AnimeDownloadHeaderItem
-import eu.kanade.tachiyomi.ui.download.anime.AnimeDownloadQueueScreenModel
+import eu.kanade.tachiyomi.ui.download.anime.AnimeDownloadQueueViewModel
 import eu.kanade.tachiyomi.ui.download.anime.animeDownloadTab
 import eu.kanade.tachiyomi.ui.download.manga.MangaDownloadHeaderItem
 import eu.kanade.tachiyomi.ui.download.manga.MangaDownloadQueueViewModel
@@ -94,9 +94,9 @@ data object DownloadsTab : Tab {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
-        val animeScreenModel = rememberScreenModel { AnimeDownloadQueueScreenModel() }
+        val animeViewModel = viewModel<AnimeDownloadQueueViewModel>()
         val mangaScreenModel = viewModel<MangaDownloadQueueViewModel>()
-        val animeDownloadList by animeScreenModel.state.collectAsState()
+        val animeDownloadList by animeViewModel.state.collectAsState()
         val mangaDownloadList by mangaScreenModel.state.collectAsState()
         val animeDownloadCount by remember {
             derivedStateOf { animeDownloadList.sumOf { it.subItems.size } }
@@ -158,7 +158,7 @@ data object DownloadsTab : Tab {
                     navigateUp = navigator::pop,
                     actions = {
                         when (state.currentPage) {
-                            0 -> AnimeActions(animeScreenModel, animeDownloadList)
+                            0 -> AnimeActions(animeViewModel, animeDownloadList)
                             1 -> MangaActions(mangaScreenModel, mangaDownloadList)
                         }
                     },
@@ -175,7 +175,7 @@ data object DownloadsTab : Tab {
                     enter = fadeIn(),
                     exit = fadeOut(),
                 ) {
-                    val animeIsRunning by animeScreenModel.isDownloaderRunning.collectAsState()
+                    val animeIsRunning by animeViewModel.isDownloaderRunning.collectAsState()
                     val mangaIsRunning by mangaScreenModel.isDownloaderRunning.collectAsState()
                     ExtendedFloatingActionButton(
                         text = {
@@ -217,9 +217,9 @@ data object DownloadsTab : Tab {
                         onClick = {
                             when (state.currentPage) {
                                 0 -> if (animeIsRunning) {
-                                    animeScreenModel.pauseDownloads()
+                                    animeViewModel.pauseDownloads()
                                 } else {
-                                    animeScreenModel.startDownloads()
+                                    animeViewModel.startDownloads()
                                 }
 
                                 1 -> if (mangaIsRunning) {
@@ -299,7 +299,7 @@ data object DownloadsTab : Tab {
 
     @Composable
     private fun AnimeActions(
-        animeScreenModel: AnimeDownloadQueueScreenModel,
+        animeViewModel: AnimeDownloadQueueViewModel,
         animeDownloadList: List<AnimeDownloadHeaderItem>,
     ) {
         if (animeDownloadList.isNotEmpty()) {
@@ -315,7 +315,7 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_newest)) },
                             onClick = {
-                                animeScreenModel.reorderQueue(
+                                animeViewModel.reorderQueue(
                                     {
                                         it.download.episode.let { e ->
                                             e.dateUploadOverride.takeIf { d -> d > 0 }
@@ -330,7 +330,7 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_oldest)) },
                             onClick = {
-                                animeScreenModel.reorderQueue(
+                                animeViewModel.reorderQueue(
                                     {
                                         it.download.episode.let { e ->
                                             e.dateUploadOverride.takeIf { d -> d > 0 }
@@ -354,7 +354,7 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_asc)) },
                             onClick = {
-                                animeScreenModel.reorderQueue(
+                                animeViewModel.reorderQueue(
                                     { it.download.episode.episodeNumber },
                                     false,
                                 )
@@ -364,7 +364,7 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_desc)) },
                             onClick = {
-                                animeScreenModel.reorderQueue(
+                                animeViewModel.reorderQueue(
                                     { it.download.episode.episodeNumber },
                                     true,
                                 )
@@ -384,7 +384,7 @@ data object DownloadsTab : Tab {
                     ),
                     AppBar.OverflowAction(
                         title = stringResource(MR.strings.action_cancel_all),
-                        onClick = { animeScreenModel.clearQueue() },
+                        onClick = { animeViewModel.clearQueue() },
                     ),
                 ),
             )

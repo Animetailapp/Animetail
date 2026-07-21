@@ -24,7 +24,7 @@ class MigrateMangaSearchScreen(private val mangaId: Long) : Screen() {
                 initializer {
                     MigrateMangaSearchViewModel(mangaId = mangaId)
                 }
-            }
+            },
         )
         val state by screenModel.state.collectAsState()
 

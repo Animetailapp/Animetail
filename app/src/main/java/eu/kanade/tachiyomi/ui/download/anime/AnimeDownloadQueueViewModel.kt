@@ -1,8 +1,8 @@
 package eu.kanade.tachiyomi.ui.download.anime
 
 import android.view.MenuItem
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
@@ -18,9 +18,9 @@ import kotlinx.coroutines.launch
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class AnimeDownloadQueueScreenModel(
+class AnimeDownloadQueueViewModel(
     private val downloadManager: AnimeDownloadManager = Injekt.get(),
-) : ScreenModel {
+) : ViewModel() {
 
     private val _state = MutableStateFlow(emptyList<AnimeDownloadHeaderItem>())
     val state = _state.asStateFlow()
@@ -113,7 +113,7 @@ class AnimeDownloadQueueScreenModel(
     }
 
     init {
-        screenModelScope.launch {
+        viewModelScope.launch {
             downloadManager.queueState
                 .map { downloads ->
                     downloads
@@ -128,7 +128,8 @@ class AnimeDownloadQueueScreenModel(
         }
     }
 
-    override fun onDispose() {
+    override fun onCleared() {
+        super.onCleared()
         for (job in progressJobs.values) {
             job.cancel()
         }
@@ -137,7 +138,7 @@ class AnimeDownloadQueueScreenModel(
     }
 
     val isDownloaderRunning = downloadManager.isDownloaderRunning
-        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun getDownloadStatusFlow() = downloadManager.statusFlow()
     fun getDownloadProgressFlow() = downloadManager.progressFlow()

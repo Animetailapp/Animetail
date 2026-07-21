@@ -1038,4 +1038,3 @@ private fun onChapterItemClick(
         else -> onChapterClicked(chapterItem.chapter)
     }
 }
-

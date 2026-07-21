@@ -236,4 +236,3 @@ private fun UpcomingMangaScreenLargeImpl(
         },
     )
 }
-

@@ -1,9 +1,9 @@
 package eu.kanade.tachiyomi.ui.storage.anime
 
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.viewModelScope
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
-import eu.kanade.tachiyomi.ui.storage.CommonStorageScreenModel
+import eu.kanade.tachiyomi.ui.storage.CommonStorageViewModel
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.anime.interactor.GetVisibleAnimeCategories
@@ -13,14 +13,14 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class AnimeStorageScreenModel(
+class AnimeStorageViewModel(
     downloadCache: AnimeDownloadCache = Injekt.get(),
     private val getLibraries: GetLibraryAnime = Injekt.get(),
     getCategories: GetAnimeCategories = Injekt.get(),
     getVisibleCategories: GetVisibleAnimeCategories = Injekt.get(),
     private val downloadManager: AnimeDownloadManager = Injekt.get(),
     private val sourceManager: AnimeSourceManager = Injekt.get(),
-) : CommonStorageScreenModel<LibraryAnime>(
+) : CommonStorageViewModel<LibraryAnime>(
     downloadCacheChanges = downloadCache.changes,
     downloadCacheIsInitializing = downloadCache.isInitializing,
     libraries = getLibraries.subscribe(),
@@ -39,7 +39,7 @@ class AnimeStorageScreenModel(
     getThumbnail = { anime.thumbnailUrl },
 ) {
     override fun deleteEntry(id: Long) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             val anime = getLibraries.await().find {
                 it.id == id
             }?.anime ?: return@launchNonCancellable

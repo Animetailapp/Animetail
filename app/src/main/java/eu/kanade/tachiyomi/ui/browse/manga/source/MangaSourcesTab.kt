@@ -87,4 +87,3 @@ fun Screen.mangaSourcesTab(): TabContent {
         },
     )
 }
-

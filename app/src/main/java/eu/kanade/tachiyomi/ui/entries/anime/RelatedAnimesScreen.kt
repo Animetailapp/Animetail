@@ -27,11 +27,11 @@ import uy.kohesive.injekt.api.get
 
 @Composable
 fun RelatedAnimesScreen(
-    screenModel: AnimeScreenModel,
+    viewModel: AnimeViewModel,
     navigateUp: () -> Unit,
     navigator: Navigator,
     scope: CoroutineScope,
-    successState: AnimeScreenModel.State.Success,
+    successState: AnimeViewModel.State.Success,
 ) {
     val sourcePreferences: SourcePreferences = Injekt.get()
     var displayMode by sourcePreferences.sourceDisplayMode.asState(scope)
@@ -56,19 +56,19 @@ fun RelatedAnimesScreen(
     ) { paddingValues ->
         RelatedAnimesContent(
             relatedAnimes = successState.relatedAnimesSorted,
-            getMangaState = { manga -> screenModel.getManga(initialManga = manga) },
+            getMangaState = { manga -> viewModel.getManga(initialManga = manga) },
             columns = getColumnsPreference(LocalConfiguration.current.orientation),
             displayMode = displayMode,
             contentPadding = paddingValues,
             onMangaClick = {
                 scope.launchIO {
-                    val manga = screenModel.networkToLocalAnime.getLocal(it)
+                    val manga = viewModel.networkToLocalAnime.getLocal(it)
                     navigator.push(AnimeScreen(manga.id, true))
                 }
             },
             onMangaLongClick = {
                 scope.launchIO {
-                    val manga = screenModel.networkToLocalAnime.getLocal(it)
+                    val manga = viewModel.networkToLocalAnime.getLocal(it)
                     navigator.push(AnimeScreen(manga.id, true))
                 }
             },

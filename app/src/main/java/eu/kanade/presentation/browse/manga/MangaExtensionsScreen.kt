@@ -557,4 +557,3 @@ fun ExtensionTrustDialog(
         onDismissRequest = onDismissRequest,
     )
 }
-
