@@ -3,25 +3,26 @@ package eu.kanade.tachiyomi.source
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.SMangaUpdate
 import eu.kanade.tachiyomi.util.awaitSingle
 import rx.Observable
 
 /**
  * A basic interface for creating a source. It could be an online source, a local source, etc.
  */
-interface MangaSource {
+interface MangaSource : Source {
 
     /**
      * ID for the source. Must be unique.
      */
-    val id: Long
+    override val id: Long
 
     /**
      * Name of the source.
      */
-    val name: String
+    override val name: String
 
-    val lang: String
+    override val lang: String
         get() = ""
 
     /**
@@ -81,6 +82,30 @@ interface MangaSource {
     )
     fun fetchPageList(chapter: SChapter): Observable<List<Page>> =
         throw IllegalStateException("Not used")
+
+    /**
+     * Fetches updated information for a manga.
+     *
+     * Depending on the provided flags or source availability, this may include
+     * updated manga metadata, available chapters, or both.
+     *
+     * @since tachiyomix 1.6
+     * @param manga The manga to fetch updates for.
+     * @param chapters Existing chapters of the manga
+     * @param fetchDetails Whether to fetch updated manga details.
+     * @param fetchChapters Whether to fetch available chapters.
+     */
+    @Suppress("DEPRECATION")
+    suspend fun getMangaUpdate(
+        manga: SManga,
+        chapters: List<SChapter>,
+        fetchDetails: Boolean,
+        fetchChapters: Boolean,
+    ): SMangaUpdate {
+        val updatedManga = if (fetchDetails) getMangaDetails(manga) else manga
+        val updatedChapters = if (fetchChapters) getChapterList(manga) else chapters
+        return SMangaUpdate(updatedManga, updatedChapters)
+    }
 
     // KMK -->
 
