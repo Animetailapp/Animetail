@@ -2,8 +2,11 @@ package eu.kanade.tachiyomi.source
 
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
+import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.SMangaUpdate
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
@@ -22,7 +25,7 @@ interface CatalogueSource : MangaSource {
     /**
      * Whether the source has support for latest updates.
      */
-    val supportsLatest: Boolean
+    override val supportsLatest: Boolean
 
     /**
      * Get a page with a list of manga.
@@ -62,7 +65,7 @@ interface CatalogueSource : MangaSource {
     /**
      * Returns the list of filters for the source.
      */
-    fun getFilterList(): FilterList
+    override fun getFilterList(): FilterList
 
     @Deprecated(
         "Use the non-RxJava API instead",
@@ -84,6 +87,18 @@ interface CatalogueSource : MangaSource {
     )
     fun fetchLatestUpdates(page: Int): Observable<MangasPage> =
         throw IllegalStateException("Not used")
+
+    @Suppress("DEPRECATION")
+    override suspend fun getMangaUpdate(
+        manga: SManga,
+        chapters: List<SChapter>,
+        fetchDetails: Boolean,
+        fetchChapters: Boolean,
+    ): SMangaUpdate = supervisorScope {
+        val asyncManga = if (fetchDetails) async { getMangaDetails(manga) } else null
+        val asyncChapters = if (fetchChapters) async { getChapterList(manga) } else null
+        SMangaUpdate(asyncManga?.await() ?: manga, asyncChapters?.await() ?: chapters)
+    }
 
     // KMK -->
 
