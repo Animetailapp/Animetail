@@ -65,8 +65,7 @@ interface CatalogueSource : MangaSource {
     /**
      * Returns the list of filters for the source.
      */
-    override fun
-        getFilterList(): FilterList
+    override fun getFilterList(): FilterList
 
     @Deprecated(
         "Use the non-RxJava API instead",
