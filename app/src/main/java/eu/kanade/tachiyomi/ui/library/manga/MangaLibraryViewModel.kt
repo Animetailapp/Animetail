@@ -48,6 +48,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import mihon.core.viewmodel.StateViewModel
+import mihon.domain.library.model.search.QueryNode
+import mihon.feature.library.matches
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.util.lang.compareToWithCollator
@@ -138,10 +140,11 @@ class MangaLibraryViewModel(
                     .applyFilters(tracks, trackingFilter)
                     .applySort(tracks, sort.takeIf { groupType != MangaLibraryGroup.BY_DEFAULT }, trackingFilter.keys)
                     .mapValues { (_, value) ->
-                        if (searchQuery != null) {
-                            value.filter { it.matches(searchQuery, sourceManager) }
-                        } else {
+                        if (searchQuery.isNullOrEmpty()) {
                             value
+                        } else {
+                            val queryNode = QueryNode.from(searchQuery)
+                            value.filter { queryNode.matches(it) }
                         }
                     }
             }
@@ -428,6 +431,8 @@ class MangaLibraryViewModel(
                         downloadCount = downloadManager.getDownloadCount(libraryManga.manga),
                         unreadCount = libraryManga.unreadCount,
                         isLocal = libraryManga.manga.isLocal(),
+                        sourceName = sourceManager.getOrStub(libraryManga.manga.source).name.lowercase(),
+                        sourceLanguage = sourceManager.getOrStub(libraryManga.manga.source).lang,
                         badges = MangaLibraryItem.Badges(
                             downloadCount = if (prefs.downloadBadge) {
                                 downloadManager.getDownloadCount(libraryManga.manga)
