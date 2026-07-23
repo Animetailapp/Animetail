@@ -4,14 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import eu.kanade.presentation.browse.manga.components.GlobalMangaSearchToolbar
 import eu.kanade.tachiyomi.source.CatalogueSource
-import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.MangaSearchScreenModel
+import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.MangaSearchViewModel
 import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.MangaSourceFilter
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.presentation.core.components.material.Scaffold
 
 @Composable
 fun MigrateMangaSearchScreen(
-    state: MangaSearchScreenModel.State,
+    state: MangaSearchViewModel.State,
     fromSourceId: Long?,
     navigateUp: () -> Unit,
     onChangeSearchQuery: (String?) -> Unit,

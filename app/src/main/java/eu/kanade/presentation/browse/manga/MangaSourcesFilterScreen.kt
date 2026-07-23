@@ -11,7 +11,7 @@ import eu.kanade.presentation.browse.manga.components.BaseMangaSourceItem
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
 import eu.kanade.presentation.util.animateItemFastScroll
-import eu.kanade.tachiyomi.ui.browse.manga.source.MangaSourcesFilterScreenModel
+import eu.kanade.tachiyomi.ui.browse.manga.source.MangaSourcesFilterViewModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import tachiyomi.domain.source.manga.model.Source
 import tachiyomi.i18n.MR
@@ -23,7 +23,7 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 @Composable
 fun MangaSourcesFilterScreen(
     navigateUp: () -> Unit,
-    state: MangaSourcesFilterScreenModel.State.Success,
+    state: MangaSourcesFilterViewModel.State.Success,
     onClickLanguage: (String) -> Unit,
     onClickSource: (Source) -> Unit,
 ) {
@@ -55,7 +55,7 @@ fun MangaSourcesFilterScreen(
 @Composable
 private fun SourcesFilterContent(
     contentPadding: PaddingValues,
-    state: MangaSourcesFilterScreenModel.State.Success,
+    state: MangaSourcesFilterViewModel.State.Success,
     onClickLanguage: (String) -> Unit,
     onClickSource: (Source) -> Unit,
 ) {

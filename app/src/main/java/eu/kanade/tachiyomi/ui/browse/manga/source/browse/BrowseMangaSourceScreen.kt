@@ -34,7 +34,8 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.core.util.ifMangaSourcesLoaded
@@ -52,7 +53,7 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaSourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.browse.manga.migration.search.MigrateMangaDialog
 import eu.kanade.tachiyomi.ui.browse.manga.migration.search.MigrateMangaDialogScreenModel
-import eu.kanade.tachiyomi.ui.browse.manga.source.browse.BrowseMangaSourceScreenModel.Listing
+import eu.kanade.tachiyomi.ui.browse.manga.source.browse.BrowseMangaSourceViewModel.Listing
 import eu.kanade.tachiyomi.ui.category.CategoriesTab
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
@@ -85,13 +86,19 @@ data class BrowseMangaSourceScreen(
             return
         }
 
-        val screenModel = rememberScreenModel { BrowseMangaSourceScreenModel(sourceId, listingQuery) }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<BrowseMangaSourceViewModel>(
+            factory = BrowseMangaSourceViewModel.Factory,
+            extras = CreationExtras {
+                set(BrowseMangaSourceViewModel.SOURCE_ID_KEY, sourceId)
+                set(BrowseMangaSourceViewModel.LISTING_QUERY_KEY, listingQuery)
+            },
+        )
+        val state by viewModel.state.collectAsState()
 
         val navigator = LocalNavigator.currentOrThrow
         val navigateUp: () -> Unit = {
             when {
-                !state.isUserQuery && state.toolbarQuery != null -> screenModel.setToolbarQuery(
+                !state.isUserQuery && state.toolbarQuery != null -> viewModel.setToolbarQuery(
                     null,
                 )
 
@@ -99,9 +106,9 @@ data class BrowseMangaSourceScreen(
             }
         }
 
-        if (screenModel.source is StubMangaSource) {
+        if (viewModel.source is StubMangaSource) {
             MissingSourceScreen(
-                source = screenModel.source,
+                source = viewModel.source,
                 navigateUp = navigateUp,
             )
             return
@@ -114,7 +121,7 @@ data class BrowseMangaSourceScreen(
 
         val onHelpClick = { uriHandler.openUri(LocalMangaSource.HELP_URL) }
         val onWebViewClick = f@{
-            val source = screenModel.source as? HttpSource ?: return@f
+            val source = viewModel.source as? HttpSource ?: return@f
             navigator.push(
                 WebViewScreen(
                     url = source.baseUrl,
@@ -124,8 +131,8 @@ data class BrowseMangaSourceScreen(
             )
         }
 
-        LaunchedEffect(screenModel.source) {
-            assistUrl = (screenModel.source as? HttpSource)?.baseUrl
+        LaunchedEffect(viewModel.source) {
+            assistUrl = (viewModel.source as? HttpSource)?.baseUrl
         }
 
         var topBarHeight by remember { mutableIntStateOf(0) }
@@ -138,15 +145,15 @@ data class BrowseMangaSourceScreen(
                 ) {
                     BrowseMangaSourceToolbar(
                         searchQuery = state.toolbarQuery,
-                        onSearchQueryChange = screenModel::setToolbarQuery,
-                        source = screenModel.source,
-                        displayMode = screenModel.displayMode,
-                        onDisplayModeChange = { screenModel.displayMode = it },
+                        onSearchQueryChange = viewModel::setToolbarQuery,
+                        source = viewModel.source,
+                        displayMode = viewModel.displayMode,
+                        onDisplayModeChange = { viewModel.displayMode = it },
                         navigateUp = navigateUp,
                         onWebViewClick = onWebViewClick,
                         onHelpClick = onHelpClick,
                         onSettingsClick = { navigator.push(MangaSourcePreferencesScreen(sourceId)) },
-                        onSearch = screenModel::search,
+                        onSearch = viewModel::search,
                     )
 
                     Row(
@@ -158,8 +165,8 @@ data class BrowseMangaSourceScreen(
                         FilterChip(
                             selected = state.listing == Listing.Popular,
                             onClick = {
-                                screenModel.resetFilters()
-                                screenModel.setListing(Listing.Popular)
+                                viewModel.resetFilters()
+                                viewModel.setListing(Listing.Popular)
                             },
                             leadingIcon = {
                                 Icon(
@@ -173,12 +180,12 @@ data class BrowseMangaSourceScreen(
                                 Text(text = stringResource(MR.strings.popular))
                             },
                         )
-                        if ((screenModel.source as CatalogueSource).supportsLatest) {
+                        if ((viewModel.source as CatalogueSource).supportsLatest) {
                             FilterChip(
                                 selected = state.listing == Listing.Latest,
                                 onClick = {
-                                    screenModel.resetFilters()
-                                    screenModel.setListing(Listing.Latest)
+                                    viewModel.resetFilters()
+                                    viewModel.setListing(Listing.Latest)
                                 },
                                 leadingIcon = {
                                     Icon(
@@ -196,7 +203,7 @@ data class BrowseMangaSourceScreen(
                         if (state.filters.isNotEmpty()) {
                             FilterChip(
                                 selected = state.listing is Listing.Search,
-                                onClick = screenModel::openFilterSheet,
+                                onClick = viewModel::openFilterSheet,
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Outlined.FilterList,
@@ -218,12 +225,12 @@ data class BrowseMangaSourceScreen(
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         ) { paddingValues ->
             BrowseSourceContent(
-                source = screenModel.source,
-                mangaList = screenModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
-                columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
-                entries = screenModel.getColumnsPreferenceForCurrentOrientation(LocalConfiguration.current.orientation),
+                source = viewModel.source,
+                mangaList = viewModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
+                columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
+                entries = viewModel.getColumnsPreferenceForCurrentOrientation(LocalConfiguration.current.orientation),
                 topBarHeight = topBarHeight,
-                displayMode = screenModel.displayMode,
+                displayMode = viewModel.displayMode,
                 snackbarHostState = snackbarHostState,
                 contentPadding = paddingValues,
                 onWebViewClick = onWebViewClick,
@@ -232,20 +239,20 @@ data class BrowseMangaSourceScreen(
                 onMangaClick = { navigator.push((MangaScreen(it.id, true))) },
                 onMangaLongClick = { manga ->
                     scope.launchIO {
-                        val duplicateManga = screenModel.getDuplicateLibraryManga(manga)
+                        val duplicateManga = viewModel.getDuplicateLibraryManga(manga)
                         when {
-                            manga.favorite -> screenModel.setDialog(
-                                BrowseMangaSourceScreenModel.Dialog.RemoveManga(manga),
+                            manga.favorite -> viewModel.setDialog(
+                                BrowseMangaSourceViewModel.Dialog.RemoveManga(manga),
                             )
 
-                            duplicateManga != null -> screenModel.setDialog(
-                                BrowseMangaSourceScreenModel.Dialog.AddDuplicateManga(
+                            duplicateManga != null -> viewModel.setDialog(
+                                BrowseMangaSourceViewModel.Dialog.AddDuplicateManga(
                                     manga,
                                     duplicateManga,
                                 ),
                             )
 
-                            else -> screenModel.addFavorite(manga)
+                            else -> viewModel.addFavorite(manga)
                         }
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
@@ -253,32 +260,32 @@ data class BrowseMangaSourceScreen(
             )
         }
 
-        val onDismissRequest = { screenModel.setDialog(null) }
+        val onDismissRequest = { viewModel.setDialog(null) }
         when (val dialog = state.dialog) {
-            is BrowseMangaSourceScreenModel.Dialog.Filter -> {
+            is BrowseMangaSourceViewModel.Dialog.Filter -> {
                 SourceFilterMangaDialog(
                     onDismissRequest = onDismissRequest,
                     filters = state.filters,
-                    onReset = screenModel::resetFilters,
-                    onFilter = { screenModel.search(filters = state.filters) },
-                    onUpdate = screenModel::setFilters,
+                    onReset = viewModel::resetFilters,
+                    onFilter = { viewModel.search(filters = state.filters) },
+                    onUpdate = viewModel::setFilters,
                 )
             }
 
-            is BrowseMangaSourceScreenModel.Dialog.AddDuplicateManga -> {
+            is BrowseMangaSourceViewModel.Dialog.AddDuplicateManga -> {
                 DuplicateMangaDialog(
                     onDismissRequest = onDismissRequest,
-                    onConfirm = { screenModel.addFavorite(dialog.manga) },
+                    onConfirm = { viewModel.addFavorite(dialog.manga) },
                     onOpenManga = { navigator.push(MangaScreen(dialog.duplicate.id)) },
                     onMigrate = {
-                        screenModel.setDialog(
-                            BrowseMangaSourceScreenModel.Dialog.Migrate(dialog.manga, dialog.duplicate),
+                        viewModel.setDialog(
+                            BrowseMangaSourceViewModel.Dialog.Migrate(dialog.manga, dialog.duplicate),
                         )
                     },
                 )
             }
 
-            is BrowseMangaSourceScreenModel.Dialog.Migrate -> {
+            is BrowseMangaSourceViewModel.Dialog.Migrate -> {
                 MigrateMangaDialog(
                     oldManga = dialog.oldManga,
                     newManga = dialog.newManga,
@@ -291,17 +298,17 @@ data class BrowseMangaSourceScreen(
                 )
             }
 
-            is BrowseMangaSourceScreenModel.Dialog.RemoveManga -> {
+            is BrowseMangaSourceViewModel.Dialog.RemoveManga -> {
                 RemoveEntryDialog(
                     onDismissRequest = onDismissRequest,
                     onConfirm = {
-                        screenModel.changeMangaFavorite(dialog.manga)
+                        viewModel.changeMangaFavorite(dialog.manga)
                     },
                     entryToRemove = dialog.manga.title,
                 )
             }
 
-            is BrowseMangaSourceScreenModel.Dialog.ChangeMangaCategory -> {
+            is BrowseMangaSourceViewModel.Dialog.ChangeMangaCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
                     onDismissRequest = onDismissRequest,
@@ -310,8 +317,8 @@ data class BrowseMangaSourceScreen(
                         CategoriesTab.showMangaCategory()
                     },
                     onConfirm = { include, _ ->
-                        screenModel.changeMangaFavorite(dialog.manga)
-                        screenModel.moveMangaToCategories(dialog.manga, include)
+                        viewModel.changeMangaFavorite(dialog.manga)
+                        viewModel.moveMangaToCategories(dialog.manga, include)
                     },
                 )
             }
@@ -323,8 +330,8 @@ data class BrowseMangaSourceScreen(
             queryEvent.receiveAsFlow()
                 .collectLatest {
                     when (it) {
-                        is SearchType.Genre -> screenModel.searchGenre(it.txt)
-                        is SearchType.Text -> screenModel.search(it.txt)
+                        is SearchType.Genre -> viewModel.searchGenre(it.txt)
+                        is SearchType.Text -> viewModel.search(it.txt)
                     }
                 }
         }

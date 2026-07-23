@@ -1,50 +1,37 @@
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-
 plugins {
-    alias(mihonx.plugins.kotlin.multiplatform)
+    alias(mihonx.plugins.android.library)
     alias(mihonx.plugins.spotless)
 }
 
+android {
+    namespace = "tachiyomi.source.local"
+
+    defaultConfig {
+        consumerProguardFiles("consumer-proguard.pro")
+    }
+}
+
 kotlin {
-    android {
-        namespace = "tachiyomi.source.local"
-
-        // TODO(antsy): Remove when https://youtrack.jetbrains.com/issue/KT-83319 is resolved
-        withHostTest { }
-    }
-
-    @OptIn(ExperimentalKotlinGradlePluginApi::class)
-    dependencies {
-        implementation(projects.sourceApi)
-        api(projects.i18n)
-        api(projects.i18nAniyomi)
-        // TAIL -->
-        api(projects.i18nTail)
-        // TAIL <--
-        implementation(libs.unifile)
-        implementation(aniyomilibs.ffmpeg.kit)
-    }
-
-    sourceSets {
-        androidMain {
-            dependencies {
-                implementation(projects.core.archive)
-                implementation(projects.core.common)
-                implementation(projects.coreMetadata)
-
-                // Move ChapterRecognition to separate module?
-                implementation(projects.domain)
-
-                implementation(libs.bundles.serialization)
-            }
-        }
-    }
-
-    @OptIn(ExperimentalKotlinGradlePluginApi::class)
     compilerOptions {
-        freeCompilerArgs.addAll(
-            "-Xexpect-actual-classes",
-            "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
-        )
+        optIn.add("kotlinx.serialization.ExperimentalSerializationApi")
     }
+}
+
+dependencies {
+    implementation(projects.sourceApi)
+    implementation(projects.i18n)
+    implementation(projects.i18nAniyomi)
+    implementation(projects.i18nTail)
+
+    implementation(projects.core.archive)
+    implementation(projects.core.common)
+    implementation(projects.coreMetadata)
+    implementation(projects.domain)
+
+    implementation(libs.unifile)
+    implementation(aniyomilibs.ffmpeg.kit)
+    implementation(libs.bundles.serialization)
+
+    implementation(libs.injekt)
+    implementation(libs.jsoup)
 }

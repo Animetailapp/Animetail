@@ -7,7 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -17,7 +18,7 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.tachiyomi.ui.browse.anime.source.SourcesScreen.SmartSearchConfig
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
-import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceViewModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.feed.SourceFeedScreen
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
 import kotlinx.collections.immutable.persistentListOf
@@ -32,8 +33,13 @@ fun Screen.animeSourcesTab(
     smartSearchConfig: SmartSearchConfig? = null,
 ): TabContent {
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { AnimeSourcesScreenModel(smartSearchConfig = smartSearchConfig) }
-    val state by screenModel.state.collectAsState()
+    val viewModel = viewModel<AnimeSourcesViewModel>(
+        factory = AnimeSourcesViewModel.Factory,
+        extras = CreationExtras {
+            set(AnimeSourcesViewModel.SMART_SEARCH_CONFIG_KEY, smartSearchConfig)
+        },
+    )
+    val state by viewModel.state.collectAsState()
 
     return TabContent(
         titleRes = AYMR.strings.label_anime_sources,
@@ -56,16 +62,16 @@ fun Screen.animeSourcesTab(
                 onClickItem = { source, listing ->
                     // SY -->
                     val screen = when {
-                        listing == BrowseAnimeSourceScreenModel.Listing.Popular &&
-                            screenModel.useNewSourceNavigation -> SourceFeedScreen(source.id)
+                        listing == BrowseAnimeSourceViewModel.Listing.Popular &&
+                            viewModel.useNewSourceNavigation -> SourceFeedScreen(source.id)
 
                         else -> BrowseAnimeSourceScreen(source.id, listing.query)
                     }
                     navigator.push(screen)
                     // SY <--
                 },
-                onClickPin = screenModel::togglePin,
-                onLongClickItem = screenModel::showSourceDialog,
+                onClickPin = viewModel::togglePin,
+                onLongClickItem = viewModel::showSourceDialog,
             )
 
             state.dialog?.let { dialog ->
@@ -73,22 +79,22 @@ fun Screen.animeSourcesTab(
                 AnimeSourceOptionsDialog(
                     source = source,
                     onClickPin = {
-                        screenModel.togglePin(source)
-                        screenModel.closeDialog()
+                        viewModel.togglePin(source)
+                        viewModel.closeDialog()
                     },
                     onClickDisable = {
-                        screenModel.toggleSource(source)
-                        screenModel.closeDialog()
+                        viewModel.toggleSource(source)
+                        viewModel.closeDialog()
                     },
-                    onDismiss = screenModel::closeDialog,
+                    onDismiss = viewModel::closeDialog,
                 )
             }
 
             val internalErrString = stringResource(MR.strings.internal_error)
             LaunchedEffect(Unit) {
-                screenModel.events.collectLatest { event ->
+                viewModel.events.collectLatest { event ->
                     when (event) {
-                        AnimeSourcesScreenModel.Event.FailedFetchingSources -> {
+                        AnimeSourcesViewModel.Event.FailedFetchingSources -> {
                             launch { snackbarHostState.showSnackbar(internalErrString) }
                         }
                     }

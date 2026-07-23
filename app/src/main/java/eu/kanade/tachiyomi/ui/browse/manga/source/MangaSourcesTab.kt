@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -26,8 +26,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Composable
 fun Screen.mangaSourcesTab(): TabContent {
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { MangaSourcesScreenModel() }
-    val state by screenModel.state.collectAsState()
+    val viewModel = viewModel<MangaSourcesViewModel>()
+    val state by viewModel.state.collectAsState()
 
     return TabContent(
         titleRes = AYMR.strings.label_manga_sources,
@@ -50,8 +50,8 @@ fun Screen.mangaSourcesTab(): TabContent {
                 onClickItem = { source, listing ->
                     navigator.push(BrowseMangaSourceScreen(source.id, listing.query))
                 },
-                onClickPin = screenModel::togglePin,
-                onLongClickItem = screenModel::showSourceDialog,
+                onClickPin = viewModel::togglePin,
+                onLongClickItem = viewModel::showSourceDialog,
             )
 
             state.dialog?.let { dialog ->
@@ -59,26 +59,26 @@ fun Screen.mangaSourcesTab(): TabContent {
                 MangaSourceOptionsDialog(
                     source = source,
                     onClickPin = {
-                        screenModel.togglePin(source)
-                        screenModel.closeDialog()
+                        viewModel.togglePin(source)
+                        viewModel.closeDialog()
                     },
                     onClickDisable = {
-                        screenModel.toggleSource(source)
-                        screenModel.closeDialog()
+                        viewModel.toggleSource(source)
+                        viewModel.closeDialog()
                     },
                     onClickToggleDataSaver = {
-                        screenModel.toggleExcludeFromMangaDataSaver(source)
-                        screenModel.closeDialog()
+                        viewModel.toggleExcludeFromMangaDataSaver(source)
+                        viewModel.closeDialog()
                     }.takeIf { state.dataSaverEnabled },
-                    onDismiss = screenModel::closeDialog,
+                    onDismiss = viewModel::closeDialog,
                 )
             }
 
             val internalErrString = stringResource(MR.strings.internal_error)
             LaunchedEffect(Unit) {
-                screenModel.events.collectLatest { event ->
+                viewModel.events.collectLatest { event ->
                     when (event) {
-                        MangaSourcesScreenModel.Event.FailedFetchingSources -> {
+                        MangaSourcesViewModel.Event.FailedFetchingSources -> {
                             launch { snackbarHostState.showSnackbar(internalErrString) }
                         }
                     }

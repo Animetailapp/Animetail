@@ -19,7 +19,7 @@ import eu.kanade.presentation.entries.components.EntryBottomActionMenu
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.updates.anime.AnimeUpdatesItem
-import eu.kanade.tachiyomi.ui.updates.anime.AnimeUpdatesScreenModel
+import eu.kanade.tachiyomi.ui.updates.anime.AnimeUpdatesViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
@@ -35,7 +35,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun AnimeUpdateScreen(
-    state: AnimeUpdatesScreenModel.State,
+    state: AnimeUpdatesViewModel.State,
     snackbarHostState: SnackbarHostState,
     lastUpdated: Long,
     onClickCover: (AnimeUpdatesItem) -> Unit,

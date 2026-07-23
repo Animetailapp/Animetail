@@ -1,58 +1,35 @@
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-
 plugins {
-    alias(mihonx.plugins.kotlin.multiplatform)
+    alias(mihonx.plugins.android.library)
     alias(mihonx.plugins.spotless)
 
     alias(libs.plugins.kotlin.serialization)
 }
 
-kotlin {
-    @Suppress("UnstableApiUsage")
-    android {
-        namespace = "eu.kanade.tachiyomi.source"
-        optimization {
-            consumerKeepRules.apply {
-                publish = true
-                file("consumer-proguard.pro")
-            }
-        }
+android {
+    namespace = "eu.kanade.tachiyomi.source"
 
-        // TODO(antsy): Remove when https://youtrack.jetbrains.com/issue/KT-83319 is resolved
-        withHostTest { }
+    defaultConfig {
+        consumerProguardFiles("consumer-proguard.pro")
     }
+}
 
-    @OptIn(ExperimentalKotlinGradlePluginApi::class)
-    dependencies {
-        api(libs.kotlinx.serialization.json)
-        api(libs.injekt)
-        api(libs.rxJava)
-        api(libs.jsoup)
-        api(libs.re2j)
-        api(aniyomilibs.nanohttpd)
-        // TAIL
-        api(projects.i18nTail)
-        // TAIL
+dependencies {
+    api(projects.core.common)
 
-        // SY -->
-        api(libs.kotlin.reflect)
-        // SY <--
+    api(libs.kotlinx.serialization.json)
+    api(libs.injekt)
+    api(libs.rxJava)
+    api(libs.jsoup)
+    api(libs.re2j)
+    api(aniyomilibs.nanohttpd)
+    api(projects.i18nTail)
 
-        implementation(platform(libs.androidx.compose.bom))
-        implementation(libs.androidx.compose.runtime)
-    }
+    // SY -->
+    api(libs.kotlin.reflect)
+    // SY <--
 
-    sourceSets {
-        androidMain {
-            dependencies {
-                implementation(projects.core.common)
-                api(libs.androidx.preference)
-            }
-        }
-    }
+    api(libs.androidx.preference)
 
-    @OptIn(ExperimentalKotlinGradlePluginApi::class)
-    compilerOptions {
-        freeCompilerArgs.add("-Xexpect-actual-classes")
-    }
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.runtime)
 }

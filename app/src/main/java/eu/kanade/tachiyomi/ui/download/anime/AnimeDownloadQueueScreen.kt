@@ -29,7 +29,7 @@ import kotlin.math.roundToInt
 fun AnimeDownloadQueueScreen(
     contentPadding: PaddingValues,
     scope: CoroutineScope,
-    screenModel: AnimeDownloadQueueScreenModel,
+    viewModel: AnimeDownloadQueueViewModel,
     downloadList: List<AnimeDownloadHeaderItem>,
     nestedScrollConnection: NestedScrollConnection,
 ) {
@@ -53,31 +53,31 @@ fun AnimeDownloadQueueScreen(
             AndroidView(
                 modifier = Modifier.fillMaxWidth(),
                 factory = { context ->
-                    screenModel.controllerBinding = DownloadListBinding.inflate(
+                    viewModel.controllerBinding = DownloadListBinding.inflate(
                         LayoutInflater.from(context),
                     )
-                    screenModel.adapter = AnimeDownloadAdapter(screenModel.listener)
-                    screenModel.controllerBinding.root.adapter = screenModel.adapter
-                    screenModel.adapter?.isHandleDragEnabled = true
-                    screenModel.controllerBinding.root.layoutManager = LinearLayoutManager(
+                    viewModel.adapter = AnimeDownloadAdapter(viewModel.listener)
+                    viewModel.controllerBinding.root.adapter = viewModel.adapter
+                    viewModel.adapter?.isHandleDragEnabled = true
+                    viewModel.controllerBinding.root.layoutManager = LinearLayoutManager(
                         context,
                     )
 
-                    ViewCompat.setNestedScrollingEnabled(screenModel.controllerBinding.root, true)
+                    ViewCompat.setNestedScrollingEnabled(viewModel.controllerBinding.root, true)
 
                     scope.launchUI {
-                        screenModel.getDownloadStatusFlow()
-                            .collect(screenModel::onStatusChange)
+                        viewModel.getDownloadStatusFlow()
+                            .collect(viewModel::onStatusChange)
                     }
                     scope.launchUI {
-                        screenModel.getDownloadProgressFlow()
-                            .collect(screenModel::onUpdateDownloadedPages)
+                        viewModel.getDownloadProgressFlow()
+                            .collect(viewModel::onUpdateDownloadedPages)
                     }
 
-                    screenModel.controllerBinding.root
+                    viewModel.controllerBinding.root
                 },
                 update = {
-                    screenModel.controllerBinding.root
+                    viewModel.controllerBinding.root
                         .updatePadding(
                             left = left,
                             top = top,
@@ -85,7 +85,7 @@ fun AnimeDownloadQueueScreen(
                             bottom = bottom,
                         )
 
-                    screenModel.adapter?.updateDataSet(downloadList)
+                    viewModel.adapter?.updateDataSet(downloadList)
                 },
             )
         }

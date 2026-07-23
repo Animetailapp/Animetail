@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
@@ -29,7 +30,7 @@ import eu.kanade.tachiyomi.ui.browse.anime.source.animeSourcesTab
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
 import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenModel
 import eu.kanade.tachiyomi.ui.browse.feed.feedTab
-import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionsScreenModel
+import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionsViewModel
 import eu.kanade.tachiyomi.ui.browse.manga.extension.mangaExtensionsTab
 import eu.kanade.tachiyomi.ui.browse.manga.migration.sources.migrateMangaSourceTab
 import eu.kanade.tachiyomi.ui.browse.manga.source.mangaSourcesTab
@@ -88,14 +89,14 @@ data object BrowseTab : Tab {
         // SY <--
 
         // Hoisted for extensions tab's search bar
-        val mangaExtensionsScreenModel = rememberScreenModel { MangaExtensionsScreenModel() }
-        val mangaExtensionsState by mangaExtensionsScreenModel.state.collectAsState()
+        val mangaExtensionsViewModel = viewModel<MangaExtensionsViewModel>()
+        val mangaExtensionsState by mangaExtensionsViewModel.state.collectAsState()
 
         val animeExtensionsScreenModel = rememberScreenModel { AnimeExtensionsScreenModel() }
         val animeExtensionsState by animeExtensionsScreenModel.state.collectAsState()
 
         val animeExtensionsTabContent = animeExtensionsTab(animeExtensionsScreenModel)
-        val mangaExtensionsTabContent = mangaExtensionsTab(mangaExtensionsScreenModel)
+        val mangaExtensionsTabContent = mangaExtensionsTab(mangaExtensionsViewModel)
 
         // KMK -->
         val feedScreenModel = rememberScreenModel { FeedScreenModel() }
@@ -158,7 +159,7 @@ data object BrowseTab : Tab {
             tabs = tabs,
             state = state,
             mangaSearchQuery = mangaExtensionsState.searchQuery,
-            onChangeMangaSearchQuery = mangaExtensionsScreenModel::search,
+            onChangeMangaSearchQuery = mangaExtensionsViewModel::search,
             animeSearchQuery = animeExtensionsState.searchQuery,
             onChangeAnimeSearchQuery = animeExtensionsScreenModel::search,
             animeExtensionsTabIndex = animeExtensionsTabIndex,

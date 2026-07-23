@@ -8,7 +8,7 @@ import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.ScreenModelStore
+import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
@@ -28,6 +28,9 @@ import soup.compose.material.motion.animation.rememberSlideDistance
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+
+val ScreenModel.ioCoroutineScope: CoroutineScope
+    get() = screenModelScope + Dispatchers.IO
 
 /**
  * For invoking back press to the parent activity
@@ -52,18 +55,6 @@ abstract class Screen : Screen {
 
     override val key: ScreenKey = uniqueScreenKey
 }
-
-/**
- * A variant of ScreenModel.coroutineScope except with the IO dispatcher instead of the
- * main dispatcher.
- */
-val ScreenModel.ioCoroutineScope: CoroutineScope
-    get() = ScreenModelStore.getOrPutDependency(
-        screenModel = this,
-        name = "ScreenModelIoCoroutineScope",
-        factory = { key -> CoroutineScope(Dispatchers.IO + SupervisorJob()) + CoroutineName(key) },
-        onDispose = { scope -> scope.cancel() },
-    )
 
 interface AssistContentScreen {
     fun onProvideAssistUrl(): String?
