@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.MangaSource
+import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
@@ -66,7 +67,7 @@ internal object MangaExtensionLoader {
     private const val METADATA_EXTENSION_LIB = "tachiyomix.extensionLib"
     private const val METADATA_CONTENT_WARNING = "tachiyomix.contentWarning"
 
-    private val SUPPORTED_LIB_VERSIONS = listOf(1.4, 1.5, 1.6)
+    private val SUPPORTED_LIB_VERSIONS = listOf(1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 14.0, 15.0, 16.0, 17.0)
 
     @Suppress("DEPRECATION")
     private val PACKAGE_FLAGS = PackageManager.GET_CONFIGURATIONS or
@@ -342,7 +343,11 @@ internal object MangaExtensionLoader {
             return MangaLoadResult.Error
         }
 
-        val sources = appInfo.metaData.getString(METADATA_SOURCE_CLASS)!!
+        val sourceClassString = appInfo.metaData?.getString(METADATA_SOURCE_FACTORY)
+            ?: appInfo.metaData?.getString(METADATA_SOURCE_CLASS)
+            ?: return MangaLoadResult.Error
+
+        val sources = sourceClassString
             .split(";")
             .map {
                 val sourceClass = it.trim()
@@ -352,37 +357,19 @@ internal object MangaExtensionLoader {
                     sourceClass
                 }
             }
-            .flatMap {
+            .flatMap { className ->
                 try {
-                    when (val obj = Class.forName(it, false, classLoader).getDeclaredConstructor().newInstance()) {
-                        is MangaSource -> listOf(obj)
-                        is SourceFactory -> obj.createSources()
-                        else -> throw Exception("Unknown source class type: ${obj.javaClass}")
-                    }
+                    loadSourceClass(className, classLoader)
                 } catch (e: LinkageError) {
                     try {
                         val fallBackClassLoader = PathClassLoader(appInfo.sourceDir, null, context.classLoader)
-                        when (
-                            val obj = Class.forName(
-                                it,
-                                false,
-                                fallBackClassLoader,
-                            ).getDeclaredConstructor().newInstance()
-                        ) {
-                            is MangaSource -> {
-                                listOf(obj)
-                            }
-
-                            is SourceFactory -> obj.createSources()
-
-                            else -> throw Exception("Unknown source class type: ${obj.javaClass}")
-                        }
+                        loadSourceClass(className, fallBackClassLoader)
                     } catch (e: Throwable) {
-                        logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
+                        logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($className)" }
                         return MangaLoadResult.Error
                     }
                 } catch (e: Throwable) {
-                    logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
+                    logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($className)" }
                     return MangaLoadResult.Error
                 }
             }
@@ -489,6 +476,41 @@ internal object MangaExtensionLoader {
         }
         if (publicSourceDir == null) {
             publicSourceDir = apkPath
+        }
+    }
+
+    private fun loadSourceClass(className: String, classLoader: ClassLoader): List<MangaSource> {
+        val pkg = className.substringBeforeLast('.')
+        var clazz = try {
+            Class.forName(className, false, classLoader)
+        } catch (e: ClassNotFoundException) {
+            try {
+                Class.forName("$pkg.ExtensionGenerated", false, classLoader)
+            } catch (_: ClassNotFoundException) {
+                Class.forName("${className}Generated", false, classLoader)
+            }
+        }
+        if (java.lang.reflect.Modifier.isAbstract(clazz.modifiers)) {
+            clazz = try {
+                Class.forName("$pkg.ExtensionGenerated", false, classLoader)
+            } catch (_: Exception) {
+                try {
+                    Class.forName("${className}Generated", false, classLoader)
+                } catch (_: Exception) {
+                    try {
+                        Class.forName("${className}Impl", false, classLoader)
+                    } catch (_: Exception) {
+                        clazz
+                    }
+                }
+            }
+        }
+        val obj = clazz.getDeclaredConstructor().newInstance()
+        return when (obj) {
+            is MangaSource -> listOf(obj)
+            is Source -> listOf(obj as MangaSource)
+            is SourceFactory -> obj.createSources().filterIsInstance<MangaSource>()
+            else -> throw Exception("Unknown source class type: ${obj?.javaClass}")
         }
     }
 
