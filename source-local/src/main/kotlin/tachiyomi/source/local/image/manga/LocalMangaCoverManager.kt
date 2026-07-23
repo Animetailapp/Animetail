@@ -11,12 +11,12 @@ import java.io.InputStream
 
 private const val DEFAULT_COVER_NAME = "cover.jpg"
 
-actual class LocalMangaCoverManager(
+class LocalMangaCoverManager(
     private val context: Context,
     private val fileSystem: LocalMangaSourceFileSystem,
 ) {
 
-    actual fun find(mangaUrl: String): UniFile? {
+    fun find(mangaUrl: String): UniFile? {
         return fileSystem.getFilesInMangaDirectory(mangaUrl)
             // Get all file whose names start with "cover"
             .filter { it.isFile && it.nameWithoutExtension.equals("cover", ignoreCase = true) }
@@ -24,7 +24,7 @@ actual class LocalMangaCoverManager(
             .firstOrNull { ImageUtil.isImage(it.name) { it.openInputStream() } }
     }
 
-    actual fun update(
+    fun update(
         manga: SManga,
         inputStream: InputStream,
     ): UniFile? {
