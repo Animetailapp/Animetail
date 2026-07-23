@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.data.backup.models
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.protobuf.ProtoNumber
+
 import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.domain.items.chapter.model.Chapter
 
