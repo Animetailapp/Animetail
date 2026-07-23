@@ -45,7 +45,7 @@ private fun GeneralQueryNode.matches(item: MangaLibraryItem): Boolean {
 
             MangaField.DESCRIPTION -> manga.description?.contains(value, ignoreCase = true) ?: false
 
-            MangaField.GENRE -> manga.genre?.any { it.contains(value, ignoreCase = true) } ?: false
+            MangaField.GENRE -> manga.genre?.any { g -> g.contains(value, ignoreCase = true) } ?: false
 
             MangaField.SOURCE -> {
                 item.sourceName.contains(value, ignoreCase = true) ||
@@ -69,7 +69,7 @@ private fun FieldQueryNode.matches(item: MangaLibraryItem): Boolean {
             if (value.isEmpty()) {
                 manga.genre.isNullOrEmpty()
             } else {
-                manga.genre?.any { it.contains(value, ignoreCase = true) } ?: false
+                manga.genre?.any { g -> g.contains(value, ignoreCase = true) } ?: false
             }
         }
 

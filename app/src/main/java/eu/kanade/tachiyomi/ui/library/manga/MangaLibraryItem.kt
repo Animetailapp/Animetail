@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.library.manga
 
-import tachiyomi.domain.library.manga.model.LibraryManga
+import tachiyomi.domain.entries.manga.model.Manga
+import tachiyomi.domain.library.manga.LibraryManga
 
 class MangaLibraryItem(
     val libraryManga: LibraryManga,
@@ -11,7 +12,8 @@ class MangaLibraryItem(
     val sourceLanguage: String,
     val badges: Badges,
 ) {
-    val id: Long = libraryManga.id
+    val manga: Manga get() = libraryManga.manga
+    val id: Long get() = libraryManga.id
 
     data class Badges(
         val downloadCount: Int,
