@@ -54,7 +54,7 @@ fun Screen.animeHistoryTab(
     val navigator = LocalNavigator.currentOrThrow
     val viewModel = viewModel<AnimeHistoryViewModel>()
     val state by viewModel.state.collectAsState()
-    val searchQuery by viewModel.query.collectAsState()
+    val searchQuery = state.searchQuery ?: ""
 
     suspend fun openEpisode(context: Context, episode: Episode?) {
         val playerPreferences: PlayerPreferences by injectLazy()
