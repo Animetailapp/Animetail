@@ -5,11 +5,11 @@ import eu.kanade.tachiyomi.animesource.model.FetchType
 import tachiyomi.source.local.io.ArchiveAnime
 import tachiyomi.source.local.io.anime.LocalAnimeSourceFileSystem
 
-actual class LocalAnimeFetchTypeManager(
+class LocalAnimeFetchTypeManager(
     private val context: Context,
     private val fileSystem: LocalAnimeSourceFileSystem,
 ) {
-    actual fun find(animeUrl: String): FetchType {
+    fun find(animeUrl: String): FetchType {
         val files = fileSystem.getFilesInAnimeDirectory(animeUrl)
 
         return when {

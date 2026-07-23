@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import eu.kanade.tachiyomi.animesource.model.Credit as SourceCredit
 
-actual class LocalAnimeSource(
+class LocalAnimeSource(
     private val context: Context,
     private val fileSystem: LocalAnimeSourceFileSystem,
     private val coverManager: LocalAnimeCoverManager,
