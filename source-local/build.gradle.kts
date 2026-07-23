@@ -35,4 +35,3 @@ dependencies {
     implementation(libs.injekt)
     implementation(libs.jsoup)
 }
-

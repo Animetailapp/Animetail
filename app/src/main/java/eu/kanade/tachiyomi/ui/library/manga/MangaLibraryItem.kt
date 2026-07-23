@@ -20,4 +20,3 @@ class MangaLibraryItem(
         val sourceLanguage: String,
     )
 }
-

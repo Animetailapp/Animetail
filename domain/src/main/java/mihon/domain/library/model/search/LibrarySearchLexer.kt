@@ -48,10 +48,15 @@ object LibrarySearchLexer {
             val groups = match.groups
             when {
                 groups["Separator"] != null -> continue
+
                 groups["AND"] != null -> tokens.add(Token.And)
+
                 groups["OR"] != null -> tokens.add(Token.Or)
+
                 groups["NOT"] != null -> tokens.add(Token.Not)
+
                 groups["LParen"] != null -> tokens.add(Token.LParen)
+
                 groups["RParen"] != null -> tokens.add(Token.RParen)
 
                 groups["CompField"] != null -> {

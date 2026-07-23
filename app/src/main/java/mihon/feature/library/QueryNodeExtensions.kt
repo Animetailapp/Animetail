@@ -38,14 +38,20 @@ private fun GeneralQueryNode.matches(item: MangaLibraryItem): Boolean {
 
         when (field) {
             MangaField.TITLE -> manga.title.contains(value, ignoreCase = true)
+
             MangaField.AUTHOR -> manga.author?.contains(value, ignoreCase = true) ?: false
+
             MangaField.ARTIST -> manga.artist?.contains(value, ignoreCase = true) ?: false
+
             MangaField.DESCRIPTION -> manga.description?.contains(value, ignoreCase = true) ?: false
+
             MangaField.GENRE -> manga.genre?.any { it.contains(value, ignoreCase = true) } ?: false
+
             MangaField.SOURCE -> {
                 item.sourceName.contains(value, ignoreCase = true) ||
                     (value.equals("local", ignoreCase = true) && manga.source == LocalSource.ID)
             }
+
             MangaField.NOTES -> manga.notes.contains(value, ignoreCase = true)
 
             // field-only queries; unreachable; added here to make `when` exhaustive
@@ -83,10 +89,15 @@ private fun FieldQueryNode.matches(item: MangaLibraryItem): Boolean {
         else -> {
             val text = when (field) {
                 MangaField.TITLE -> manga.title
+
                 MangaField.AUTHOR -> manga.author
+
                 MangaField.ARTIST -> manga.artist
+
                 MangaField.DESCRIPTION -> manga.description
+
                 MangaField.NOTES -> manga.notes
+
                 MangaField.LANGUAGE -> item.sourceLanguage
 
                 // unreachable; added here to make `when` exhaustive
