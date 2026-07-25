@@ -340,7 +340,6 @@
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
 
-
         <service
             android:name=".data.torrent.service.TorrentServerService"
             android:foregroundServiceType="dataSync" />
@@ -349,7 +348,6 @@
             android:name=".util.LocalHttpServerService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

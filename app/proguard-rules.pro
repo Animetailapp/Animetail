@@ -30,7 +30,6 @@
 -keep,allowoptimization class eu.kanade.tachiyomi.network.RequestsKt { public protected *; }
 -keep,allowoptimization class eu.kanade.tachiyomi.AppInfo { public protected *; }
 -keep,allowoptimization class eu.kanade.tachiyomi.torrentutils.** { public protected *; }
-
 -keepclassmembers class * implements java.io.Serializable {
     java.lang.Object writeReplace();
     java.lang.Object readResolve();
@@ -87,7 +86,6 @@
 
 # XmlUtil
 -keep public enum nl.adaptivity.xmlutil.EventType { *; }
-
 # Firebase
 -keep class com.google.firebase.installations.** { *; }
 -keep interface com.google.firebase.installations.** { *; }
@@ -121,8 +119,6 @@
 
 # Apache Commons Compress
 -keep class * extends org.apache.commons.compress.archivers.zip.ZipExtraField { <init>(); }
-
--keep public enum nl.adaptivity.xmlutil.EventType { *; }
 
 # Discord RPC Manager JNI Calls
 -keep class eu.kanade.tachiyomi.data.connections.discord.DiscordRpcManager { *; }

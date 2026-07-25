@@ -67,7 +67,6 @@ dependencies {
     // TLMR <--
     implementation(libs.exifinterface)
     // SY <--
-
     // TorrServer
     implementation(aniyomilibs.torrserver)
 

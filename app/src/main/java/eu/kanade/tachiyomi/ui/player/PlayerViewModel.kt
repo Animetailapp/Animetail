@@ -143,7 +143,6 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
-
 private const val NETWORK_STREAM_ANIME_ID = Long.MIN_VALUE + 101
 private const val NETWORK_STREAM_EPISODE_ID = Long.MIN_VALUE + 102
 
@@ -1177,7 +1176,6 @@ class PlayerViewModel @JvmOverloads constructor(
             seekTo(lastPosition.toInt()) // Mueve el reproductor local a la última posición
         }
     }
-
     fun stopHttpServer() {
         val server = (currentSource.value as? AnimeHttpSource)?.server
             ?: return
