@@ -1163,7 +1163,6 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
-<<<<<<< HEAD
     fun updateCastProgress(position: Float) {
         _pos.update { position }
     }
@@ -1177,9 +1176,6 @@ class PlayerViewModel @JvmOverloads constructor(
             seekTo(lastPosition.toInt()) // Mueve el reproductor local a la última posición
         }
     }
-
-=======
->>>>>>> upstream/main
     fun stopHttpServer() {
         val server = (currentSource.value as? AnimeHttpSource)?.server
             ?: return

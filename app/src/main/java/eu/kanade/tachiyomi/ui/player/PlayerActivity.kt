@@ -1140,7 +1140,6 @@ class PlayerActivity : BaseActivity() {
         finish()
     }
 
-<<<<<<< HEAD
     private fun handleNetworkStreamIntent(request: NetworkStreamRequest) {
         viewModel.saveCurrentEpisodeWatchingProgress()
         lifecycleScope.launchNonCancellable {
@@ -1162,34 +1161,18 @@ class PlayerActivity : BaseActivity() {
             torrentServerApi.setPort(preferredPort)
         }
 
-=======
-    private suspend fun torrentLinkHandler(videoUrl: String, title: String, videoOptions: String) {
-        var index = 0
-
->>>>>>> upstream/main
         // check if link is from localSource
         if (videoUrl.startsWith("content://")) {
             val videoInputStream = applicationContext.contentResolver.openInputStream(videoUrl.toUri())
             val torrent = torrentServerApi.uploadTorrent(videoInputStream!!, title, false)
             val torrentUrl = torrentServerUtils.getTorrentPlayLink(torrent, 0)
 
-<<<<<<< HEAD
             mpv.command(
                 "loadfile",
                 torrentUrl,
                 "replace",
                 "0",
                 videoOptions,
-=======
-            MPVLib.command(
-                arrayOf(
-                    "loadfile",
-                    torrentUrl,
-                    "replace",
-                    "0",
-                    videoOptions,
-                ),
->>>>>>> upstream/main
             )
             return
         }
@@ -1208,7 +1191,6 @@ class PlayerActivity : BaseActivity() {
         val currentTorrent = torrentServerApi.addTorrent(videoUrl, title, "", "", false)
         val videoTorrentUrl = torrentServerUtils.getTorrentPlayLink(currentTorrent, index)
 
-<<<<<<< HEAD
         mpv.command(
             "loadfile",
             videoTorrentUrl,
@@ -1219,20 +1201,6 @@ class PlayerActivity : BaseActivity() {
     }
 
     private fun parseVideoUrl(videoUrl: String?): String? {
-=======
-        MPVLib.command(
-            arrayOf(
-                "loadfile",
-                videoTorrentUrl,
-                "replace",
-                "0",
-                videoOptions,
-            ),
-        )
-    }
-
-    fun parseVideoUrl(videoUrl: String?): String? {
->>>>>>> upstream/main
         return videoUrl?.toUri()?.resolveUri(this)
             ?: videoUrl
     }
