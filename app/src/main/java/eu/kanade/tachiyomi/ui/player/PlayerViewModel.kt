@@ -143,9 +143,12 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
+<<<<<<< HEAD
 
 private const val NETWORK_STREAM_ANIME_ID = Long.MIN_VALUE + 101
 private const val NETWORK_STREAM_EPISODE_ID = Long.MIN_VALUE + 102
+=======
+>>>>>>> upstream/main
 
 class PlayerViewModelProviderFactory(
     private val activity: PlayerActivity,
@@ -1164,6 +1167,7 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
+<<<<<<< HEAD
     fun updateCastProgress(position: Float) {
         _pos.update { position }
     }
@@ -1178,6 +1182,8 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
+=======
+>>>>>>> upstream/main
     fun stopHttpServer() {
         val server = (currentSource.value as? AnimeHttpSource)?.server
             ?: return

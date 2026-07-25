@@ -17,10 +17,10 @@ kotlin {
                 file("consumer-proguard.pro")
             }
         }
-
-        // TODO(antsy): Remove when https://youtrack.jetbrains.com/issue/KT-83319 is resolved
-        withHostTest { }
     }
+
+    // TODO(antsy): Remove when https://youtrack.jetbrains.com/issue/KT-83319 is resolved
+    withHostTest { }
 
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
     dependencies {

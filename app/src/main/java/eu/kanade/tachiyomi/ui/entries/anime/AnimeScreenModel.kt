@@ -849,6 +849,18 @@ class AnimeScreenModel(
         }
     }
 
+    fun isTorrentEnabled(): Boolean {
+        return torrentPreferences.torrServerEnable().get()
+    }
+
+    private suspend fun startTorrentServer(source: AnimeSource?) {
+        if (isTorrentEnabled() && source.isSourceForTorrents()) {
+            TorrentServerService.start()
+            TorrentServerService.wait(10)
+            torrentServerUtils.setTrackersList()
+        }
+    }
+
     /**
      * Requests an updated list of episodes and seasons from the source.
      */

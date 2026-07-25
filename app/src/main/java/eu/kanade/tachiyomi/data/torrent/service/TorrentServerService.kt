@@ -50,7 +50,6 @@ class TorrentServerService : Service() {
                         notification(applicationContext)
                         return START_STICKY
                     }
-
                     ACTION_STOP -> {
                         stopServer()
                         return START_NOT_STICKY
