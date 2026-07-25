@@ -1110,16 +1110,11 @@ class PlayerActivity : BaseActivity() {
                     video.videoUrl.endsWith("torrent")
                 )
         ) {
-<<<<<<< HEAD
             lifecycleScope.launchIO {
-=======
-            launchIO {
->>>>>>> upstream/main
                 TorrentServerService.start()
                 torrentLinkHandler(video.videoUrl, video.videoTitle, videoOptions)
             }
         } else {
-<<<<<<< HEAD
             mpv.command(
                 "loadfile",
                 parseVideoUrl(video.videoUrl) ?: return,
@@ -1129,18 +1124,6 @@ class PlayerActivity : BaseActivity() {
             )
         }
         updateDiscordRPC(exitingPlayer = false)
-=======
-            MPVLib.command(
-                arrayOf(
-                    "loadfile",
-                    parseVideoUrl(video.videoUrl),
-                    "replace",
-                    "0",
-                    videoOptions,
-                ),
-            )
-        }
->>>>>>> upstream/main
     }
 
     /**

@@ -338,11 +338,7 @@
     <string name="player_hoster_failed">Failed to load videos</string>
     <string name="player_sheets_qualities_title">Qualities</string>
     <!-- Sheets - Decoders -->
-<<<<<<< HEAD
     <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
-=======
-    <string name="player_sheets_decoder_formatted">%s (%s)</string>
->>>>>>> upstream/main
     <!-- Sheets - More Sheet -->
     <string name="player_sheets_more_title">More</string>
     <string name="player_hwdec_mode">Hardware decoding mode</string>
