@@ -38,6 +38,7 @@ object TorrentHelpers {
                 lengthEntry !== null && filesEntry === null -> {
                     lengthEntry.value to listOf(FileStats(null, title, lengthEntry.value))
                 }
+
                 filesEntry !== null && lengthEntry === null -> {
                     var totalSizeAcc: Long = 0
                     val fileStats = filesEntry.value.mapIndexed { i, file ->
@@ -56,6 +57,7 @@ object TorrentHelpers {
                     }
                     totalSizeAcc to fileStats
                 }
+
                 else -> throw RuntimeException("Invalid torrent file")
             }
             return Torrent(

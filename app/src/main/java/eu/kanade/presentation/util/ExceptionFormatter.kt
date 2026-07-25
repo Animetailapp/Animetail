@@ -20,6 +20,7 @@ val Throwable.formattedMessage: String
             is DisabledTorrServerException -> return context.stringResource(AYMR.strings.torrserver_disabled)
 
             is HttpException -> return context.stringResource(MR.strings.exception_http, code)
+
             is UnknownHostException -> {
                 return if (!context.isOnline()) {
                     context.stringResource(MR.strings.exception_offline)
