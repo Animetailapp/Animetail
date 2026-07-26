@@ -196,7 +196,7 @@ object HomeScreen : Screen() {
                 if (defaultTab != moreTab) {
                     tabNavigator.current = defaultTab
                 } else {
-                    tabNavigator.current = AnimeLibraryTab
+                    tabNavigator.current = HomeTab
                 }
             }
             BackHandler(
@@ -219,6 +219,8 @@ object HomeScreen : Screen() {
                 launch {
                     openTabEvent.receiveAsFlow().collectLatest {
                         tabNavigator.current = when (it) {
+                            is Tab.Home -> HomeTab
+
                             is Tab.AnimeLib -> AnimeLibraryTab
 
                             is Tab.Library -> MangaLibraryTab
@@ -280,7 +282,8 @@ object HomeScreen : Screen() {
             label = {
                 Text(
                     text = tab.options.title,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontSize = androidx.compose.ui.unit.TextUnit(11f, androidx.compose.ui.unit.TextUnitType.Sp),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -399,6 +402,7 @@ object HomeScreen : Screen() {
     }
 
     sealed interface Tab {
+        data object Home : Tab
         data class AnimeLib(val animeIdToOpen: Long? = null) : Tab
         data class Library(val mangaIdToOpen: Long? = null) : Tab
         data object Updates : Tab

@@ -47,7 +47,7 @@ class UiPreferences(
 
     val tabletUiMode: Preference<TabletUiMode> = preferenceStore.getEnum("tablet_ui_mode", TabletUiMode.AUTOMATIC)
 
-    val startScreen: Preference<StartScreen> = preferenceStore.getEnum("start_screen", StartScreen.ANIME)
+    val startScreen: Preference<StartScreen> = preferenceStore.getEnum("start_screen", StartScreen.HOME)
 
     val navStyle: Preference<NavStyle> = preferenceStore.getEnum("bottom_rail_nav_style", NavStyle.MOVE_HISTORY_TO_MORE)
 

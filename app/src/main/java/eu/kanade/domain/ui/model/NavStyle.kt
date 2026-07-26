@@ -40,6 +40,7 @@ enum class NavStyle(
     val tabs: List<Tab>
         get() {
             return mutableListOf(
+                eu.kanade.tachiyomi.ui.home.HomeTab,
                 AnimeLibraryTab,
                 MangaLibraryTab,
                 UpdatesTab,
