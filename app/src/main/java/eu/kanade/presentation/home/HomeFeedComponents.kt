@@ -43,6 +43,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -314,14 +316,15 @@ fun HeroMediaCarousel(
 ) {
     if (heroList.isEmpty()) return
 
-    val pagerState = rememberPagerState(pageCount = { heroList.size })
+    val displayList = remember(heroList) { heroList.take(7) }
+    val pagerState = rememberPagerState(pageCount = { displayList.size })
 
     // Auto-advance cada 4 segundos
-    LaunchedEffect(pagerState, heroList) {
-        if (heroList.size > 1) {
+    LaunchedEffect(pagerState, displayList) {
+        if (displayList.size > 1) {
             while (true) {
                 delay(4000L)
-                val nextPage = (pagerState.currentPage + 1) % heroList.size
+                val nextPage = (pagerState.currentPage + 1) % displayList.size
                 pagerState.animateScrollToPage(nextPage)
             }
         }
@@ -332,7 +335,7 @@ fun HeroMediaCarousel(
             state = pagerState,
             modifier = Modifier.fillMaxWidth(),
         ) { page ->
-            val item = heroList[page]
+            val item = displayList[page]
             HeroMediaBanner(
                 title = item.title,
                 genres = item.genres.ifBlank { item.subtitle },
@@ -345,25 +348,34 @@ fun HeroMediaCarousel(
             )
         }
 
-        // Indicadores de páginas (puntos)
-        if (heroList.size > 1) {
-            Row(
+        // Indicadores de páginas (puntos estilizados)
+        if (displayList.size > 1) {
+            Surface(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 24.dp, bottom = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .align(Alignment.TopEnd)
+                    .padding(top = 12.dp, end = 12.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.Black.copy(alpha = 0.55f),
             ) {
-                repeat(heroList.size) { index ->
-                    val isSelected = pagerState.currentPage == index
-                    Box(
-                        modifier = Modifier
-                            .size(if (isSelected) 8.dp else 6.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (isSelected) Color.Red else Color.White.copy(alpha = 0.5f),
-                            ),
-                    )
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    repeat(displayList.size) { index ->
+                        val isSelected = pagerState.currentPage == index
+                        Box(
+                            modifier = Modifier
+                                .size(
+                                    width = if (isSelected) 14.dp else 6.dp,
+                                    height = 6.dp,
+                                )
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected) Color(0xFFFFC107) else Color.White.copy(alpha = 0.45f),
+                                ),
+                        )
+                    }
                 }
             }
         }
@@ -388,7 +400,7 @@ fun HeroMediaBanner(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(260.dp),
+            .height(270.dp),
         shape = RoundedCornerShape(18.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
     ) {
@@ -408,7 +420,7 @@ fun HeroMediaBanner(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.4f),
+                                Color.Black.copy(alpha = 0.35f),
                                 Color.Black.copy(alpha = 0.95f),
                             ),
                         ),
@@ -425,7 +437,23 @@ fun HeroMediaBanner(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    MediaFormatBadge(mediaType = mediaType, extraText = stringResource(MR.strings.label_featured))
+                    // Badge del formato real (PELÍCULA, ANIME, SERIE)
+                    MediaFormatBadge(mediaType = mediaType)
+
+                    // Badge de Destacado
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFFFC107).copy(alpha = 0.9f),
+                    ) {
+                        Text(
+                            text = stringResource(MR.strings.label_featured).uppercase(),
+                            color = Color.Black,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                            letterSpacing = 0.5.sp,
+                        )
+                    }
 
                     // Rating Badge (solo si tiene calificación real)
                     if (rating.isNotBlank() && rating != "0" && rating != "0.0") {

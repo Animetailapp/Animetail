@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import coil3.compose.AsyncImage
 import eu.kanade.tachiyomi.ui.browse.BrowseTab
+import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
+import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearchScreen
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.home.HomeFeedScreenModel
@@ -65,6 +67,7 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 data class HomeItemData(
     val id: Long,
     val isAnime: Boolean = true,
+    val inLibrary: Boolean = false,
     val episodeId: Long? = null,
     val chapterId: Long? = null,
     val title: String,
@@ -98,10 +101,18 @@ fun HomeFeedScreen(
     var showSettingsDialog by remember { mutableStateOf(false) }
 
     val onItemClick: (HomeItemData) -> Unit = { item ->
-        if (item.isAnime) {
-            navigator?.push(AnimeScreen(item.id))
+        if (item.inLibrary) {
+            if (item.isAnime) {
+                navigator?.push(AnimeScreen(item.id))
+            } else {
+                navigator?.push(MangaScreen(item.id))
+            }
         } else {
-            navigator?.push(MangaScreen(item.id))
+            if (item.isAnime) {
+                navigator?.push(GlobalAnimeSearchScreen(item.title))
+            } else {
+                navigator?.push(GlobalMangaSearchScreen(item.title))
+            }
         }
     }
 

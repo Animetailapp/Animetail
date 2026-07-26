@@ -5,6 +5,8 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.home.HomeItemData
 import eu.kanade.presentation.home.MediaType
+import eu.kanade.tachiyomi.data.track.TrackerManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
@@ -43,6 +45,7 @@ class HomeFeedScreenModel(
     private val getAnimeTracks: GetAnimeTracks = Injekt.get(),
     private val getMangaTracks: GetMangaTracks = Injekt.get(),
     private val sourcePreferences: SourcePreferences = Injekt.get(),
+    private val trackerManager: TrackerManager = Injekt.get(),
 ) : StateScreenModel<HomeFeedScreenModel.State>(State()) {
 
     data class State(
@@ -66,12 +69,20 @@ class HomeFeedScreenModel(
 
     init {
         observeHomeData()
+        fetchRemoteTrendsAsync()
     }
 
     fun refresh() {
         screenModelScope.launch {
-            mutableState.update { it.copy(isRefreshing = true) }
-            delay(800L)
+            mutableState.update { current ->
+                val newShuffledRecs = current.recommendedList.shuffled()
+                current.copy(
+                    isRefreshing = true,
+                    recommendedList = newShuffledRecs,
+                )
+            }
+            fetchRemoteTrendsAsync()
+            delay(600L)
             mutableState.update { it.copy(isRefreshing = false) }
         }
     }
@@ -90,6 +101,87 @@ class HomeFeedScreenModel(
         }
     }
 
+    private fun fetchRemoteTrendsAsync() {
+        screenModelScope.launch(Dispatchers.IO) {
+            try {
+                val remoteItems = mutableListOf<HomeItemData>()
+
+                // 1. Tendencias de AniList (Anime)
+                if (trackerManager.aniList.isLoggedIn) {
+                    try {
+                        val popularAnime = trackerManager.aniList.getPopularAnime()
+                        remoteItems += popularAnime.map { track ->
+                            val classified = classifyMedia(track.title, null, track.summary)
+                            HomeItemData(
+                                id = track.remote_id,
+                                isAnime = true,
+                                inLibrary = false,
+                                title = track.title,
+                                subtitle = classified.name,
+                                coverUrl = track.cover_url,
+                                mediaType = classified,
+                                rating = if (track.score > 0) String.format("%.1f", track.score / 10.0) else "",
+                                synopsis = track.summary,
+                            )
+                        }
+                    } catch (e: Exception) {
+                        logcat(LogPriority.WARN, e) { "Failed to fetch AniList trends" }
+                    }
+                }
+
+                // 2. Tendencias de TMDB (Películas y Series)
+                if (trackerManager.tmdb.isLoggedIn) {
+                    try {
+                        val movies = trackerManager.tmdb.getTrendingMovies().map { track ->
+                            HomeItemData(
+                                id = track.remote_id,
+                                isAnime = true,
+                                inLibrary = false,
+                                title = track.title,
+                                subtitle = "Película",
+                                coverUrl = track.cover_url,
+                                mediaType = MediaType.MOVIES,
+                                rating = if (track.score > 0) String.format("%.1f", track.score) else "",
+                                synopsis = track.summary,
+                            )
+                        }
+                        val series = trackerManager.tmdb.getTrendingTv().map { track ->
+                            HomeItemData(
+                                id = track.remote_id,
+                                isAnime = true,
+                                inLibrary = false,
+                                title = track.title,
+                                subtitle = "Serie",
+                                coverUrl = track.cover_url,
+                                mediaType = MediaType.SERIES,
+                                rating = if (track.score > 0) String.format("%.1f", track.score) else "",
+                                synopsis = track.summary,
+                            )
+                        }
+                        remoteItems += (movies + series)
+                    } catch (e: Exception) {
+                        logcat(LogPriority.WARN, e) { "Failed to fetch TMDB trends" }
+                    }
+                }
+
+                if (remoteItems.isNotEmpty()) {
+                    mutableState.update { current ->
+                        current.copy(heroList = remoteItems.shuffled())
+                    }
+                } else {
+                    mutableState.update { current ->
+                        val videoOnly = current.animeList.filter { it.mediaType != MediaType.MANGA }
+                        if (videoOnly.isNotEmpty()) {
+                            current.copy(heroList = videoOnly.shuffled().take(7))
+                        } else current
+                    }
+                }
+            } catch (e: Exception) {
+                logcat(LogPriority.WARN, e) { "Failed to fetch remote trends" }
+            }
+        }
+    }
+
     private fun observeHomeData() {
         combine(
             getAnimeHistory.subscribe("").onStart { emit(emptyList()) },
@@ -99,6 +191,7 @@ class HomeFeedScreenModel(
         ) { animeHistories, mangaHistories, libraryAnimeList, libraryMangaList ->
             val pinnedAnimeSources = sourcePreferences.pinnedAnimeSources.get()
             val pinnedMangaSources = sourcePreferences.pinnedMangaSources.get()
+            val hasLoggedInTrackers = trackerManager.loggedInTrackers().isNotEmpty()
 
             val animeMap = libraryAnimeList.associateBy { it.anime.id }
 
@@ -145,6 +238,7 @@ class HomeFeedScreenModel(
                 HomeItemData(
                     id = relation.animeId,
                     isAnime = true,
+                    inLibrary = true,
                     episodeId = relation.episodeId,
                     title = relation.title,
                     subtitle = subtitleText,
@@ -173,6 +267,7 @@ class HomeFeedScreenModel(
                 HomeItemData(
                     id = relation.mangaId,
                     isAnime = false,
+                    inLibrary = true,
                     chapterId = relation.chapterId,
                     title = relation.title,
                     subtitle = "Capítulo $chNum",
@@ -205,13 +300,18 @@ class HomeFeedScreenModel(
                 val anime = lib.anime
                 val mediaType = classifyMedia(anime.title, anime.genre, anime.description)
                 
-                val tracks = getAnimeTracks.await(anime.id)
-                val realScore = tracks.firstOrNull { it.score > 0 }?.score ?: 0.0
-                val ratingStr = if (realScore > 0) String.format("%.1f", realScore) else ""
+                val ratingStr = if (hasLoggedInTrackers) {
+                    val tracks = getAnimeTracks.await(anime.id)
+                    val realScore = tracks.firstOrNull { it.score > 0 }?.score ?: 0.0
+                    if (realScore > 0) String.format("%.1f", realScore) else ""
+                } else {
+                    ""
+                }
 
                 HomeItemData(
                     id = anime.id,
                     isAnime = true,
+                    inLibrary = true,
                     title = anime.title,
                     subtitle = anime.genre?.firstOrNull() ?: mediaType.name,
                     coverData = anime.asAnimeCover(),
@@ -224,13 +324,18 @@ class HomeFeedScreenModel(
 
             val mangaItems = sourceMangaList.map { lib ->
                 val manga = lib.manga
-                val tracks = getMangaTracks.await(manga.id)
-                val realScore = tracks.firstOrNull { it.score > 0 }?.score ?: 0.0
-                val ratingStr = if (realScore > 0) String.format("%.1f", realScore) else ""
+                val ratingStr = if (hasLoggedInTrackers) {
+                    val tracks = getMangaTracks.await(manga.id)
+                    val realScore = tracks.firstOrNull { it.score > 0 }?.score ?: 0.0
+                    if (realScore > 0) String.format("%.1f", realScore) else ""
+                } else {
+                    ""
+                }
 
                 HomeItemData(
                     id = manga.id,
                     isAnime = false,
+                    inLibrary = true,
                     title = manga.title,
                     subtitle = manga.genre?.firstOrNull() ?: "Manga",
                     coverData = manga.asMangaCover(),
@@ -258,16 +363,18 @@ class HomeFeedScreenModel(
             }
 
             val unifiedRecommended = (animeItems + mangaItems).shuffled()
-            
-            // Garantizar que el carrusel Destacados tome de las extensiones ancladas y omita locales
-            val carouselFeatured = (animeItems + mangaItems)
-                .distinctBy { it.id }
-                .take(7)
+            val videoItems = animeItems.filter { it.mediaType != MediaType.MANGA }
+            val fallbackCarousel = if (videoItems.isNotEmpty()) {
+                videoItems.distinctBy { it.id }.take(7)
+            } else {
+                animeItems.distinctBy { it.id }.take(7)
+            }
+            val currentHeroList = mutableState.value.heroList.ifEmpty { fallbackCarousel }
 
             State(
                 isLoading = false,
                 isRefreshing = false,
-                heroList = carouselFeatured,
+                heroList = currentHeroList,
                 continueList = unifiedContinue,
                 becauseYouWatchedTitle = lastInteractedItem?.title,
                 becauseYouWatchedIsAnime = lastInteractedItem?.isAnime ?: true,

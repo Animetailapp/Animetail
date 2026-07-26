@@ -357,6 +357,88 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         }
     }
 
+    suspend fun getPopularAnime(): List<AnimeTrackSearch> {
+        return withIOContext {
+            val query = $$"""
+            |query PopularAnime {
+                |Page (perPage: 10) {
+                    |media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
+                        |id
+                        |title {
+                            |userPreferred
+                        |}
+                        |coverImage {
+                            |large
+                        |}
+                        |format
+                        |status
+                        |episodes
+                        |description
+                        |averageScore
+                    |}
+                |}
+            |}
+            |
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+            }
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<ALSearchResult>()
+                    .data.page.media
+                    .map { it.toALAnime().toTrack() }
+            }
+        }
+    }
+
+    suspend fun getPopularManga(): List<MangaTrackSearch> {
+        return withIOContext {
+            val query = $$"""
+            |query PopularManga {
+                |Page (perPage: 10) {
+                    |media(sort: TRENDING_DESC, type: MANGA, format_not_in: [NOVEL], isAdult: false) {
+                        |id
+                        |title {
+                            |userPreferred
+                        |}
+                        |coverImage {
+                            |large
+                        |}
+                        |format
+                        |status
+                        |chapters
+                        |description
+                        |averageScore
+                    |}
+                |}
+            |}
+            |
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+            }
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<ALSearchResult>()
+                    .data.page.media
+                    .map { it.toALManga().toTrack() }
+            }
+        }
+    }
+
     suspend fun findLibManga(track: MangaTrack, userid: Int): MangaTrack? {
         return withIOContext {
             val query = $$"""
