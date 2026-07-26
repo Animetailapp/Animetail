@@ -7,6 +7,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -110,8 +112,20 @@ object HomeScreen : Screen() {
             castManager.reconnect()
         }
 
+        val showHomeTab by uiPreferences.showHomeTab.collectAsState()
+        val startScreenPref by uiPreferences.startScreen.collectAsState()
+
+        val effectiveStartTab = remember(showHomeTab, startScreenPref) {
+            val configuredTab = startScreenPref.tab
+            if (configuredTab == HomeTab && !showHomeTab) {
+                AnimeLibraryTab
+            } else {
+                configuredTab
+            }
+        }
+
         TabNavigator(
-            tab = defaultTab,
+            tab = effectiveStartTab,
             key = TAB_NAVIGATOR_KEY,
         ) { tabNavigator ->
             // Provide usable navigator to content screen
@@ -193,15 +207,15 @@ object HomeScreen : Screen() {
             }
 
             val goToStartScreen = {
-                if (defaultTab != moreTab) {
-                    tabNavigator.current = defaultTab
+                if (effectiveStartTab != moreTab) {
+                    tabNavigator.current = effectiveStartTab
                 } else {
-                    tabNavigator.current = HomeTab
+                    tabNavigator.current = if (showHomeTab) HomeTab else AnimeLibraryTab
                 }
             }
             BackHandler(
-                enabled = (tabNavigator.current == moreTab || tabNavigator.current != defaultTab) &&
-                    (tabNavigator.current != AnimeLibraryTab || defaultTab != moreTab),
+                enabled = (tabNavigator.current == moreTab || tabNavigator.current != effectiveStartTab) &&
+                    (tabNavigator.current != AnimeLibraryTab || effectiveStartTab != moreTab),
                 onBack = goToStartScreen,
             )
 
@@ -209,7 +223,7 @@ object HomeScreen : Screen() {
                 launch {
                     librarySearchEvent.receiveAsFlow().collectLatest {
                         goToStartScreen()
-                        when (defaultTab) {
+                        when (effectiveStartTab) {
                             AnimeLibraryTab -> AnimeLibraryTab.search(it)
                             MangaLibraryTab -> MangaLibraryTab.search(it)
                             else -> {}
@@ -219,7 +233,7 @@ object HomeScreen : Screen() {
                 launch {
                     openTabEvent.receiveAsFlow().collectLatest {
                         tabNavigator.current = when (it) {
-                            is Tab.Home -> HomeTab
+                            is Tab.Home -> if (showHomeTab) HomeTab else AnimeLibraryTab
 
                             is Tab.AnimeLib -> AnimeLibraryTab
 
@@ -258,6 +272,7 @@ object HomeScreen : Screen() {
         }
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     private fun RowScope.NavigationBarItem(
         tab: eu.kanade.presentation.util.Tab,
@@ -278,6 +293,21 @@ object HomeScreen : Screen() {
                     scope.launch { tab.onReselect(navigator) }
                 }
             },
+            modifier = Modifier.combinedClickable(
+                onClick = {
+                    if (!selected) {
+                        tabNavigator.current = tab
+                    } else {
+                        scope.launch { tab.onReselect(navigator) }
+                    }
+                },
+                onLongClick = {
+                    if (!selected) {
+                        tabNavigator.current = tab
+                    }
+                    scope.launch { tab.onReselect(navigator) }
+                },
+            ),
             icon = { NavigationIconItem(tab) },
             label = {
                 Text(
@@ -292,6 +322,7 @@ object HomeScreen : Screen() {
         )
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun NavigationRailItem(
         tab: eu.kanade.presentation.util.Tab,
@@ -312,6 +343,21 @@ object HomeScreen : Screen() {
                     scope.launch { tab.onReselect(navigator) }
                 }
             },
+            modifier = Modifier.combinedClickable(
+                onClick = {
+                    if (!selected) {
+                        tabNavigator.current = tab
+                    } else {
+                        scope.launch { tab.onReselect(navigator) }
+                    }
+                },
+                onLongClick = {
+                    if (!selected) {
+                        tabNavigator.current = tab
+                    }
+                    scope.launch { tab.onReselect(navigator) }
+                },
+            ),
             icon = { NavigationIconItem(tab) },
             label = {
                 Text(

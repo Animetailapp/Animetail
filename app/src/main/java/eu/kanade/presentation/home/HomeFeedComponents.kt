@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,8 +19,15 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import eu.kanade.presentation.components.TabbedDialog
+import eu.kanade.presentation.components.TabbedDialogPaddings
+import kotlinx.collections.immutable.persistentListOf
+import tachiyomi.presentation.core.components.CheckboxItem
+import tachiyomi.presentation.core.components.HeadingItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Movie
@@ -313,6 +321,7 @@ fun HeroMediaCarousel(
     heroList: List<HomeItemData>,
     onItemClick: (HomeItemData) -> Unit,
     modifier: Modifier = Modifier,
+    autoScrollHero: Boolean = true,
 ) {
     if (heroList.isEmpty()) return
 
@@ -320,8 +329,8 @@ fun HeroMediaCarousel(
     val pagerState = rememberPagerState(pageCount = { displayList.size })
 
     // Auto-advance cada 4 segundos
-    LaunchedEffect(pagerState, displayList) {
-        if (displayList.size > 1) {
+    LaunchedEffect(pagerState, displayList, autoScrollHero) {
+        if (autoScrollHero && displayList.size > 1) {
             while (true) {
                 delay(4000L)
                 val nextPage = (pagerState.currentPage + 1) % displayList.size
@@ -549,65 +558,176 @@ fun HeroMediaBanner(
  * Diálogo modal para personalizar y reordenar las secciones del Feed de Inicio.
  */
 @Composable
+private fun <T> CompactSegmentedControl(
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        shape = RoundedCornerShape(8.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            options.forEach { (value, label) ->
+                val isSelected = value == selected
+                Surface(
+                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onSelect(value) },
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        maxLines = 1,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(vertical = 6.dp, horizontal = 2.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Diálogo modal para personalizar las opciones y secciones del Feed de Inicio.
+ */
+@Composable
 fun HomeFeedSettingsDialog(
-    showFeatured: Boolean,
-    showContinue: Boolean,
-    showBecauseYouWatched: Boolean,
-    showRecommended: Boolean,
-    showPopularAnime: Boolean,
-    showPopularManga: Boolean,
+    state: eu.kanade.tachiyomi.ui.home.HomeFeedScreenModel.State,
     onToggleSection: (String) -> Unit,
+    onSetMediaFilter: (eu.kanade.tachiyomi.ui.home.HomeMediaFilter) -> Unit,
+    onToggleAutoScrollHero: () -> Unit,
+    onSetHeroSource: (eu.kanade.tachiyomi.ui.home.HeroSource) -> Unit,
+    onSetItemsPerSection: (Int) -> Unit,
+    onToggleHideCompleted: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
-    AlertDialog(
+    TabbedDialog(
         onDismissRequest = onDismissRequest,
-        title = {
-            Text(
-                text = stringResource(MR.strings.customize_home_feed),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                FeedSectionToggleItem(
-                    label = stringResource(MR.strings.show_featured),
-                    checked = showFeatured,
-                    onCheckedChange = { onToggleSection("featured") },
-                )
-                FeedSectionToggleItem(
-                    label = stringResource(MR.strings.show_continue),
-                    checked = showContinue,
-                    onCheckedChange = { onToggleSection("continue") },
-                )
-                FeedSectionToggleItem(
-                    label = stringResource(MR.strings.show_because_you_watched),
-                    checked = showBecauseYouWatched,
-                    onCheckedChange = { onToggleSection("because_you_watched") },
-                )
-                FeedSectionToggleItem(
-                    label = stringResource(MR.strings.show_recommended),
-                    checked = showRecommended,
-                    onCheckedChange = { onToggleSection("recommended") },
-                )
-                FeedSectionToggleItem(
-                    label = stringResource(MR.strings.show_popular_anime),
-                    checked = showPopularAnime,
-                    onCheckedChange = { onToggleSection("popular_anime") },
-                )
-                FeedSectionToggleItem(
-                    label = stringResource(MR.strings.show_popular_manga),
-                    checked = showPopularManga,
-                    onCheckedChange = { onToggleSection("popular_manga") },
-                )
+        tabTitles = persistentListOf(
+            stringResource(MR.strings.content_filter_title),
+            stringResource(MR.strings.show_featured),
+            stringResource(MR.strings.visible_sections_title),
+        ),
+    ) { page ->
+        Column(
+            modifier = Modifier
+                .padding(vertical = TabbedDialogPaddings.Vertical)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            when (page) {
+                0 -> {
+                    HeadingItem(stringResource(MR.strings.content_filter_title))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                    ) {
+                        CompactSegmentedControl(
+                            options = listOf(
+                                eu.kanade.tachiyomi.ui.home.HomeMediaFilter.ALL to stringResource(MR.strings.home_media_filter_all),
+                                eu.kanade.tachiyomi.ui.home.HomeMediaFilter.VIDEO_ONLY to stringResource(MR.strings.home_media_filter_video),
+                                eu.kanade.tachiyomi.ui.home.HomeMediaFilter.MANGA_ONLY to stringResource(MR.strings.home_media_filter_manga),
+                            ),
+                            selected = state.mediaFilter,
+                            onSelect = onSetMediaFilter,
+                        )
+                    }
+
+                    HeadingItem(stringResource(MR.strings.items_per_section))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                    ) {
+                        CompactSegmentedControl(
+                            options = listOf(
+                                6 to stringResource(MR.strings.items_count_format, 6),
+                                12 to stringResource(MR.strings.items_count_format, 12),
+                                24 to stringResource(MR.strings.items_count_format, 24),
+                            ),
+                            selected = state.itemsPerSection,
+                            onSelect = onSetItemsPerSection,
+                        )
+                    }
+
+                    HeadingItem(stringResource(MR.strings.additional_filters_title))
+                    CheckboxItem(
+                        label = stringResource(MR.strings.hide_completed_recommended),
+                        checked = state.hideCompletedInRecommended,
+                        onClick = onToggleHideCompleted,
+                    )
+                }
+
+                1 -> {
+                    HeadingItem(stringResource(MR.strings.show_featured))
+                    CheckboxItem(
+                        label = stringResource(MR.strings.auto_scroll_hero),
+                        checked = state.autoScrollHero,
+                        onClick = onToggleAutoScrollHero,
+                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                    ) {
+                        CompactSegmentedControl(
+                            options = listOf(
+                                eu.kanade.tachiyomi.ui.home.HeroSource.BOTH to stringResource(MR.strings.hero_source_both),
+                                eu.kanade.tachiyomi.ui.home.HeroSource.LIBRARY_ONLY to stringResource(MR.strings.hero_source_library),
+                            ),
+                            selected = state.heroSource,
+                            onSelect = onSetHeroSource,
+                        )
+                    }
+                }
+
+                2 -> {
+                    HeadingItem(stringResource(MR.strings.visible_sections_title))
+                    CheckboxItem(
+                        label = stringResource(MR.strings.show_featured),
+                        checked = state.showFeatured,
+                        onClick = { onToggleSection("featured") },
+                    )
+                    CheckboxItem(
+                        label = stringResource(MR.strings.show_continue),
+                        checked = state.showContinue,
+                        onClick = { onToggleSection("continue") },
+                    )
+                    CheckboxItem(
+                        label = stringResource(MR.strings.show_because_you_watched),
+                        checked = state.showBecauseYouWatched,
+                        onClick = { onToggleSection("because_you_watched") },
+                    )
+                    CheckboxItem(
+                        label = stringResource(MR.strings.show_recommended),
+                        checked = state.showRecommended,
+                        onClick = { onToggleSection("recommended") },
+                    )
+                    CheckboxItem(
+                        label = stringResource(MR.strings.show_popular_anime),
+                        checked = state.showPopularAnime,
+                        onClick = { onToggleSection("popular_anime") },
+                    )
+                    CheckboxItem(
+                        label = stringResource(MR.strings.show_popular_manga),
+                        checked = state.showPopularManga,
+                        onClick = { onToggleSection("popular_manga") },
+                    )
+                }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = stringResource(MR.strings.action_ok))
-            }
-        },
-    )
+        }
+    }
 }
 
 @Composable

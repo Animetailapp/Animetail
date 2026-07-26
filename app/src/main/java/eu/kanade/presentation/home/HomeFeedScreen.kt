@@ -29,6 +29,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.receiveAsFlow
+import eu.kanade.tachiyomi.ui.home.HomeTab
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,6 +104,12 @@ fun HomeFeedScreen(
     var selectedMediaType by remember { mutableStateOf(MediaType.ALL) }
     var showSettingsDialog by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        HomeTab.openSettingsSheetEvent.receiveAsFlow().collectLatest {
+            showSettingsDialog = true
+        }
+    }
+
     val onItemClick: (HomeItemData) -> Unit = { item ->
         if (item.inLibrary) {
             if (item.isAnime) {
@@ -132,17 +142,16 @@ fun HomeFeedScreen(
     if (state.isLoading) {
         LoadingScreen(modifier = modifier)
         return
-    }
-
+    }    
     if (showSettingsDialog) {
         HomeFeedSettingsDialog(
-            showFeatured = state.showFeatured,
-            showContinue = state.showContinue,
-            showBecauseYouWatched = state.showBecauseYouWatched,
-            showRecommended = state.showRecommended,
-            showPopularAnime = state.showPopularAnime,
-            showPopularManga = state.showPopularManga,
+            state = state,
             onToggleSection = { model.toggleSection(it) },
+            onSetMediaFilter = { model.setMediaFilter(it) },
+            onToggleAutoScrollHero = { model.toggleAutoScrollHero() },
+            onSetHeroSource = { model.setHeroSource(it) },
+            onSetItemsPerSection = { model.setItemsPerSection(it) },
+            onToggleHideCompleted = { model.toggleHideCompletedInRecommended() },
             onDismissRequest = { showSettingsDialog = false },
         )
     }
@@ -170,31 +179,24 @@ fun HomeFeedScreen(
                             contentDescription = stringResource(MR.strings.label_notifications),
                         )
                     }
-                    IconButton(onClick = { showSettingsDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Tune,
-                            contentDescription = stringResource(MR.strings.customize_home_feed),
-                        )
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
         },
-        modifier = modifier.fillMaxSize(),
-    ) { paddingValues ->
-        PullRefresh(
+    ) { padding ->
+        tachiyomi.presentation.core.components.material.PullRefresh(
             refreshing = state.isRefreshing,
             onRefresh = { model.refresh() },
             enabled = true,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+            indicatorPadding = padding,
         ) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp),
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // 1. Chips de Filtro Horizontal (Todo, Películas, Series, Anime, Manga)
                 item {
@@ -211,6 +213,7 @@ fun HomeFeedScreen(
                             heroList = state.heroList,
                             onItemClick = onContinueItemClick,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            autoScrollHero = state.autoScrollHero,
                         )
                     }
                 }
