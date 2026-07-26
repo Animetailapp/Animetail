@@ -43,6 +43,15 @@
     <string name="series_format">Series • Ep. %s</string>
     <string name="page_format">Page %s</string>
     <string name="label_notifications">Notifications</string>
+    <string name="because_you_watched">Because you watched %s</string>
+    <string name="because_you_read">Because you read %s</string>
+    <string name="customize_home_feed">Customize Home Feed</string>
+    <string name="show_featured">Featured Carousel</string>
+    <string name="show_continue">Continue Watching &amp; Reading</string>
+    <string name="show_because_you_watched">Smart Recommendations ("Because you watched…")</string>
+    <string name="show_recommended">Recommended for You</string>
+    <string name="show_popular_anime">Popular Anime</string>
+    <string name="show_popular_manga">Popular Manga</string>
     <string name="label_download_queue">Download queue</string>
     <string name="label_library">Library</string>
     <string name="label_recent_updates">Updates</string>

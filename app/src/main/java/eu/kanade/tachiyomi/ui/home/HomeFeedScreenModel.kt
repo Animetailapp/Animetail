@@ -5,11 +5,14 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.home.HomeItemData
 import eu.kanade.presentation.home.MediaType
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.anime.interactor.GetAnime
@@ -44,15 +47,47 @@ class HomeFeedScreenModel(
 
     data class State(
         val isLoading: Boolean = true,
+        val isRefreshing: Boolean = false,
         val heroList: List<HomeItemData> = emptyList(),
         val continueList: List<HomeItemData> = emptyList(),
+        val becauseYouWatchedTitle: String? = null,
+        val becauseYouWatchedIsAnime: Boolean = true,
+        val becauseYouWatchedList: List<HomeItemData> = emptyList(),
         val recommendedList: List<HomeItemData> = emptyList(),
         val animeList: List<HomeItemData> = emptyList(),
         val mangaList: List<HomeItemData> = emptyList(),
+        val showFeatured: Boolean = true,
+        val showContinue: Boolean = true,
+        val showBecauseYouWatched: Boolean = true,
+        val showRecommended: Boolean = true,
+        val showPopularAnime: Boolean = true,
+        val showPopularManga: Boolean = true,
     )
 
     init {
         observeHomeData()
+    }
+
+    fun refresh() {
+        screenModelScope.launch {
+            mutableState.update { it.copy(isRefreshing = true) }
+            delay(800L)
+            mutableState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    fun toggleSection(key: String) {
+        mutableState.update { current ->
+            when (key) {
+                "featured" -> current.copy(showFeatured = !current.showFeatured)
+                "continue" -> current.copy(showContinue = !current.showContinue)
+                "because_you_watched" -> current.copy(showBecauseYouWatched = !current.showBecauseYouWatched)
+                "recommended" -> current.copy(showRecommended = !current.showRecommended)
+                "popular_anime" -> current.copy(showPopularAnime = !current.showPopularAnime)
+                "popular_manga" -> current.copy(showPopularManga = !current.showPopularManga)
+                else -> current
+            }
+        }
     }
 
     private fun observeHomeData() {
@@ -94,7 +129,6 @@ class HomeFeedScreenModel(
                     "Ep. $epNum"
                 }
 
-                // Buscar el objeto Anime para obtener géneros y sinopsis para clasificar si es Película, Serie o Anime
                 val libAnime = animeMap[relation.animeId]?.anime ?: getAnime.await(relation.animeId)
                 val classifiedType = if (libAnime != null) {
                     classifyMedia(libAnime.title, libAnime.genre, libAnime.description)
@@ -119,6 +153,8 @@ class HomeFeedScreenModel(
                     progress = progressRatio,
                     remainingInfo = timeFormatted,
                     synopsis = libAnime?.description ?: relation.title,
+                    genres = libAnime?.genre?.joinToString(", ") ?: "",
+                    lastUpdatedTimestamp = relation.seenAt?.time ?: 0L,
                 )
             }
 
@@ -145,11 +181,14 @@ class HomeFeedScreenModel(
                     progress = 0.8f,
                     remainingInfo = pageFormatted,
                     synopsis = relation.title,
+                    lastUpdatedTimestamp = relation.readAt?.time ?: 0L,
                 )
             }
 
-            // Unificar lista de Continuar viendo (Anime/Películas/Series) y leyendo (Manga)
-            val unifiedContinue = (continueAnime + continueManga).take(15)
+            // Unificar e intercalar por fecha de actualización más reciente (Anime/Películas/Series + Manga)
+            val unifiedContinue = (continueAnime + continueManga)
+                .sortedByDescending { it.lastUpdatedTimestamp }
+                .take(20)
 
             // 3. Listas de Biblioteca (Online vs Local)
             val nonLocalAnime = libraryAnimeList.filterNot { it.anime.isLocal() }
@@ -166,7 +205,6 @@ class HomeFeedScreenModel(
                 val anime = lib.anime
                 val mediaType = classifyMedia(anime.title, anime.genre, anime.description)
                 
-                // Obtener rating real de tracking si existe (MAL, AniList, etc.), sin inventar notas
                 val tracks = getAnimeTracks.await(anime.id)
                 val realScore = tracks.firstOrNull { it.score > 0 }?.score ?: 0.0
                 val ratingStr = if (realScore > 0) String.format("%.1f", realScore) else ""
@@ -180,6 +218,7 @@ class HomeFeedScreenModel(
                     mediaType = mediaType,
                     rating = ratingStr,
                     synopsis = anime.description ?: anime.title,
+                    genres = anime.genre?.joinToString(", ") ?: "",
                 )
             }
 
@@ -198,7 +237,24 @@ class HomeFeedScreenModel(
                     mediaType = MediaType.MANGA,
                     rating = ratingStr,
                     synopsis = manga.description ?: manga.title,
+                    genres = manga.genre?.joinToString(", ") ?: "",
                 )
+            }
+
+            // 4. Cálculo de la sección inteligente "Porque viste / leíste..."
+            val lastInteractedItem = unifiedContinue.firstOrNull()
+            val targetGenres = lastInteractedItem?.genres?.split(",")?.map { it.trim().lowercase() }?.filter { it.isNotBlank() } ?: emptyList()
+            
+            val becauseYouWatchedList = if (lastInteractedItem != null && targetGenres.isNotEmpty()) {
+                (animeItems + mangaItems)
+                    .filter { item ->
+                        item.id != lastInteractedItem.id &&
+                            item.genres.split(",").any { g -> g.trim().lowercase() in targetGenres }
+                    }
+                    .distinctBy { it.id }
+                    .take(10)
+            } else {
+                emptyList()
             }
 
             val unifiedRecommended = (animeItems + mangaItems).shuffled()
@@ -210,8 +266,12 @@ class HomeFeedScreenModel(
 
             State(
                 isLoading = false,
+                isRefreshing = false,
                 heroList = carouselFeatured,
                 continueList = unifiedContinue,
+                becauseYouWatchedTitle = lastInteractedItem?.title,
+                becauseYouWatchedIsAnime = lastInteractedItem?.isAnime ?: true,
+                becauseYouWatchedList = becauseYouWatchedList,
                 recommendedList = unifiedRecommended.take(12),
                 animeList = animeItems.take(12),
                 mangaList = mangaItems.take(12),

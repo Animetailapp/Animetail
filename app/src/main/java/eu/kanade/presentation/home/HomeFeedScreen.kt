@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,6 +55,7 @@ import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.components.material.PullRefresh
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 
@@ -75,6 +77,7 @@ data class HomeItemData(
     val remainingInfo: String = "",
     val synopsis: String = "",
     val genres: String = "",
+    val lastUpdatedTimestamp: Long = 0L,
 )
 
 /**
@@ -92,6 +95,7 @@ fun HomeFeedScreen(
     val model = screenModel ?: remember { HomeFeedScreenModel() }
     val state by model.state.collectAsState()
     var selectedMediaType by remember { mutableStateOf(MediaType.ALL) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
 
     val onItemClick: (HomeItemData) -> Unit = { item ->
         if (item.isAnime) {
@@ -119,6 +123,19 @@ fun HomeFeedScreen(
         return
     }
 
+    if (showSettingsDialog) {
+        HomeFeedSettingsDialog(
+            showFeatured = state.showFeatured,
+            showContinue = state.showContinue,
+            showBecauseYouWatched = state.showBecauseYouWatched,
+            showRecommended = state.showRecommended,
+            showPopularAnime = state.showPopularAnime,
+            showPopularManga = state.showPopularManga,
+            onToggleSection = { model.toggleSection(it) },
+            onDismissRequest = { showSettingsDialog = false },
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -142,6 +159,12 @@ fun HomeFeedScreen(
                             contentDescription = stringResource(MR.strings.label_notifications),
                         )
                     }
+                    IconButton(onClick = { showSettingsDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = stringResource(MR.strings.customize_home_feed),
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -150,116 +173,152 @@ fun HomeFeedScreen(
         },
         modifier = modifier.fillMaxSize(),
     ) { paddingValues ->
-        LazyColumn(
+        PullRefresh(
+            refreshing = state.isRefreshing,
+            onRefresh = { model.refresh() },
+            enabled = true,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(bottom = 24.dp),
         ) {
-            // 1. Chips de Filtro Horizontal (Todo, Películas, Series, Anime, Manga)
-            item {
-                MediaFormatFilterChips(
-                    selectedMediaType = selectedMediaType,
-                    onMediaTypeSelected = { selectedMediaType = it },
-                )
-            }
-
-            // 2. Banner Destacado (Hero Carousel con avance automático de 7+ ítems)
-            if (state.heroList.isNotEmpty()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 24.dp),
+            ) {
+                // 1. Chips de Filtro Horizontal (Todo, Películas, Series, Anime, Manga)
                 item {
-                    HeroMediaCarousel(
-                        heroList = state.heroList,
-                        onItemClick = onContinueItemClick,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    MediaFormatFilterChips(
+                        selectedMediaType = selectedMediaType,
+                        onMediaTypeSelected = { selectedMediaType = it },
                     )
                 }
-            }
 
-            // 3. Sección "Continuar viendo y leyendo"
-            if (state.continueList.isNotEmpty()) {
-                item {
-                    SectionHeader(title = stringResource(MR.strings.label_continue_watching_reading))
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        val filteredContinue = if (selectedMediaType == MediaType.ALL) {
-                            state.continueList
+                // 2. Banner Destacado (Hero Carousel con avance automático de 7+ ítems)
+                if (state.showFeatured && state.heroList.isNotEmpty()) {
+                    item {
+                        HeroMediaCarousel(
+                            heroList = state.heroList,
+                            onItemClick = onContinueItemClick,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                }
+
+                // 3. Sección "Continuar viendo y leyendo"
+                if (state.showContinue && state.continueList.isNotEmpty()) {
+                    item {
+                        SectionHeader(title = stringResource(MR.strings.label_continue_watching_reading))
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            val filteredContinue = if (selectedMediaType == MediaType.ALL) {
+                                state.continueList
+                            } else {
+                                state.continueList.filter { it.mediaType == selectedMediaType }
+                            }
+
+                            items(filteredContinue) { item ->
+                                ContinueWatchingReadingCard(
+                                    title = item.title,
+                                    subtitle = item.subtitle,
+                                    coverUrl = item.coverUrl,
+                                    coverData = item.coverData,
+                                    mediaType = item.mediaType,
+                                    progress = item.progress,
+                                    remainingInfo = item.remainingInfo,
+                                    onClick = { onContinueItemClick(item) },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 4. Sección Inteligente "Porque viste / leíste [Título]..."
+                if (state.showBecauseYouWatched && state.becauseYouWatchedTitle != null && state.becauseYouWatchedList.isNotEmpty()) {
+                    item {
+                        val headerText = if (state.becauseYouWatchedIsAnime) {
+                            stringResource(MR.strings.because_you_watched, state.becauseYouWatchedTitle!!)
                         } else {
-                            state.continueList.filter { it.mediaType == selectedMediaType }
+                            stringResource(MR.strings.because_you_read, state.becauseYouWatchedTitle!!)
                         }
+                        SectionHeader(title = headerText)
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            val filteredBecause = if (selectedMediaType == MediaType.ALL) {
+                                state.becauseYouWatchedList
+                            } else {
+                                state.becauseYouWatchedList.filter { it.mediaType == selectedMediaType }
+                            }
 
-                        items(filteredContinue) { item ->
-                            ContinueWatchingReadingCard(
-                                title = item.title,
-                                subtitle = item.subtitle,
-                                coverUrl = item.coverUrl,
-                                coverData = item.coverData,
-                                mediaType = item.mediaType,
-                                progress = item.progress,
-                                remainingInfo = item.remainingInfo,
-                                onClick = { onContinueItemClick(item) },
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 4. Sección "Recomendados para ti"
-            if (state.recommendedList.isNotEmpty()) {
-                item {
-                    SectionHeader(title = stringResource(MR.strings.label_recommended_for_you))
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        val filteredRecs = if (selectedMediaType == MediaType.ALL) {
-                            state.recommendedList
-                        } else {
-                            state.recommendedList.filter { it.mediaType == selectedMediaType }
-                        }
-
-                        items(filteredRecs) { item ->
-                            MediaPosterCard(
-                                item = item,
-                                onClick = { onItemClick(item) },
-                            )
+                            items(filteredBecause) { item ->
+                                MediaPosterCard(
+                                    item = item,
+                                    onClick = { onItemClick(item) },
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            // 5. Sección "Anime populares"
-            if (state.animeList.isNotEmpty()) {
-                item {
-                    SectionHeader(title = stringResource(MR.strings.label_popular_anime))
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(state.animeList) { item ->
-                            MediaPosterCard(
-                                item = item,
-                                onClick = { onItemClick(item) },
-                            )
+                // 5. Sección "Recomendados para ti"
+                if (state.showRecommended && state.recommendedList.isNotEmpty()) {
+                    item {
+                        SectionHeader(title = stringResource(MR.strings.label_recommended_for_you))
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            val filteredRecs = if (selectedMediaType == MediaType.ALL) {
+                                state.recommendedList
+                            } else {
+                                state.recommendedList.filter { it.mediaType == selectedMediaType }
+                            }
+
+                            items(filteredRecs) { item ->
+                                MediaPosterCard(
+                                    item = item,
+                                    onClick = { onItemClick(item) },
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            // 6. Sección "Manga populares"
-            if (state.mangaList.isNotEmpty()) {
-                item {
-                    SectionHeader(title = stringResource(MR.strings.label_popular_manga))
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(state.mangaList) { item ->
-                            MediaPosterCard(
-                                item = item,
-                                onClick = { onItemClick(item) },
-                            )
+                // 6. Sección "Anime populares"
+                if (state.showPopularAnime && state.animeList.isNotEmpty()) {
+                    item {
+                        SectionHeader(title = stringResource(MR.strings.label_popular_anime))
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(state.animeList) { item ->
+                                MediaPosterCard(
+                                    item = item,
+                                    onClick = { onItemClick(item) },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 7. Sección "Manga populares"
+                if (state.showPopularManga && state.mangaList.isNotEmpty()) {
+                    item {
+                        SectionHeader(title = stringResource(MR.strings.label_popular_manga))
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(state.mangaList) { item ->
+                                MediaPosterCard(
+                                    item = item,
+                                    onClick = { onItemClick(item) },
+                                )
+                            }
                         }
                     }
                 }

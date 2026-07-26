@@ -252,6 +252,15 @@
     <string name="series_format">Serie • Ep. %s</string>
     <string name="page_format">Pág %s</string>
     <string name="label_notifications">Notificaciones</string>
+    <string name="because_you_watched">Porque viste %s</string>
+    <string name="because_you_read">Porque leíste %s</string>
+    <string name="customize_home_feed">Personalizar pantalla de Inicio</string>
+    <string name="show_featured">Carrusel de Destacados</string>
+    <string name="show_continue">Continuar viendo y leyendo</string>
+    <string name="show_because_you_watched">Recomendaciones inteligentes ("Porque viste…")</string>
+    <string name="show_recommended">Recomendados para ti</string>
+    <string name="show_popular_anime">Anime populares</string>
+    <string name="show_popular_manga">Manga populares</string>
     <string name="browse">Explorar</string>
     <string name="channel_common">Comunes</string>
     <string name="information_empty_category">No hay categorías. Pulsa el botón «+» para crear una y organizar tu biblioteca.</string>

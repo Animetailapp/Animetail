@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -37,7 +38,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -511,5 +514,96 @@ fun HeroMediaBanner(
                 }
             }
         }
+    }
+}
+
+/**
+ * Diálogo modal para personalizar y reordenar las secciones del Feed de Inicio.
+ */
+@Composable
+fun HomeFeedSettingsDialog(
+    showFeatured: Boolean,
+    showContinue: Boolean,
+    showBecauseYouWatched: Boolean,
+    showRecommended: Boolean,
+    showPopularAnime: Boolean,
+    showPopularManga: Boolean,
+    onToggleSection: (String) -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = {
+            Text(
+                text = stringResource(MR.strings.customize_home_feed),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FeedSectionToggleItem(
+                    label = stringResource(MR.strings.show_featured),
+                    checked = showFeatured,
+                    onCheckedChange = { onToggleSection("featured") },
+                )
+                FeedSectionToggleItem(
+                    label = stringResource(MR.strings.show_continue),
+                    checked = showContinue,
+                    onCheckedChange = { onToggleSection("continue") },
+                )
+                FeedSectionToggleItem(
+                    label = stringResource(MR.strings.show_because_you_watched),
+                    checked = showBecauseYouWatched,
+                    onCheckedChange = { onToggleSection("because_you_watched") },
+                )
+                FeedSectionToggleItem(
+                    label = stringResource(MR.strings.show_recommended),
+                    checked = showRecommended,
+                    onCheckedChange = { onToggleSection("recommended") },
+                )
+                FeedSectionToggleItem(
+                    label = stringResource(MR.strings.show_popular_anime),
+                    checked = showPopularAnime,
+                    onCheckedChange = { onToggleSection("popular_anime") },
+                )
+                FeedSectionToggleItem(
+                    label = stringResource(MR.strings.show_popular_manga),
+                    checked = showPopularManga,
+                    onCheckedChange = { onToggleSection("popular_manga") },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(text = stringResource(MR.strings.action_ok))
+            }
+        },
+    )
+}
+
+@Composable
+private fun FeedSectionToggleItem(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
     }
 }
