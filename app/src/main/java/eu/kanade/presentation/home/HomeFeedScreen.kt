@@ -30,9 +30,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.receiveAsFlow
-import eu.kanade.tachiyomi.ui.home.HomeTab
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,9 +53,12 @@ import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearch
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.home.HomeFeedScreenModel
+import eu.kanade.tachiyomi.ui.home.HomeTab
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.PullRefresh
@@ -142,7 +142,7 @@ fun HomeFeedScreen(
     if (state.isLoading) {
         LoadingScreen(modifier = modifier)
         return
-    }    
+    }
     if (showSettingsDialog) {
         HomeFeedSettingsDialog(
             state = state,
@@ -249,7 +249,9 @@ fun HomeFeedScreen(
                 }
 
                 // 4. Sección Inteligente "Porque viste / leíste [Título]..."
-                if (state.showBecauseYouWatched && state.becauseYouWatchedTitle != null && state.becauseYouWatchedList.isNotEmpty()) {
+                if (state.showBecauseYouWatched && state.becauseYouWatchedTitle != null &&
+                    state.becauseYouWatchedList.isNotEmpty()
+                ) {
                     item {
                         val headerText = if (state.becauseYouWatchedIsAnime) {
                             stringResource(MR.strings.because_you_watched, state.becauseYouWatchedTitle!!)

@@ -41,11 +41,15 @@ import uy.kohesive.injekt.api.get
 import java.util.concurrent.TimeUnit
 
 enum class HomeMediaFilter {
-    ALL, VIDEO_ONLY, MANGA_ONLY
+    ALL,
+    VIDEO_ONLY,
+    MANGA_ONLY,
 }
 
 enum class HeroSource {
-    BOTH, LIBRARY_ONLY, TRACKERS_ONLY
+    BOTH,
+    LIBRARY_ONLY,
+    TRACKERS_ONLY,
 }
 
 class HomeFeedScreenModel(
@@ -135,10 +139,17 @@ class HomeFeedScreenModel(
     fun toggleSection(key: String) {
         when (key) {
             "featured" -> uiPreferences.homeShowFeatured.set(!uiPreferences.homeShowFeatured.get())
+
             "continue" -> uiPreferences.homeShowContinue.set(!uiPreferences.homeShowContinue.get())
-            "because_you_watched" -> uiPreferences.homeShowBecauseYouWatched.set(!uiPreferences.homeShowBecauseYouWatched.get())
+
+            "because_you_watched" -> uiPreferences.homeShowBecauseYouWatched.set(
+                !uiPreferences.homeShowBecauseYouWatched.get(),
+            )
+
             "recommended" -> uiPreferences.homeShowRecommended.set(!uiPreferences.homeShowRecommended.get())
+
             "popular_anime" -> uiPreferences.homeShowPopularAnime.set(!uiPreferences.homeShowPopularAnime.get())
+
             "popular_manga" -> uiPreferences.homeShowPopularManga.set(!uiPreferences.homeShowPopularManga.get())
         }
     }
@@ -244,7 +255,9 @@ class HomeFeedScreenModel(
                         val videoOnly = current.animeList.filter { it.mediaType != MediaType.MANGA }
                         if (videoOnly.isNotEmpty()) {
                             current.copy(heroList = videoOnly.shuffled().take(7))
-                        } else current
+                        } else {
+                            current
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -418,8 +431,20 @@ class HomeFeedScreenModel(
                 .take(20)
 
             // 3. Listas de Biblioteca (Online vs Local)
-            val nonLocalAnime = if (filter != HomeMediaFilter.MANGA_ONLY) libraryAnimeList.filterNot { it.anime.isLocal() } else emptyList()
-            val nonLocalManga = if (filter != HomeMediaFilter.VIDEO_ONLY) libraryMangaList.filterNot { it.manga.isLocal() } else emptyList()
+            val nonLocalAnime = if (filter !=
+                HomeMediaFilter.MANGA_ONLY
+            ) {
+                libraryAnimeList.filterNot { it.anime.isLocal() }
+            } else {
+                emptyList()
+            }
+            val nonLocalManga = if (filter !=
+                HomeMediaFilter.VIDEO_ONLY
+            ) {
+                libraryMangaList.filterNot { it.manga.isLocal() }
+            } else {
+                emptyList()
+            }
 
             val pinnedAnimeList = nonLocalAnime.filter { "${it.anime.source}" in pinnedAnimeSources }
             val sourceAnimeList = if (pinnedAnimeList.isNotEmpty()) pinnedAnimeList else nonLocalAnime
@@ -487,7 +512,9 @@ class HomeFeedScreenModel(
 
             // 4. Cálculo de la sección inteligente "Porque viste / leíste..."
             val lastInteractedItem = unifiedContinue.firstOrNull()
-            val targetGenres = lastInteractedItem?.genres?.split(",")?.map { it.trim().lowercase() }?.filter { it.isNotBlank() } ?: emptyList()
+            val targetGenres =
+                lastInteractedItem?.genres?.split(",")?.map { it.trim().lowercase() }?.filter { it.isNotBlank() }
+                    ?: emptyList()
 
             val becauseYouWatchedList = if (lastInteractedItem != null && targetGenres.isNotEmpty()) {
                 (animeItems + mangaItems)
@@ -573,9 +600,16 @@ class HomeFeedScreenModel(
         if (animeId != null) {
             try {
                 val tracks = getAnimeTracks.await(animeId)
-                val tmdbTrack = tracks.firstOrNull { trackerManager.get(it.trackerId) is eu.kanade.tachiyomi.data.track.tmdb.Tmdb }
+                val tmdbTrack = tracks.firstOrNull {
+                    trackerManager.get(it.trackerId) is eu.kanade.tachiyomi.data.track.tmdb.Tmdb
+                }
                 if (tmdbTrack != null) {
-                    if (titleClean.contains("película") || titleClean.contains("movie") || titleClean.contains("film") || genreClean.contains("película") || genreClean.contains("movie")) {
+                    if (titleClean.contains(
+                            "película",
+                        ) || titleClean.contains("movie") || titleClean.contains("film") ||
+                        genreClean.contains("película") ||
+                        genreClean.contains("movie")
+                    ) {
                         return MediaType.MOVIES
                     }
                     return MediaType.SERIES
@@ -590,12 +624,16 @@ class HomeFeedScreenModel(
                 sourceClean.contains("tmdb") || sourceClean.contains("cuevana") ||
                     sourceClean.contains("pelis") || sourceClean.contains("cine") ||
                     sourceClean.contains("filmaffinity") || sourceClean.contains("movie") -> {
-                    return if (titleClean.contains("película") || titleClean.contains("movie") || titleClean.contains("film") || totalEpisodes == 1L) {
+                    return if (titleClean.contains("película") || titleClean.contains("movie") ||
+                        titleClean.contains("film") ||
+                        totalEpisodes == 1L
+                    ) {
                         MediaType.MOVIES
                     } else {
                         MediaType.SERIES
                     }
                 }
+
                 // Fuentes dedicadas a Doramas / K-Dramas
                 sourceClean.contains("dorama") || sourceClean.contains("kdrama") || sourceClean.contains("drama") -> {
                     return MediaType.SERIES
@@ -604,13 +642,20 @@ class HomeFeedScreenModel(
         }
 
         // CAPA 3: Expresiones regulares de Películas y Películas Anime (Gekijouban / Movie)
-        val movieKeywordsRegex = Regex("""\b(movie|película|pelicula|film|gekijouban|劇場版|the movie|eiga)\b""", RegexOption.IGNORE_CASE)
-        if (movieKeywordsRegex.containsMatchIn(titleClean) || (totalEpisodes == 1L && movieKeywordsRegex.containsMatchIn(combinedText))) {
+        val movieKeywordsRegex =
+            Regex("""\b(movie|película|pelicula|film|gekijouban|劇場版|the movie|eiga)\b""", RegexOption.IGNORE_CASE)
+        if (movieKeywordsRegex.containsMatchIn(titleClean) ||
+            (totalEpisodes == 1L && movieKeywordsRegex.containsMatchIn(combinedText))
+        ) {
             return MediaType.MOVIES
         }
 
         // CAPA 4: Expresiones regulares de Series Live Action / Doramas
-        val seriesKeywordsRegex = Regex("""\b(dorama|kdrama|jdrama|live action|live-action|tv show|tv series|serie|temporada|season)\b""", RegexOption.IGNORE_CASE)
+        val seriesKeywordsRegex =
+            Regex(
+                """\b(dorama|kdrama|jdrama|live action|live-action|tv show|tv series|serie|temporada|season)\b""",
+                RegexOption.IGNORE_CASE,
+            )
         if (seriesKeywordsRegex.containsMatchIn(combinedText)) {
             return MediaType.SERIES
         }

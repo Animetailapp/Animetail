@@ -20,14 +20,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import eu.kanade.presentation.components.TabbedDialog
-import eu.kanade.presentation.components.TabbedDialogPaddings
-import kotlinx.collections.immutable.persistentListOf
-import tachiyomi.presentation.core.components.CheckboxItem
-import tachiyomi.presentation.core.components.HeadingItem
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Movie
@@ -52,7 +47,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,8 +59,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import eu.kanade.presentation.components.TabbedDialog
+import eu.kanade.presentation.components.TabbedDialogPaddings
+import eu.kanade.tachiyomi.ui.home.HeroSource
+import eu.kanade.tachiyomi.ui.home.HomeFeedScreenModel
+import eu.kanade.tachiyomi.ui.home.HomeMediaFilter
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.components.CheckboxItem
+import tachiyomi.presentation.core.components.HeadingItem
 import tachiyomi.presentation.core.i18n.stringResource
 
 /**
@@ -249,7 +251,13 @@ fun ContinueWatchingReadingCard(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = if (mediaType == MediaType.MANGA) Icons.Default.Book else Icons.Default.PlayArrow,
+                            imageVector = if (mediaType ==
+                                MediaType.MANGA
+                            ) {
+                                Icons.Default.Book
+                            } else {
+                                Icons.Default.PlayArrow
+                            },
                             contentDescription = stringResource(MR.strings.action_resume),
                             modifier = Modifier.size(24.dp),
                         )
@@ -575,8 +583,18 @@ private fun <T> CompactSegmentedControl(
         ) {
             options.forEach { (value, label) ->
                 val isSelected = value == selected
+                val surfaceColor = if (isSelected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    Color.Transparent
+                }
+                val textColor = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
                 Surface(
-                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                    color = surfaceColor,
                     shape = RoundedCornerShape(6.dp),
                     modifier = Modifier
                         .weight(1f)
@@ -586,7 +604,7 @@ private fun <T> CompactSegmentedControl(
                         text = label,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = textColor,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         maxLines = 1,
                         fontSize = 11.sp,
@@ -603,11 +621,11 @@ private fun <T> CompactSegmentedControl(
  */
 @Composable
 fun HomeFeedSettingsDialog(
-    state: eu.kanade.tachiyomi.ui.home.HomeFeedScreenModel.State,
+    state: HomeFeedScreenModel.State,
     onToggleSection: (String) -> Unit,
-    onSetMediaFilter: (eu.kanade.tachiyomi.ui.home.HomeMediaFilter) -> Unit,
+    onSetMediaFilter: (HomeMediaFilter) -> Unit,
     onToggleAutoScrollHero: () -> Unit,
-    onSetHeroSource: (eu.kanade.tachiyomi.ui.home.HeroSource) -> Unit,
+    onSetHeroSource: (HeroSource) -> Unit,
     onSetItemsPerSection: (Int) -> Unit,
     onToggleHideCompleted: () -> Unit,
     onDismissRequest: () -> Unit,
@@ -635,9 +653,12 @@ fun HomeFeedSettingsDialog(
                     ) {
                         CompactSegmentedControl(
                             options = listOf(
-                                eu.kanade.tachiyomi.ui.home.HomeMediaFilter.ALL to stringResource(MR.strings.home_media_filter_all),
-                                eu.kanade.tachiyomi.ui.home.HomeMediaFilter.VIDEO_ONLY to stringResource(MR.strings.home_media_filter_video),
-                                eu.kanade.tachiyomi.ui.home.HomeMediaFilter.MANGA_ONLY to stringResource(MR.strings.home_media_filter_manga),
+                                HomeMediaFilter.ALL to
+                                    stringResource(MR.strings.home_media_filter_all),
+                                HomeMediaFilter.VIDEO_ONLY to
+                                    stringResource(MR.strings.home_media_filter_video),
+                                HomeMediaFilter.MANGA_ONLY to
+                                    stringResource(MR.strings.home_media_filter_manga),
                             ),
                             selected = state.mediaFilter,
                             onSelect = onSetMediaFilter,
@@ -683,8 +704,10 @@ fun HomeFeedSettingsDialog(
                     ) {
                         CompactSegmentedControl(
                             options = listOf(
-                                eu.kanade.tachiyomi.ui.home.HeroSource.BOTH to stringResource(MR.strings.hero_source_both),
-                                eu.kanade.tachiyomi.ui.home.HeroSource.LIBRARY_ONLY to stringResource(MR.strings.hero_source_library),
+                                HeroSource.BOTH to
+                                    stringResource(MR.strings.hero_source_both),
+                                HeroSource.LIBRARY_ONLY to
+                                    stringResource(MR.strings.hero_source_library),
                             ),
                             selected = state.heroSource,
                             onSelect = onSetHeroSource,
