@@ -1,108 +1,127 @@
 // AM (DISCORD) -->
 
-// Original library from https://github.com/dead8309/KizzyRPC (Thank you)
-// Thank you to the 最高 man for the refactored and simplified code
-// https://github.com/saikou-app/saikou
 package eu.kanade.tachiyomi.ui.setting.connections
 
-import android.annotation.SuppressLint
 import android.os.Bundle
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.util.Log
 import eu.kanade.domain.connections.service.ConnectionsPreferences
-import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.connections.discord.DiscordAccount
+import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
+import eu.kanade.tachiyomi.data.connections.discord.DiscordRpcManager
+import eu.kanade.tachiyomi.data.connections.discord.DiscordTokenStore
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
-import java.io.File
 
+/**
+ * Activity for Discord login using the official Discord Partner SDK.
+ * Opens the Discord Android app for secure OAuth PKCE consent flow.
+ * No WebView, no token extraction — completely safe.
+ */
 class DiscordLoginActivity : BaseActivity() {
 
     private val connectionsManager: ConnectionsManager by injectLazy()
     private val connectionsPreferences: ConnectionsPreferences by injectLazy()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    @SuppressLint("SetJavaScriptEnabled")
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.discord_login_activity)
-        val webView = findViewById<WebView>(R.id.webview)
-
-        webView.apply {
-            settings.javaScriptEnabled = true
-            settings.databaseEnabled = true
-            settings.domStorageEnabled = true
-        }
-
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView?, url: String?) {
-                if (url != null && url.endsWith("/app")) {
-                    webView.stopLoading()
-                    webView.evaluateJavascript(
-                        """
-                        (function() {
-                            const wreq = (webpackChunkdiscord_app.push([[''], {}, e => { m = []; for (let c in e.c) m.push(e.c[c])}]), m)
-                            webpackChunkdiscord_app.pop()
-                            const token = wreq.find(m => m?.exports?.default?.getToken !== void 0).exports.default.getToken();
-                            return token;
-                        })()
-                        """.trimIndent(),
-                    ) {
-                        login(it.trim('"'))
-                    }
-                }
-            }
-        }
-        webView.loadUrl("https://discord.com/login")
+    companion object {
+        private const val TAG = "DiscordLogin"
     }
 
-    private fun login(token: String) {
-        Thread {
-            try {
-                val response = okhttp3.OkHttpClient().newCall(
-                    okhttp3.Request.Builder()
-                        .url("https://discord.com/api/v10/users/@me")
-                        .addHeader("Authorization", token)
-                        .build(),
-                ).execute()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-                if (response.isSuccessful) {
-                    val body = response.body.string()
-                    val jsonObject = org.json.JSONObject(body!!)
-                    val id = jsonObject.getString("id")
-                    val username = jsonObject.getString("username")
-                    val avatarId = jsonObject.optString("avatar")
-                    val avatarUrl = if (avatarId.isNotEmpty()) {
-                        "https://cdn.discordapp.com/avatars/$id/$avatarId.png"
+        // Initialize DiscordRpcManager if not already done
+        if (!DiscordRpcManager.isInitialized()) {
+            DiscordRpcManager.init(applicationContext)
+        }
+
+        Log.i(TAG, "Starting Discord OAuth PKCE authorization flow")
+
+        // Start the OAuth PKCE flow through the Discord app
+        DiscordRpcManager.authorize { success ->
+            if (success) {
+                Log.i(TAG, "Authorization successful, fetching user info")
+                scope.launch {
+                    val token = DiscordRpcManager.getAccessToken()
+                    if (token != null) {
+                        val user = withContext(Dispatchers.IO) {
+                            DiscordRpcManager.fetchCurrentUser(token)
+                        }
+                        if (user != null) {
+                            Log.i(TAG, "Got user info: ${user.username}")
+                            saveAccount(user, token)
+                            handleLoginSuccess()
+                        } else {
+                            Log.e(TAG, "Failed to fetch user info")
+                            handleLoginError("Failed to fetch Discord user info")
+                        }
                     } else {
-                        null
+                        Log.e(TAG, "Access token is null after successful authorization")
+                        handleLoginError("Authorization succeeded but no token received")
                     }
-
-                    val account = DiscordAccount(
-                        id = id,
-                        username = username,
-                        avatarUrl = avatarUrl,
-                        token = token,
-                        isActive = true,
-                    )
-                    connectionsManager.discord.addAccount(account)
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } else {
+                Log.e(TAG, "Authorization failed or was cancelled")
+                handleLoginError("Discord authorization failed or was cancelled")
             }
-        }.start()
+        }
+    }
 
+    /**
+     * Creates a DiscordAccount and saves it to preferences.
+     */
+    private fun saveAccount(user: eu.kanade.tachiyomi.data.connections.discord.DiscordUser, token: String) {
+        val account = DiscordAccount(
+            id = user.id,
+            username = user.username,
+            avatarUrl = user.avatar,
+            token = token,
+            isActive = true,
+        )
+
+        Log.i(TAG, "Saving Discord account: ${account.username}")
+
+        // Save account through ConnectionsManager
+        connectionsManager.discord.addAccount(account)
+
+        // Store token in ConnectionsPreferences for backward compatibility
         connectionsPreferences.connectionsToken(connectionsManager.discord).set(token)
         connectionsPreferences.setConnectionsCredentials(
             connectionsManager.discord,
             "Discord",
             "Logged In",
         )
+
+        // Also store in DiscordTokenStore for the native SDK
+        DiscordTokenStore.store(token)
+    }
+
+    /**
+     * Handles successful login completion.
+     */
+    private fun handleLoginSuccess() {
         toast(MR.strings.login_success)
-        applicationInfo.dataDir.let { File("$it/app_webview/").deleteRecursively() }
         setResult(RESULT_OK)
+        if (connectionsPreferences.enableDiscordRPC().get()) {
+            DiscordRPCService.start(applicationContext)
+        }
+        finish()
+    }
+
+    /**
+     * Handles login errors.
+     */
+    private fun handleLoginError(message: String) {
+        toast(message)
+        setResult(RESULT_CANCELED)
         finish()
     }
 }

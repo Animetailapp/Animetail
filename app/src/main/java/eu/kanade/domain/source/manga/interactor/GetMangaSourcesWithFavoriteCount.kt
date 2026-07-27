@@ -17,8 +17,8 @@ class GetMangaSourcesWithFavoriteCount(
 
     fun subscribe(): Flow<List<Pair<Source, Long>>> {
         return combine(
-            preferences.migrationSortingDirection().changes(),
-            preferences.migrationSortingMode().changes(),
+            preferences.migrationSortingDirection.changes(),
+            preferences.migrationSortingMode.changes(),
             repository.getMangaSourcesWithFavoriteCount(),
         ) { direction, mode, list ->
             list
@@ -40,6 +40,7 @@ class GetMangaSourcesWithFavoriteCount(
                         else -> a.first.name.lowercase().compareToWithCollator(b.first.name.lowercase())
                     }
                 }
+
                 SetMigrateSorting.Mode.TOTAL -> {
                     when {
                         a.first.isStub && !b.first.isStub -> -1

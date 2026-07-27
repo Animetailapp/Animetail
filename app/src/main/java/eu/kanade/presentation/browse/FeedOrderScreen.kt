@@ -27,6 +27,7 @@ fun FeedOrderScreen(
 ) {
     when {
         state.isLoading -> LoadingScreen()
+
         state.isEmpty -> EmptyScreen(
             stringRes = MR.strings.empty_screen,
         )

@@ -11,6 +11,8 @@ import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -368,7 +370,19 @@ abstract class HttpSource : CatalogueSource {
      * @param page the page whose source image has to be downloaded.
      */
     open suspend fun getImage(page: Page): Response {
-        return client.newCachelessCallWithProgress(imageRequest(page), page)
+        return getImage(page, 0L)
+    }
+
+    /**
+     * Returns the response of the source image.
+     * Typically does not need to be overridden.
+     *
+     * @since extensions-lib 1.5
+     * @param page the page whose source image has to be downloaded.
+     * @param existingSize the size of the existing file in bytes.
+     */
+    open suspend fun getImage(page: Page, existingSize: Long): Response {
+        return client.newCachelessCallWithProgress(imageRequest(page, existingSize), page, existingSize)
             .awaitSuccess()
     }
 
@@ -380,6 +394,28 @@ abstract class HttpSource : CatalogueSource {
      */
     protected open fun imageRequest(page: Page): Request {
         return GET(page.imageUrl!!, headers)
+    }
+
+    /**
+     * Returns the request for getting the source image. Override only if it's needed to override
+     * the url, send different headers or request method like POST.
+     *
+     * @param page the chapter whose page list has to be fetched
+     * @param existingSize the size of the existing file in bytes.
+     */
+    @Deprecated("Use the non-existingSize version instead")
+    protected open fun imageRequest(page: Page, existingSize: Long): Request {
+        val request = imageRequest(page)
+        return if (existingSize > 0) {
+            val newHeaders = request.headers.newBuilder()
+                .set("Range", "bytes=$existingSize-")
+                .build()
+            request.newBuilder()
+                .headers(newHeaders)
+                .build()
+        } else {
+            request
+        }
     }
 
     /**
@@ -458,4 +494,54 @@ abstract class HttpSource : CatalogueSource {
      * Returns the list of filters for the source.
      */
     override fun getFilterList() = FilterList()
+
+    // KMK -->
+
+    /**
+     * Whether parsing related mangas in manga page or extension provide custom related mangas request.
+     *
+     * @default true
+     * @since komikku/extensions-lib 1.6
+     */
+    override val supportsRelatedMangas: Boolean get() = true
+
+    /**
+     * Fetch related mangas for a manga from source/site.
+     * Normally it's not needed to override this method.
+     *
+     * @since komikku/extensions-lib 1.6
+     * @param manga the current manga to get related mangas.
+     * @return the related mangas for the current manga.
+     * @throws UnsupportedOperationException if a source doesn't support related mangas.
+     */
+    override suspend fun fetchRelatedMangaList(manga: SManga): List<SManga> = coroutineScope {
+        async {
+            client.newCall(relatedMangaListRequest(manga))
+                .execute()
+                .use { response ->
+                    relatedMangaListParse(response)
+                }
+        }.await()
+    }
+
+    /**
+     * Returns the request for get related manga list. Override only if it's needed to override
+     * the url, send different headers or request method like POST.
+     * Normally it's not needed to override this method.
+     *
+     * @since komikku/extensions-lib 1.6
+     * @param manga the manga to look for related mangas.
+     */
+    protected open fun relatedMangaListRequest(manga: SManga): Request {
+        return mangaDetailsRequest(manga)
+    }
+
+    /**
+     * Parses the response from the site and returns a list of related mangas.
+     *
+     * @since komikku/extensions-lib 1.6
+     * @param response the response from the site.
+     */
+    protected open fun relatedMangaListParse(response: Response): List<SManga> = popularMangaParse(response).mangas
+    // KMK <--
 }

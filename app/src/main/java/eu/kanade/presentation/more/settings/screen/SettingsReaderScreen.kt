@@ -12,11 +12,8 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerConfig
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableMap
-import kotlinx.collections.immutable.toPersistentMap
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
@@ -39,15 +36,15 @@ object SettingsReaderScreen : SearchableSettings {
 
         return listOf(
             Preference.PreferenceItem.ListPreference(
-                preference = readerPref.defaultReadingMode(),
+                preference = readerPref.defaultReadingMode,
                 entries = ReadingMode.entries.drop(1)
                     .associate { it.flagValue to stringResource(it.stringRes) }
-                    .toImmutableMap(),
+                    .toMap(),
                 title = stringResource(MR.strings.pref_viewer_type),
             ),
             Preference.PreferenceItem.ListPreference(
-                preference = readerPref.doubleTapAnimSpeed(),
-                entries = persistentMapOf(
+                preference = readerPref.doubleTapAnimSpeed,
+                entries = mapOf(
                     1 to stringResource(MR.strings.double_tap_anim_speed_0),
                     500 to stringResource(MR.strings.double_tap_anim_speed_normal),
                     250 to stringResource(MR.strings.double_tap_anim_speed_fast),
@@ -55,12 +52,12 @@ object SettingsReaderScreen : SearchableSettings {
                 title = stringResource(MR.strings.pref_double_tap_anim_speed),
             ),
             Preference.PreferenceItem.SwitchPreference(
-                preference = readerPref.showReadingMode(),
+                preference = readerPref.showReadingMode,
                 title = stringResource(MR.strings.pref_show_reading_mode),
                 subtitle = stringResource(MR.strings.pref_show_reading_mode_summary),
             ),
             Preference.PreferenceItem.SwitchPreference(
-                preference = readerPref.showNavigationOverlayOnStart(),
+                preference = readerPref.showNavigationOverlayOnStart,
                 title = stringResource(MR.strings.pref_show_navigation_mode),
                 subtitle = stringResource(MR.strings.pref_show_navigation_mode_summary),
             ),
@@ -71,7 +68,7 @@ object SettingsReaderScreen : SearchableSettings {
             ),
             SY <-- */
             Preference.PreferenceItem.SwitchPreference(
-                preference = readerPref.flashOnPageChange(),
+                preference = readerPref.flashOnPageChange,
                 title = stringResource(MR.strings.pref_flash_page),
                 subtitle = stringResource(MR.strings.pref_flash_page_summ),
             ),
@@ -90,21 +87,20 @@ object SettingsReaderScreen : SearchableSettings {
 
     @Composable
     private fun getDisplayGroup(readerPreferences: ReaderPreferences): Preference.PreferenceGroup {
-        val fullscreenPref = readerPreferences.fullscreen()
-        val fullscreen by fullscreenPref.collectAsState()
+        val fullscreen by readerPreferences.fullscreen.collectAsState()
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_display),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
-                    preference = readerPreferences.defaultOrientationType(),
+                    preference = readerPreferences.defaultOrientationType,
                     entries = ReaderOrientation.entries.drop(1)
                         .associate { it.flagValue to stringResource(it.stringRes) }
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(MR.strings.pref_rotation_type),
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    preference = readerPreferences.readerTheme(),
-                    entries = persistentMapOf(
+                    preference = readerPreferences.readerTheme,
+                    entries = mapOf(
                         1 to stringResource(MR.strings.black_background),
                         2 to stringResource(MR.strings.gray_background),
                         0 to stringResource(MR.strings.white_background),
@@ -113,22 +109,22 @@ object SettingsReaderScreen : SearchableSettings {
                     title = stringResource(MR.strings.pref_reader_theme),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = fullscreenPref,
+                    preference = readerPreferences.fullscreen,
                     title = stringResource(MR.strings.pref_fullscreen),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.cutoutShort(),
+                    preference = readerPreferences.drawUnderCutout,
                     title = stringResource(MR.strings.pref_cutout_short),
                     enabled = fullscreen &&
                         Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
                         LocalView.current.rootWindowInsets?.displayCutout != null, // has cutout
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.keepScreenOn(),
+                    preference = readerPreferences.keepScreenOn,
                     title = stringResource(MR.strings.pref_keep_screen_on),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.showPageNumber(),
+                    preference = readerPreferences.showPageNumber,
                     title = stringResource(MR.strings.pref_show_page_number),
                 ),
             ),
@@ -137,21 +133,21 @@ object SettingsReaderScreen : SearchableSettings {
 
     @Composable
     private fun getEInkGroup(readerPreferences: ReaderPreferences): Preference.PreferenceGroup {
-        val flashPageState by readerPreferences.flashOnPageChange().collectAsState()
+        val flashPageState by readerPreferences.flashOnPageChange.collectAsState()
 
-        val flashMillisPref = readerPreferences.flashDurationMillis()
+        val flashMillisPref = readerPreferences.flashDurationMillis
         val flashMillis by flashMillisPref.collectAsState()
 
-        val flashIntervalPref = readerPreferences.flashPageInterval()
+        val flashIntervalPref = readerPreferences.flashPageInterval
         val flashInterval by flashIntervalPref.collectAsState()
 
-        val flashColorPref = readerPreferences.flashColor()
+        val flashColorPref = readerPreferences.flashColor
 
         return Preference.PreferenceGroup(
             title = "E-Ink",
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.flashOnPageChange(),
+                    preference = readerPreferences.flashOnPageChange,
                     title = stringResource(MR.strings.pref_flash_page),
                     subtitle = stringResource(MR.strings.pref_flash_page_summ),
                 ),
@@ -179,7 +175,7 @@ object SettingsReaderScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = flashColorPref,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         ReaderPreferences.FlashColor.BLACK to stringResource(MR.strings.pref_flash_style_black),
                         ReaderPreferences.FlashColor.WHITE to stringResource(MR.strings.pref_flash_style_white),
                         ReaderPreferences.FlashColor.WHITE_BLACK
@@ -194,32 +190,41 @@ object SettingsReaderScreen : SearchableSettings {
 
     @Composable
     private fun getReadingGroup(readerPreferences: ReaderPreferences): Preference.PreferenceGroup {
-        val preloadSizePref = readerPreferences.preloadSize()
+        val preloadSizePref = readerPreferences.preloadSize
 
         val preloadSize by preloadSizePref.collectAsState()
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_reading),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.skipRead(),
+                    preference = readerPreferences.skipRead,
                     title = stringResource(MR.strings.pref_skip_read_chapters),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.skipFiltered(),
+                    preference = readerPreferences.skipFiltered,
                     title = stringResource(MR.strings.pref_skip_filtered_chapters),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.skipDupe(),
+                    preference = readerPreferences.skipDupe,
                     title = stringResource(MR.strings.pref_skip_dupe_chapters),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.alwaysShowChapterTransition(),
+                    preference = readerPreferences.alwaysShowChapterTransition,
                     title = stringResource(MR.strings.pref_always_show_chapter_transition),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.preserveReadingPosition(),
-                    title = stringResource(MR.strings.pref_preserve_reading_position),
+                    preference = readerPreferences.preserveReadingPosition,
+                    title = stringResource(AYMR.strings.pref_preserve_reading_position),
+                ),
+                Preference.PreferenceItem.SliderPreference(
+                    value = preloadSize,
+                    title = stringResource(TLMR.strings.pref_page_preload_amount),
+                    valueRange = ReaderPreferences.PRELOAD_SIZE_MIN..ReaderPreferences.PRELOAD_SIZE_MAX,
+                    onValueChanged = {
+                        preloadSizePref.set(it)
+                        true
+                    },
                 ),
                 Preference.PreferenceItem.SliderPreference(
                     value = preloadSize,
@@ -236,10 +241,10 @@ object SettingsReaderScreen : SearchableSettings {
 
     @Composable
     private fun getPagedGroup(readerPreferences: ReaderPreferences): Preference.PreferenceGroup {
-        val navModePref = readerPreferences.navigationModePager()
-        val imageScaleTypePref = readerPreferences.imageScaleType()
-        val dualPageSplitPref = readerPreferences.dualPageSplitPaged()
-        val rotateToFitPref = readerPreferences.dualPageRotateToFit()
+        val navModePref = readerPreferences.navigationModePager
+        val imageScaleTypePref = readerPreferences.imageScaleType
+        val dualPageSplitPref = readerPreferences.dualPageSplitPaged
+        val rotateToFitPref = readerPreferences.dualPageRotateToFit
 
         val navMode by navModePref.collectAsState()
         val imageScaleType by imageScaleTypePref.collectAsState()
@@ -248,25 +253,25 @@ object SettingsReaderScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pager_viewer),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = navModePref,
                     entries = ReaderPreferences.TapZones
                         .mapIndexed { index, it -> index to stringResource(it) }
                         .toMap()
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(MR.strings.pref_viewer_nav),
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    preference = readerPreferences.pagerNavInverted(),
-                    entries = persistentListOf(
+                    preference = readerPreferences.pagerNavInverted,
+                    entries = listOf(
                         ReaderPreferences.TappingInvertMode.NONE,
                         ReaderPreferences.TappingInvertMode.HORIZONTAL,
                         ReaderPreferences.TappingInvertMode.VERTICAL,
                         ReaderPreferences.TappingInvertMode.BOTH,
                     )
                         .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(MR.strings.pref_read_with_tapping_inverted),
                     enabled = navMode != 5,
                 ),
@@ -275,28 +280,28 @@ object SettingsReaderScreen : SearchableSettings {
                     entries = ReaderPreferences.ImageScaleType
                         .mapIndexed { index, it -> index + 1 to stringResource(it) }
                         .toMap()
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(MR.strings.pref_image_scale_type),
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    preference = readerPreferences.zoomStart(),
+                    preference = readerPreferences.zoomStart,
                     entries = ReaderPreferences.ZoomStart
                         .mapIndexed { index, it -> index + 1 to stringResource(it) }
                         .toMap()
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(MR.strings.pref_zoom_start),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.cropBorders(),
+                    preference = readerPreferences.cropBorders,
                     title = stringResource(MR.strings.pref_crop_borders),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.landscapeZoom(),
+                    preference = readerPreferences.landscapeZoom,
                     title = stringResource(MR.strings.pref_landscape_zoom),
                     enabled = imageScaleType == 1,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.navigateToPan(),
+                    preference = readerPreferences.navigateToPan,
                     title = stringResource(MR.strings.pref_navigate_pan),
                     enabled = navMode != 5,
                 ),
@@ -309,7 +314,7 @@ object SettingsReaderScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.dualPageInvertPaged(),
+                    preference = readerPreferences.dualPageInvertPaged,
                     title = stringResource(MR.strings.pref_dual_page_invert),
                     subtitle = stringResource(MR.strings.pref_dual_page_invert_summary),
                     enabled = dualPageSplit,
@@ -323,7 +328,7 @@ object SettingsReaderScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.dualPageRotateToFitInvert(),
+                    preference = readerPreferences.dualPageRotateToFitInvert,
                     title = stringResource(MR.strings.pref_page_rotate_invert),
                     enabled = rotateToFit,
                 ),
@@ -335,10 +340,10 @@ object SettingsReaderScreen : SearchableSettings {
     private fun getWebtoonGroup(readerPreferences: ReaderPreferences): Preference.PreferenceGroup {
         val numberFormat = remember { NumberFormat.getPercentInstance() }
 
-        val navModePref = readerPreferences.navigationModeWebtoon()
-        val dualPageSplitPref = readerPreferences.dualPageSplitWebtoon()
-        val rotateToFitPref = readerPreferences.dualPageRotateToFitWebtoon()
-        val webtoonSidePaddingPref = readerPreferences.webtoonSidePadding()
+        val navModePref = readerPreferences.navigationModeWebtoon
+        val dualPageSplitPref = readerPreferences.dualPageSplitWebtoon
+        val rotateToFitPref = readerPreferences.dualPageRotateToFitWebtoon
+        val webtoonSidePaddingPref = readerPreferences.webtoonSidePadding
 
         val navMode by navModePref.collectAsState()
         val dualPageSplit by dualPageSplitPref.collectAsState()
@@ -347,25 +352,25 @@ object SettingsReaderScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.webtoon_viewer),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = navModePref,
                     entries = ReaderPreferences.TapZones
                         .mapIndexed { index, it -> index to stringResource(it) }
                         .toMap()
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(MR.strings.pref_viewer_nav),
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    preference = readerPreferences.webtoonNavInverted(),
-                    entries = persistentListOf(
+                    preference = readerPreferences.webtoonNavInverted,
+                    entries = listOf(
                         ReaderPreferences.TappingInvertMode.NONE,
                         ReaderPreferences.TappingInvertMode.HORIZONTAL,
                         ReaderPreferences.TappingInvertMode.VERTICAL,
                         ReaderPreferences.TappingInvertMode.BOTH,
                     )
                         .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(MR.strings.pref_read_with_tapping_inverted),
                     enabled = navMode != 5,
                 ),
@@ -382,8 +387,8 @@ object SettingsReaderScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    preference = readerPreferences.readerHideThreshold(),
-                    entries = persistentMapOf(
+                    preference = readerPreferences.readerHideThreshold,
+                    entries = mapOf(
                         ReaderPreferences.ReaderHideThreshold.HIGHEST to stringResource(MR.strings.pref_highest),
                         ReaderPreferences.ReaderHideThreshold.HIGH to stringResource(MR.strings.pref_high),
                         ReaderPreferences.ReaderHideThreshold.LOW to stringResource(MR.strings.pref_low),
@@ -392,7 +397,7 @@ object SettingsReaderScreen : SearchableSettings {
                     title = stringResource(MR.strings.pref_hide_threshold),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.cropBordersWebtoon(),
+                    preference = readerPreferences.cropBordersWebtoon,
                     title = stringResource(MR.strings.pref_crop_borders),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
@@ -404,7 +409,7 @@ object SettingsReaderScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.dualPageInvertWebtoon(),
+                    preference = readerPreferences.dualPageInvertWebtoon,
                     title = stringResource(MR.strings.pref_dual_page_invert),
                     subtitle = stringResource(MR.strings.pref_dual_page_invert_summary),
                     enabled = dualPageSplit,
@@ -418,16 +423,16 @@ object SettingsReaderScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.dualPageRotateToFitInvertWebtoon(),
+                    preference = readerPreferences.dualPageRotateToFitInvertWebtoon,
                     title = stringResource(MR.strings.pref_page_rotate_invert),
                     enabled = rotateToFit,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.webtoonDoubleTapZoomEnabled(),
+                    preference = readerPreferences.webtoonDoubleTapZoomEnabled,
                     title = stringResource(MR.strings.pref_double_tap_zoom),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.webtoonDisableZoomOut(),
+                    preference = readerPreferences.webtoonDisableZoomOut,
                     title = stringResource(MR.strings.pref_webtoon_disable_zoom_out),
                 ),
             ),
@@ -436,19 +441,46 @@ object SettingsReaderScreen : SearchableSettings {
 
     @Composable
     private fun getNavigationGroup(readerPreferences: ReaderPreferences): Preference.PreferenceGroup {
-        val readWithVolumeKeysPref = readerPreferences.readWithVolumeKeys()
+        val readWithVolumeKeysPref = readerPreferences.readWithVolumeKeys
         val readWithVolumeKeys by readWithVolumeKeysPref.collectAsState()
+
+        val verticalNavigator by readerPreferences.verticalNavigator.collectAsState()
+        val verticalNavigatorHeightPref = readerPreferences.verticalNavigatorHeight
+        val verticalNavigatorHeight by verticalNavigatorHeightPref.collectAsState()
+
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_reader_navigation),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = readWithVolumeKeysPref,
                     title = stringResource(MR.strings.pref_read_with_volume_keys),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.readWithVolumeKeysInverted(),
+                    preference = readerPreferences.readWithVolumeKeysInverted,
                     title = stringResource(MR.strings.pref_read_with_volume_keys_inverted),
                     enabled = readWithVolumeKeys,
+                ),
+                Preference.PreferenceItem.MultiSelectListPreference(
+                    preference = readerPreferences.verticalNavigator,
+                    entries = ReadingMode.entries.filter { it != ReadingMode.DEFAULT }
+                        .associate { it to stringResource(it.stringRes) },
+                    title = stringResource(MR.strings.pref_vertical_navigator),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = readerPreferences.verticalNavigatorOnLeft,
+                    title = stringResource(MR.strings.pref_webtoon_vertical_navigator_on_left),
+                    enabled = verticalNavigator.isNotEmpty(),
+                ),
+                Preference.PreferenceItem.SliderPreference(
+                    value = verticalNavigatorHeight,
+                    valueRange = 65..100,
+                    steps = 6,
+                    title = stringResource(MR.strings.pref_vertical_navigator_height),
+                    onValueChanged = {
+                        verticalNavigatorHeightPref.set(it)
+                        true
+                    },
+                    enabled = verticalNavigator.isNotEmpty(),
                 ),
             ),
         )
@@ -458,13 +490,13 @@ object SettingsReaderScreen : SearchableSettings {
     private fun getActionsGroup(readerPreferences: ReaderPreferences): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_reader_actions),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.readWithLongTap(),
+                    preference = readerPreferences.readWithLongTap,
                     title = stringResource(MR.strings.pref_read_with_long_tap),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.folderPerManga(),
+                    preference = readerPreferences.folderPerManga,
                     title = stringResource(MR.strings.pref_create_folder_per_manga),
                     subtitle = stringResource(MR.strings.pref_create_folder_per_manga_summary),
                 ),
@@ -475,38 +507,38 @@ object SettingsReaderScreen : SearchableSettings {
     // SY -->
     @Composable
     private fun getForkSettingsGroup(readerPreferences: ReaderPreferences): Preference.PreferenceGroup {
-        val pageLayout by readerPreferences.pageLayout().collectAsState()
+        val pageLayout by readerPreferences.pageLayout.collectAsState()
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_category_fork),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.MultiSelectListPreference(
-                    preference = readerPreferences.readerBottomButtons(),
+                    preference = readerPreferences.readerBottomButtons,
                     title = stringResource(TLMR.strings.reader_bottom_buttons),
                     subtitle = stringResource(TLMR.strings.reader_bottom_buttons_summary),
                     entries = ReaderBottomButton.entries
-                        .associate { it.value to stringResource(it.stringRes) }.toPersistentMap(),
+                        .associate { it.value to stringResource(it.stringRes) }.toMap(),
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    preference = readerPreferences.pageLayout(),
+                    preference = readerPreferences.pageLayout,
                     title = stringResource(TLMR.strings.page_layout),
                     subtitle = stringResource(TLMR.strings.automatic_can_still_switch),
                     entries = ReaderPreferences.PageLayouts
                         .mapIndexed { index, it -> index + 1 to stringResource(it) }
-                        .toMap().toPersistentMap(),
+                        .toMap().toMap(),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = readerPreferences.invertDoublePages(),
+                    preference = readerPreferences.invertDoublePages,
                     title = stringResource(TLMR.strings.invert_double_pages),
                     enabled = pageLayout != PagerConfig.PageLayout.SINGLE_PAGE,
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    preference = readerPreferences.centerMarginType(),
+                    preference = readerPreferences.centerMarginType,
                     title = stringResource(TLMR.strings.center_margin),
                     subtitle = stringResource(TLMR.strings.pref_center_margin_summary),
                     entries = ReaderPreferences.CenterMarginTypes
                         .mapIndexed { index, it -> index + 1 to stringResource(it) }
                         .toMap()
-                        .toImmutableMap(),
+                        .toMap(),
                 ),
             ),
         )

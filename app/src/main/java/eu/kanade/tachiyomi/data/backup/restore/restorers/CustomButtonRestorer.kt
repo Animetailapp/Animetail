@@ -35,7 +35,6 @@ class CustomButtonRestorer(
                             it.longPressContent,
                             it.onStartup,
                         )
-                        custom_buttonsQueries.selectLastInsertedRowId()
                     }
                 }
         }

@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.data.backup.models
 
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
+import eu.kanade.tachiyomi.animesource.model.FetchType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import tachiyomi.domain.entries.anime.model.Anime
@@ -41,8 +42,20 @@ data class BackupAnime(
     @ProtoNumber(104) var history: List<BackupAnimeHistory> = emptyList(),
     @ProtoNumber(105) var updateStrategy: AnimeUpdateStrategy = AnimeUpdateStrategy.ALWAYS_UPDATE,
     @ProtoNumber(106) var lastModifiedAt: Long = 0,
+    // Mihon values start here
     @ProtoNumber(107) var favoriteModifiedAt: Long? = null,
     @ProtoNumber(109) var version: Long = 0,
+    @ProtoNumber(110) var notes: String = "",
+
+    // Aniyomi specific values
+    @ProtoNumber(500) var backgroundUrl: String? = null,
+    // @ProtoNumber(501) Broken, do not use
+    @ProtoNumber(502) var parentId: Long? = null,
+    @ProtoNumber(503) var id: Long? = null, // Used to associate seasons with parents. Do not use for anything else.
+    @ProtoNumber(504) var seasonFlags: Long = 0,
+    @ProtoNumber(505) var seasonNumber: Double = -1.0,
+    @ProtoNumber(506) var seasonSourceOrder: Long = 0,
+    @ProtoNumber(507) var fetchType: FetchType = FetchType.Episodes,
 
     @ProtoNumber(602) var customStatus: Int = 0,
 
@@ -66,6 +79,7 @@ data class BackupAnime(
             ogStatus = this@BackupAnime.status.toLong(),
             // SY <--
             thumbnailUrl = this@BackupAnime.thumbnailUrl,
+            backgroundUrl = this@BackupAnime.backgroundUrl,
             favorite = this@BackupAnime.favorite,
             source = this@BackupAnime.source,
             dateAdded = this@BackupAnime.dateAdded,
@@ -75,6 +89,12 @@ data class BackupAnime(
             lastModifiedAt = this@BackupAnime.lastModifiedAt,
             favoriteModifiedAt = this@BackupAnime.favoriteModifiedAt,
             version = this@BackupAnime.version,
+            notes = this@BackupAnime.notes,
+            fetchType = this@BackupAnime.fetchType,
+            parentId = this@BackupAnime.parentId,
+            seasonFlags = this@BackupAnime.seasonFlags,
+            seasonNumber = this@BackupAnime.seasonNumber,
+            seasonSourceOrder = this@BackupAnime.seasonSourceOrder,
         )
     }
 

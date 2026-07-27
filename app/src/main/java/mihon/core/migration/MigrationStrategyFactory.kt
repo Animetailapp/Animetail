@@ -10,7 +10,9 @@ class MigrationStrategyFactory(
             old == 0 -> InitialMigrationStrategy(
                 strategy = DefaultMigrationStrategy(factory, migrationCompletedListener, Migrator.scope),
             )
+
             old >= new -> NoopMigrationStrategy(false)
+
             else -> VersionRangeMigrationStrategy(
                 versions = (old + 1)..new,
                 strategy = DefaultMigrationStrategy(factory, migrationCompletedListener, Migrator.scope),

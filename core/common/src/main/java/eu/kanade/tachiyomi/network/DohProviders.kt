@@ -22,6 +22,7 @@ const val PREF_DOH_CONTROLD = 10
 const val PREF_DOH_NJALLA = 11
 const val PREF_DOH_SHECAN = 12
 const val PREF_DOH_LIBREDNS = 13
+const val PREF_DOH_CUSTOM = 14
 
 fun OkHttpClient.Builder.dohCloudflare() = dns(
     DnsOverHttps.Builder().client(build())
@@ -195,5 +196,20 @@ fun OkHttpClient.Builder.dohLibreDNS() = dns(
             InetAddress.getByName("116.202.176.26"),
             InetAddress.getByName("2a01:4f8:1c0c:8274::1"),
         )
+        .build(),
+)
+
+/**
+ * Build a DoH implementation using a custom user-provided URL.
+ * The URL must be a valid https URL (e.g. "https://example.com/dns-query").
+ */
+fun OkHttpClient.Builder.dohCustom(dohUrl: String, bootstrapHosts: List<java.net.InetAddress> = emptyList()) = dns(
+    DnsOverHttps.Builder().client(build())
+        .url(dohUrl.toHttpUrl())
+        .apply {
+            if (bootstrapHosts.isNotEmpty()) {
+                bootstrapDnsHosts(*bootstrapHosts.toTypedArray())
+            }
+        }
         .build(),
 )

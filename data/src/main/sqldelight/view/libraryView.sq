@@ -14,7 +14,7 @@ LEFT JOIN(
         chapters.manga_id,
         count(*) AS total,
         sum(read) AS readCount,
-        coalesce(max(chapters.date_upload), 0) AS latestUpload,
+        coalesce(max(CASE WHEN chapters.date_upload_override > 0 THEN chapters.date_upload_override ELSE chapters.date_upload END), 0) AS latestUpload,
         coalesce(max(history.last_read), 0) AS lastRead,
         coalesce(max(chapters.date_fetch), 0) AS fetchedAt,
         sum(chapters.bookmark) AS bookmarkCount

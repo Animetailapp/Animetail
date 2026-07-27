@@ -1,7 +1,9 @@
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy;
+import eu.kanade.tachiyomi.animesource.model.FetchType;
 import kotlin.Boolean;
 import kotlin.String;
 import kotlin.collections.List;
+import eu.kanade.tachiyomi.animesource.model.Credit;
 
 CREATE TABLE animes(
     _id INTEGER NOT NULL PRIMARY KEY,
@@ -27,11 +29,22 @@ CREATE TABLE animes(
     last_modified_at INTEGER NOT NULL DEFAULT 0,
     favorite_modified_at INTEGER,
     version INTEGER NOT NULL DEFAULT 0,
-    is_syncing INTEGER NOT NULL DEFAULT 0
+    is_syncing INTEGER NOT NULL DEFAULT 0,
+    notes TEXT NOT NULL DEFAULT "",
+    fetch_type INTEGER AS FetchType NOT NULL DEFAULT 1,
+    parent_id INTEGER,
+    season_flags INTEGER NOT NULL,
+    season_number REAL NOT NULL,
+    season_source_order INTEGER NOT NULL,
+    background_url TEXT,
+    "cast" TEXT AS List<Credit>,
+    background_last_modified INTEGER NOT NULL
 );
 
 CREATE INDEX animelib_favorite_index ON animes(favorite) WHERE favorite = 1;
 CREATE INDEX animes_url_index ON animes(url);
+CREATE INDEX animes_parent_id ON animes(parent_id);
+CREATE INDEX animes_fetch_type ON animes(fetch_type);
 
 CREATE TRIGGER update_last_favorite_at_animes
 AFTER UPDATE OF favorite ON animes
@@ -137,19 +150,40 @@ UPDATE animes
 SET is_syncing = 0
 WHERE is_syncing = 1;
 
-getSourceIdsWithNonLibraryAnime:
-SELECT source, COUNT(*) AS anime_count
+removeParentIdByIds:
+UPDATE animes
+SET parent_id = NULL
+WHERE _id IN :animeIds;
+
+getChildrenByParentId:
+SELECT *
 FROM animes
-WHERE favorite = 0
-GROUP BY source;
+WHERE parent_id = :parentId;
 
-deleteAnimesNotInLibraryBySourceIds:
+deleteAnimesNotInLibraryByAnimeIds:
 DELETE FROM animes
-WHERE favorite = 0 AND source IN :sourceIds;
+WHERE favorite = 0 AND _id IN :animeIds;
 
-insert:
-INSERT INTO animes(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version)
-VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :episodeFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version);
+deleteNonLibraryAnime:
+DELETE FROM animes
+WHERE favorite = 0
+AND _id IN :animeIds
+AND (
+    :keepWatchedAnime = 0
+    OR _id NOT IN (
+        SELECT DISTINCT anime_id
+        FROM episodes
+        WHERE seen = 1
+        OR last_second_seen != 0
+    )
+);
+
+insert {
+INSERT INTO animes(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, notes, fetch_type, parent_id, season_flags, season_number, season_source_order, background_url, "cast", background_last_modified)
+VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :episodeFlags, :coverLastModified,:dateAdded, :updateStrategy, :calculateInterval, 0, :version, :notes, :fetchType, :parentId, :seasonFlags, :seasonNumber, :seasonSourceOrder, :backgroundUrl, :cast, :backgroundLastModified);
+
+SELECT last_insert_rowid();
+}
 
 update:
 UPDATE animes SET
@@ -173,8 +207,15 @@ UPDATE animes SET
     update_strategy = coalesce(:updateStrategy, update_strategy),
     calculate_interval = coalesce(:calculateInterval, calculate_interval),
     version = coalesce(:version, version),
-    is_syncing = coalesce(:isSyncing, is_syncing)
+    is_syncing = coalesce(:isSyncing, is_syncing),
+    notes = coalesce(:notes, notes),
+    fetch_type = coalesce(:fetchType, fetch_type),
+    parent_id = coalesce(:parentId, parent_id),
+    season_flags = coalesce(:seasonFlags, season_flags),
+    season_number = coalesce(:seasonNumber, season_number),
+    season_source_order = coalesce(:seasonSourceOrder, season_source_order),
+    background_url = coalesce(:backgroundUrl, background_url),
+    "cast" = coalesce(:cast, "cast"),
+    background_last_modified = coalesce(:backgroundLastModified, background_last_modified)
 WHERE _id = :animeId;
 
-selectLastInsertedRowId:
-SELECT last_insert_rowid();

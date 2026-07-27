@@ -69,8 +69,6 @@ import eu.kanade.tachiyomi.data.sync.service.GoogleDriveSyncService
 import eu.kanade.tachiyomi.ui.storage.StorageTab
 import eu.kanade.tachiyomi.util.system.DeviceUtil
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
@@ -87,6 +85,7 @@ import tachiyomi.domain.entries.manga.interactor.GetMangaFavorites
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -122,7 +121,7 @@ object SettingsDataScreen : SearchableSettings {
         val syncPreferences = remember { Injekt.get<SyncPreferences>() }
         val syncService by syncPreferences.syncService().collectAsState()
 
-        return persistentListOf(
+        return listOf(
             getStorageLocationPref(storagePreferences = storagePreferences),
             Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.pref_storage_location_info)),
             getBackupAndRestoreGroup(backupPreferences = backupPreferences),
@@ -187,11 +186,11 @@ object SettingsDataScreen : SearchableSettings {
         storagePreferences: StoragePreferences,
     ): Preference.PreferenceItem.TextPreference {
         val context = LocalContext.current
-        val pickStorageLocation = storageLocationPicker(storagePreferences.baseStorageDirectory())
+        val pickStorageLocation = storageLocationPicker(storagePreferences.baseStorageDirectory)
 
         return Preference.PreferenceItem.TextPreference(
             title = stringResource(MR.strings.pref_storage_location),
-            subtitle = storageLocationText(storagePreferences.baseStorageDirectory()),
+            subtitle = storageLocationText(storagePreferences.baseStorageDirectory),
             onClick = {
                 try {
                     pickStorageLocation.launch(null)
@@ -206,7 +205,7 @@ object SettingsDataScreen : SearchableSettings {
     private fun getBackupAndRestoreGroup(backupPreferences: BackupPreferences): Preference.PreferenceGroup {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val lastAutoBackup by backupPreferences.lastAutoBackupTimestamp().collectAsState()
+        val lastAutoBackup by backupPreferences.lastAutoBackupTimestamp.collectAsState()
 
         val chooseBackup = rememberLauncherForActivityResult(
             object : ActivityResultContracts.GetContent() {
@@ -226,7 +225,7 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_backup),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 // Manual actions
                 Preference.PreferenceItem.CustomPreference(
                     title = stringResource(restorePreferenceKeyString),
@@ -273,8 +272,8 @@ object SettingsDataScreen : SearchableSettings {
 
                 // Automatic backups
                 Preference.PreferenceItem.ListPreference(
-                    preference = backupPreferences.backupInterval(),
-                    entries = persistentMapOf(
+                    preference = backupPreferences.backupInterval,
+                    entries = mapOf(
                         0 to stringResource(MR.strings.off),
                         6 to stringResource(MR.strings.update_6hour),
                         12 to stringResource(MR.strings.update_12hour),
@@ -309,7 +308,7 @@ object SettingsDataScreen : SearchableSettings {
 
         // AM (FILE_SIZE) -->
         LaunchedEffect(Unit) {
-            storagePreferences.showEpisodeFileSize().changes()
+            storagePreferences.showEpisodeFileSize.changes()
                 .drop(1)
                 .collectLatest { value ->
                     if (value) {
@@ -321,7 +320,7 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_storage_usage),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.CustomPreference(
                     title = stringResource(MR.strings.pref_storage_usage),
                 ) {
@@ -336,13 +335,13 @@ object SettingsDataScreen : SearchableSettings {
 
                 // AM (FILE_SIZE) -->
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = storagePreferences.showEpisodeFileSize(),
+                    preference = storagePreferences.showEpisodeFileSize,
                     title = stringResource(TLMR.strings.pref_show_downloaded_episode_file_size),
                 ),
                 // <-- AM (FILE_SIZE)
 
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.label_storage),
+                    title = stringResource(AYMR.strings.label_storage),
                     icon = Icons.Outlined.Storage,
                     onClick = {
                         navigator.push(StorageTab)
@@ -350,7 +349,7 @@ object SettingsDataScreen : SearchableSettings {
                 ),
 
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_clear_chapter_cache),
+                    title = stringResource(AYMR.strings.pref_clear_chapter_cache),
                     subtitle = stringResource(MR.strings.used_cache, cacheReadableSize),
                     onClick = {
                         scope.launchNonCancellable {
@@ -368,8 +367,8 @@ object SettingsDataScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = libraryPreferences.autoClearItemCache(),
-                    title = stringResource(MR.strings.pref_auto_clear_chapter_cache),
+                    preference = libraryPreferences.autoClearItemCache,
+                    title = stringResource(AYMR.strings.pref_auto_clear_chapter_cache),
                 ),
             ),
         )
@@ -434,7 +433,7 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.export),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.library_list),
                     onClick = { showDialog = true },
@@ -482,7 +481,7 @@ object SettingsDataScreen : SearchableSettings {
                             onCheckedChange = { typeSelected = it },
                             enabled = titleSelected,
                         )
-                        Text(text = stringResource(MR.strings.type))
+                        Text(text = stringResource(AYMR.strings.type))
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -534,11 +533,11 @@ object SettingsDataScreen : SearchableSettings {
         return listOf(
             Preference.PreferenceGroup(
                 title = stringResource(TLMR.strings.pref_sync_service_category),
-                preferenceItems = persistentListOf(
+                preferenceItems = listOf(
                     Preference.PreferenceItem.ListPreference(
                         preference = syncPreferences.syncService(),
                         title = stringResource(TLMR.strings.pref_sync_service),
-                        entries = persistentMapOf(
+                        entries = mapOf(
                             SyncManager.SyncService.NONE.value to stringResource(MR.strings.off),
                             SyncManager.SyncService.SYNCYOMI.value to stringResource(TLMR.strings.syncyomi),
                             SyncManager.SyncService.GOOGLE_DRIVE.value to stringResource(TLMR.strings.google_drive),
@@ -614,14 +613,17 @@ object SettingsDataScreen : SearchableSettings {
                                 TLMR.strings.google_drive_not_signed_in,
                                 duration = 5000,
                             )
+
                             GoogleDriveSyncService.DeleteSyncDataStatus.NO_FILES -> context.toast(
                                 TLMR.strings.google_drive_sync_data_not_found,
                                 duration = 5000,
                             )
+
                             GoogleDriveSyncService.DeleteSyncDataStatus.SUCCESS -> context.toast(
                                 TLMR.strings.google_drive_sync_data_purged,
                                 duration = 5000,
                             )
+
                             GoogleDriveSyncService.DeleteSyncDataStatus.ERROR -> context.toast(
                                 TLMR.strings.google_drive_sync_data_purge_error,
                                 duration = 10000,
@@ -692,7 +694,7 @@ object SettingsDataScreen : SearchableSettings {
         val navigator = LocalNavigator.currentOrThrow
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_sync_now_group_title),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 getSyncOptionsPref(),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(TLMR.strings.pref_sync_now),
@@ -724,11 +726,11 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_sync_automatic_category),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = syncIntervalPref,
                     title = stringResource(TLMR.strings.pref_sync_interval),
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         0 to stringResource(MR.strings.off),
                         30 to stringResource(TLMR.strings.update_30min),
                         60 to stringResource(TLMR.strings.update_1hour),

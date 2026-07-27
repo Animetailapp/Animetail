@@ -1,10 +1,10 @@
 package tachiyomi.data.items.episode
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import kotlinx.coroutines.flow.Flow
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
-import tachiyomi.data.items.episode.EpisodeMapper.mapEpisode
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.items.episode.model.EpisodeUpdate
 import tachiyomi.domain.items.episode.repository.EpisodeRepository
@@ -17,7 +17,7 @@ class EpisodeRepositoryImpl(
         return try {
             handler.await(inTransaction = true) {
                 episodes.map { episode ->
-                    episodesQueries.insert(
+                    val lastInsertId = episodesQueries.insert(
                         episode.animeId,
                         episode.url,
                         episode.name,
@@ -31,8 +31,11 @@ class EpisodeRepositoryImpl(
                         episode.dateFetch,
                         episode.dateUpload,
                         episode.version,
-                    )
-                    val lastInsertId = episodesQueries.selectLastInsertedRowId().executeAsOne()
+                        episode.summary,
+                        episode.previewUrl,
+                        episode.fillermark,
+                        episode.dateUploadOverride,
+                    ).awaitAsOne()
                     episode.copy(id = lastInsertId)
                 }
             }
@@ -69,6 +72,10 @@ class EpisodeRepositoryImpl(
                     episodeId = episodeUpdate.id,
                     version = episodeUpdate.version,
                     isSyncing = 0,
+                    summary = episodeUpdate.summary,
+                    previewUrl = episodeUpdate.previewUrl,
+                    fillermark = episodeUpdate.fillermark,
+                    dateUploadOverride = episodeUpdate.dateUploadOverride,
                 )
             }
         }
@@ -136,11 +143,16 @@ class EpisodeRepositoryImpl(
         version: Long,
         @Suppress("UNUSED_PARAMETER")
         isSyncing: Long,
+        summary: String?,
+        previewUrl: String?,
+        fillermark: Boolean,
+        dateUploadOverride: Long,
     ): Episode = Episode(
         id = id,
         animeId = animeId,
         seen = seen,
         bookmark = bookmark,
+        fillermark = fillermark,
         lastSecondSeen = lastSecondSeen,
         totalSeconds = totalSeconds,
         dateFetch = dateFetch,
@@ -150,7 +162,10 @@ class EpisodeRepositoryImpl(
         dateUpload = dateUpload,
         episodeNumber = episodeNumber,
         scanlator = scanlator,
+        summary = summary,
+        previewUrl = previewUrl,
         lastModifiedAt = lastModifiedAt,
         version = version,
+        dateUploadOverride = dateUploadOverride,
     )
 }

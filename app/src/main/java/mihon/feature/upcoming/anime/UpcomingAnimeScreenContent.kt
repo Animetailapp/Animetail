@@ -173,6 +173,7 @@ private fun UpcomingAnimeScreenSmallImpl(
                         onClick = { onClickUpcoming(item.anime) },
                     )
                 }
+
                 is UpcomingAnimeUIModel.Header -> {
                     DateHeading(
                         date = item.date,
@@ -224,6 +225,7 @@ private fun UpcomingAnimeScreenLargeImpl(
                                 onClick = { onClickUpcoming(item.anime) },
                             )
                         }
+
                         is UpcomingAnimeUIModel.Header -> {
                             DateHeading(
                                 date = item.date,

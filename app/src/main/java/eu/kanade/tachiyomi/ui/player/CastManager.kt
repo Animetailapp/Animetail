@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.player
 
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
@@ -14,12 +15,11 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaQueueItem
+import com.google.android.gms.cast.MediaSeekOptions
 import com.google.android.gms.cast.TextTrackStyle
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
 import eu.kanade.tachiyomi.ui.player.cast.CastMediaBuilder
 import eu.kanade.tachiyomi.ui.player.cast.CastSessionListener
 import eu.kanade.tachiyomi.ui.player.cast.components.BorderStyle
@@ -75,10 +75,12 @@ class CastManager(
                 val factory = PlayerViewModelProviderFactory(activity)
                 activity.viewModels<PlayerViewModel> { factory }.value
             }
+
             else -> null
         }
     }
     private val player by lazy { (activity as? PlayerActivity)?.player }
+    private val mpv by lazy { viewModel?.mpv }
     private val playerPreferences: PlayerPreferences by lazy {
         viewModel?.playerPreferences ?: PlayerPreferences(preferenceStore)
     }
@@ -102,7 +104,14 @@ class CastManager(
     private var mediaRouterCallback: androidx.mediarouter.media.MediaRouter.Callback? = null
 
     private val isCastApiAvailable: Boolean
-        get() = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS
+        get() = try {
+            context.packageManager
+                .getPackageInfo("com.google.android.gms", PackageManager.GET_META_DATA)
+                .applicationInfo
+                ?.enabled == true
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        }
 
     private val mediaQueue = LinkedList<MediaQueueItem>()
     private var isLoadingMedia = false
@@ -201,7 +210,7 @@ class CastManager(
 
     fun updateCastState(state: CastState) {
         _castState.value = state
-        if (state == CastState.CONNECTED) player?.paused = true
+        if (state == CastState.CONNECTED) mpv?.setPropertyBoolean("pause", true)
         activity.invalidateOptionsMenu()
     }
 
@@ -253,7 +262,7 @@ class CastManager(
                 val video = hosterState?.videoList?.getOrNull(selectedVideoIndex) ?: return@launch
 
                 val mediaInfo = mediaBuilder!!.buildMediaInfo(video) // Ahora pasa el objeto `Video` directamente
-                val currentLocalPosition = (player?.timePos ?: 0).toLong()
+                val currentLocalPosition = (mpv?.getPropertyInt("time-pos") ?: 0).toLong()
 
                 updateQueueItems()
                 if (remoteMediaClient.mediaQueue.itemCount > 0) {
@@ -471,6 +480,7 @@ class CastManager(
 
             when {
                 newDevices.any { it.isConnected } -> _castState.value = CastState.CONNECTED
+
                 newDevices.isEmpty() && _castState.value != CastState.DISCONNECTED ->
                     _castState.value = CastState.DISCONNECTED
             }
@@ -572,7 +582,11 @@ class CastManager(
     fun seekRelative(offset: Int) {
         castSession?.remoteMediaClient?.let { client ->
             val newPosition = client.approximateStreamPosition + (offset * 1000)
-            client.seek(newPosition)
+            client.seek(
+                MediaSeekOptions.Builder()
+                    .setPosition(newPosition)
+                    .build(),
+            )
         }
     }
 
@@ -688,7 +702,6 @@ class CastManager(
                             BorderStyle.DROP_SHADOW -> TextTrackStyle.EDGE_TYPE_DROP_SHADOW
                             BorderStyle.RAISED -> TextTrackStyle.EDGE_TYPE_RAISED
                             BorderStyle.DEPRESSED -> TextTrackStyle.EDGE_TYPE_DEPRESSED
-                            else -> TextTrackStyle.EDGE_TYPE_NONE
                         }
                     }
                 }

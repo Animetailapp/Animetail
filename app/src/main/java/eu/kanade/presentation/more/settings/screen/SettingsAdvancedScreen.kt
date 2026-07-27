@@ -47,6 +47,7 @@ import eu.kanade.tachiyomi.network.PREF_DOH_ADGUARD
 import eu.kanade.tachiyomi.network.PREF_DOH_ALIDNS
 import eu.kanade.tachiyomi.network.PREF_DOH_CLOUDFLARE
 import eu.kanade.tachiyomi.network.PREF_DOH_CONTROLD
+import eu.kanade.tachiyomi.network.PREF_DOH_CUSTOM
 import eu.kanade.tachiyomi.network.PREF_DOH_DNSPOD
 import eu.kanade.tachiyomi.network.PREF_DOH_GOOGLE
 import eu.kanade.tachiyomi.network.PREF_DOH_LIBREDNS
@@ -66,10 +67,6 @@ import eu.kanade.tachiyomi.util.system.isShizukuInstalled
 import eu.kanade.tachiyomi.util.system.powerManager
 import eu.kanade.tachiyomi.util.system.setDefaultSettings
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableMap
-import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -77,6 +74,7 @@ import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import mihon.core.migration.Migrator.scope
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -85,7 +83,9 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.interactor.ResetMangaViewerFlags
+import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -93,6 +93,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 import java.io.File
+import java.net.InetAddress
 import tachiyomi.core.common.preference.Preference as BasePreference
 
 object SettingsAdvancedScreen : SearchableSettings {
@@ -165,7 +166,7 @@ object SettingsAdvancedScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_background_activity),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_disable_battery_optimization),
                     subtitle = stringResource(MR.strings.pref_disable_battery_optimization_summary),
@@ -204,10 +205,10 @@ object SettingsAdvancedScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_data),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_invalidate_download_cache),
-                    subtitle = stringResource(MR.strings.pref_invalidate_download_cache_summary),
+                    subtitle = stringResource(AYMR.strings.pref_invalidate_download_cache_summary),
                     onClick = {
                         Injekt.get<MangaDownloadCache>().invalidateCache()
                         Injekt.get<AnimeDownloadCache>().invalidateCache()
@@ -215,13 +216,13 @@ object SettingsAdvancedScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_clear_manga_database),
-                    subtitle = stringResource(MR.strings.pref_clear_manga_database_summary),
+                    title = stringResource(AYMR.strings.pref_clear_manga_database),
+                    subtitle = stringResource(AYMR.strings.pref_clear_manga_database_summary),
                     onClick = { navigator.push(ClearDatabaseScreen()) },
                 ),
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_clear_anime_database),
-                    subtitle = stringResource(MR.strings.pref_clear_anime_database_summary),
+                    title = stringResource(AYMR.strings.pref_clear_anime_database),
+                    subtitle = stringResource(AYMR.strings.pref_clear_anime_database_summary),
                     onClick = { navigator.push(ClearAnimeDatabaseScreen()) },
                 ),
             ),
@@ -237,16 +238,22 @@ object SettingsAdvancedScreen : SearchableSettings {
 
         val userAgentPref = networkPreferences.defaultUserAgent()
         val userAgent by userAgentPref.collectAsState()
+        val dohProviderPref = networkPreferences.dohProvider()
+        val dohProvider by dohProviderPref.collectAsState()
+        val dohCustomUrlPref = networkPreferences.dohCustomUrl()
+        val dohCustomBootstrapPref = networkPreferences.dohCustomBootstrap()
+        val errorDohCustomBootstrapInvalid = stringResource(TLMR.strings.error_doh_custom_bootstrap_invalid)
 
         // TLMR -->
         val flareSolverrUrlPref = networkPreferences.flareSolverrUrl()
+        val flareSolverrTimeoutPref = networkPreferences.flareSolverrTimeout()
         val enableFlareSolverrPref = networkPreferences.enableFlareSolverr()
         val enableFlareSolverr by enableFlareSolverrPref.collectAsState()
         // <-- TLMR
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_network),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_clear_cookies),
                     onClick = {
@@ -276,7 +283,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = networkPreferences.dohProvider(),
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         -1 to stringResource(MR.strings.disabled),
                         PREF_DOH_CLOUDFLARE to "Cloudflare",
                         PREF_DOH_GOOGLE to "Google",
@@ -291,9 +298,56 @@ object SettingsAdvancedScreen : SearchableSettings {
                         PREF_DOH_NJALLA to "Njalla",
                         PREF_DOH_SHECAN to "Shecan",
                         PREF_DOH_LIBREDNS to "LibreDNS",
+                        PREF_DOH_CUSTOM to "Custom",
                     ),
                     title = stringResource(MR.strings.pref_dns_over_https),
                     onValueChanged = {
+                        context.toast(MR.strings.requires_app_restart)
+                        true
+                    },
+                ),
+                Preference.PreferenceItem.EditTextPreference(
+                    preference = dohCustomUrlPref,
+                    title = stringResource(TLMR.strings.pref_doh_custom_url),
+                    subtitle = stringResource(TLMR.strings.pref_doh_custom_url_summary),
+                    enabled = dohProvider == PREF_DOH_CUSTOM,
+                    onValueChanged = {
+                        val value = it.trim()
+                        try {
+                            val parsed = value.toHttpUrl()
+                            if (!parsed.scheme.equals("https", ignoreCase = true)) {
+                                context.toast(TLMR.strings.error_doh_custom_must_use_https)
+                                return@EditTextPreference false
+                            }
+                        } catch (e: Exception) {
+                            context.toast(TLMR.strings.error_doh_custom_invalid)
+                            return@EditTextPreference false
+                        }
+                        context.toast(MR.strings.requires_app_restart)
+                        true
+                    },
+                ),
+                Preference.PreferenceItem.EditTextPreference(
+                    preference = dohCustomBootstrapPref,
+                    title = stringResource(TLMR.strings.pref_doh_custom_bootstrap),
+                    subtitle = stringResource(TLMR.strings.pref_doh_custom_bootstrap_summary),
+                    enabled = dohProvider == PREF_DOH_CUSTOM,
+                    onValueChanged = {
+                        // Validate comma separated hosts by attempting to resolve them
+                        val raw = it.trim()
+                        if (raw.isEmpty()) {
+                            context.toast(MR.strings.requires_app_restart)
+                            return@EditTextPreference true
+                        }
+                        val parts = raw.split(',').map { p -> p.trim() }.filter { p -> p.isNotEmpty() }
+                        for (p in parts) {
+                            try {
+                                InetAddress.getByName(p)
+                            } catch (e: Exception) {
+                                context.toast(errorDohCustomBootstrapInvalid.format(p))
+                                return@EditTextPreference false
+                            }
+                        }
                         context.toast(MR.strings.requires_app_restart)
                         true
                     },
@@ -333,13 +387,31 @@ object SettingsAdvancedScreen : SearchableSettings {
                     enabled = enableFlareSolverr,
                     subtitle = stringResource(TLMR.strings.pref_flare_solverr_url_summary),
                 ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = flareSolverrTimeoutPref,
+                    entries = mapOf(
+                        10000 to "10s",
+                        30000 to "30s",
+                        60000 to "1m",
+                        90000 to "1.5m",
+                        120000 to "2m",
+                    ),
+                    title = stringResource(TLMR.strings.pref_flare_solverr_timeout),
+                    enabled = enableFlareSolverr,
+                    subtitle = stringResource(TLMR.strings.pref_flare_solverr_timeout_summary),
+                ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(TLMR.strings.pref_test_flare_solverr_and_update_user_agent),
                     enabled = enableFlareSolverr,
                     subtitle = stringResource(TLMR.strings.pref_test_flare_solverr_and_update_user_agent_summary),
                     onClick = {
                         scope.launch {
-                            testFlareSolverrAndUpdateUserAgent(flareSolverrUrlPref, userAgentPref, context)
+                            testFlareSolverrAndUpdateUserAgent(
+                                flareSolverrUrlPref,
+                                flareSolverrTimeoutPref,
+                                userAgentPref,
+                                context,
+                            )
                         }
                     },
                 ),
@@ -352,10 +424,11 @@ object SettingsAdvancedScreen : SearchableSettings {
     private fun getLibraryGroup(): Preference.PreferenceGroup {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
+        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_library),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_refresh_library_covers),
                     onClick = {
@@ -382,6 +455,16 @@ object SettingsAdvancedScreen : SearchableSettings {
                         }
                     },
                 ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = libraryPreferences.updateMangaTitles,
+                    title = stringResource(MR.strings.pref_update_library_manga_titles),
+                    subtitle = stringResource(MR.strings.pref_update_library_manga_titles_summary),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = libraryPreferences.disallowNonAsciiFilenames,
+                    title = stringResource(MR.strings.pref_disallow_non_ascii_filenames),
+                    subtitle = stringResource(MR.strings.pref_disallow_non_ascii_filenames_details),
+                ),
             ),
         )
     }
@@ -397,14 +480,14 @@ object SettingsAdvancedScreen : SearchableSettings {
             uri?.let {
                 val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 context.contentResolver.takePersistableUriPermission(uri, flags)
-                basePreferences.displayProfile().set(uri.toString())
+                basePreferences.displayProfile.set(uri.toString())
             }
         }
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_reader),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
-                    preference = basePreferences.hardwareBitmapThreshold(),
+                    preference = basePreferences.hardwareBitmapThreshold,
                     entries = GLUtil.CUSTOM_TEXTURE_LIMIT_OPTIONS
                         .mapIndexed { index, option ->
                             val display = if (index == 0) {
@@ -415,7 +498,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                             option to display
                         }
                         .toMap()
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(MR.strings.pref_hardware_bitmap_threshold),
                     subtitleProvider = { value, options ->
                         stringResource(MR.strings.pref_hardware_bitmap_threshold_summary, options[value].orEmpty())
@@ -424,13 +507,13 @@ object SettingsAdvancedScreen : SearchableSettings {
                         GLUtil.DEVICE_TEXTURE_LIMIT > GLUtil.SAFE_TEXTURE_LIMIT,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = basePreferences.alwaysDecodeLongStripWithSSIV(),
+                    preference = basePreferences.alwaysDecodeLongStripWithSSIV,
                     title = stringResource(MR.strings.pref_always_decode_long_strip_with_ssiv_2),
                     subtitle = stringResource(MR.strings.pref_always_decode_long_strip_with_ssiv_summary),
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_display_profile),
-                    subtitle = basePreferences.displayProfile().get(),
+                    subtitle = basePreferences.displayProfile.get(),
                     onClick = {
                         chooseColorProfile.launch(arrayOf("*/*"))
                     },
@@ -445,7 +528,7 @@ object SettingsAdvancedScreen : SearchableSettings {
     ): Preference.PreferenceGroup {
         val context = LocalContext.current
         val uriHandler = LocalUriHandler.current
-        val extensionInstallerPref = basePreferences.extensionInstaller()
+        val extensionInstallerPref = basePreferences.extensionInstaller
         var shizukuMissing by rememberSaveable { mutableStateOf(false) }
         val trustAnimeExtension = remember { Injekt.get<TrustAnimeExtension>() }
         val trustMangaExtension = remember { Injekt.get<TrustMangaExtension>() }
@@ -479,7 +562,7 @@ object SettingsAdvancedScreen : SearchableSettings {
         }
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_extensions),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = extensionInstallerPref,
                     entries = extensionInstallerPref.entries
@@ -492,7 +575,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                             }
                         }
                         .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(MR.strings.ext_installer_pref),
                     onValueChanged = {
                         if (it == BasePreferences.ExtensionInstaller.SHIZUKU &&
@@ -521,44 +604,44 @@ object SettingsAdvancedScreen : SearchableSettings {
     @Composable
     private fun getDataSaverGroup(): Preference.PreferenceGroup {
         val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
-        val dataSaver by sourcePreferences.dataSaver().collectAsState()
+        val dataSaver by sourcePreferences.dataSaver.collectAsState()
         return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.data_saver),
-            preferenceItems = persistentListOf(
+            title = stringResource(AYMR.strings.data_saver),
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
-                    preference = sourcePreferences.dataSaver(),
-                    entries = persistentMapOf(
+                    preference = sourcePreferences.dataSaver,
+                    entries = mapOf(
                         DataSaver.NONE to stringResource(MR.strings.disabled),
-                        DataSaver.BANDWIDTH_HERO to stringResource(MR.strings.bandwidth_hero),
-                        DataSaver.WSRV_NL to stringResource(MR.strings.wsrv),
-                        DataSaver.RESMUSH_IT to stringResource(MR.strings.resmush),
+                        DataSaver.BANDWIDTH_HERO to stringResource(AYMR.strings.bandwidth_hero),
+                        DataSaver.WSRV_NL to stringResource(AYMR.strings.wsrv),
+                        DataSaver.RESMUSH_IT to stringResource(AYMR.strings.resmush),
                     ),
-                    title = stringResource(MR.strings.data_saver),
-                    subtitle = stringResource(MR.strings.data_saver_summary),
+                    title = stringResource(AYMR.strings.data_saver),
+                    subtitle = stringResource(AYMR.strings.data_saver_summary),
                 ),
                 Preference.PreferenceItem.EditTextPreference(
-                    preference = sourcePreferences.dataSaverServer(),
-                    title = stringResource(MR.strings.bandwidth_data_saver_server),
-                    subtitle = stringResource(MR.strings.data_saver_server_summary),
+                    preference = sourcePreferences.dataSaverServer,
+                    title = stringResource(AYMR.strings.bandwidth_data_saver_server),
+                    subtitle = stringResource(AYMR.strings.data_saver_server_summary),
                     enabled = dataSaver == DataSaver.BANDWIDTH_HERO,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = sourcePreferences.dataSaverDownloader(),
-                    title = stringResource(MR.strings.data_saver_downloader),
+                    preference = sourcePreferences.dataSaverDownloader,
+                    title = stringResource(AYMR.strings.data_saver_downloader),
                     enabled = dataSaver != DataSaver.NONE,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = sourcePreferences.dataSaverIgnoreJpeg(),
-                    title = stringResource(MR.strings.data_saver_ignore_jpeg),
+                    preference = sourcePreferences.dataSaverIgnoreJpeg,
+                    title = stringResource(AYMR.strings.data_saver_ignore_jpeg),
                     enabled = dataSaver != DataSaver.NONE,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = sourcePreferences.dataSaverIgnoreGif(),
-                    title = stringResource(MR.strings.data_saver_ignore_gif),
+                    preference = sourcePreferences.dataSaverIgnoreGif,
+                    title = stringResource(AYMR.strings.data_saver_ignore_gif),
                     enabled = dataSaver != DataSaver.NONE,
                 ),
                 Preference.PreferenceItem.ListPreference(
-                    preference = sourcePreferences.dataSaverImageQuality(),
+                    preference = sourcePreferences.dataSaverImageQuality,
                     entries = listOf(
                         "10%",
                         "20%",
@@ -568,27 +651,27 @@ object SettingsAdvancedScreen : SearchableSettings {
                         "80%",
                         "90%",
                         "95%",
-                    ).associateBy { it.trimEnd('%').toInt() }.toPersistentMap(),
-                    title = stringResource(MR.strings.data_saver_image_quality),
-                    subtitle = stringResource(MR.strings.data_saver_image_quality_summary),
+                    ).associateBy { it.trimEnd('%').toInt() }.toMap(),
+                    title = stringResource(AYMR.strings.data_saver_image_quality),
+                    subtitle = stringResource(AYMR.strings.data_saver_image_quality_summary),
                     enabled = dataSaver != DataSaver.NONE,
                 ),
                 kotlin.run {
-                    val dataSaverImageFormatJpeg by sourcePreferences.dataSaverImageFormatJpeg().collectAsState()
+                    val dataSaverImageFormatJpeg by sourcePreferences.dataSaverImageFormatJpeg.collectAsState()
                     Preference.PreferenceItem.SwitchPreference(
-                        preference = sourcePreferences.dataSaverImageFormatJpeg(),
-                        title = stringResource(MR.strings.data_saver_image_format),
+                        preference = sourcePreferences.dataSaverImageFormatJpeg,
+                        title = stringResource(AYMR.strings.data_saver_image_format),
                         subtitle = if (dataSaverImageFormatJpeg) {
-                            stringResource(MR.strings.data_saver_image_format_summary_on)
+                            stringResource(AYMR.strings.data_saver_image_format_summary_on)
                         } else {
-                            stringResource(MR.strings.data_saver_image_format_summary_off)
+                            stringResource(AYMR.strings.data_saver_image_format_summary_off)
                         },
                         enabled = dataSaver != DataSaver.NONE && dataSaver != DataSaver.RESMUSH_IT,
                     )
                 },
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = sourcePreferences.dataSaverColorBW(),
-                    title = stringResource(MR.strings.data_saver_color_bw),
+                    preference = sourcePreferences.dataSaverColorBW,
+                    title = stringResource(AYMR.strings.data_saver_color_bw),
                     enabled = dataSaver == DataSaver.BANDWIDTH_HERO,
                 ),
             ),
@@ -599,12 +682,18 @@ object SettingsAdvancedScreen : SearchableSettings {
     // TLMR -->
     private suspend fun testFlareSolverrAndUpdateUserAgent(
         flareSolverrUrlPref: BasePreference<String>,
+        flareSolverrTimeoutPref: BasePreference<Int>,
         userAgentPref: BasePreference<String>,
         context: android.content.Context,
     ) {
         val json: Json by injectLazy()
         val jsonMediaType = "application/json".toMediaType()
-        val client = OkHttpClient.Builder().build()
+        val timeout = flareSolverrTimeoutPref.get() + 10000
+        val client = OkHttpClient.Builder()
+            .readTimeout(timeout.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .writeTimeout(timeout.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .connectTimeout(timeout.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
+            .build()
 
         try {
             withContext(Dispatchers.IO) {
@@ -619,7 +708,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                                     "request.get",
                                     "https://www.google.com/",
                                     returnOnlyCookies = true,
-                                    maxTimeout = 60000,
+                                    maxTimeout = flareSolverrTimeoutPref.get(),
                                 ),
                             ).toRequestBody(jsonMediaType),
                         ),

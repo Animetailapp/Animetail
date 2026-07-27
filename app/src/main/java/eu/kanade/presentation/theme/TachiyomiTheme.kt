@@ -1,12 +1,14 @@
 package eu.kanade.presentation.theme
 
+import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.RippleConfiguration
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.AppTheme
@@ -42,8 +44,8 @@ fun TachiyomiTheme(
 ) {
     val uiPreferences = Injekt.get<UiPreferences>()
     BaseTachiyomiTheme(
-        appTheme = appTheme ?: uiPreferences.appTheme().get(),
-        isAmoled = amoled ?: uiPreferences.themeDarkAmoled().get(),
+        appTheme = appTheme ?: uiPreferences.appTheme.get(),
+        isAmoled = amoled ?: uiPreferences.themeDarkAmoled.get(),
         content = content,
     )
 }
@@ -61,29 +63,39 @@ private fun BaseTachiyomiTheme(
     isAmoled: Boolean,
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = getThemeColorScheme(appTheme, isAmoled),
+    val context = LocalContext.current
+    val isDark = isSystemInDarkTheme()
+    MaterialExpressiveTheme(
+        colorScheme = remember(appTheme, isDark, isAmoled) {
+            getThemeColorScheme(
+                context = context,
+                appTheme = appTheme,
+                isDark = isDark,
+                isAmoled = isAmoled,
+            )
+        },
         content = content,
     )
 }
 
-@Composable
-@ReadOnlyComposable
 private fun getThemeColorScheme(
+    context: Context,
     appTheme: AppTheme,
+    isDark: Boolean,
     isAmoled: Boolean,
 ): ColorScheme {
     val uiPreferences = Injekt.get<UiPreferences>()
     val colorScheme = if (appTheme == AppTheme.MONET) {
-        MonetColorScheme(LocalContext.current)
+        MonetColorScheme(context)
     } else if (appTheme == AppTheme.CUSTOM) {
         CustomColorScheme(uiPreferences)
     } else {
         colorSchemes.getOrDefault(appTheme, TachiyomiColorScheme)
     }
     return colorScheme.getColorScheme(
-        isSystemInDarkTheme(),
-        isAmoled,
+        isDark = isDark,
+        isAmoled = isAmoled,
+        overrideDarkSurfaceContainers = appTheme != AppTheme.MONET,
     )
 }
 
@@ -92,9 +104,10 @@ private const val RIPPLE_FOCUSED_ALPHA = .6f
 private const val RIPPLE_HOVERED_ALPHA = .98f
 private const val RIPPLE_PRESSED_ALPHA = .6f
 
+@Suppress("DEPRECATION")
 val playerRippleConfiguration
     @Composable get() = RippleConfiguration(
-        color = MaterialTheme.colorScheme.primaryContainer,
+        color = if (isSystemInDarkTheme()) Color.White else Color.Black,
         rippleAlpha = RippleAlpha(
             draggedAlpha = RIPPLE_DRAGGED_ALPHA,
             focusedAlpha = RIPPLE_FOCUSED_ALPHA,

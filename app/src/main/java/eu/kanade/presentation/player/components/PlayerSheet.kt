@@ -21,7 +21,6 @@ import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.AnchoredDraggableState
@@ -85,7 +84,7 @@ fun PlayerSheet(
     val density = LocalDensity.current
     val latestOnDismissRequest by rememberUpdatedState(onDismissRequest)
     val maxWidth = if (LocalConfiguration.current.orientation == ORIENTATION_LANDSCAPE) {
-        640.dp
+        720.dp
     } else {
         420.dp
     }
@@ -98,14 +97,9 @@ fun PlayerSheet(
         label = "alpha",
     )
 
-    val decayAnimationSpec = rememberSplineBasedDecay<Float>()
     val anchoredDraggableState = remember {
         AnchoredDraggableState(
             initialValue = 1,
-            snapAnimationSpec = sheetAnimationSpec,
-            decayAnimationSpec = decayAnimationSpec,
-            positionalThreshold = { with(density) { 56.dp.toPx() } },
-            velocityThreshold = { with(density) { 125.dp.toPx() } },
         )
     }
 
@@ -153,7 +147,9 @@ fun PlayerSheet(
                 )
                 .nestedScroll(
                     remember(anchoredDraggableState) {
-                        anchoredDraggableState.preUpPostDownNestedScrollConnection()
+                        anchoredDraggableState.preUpPostDownNestedScrollConnection {
+                            scope.launch { anchoredDraggableState.settle(sheetAnimationSpec) }
+                        }
                     },
                 )
                 .then(modifier)
@@ -199,7 +195,9 @@ fun PlayerSheet(
     }
 }
 
-private fun <T> AnchoredDraggableState<T>.preUpPostDownNestedScrollConnection() = object : NestedScrollConnection {
+private fun <T> AnchoredDraggableState<T>.preUpPostDownNestedScrollConnection(
+    onFling: suspend (velocity: Float) -> Unit,
+) = object : NestedScrollConnection {
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
         val delta = available.toFloat()
         return if (delta < 0 && source == NestedScrollSource.UserInput) {
@@ -223,8 +221,8 @@ private fun <T> AnchoredDraggableState<T>.preUpPostDownNestedScrollConnection() 
 
     override suspend fun onPreFling(available: Velocity): Velocity {
         val toFling = available.toFloat()
-        return if (toFling < 0 && offset > anchors.minAnchor()) {
-            settle(toFling)
+        return if (toFling < 0 && offset > 0f) {
+            onFling(toFling)
             available
         } else {
             Velocity.Zero
@@ -232,9 +230,8 @@ private fun <T> AnchoredDraggableState<T>.preUpPostDownNestedScrollConnection() 
     }
 
     override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-        val toFling = available.toFloat()
-        return if (toFling > 0) {
-            settle(toFling)
+        onFling(available.toFloat())
+        return if (targetValue != settledValue) {
             available
         } else {
             Velocity.Zero

@@ -18,12 +18,14 @@ fun PlayerDialogs(
     dateRelativeTime: Boolean,
     dateFormat: DateTimeFormatter,
     onBookmarkClicked: (Long?, Boolean) -> Unit,
+    onFillermarkClicked: (Long?, Boolean) -> Unit,
     onEpisodeClicked: (Long?) -> Unit,
 
     onDismissRequest: () -> Unit,
 ) {
     when (dialogShown) {
         Dialogs.None -> {}
+
         Dialogs.EpisodeList -> {
             EpisodeListDialog(
                 displayMode = episodeDisplayMode,
@@ -32,10 +34,12 @@ fun PlayerDialogs(
                 dateRelativeTime = dateRelativeTime,
                 dateFormat = dateFormat,
                 onBookmarkClicked = onBookmarkClicked,
+                onFillermarkClicked = onFillermarkClicked,
                 onEpisodeClicked = onEpisodeClicked,
                 onDismissRequest = onDismissRequest,
             )
         }
+
         is Dialogs.IntegerPicker -> {
             IntegerPickerDialog(
                 defaultValue = dialogShown.defaultValue,

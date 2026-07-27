@@ -30,6 +30,7 @@ import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.isOnline
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -59,6 +60,8 @@ import java.io.File
 import java.util.Date
 
 class ExternalIntents {
+
+    private val scope: CoroutineScope by injectLazy()
 
     /**
      * The common variables
@@ -100,7 +103,7 @@ class ExternalIntents {
             DiscordRPCService.setPlayerActivity(
                 context = context,
                 playerData = PlayerData(
-                    incognitoMode = source.isNsfw() || basePreferences.incognitoMode().get(),
+                    incognitoMode = source.isNsfw() || basePreferences.incognitoMode.get(),
                     animeId = anime.id,
                     // AM (CU)>
                     animeTitle = anime.ogTitle,
@@ -156,6 +159,7 @@ class ExternalIntents {
                 downloadManager.isEpisodeDownloaded(
                     episodeName = episode.name,
                     episodeScanlator = episode.scanlator,
+                    episodeUrl = episode.url,
                     animeTitle = anime.title,
                     sourceId = anime.source,
                     skipCache = true,
@@ -364,17 +368,26 @@ class ExternalIntents {
     private fun getComponent(packageName: String): ComponentName? {
         return when (packageName) {
             MPV_PLAYER -> ComponentName(packageName, "$packageName.MPVActivity")
+
             MX_PLAYER, MX_PLAYER_FREE, MX_PLAYER_PRO -> ComponentName(
                 packageName,
                 "$packageName.ActivityScreen",
             )
+
             VLC_PLAYER -> ComponentName(packageName, "$packageName.gui.video.VideoPlayerActivity")
+
             MPV_KT, MPV_KT_PREVIEW -> ComponentName(packageName, "live.mehiz.mpvkt.ui.player.PlayerActivity")
+
             MPV_REMOTE -> ComponentName(packageName, "$packageName.MainActivity")
+
             JUST_PLAYER -> ComponentName(packageName, "$packageName.PlayerActivity")
+
             NEXT_PLAYER -> ComponentName(packageName, "$packageName.feature.player.PlayerActivity")
+
             X_PLAYER -> ComponentName(packageName, "com.inshot.xplayer.activities.PlayerActivity")
+
             AMNIS -> ComponentName(packageName, "$packageName.gui.player.PlayerActivity")
+
             else -> null
         }
     }
@@ -436,7 +449,7 @@ class ExternalIntents {
         }
 
         // Update the episode's progress and history
-        launchIO {
+        scope.launchIO {
             // AM (DISCORD) -->
             DiscordRPCService.setAnimeScreen(context, DiscordRPCService.lastUsedScreen)
             // <-- AM (DISCORD)
@@ -475,7 +488,7 @@ class ExternalIntents {
      * @param currentEpisode the episode to update.
      */
     private suspend fun saveEpisodeHistory(currentEpisode: Episode) {
-        if (basePreferences.incognitoMode().get()) return
+        if (basePreferences.incognitoMode.get()) return
         upsertHistory.await(
             AnimeHistoryUpdate(currentEpisode.id, Date()),
         )
@@ -496,7 +509,7 @@ class ExternalIntents {
         lastSecondSeen: Long,
         totalSeconds: Long,
     ) {
-        if (basePreferences.incognitoMode().get()) return
+        if (basePreferences.incognitoMode.get()) return
         val currEp = currentEpisode ?: return
 
         if (totalSeconds > 0L) {
@@ -507,12 +520,13 @@ class ExternalIntents {
                     id = currEp.id,
                     seen = seen,
                     bookmark = currEp.bookmark,
+                    fillermark = currEp.fillermark,
                     lastSecondSeen = lastSecondSeen,
                     totalSeconds = totalSeconds,
                 ),
             )
-            if (trackPreferences.autoUpdateTrack().get() && currEp.seen) {
-                updateTrackEpisodeSeen(currEp.episodeNumber.toDouble(), anime)
+            if (trackPreferences.autoUpdateTrack.get() && currEp.seen) {
+                updateTrackEpisodeSeen(currEp.episodeNumber, anime)
             }
             if (seen) {
                 deleteEpisodeIfNeeded(currentEpisode, anime)
@@ -540,7 +554,7 @@ class ExternalIntents {
             .sortedWith { e1, e2 -> sortFunction(e1, e2) }
 
         val currentEpisodePosition = episodes.indexOf(episode)
-        val removeAfterSeenSlots = downloadPreferences.removeAfterReadSlots().get()
+        val removeAfterSeenSlots = downloadPreferences.removeAfterReadSlots.get()
         val episodeToDelete = episodes.getOrNull(currentEpisodePosition - removeAfterSeenSlots)
 
         // Check if deleting option is enabled and episode exists
@@ -557,7 +571,7 @@ class ExternalIntents {
      * @param anime the anime of the episode.
      */
     private suspend fun updateTrackEpisodeSeen(episodeNumber: Double, anime: Anime) {
-        if (!trackPreferences.autoUpdateTrack().get()) return
+        if (!trackPreferences.autoUpdateTrack.get()) return
 
         val trackerManager = Injekt.get<TrackerManager>()
         val context = Injekt.get<Application>()

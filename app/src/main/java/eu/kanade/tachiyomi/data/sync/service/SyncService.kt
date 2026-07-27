@@ -155,7 +155,9 @@ abstract class SyncService(
             // New version comparison logic
             when {
                 local != null && remote == null -> updateCategories(local, localCategoriesMapByOrder)
+
                 local == null && remote != null -> updateCategories(remote, remoteCategoriesMapByOrder)
+
                 local != null && remote != null -> {
                     // Compare versions to decide which manga to keep
                     if (local.version >= remote.version) {
@@ -178,6 +180,7 @@ abstract class SyncService(
                         )
                     }
                 }
+
                 else -> null // No manga found for key
             }
         }
@@ -242,7 +245,9 @@ abstract class SyncService(
             // New version comparison logic
             when {
                 local != null && remote == null -> updateCategories(local, localCategoriesMapByOrder)
+
                 local == null && remote != null -> updateCategories(remote, remoteCategoriesMapByOrder)
+
                 local != null && remote != null -> {
                     // Compare versions to decide which manga to keep
                     if (local.version >= remote.version) {
@@ -265,6 +270,7 @@ abstract class SyncService(
                         )
                     }
                 }
+
                 else -> null // No manga found for key
             }
         }
@@ -332,10 +338,12 @@ abstract class SyncService(
                     logcat(LogPriority.DEBUG, logTag) { "Keeping local chapter: ${localChapter.name}." }
                     localChapter
                 }
+
                 localChapter == null && remoteChapter != null -> {
                     logcat(LogPriority.DEBUG, logTag) { "Taking remote chapter: ${remoteChapter.name}." }
                     remoteChapter
                 }
+
                 localChapter != null && remoteChapter != null -> {
                     // Use version number to decide which chapter to keep
                     val chosenChapter =
@@ -347,6 +355,7 @@ abstract class SyncService(
                     }
                     chosenChapter
                 }
+
                 else -> {
                     logcat(LogPriority.DEBUG, logTag) {
                         "No chapter found for composite key: $compositeKey. Skipping."
@@ -393,10 +402,12 @@ abstract class SyncService(
                     logcat(LogPriority.DEBUG, logTag) { "Keeping local episode: ${localEpisode.name}." }
                     localEpisode
                 }
+
                 localEpisode == null && remoteEpisode != null -> {
                     logcat(LogPriority.DEBUG, logTag) { "Taking remote episode: ${remoteEpisode.name}." }
                     remoteEpisode
                 }
+
                 localEpisode != null && remoteEpisode != null -> {
                     // Use version number to decide which episode to keep
                     val chosenChapter =
@@ -408,6 +419,7 @@ abstract class SyncService(
                     }
                     chosenChapter
                 }
+
                 else -> {
                     logcat(LogPriority.DEBUG, logTag) {
                         "No chapter found for composite key: $compositeKey. Skipping."
@@ -496,10 +508,12 @@ abstract class SyncService(
                     logcat(LogPriority.DEBUG, logTag) { "Using local source: ${localSource.name}." }
                     localSource
                 }
+
                 remoteSource != null && localSource == null -> {
                     logcat(LogPriority.DEBUG, logTag) { "Using remote source: ${remoteSource.name}." }
                     remoteSource
                 }
+
                 else -> {
                     logcat(LogPriority.DEBUG, logTag) { "Remote and local is not empty: $sourceId. Skipping." }
                     null
@@ -541,10 +555,12 @@ abstract class SyncService(
                     logcat(LogPriority.DEBUG, logTag) { "Using local source: ${localSource.name}." }
                     localSource
                 }
+
                 remoteSource != null && localSource == null -> {
                     logcat(LogPriority.DEBUG, logTag) { "Using remote source: ${remoteSource.name}." }
                     remoteSource
                 }
+
                 else -> {
                     logcat(LogPriority.DEBUG, logTag) { "Remote and local is not empty: $sourceId. Skipping." }
                     null
@@ -587,10 +603,12 @@ abstract class SyncService(
                     logcat(LogPriority.DEBUG, logTag) { "Using local preference: ${localPreference.key}." }
                     localPreference
                 }
+
                 remotePreference != null && localPreference == null -> {
                     logcat(LogPriority.DEBUG, logTag) { "Using remote preference: ${remotePreference.key}." }
                     remotePreference
                 }
+
                 else -> {
                     logcat(LogPriority.DEBUG, logTag) { "Both remote and local have keys. Skipping: $key" }
                     null
@@ -639,18 +657,21 @@ abstract class SyncService(
                         }
                         localSourcePreference
                     }
+
                     remoteSourcePreference != null && localSourcePreference == null -> {
                         logcat(LogPriority.DEBUG, logTag) {
                             "Using remote source preference: ${remoteSourcePreference.sourceKey}."
                         }
                         remoteSourcePreference
                     }
+
                     localSourcePreference != null && remoteSourcePreference != null -> {
                         // Merge the individual preferences within the source preferences
                         val mergedPrefs =
                             mergeIndividualPreferences(localSourcePreference.prefs, remoteSourcePreference.prefs)
                         BackupSourcePreferences(sourceKey, mergedPrefs)
                     }
+
                     else -> null
                 }
             }

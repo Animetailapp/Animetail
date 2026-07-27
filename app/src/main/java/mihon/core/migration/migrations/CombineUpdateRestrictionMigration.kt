@@ -22,7 +22,7 @@ class CombineUpdateRestrictionMigration : Migration {
             true,
         )
         if (!oldUpdateOngoingOnly) {
-            libraryPreferences.autoUpdateItemRestrictions() -= ENTRY_NON_COMPLETED
+            libraryPreferences.autoUpdateMangaRestrictions -= ENTRY_NON_COMPLETED
         }
 
         return true

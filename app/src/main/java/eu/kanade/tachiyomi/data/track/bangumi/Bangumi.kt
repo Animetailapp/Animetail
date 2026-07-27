@@ -13,11 +13,10 @@ import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
@@ -32,7 +31,7 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi"), MangaTracker, AnimeTracker
 
     override val supportsPrivateTracking: Boolean = true
 
-    override fun getScoreList(): ImmutableList<String> = SCORE_LIST
+    override fun getScoreList(): List<String> = SCORE_LIST
 
     override fun indexToScore(index: Int): Double {
         return index.toDouble()
@@ -175,8 +174,8 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi"), MangaTracker, AnimeTracker
     }
 
     override fun getStatusForAnime(status: Long): StringResource? = when (status) {
-        READING -> MR.strings.watching
-        PLAN_TO_READ -> MR.strings.plan_to_watch
+        READING -> AYMR.strings.watching
+        PLAN_TO_READ -> AYMR.strings.plan_to_watch
         COMPLETED -> MR.strings.completed
         ON_HOLD -> MR.strings.on_hold
         DROPPED -> MR.strings.dropped
@@ -202,8 +201,9 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi"), MangaTracker, AnimeTracker
             // Users can set a 'username' (not nickname) once which effectively
             // replaces the stringified ID in certain queries.
             // If no username is set, the API returns the user ID as a strings
-            var username = api.getUsername()
-            saveCredentials(username, oauth.accessToken)
+            val currentUser = api.getCurrentUser()
+            saveDisplayUsername(currentUser.nickname?.takeIf { it.isNotBlank() } ?: currentUser.username)
+            saveCredentials(currentUser.username, oauth.accessToken)
         } catch (_: Throwable) {
             logout()
         }
@@ -236,6 +236,6 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi"), MangaTracker, AnimeTracker
 
         private val SCORE_LIST = IntRange(0, 10)
             .map(Int::toString)
-            .toImmutableList()
+            .toList()
     }
 }

@@ -3,6 +3,7 @@ package eu.kanade.presentation.more.settings.screen.about
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,7 @@ import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import eu.kanade.presentation.util.LocalBackPress
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.BuildConfig
+import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
 import eu.kanade.tachiyomi.data.updater.RELEASE_URL
 import eu.kanade.tachiyomi.ui.more.NewUpdateScreen
@@ -82,7 +84,9 @@ object AboutScreen : Screen() {
                 contentPadding = contentPadding,
             ) {
                 item {
-                    LogoHeader()
+                    LogoHeader(
+                        iconPadding = PaddingValues(vertical = 56.dp),
+                    )
                 }
 
                 item {
@@ -184,7 +188,7 @@ object AboutScreen : Screen() {
                         LinkIcon(
                             label = "Discord",
                             icon = CustomIcons.Discord,
-                            url = "https://discord.gg/wPRFW6ccDE",
+                            url = Constants.URL_DISCORD,
                         )
                         LinkIcon(
                             label = "GitHub",
@@ -219,13 +223,14 @@ object AboutScreen : Screen() {
                     is GetApplicationRelease.Result.NewUpdate -> {
                         onAvailableUpdate(result)
                     }
+
                     is GetApplicationRelease.Result.NoNewUpdate -> {
                         context.toast(MR.strings.update_check_no_new_updates)
                     }
+
                     is GetApplicationRelease.Result.OsTooOld -> {
                         context.toast(MR.strings.update_check_eol)
                     }
-                    else -> {}
                 }
             } catch (e: Exception) {
                 context.toast(e.message)
@@ -247,6 +252,7 @@ object AboutScreen : Screen() {
                     }
                 }
             }
+
             isPreviewBuildType -> {
                 "Preview r${BuildConfig.COMMIT_COUNT}".let {
                     if (withBuildDate) {
@@ -256,6 +262,7 @@ object AboutScreen : Screen() {
                     }
                 }
             }
+
             else -> {
                 "Stable ${BuildConfig.VERSION_NAME}".let {
                     if (withBuildDate) {
@@ -276,7 +283,7 @@ object AboutScreen : Screen() {
             )
                 .toDateTimestampString(
                     UiPreferences.dateFormat(
-                        Injekt.get<UiPreferences>().dateFormat().get(),
+                        Injekt.get<UiPreferences>().dateFormat.get(),
                     ),
                 )
         } catch (e: Exception) {

@@ -38,7 +38,7 @@ class MangaLibrarySettingsScreenModel(
         )
 
     // SY -->
-    val grouping by libraryPreferences.groupMangaLibraryBy().asState(screenModelScope)
+    val grouping by libraryPreferences.groupMangaLibraryBy.asState(screenModelScope)
 
     // SY <--
 
@@ -69,7 +69,7 @@ class MangaLibrarySettingsScreenModel(
     // SY -->
     fun setGrouping(grouping: Int) {
         screenModelScope.launchIO {
-            libraryPreferences.groupMangaLibraryBy().set(grouping)
+            libraryPreferences.groupMangaLibraryBy.set(grouping)
         }
     }
     // SY <--

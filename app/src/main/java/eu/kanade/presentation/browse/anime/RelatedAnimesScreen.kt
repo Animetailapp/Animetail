@@ -79,9 +79,10 @@ fun RelatedAnimesContent(
                 onMangaLongClick = onMangaLongClick,
                 onKeywordClick = onKeywordClick,
                 onKeywordLongClick = onKeywordLongClick,
-                selection = selection!!,
+                selection = selection,
             )
         }
+
         LibraryDisplayMode.ComfortableGridPanorama -> {
             RelatedAnimesComfortableGrid(
                 relatedAnimes = relatedAnimes,
@@ -92,10 +93,11 @@ fun RelatedAnimesContent(
                 onMangaLongClick = onMangaLongClick,
                 onKeywordClick = onKeywordClick,
                 onKeywordLongClick = onKeywordLongClick,
-                selection = selection!!,
+                selection = selection,
                 usePanoramaCover = true,
             )
         }
+
         LibraryDisplayMode.CompactGrid, LibraryDisplayMode.CoverOnlyGrid -> {
             RelatedAnimesCompactGrid(
                 relatedAnimes = relatedAnimes,
@@ -106,9 +108,10 @@ fun RelatedAnimesContent(
                 onMangaLongClick = onMangaLongClick,
                 onKeywordClick = onKeywordClick,
                 onKeywordLongClick = onKeywordLongClick,
-                selection = selection!!,
+                selection = selection,
             )
         }
+
         LibraryDisplayMode.List -> {
             RelatedAnimesList(
                 relatedAnimes = relatedAnimes,

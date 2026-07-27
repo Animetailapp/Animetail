@@ -47,7 +47,6 @@ import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.entries.EditCoverAction
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -92,7 +91,7 @@ fun MangaCoverDialog(
                     Spacer(modifier = Modifier.weight(1f))
                     ActionsPill {
                         AppBarActions(
-                            actions = persistentListOf(
+                            actions = listOf(
                                 AppBar.Action(
                                     title = stringResource(MR.strings.action_share),
                                     icon = Icons.Outlined.Share,

@@ -52,32 +52,16 @@
         <item quantity="one">Seuraava lukematon luku</item>
         <item quantity="other">Seuraavat %d lukematonta lukua</item>
     </plurals>
-    <plurals name="notification_episodes_generic">
-        <item quantity="one">1 uusi jakso</item>
-        <item quantity="other">%1$d uutta jaksoa</item>
+    <plurals name="upcoming_relative_time">
+        <item quantity="one">Huomenna</item>
+        <item quantity="other">%1$d:n päivän päästä</item>
     </plurals>
-    <plurals name="seconds">
-        <item quantity="one">%d sekunti</item>
-        <item quantity="other">%d sekuntia</item>
+    <plurals name="day">
+        <item quantity="one">1 päivä</item>
+        <item quantity="other">%d päivää</item>
     </plurals>
-    <plurals name="anime_num_episodes">
-        <item quantity="one">%1$s jakso</item>
-        <item quantity="other">%1$s jaksoa</item>
-    </plurals>
-    <plurals name="next_unseen_episodes">
-        <item quantity="one"/>
-        <item quantity="other"/>
-    </plurals>
-    <plurals name="notification_new_episodes_summary">
-        <item quantity="one"/>
-        <item quantity="other"/>
-    </plurals>
-    <plurals name="download_amount_anime">
-        <item quantity="one"/>
-        <item quantity="other"/>
-    </plurals>
-    <plurals name="notification_episodes_multiple_and_more">
-        <item quantity="one"/>
-        <item quantity="other"/>
+    <plurals name="pref_pages">
+        <item quantity="one">1 sivu</item>
+        <item quantity="other">%1$s sivua</item>
     </plurals>
 </resources>

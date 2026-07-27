@@ -1,6 +1,6 @@
 package eu.kanade.presentation.entries.anime.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -24,13 +24,17 @@ fun BaseAnimeListItem(
     modifier: Modifier = Modifier,
     onClickItem: () -> Unit = {},
     onClickCover: () -> Unit = onClickItem,
+    onLongClickItem: (() -> Unit)? = null,
     cover: @Composable RowScope.() -> Unit = { defaultCover(anime, onClickCover) },
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable RowScope.() -> Unit = { defaultContent(anime) },
 ) {
     Row(
         modifier = modifier
-            .clickable(onClick = onClickItem)
+            .combinedClickable(
+                onClick = onClickItem,
+                onLongClick = onLongClickItem,
+            )
             .height(76.dp)
             .padding(horizontal = MaterialTheme.padding.medium, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,

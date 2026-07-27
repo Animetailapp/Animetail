@@ -1,22 +1,25 @@
 package eu.kanade.tachiyomi.util
 
 import android.annotation.SuppressLint
+import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService.Companion.applicationContext
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 import java.io.IOException
 
@@ -29,6 +32,7 @@ class LocalHttpServerService : Service() {
         const val ACTION_STOP = "eu.kanade.tachiyomi.ACTION_STOP_SERVER"
         fun stop() {
             try {
+                val applicationContext = Injekt.get<Application>()
                 val intent =
                     Intent(applicationContext, LocalHttpServerService::class.java).apply {
                         action = ACTION_STOP
@@ -79,7 +83,11 @@ class LocalHttpServerService : Service() {
             .setOngoing(true)
             .build()
 
-        startForeground(NOTIFICATION_ID, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

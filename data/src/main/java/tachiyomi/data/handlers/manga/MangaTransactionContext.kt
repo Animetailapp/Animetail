@@ -18,7 +18,7 @@ import kotlin.coroutines.resume
  * Returns the transaction dispatcher if we are on a transaction, or the database dispatchers.
  */
 internal suspend fun AndroidMangaDatabaseHandler.getCurrentMangaDatabaseContext(): CoroutineContext {
-    return coroutineContext[TransactionElement]?.transactionDispatcher ?: queryDispatcher
+    return coroutineContext[MangaTransactionElement]?.transactionDispatcher ?: queryDispatcher
 }
 
 /**
@@ -36,17 +36,14 @@ internal suspend fun AndroidMangaDatabaseHandler.getCurrentMangaDatabaseContext(
  * The dispatcher used to execute the given [block] will utilize threads from SQLDelight's query executor.
  */
 internal suspend fun <T> AndroidMangaDatabaseHandler.withMangaTransaction(block: suspend () -> T): T {
-    // Use inherited transaction context if available, this allows nested suspending transactions.
     val transactionContext =
-        coroutineContext[TransactionElement]?.transactionDispatcher ?: createTransactionContext()
+        coroutineContext[MangaTransactionElement]?.transactionDispatcher ?: createTransactionContext()
     return withContext(transactionContext) {
-        val transactionElement = coroutineContext[TransactionElement]!!
+        val transactionElement = coroutineContext[MangaTransactionElement]!!
         transactionElement.acquire()
         try {
             db.transactionWithResult {
-                runBlocking(transactionContext) {
-                    block()
-                }
+                block()
             }
         } finally {
             transactionElement.release()
@@ -57,33 +54,16 @@ internal suspend fun <T> AndroidMangaDatabaseHandler.withMangaTransaction(block:
 /**
  * Creates a [CoroutineContext] for performing database operations within a coroutine transaction.
  *
- * The context is a combination of a dispatcher, a [TransactionElement] and a thread local element.
- *
- * * The dispatcher will dispatch coroutines to a single thread that is taken over from the SQLDelight
- * query executor. If the coroutine context is switched, suspending DAO functions will be able to
- * dispatch to the transaction thread.
- *
- * * The [TransactionElement] serves as an indicator for inherited context, meaning, if there is a
- * switch of context, suspending DAO methods will be able to use the indicator to dispatch the
- * database operation to the transaction thread.
- *
- * * The thread local element serves as a second indicator and marks threads that are used to
- * execute coroutines within the coroutine transaction, more specifically it allows us to identify
- * if a blocking DAO method is invoked within the transaction coroutine. Never assign meaning to
- * this value, for now all we care is if its present or not.
+ * The context is a combination of a dispatcher, a [MangaTransactionElement] and a thread local element.
  */
 private suspend fun AndroidMangaDatabaseHandler.createTransactionContext(): CoroutineContext {
     val controlJob = Job()
-    // make sure to tie the control job to this context to avoid blocking the transaction if
-    // context get cancelled before we can even start using this job. Otherwise, the acquired
-    // transaction thread will forever wait for the controlJob to be cancelled.
-    // see b/148181325
     coroutineContext[Job]?.invokeOnCompletion {
         controlJob.cancel()
     }
 
     val dispatcher = transactionDispatcher.acquireTransactionThread(controlJob)
-    val transactionElement = TransactionElement(controlJob, dispatcher)
+    val transactionElement = MangaTransactionElement(controlJob, dispatcher)
     val threadLocalElement =
         suspendingTransactionId.asContextElement(System.identityHashCode(controlJob))
     return dispatcher + transactionElement + threadLocalElement
@@ -99,21 +79,16 @@ private suspend fun CoroutineDispatcher.acquireTransactionThread(
 ): ContinuationInterceptor {
     return suspendCancellableCoroutine { continuation ->
         continuation.invokeOnCancellation {
-            // We got cancelled while waiting to acquire a thread, we can't stop our attempt to
-            // acquire a thread, but we can cancel the controlling job so once it gets acquired it
-            // is quickly released.
             controlJob.cancel()
         }
         try {
             dispatch(EmptyCoroutineContext) {
                 runBlocking {
-                    // Thread acquired, resume coroutine
                     continuation.resume(coroutineContext[ContinuationInterceptor]!!)
                     controlJob.join()
                 }
             }
         } catch (ex: RejectedExecutionException) {
-            // Couldn't acquire a thread, cancel coroutine
             continuation.cancel(
                 IllegalStateException(
                     "Unable to acquire a thread to perform the database transaction",
@@ -127,22 +102,16 @@ private suspend fun CoroutineDispatcher.acquireTransactionThread(
 /**
  * A [CoroutineContext.Element] that indicates there is an on-going database transaction.
  */
-private class TransactionElement(
+private class MangaTransactionElement(
     private val transactionThreadControlJob: Job,
     val transactionDispatcher: ContinuationInterceptor,
 ) : CoroutineContext.Element {
 
-    companion object Key : CoroutineContext.Key<TransactionElement>
+    companion object Key : CoroutineContext.Key<MangaTransactionElement>
 
-    override val key: CoroutineContext.Key<TransactionElement>
-        get() = TransactionElement
+    override val key: CoroutineContext.Key<MangaTransactionElement>
+        get() = MangaTransactionElement
 
-    /**
-     * Number of transactions (including nested ones) started with this element.
-     * Call [acquire] to increase the count and [release] to decrease it. If the count reaches zero
-     * when [release] is invoked then the transaction job is cancelled and the transaction thread
-     * is released.
-     */
     private val referenceCount = AtomicInteger(0)
 
     fun acquire() {
@@ -154,7 +123,6 @@ private class TransactionElement(
         if (count < 0) {
             throw IllegalStateException("Transaction was never started or was already released")
         } else if (count == 0) {
-            // Cancel the job that controls the transaction thread, causing it to be released.
             transactionThreadControlJob.cancel()
         }
     }

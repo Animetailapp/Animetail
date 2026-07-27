@@ -29,6 +29,14 @@ interface EnhancedAnimeTracker {
      */
     suspend fun match(anime: Anime): AnimeTrackSearch?
 
+    // AM -->
+
+    /**
+     * Similar to [Tracker].search, but only returns zero or one match for seasons.
+     */
+    suspend fun matchSeason(anime: Anime): AnimeTrackSearch?
+    // <-- AM
+
     /**
      * Checks whether the provided source/track/anime triplet is from this AnimeTracker
      */

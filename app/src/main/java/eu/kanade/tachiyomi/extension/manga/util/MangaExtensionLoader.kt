@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.MangaSource
+import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
@@ -22,9 +23,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
-import mihon.domain.extensionrepo.anime.interactor.CreateAnimeExtensionRepo.Companion.KEIYOUSHI_SIGNATURE
-import mihon.domain.extensionrepo.manga.interactor.GetMangaExtensionRepo
-import mihon.domain.extensionrepo.model.ExtensionRepo
+import mihon.domain.extension.manga.interactor.GetMangaExtensionStores
+import mihon.domain.extension.model.ExtensionStore
+import mihon.domain.extension.model.ExtensionStore.Companion.KEIYOUSHI_SIGNATURE
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
 import java.io.File
@@ -50,19 +51,23 @@ internal object MangaExtensionLoader {
     private val trustExtension: TrustMangaExtension by injectLazy()
 
     // KMK -->
-    private val getExtensionRepo: GetMangaExtensionRepo by injectLazy()
+    private val getExtensionStores: GetMangaExtensionStores by injectLazy()
 
     // KMK <--
     private val loadNsfwSource by lazy {
-        preferences.showNsfwSource().get()
+        preferences.showNsfwSource.get()
     }
 
     private const val EXTENSION_FEATURE = "tachiyomi.extension"
     private const val METADATA_SOURCE_CLASS = "tachiyomi.extension.class"
     private const val METADATA_SOURCE_FACTORY = "tachiyomi.extension.factory"
     private const val METADATA_NSFW = "tachiyomi.extension.nsfw"
-    const val LIB_VERSION_MIN = 1.4
-    const val LIB_VERSION_MAX = 1.5
+
+    private const val METADATA_NAME = "tachiyomix.name"
+    private const val METADATA_EXTENSION_LIB = "tachiyomix.extensionLib"
+    private const val METADATA_CONTENT_WARNING = "tachiyomix.contentWarning"
+
+    private val SUPPORTED_LIB_VERSIONS = listOf(1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 14.0, 15.0, 16.0, 17.0)
 
     @Suppress("DEPRECATION")
     private val PACKAGE_FLAGS = PackageManager.GET_CONFIGURATIONS or
@@ -181,21 +186,16 @@ internal object MangaExtensionLoader {
 
         if (extPkgs.isEmpty()) return emptyList()
 
+        // KMK -->
+        // Pre-fetch repos outside runBlocking to avoid nested runBlocking deadlock
+        // with the SQLDelight driver's connection pool
+        val repos = runBlocking { getExtensionStores.await() }
+        // KMK <--
+
         // Load each extension concurrently and wait for completion
         return runBlocking {
-            // KMK -->
-            val extRepos = getExtensionRepo.getAll()
-            // KMK <--
             val deferred = extPkgs.map {
-                async {
-                    loadMangaExtension(
-                        context,
-                        it,
-                        // KMK -->
-                        extRepos,
-                        // KMK <--
-                    )
-                }
+                async { loadMangaExtension(context, it, extRepos = repos) }
             }
             deferred.awaitAll()
         }
@@ -266,20 +266,21 @@ internal object MangaExtensionLoader {
         context: Context,
         extensionInfo: MangaExtensionInfo,
         // KMK -->
-        extRepos: List<ExtensionRepo>? = null,
+        extRepos: List<ExtensionStore>? = null,
         // KMK <--
     ): MangaLoadResult {
         // KMK -->
-        val repos = extRepos ?: getExtensionRepo.getAll()
+        val repos = extRepos ?: getExtensionStores.await()
         // KMK <--
         val pkgManager = context.packageManager
         val pkgInfo = extensionInfo.packageInfo
         val appInfo = pkgInfo.applicationInfo!!
         val pkgName = pkgInfo.packageName
 
-        val extName = pkgManager.getApplicationLabel(appInfo).toString().substringAfter(
-            "Tachiyomi: ",
-        )
+        val extName = appInfo.metaData.getString(METADATA_NAME)
+            ?: pkgManager.getApplicationLabel(appInfo).toString().substringAfter(
+                "Tachiyomi: ",
+            )
         val versionName = pkgInfo.versionName
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
 
@@ -289,11 +290,15 @@ internal object MangaExtensionLoader {
         }
 
         // Validate lib version
-        val libVersion = versionName.substringBeforeLast('.').toDoubleOrNull()
-        if (libVersion == null || libVersion < LIB_VERSION_MIN || libVersion > LIB_VERSION_MAX) {
+        val libVersion = appInfo.metaData.getFloat(METADATA_EXTENSION_LIB)
+            .takeUnless { it == 0.0f }
+            ?.toString()
+            ?.toDouble()
+            ?: versionName.substringBeforeLast('.').toDoubleOrNull()
+        if (libVersion == null || libVersion !in SUPPORTED_LIB_VERSIONS) {
             logcat(LogPriority.WARN) {
-                "Lib version is $libVersion, while only versions " +
-                    "$LIB_VERSION_MIN to $LIB_VERSION_MAX are allowed"
+                "Lib version is $libVersion, while only version(s) " +
+                    "${SUPPORTED_LIB_VERSIONS.joinToString()} are supported"
             }
             return MangaLoadResult.Error
         }
@@ -313,8 +318,9 @@ internal object MangaExtensionLoader {
                 // KMK -->
                 repoName = when {
                     isKeiyoushiSigned(signatures) -> "Keiyoushi"
+
                     else -> repos.firstOrNull { repo ->
-                        signatures.all { it == repo.signingKeyFingerprint }
+                        signatures.all { it == repo.signingKey }
                     }?.name
                 },
                 // KMK <--
@@ -323,7 +329,8 @@ internal object MangaExtensionLoader {
             return MangaLoadResult.Untrusted(extension)
         }
 
-        val isNsfw = appInfo.metaData.getInt(METADATA_NSFW) == 1
+        val isNsfw = appInfo.metaData.getInt(METADATA_CONTENT_WARNING) > 0 ||
+            appInfo.metaData.getInt(METADATA_NSFW) == 1
         if (!loadNsfwSource && isNsfw) {
             logcat(LogPriority.WARN) { "NSFW extension $pkgName not allowed" }
             return MangaLoadResult.Error
@@ -336,7 +343,11 @@ internal object MangaExtensionLoader {
             return MangaLoadResult.Error
         }
 
-        val sources = appInfo.metaData.getString(METADATA_SOURCE_CLASS)!!
+        val sourceClassString = appInfo.metaData?.getString(METADATA_SOURCE_FACTORY)
+            ?: appInfo.metaData?.getString(METADATA_SOURCE_CLASS)
+            ?: return MangaLoadResult.Error
+
+        val sources = sourceClassString
             .split(";")
             .map {
                 val sourceClass = it.trim()
@@ -346,35 +357,19 @@ internal object MangaExtensionLoader {
                     sourceClass
                 }
             }
-            .flatMap {
+            .flatMap { className ->
                 try {
-                    when (val obj = Class.forName(it, false, classLoader).getDeclaredConstructor().newInstance()) {
-                        is MangaSource -> listOf(obj)
-                        is SourceFactory -> obj.createSources()
-                        else -> throw Exception("Unknown source class type: ${obj.javaClass}")
-                    }
+                    loadSourceClass(className, classLoader)
                 } catch (e: LinkageError) {
                     try {
                         val fallBackClassLoader = PathClassLoader(appInfo.sourceDir, null, context.classLoader)
-                        when (
-                            val obj = Class.forName(
-                                it,
-                                false,
-                                fallBackClassLoader,
-                            ).getDeclaredConstructor().newInstance()
-                        ) {
-                            is MangaSource -> {
-                                listOf(obj)
-                            }
-                            is SourceFactory -> obj.createSources()
-                            else -> throw Exception("Unknown source class type: ${obj.javaClass}")
-                        }
+                        loadSourceClass(className, fallBackClassLoader)
                     } catch (e: Throwable) {
-                        logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
+                        logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($className)" }
                         return MangaLoadResult.Error
                     }
                 } catch (e: Throwable) {
-                    logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
+                    logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($className)" }
                     return MangaLoadResult.Error
                 }
             }
@@ -404,8 +399,9 @@ internal object MangaExtensionLoader {
             signatureHash = signatures.last(),
             repoName = when {
                 isKeiyoushiSigned(signatures) -> "Keiyoushi"
+
                 else -> repos.firstOrNull { repo ->
-                    signatures.all { it == repo.signingKeyFingerprint }
+                    signatures.all { it == repo.signingKey }
                 }?.name
             },
             // KMK <--
@@ -480,6 +476,41 @@ internal object MangaExtensionLoader {
         }
         if (publicSourceDir == null) {
             publicSourceDir = apkPath
+        }
+    }
+
+    private fun loadSourceClass(className: String, classLoader: ClassLoader): List<MangaSource> {
+        val pkg = className.substringBeforeLast('.')
+        var clazz = try {
+            Class.forName(className, false, classLoader)
+        } catch (e: ClassNotFoundException) {
+            try {
+                Class.forName("$pkg.ExtensionGenerated", false, classLoader)
+            } catch (_: ClassNotFoundException) {
+                Class.forName("${className}Generated", false, classLoader)
+            }
+        }
+        if (java.lang.reflect.Modifier.isAbstract(clazz.modifiers)) {
+            clazz = try {
+                Class.forName("$pkg.ExtensionGenerated", false, classLoader)
+            } catch (_: Exception) {
+                try {
+                    Class.forName("${className}Generated", false, classLoader)
+                } catch (_: Exception) {
+                    try {
+                        Class.forName("${className}Impl", false, classLoader)
+                    } catch (_: Exception) {
+                        clazz
+                    }
+                }
+            }
+        }
+        val obj = clazz.getDeclaredConstructor().newInstance()
+        return when (obj) {
+            is MangaSource -> listOf(obj)
+            is Source -> listOf(obj as MangaSource)
+            is SourceFactory -> obj.createSources().filterIsInstance<MangaSource>()
+            else -> throw Exception("Unknown source class type: ${obj?.javaClass}")
         }
     }
 

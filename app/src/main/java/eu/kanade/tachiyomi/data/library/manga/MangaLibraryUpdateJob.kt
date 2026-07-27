@@ -105,7 +105,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         if (tags.contains(WORK_NAME_AUTO)) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
                 val preferences = Injekt.get<LibraryPreferences>()
-                val restrictions = preferences.autoUpdateDeviceRestrictions().get()
+                val restrictions = preferences.autoUpdateDeviceRestrictions.get()
                 if ((DEVICE_ONLY_ON_WIFI in restrictions) && !context.isConnectedToWifi()) {
                     return Result.retry()
                 }
@@ -123,7 +123,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
             logcat(LogPriority.ERROR, e) { "Not allowed to set foreground job" }
         }
 
-        libraryPreferences.lastUpdatedTimestamp().set(Instant.now().toEpochMilli())
+        libraryPreferences.lastUpdatedTimestamp.set(Instant.now().toEpochMilli())
 
         val categoryId = inputData.getLong(KEY_CATEGORY, -1L)
         // SY -->
@@ -173,7 +173,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         val libraryManga = getLibraryManga.await()
 
         // SY -->
-        val groupMangaLibraryUpdateType = libraryPreferences.groupMangaLibraryUpdateType().get()
+        val groupMangaLibraryUpdateType = libraryPreferences.groupMangaLibraryUpdateType.get()
         // SY <--
 
         val listToUpdate = if (categoryId != -1L) {
@@ -186,14 +186,14 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                     group == MangaLibraryGroup.UNGROUPED
                 )
         ) {
-            val categoriesToUpdate = libraryPreferences.mangaUpdateCategories().get().map { it.toLong() }
+            val categoriesToUpdate = libraryPreferences.updateCategories.get().map { it.toLong() }
             val includedManga = if (categoriesToUpdate.isNotEmpty()) {
                 libraryManga.filter { it.category in categoriesToUpdate }
             } else {
                 libraryManga
             }
 
-            val categoriesToExclude = libraryPreferences.mangaUpdateCategoriesExclude().get().map { it.toLong() }
+            val categoriesToExclude = libraryPreferences.updateCategoriesExclude.get().map { it.toLong() }
             val excludedMangaIds = if (categoriesToExclude.isNotEmpty()) {
                 libraryManga.filter { it.category in categoriesToExclude }.map { it.manga.id }
             } else {
@@ -215,6 +215,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                         status.int == trackingExtra.toLong()
                     }
                 }
+
                 MangaLibraryGroup.BY_SOURCE -> {
                     val sourceExtra = groupExtra?.nullIfBlank()?.toIntOrNull()
                     val source = libraryManga.map { it.manga.source }
@@ -224,6 +225,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
 
                     if (source != null) libraryManga.filter { it.manga.source == source } else emptyList()
                 }
+
                 MangaLibraryGroup.BY_TAG -> {
                     val tagExtra = groupExtra?.nullIfBlank()?.toIntOrNull()
                     val tag = libraryManga.map { it.manga.genre }
@@ -231,19 +233,22 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                         .getOrNull(tagExtra ?: -1)
                     if (tag != null) libraryManga.filter { it.manga.genre == tag } else emptyList()
                 }
+
                 MangaLibraryGroup.BY_STATUS -> {
                     val statusExtra = groupExtra?.toLongOrNull() ?: -1
                     libraryManga.filter {
                         it.manga.status == statusExtra
                     }
                 }
+
                 MangaLibraryGroup.UNGROUPED -> libraryManga
+
                 else -> libraryManga
             }
             // SY <--
         }
 
-        val restrictions = libraryPreferences.autoUpdateItemRestrictions().get()
+        val restrictions = libraryPreferences.autoUpdateMangaRestrictions.get()
         val skippedUpdates = mutableListOf<Pair<Manga, String?>>()
         val (_, fetchWindowUpperBound) = mangaFetchInterval.getWindow(ZonedDateTime.now())
 
@@ -287,6 +292,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                         )
                         false
                     }
+
                     else -> true
                 }
             }
@@ -359,7 +365,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                                                 downloadChapters(manga, chaptersToDownload)
                                                 hasDownloads.set(true)
                                             }
-                                            libraryPreferences.newMangaUpdatesCount()
+                                            libraryPreferences.newMangaUpdatesCount
                                                 .getAndSet { it + newChapters.size }
 
                                             // Convert to the manga that contains new chapters
@@ -370,10 +376,12 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                                             is NoChaptersException -> context.stringResource(
                                                 MR.strings.no_chapters_error,
                                             )
+
                                             // failedUpdates will already have the source, don't need to copy it into the message
                                             is SourceNotInstalledException -> context.stringResource(
                                                 MR.strings.loader_not_implemented_error,
                                             )
+
                                             else -> e.message
                                         }
                                         failedUpdates.add(manga to errorMessage)
@@ -420,7 +428,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         val source = sourceManager.getOrStub(manga.source)
 
         // Update manga metadata if needed
-        if (libraryPreferences.autoUpdateMetadata().get()) {
+        if (libraryPreferences.autoUpdateMetadata.get()) {
             val networkManga = source.getMangaDetails(manga.toSManga())
             updateManga.awaitUpdateFromSource(manga, networkManga, manualFetch = false, coverCache)
         }
@@ -506,8 +514,8 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
          * Key for category to update.
          */
         private const val KEY_CATEGORY = "category"
-
         // SY -->
+
         /**
          * Key for group to update.
          */
@@ -518,30 +526,32 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         fun cancelAllWorks(context: Context) {
             context.workManager.cancelAllWorkByTag(TAG)
         }
-
         fun setupTask(
             context: Context,
             prefInterval: Int? = null,
         ) {
             val preferences = Injekt.get<LibraryPreferences>()
-            val interval = prefInterval ?: preferences.autoUpdateInterval().get()
+            val interval = prefInterval ?: preferences.autoUpdateInterval.get()
             if (interval > 0) {
-                val restrictions = preferences.autoUpdateDeviceRestrictions().get()
+                val restrictions = preferences.autoUpdateDeviceRestrictions.get()
                 val networkType = if (DEVICE_NETWORK_NOT_METERED in restrictions) {
                     NetworkType.UNMETERED
                 } else {
                     NetworkType.CONNECTED
                 }
-                val networkRequestBuilder = NetworkRequest.Builder()
-                if (DEVICE_ONLY_ON_WIFI in restrictions) {
-                    networkRequestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                val networkRequest = NetworkRequest.Builder().apply {
+                    removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                    if (DEVICE_ONLY_ON_WIFI in restrictions) {
+                        addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    }
+                    if (DEVICE_NETWORK_NOT_METERED in restrictions) {
+                        addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+                    }
                 }
-                if (DEVICE_NETWORK_NOT_METERED in restrictions) {
-                    networkRequestBuilder.addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
-                }
+                    .build()
                 val constraints = Constraints.Builder()
                     // 'networkRequest' only applies to Android 9+, otherwise 'networkType' is used
-                    .setRequiredNetworkRequest(networkRequestBuilder.build(), networkType)
+                    .setRequiredNetworkRequest(networkRequest, networkType)
                     .setRequiresCharging(DEVICE_CHARGING in restrictions)
                     .setRequiresBatteryNotLow(true)
                     .build()

@@ -26,8 +26,8 @@ import eu.kanade.presentation.entries.DownloadAction
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
 import eu.kanade.tachiyomi.ui.browse.anime.source.feed.SourceFeedScreen
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.theme.active
@@ -45,6 +45,7 @@ fun EntryToolbar(
     onClickEditCategory: (() -> Unit)?,
     onClickRefresh: () -> Unit,
     onClickMigrate: (() -> Unit)?,
+    onClickEditNotes: () -> Unit,
     onClickSettings: (() -> Unit)?,
     // Anime only
     changeAnimeSkipIntro: (() -> Unit)?,
@@ -68,7 +69,7 @@ fun EntryToolbar(
     fun onHomeClicked() = navigator?.popUntil { screen ->
         screen is SourceFeedScreen || screen is BrowseAnimeSourceScreen
     }
-    val isHomeEnabled = Injekt.get<UiPreferences>().showHomeOnRelatedAnimes().get()
+    val isHomeEnabled = Injekt.get<UiPreferences>().showHomeOnRelatedAnimes.get()
 
     val isActionMode = actionModeCounter > 0
     AppBar(
@@ -90,8 +91,10 @@ fun EntryToolbar(
                 navigateUp()
 
                 if (isHomeEnabled && navigator != null) {
-                    if (navigator.size >= 2 &&
-                        navigator.items[navigator.size - 2] is AnimeScreen ||
+                    if ((
+                            navigator.size >= 2 &&
+                                navigator.items[navigator.size - 2] is AnimeScreen
+                            ) ||
                         navigator.size >= 5
                     ) {
                         onHomeClicked()
@@ -113,7 +116,7 @@ fun EntryToolbar(
 
             val filterTint = if (hasFilters) MaterialTheme.colorScheme.active else LocalContentColor.current
             AppBarActions(
-                actions = persistentListOf<AppBar.AppBarAction>().builder().apply {
+                actions = buildList {
                     if (isActionMode) {
                         add(
                             AppBar.Action(
@@ -129,7 +132,7 @@ fun EntryToolbar(
                                 onClick = onInvertSelection,
                             ),
                         )
-                        return@apply
+                        return@buildList
                     }
                     if (onClickDownload != null) {
                         add(
@@ -161,7 +164,7 @@ fun EntryToolbar(
                     if (changeAnimeSkipIntro != null) {
                         add(
                             AppBar.OverflowAction(
-                                title = stringResource(MR.strings.action_change_intro_length),
+                                title = stringResource(AYMR.strings.action_change_intro_length),
                                 onClick = changeAnimeSkipIntro,
                             ),
                         )
@@ -197,6 +200,12 @@ fun EntryToolbar(
                             ),
                         )
                     }
+                    add(
+                        AppBar.OverflowAction(
+                            title = stringResource(MR.strings.action_notes),
+                            onClick = onClickEditNotes,
+                        ),
+                    )
                     // KMK -->
                     if (onClickRelatedAnimes != null) {
                         add(
@@ -210,13 +219,12 @@ fun EntryToolbar(
                     if (onClickSettings != null) {
                         add(
                             AppBar.OverflowAction(
-                                title = stringResource(MR.strings.settings),
+                                title = stringResource(AYMR.strings.settings),
                                 onClick = onClickSettings,
                             ),
                         )
                     }
-                }
-                    .build(),
+                },
             )
         },
         isActionMode = isActionMode,

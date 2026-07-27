@@ -16,22 +16,27 @@ fun replacePreferences(
                     preferenceStore.getInt(newKey(key)).set(value)
                     preferenceStore.getInt(key).delete()
                 }
+
                 is Long -> {
                     preferenceStore.getLong(newKey(key)).set(value)
                     preferenceStore.getLong(key).delete()
                 }
+
                 is Float -> {
                     preferenceStore.getFloat(newKey(key)).set(value)
                     preferenceStore.getFloat(key).delete()
                 }
+
                 is String -> {
                     preferenceStore.getString(newKey(key)).set(value)
                     preferenceStore.getString(key).delete()
                 }
+
                 is Boolean -> {
                     preferenceStore.getBoolean(newKey(key)).set(value)
                     preferenceStore.getBoolean(key).delete()
                 }
+
                 is Set<*> -> (value as? Set<String>)?.let {
                     preferenceStore.getStringSet(newKey(key)).set(value)
                     preferenceStore.getStringSet(key).delete()

@@ -25,9 +25,9 @@ class MigrateSecureScreenMigration : Migration {
             )
         }
         if (DeviceUtil.isMiui &&
-            basePreferences.extensionInstaller().get() == BasePreferences.ExtensionInstaller.PACKAGEINSTALLER
+            basePreferences.extensionInstaller.get() == BasePreferences.ExtensionInstaller.PACKAGEINSTALLER
         ) {
-            basePreferences.extensionInstaller().set(
+            basePreferences.extensionInstaller.set(
                 BasePreferences.ExtensionInstaller.LEGACY,
             )
         }

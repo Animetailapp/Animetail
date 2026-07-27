@@ -24,13 +24,19 @@ import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Input
 import androidx.compose.material.icons.automirrored.outlined.Label
+import androidx.compose.material.icons.automirrored.outlined.LabelOff
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.BookmarkRemove
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.EditCalendar
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.NewLabel
 import androidx.compose.material.icons.outlined.RemoveDone
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -60,6 +66,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
@@ -73,6 +80,8 @@ fun EntryBottomActionMenu(
     modifier: Modifier = Modifier,
     onBookmarkClicked: (() -> Unit)? = null,
     onRemoveBookmarkClicked: (() -> Unit)? = null,
+    onFillermarkClicked: (() -> Unit)? = null,
+    onRemoveFillermarkClicked: (() -> Unit)? = null,
     onMarkAsViewedClicked: (() -> Unit)? = null,
     onMarkAsUnviewedClicked: (() -> Unit)? = null,
     onMarkPreviousAsViewedClicked: (() -> Unit)? = null,
@@ -80,6 +89,7 @@ fun EntryBottomActionMenu(
     onDeleteClicked: (() -> Unit)? = null,
     onExternalClicked: (() -> Unit)? = null,
     onInternalClicked: (() -> Unit)? = null,
+    onSetDateClicked: (() -> Unit)? = null,
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -97,11 +107,13 @@ fun EntryBottomActionMenu(
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             val haptic = LocalHapticFeedback.current
-            val confirm = remember { mutableStateListOf(false, false, false, false, false, false, false, false, false) }
-            var resetJob: Job? = remember { null }
+            val confirm = remember {
+                mutableStateListOf(false, false, false, false, false, false, false, false, false, false, false, false)
+            }
+            var resetJob by remember { mutableStateOf<Job?>(null) }
             val onLongClickItem: (Int) -> Unit = { toConfirmIndex ->
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                (0..<9).forEach { i -> confirm[i] = i == toConfirmIndex }
+                confirm.indices.forEach { i -> confirm[i] = i == toConfirmIndex }
                 resetJob?.cancel()
                 resetJob = scope.launch {
                     delay(1.seconds)
@@ -118,7 +130,7 @@ fun EntryBottomActionMenu(
                     .padding(horizontal = 8.dp, vertical = 12.dp),
             ) {
                 if (onBookmarkClicked != null) {
-                    val bookmark = if (isManga) MR.strings.action_bookmark else MR.strings.action_bookmark_episode
+                    val bookmark = if (isManga) MR.strings.action_bookmark else AYMR.strings.action_bookmark_episode
                     Button(
                         title = stringResource(bookmark),
                         icon = Icons.Outlined.BookmarkAdd,
@@ -131,7 +143,7 @@ fun EntryBottomActionMenu(
                     val removeBookmark = if (isManga) {
                         MR.strings.action_remove_bookmark
                     } else {
-                        MR.strings.action_remove_bookmark_episode
+                        AYMR.strings.action_remove_bookmark_episode
                     }
                     Button(
                         title = stringResource(removeBookmark),
@@ -141,23 +153,41 @@ fun EntryBottomActionMenu(
                         onClick = onRemoveBookmarkClicked,
                     )
                 }
+                if (onFillermarkClicked != null) {
+                    Button(
+                        title = stringResource(AYMR.strings.action_fillermark_episode),
+                        icon = Icons.Outlined.NewLabel,
+                        toConfirm = confirm[2],
+                        onLongClick = { onLongClickItem(2) },
+                        onClick = onFillermarkClicked,
+                    )
+                }
+                if (onRemoveFillermarkClicked != null) {
+                    Button(
+                        title = stringResource(AYMR.strings.action_remove_fillermark_episode),
+                        icon = Icons.AutoMirrored.Outlined.LabelOff,
+                        toConfirm = confirm[3],
+                        onLongClick = { onLongClickItem(3) },
+                        onClick = onRemoveFillermarkClicked,
+                    )
+                }
                 if (onMarkAsViewedClicked != null) {
-                    val viewed = if (isManga) MR.strings.action_mark_as_read else MR.strings.action_mark_as_seen
+                    val viewed = if (isManga) MR.strings.action_mark_as_read else AYMR.strings.action_mark_as_seen
                     Button(
                         title = stringResource(viewed),
                         icon = Icons.Outlined.DoneAll,
-                        toConfirm = confirm[2],
-                        onLongClick = { onLongClickItem(2) },
+                        toConfirm = confirm[4],
+                        onLongClick = { onLongClickItem(4) },
                         onClick = onMarkAsViewedClicked,
                     )
                 }
                 if (onMarkAsUnviewedClicked != null) {
-                    val unviewed = if (isManga) MR.strings.action_mark_as_unread else MR.strings.action_mark_as_unseen
+                    val unviewed = if (isManga) MR.strings.action_mark_as_unread else AYMR.strings.action_mark_as_unseen
                     Button(
                         title = stringResource(unviewed),
                         icon = Icons.Outlined.RemoveDone,
-                        toConfirm = confirm[3],
-                        onLongClick = { onLongClickItem(3) },
+                        toConfirm = confirm[5],
+                        onLongClick = { onLongClickItem(5) },
                         onClick = onMarkAsUnviewedClicked,
                     )
                 }
@@ -165,13 +195,13 @@ fun EntryBottomActionMenu(
                     val previousUnviewed = if (isManga) {
                         MR.strings.action_mark_previous_as_read
                     } else {
-                        MR.strings.action_mark_previous_as_seen
+                        AYMR.strings.action_mark_previous_as_seen
                     }
                     Button(
                         title = stringResource(previousUnviewed),
                         icon = ImageVector.vectorResource(R.drawable.ic_done_prev_24dp),
-                        toConfirm = confirm[4],
-                        onLongClick = { onLongClickItem(4) },
+                        toConfirm = confirm[6],
+                        onLongClick = { onLongClickItem(6) },
                         onClick = onMarkPreviousAsViewedClicked,
                     )
                 }
@@ -179,8 +209,8 @@ fun EntryBottomActionMenu(
                     Button(
                         title = stringResource(MR.strings.action_download),
                         icon = Icons.Outlined.Download,
-                        toConfirm = confirm[5],
-                        onLongClick = { onLongClickItem(5) },
+                        toConfirm = confirm[7],
+                        onLongClick = { onLongClickItem(7) },
                         onClick = onDownloadClicked,
                     )
                 }
@@ -188,26 +218,35 @@ fun EntryBottomActionMenu(
                     Button(
                         title = stringResource(MR.strings.action_delete),
                         icon = Icons.Outlined.Delete,
-                        toConfirm = confirm[6],
-                        onLongClick = { onLongClickItem(6) },
+                        toConfirm = confirm[8],
+                        onLongClick = { onLongClickItem(8) },
                         onClick = onDeleteClicked,
+                    )
+                }
+                if (onSetDateClicked != null) {
+                    Button(
+                        title = stringResource(TLMR.strings.action_set_date),
+                        icon = Icons.Outlined.EditCalendar,
+                        toConfirm = confirm[9],
+                        onLongClick = { onLongClickItem(9) },
+                        onClick = onSetDateClicked,
                     )
                 }
                 if (!isManga && onExternalClicked != null && !playerPreferences.alwaysUseExternalPlayer().get()) {
                     Button(
-                        title = stringResource(MR.strings.action_play_externally),
+                        title = stringResource(AYMR.strings.action_play_externally),
                         icon = Icons.AutoMirrored.Outlined.OpenInNew,
-                        toConfirm = confirm[7],
-                        onLongClick = { onLongClickItem(7) },
+                        toConfirm = confirm[10],
+                        onLongClick = { onLongClickItem(10) },
                         onClick = onExternalClicked,
                     )
                 }
                 if (!isManga && onInternalClicked != null && playerPreferences.alwaysUseExternalPlayer().get()) {
                     Button(
-                        title = stringResource(MR.strings.action_play_internally),
+                        title = stringResource(AYMR.strings.action_play_internally),
                         icon = Icons.AutoMirrored.Outlined.Input,
-                        toConfirm = confirm[8],
-                        onLongClick = { onLongClickItem(8) },
+                        toConfirm = confirm[11],
+                        onLongClick = { onLongClickItem(11) },
                         onClick = onInternalClicked,
                     )
                 }
@@ -270,6 +309,7 @@ fun LibraryBottomActionMenu(
     onMarkAsUnviewedClicked: () -> Unit,
     onDownloadClicked: ((DownloadAction) -> Unit)?,
     onDeleteClicked: () -> Unit,
+    onMigrateClicked: (() -> Unit)? = null,
     // SY -->
     onClickResetInfo: (() -> Unit)?,
     // SY <--
@@ -291,18 +331,19 @@ fun LibraryBottomActionMenu(
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             val haptic = LocalHapticFeedback.current
-            val confirm = remember { mutableStateListOf(false, false, false, false, false) }
-            var resetJob: Job? = remember { null }
+            val confirm = remember { mutableStateListOf(false, false, false, false, false, false, false) }
+            var resetJob by remember { mutableStateOf<Job?>(null) }
             val onLongClickItem: (Int) -> Unit = { toConfirmIndex ->
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                (0..<5).forEach { i -> confirm[i] = i == toConfirmIndex }
+                confirm.indices.forEach { i -> confirm[i] = i == toConfirmIndex }
                 resetJob?.cancel()
                 resetJob = scope.launch {
                     delay(1.seconds)
                     if (isActive) confirm[toConfirmIndex] = false
                 }
             }
-            val showOverflow = onClickResetInfo != null
+            val showOverflow = true
+            var overflowExpanded by remember { mutableStateOf(false) }
             Row(
                 modifier = Modifier
                     .windowInsetsPadding(
@@ -318,7 +359,7 @@ fun LibraryBottomActionMenu(
                     onLongClick = { onLongClickItem(0) },
                     onClick = onChangeCategoryClicked,
                 )
-                val viewed = if (isManga) MR.strings.action_mark_as_read else MR.strings.action_mark_as_seen
+                val viewed = if (isManga) MR.strings.action_mark_as_read else AYMR.strings.action_mark_as_seen
                 Button(
                     title = stringResource(viewed),
                     icon = Icons.Outlined.DoneAll,
@@ -326,7 +367,7 @@ fun LibraryBottomActionMenu(
                     onLongClick = { onLongClickItem(1) },
                     onClick = onMarkAsViewedClicked,
                 )
-                val unviewed = if (isManga) MR.strings.action_mark_as_unread else MR.strings.action_mark_as_unseen
+                val unviewed = if (isManga) MR.strings.action_mark_as_unread else AYMR.strings.action_mark_as_unseen
                 Button(
                     title = stringResource(unviewed),
                     icon = Icons.Outlined.RemoveDone,
@@ -352,24 +393,48 @@ fun LibraryBottomActionMenu(
                         )
                     }
                 }
-                Button(
-                    title = stringResource(MR.strings.action_delete),
-                    icon = Icons.Outlined.Delete,
-                    toConfirm = confirm[4],
-                    onLongClick = { onLongClickItem(4) },
-                    onClick = onDeleteClicked,
-                )
-                // SY -->
                 if (showOverflow) {
                     Button(
-                        title = stringResource(TLMR.strings.reset_info),
-                        icon = Icons.Outlined.Delete,
-                        toConfirm = confirm[5],
-                        onLongClick = { onLongClickItem(5) },
-                        onClick = onClickResetInfo!!,
-                    )
+                        title = stringResource(MR.strings.label_more),
+                        icon = Icons.Outlined.MoreVert,
+                        toConfirm = false,
+                        onLongClick = {},
+                        onClick = { overflowExpanded = !overflowExpanded },
+                    ) {
+                        DropdownMenu(
+                            expanded = overflowExpanded,
+                            onDismissRequest = { overflowExpanded = false },
+                        ) {
+                            if (onMigrateClicked != null) {
+                                DropdownMenuItem(
+                                    text = { Text(text = stringResource(MR.strings.action_migrate)) },
+                                    onClick = {
+                                        onMigrateClicked()
+                                        overflowExpanded = false
+                                    },
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(MR.strings.action_delete)) },
+                                onClick = {
+                                    onDeleteClicked()
+                                    overflowExpanded = false
+                                },
+                            )
+                            // SY -->
+                            if (onClickResetInfo != null) {
+                                DropdownMenuItem(
+                                    text = { Text(text = stringResource(TLMR.strings.reset_info)) },
+                                    onClick = {
+                                        onClickResetInfo()
+                                        overflowExpanded = false
+                                    },
+                                )
+                            }
+                            // SY <--
+                        }
+                    }
                 }
-                // SY <--
             }
         }
     }

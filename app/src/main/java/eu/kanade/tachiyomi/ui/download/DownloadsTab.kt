@@ -69,6 +69,7 @@ import eu.kanade.tachiyomi.ui.download.manga.mangaDownloadTab
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.Pill
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.TabText
@@ -166,7 +167,7 @@ data object DownloadsTab : Tab {
             floatingActionButton = {
                 AnimatedVisibility(
                     visible = when (state.currentPage) {
-                        0 -> false
+                        0 -> animeDownloadList.isNotEmpty()
                         1 -> mangaDownloadList.isNotEmpty()
                         else -> false
                     },
@@ -179,15 +180,17 @@ data object DownloadsTab : Tab {
                         text = {
                             val id = when (state.currentPage) {
                                 0 -> if (animeIsRunning) {
-                                    MR.strings.action_pause
+                                    AYMR.strings.action_stop
                                 } else {
-                                    MR.strings.action_resume
+                                    AYMR.strings.action_continue
                                 }
+
                                 1 -> if (mangaIsRunning) {
                                     MR.strings.action_pause
                                 } else {
                                     MR.strings.action_resume
                                 }
+
                                 else -> MR.strings.action_pause
                             }
                             Text(text = stringResource(id))
@@ -199,11 +202,13 @@ data object DownloadsTab : Tab {
                                 } else {
                                     Icons.Filled.PlayArrow
                                 }
+
                                 1 -> if (mangaIsRunning) {
                                     Icons.Outlined.Pause
                                 } else {
                                     Icons.Filled.PlayArrow
                                 }
+
                                 else -> Icons.Filled.PlayArrow
                             }
                             Icon(imageVector = icon, contentDescription = null)
@@ -245,7 +250,7 @@ data object DownloadsTab : Tab {
                             onClick = { scope.launch { state.animateScrollToPage(0) } },
                             text = {
                                 TabText(
-                                    text = stringResource(MR.strings.label_anime),
+                                    text = stringResource(AYMR.strings.label_anime),
                                     badgeCount = animeDownloadCount,
                                 )
                             },
@@ -256,7 +261,7 @@ data object DownloadsTab : Tab {
                             onClick = { scope.launch { state.animateScrollToPage(1) } },
                             text = {
                                 TabText(
-                                    text = stringResource(MR.strings.manga),
+                                    text = stringResource(AYMR.strings.manga),
                                     badgeCount = mangaDownloadCount,
                                 )
                             },
@@ -278,6 +283,7 @@ data object DownloadsTab : Tab {
                             PaddingValues(bottom = contentPadding.calculateBottomPadding()),
                             snackbarHostState,
                         )
+
                         1 -> mangaDownloadTab(
                             nestedScrollConnection,
                         ).content(
@@ -309,7 +315,12 @@ data object DownloadsTab : Tab {
                             text = { Text(text = stringResource(MR.strings.action_newest)) },
                             onClick = {
                                 animeScreenModel.reorderQueue(
-                                    { it.download.episode.dateUpload },
+                                    {
+                                        it.download.episode.let { e ->
+                                            e.dateUploadOverride.takeIf { d -> d > 0 }
+                                                ?: e.dateUpload
+                                        }
+                                    },
                                     true,
                                 )
                                 closeMenu()
@@ -319,7 +330,12 @@ data object DownloadsTab : Tab {
                             text = { Text(text = stringResource(MR.strings.action_oldest)) },
                             onClick = {
                                 animeScreenModel.reorderQueue(
-                                    { it.download.episode.dateUpload },
+                                    {
+                                        it.download.episode.let { e ->
+                                            e.dateUploadOverride.takeIf { d -> d > 0 }
+                                                ?: e.dateUpload
+                                        }
+                                    },
                                     false,
                                 )
                                 closeMenu()
@@ -330,7 +346,7 @@ data object DownloadsTab : Tab {
                 NestedMenuItem(
                     text = {
                         Text(
-                            text = stringResource(MR.strings.action_order_by_episode_number),
+                            text = stringResource(AYMR.strings.action_order_by_episode_number),
                         )
                     },
                     children = { closeMenu ->
@@ -393,7 +409,12 @@ data object DownloadsTab : Tab {
                             text = { Text(text = stringResource(MR.strings.action_newest)) },
                             onClick = {
                                 mangaScreenModel.reorderQueue(
-                                    { it.download.chapter.dateUpload },
+                                    {
+                                        it.download.chapter.let { c ->
+                                            c.dateUploadOverride.takeIf { d -> d > 0 }
+                                                ?: c.dateUpload
+                                        }
+                                    },
                                     true,
                                 )
                                 closeMenu()
@@ -403,7 +424,12 @@ data object DownloadsTab : Tab {
                             text = { Text(text = stringResource(MR.strings.action_oldest)) },
                             onClick = {
                                 mangaScreenModel.reorderQueue(
-                                    { it.download.chapter.dateUpload },
+                                    {
+                                        it.download.chapter.let { c ->
+                                            c.dateUploadOverride.takeIf { d -> d > 0 }
+                                                ?: c.dateUpload
+                                        }
+                                    },
                                     false,
                                 )
                                 closeMenu()

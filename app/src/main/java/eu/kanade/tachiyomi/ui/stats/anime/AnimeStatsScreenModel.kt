@@ -65,7 +65,7 @@ class AnimeStatsScreenModel(
             )
 
             val chaptersStatData = StatsData.Episodes(
-                totalEpisodeCount = distinctLibraryAnime.sumOf { it.totalEpisodes }.toInt(),
+                totalEpisodeCount = distinctLibraryAnime.sumOf { it.totalCount }.toInt(),
                 readEpisodeCount = distinctLibraryAnime.sumOf { it.seenCount }.toInt(),
                 downloadCount = downloadManager.getDownloadCount(),
             )
@@ -88,14 +88,14 @@ class AnimeStatsScreenModel(
     }
 
     private fun getGlobalUpdateItemCount(libraryAnime: List<LibraryAnime>): Int {
-        val includedCategories = preferences.animeUpdateCategories().get().map { it.toLong() }
+        val includedCategories = preferences.animeUpdateCategories.get().map { it.toLong() }
         val includedAnime = if (includedCategories.isNotEmpty()) {
             libraryAnime.filter { it.category in includedCategories }
         } else {
             libraryAnime
         }
 
-        val excludedCategories = preferences.animeUpdateCategoriesExclude().get().map { it.toLong() }
+        val excludedCategories = preferences.animeUpdateCategoriesExclude.get().map { it.toLong() }
         val excludedMangaIds = if (excludedCategories.isNotEmpty()) {
             libraryAnime.fastMapNotNull { anime ->
                 anime.id.takeIf { anime.category in excludedCategories }
@@ -104,14 +104,14 @@ class AnimeStatsScreenModel(
             emptyList()
         }
 
-        val updateRestrictions = preferences.autoUpdateItemRestrictions().get()
+        val updateRestrictions = preferences.autoUpdateMangaRestrictions.get()
         return includedAnime
             .fastFilterNot { it.anime.id in excludedMangaIds }
             .fastDistinctBy { it.anime.id }
             .fastCountNot {
                 (ENTRY_NON_COMPLETED in updateRestrictions && it.anime.status.toInt() == SAnime.COMPLETED) ||
                     (ENTRY_HAS_UNVIEWED in updateRestrictions && it.unseenCount != 0L) ||
-                    (ENTRY_NON_VIEWED in updateRestrictions && it.totalEpisodes > 0 && !it.hasStarted)
+                    (ENTRY_NON_VIEWED in updateRestrictions && it.totalCount > 0 && !it.hasStarted)
             }
     }
 

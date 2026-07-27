@@ -1,75 +1,88 @@
 package tachiyomi.domain.download.service
 
+import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 
 class DownloadPreferences(
     private val preferenceStore: PreferenceStore,
 ) {
 
-    fun downloadOnlyOverWifi() = preferenceStore.getBoolean(
+    val downloadOnlyOverWifi: Preference<Boolean> = preferenceStore.getBoolean(
         "pref_download_only_over_wifi_key",
         true,
     )
 
-    fun useExternalDownloader() = preferenceStore.getBoolean("use_external_downloader", false)
+    val useExternalDownloader: Preference<Boolean> = preferenceStore.getBoolean("use_external_downloader", false)
 
-    fun externalDownloaderSelection() = preferenceStore.getString(
+    val externalDownloaderSelection: Preference<String> = preferenceStore.getString(
         "external_downloader_selection",
         "",
     )
 
-    fun saveChaptersAsCBZ() = preferenceStore.getBoolean("save_chapter_as_cbz", true)
+    val saveChaptersAsCBZ: Preference<Boolean> = preferenceStore.getBoolean("save_chapter_as_cbz", true)
 
-    fun splitTallImages() = preferenceStore.getBoolean("split_tall_images", true)
+    val includeHashInDownloadFilenames: Preference<Boolean> = preferenceStore.getBoolean(
+        "pref_download_filename_hash_key",
+        true,
+    )
 
-    fun autoDownloadWhileReading() = preferenceStore.getInt("auto_download_while_reading", 0)
-    fun autoDownloadWhileWatching() = preferenceStore.getInt("auto_download_while_watching", 0)
+    val splitTallImages: Preference<Boolean> = preferenceStore.getBoolean("split_tall_images", true)
 
-    fun removeAfterReadSlots() = preferenceStore.getInt("remove_after_read_slots", -1)
+    val autoDownloadWhileReading: Preference<Int> = preferenceStore.getInt("auto_download_while_reading", 0)
+    val autoDownloadWhileWatching: Preference<Int> = preferenceStore.getInt("auto_download_while_watching", 0)
 
-    fun removeAfterMarkedAsRead() = preferenceStore.getBoolean(
+    val removeAfterReadSlots: Preference<Int> = preferenceStore.getInt("remove_after_read_slots", -1)
+
+    val removeAfterMarkedAsRead: Preference<Boolean> = preferenceStore.getBoolean(
         "pref_remove_after_marked_as_read_key",
         false,
     )
 
-    fun removeBookmarkedChapters() = preferenceStore.getBoolean("pref_remove_bookmarked", false)
+    val removeBookmarkedChapters: Preference<Boolean> = preferenceStore.getBoolean("pref_remove_bookmarked", false)
 
-    fun removeExcludeCategories() = preferenceStore.getStringSet(
+    val downloadFillermarkedItems: Preference<Boolean> = preferenceStore.getBoolean("pref_download_fillermarked", false)
+
+    val removeExcludeCategories: Preference<Set<String>> = preferenceStore.getStringSet(
         REMOVE_EXCLUDE_MANGA_CATEGORIES_PREF_KEY,
         emptySet(),
     )
-    fun removeExcludeAnimeCategories() = preferenceStore.getStringSet(
+    val removeExcludeAnimeCategories: Preference<Set<String>> = preferenceStore.getStringSet(
         REMOVE_EXCLUDE_ANIME_CATEGORIES_PREF_KEY,
         emptySet(),
     )
 
-    fun downloadNewChapters() = preferenceStore.getBoolean("download_new", false)
-    fun downloadNewEpisodes() = preferenceStore.getBoolean("download_new_episode", false)
+    val downloadNewChapters: Preference<Boolean> = preferenceStore.getBoolean("download_new", false)
+    val downloadNewEpisodes: Preference<Boolean> = preferenceStore.getBoolean("download_new_episode", false)
 
-    fun downloadNewChapterCategories() = preferenceStore.getStringSet(
+    val downloadNewChapterCategories: Preference<Set<String>> = preferenceStore.getStringSet(
         DOWNLOAD_NEW_MANGA_CATEGORIES_PREF_KEY,
         emptySet(),
     )
-    fun downloadNewEpisodeCategories() = preferenceStore.getStringSet(
+    val downloadNewEpisodeCategories: Preference<Set<String>> = preferenceStore.getStringSet(
         DOWNLOAD_NEW_ANIME_CATEGORIES_PREF_KEY,
         emptySet(),
     )
 
-    fun downloadNewChapterCategoriesExclude() = preferenceStore.getStringSet(
+    val downloadNewChapterCategoriesExclude: Preference<Set<String>> = preferenceStore.getStringSet(
         DOWNLOAD_NEW_MANGA_CATEGORIES_EXCLUDE_PREF_KEY,
         emptySet(),
     )
-    fun downloadNewEpisodeCategoriesExclude() = preferenceStore.getStringSet(
+    val downloadNewEpisodeCategoriesExclude: Preference<Set<String>> = preferenceStore.getStringSet(
         DOWNLOAD_NEW_ANIME_CATEGORIES_EXCLUDE_PREF_KEY,
         emptySet(),
     )
 
-    fun numberOfDownloads() = preferenceStore.getInt("download_slots", 1)
-    fun downloadSpeedLimit() = preferenceStore.getInt("download_speed_limit", 0)
+    val numberOfDownloads: Preference<Int> = preferenceStore.getInt("download_slots", 1)
+    val downloadSpeedLimit: Preference<Int> = preferenceStore.getInt("download_speed_limit", 0)
 
-    fun downloadNewUnreadChaptersOnly() = preferenceStore.getBoolean("download_new_unread_chapters_only", false)
-    fun downloadNewUnseenEpisodesOnly() = preferenceStore.getBoolean("download_new_unread_episodes_only", false)
-
+    val downloadNewUnreadChaptersOnly: Preference<Boolean> = preferenceStore.getBoolean(
+        "download_new_unread_chapters_only",
+        false,
+    )
+    val downloadNewUnseenEpisodesOnly: Preference<Boolean> = preferenceStore.getBoolean(
+        "download_new_unread_episodes_only",
+        false,
+    )
     companion object {
         private const val REMOVE_EXCLUDE_MANGA_CATEGORIES_PREF_KEY = "remove_exclude_categories"
         private const val REMOVE_EXCLUDE_ANIME_CATEGORIES_PREF_KEY = "remove_exclude_anime_categories"

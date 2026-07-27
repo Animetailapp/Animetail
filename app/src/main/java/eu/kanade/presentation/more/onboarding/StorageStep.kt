@@ -1,7 +1,6 @@
 package eu.kanade.presentation.more.onboarding
 
 import android.content.ActivityNotFoundException
-import android.os.Environment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,16 +24,16 @@ import kotlinx.coroutines.flow.collectLatest
 import tachiyomi.core.common.storage.AndroidStorageFolderProvider
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.Button
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.io.File
 
 internal class StorageStep : OnboardingStep {
 
-    private val storagePref = Injekt.get<StoragePreferences>().baseStorageDirectory()
+    private val storagePref = Injekt.get<StoragePreferences>().baseStorageDirectory
     private val folderProvider = Injekt.get<AndroidStorageFolderProvider>()
 
     private var _isComplete by mutableStateOf(false)
@@ -52,12 +51,8 @@ internal class StorageStep : OnboardingStep {
         val pickStorageLocation = SettingsDataScreen.storageLocationPicker(storagePref)
 
         if (!storagePref.isSet()) {
-            val storage =
-                File(Environment.getExternalStorageDirectory().toString() + "/${stringResource(MR.strings.app_name)}/")
-            if (!storage.exists()) {
-                storage.mkdirs()
-            }
-            storagePref.set("${storagePref.get()}/")
+            folderProvider.directory().mkdirs()
+            storagePref.set(folderProvider.path())
             storagePref.changes()
         }
 
@@ -82,10 +77,10 @@ internal class StorageStep : OnboardingStep {
                             if (!storage.exists()) {
                                 storage.mkdirs()
                             }
-                            storagePref.set(storagePref.get())
+                            storagePref.set(folderProvider.path())
                         },
                     ) {
-                        Text(stringResource(MR.strings.onboarding_storage_action_create_folder))
+                        Text(stringResource(AYMR.strings.onboarding_storage_action_create_folder))
                     }
                 }
             } else {

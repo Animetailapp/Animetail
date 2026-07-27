@@ -18,7 +18,6 @@ import eu.kanade.core.util.fastPartition
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.items.chapter.interactor.SetReadStatus
-import eu.kanade.presentation.components.SEARCH_DEBOUNCE_MILLIS
 import eu.kanade.presentation.entries.DownloadAction
 import eu.kanade.presentation.library.components.LibraryToolbarTitle
 import eu.kanade.tachiyomi.R
@@ -80,6 +79,7 @@ import tachiyomi.source.local.entries.manga.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Typealias for the library manga, using the category as keys, and list of manga as values.
@@ -108,14 +108,14 @@ class MangaLibraryScreenModel(
     // SY <--
 ) : StateScreenModel<MangaLibraryScreenModel.State>(State()) {
 
-    var activeCategoryIndex: Int by libraryPreferences.lastUsedMangaCategory().asState(
+    var activeCategoryIndex: Int by libraryPreferences.lastUsedCategory.asState(
         screenModelScope,
     )
 
     init {
         screenModelScope.launchIO {
             combine(
-                state.map { it.searchQuery }.debounce(SEARCH_DEBOUNCE_MILLIS),
+                state.map { it.searchQuery }.debounce(0.25.seconds),
                 getLibraryFlow(),
                 getTracksPerManga.subscribe(),
                 combine(
@@ -126,7 +126,7 @@ class MangaLibraryScreenModel(
                 // SY -->
                 combine(
                     state.map { it.groupType }.distinctUntilChanged(),
-                    libraryPreferences.mangaSortingMode().changes(),
+                    libraryPreferences.mangaSortingMode.changes(),
                     ::Pair,
                 ),
                 // SY <--
@@ -139,7 +139,7 @@ class MangaLibraryScreenModel(
                     .applySort(tracks, sort.takeIf { groupType != MangaLibraryGroup.BY_DEFAULT }, trackingFilter.keys)
                     .mapValues { (_, value) ->
                         if (searchQuery != null) {
-                            value.filter { it.matches(searchQuery) }
+                            value.filter { it.matches(searchQuery, sourceManager) }
                         } else {
                             value
                         }
@@ -156,9 +156,9 @@ class MangaLibraryScreenModel(
         }
 
         combine(
-            libraryPreferences.categoryTabs().changes(),
-            libraryPreferences.categoryNumberOfItems().changes(),
-            libraryPreferences.showContinueViewingButton().changes(),
+            libraryPreferences.categoryTabs.changes(),
+            libraryPreferences.categoryNumberOfItems.changes(),
+            libraryPreferences.showContinueReadingButton.changes(),
         ) { a, b, c -> arrayOf(a, b, c) }
             .onEach { (showCategoryTabs, showMangaCount, showMangaContinueButton) ->
                 mutableState.update { state ->
@@ -195,7 +195,7 @@ class MangaLibraryScreenModel(
             .launchIn(screenModelScope)
 
         // SY -->
-        libraryPreferences.groupMangaLibraryBy().changes()
+        libraryPreferences.groupMangaLibraryBy.changes()
             .onEach {
                 mutableState.update { state ->
                     state.copy(groupType = it)
@@ -226,11 +226,7 @@ class MangaLibraryScreenModel(
         val trackFiltersIsIgnored = includedTracks.isEmpty() && excludedTracks.isEmpty()
 
         val filterFnDownloaded: (MangaLibraryItem) -> Boolean = {
-            applyFilter(filterDownloaded) {
-                it.libraryManga.manga.isLocal() ||
-                    it.downloadCount > 0 ||
-                    downloadManager.getDownloadCount(it.libraryManga.manga) > 0
-            }
+            applyFilter(filterDownloaded) { it.isLocal || it.downloadCount > 0 }
         }
 
         val filterFnUnread: (MangaLibraryItem) -> Boolean = {
@@ -298,6 +294,7 @@ class MangaLibraryScreenModel(
             trackMap.mapValues { entry ->
                 when {
                     entry.value.isEmpty() -> null
+
                     else ->
                         entry.value
                             .mapNotNull { trackerMap[it.trackerId]?.mangaService?.get10PointScore(it) }
@@ -318,36 +315,48 @@ class MangaLibraryScreenModel(
                 MangaLibrarySort.Type.Alphabetical -> {
                     sortAlphabetically(i1, i2)
                 }
+
                 MangaLibrarySort.Type.LastRead -> {
                     i1.libraryManga.lastRead.compareTo(i2.libraryManga.lastRead)
                 }
+
                 MangaLibrarySort.Type.LastUpdate -> {
                     i1.libraryManga.manga.lastUpdate.compareTo(i2.libraryManga.manga.lastUpdate)
                 }
+
                 MangaLibrarySort.Type.UnreadCount -> when {
                     // Ensure unread content comes first
                     i1.libraryManga.unreadCount == i2.libraryManga.unreadCount -> 0
+
                     i1.libraryManga.unreadCount == 0L -> if (currentSort.isAscending) 1 else -1
+
                     i2.libraryManga.unreadCount == 0L -> if (currentSort.isAscending) -1 else 1
+
                     else -> i1.libraryManga.unreadCount.compareTo(i2.libraryManga.unreadCount)
                 }
+
                 MangaLibrarySort.Type.TotalChapters -> {
                     i1.libraryManga.totalChapters.compareTo(i2.libraryManga.totalChapters)
                 }
+
                 MangaLibrarySort.Type.LatestChapter -> {
                     i1.libraryManga.latestUpload.compareTo(i2.libraryManga.latestUpload)
                 }
+
                 MangaLibrarySort.Type.ChapterFetchDate -> {
                     i1.libraryManga.chapterFetchedAt.compareTo(i2.libraryManga.chapterFetchedAt)
                 }
+
                 MangaLibrarySort.Type.DateAdded -> {
                     i1.libraryManga.manga.dateAdded.compareTo(i2.libraryManga.manga.dateAdded)
                 }
+
                 MangaLibrarySort.Type.TrackerMean -> {
                     val item1Score = trackerScores[i1.libraryManga.id] ?: defaultTrackerScoreSortValue
                     val item2Score = trackerScores[i2.libraryManga.id] ?: defaultTrackerScoreSortValue
                     item1Score.compareTo(item2Score)
                 }
+
                 MangaLibrarySort.Type.Random -> {
                     error("Why Are We Still Here? Just To Suffer?")
                 }
@@ -356,7 +365,7 @@ class MangaLibraryScreenModel(
 
         return mapValues { (key, value) ->
             if (key.sort.type == MangaLibrarySort.Type.Random) {
-                return@mapValues value.shuffled(Random(libraryPreferences.randomMangaSortSeed().get()))
+                return@mapValues value.shuffled(Random(libraryPreferences.randomMangaSortSeed.get()))
             }
 
             // Use groupSort if we're in a grouped mode, otherwise use the category's sort
@@ -371,19 +380,19 @@ class MangaLibraryScreenModel(
 
     private fun getLibraryItemPreferencesFlow(): Flow<ItemPreferences> {
         return combine(
-            libraryPreferences.downloadBadge().changes(),
-            libraryPreferences.unreadBadge().changes(),
-            libraryPreferences.localBadge().changes(),
-            libraryPreferences.languageBadge().changes(),
-            libraryPreferences.autoUpdateItemRestrictions().changes(),
+            libraryPreferences.downloadBadge.changes(),
+            libraryPreferences.unreadBadge.changes(),
+            libraryPreferences.localBadge.changes(),
+            libraryPreferences.languageBadge.changes(),
+            libraryPreferences.autoUpdateMangaRestrictions.changes(),
 
-            preferences.downloadedOnly().changes(),
-            libraryPreferences.filterDownloadedManga().changes(),
-            libraryPreferences.filterUnread().changes(),
-            libraryPreferences.filterStartedManga().changes(),
-            libraryPreferences.filterBookmarkedManga().changes(),
-            libraryPreferences.filterCompletedManga().changes(),
-            libraryPreferences.filterIntervalCustom().changes(),
+            preferences.downloadedOnly.changes(),
+            libraryPreferences.filterDownloadedManga.changes(),
+            libraryPreferences.filterUnread.changes(),
+            libraryPreferences.filterStarted.changes(),
+            libraryPreferences.filterBookmarked.changes(),
+            libraryPreferences.filterCompleted.changes(),
+            libraryPreferences.filterIntervalCustom.changes(),
         ) {
             ItemPreferences(
                 downloadBadge = it[0] as Boolean,
@@ -415,19 +424,32 @@ class MangaLibraryScreenModel(
                 .map { libraryManga ->
                     // Display mode based on user preference: take it from global library setting or category
                     MangaLibraryItem(
-                        libraryManga,
-                        downloadCount = if (prefs.downloadBadge) {
-                            downloadManager.getDownloadCount(libraryManga.manga).toLong()
-                        } else {
-                            0
-                        },
-                        unreadCount = if (prefs.unreadBadge) libraryManga.unreadCount else 0,
-                        isLocal = if (prefs.localBadge) libraryManga.manga.isLocal() else false,
-                        sourceLanguage = if (prefs.languageBadge) {
-                            sourceManager.getOrStub(libraryManga.manga.source).lang
-                        } else {
-                            ""
-                        },
+                        libraryManga = libraryManga,
+                        downloadCount = downloadManager.getDownloadCount(libraryManga.manga),
+                        unreadCount = libraryManga.unreadCount,
+                        isLocal = libraryManga.manga.isLocal(),
+                        badges = MangaLibraryItem.Badges(
+                            downloadCount = if (prefs.downloadBadge) {
+                                downloadManager.getDownloadCount(libraryManga.manga)
+                            } else {
+                                0
+                            },
+                            unreadCount = if (prefs.unreadBadge) {
+                                libraryManga.unreadCount
+                            } else {
+                                0
+                            },
+                            isLocal = if (prefs.localBadge) {
+                                libraryManga.manga.isLocal()
+                            } else {
+                                false
+                            },
+                            sourceLanguage = if (prefs.languageBadge) {
+                                sourceManager.getOrStub(libraryManga.manga.source).lang
+                            } else {
+                                ""
+                            },
+                        ),
                     )
                 }
                 .groupBy { it.libraryManga.category }
@@ -448,6 +470,7 @@ class MangaLibraryScreenModel(
     private fun MangaLibraryMap.applyGrouping(groupType: Int): MangaLibraryMap {
         val items = when (groupType) {
             MangaLibraryGroup.BY_DEFAULT -> this
+
             MangaLibraryGroup.UNGROUPED -> {
                 mapOf(
                     Category(
@@ -460,6 +483,7 @@ class MangaLibraryScreenModel(
                         values.flatten().distinctBy { it.libraryManga.manga.id },
                 )
             }
+
             else -> {
                 getGroupedMangaItems(
                     groupType = groupType,
@@ -529,6 +553,7 @@ class MangaLibraryScreenModel(
             DownloadAction.NEXT_10_ITEMS -> downloadUnreadChapters(mangas, 10)
             DownloadAction.NEXT_25_ITEMS -> downloadUnreadChapters(mangas, 25)
             DownloadAction.UNVIEWED_ITEMS -> downloadUnreadChapters(mangas, null)
+            DownloadAction.BOOKMARKED_ITEMS -> Unit
         }
         clearSelection()
     }
@@ -548,6 +573,7 @@ class MangaLibraryScreenModel(
                             downloadManager.isChapterDownloaded(
                                 chapter.name,
                                 chapter.scanlator,
+                                chapter.url,
                                 manga.title,
                                 manga.source,
                             )
@@ -656,15 +682,15 @@ class MangaLibraryScreenModel(
     }
 
     fun getDisplayMode(): PreferenceMutableState<LibraryDisplayMode> {
-        return libraryPreferences.displayMode().asState(screenModelScope)
+        return libraryPreferences.displayMode.asState(screenModelScope)
     }
 
     fun getColumnsPreferenceForCurrentOrientation(isLandscape: Boolean): PreferenceMutableState<Int> {
         return (
             if (isLandscape) {
-                libraryPreferences.mangaLandscapeColumns()
+                libraryPreferences.mangaLandscapeColumns
             } else {
-                libraryPreferences.mangaPortraitColumns()
+                libraryPreferences.mangaPortraitColumns
             }
             ).asState(
             screenModelScope,
@@ -723,7 +749,9 @@ class MangaLibraryScreenModel(
                 val selectedIds = list.fastMap { it.id }
                 val selectionRange = when {
                     lastMangaIndex < curMangaIndex -> IntRange(lastMangaIndex, curMangaIndex)
+
                     curMangaIndex < lastMangaIndex -> IntRange(curMangaIndex, lastMangaIndex)
+
                     // We shouldn't reach this point
                     else -> return@mutate
                 }
@@ -814,6 +842,7 @@ class MangaLibraryScreenModel(
     }
 
     // SY -->
+
     /** Returns first unread chapter of a manga */
     suspend fun getFirstUnread(manga: Manga): Chapter? {
         return getNextChapters.await(manga.id).firstOrNull()
@@ -836,7 +865,7 @@ class MangaLibraryScreenModel(
                     status.int
                 }.mapKeys { (id) ->
                     Category(
-                        id = id.toLong(),
+                        id = id,
                         name = TrackStatus.entries
                             .find { it.int == id }
                             .let { it ?: TrackStatus.OTHER }
@@ -849,6 +878,7 @@ class MangaLibraryScreenModel(
                     )
                 }
             }
+
             MangaLibraryGroup.BY_SOURCE -> {
                 val sources: List<Long>
                 libraryManga.groupBy { item ->
@@ -877,6 +907,7 @@ class MangaLibraryScreenModel(
                     )
                 }
             }
+
             MangaLibraryGroup.BY_TAG -> {
                 val tags: List<String> = libraryManga.flatMap { item ->
                     item.libraryManga.manga.genre?.distinct() ?: emptyList()
@@ -896,6 +927,7 @@ class MangaLibraryScreenModel(
                         )
                     }
             }
+
             else -> {
                 libraryManga.groupBy { item ->
                     item.libraryManga.manga.status
@@ -904,13 +936,19 @@ class MangaLibraryScreenModel(
                         id = it.key + 1,
                         name = when (it.key) {
                             SManga.ONGOING.toLong() -> context.getString(R.string.ongoing)
+
                             SManga.LICENSED.toLong() -> context.getString(R.string.licensed)
+
                             SManga.CANCELLED.toLong() -> context.getString(R.string.cancelled)
+
                             SManga.ON_HIATUS.toLong() -> context.getString(R.string.on_hiatus)
+
                             SManga.PUBLISHING_FINISHED.toLong() -> context.getString(
                                 R.string.publishing_finished,
                             )
+
                             SManga.COMPLETED.toLong() -> context.getString(R.string.completed)
+
                             else -> context.getString(R.string.unknown)
                         },
                         order = when (it.key) {
@@ -1012,7 +1050,9 @@ class MangaLibraryScreenModel(
             val title = if (showCategoryTabs) defaultTitle else categoryName
             val count = when {
                 !showMangaCount -> null
+
                 !showCategoryTabs -> getMangaCountForCategory(category)
+
                 // Whole library count
                 else -> libraryCount
             }

@@ -64,10 +64,10 @@ import eu.kanade.tachiyomi.ui.player.controls.components.DoubleTapSeekTriangles
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
-import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -162,7 +162,7 @@ fun GestureHandler(
                         tryAwaitRelease()
                         if (isLongPressing) {
                             isLongPressing = false
-                            MPVLib.setPropertyDouble("speed", originalSpeed.toDouble())
+                            viewModel.mpv.setPropertyDouble("speed", originalSpeed.toDouble())
                             viewModel.playerUpdate.update { PlayerUpdates.None }
                         }
                         interactionSource.emit(PressInteraction.Release(press))
@@ -188,9 +188,12 @@ fun GestureHandler(
                         startingPosition = position.toInt()
                         startingX = it.x
                         wasPlayerAlreadyPause = viewModel.paused.value
-                        viewModel.pause()
+                        viewModel.updateIsSeeking(true)
                     },
                     onDragEnd = {
+                        viewModel.updatePlayBackPos(viewModel.seekPosition.value)
+                        viewModel.updateIsSeeking(false)
+                        viewModel.seekTo(viewModel.seekPosition.value.coerceIn(0f, duration).toInt(), preciseSeeking)
                         viewModel.gestureSeekAmount.update { null }
                         viewModel.hideSeekBar()
                         if (!wasPlayerAlreadyPause) viewModel.unpause()
@@ -206,7 +209,7 @@ fun GestureHandler(
                                     .coerceIn(0 - startingPosition, (duration - startingPosition).toInt()),
                             )
                         }
-                        viewModel.seekTo(it.coerceIn(0, duration.toInt()), preciseSeeking)
+                        viewModel.updateSeekPos(it.toFloat().coerceIn(0f, duration))
                     }
 
                     if (showSeekbar) viewModel.showSeekBar()
@@ -220,8 +223,8 @@ fun GestureHandler(
                 var originalMPVVolume = currentMPVVolume
                 var originalBrightness = currentBrightness
                 val brightnessGestureSens = 0.001f
-                val volumeGestureSens = 0.03f
-                val mpvVolumeGestureSens = 0.02f
+                val volumeGestureSens = 0.001f * viewModel.maxVolume
+                val mpvVolumeGestureSens = 0.001f * volumeBoostingCap
                 val isIncreasingVolumeBoost: (Float) -> Boolean = {
                     volumeBoostingCap > 0 &&
                         currentVolume == viewModel.maxVolume &&
@@ -303,6 +306,9 @@ fun GestureHandler(
 fun DoubleTapToSeekOvals(
     amount: Int,
     text: String?,
+    showOvals: Boolean,
+    showSeekIcon: Boolean,
+    showSeekTime: Boolean,
     interactionSource: MutableInteractionSource,
     modifier: Modifier = Modifier,
 ) {
@@ -321,21 +327,29 @@ fun DoubleTapToSeekOvals(
                         .fillMaxWidth(0.4f), // 2 fifths
                     contentAlignment = Alignment.Center,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(if (amount > 0) RightSideOvalShape else LeftSideOvalShape)
-                            .background(Color.White.copy(alpha))
-                            .indication(interactionSource, ripple()),
-                    )
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        DoubleTapSeekTriangles(isForward = amount > 0)
-                        Text(
-                            text = text ?: pluralStringResource(MR.plurals.seconds, amount, amount),
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center,
-                            color = Color.White,
+                    if (showOvals) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(if (amount > 0) RightSideOvalShape else LeftSideOvalShape)
+                                .background(Color.White.copy(alpha))
+                                .indication(interactionSource, ripple()),
                         )
+                    }
+                    if (showSeekIcon || showSeekTime) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            if (showSeekIcon) {
+                                DoubleTapSeekTriangles(isForward = amount > 0)
+                            }
+                            if (showSeekTime) {
+                                Text(
+                                    text = text ?: pluralStringResource(AYMR.plurals.seconds, amount, amount),
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center,
+                                    color = Color.White,
+                                )
+                            }
+                        }
                     }
                 }
             }

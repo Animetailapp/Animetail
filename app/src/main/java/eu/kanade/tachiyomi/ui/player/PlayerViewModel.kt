@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-/**
+/*
  * Code is a mix between PlayerViewModel from mpvKt and the former
  * PlayerViewModel from Aniyomi.
  */
-
 package eu.kanade.tachiyomi.ui.player
 
 import android.app.Application
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.graphics.Bitmap
 import android.media.AudioManager
 import android.net.Uri
 import android.provider.Settings
 import android.util.DisplayMetrics
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -52,10 +54,13 @@ import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.ChapterType
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.SerializableHoster.Companion.toHosterList
+import eu.kanade.tachiyomi.animesource.model.ThumbnailInfo
+import eu.kanade.tachiyomi.animesource.model.TileInfo
 import eu.kanade.tachiyomi.animesource.model.TimeStamp
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.database.models.anime.Episode
+import eu.kanade.tachiyomi.data.database.models.anime.EpisodeImpl
 import eu.kanade.tachiyomi.data.database.models.anime.isRecognizedNumber
 import eu.kanade.tachiyomi.data.database.models.anime.toDomainEpisode
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
@@ -71,20 +76,24 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.getChangedAt
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
+import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
+import eu.kanade.tachiyomi.ui.player.network.NetworkStreamSource
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.utils.AniSkipApi
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
 import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
 import eu.kanade.tachiyomi.ui.reader.SaveImageNotifier
+import eu.kanade.tachiyomi.util.editBackground
 import eu.kanade.tachiyomi.util.editCover
+import eu.kanade.tachiyomi.util.editThumbnail
 import eu.kanade.tachiyomi.util.episode.filterDownloadedEpisodes
 import eu.kanade.tachiyomi.util.lang.byteSize
 import eu.kanade.tachiyomi.util.lang.takeBytes
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.cacheImageDir
 import eu.kanade.tachiyomi.util.system.toast
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
@@ -124,6 +133,7 @@ import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.source.local.entries.anime.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -132,10 +142,14 @@ import java.io.InputStream
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.seconds
+private const val NETWORK_STREAM_ANIME_ID = Long.MIN_VALUE + 101
+private const val NETWORK_STREAM_EPISODE_ID = Long.MIN_VALUE + 102
 
 class PlayerViewModelProviderFactory(
     private val activity: PlayerActivity,
 ) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
         return PlayerViewModel(activity, extras.createSavedStateHandle()) as T
     }
@@ -168,8 +182,21 @@ class PlayerViewModel @JvmOverloads constructor(
     uiPreferences: UiPreferences = Injekt.get(),
 ) : ViewModel() {
 
+    val cachePath: String = activity.cacheDir.path
+
+    val mpv = MPV(activity.applicationContext) {
+        it.setOptionString("config", "yes")
+        it.setOptionString("config-dir", activity.filesDir.resolve(PlayerActivity.MPV_DIR).toString())
+        it.setOptionString("gpu-shader-cache-dir", cachePath)
+        it.setOptionString("icc-cache-dir", cachePath)
+        it.setOptionString("keep-open", "yes")
+    }
+
     private val _currentPlaylist = MutableStateFlow<List<Episode>>(emptyList())
     val currentPlaylist = _currentPlaylist.asStateFlow()
+
+    private val _isStopped = MutableStateFlow(false)
+    val isStopped = _isStopped.asStateFlow()
 
     private val _hasPreviousEpisode = MutableStateFlow(false)
     val hasPreviousEpisode = _hasPreviousEpisode.asStateFlow()
@@ -192,7 +219,7 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _isLoadingEpisode = MutableStateFlow(false)
     val isLoadingEpisode = _isLoadingEpisode.asStateFlow()
 
-    private val _currentDecoder = MutableStateFlow(getDecoderFromValue(MPVLib.getPropertyString("hwdec")))
+    private val _currentDecoder = MutableStateFlow(getDecoderFromValue(mpv.getPropertyString("hwdec") ?: ""))
     val currentDecoder = _currentDecoder.asStateFlow()
 
     val mediaTitle = MutableStateFlow("")
@@ -238,6 +265,21 @@ class PlayerViewModel @JvmOverloads constructor(
     val pos = _pos.asStateFlow()
 
     private var castProgressJob: Job? = null
+    private val _seekPosition = MutableStateFlow(0f)
+    val seekPosition = _seekPosition.asStateFlow()
+
+    private val _isSeeking = MutableStateFlow(false)
+    val isSeeking = _isSeeking.asStateFlow()
+
+    private val _thumbnailImage = MutableStateFlow<ImageBitmap?>(null)
+    val thumbnailImage = _thumbnailImage.asStateFlow()
+
+    private val thumbnailInfo = MutableStateFlow<ThumbnailInfo?>(null)
+    private val thumbnailTileCache =
+        object : LinkedHashMap<Int, Bitmap>(4, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Bitmap>?) = size > 3
+        }
+    private var thumbnailFetchJob: Job? = null
 
     val duration = MutableStateFlow(0f)
 
@@ -268,8 +310,8 @@ class PlayerViewModel @JvmOverloads constructor(
         }.getOrElse { 0f },
     )
     val currentVolume = MutableStateFlow(activity.audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
-    val currentMPVVolume = MutableStateFlow(MPVLib.getPropertyInt("volume"))
-    var volumeBoostCap: Int = MPVLib.getPropertyInt("volume-max")
+    val currentMPVVolume = MutableStateFlow(mpv.getPropertyInt("volume") ?: 100)
+    var volumeBoostCap: Int = (mpv.getPropertyInt("volume-max") ?: 100) - 100
 
     // Pair(startingPosition, seekAmount)
     val gestureSeekAmount = MutableStateFlow<Pair<Int, Int>?>(null)
@@ -292,8 +334,6 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _remainingTime = MutableStateFlow(0)
     val remainingTime = _remainingTime.asStateFlow()
 
-    val cachePath: String = activity.cacheDir.path
-
     private val _customButtons = MutableStateFlow<CustomButtonFetchState>(CustomButtonFetchState.Loading)
     val customButtons = _customButtons.asStateFlow()
 
@@ -303,23 +343,14 @@ class PlayerViewModel @JvmOverloads constructor(
     private val _primaryButton = MutableStateFlow<CustomButton?>(null)
     val primaryButton = _primaryButton.asStateFlow()
 
-    init {
-        viewModelScope.launchIO {
-            try {
-                val buttons = getCustomButtons.getAll()
-                buttons.firstOrNull { it.isFavorite }?.let {
-                    _primaryButton.update { _ -> it }
-                    // If the button text is not empty, it has been set buy a lua script in which
-                    // case we don't want to override it
-                    if (_primaryButtonTitle.value.isEmpty()) {
-                        setPrimaryCustomButtonTitle(it)
-                    }
-                }
-                activity.setupCustomButtons(buttons)
-                _customButtons.update { _ -> CustomButtonFetchState.Success(buttons.toImmutableList()) }
-            } catch (e: Exception) {
-                logcat(LogPriority.ERROR, e)
-                _customButtons.update { _ -> CustomButtonFetchState.Error(e.message ?: "Unable to fetch buttons") }
+    private fun setCustomButtons(buttons: List<CustomButton>) {
+        _customButtons.update { _ -> CustomButtonFetchState.Success(buttons.toImmutableList()) }
+        buttons.firstOrNull { it.isFavorite }?.let {
+            _primaryButton.update { _ -> it }
+            // If the button text is not empty, it has been set by a lua script in which
+            // case we don't want to override it
+            if (_primaryButtonTitle.value.isEmpty()) {
+                setPrimaryCustomButtonTitle(it)
             }
         }
     }
@@ -337,7 +368,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 delay(1000)
             }
             pause()
-            withUIContext { Injekt.get<Application>().toast(MR.strings.toast_sleep_timer_ended) }
+            withUIContext { Injekt.get<Application>().toast(AYMR.strings.toast_sleep_timer_ended) }
         }
     }
 
@@ -361,36 +392,36 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun getDecoder() {
-        _currentDecoder.update { getDecoderFromValue(activity.player.hwdecActive) }
+        _currentDecoder.update { getDecoderFromValue(mpv.getPropertyString("hwdec-current") ?: "") }
     }
 
     fun updateDecoder(decoder: Decoder) {
-        MPVLib.setPropertyString("hwdec", decoder.value)
+        mpv.setPropertyString("hwdec", decoder.value)
     }
 
     val getTrackLanguage: (Int) -> String = {
         if (it != -1) {
-            MPVLib.getPropertyString("track-list/$it/lang") ?: ""
+            mpv.getPropertyString("track-list/$it/lang") ?: ""
         } else {
             activity.stringResource(MR.strings.off)
         }
     }
     val getTrackTitle: (Int) -> String = {
         if (it != -1) {
-            MPVLib.getPropertyString("track-list/$it/title") ?: ""
+            mpv.getPropertyString("track-list/$it/title") ?: ""
         } else {
             activity.stringResource(MR.strings.off)
         }
     }
     val getTrackMPVId: (Int) -> Int = {
         if (it != -1) {
-            MPVLib.getPropertyInt("track-list/$it/id")
+            mpv.getPropertyInt("track-list/$it/id") ?: -1
         } else {
             -1
         }
     }
     val getTrackType: (Int) -> String? = {
-        MPVLib.getPropertyString("track-list/$it/type")
+        mpv.getPropertyString("track-list/$it/type")
     }
 
     private var trackLoadingJob: Job? = null
@@ -403,7 +434,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 VideoTrack(-1, activity.stringResource(MR.strings.off), null),
             )
             try {
-                val tracksCount = MPVLib.getPropertyInt("track-list/count") ?: 0
+                val tracksCount = mpv.getPropertyInt("track-list/count") ?: 0
                 for (i in 0..<tracksCount) {
                     val type = getTrackType(i)
                     if (!possibleTrackTypes.contains(type) || type == null) continue
@@ -433,13 +464,13 @@ class PlayerViewModel @JvmOverloads constructor(
     fun onFinishLoadingTracks() {
         val preferredSubtitle = trackSelect.getPreferredTrackIndex(subtitleTracks.value)
         (preferredSubtitle ?: subtitleTracks.value.firstOrNull())?.let {
-            activity.player.sid = it.id
-            activity.player.secondarySid = -1
+            activity.player.mpv?.setPropertyInt("sid", it.id)
+            activity.player.mpv?.setPropertyBoolean("secondary-sid", false)
         }
 
         val preferredAudio = trackSelect.getPreferredTrackIndex(audioTracks.value, subtitle = false)
         (preferredAudio ?: audioTracks.value.getOrNull(1))?.let {
-            activity.player.aid = it.id
+            activity.player.mpv?.setPropertyInt("aid", it.id)
         }
 
         isLoadingTracks.update { _ -> true }
@@ -456,10 +487,10 @@ class PlayerViewModel @JvmOverloads constructor(
 
     fun loadChapters() {
         val chapters = mutableListOf<IndexedSegment>()
-        val count = MPVLib.getPropertyInt("chapter-list/count")!!
+        val count = mpv.getPropertyInt("chapter-list/count") ?: 0
         for (i in 0 until count) {
-            val title = MPVLib.getPropertyString("chapter-list/$i/title")
-            val time = MPVLib.getPropertyInt("chapter-list/$i/time")!!
+            val title = mpv.getPropertyString("chapter-list/$i/title") ?: ""
+            val time = mpv.getPropertyInt("chapter-list/$i/time") ?: 0
             chapters.add(
                 IndexedSegment(
                     name = title,
@@ -492,14 +523,14 @@ class PlayerViewModel @JvmOverloads constructor(
             ?: return
         val name = if (isContentUri) uri.getFileName(activity) else null
         if (name == null) {
-            MPVLib.command(arrayOf("audio-add", path, "cached"))
+            mpv.command("audio-add", path, "cached")
         } else {
-            MPVLib.command(arrayOf("audio-add", path, "cached", name))
+            mpv.command("audio-add", path, "cached", name)
         }
     }
 
     fun selectAudio(id: Int) {
-        activity.player.aid = id
+        activity.player.mpv?.setPropertyInt("aid", id)
     }
 
     fun updateAudio(id: Int) {
@@ -513,9 +544,9 @@ class PlayerViewModel @JvmOverloads constructor(
             ?: return
         val name = if (isContentUri) uri.getFileName(activity) else null
         if (name == null) {
-            MPVLib.command(arrayOf("sub-add", path, "cached"))
+            mpv.command("sub-add", path, "cached")
         } else {
-            MPVLib.command(arrayOf("sub-add", path, "cached", name))
+            mpv.command("sub-add", path, "cached", name)
         }
     }
 
@@ -524,7 +555,9 @@ class PlayerViewModel @JvmOverloads constructor(
         _selectedSubtitles.update {
             when (id) {
                 selectedSubs.first -> Pair(selectedSubs.second, -1)
+
                 selectedSubs.second -> Pair(selectedSubs.first, -1)
+
                 else -> {
                     if (selectedSubs.first != -1) {
                         Pair(selectedSubs.first, id)
@@ -534,8 +567,17 @@ class PlayerViewModel @JvmOverloads constructor(
                 }
             }
         }
-        activity.player.secondarySid = _selectedSubtitles.value.second
-        activity.player.sid = _selectedSubtitles.value.first
+        val (primary, secondary) = _selectedSubtitles.value
+        if (secondary == -1) {
+            activity.player.mpv?.setPropertyBoolean("secondary-sid", false)
+        } else {
+            activity.player.mpv?.setPropertyInt("secondary-sid", secondary)
+        }
+        if (primary == -1) {
+            activity.player.mpv?.setPropertyBoolean("sid", false)
+        } else {
+            activity.player.mpv?.setPropertyInt("sid", primary)
+        }
     }
 
     fun updateSubtitle(sid: Int, secondarySid: Int) {
@@ -545,6 +587,56 @@ class PlayerViewModel @JvmOverloads constructor(
     fun updatePlayBackPos(pos: Float) {
         onSecondReached(pos.toInt(), duration.value.toInt())
         _pos.update { pos }
+    }
+
+    private var lastThumbnailFetch = 0L
+
+    fun updateSeekPos(pos: Float) {
+        _seekPosition.update { _ -> pos }
+
+        val thumbInfo = thumbnailInfo.value ?: return
+        val info = thumbInfo.tileInfo.lastOrNull { it.timeMs <= pos * 1000L }
+        if (info != null) {
+            val tileBitmap = thumbnailTileCache[info.imageIndex]
+            if (tileBitmap != null) {
+                createThumbnail(tileBitmap, info)
+            } else {
+                val now = System.currentTimeMillis()
+                if (now - lastThumbnailFetch < 2.seconds.inWholeMilliseconds) return
+                lastThumbnailFetch = now
+
+                thumbnailFetchJob?.cancel()
+                thumbnailFetchJob = viewModelScope.launchIO {
+                    val source = currentSource.value as? AnimeHttpSource ?: return@launchIO
+
+                    try {
+                        val tileUrl = thumbInfo.imageTileUrls[info.imageIndex]
+                        val bitmap = source.getImageTile(tileUrl)
+                        if (bitmap != null) {
+                            withUIContext {
+                                thumbnailTileCache[info.imageIndex] = bitmap
+                                createThumbnail(bitmap, info)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        logcat(LogPriority.ERROR, e) { "Failed to fetch thumbnails tiles" }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun createThumbnail(tileBitmap: Bitmap, tileInfo: TileInfo) {
+        val thumbnail = Bitmap.createBitmap(tileBitmap, tileInfo.x, tileInfo.y, tileInfo.width, tileInfo.height)
+        _thumbnailImage.update { _ -> thumbnail.asImageBitmap() }
+    }
+
+    fun updateIsSeeking(value: Boolean) {
+        _isSeeking.update { _ -> value }
+        if (!value) {
+            _thumbnailImage.update { _ -> null }
+        }
     }
 
     fun updateReadAhead(value: Long) {
@@ -578,7 +670,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun pause() {
-        activity.player.paused = true
+        mpv.setPropertyBoolean("pause", true)
         _paused.update { true }
         runCatching {
             activity.setPictureInPictureParams(activity.createPipParams())
@@ -586,7 +678,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun unpause() {
-        activity.player.paused = false
+        mpv.setPropertyBoolean("pause", false)
         _paused.update { false }
     }
 
@@ -673,12 +765,12 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun seekBy(offset: Int, precise: Boolean = false) {
-        MPVLib.command(arrayOf("seek", offset.toString(), if (precise) "relative+exact" else "relative"))
+        mpv.command("seek", offset.toString(), if (precise) "relative+exact" else "relative")
     }
 
     fun seekTo(position: Int, precise: Boolean = true) {
-        if (position !in 0..(activity.player.duration ?: 0)) return
-        MPVLib.command(arrayOf("seek", position.toString(), if (precise) "absolute" else "absolute+keyframes"))
+        if (position !in 0..(mpv.getPropertyInt("duration") ?: 0)) return
+        mpv.command("seek", position.toString(), if (precise) "absolute" else "absolute+keyframes")
     }
 
     fun changeBrightnessTo(
@@ -696,7 +788,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
     val maxVolume = activity.audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
     fun changeVolumeBy(change: Int) {
-        val mpvVolume = MPVLib.getPropertyInt("volume")
+        val mpvVolume = mpv.getPropertyInt("volume") ?: 100
         if (volumeBoostCap > 0 && currentVolume.value == maxVolume) {
             if (mpvVolume == 100 && change < 0) changeVolumeTo(currentVolume.value + change)
             val finalMPVVolume = (mpvVolume + change).coerceAtLeast(100)
@@ -719,7 +811,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun changeMPVVolumeTo(volume: Int) {
-        MPVLib.setPropertyInt("volume", volume)
+        mpv.setPropertyInt("volume", volume)
     }
 
     fun setMPVVolume(volume: Int) {
@@ -733,9 +825,9 @@ class PlayerViewModel @JvmOverloads constructor(
 
     fun setAutoPlay(value: Boolean) {
         val textRes = if (value) {
-            MR.strings.enable_auto_play
+            AYMR.strings.enable_auto_play
         } else {
-            MR.strings.disable_auto_play
+            AYMR.strings.disable_auto_play
         }
         playerUpdate.update { PlayerUpdates.ShowTextResource(textRes) }
         playerPreferences.autoplayEnabled().set(value)
@@ -752,7 +844,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
             VideoAspect.Fit -> {
                 pan = 0.0
-                MPVLib.setPropertyDouble("panscan", 0.0)
+                mpv.setPropertyDouble("panscan", 0.0)
             }
 
             VideoAspect.Stretch -> {
@@ -762,8 +854,8 @@ class PlayerViewModel @JvmOverloads constructor(
                 pan = 0.0
             }
         }
-        MPVLib.setPropertyDouble("panscan", pan)
-        MPVLib.setPropertyDouble("video-aspect-override", ratio)
+        mpv.setPropertyDouble("panscan", pan)
+        mpv.setPropertyDouble("video-aspect-override", ratio)
         playerPreferences.aspectState().set(aspect)
         playerUpdate.update { PlayerUpdates.AspectRatio }
     }
@@ -793,12 +885,15 @@ class PlayerViewModel @JvmOverloads constructor(
 
         when (property.substringAfterLast("/")) {
             "show_text" -> playerUpdate.update { PlayerUpdates.ShowText(data) }
+
             "toggle_ui" -> {
                 when (data) {
                     "show" -> showControls()
+
                     "toggle" -> {
                         if (controlsShown.value) hideControls() else showControls()
                     }
+
                     "hide" -> {
                         sheetShown.update { Sheets.None }
                         panelShown.update { Panels.None }
@@ -807,6 +902,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     }
                 }
             }
+
             "show_panel" -> {
                 when (data) {
                     "subtitle_settings" -> showPanel(Panels.SubtitleSettings)
@@ -815,23 +911,27 @@ class PlayerViewModel @JvmOverloads constructor(
                     "video_filters" -> showPanel(Panels.VideoFilters)
                 }
             }
+
             "set_button_title" -> {
                 _primaryButtonTitle.update { _ -> data }
             }
+
             "reset_button_title" -> {
                 _customButtons.value.getButtons().firstOrNull { it.isFavorite }?.let {
                     setPrimaryCustomButtonTitle(it)
                 }
             }
+
             "switch_episode" -> {
                 when (data) {
                     "n" -> changeEpisode(false)
                     "p" -> changeEpisode(true)
                 }
             }
+
             "launch_int_picker" -> {
                 val (title, nameFormat, start, stop, step, pickerProperty) = data.split("|")
-                val defaultValue = MPVLib.getPropertyInt(pickerProperty)
+                val defaultValue = mpv.getPropertyInt(pickerProperty) ?: 0
                 showDialog(
                     Dialogs.IntegerPicker(
                         defaultValue = defaultValue,
@@ -840,11 +940,12 @@ class PlayerViewModel @JvmOverloads constructor(
                         step = step.toInt(),
                         nameFormat = nameFormat,
                         title = title,
-                        onChange = { MPVLib.setPropertyInt(pickerProperty, it) },
+                        onChange = { mpv.setPropertyInt(pickerProperty, it) },
                         onDismissRequest = { showDialog(Dialogs.None) },
                     ),
                 )
             }
+
             "pause" -> {
                 when (data) {
                     "pause" -> pause()
@@ -852,16 +953,21 @@ class PlayerViewModel @JvmOverloads constructor(
                     "pauseunpause" -> pauseUnpause()
                 }
             }
+
             "seek_to_with_text" -> {
                 val (seekValue, text) = data.split("|", limit = 2)
                 seekToWithText(seekValue.toInt(), text)
             }
+
             "seek_by_with_text" -> {
                 val (seekValue, text) = data.split("|", limit = 2)
                 seekByWithText(seekValue.toInt(), text)
             }
+
             "seek_by" -> seekByWithText(data.toInt(), null)
+
             "seek_to" -> seekToWithText(data.toInt(), null)
+
             "toggle_button" -> {
                 fun showButton() {
                     if (_primaryButton.value == null) {
@@ -880,7 +986,9 @@ class PlayerViewModel @JvmOverloads constructor(
 
             "software_keyboard" -> when (data) {
                 "show" -> forceShowSoftwareKeyboard()
+
                 "hide" -> forceHideSoftwareKeyboard()
+
                 "toggle" -> if (inputMethodManager.isActive) {
                     forceHideSoftwareKeyboard()
                 } else {
@@ -889,18 +997,22 @@ class PlayerViewModel @JvmOverloads constructor(
             }
         }
 
-        MPVLib.setPropertyString(property, "")
+        mpv.setPropertyString(property, "")
     }
 
     private operator fun <T> List<T>.component6(): T = get(5)
 
     private val inputMethodManager = activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+
+    @Suppress("DEPRECATION")
     private fun forceShowSoftwareKeyboard() {
-        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
+        val view = activity.currentFocus ?: activity.window.decorView
+        inputMethodManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
     }
 
     private fun forceHideSoftwareKeyboard() {
-        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0)
+        val view = activity.currentFocus ?: activity.window.decorView
+        inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     private val doubleTapToSeekDuration = gesturePreferences.skipLengthPreference().get()
@@ -916,7 +1028,15 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     private fun seekByWithText(value: Int, text: String?) {
-        _doubleTapSeekAmount.update { if (value < 0 && it < 0 || pos.value + value > duration.value) 0 else it + value }
+        _doubleTapSeekAmount.update {
+            if ((value < 0 && it < 0) ||
+                pos.value + value > duration.value
+            ) {
+                0
+            } else {
+                it + value
+            }
+        }
         _seekText.update { text }
         _isSeekingForwards.value = value > 0
         seekBy(value, preciseSeek)
@@ -949,22 +1069,28 @@ class PlayerViewModel @JvmOverloads constructor(
         if (showSeekBar) showSeekBar()
     }
 
-    fun resetHosterState() {
+    /**
+     * Reset state when changing episodes
+     */
+    fun resetState() {
         _pausedState.update { _ -> false }
         _hosterState.update { _ -> emptyList() }
         _hosterList.update { _ -> emptyList() }
         _hosterExpandedList.update { _ -> emptyList() }
         _selectedHosterVideoIndex.update { _ -> Pair(-1, -1) }
+        thumbnailTileCache.clear()
+        thumbnailFetchJob?.cancel()
+        lastThumbnailFetch = 0L
     }
 
     fun changeEpisode(previous: Boolean, autoPlay: Boolean = false) {
         if (previous && !hasPreviousEpisode.value) {
-            activity.showToast(activity.stringResource(MR.strings.no_prev_episode))
+            activity.showToast(activity.stringResource(AYMR.strings.no_prev_episode))
             return
         }
 
         if (!previous && !hasNextEpisode.value) {
-            activity.showToast(activity.stringResource(MR.strings.no_next_episode))
+            activity.showToast(activity.stringResource(AYMR.strings.no_next_episode))
             return
         }
 
@@ -979,13 +1105,17 @@ class PlayerViewModel @JvmOverloads constructor(
             SingleActionGesture.Seek -> {
                 leftSeek()
             }
+
             SingleActionGesture.PlayPause -> {
                 pauseUnpause()
             }
+
             SingleActionGesture.Custom -> {
-                MPVLib.command(arrayOf("keypress", CustomKeyCodes.DoubleTapLeft.keyCode))
+                mpv.command("keypress", CustomKeyCodes.DoubleTapLeft.keyCode)
             }
+
             SingleActionGesture.None -> {}
+
             SingleActionGesture.Switch -> changeEpisode(true)
         }
     }
@@ -995,11 +1125,15 @@ class PlayerViewModel @JvmOverloads constructor(
             SingleActionGesture.PlayPause -> {
                 pauseUnpause()
             }
+
             SingleActionGesture.Custom -> {
-                MPVLib.command(arrayOf("keypress", CustomKeyCodes.DoubleTapCenter.keyCode))
+                mpv.command("keypress", CustomKeyCodes.DoubleTapCenter.keyCode)
             }
+
             SingleActionGesture.Seek -> {}
+
             SingleActionGesture.None -> {}
+
             SingleActionGesture.Switch -> {}
         }
     }
@@ -1009,13 +1143,17 @@ class PlayerViewModel @JvmOverloads constructor(
             SingleActionGesture.Seek -> {
                 rightSeek()
             }
+
             SingleActionGesture.PlayPause -> {
                 pauseUnpause()
             }
+
             SingleActionGesture.Custom -> {
-                MPVLib.command(arrayOf("keypress", CustomKeyCodes.DoubleTapRight.keyCode))
+                mpv.command("keypress", CustomKeyCodes.DoubleTapRight.keyCode)
             }
+
             SingleActionGesture.None -> {}
+
             SingleActionGesture.Switch -> changeEpisode(false)
         }
     }
@@ -1042,6 +1180,14 @@ class PlayerViewModel @JvmOverloads constructor(
             seekTo(lastPosition.toInt()) // Mueve el reproductor local a la última posición
         }
     }
+    fun stopHttpServer() {
+        val server = (currentSource.value as? AnimeHttpSource)?.server
+            ?: return
+
+        if (server.isRunning()) {
+            server.stop()
+        }
+    }
 
     // ====== OLD ======
 
@@ -1049,10 +1195,10 @@ class PlayerViewModel @JvmOverloads constructor(
     val eventFlow = eventChannel.receiveAsFlow()
 
     val incognitoMode: Boolean by lazy { getIncognitoState.await(currentAnime.value?.source) }
-    private val downloadAheadAmount = downloadPreferences.autoDownloadWhileWatching().get()
+    private val downloadAheadAmount = downloadPreferences.autoDownloadWhileWatching.get()
 
-    internal val relativeTime = uiPreferences.relativeTime().get()
-    internal val dateFormat = UiPreferences.dateFormat(uiPreferences.dateFormat().get())
+    internal val relativeTime = uiPreferences.relativeTime.get()
+    internal val dateFormat = UiPreferences.dateFormat(uiPreferences.dateFormat.get())
 
     /**
      * The position in the current video. Used to restore from process kill.
@@ -1089,28 +1235,50 @@ class PlayerViewModel @JvmOverloads constructor(
             ?: error("Requested episode of id $episodeId not found in episode list")
 
         val episodesForPlayer = episodes.filterNot {
-            anime.unseenFilterRaw == Anime.EPISODE_SHOW_SEEN &&
-                !it.seen ||
-                anime.unseenFilterRaw == Anime.EPISODE_SHOW_UNSEEN &&
-                it.seen ||
-                anime.downloadedFilterRaw == Anime.EPISODE_SHOW_DOWNLOADED &&
-                !downloadManager.isEpisodeDownloaded(
-                    it.name,
-                    it.scanlator,
-                    anime.title,
-                    anime.source,
+            (
+                anime.unseenFilterRaw == Anime.EPISODE_SHOW_SEEN &&
+                    !it.seen
                 ) ||
-                anime.downloadedFilterRaw == Anime.EPISODE_SHOW_NOT_DOWNLOADED &&
-                downloadManager.isEpisodeDownloaded(
-                    it.name,
-                    it.scanlator,
-                    anime.title,
-                    anime.source,
-                ) ||
-                anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_BOOKMARKED &&
-                !it.bookmark ||
-                anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_NOT_BOOKMARKED &&
-                it.bookmark
+                (
+                    anime.unseenFilterRaw == Anime.EPISODE_SHOW_UNSEEN &&
+                        it.seen
+                    ) ||
+                (
+                    anime.downloadedFilterRaw == Anime.EPISODE_SHOW_DOWNLOADED &&
+                        !downloadManager.isEpisodeDownloaded(
+                            it.name,
+                            it.scanlator,
+                            it.url,
+                            anime.title,
+                            anime.source,
+                        )
+                    ) ||
+                (
+                    anime.downloadedFilterRaw == Anime.EPISODE_SHOW_NOT_DOWNLOADED &&
+                        downloadManager.isEpisodeDownloaded(
+                            it.name,
+                            it.scanlator,
+                            it.url,
+                            anime.title,
+                            anime.source,
+                        )
+                    ) ||
+                (
+                    anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_BOOKMARKED &&
+                        !it.bookmark
+                    ) ||
+                (
+                    anime.bookmarkedFilterRaw == Anime.EPISODE_SHOW_NOT_BOOKMARKED &&
+                        it.bookmark
+                    ) ||
+                (
+                    anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_FILLERMARKED &&
+                        !it.fillermark
+                    ) ||
+                (
+                    anime.fillermarkedFilterRaw == Anime.EPISODE_SHOW_NOT_FILLERMARKED &&
+                        it.fillermark
+                    )
         }.toMutableList()
 
         if (episodesForPlayer.all { it.id != episodeId }) {
@@ -1153,6 +1321,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * to persist the current progress of the active episode.
      */
     fun onSaveInstanceStateNonConfigurationChange() {
+        if (isNetworkStreamSession) return
         val currentEpisode = currentEpisode.value ?: return
         viewModelScope.launchNonCancellable {
             saveEpisodeProgress(currentEpisode)
@@ -1166,10 +1335,10 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     /**
-     * Whether this presenter is initialized yet.
+     * Whether this viewModel is initialized with the correct episode.
      */
-    private fun needsInit(): Boolean {
-        return currentAnime.value == null || currentEpisode.value == null
+    private fun needsInit(animeId: Long, episodeId: Long): Boolean {
+        return currentAnime.value?.id != animeId || currentEpisode.value?.id != episodeId
     }
 
     data class InitResult(
@@ -1179,6 +1348,7 @@ class PlayerViewModel @JvmOverloads constructor(
     )
 
     private var currentHosterList: List<Hoster>? = null
+    private var isNetworkStreamSession: Boolean = false
 
     class ExceptionWithStringResource(
         message: String,
@@ -1193,14 +1363,18 @@ class PlayerViewModel @JvmOverloads constructor(
         vidIndex: Int,
     ): Pair<InitResult, Result<Boolean>> {
         val defaultResult = InitResult(currentHosterList, qualityIndex, null)
-        if (!needsInit()) return Pair(defaultResult, Result.success(true))
+        isNetworkStreamSession = false
+        if (!needsInit(animeId, initialEpisodeId)) return Pair(defaultResult, Result.success(true))
         return try {
             val anime = getAnime.await(animeId)
             if (anime != null) {
                 _currentAnime.update { _ -> anime }
                 animeTitle.update { _ -> anime.title }
                 sourceManager.isInitialized.first { it }
-                if (episodeId == -1L) episodeId = initialEpisodeId
+                episodeId = initialEpisodeId
+
+                val buttons = getCustomButtons.getAll()
+                setCustomButtons(buttons)
 
                 checkTrackers(anime)
 
@@ -1218,9 +1392,11 @@ class PlayerViewModel @JvmOverloads constructor(
                 _hasNextEpisode.update { _ -> getCurrentEpisodeIndex() != currentPlaylist.value.size - 1 }
 
                 // Write to mpv table
-                MPVLib.setPropertyString("user-data/current-anime/anime-title", anime.title)
-                MPVLib.setPropertyInt("user-data/current-anime/intro-length", getAnimeSkipIntroLength())
-                MPVLib.setPropertyString(
+                val parentTitle = anime.parentId?.let { getAnime.await(it)?.title } ?: ""
+                mpv.setPropertyString("user-data/current-anime/anime-title", anime.title)
+                mpv.setPropertyString("user-data/current-anime/parent-title", parentTitle)
+                mpv.setPropertyInt("user-data/current-anime/intro-length", getAnimeSkipIntroLength())
+                mpv.setPropertyString(
                     "user-data/current-anime/category",
                     getAnimeCategories.await(anime.id).joinToString {
                         it.name
@@ -1228,13 +1404,13 @@ class PlayerViewModel @JvmOverloads constructor(
                 )
 
                 val currentEp = currentEpisode.value
-                    ?: throw ExceptionWithStringResource("No episode loaded", MR.strings.no_episode_loaded)
+                    ?: throw ExceptionWithStringResource("No episode loaded", AYMR.strings.no_episode_loaded)
                 if (hostList.isNotBlank()) {
                     currentHosterList = hostList.toHosterList().ifEmpty {
                         currentHosterList = null
                         throw ExceptionWithStringResource(
                             "Hoster selected from empty list",
-                            MR.strings.select_hoster_from_empty_list,
+                            AYMR.strings.select_hoster_from_empty_list,
                         )
                     }
                     qualityIndex = Pair(hostIndex, vidIndex)
@@ -1244,7 +1420,7 @@ class PlayerViewModel @JvmOverloads constructor(
                         ?.also { currentHosterList = it }
                         ?: run {
                             currentHosterList = null
-                            throw ExceptionWithStringResource("Hoster list is empty", MR.strings.no_hosters)
+                            throw ExceptionWithStringResource("Hoster list is empty", AYMR.strings.no_hosters)
                         }
                 }
 
@@ -1263,10 +1439,73 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
+    suspend fun prepareNetworkStream(request: NetworkStreamRequest) {
+        cancelHosterVideoLinksJob()
+        isNetworkStreamSession = true
+        isLoading.update { false }
+        updateIsLoadingEpisode(false)
+        updateIsLoadingHosters(false)
+
+        val fallbackTitle = request.title.ifBlank { request.url }
+        val anime = Anime.create().copy(
+            id = NETWORK_STREAM_ANIME_ID,
+            source = NetworkStreamSource.id,
+            ogTitle = fallbackTitle,
+        )
+        val episode = EpisodeImpl().apply {
+            id = NETWORK_STREAM_EPISODE_ID
+            anime_id = NETWORK_STREAM_ANIME_ID
+            url = request.url
+            name = fallbackTitle
+            episode_number = 1f
+            date_upload = System.currentTimeMillis()
+        }
+
+        val video = request.toVideo()
+        val hoster = Hoster(
+            hosterUrl = request.url,
+            hosterName = Hoster.NO_HOSTER_LIST,
+            videoList = listOf(video),
+        )
+
+        currentHosterList = listOf(hoster)
+        qualityIndex = Pair(0, 0)
+        episodeId = -1L
+        episodePosition = 0L
+
+        animeTitle.update { fallbackTitle }
+        mediaTitle.update { fallbackTitle }
+        _currentAnime.update { anime }
+        _currentEpisode.update { episode }
+        _currentPlaylist.update { listOf(episode) }
+        _currentSource.update { NetworkStreamSource }
+        _isEpisodeOnline.update { true }
+        updateHasNextEpisode(false)
+        updateHasPreviousEpisode(false)
+
+        _hosterList.update { currentHosterList ?: emptyList() }
+        _hosterExpandedList.update { listOf(true) }
+        _hosterState.update {
+            listOf(
+                HosterState.Ready(
+                    name = hoster.hosterName,
+                    videoList = listOf(video),
+                    videoState = listOf(Video.State.READY),
+                ),
+            )
+        }
+        _selectedHosterVideoIndex.update { Pair(0, 0) }
+        _currentVideo.update { video }
+
+        withUIContext {
+            activity.setVideo(video)
+        }
+    }
+
     private fun updateEpisode(episode: Episode) {
         mediaTitle.update { _ -> episode.name }
         _isEpisodeOnline.update { _ -> isEpisodeOnline() == true }
-        MPVLib.setPropertyDouble("user-data/current-anime/episode-number", episode.episode_number.toDouble())
+        mpv.setPropertyDouble("user-data/current-anime/episode-number", episode.episode_number.toDouble())
     }
 
     private fun initEpisodeList(anime: Anime): List<Episode> {
@@ -1302,7 +1541,7 @@ class PlayerViewModel @JvmOverloads constructor(
         return episodes
             .sortedWith(getEpisodeSort(animeForSort, sortDescending))
             .run {
-                if (basePreferences.downloadedOnly().get()) {
+                if (basePreferences.downloadedOnly.get()) {
                     filterDownloadedEpisodes(anime)
                 } else {
                     this
@@ -1338,7 +1577,9 @@ class PlayerViewModel @JvmOverloads constructor(
         getHosterVideoLinksJob = viewModelScope.launchIO {
             _hosterState.update { _ ->
                 hosterList.map { hoster ->
-                    if (hoster.videoList == null) {
+                    if (hoster.lazy) {
+                        HosterState.Idle(hoster.hosterName)
+                    } else if (hoster.videoList == null) {
                         HosterState.Loading(hoster.hosterName)
                     } else {
                         val videoList = hoster.videoList!!
@@ -1394,7 +1635,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     if (hasFoundPreferredVideo.compareAndSet(false, true)) {
                         val (hosterIdx, videoIdx) = HosterLoader.selectBestVideo(hosterState.value)
                         if (hosterIdx == -1) {
-                            throw ExceptionWithStringResource("No available videos", MR.strings.no_available_videos)
+                            throw ExceptionWithStringResource("No available videos", AYMR.strings.no_available_videos)
                         }
 
                         val video = (hosterState.value[hosterIdx] as HosterState.Ready).videoList[videoIdx]
@@ -1410,6 +1651,32 @@ class PlayerViewModel @JvmOverloads constructor(
                 throw e
             }
         }
+    }
+
+    fun setIsStopped(value: Boolean) {
+        _isStopped.update { _ -> value }
+    }
+
+    fun setCurrentVideoError() {
+        val (hosterIdx, videoIdx) = selectedHosterVideoIndex.value
+        val currentHosterState = (hosterState.value[hosterIdx] as? HosterState.Ready) ?: return
+        val currentVideo = currentHosterState.videoList[videoIdx]
+
+        _hosterState.updateAt(
+            hosterIdx,
+            currentHosterState.getChangedAt(videoIdx, currentVideo, Video.State.ERROR),
+        )
+    }
+
+    fun loadBestVideo(): Boolean {
+        val source = currentSource.value ?: return false
+        val (hosterIdx, videoIdx) = HosterLoader.selectBestVideo(hosterState.value)
+        if (hosterIdx == -1) return false
+        val newVideo = (hosterState.value[hosterIdx] as HosterState.Ready).videoList[videoIdx]
+        viewModelScope.launchIO {
+            loadVideo(source, newVideo, hosterIdx, videoIdx)
+        }
+        return true
     }
 
     private suspend fun loadVideo(source: AnimeSource?, video: Video, hosterIndex: Int, videoIndex: Int): Boolean {
@@ -1447,7 +1714,7 @@ class PlayerViewModel @JvmOverloads constructor(
                         _selectedHosterVideoIndex.update { _ -> Pair(-1, -1) }
                         return false
                     } else {
-                        throw ExceptionWithStringResource("No available videos", MR.strings.no_available_videos)
+                        throw ExceptionWithStringResource("No available videos", AYMR.strings.no_available_videos)
                     }
                 }
 
@@ -1472,6 +1739,10 @@ class PlayerViewModel @JvmOverloads constructor(
         _currentVideo.update { _ -> resolvedVideo }
 
         qualityIndex = Pair(hosterIndex, videoIndex)
+
+        viewModelScope.launchIO {
+            loadThumbnails(resolvedVideo, source)
+        }
 
         activity.setVideo(resolvedVideo)
         return true
@@ -1508,16 +1779,49 @@ class PlayerViewModel @JvmOverloads constructor(
             is HosterState.Ready -> {
                 _hosterExpandedList.updateAt(index, !_hosterExpandedList.value[index])
             }
+
             is HosterState.Idle -> {
                 val hosterName = hosterList.value[index].hosterName
                 _hosterState.updateAt(index, HosterState.Loading(hosterName))
 
                 viewModelScope.launchIO {
-                    val hosterState = EpisodeLoader.loadHosterVideos(currentSource.value!!, hosterList.value[index])
+                    val hosterState = EpisodeLoader.loadHosterVideos(
+                        source = currentSource.value!!,
+                        hoster = hosterList.value[index],
+                        force = true,
+                    )
                     _hosterState.updateAt(index, hosterState)
                 }
             }
+
             is HosterState.Loading, is HosterState.Error -> {}
+        }
+    }
+
+    suspend fun loadThumbnails(video: Video, source: AnimeSource?) {
+        if (source is AnimeHttpSource) {
+            try {
+                val thumbInfo = source.getVideoThumbnails(video)
+                if (thumbInfo != null) {
+                    thumbnailInfo.update { _ ->
+                        ThumbnailInfo(
+                            tileInfo = thumbInfo.tileInfo.sortedBy { it.timeMs },
+                            imageTileUrls = thumbInfo.imageTileUrls,
+                        )
+                    }
+
+                    // Preload first 2 tilemaps
+                    thumbInfo.imageTileUrls.take(2).forEachIndexed { index, tileUrl ->
+                        val bitmap = source.getImageTile(tileUrl)
+                        if (bitmap != null) {
+                            thumbnailTileCache[index] = bitmap
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e) { "Failed to fetch thumbnails" }
+            }
         }
     }
 
@@ -1548,7 +1852,7 @@ class PlayerViewModel @JvmOverloads constructor(
             try {
                 val currentEpisode =
                     currentEpisode.value
-                        ?: throw ExceptionWithStringResource("No episode loaded", MR.strings.no_episode_loaded)
+                        ?: throw ExceptionWithStringResource("No episode loaded", AYMR.strings.no_episode_loaded)
                 currentHosterList = EpisodeLoader.getHosters(
                     currentEpisode.toDomainEpisode()!!,
                     anime,
@@ -1603,11 +1907,12 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     private suspend fun updateEpisodeProgressOnComplete(currentEp: Episode) {
+        if (isNetworkStreamSession) return
         currentEp.seen = true
         updateTrackEpisodeSeen(currentEp)
         deleteEpisodeIfNeeded(currentEp)
 
-        val markDuplicateAsSeen = libraryPreferences.markDuplicateSeenEpisodeAsSeen().get()
+        val markDuplicateAsSeen = libraryPreferences.markDuplicateSeenEpisodeAsSeen.get()
             .contains(LibraryPreferences.MARK_DUPLICATE_EPISODE_SEEN_EXISTING)
         if (!markDuplicateAsSeen) return
 
@@ -1627,7 +1932,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     private fun downloadNextEpisodes() {
-        if (downloadAheadAmount == 0) return
+        if (isNetworkStreamSession || downloadAheadAmount == 0) return
         val anime = currentAnime.value ?: return
 
         // Only download ahead if current + next episode is already downloaded too to avoid jank
@@ -1655,9 +1960,10 @@ class PlayerViewModel @JvmOverloads constructor(
      * @param chosenEpisode current episode, which is going to be marked as seen.
      */
     private fun deleteEpisodeIfNeeded(chosenEpisode: Episode) {
+        if (isNetworkStreamSession) return
         // Determine which episode should be deleted and enqueue
         val currentEpisodePosition = currentPlaylist.value.indexOf(chosenEpisode)
-        val removeAfterSeenSlots = downloadPreferences.removeAfterReadSlots().get()
+        val removeAfterSeenSlots = downloadPreferences.removeAfterReadSlots.get()
         val episodeToDelete = currentPlaylist.value.getOrNull(
             currentEpisodePosition - removeAfterSeenSlots,
         )
@@ -1689,12 +1995,14 @@ class PlayerViewModel @JvmOverloads constructor(
      * If incognito mode isn't on or has at least 1 tracker
      */
     private suspend fun saveEpisodeProgress(episode: Episode) {
+        if (isNetworkStreamSession) return
         if (!incognitoMode || hasTrackers) {
             updateEpisode.await(
                 EpisodeUpdate(
                     id = episode.id!!,
                     seen = episode.seen,
                     bookmark = episode.bookmark,
+                    fillermark = episode.fillermark,
                     lastSecondSeen = episode.last_second_seen,
                     totalSeconds = episode.total_seconds,
                 ),
@@ -1706,6 +2014,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * Saves this [episode] last seen history if incognito mode isn't on.
      */
     private suspend fun saveEpisodeHistory(episode: Episode) {
+        if (isNetworkStreamSession) return
         if (!incognitoMode) {
             val episodeId = episode.id!!
             val seenAt = Date()
@@ -1719,6 +2028,7 @@ class PlayerViewModel @JvmOverloads constructor(
      * Bookmarks the currently active episode.
      */
     fun bookmarkEpisode(episodeId: Long?, bookmarked: Boolean) {
+        if (isNetworkStreamSession) return
         viewModelScope.launchNonCancellable {
             updateEpisode.await(
                 EpisodeUpdate(
@@ -1729,11 +2039,26 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
+    /**
+     * Fillermarks the currently active episode.
+     */
+    fun fillermarkEpisode(episodeId: Long?, fillermarked: Boolean) {
+        if (isNetworkStreamSession) return
+        viewModelScope.launchNonCancellable {
+            updateEpisode.await(
+                EpisodeUpdate(
+                    id = episodeId!!,
+                    fillermark = fillermarked,
+                ),
+            )
+        }
+    }
+
     fun takeScreenshot(cachePath: String, showSubtitles: Boolean): InputStream? {
         val filename = cachePath + "/${System.currentTimeMillis()}_mpv_screenshot_tmp.png"
         val subtitleFlag = if (showSubtitles) "subtitles" else "video"
 
-        MPVLib.command(arrayOf("screenshot-to-file", filename, subtitleFlag))
+        mpv.command("screenshot-to-file", filename, subtitleFlag)
         val tempFile = File(filename).takeIf { it.exists() } ?: return null
         val newFile = File("$cachePath/mpv_screenshot.png")
 
@@ -1812,23 +2137,29 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     /**
-     * Sets the screenshot as cover and notifies the UI of the result.
+     * Sets the screenshot as art and notifies the UI of the result.
      */
-    fun setAsCover(imageStream: () -> InputStream) {
+    fun setAsArt(artType: ArtType, imageStream: () -> InputStream) {
         val anime = currentAnime.value ?: return
+        val episode = currentEpisode.value ?: return
 
         viewModelScope.launchNonCancellable {
             val result = try {
-                anime.editCover(Injekt.get(), imageStream())
+                when (artType) {
+                    ArtType.Cover -> anime.editCover(Injekt.get(), imageStream())
+                    ArtType.Background -> anime.editBackground(Injekt.get(), imageStream())
+                    ArtType.Thumbnail -> episode.editThumbnail(anime, Injekt.get(), imageStream())
+                }
+
                 if (anime.isLocal() || anime.favorite) {
-                    SetAsCover.Success
+                    SetAsArt.Success
                 } else {
-                    SetAsCover.AddToLibraryFirst
+                    SetAsArt.AddToLibraryFirst
                 }
             } catch (e: Exception) {
-                SetAsCover.Error
+                SetAsArt.Error
             }
-            eventChannel.send(Event.SetCoverResult(result))
+            eventChannel.send(Event.SetArtResult(result, artType))
         }
     }
 
@@ -1841,8 +2172,8 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     private fun updateTrackEpisodeSeen(episode: Episode) {
-        if (basePreferences.incognitoMode().get() || !hasTrackers) return
-        if (!trackPreferences.autoUpdateTrack().get()) return
+        if (basePreferences.incognitoMode.get() || !hasTrackers) return
+        if (!trackPreferences.autoUpdateTrack.get()) return
 
         val anime = currentAnime.value ?: return
         val context = Injekt.get<Application>()
@@ -1976,7 +2307,7 @@ class PlayerViewModel @JvmOverloads constructor(
                     if (waitingSkipIntro == defaultWaitingTime) {
                         activity.showToast(
                             "Skip Intro: ${activity.stringResource(
-                                MR.strings.player_aniskip_dontskip_toast,
+                                AYMR.strings.player_aniskip_dontskip_toast,
                                 chapter.name,
                                 waitingSkipIntro,
                             )}",
@@ -1987,7 +2318,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 } else if (autoSkip) {
                     seekToWithText(
                         seekValue = nextChapterPos.toInt(),
-                        text = activity.stringResource(MR.strings.player_intro_skipped, chapter.name),
+                        text = activity.stringResource(AYMR.strings.player_intro_skipped, chapter.name),
                     )
                 } else {
                     updateSkipIntroButton(chapter.chapterType)
@@ -2002,7 +2333,7 @@ class PlayerViewModel @JvmOverloads constructor(
         _skipIntroText.update { _ ->
             skipButtonString?.let {
                 activity.stringResource(
-                    MR.strings.player_skip_action,
+                    AYMR.strings.player_skip_action,
                     activity.stringResource(skipButtonString),
                 )
             }
@@ -2012,11 +2343,11 @@ class PlayerViewModel @JvmOverloads constructor(
     private fun showSkipIntroButton(chapter: IndexedSegment, nextChapterPos: Float, waitingTime: Int) {
         if (waitingTime > -1) {
             if (waitingTime > 0) {
-                _skipIntroText.update { _ -> activity.stringResource(MR.strings.player_aniskip_dontskip) }
+                _skipIntroText.update { _ -> activity.stringResource(AYMR.strings.player_aniskip_dontskip) }
             } else {
                 seekToWithText(
                     seekValue = nextChapterPos.toInt(),
-                    text = activity.stringResource(MR.strings.player_aniskip_skip, chapter.name),
+                    text = activity.stringResource(AYMR.strings.player_aniskip_skip, chapter.name),
                 )
             }
         } else {
@@ -2037,7 +2368,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
             seekToWithText(
                 seekValue = nextChapterPos.toInt(),
-                text = activity.stringResource(MR.strings.player_aniskip_skip, chapter.name),
+                text = activity.stringResource(AYMR.strings.player_aniskip_skip, chapter.name),
             )
         }
     }
@@ -2053,18 +2384,18 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     sealed class Event {
-        data class SetCoverResult(val result: SetAsCover) : Event()
+        data class SetArtResult(val result: SetAsArt, val artType: ArtType) : Event()
         data class SavedImage(val result: SaveImageResult) : Event()
         data class ShareImage(val uri: Uri, val seconds: String) : Event()
     }
 }
 
-fun CustomButton.execute() {
-    MPVLib.command(arrayOf("script-message", "call_button_$id"))
+fun CustomButton.execute(mpv: MPV) {
+    mpv.command("script-message", "call_button_$id")
 }
 
-fun CustomButton.executeLongPress() {
-    MPVLib.command(arrayOf("script-message", "call_button_${id}_long"))
+fun CustomButton.executeLongPress(mpv: MPV) {
+    mpv.command("script-message", "call_button_${id}_long")
 }
 
 fun Float.normalize(inMin: Float, inMax: Float, outMin: Float, outMax: Float): Float {

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,12 +24,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import eu.kanade.presentation.entries.components.DotSeparatorText
 import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.util.lang.toTimestampString
 import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -72,19 +75,35 @@ fun MangaHistoryItem(
                 style = textStyle,
             )
             val readAt = remember { history.readAt?.toTimestampString() ?: "" }
-            Text(
-                text = if (history.chapterNumber > -1) {
-                    stringResource(
-                        MR.strings.recent_manga_time,
-                        formatChapterNumber(history.chapterNumber),
-                        readAt,
+            val lastPage = history.lastPageRead.takeIf { it > 0L }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (history.chapterNumber > -1) {
+                        stringResource(
+                            MR.strings.recent_manga_time,
+                            formatChapterNumber(history.chapterNumber),
+                            readAt,
+                        )
+                    } else {
+                        readAt
+                    },
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = textStyle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                if (lastPage != null) {
+                    DotSeparatorText()
+                    Text(
+                        text = stringResource(MR.strings.chapter_progress, (lastPage + 1).toInt()),
+                        maxLines = 1,
+                        color = LocalContentColor.current.copy(alpha = DISABLED_ALPHA),
+                        overflow = TextOverflow.Ellipsis,
                     )
-                } else {
-                    readAt
-                },
-                modifier = Modifier.padding(top = 4.dp),
-                style = textStyle,
-            )
+                }
+            }
         }
 
         if (!history.coverData.isMangaFavorite) {

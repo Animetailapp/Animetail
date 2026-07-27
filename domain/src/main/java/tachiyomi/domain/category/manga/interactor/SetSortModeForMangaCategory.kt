@@ -20,17 +20,17 @@ class SetSortModeForMangaCategory(
         direction: MangaLibrarySort.Direction,
     ) {
         // SY -->
-        if (preferences.groupMangaLibraryBy().get() != MangaLibraryGroup.BY_DEFAULT) {
-            preferences.mangaSortingMode().set(MangaLibrarySort(type, direction))
+        if (preferences.groupMangaLibraryBy.get() != MangaLibraryGroup.BY_DEFAULT) {
+            preferences.mangaSortingMode.set(MangaLibrarySort(type, direction))
             return
         }
         // SY <--
         val category = categoryId?.let { categoryRepository.getMangaCategory(it) }
         val flags = (category?.flags ?: 0) + type + direction
         if (type == MangaLibrarySort.Type.Random) {
-            preferences.randomMangaSortSeed().set(Random.nextInt())
+            preferences.randomMangaSortSeed.set(Random.nextInt())
         }
-        if (category != null && preferences.categorizedDisplaySettings().get()) {
+        if (category != null && preferences.categorizedDisplaySettings.get()) {
             categoryRepository.updatePartialMangaCategory(
                 CategoryUpdate(
                     id = category.id,
@@ -38,7 +38,7 @@ class SetSortModeForMangaCategory(
                 ),
             )
         } else {
-            preferences.mangaSortingMode().set(MangaLibrarySort(type, direction))
+            preferences.mangaSortingMode.set(MangaLibrarySort(type, direction))
             categoryRepository.updateAllMangaCategoryFlags(flags)
         }
     }

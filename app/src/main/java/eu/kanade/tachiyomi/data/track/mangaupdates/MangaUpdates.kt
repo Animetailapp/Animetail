@@ -15,8 +15,6 @@ import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.util.lang.htmlDecode
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.i18n.MR
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
@@ -34,13 +32,15 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
             .flatMap { decimal ->
                 when (decimal) {
                     0 -> listOf("-")
+
                     10 -> listOf("10.0")
+
                     else -> (0..9).map { fraction ->
                         "$decimal.$fraction"
                     }
                 }
             }
-            .toImmutableList()
+            .toList()
     }
 
     private val interceptor by lazy { MangaUpdatesInterceptor(this) }
@@ -70,7 +70,7 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
 
     override fun getCompletionStatus(): Long = COMPLETE_LIST
 
-    override fun getScoreList(): ImmutableList<String> = SCORE_LIST
+    override fun getScoreList(): List<String> = SCORE_LIST
 
     override fun indexToScore(index: Int): Double = if (index == 0) 0.0 else SCORE_LIST[index].toDouble()
 
@@ -108,7 +108,7 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
 
     override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata? {
         val series = api.getSeries(track)
-        return series?.let {
+        return series.let {
             TrackMangaMetadata(
                 it.seriesId,
                 it.title?.htmlDecode(),
@@ -135,11 +135,11 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
     }
 
     override suspend fun login(username: String, password: String) {
-        val authenticated = api.authenticate(username, password) ?: throw Throwable(
-            "Unable to login",
-        )
-        saveCredentials(authenticated.uid.toString(), authenticated.sessionToken)
+        val authenticated = api.authenticate(username, password)
         interceptor.newAuth(authenticated.sessionToken)
+        val currentUser = api.getCurrentUser()
+        saveDisplayUsername(currentUser.username)
+        saveCredentials(authenticated.uid.toString(), authenticated.sessionToken)
     }
 
     fun restoreSession(): String? {

@@ -1,5 +1,6 @@
 package eu.kanade.presentation.entries.anime
 
+import android.content.ClipData
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
@@ -24,12 +25,12 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Input
+import androidx.compose.material.icons.automirrored.outlined.NavigateNext
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Cast
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.Input
-import androidx.compose.material.icons.outlined.NavigateNext
-import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.SystemUpdateAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,10 +42,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -90,6 +92,7 @@ import tachiyomi.domain.items.episode.interactor.GetEpisode
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -353,6 +356,7 @@ class EpisodeOptionsDialogScreenModel(
                     }
                 }
             }
+
             is HosterState.Error, is HosterState.Idle -> {
                 val hosterName = hosterState.name
                 _hosterState.updateAt(hosterIndex, HosterState.Loading(hosterName))
@@ -365,6 +369,7 @@ class EpisodeOptionsDialogScreenModel(
                     _hosterState.updateAt(hosterIndex, newHosterState)
                 }
             }
+
             is HosterState.Loading -> {}
         }
     }
@@ -440,7 +445,7 @@ fun EpisodeOptionsDialog(
         )
 
         Text(
-            text = stringResource(MR.strings.choose_video_quality),
+            text = stringResource(AYMR.strings.choose_video_quality),
             modifier = Modifier.padding(horizontal = TabbedDialogPaddings.Horizontal),
             fontStyle = FontStyle.Italic,
             style = MaterialTheme.typography.bodyMedium,
@@ -497,10 +502,10 @@ private fun VideoList(
     getHosterList: () -> List<Hoster>?,
 ) {
     val downloadManager = Injekt.get<AnimeDownloadManager>()
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val copiedString = stringResource(MR.strings.copied_video_link_to_clipboard)
+    val copiedString = stringResource(AYMR.strings.copied_video_link_to_clipboard)
 
     AnimatedVisibility(
         visible = !showAllQualities,
@@ -530,8 +535,14 @@ private fun VideoList(
                     onDownloadClicked = { downloadEpisode(useExternalDownloader) },
                     onExtDownloadClicked = { downloadEpisode(!useExternalDownloader) },
                     onCopyClicked = {
-                        clipboardManager.setText(AnnotatedString(currentVideo.videoUrl))
-                        scope.launch { context.toast(copiedString) }
+                        scope.launch {
+                            val clipEntry = ClipData.newPlainText(
+                                currentVideo.videoUrl,
+                                currentVideo.videoUrl,
+                            ).toClipEntry()
+                            clipboard.setClipEntry(clipEntry)
+                            context.toast(copiedString)
+                        }
                     },
                     onExtPlayerClicked = {
                         scope.launch {
@@ -638,7 +649,7 @@ private fun QualityOptions(
         )
 
         ClickableRow(
-            text = stringResource(MR.strings.action_start_download_internally),
+            text = stringResource(AYMR.strings.action_start_download_internally),
             icon = Icons.Outlined.Download,
             onClick = {
                 onDownloadClicked()
@@ -647,7 +658,7 @@ private fun QualityOptions(
         )
 
         ClickableRow(
-            text = stringResource(MR.strings.action_start_download_externally),
+            text = stringResource(AYMR.strings.action_start_download_externally),
             icon = Icons.Outlined.SystemUpdateAlt,
             onClick = {
                 onExtDownloadClicked()
@@ -656,8 +667,8 @@ private fun QualityOptions(
         )
 
         ClickableRow(
-            text = stringResource(MR.strings.action_play_externally),
-            icon = Icons.Outlined.OpenInNew,
+            text = stringResource(AYMR.strings.action_play_externally),
+            icon = Icons.AutoMirrored.Outlined.OpenInNew,
             onClick = {
                 onExtPlayerClicked()
                 closeMenu()
@@ -665,8 +676,8 @@ private fun QualityOptions(
         )
 
         ClickableRow(
-            text = stringResource(MR.strings.action_play_internally),
-            icon = Icons.Outlined.Input,
+            text = stringResource(AYMR.strings.action_play_internally),
+            icon = Icons.AutoMirrored.Outlined.Input,
             onClick = {
                 onIntPlayerClicked()
                 closeMenu()
@@ -719,7 +730,7 @@ private fun ClickableRow(
         )
         if (showDropdownArrow) {
             Icon(
-                imageVector = Icons.Outlined.NavigateNext,
+                imageVector = Icons.AutoMirrored.Outlined.NavigateNext,
                 contentDescription = null,
                 modifier = Modifier,
                 tint = MaterialTheme.colorScheme.onSurface,

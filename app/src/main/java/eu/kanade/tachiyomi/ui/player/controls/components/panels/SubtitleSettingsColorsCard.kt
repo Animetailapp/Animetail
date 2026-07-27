@@ -57,10 +57,11 @@ import eu.kanade.presentation.player.components.TintedSliderItem
 import eu.kanade.tachiyomi.ui.player.controls.CARDS_MAX_WIDTH
 import eu.kanade.tachiyomi.ui.player.controls.panelCardsColors
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.deleteAndGet
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
@@ -68,6 +69,7 @@ import uy.kohesive.injekt.api.get
 
 @Composable
 fun SubtitleSettingsColorsCard(
+    mpv: MPV,
     modifier: Modifier = Modifier,
 ) {
     val preferences = remember { Injekt.get<SubtitlePreferences>() }
@@ -80,7 +82,7 @@ fun SubtitleSettingsColorsCard(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.medium),
             ) {
                 Icon(Icons.Default.Palette, null)
-                Text(stringResource(MR.strings.player_sheets_sub_colors_title))
+                Text(stringResource(AYMR.strings.player_sheets_sub_colors_title))
             }
         },
         modifier = modifier.widthIn(max = CARDS_MAX_WIDTH),
@@ -88,9 +90,9 @@ fun SubtitleSettingsColorsCard(
     ) {
         Column {
             var currentColorType by remember { mutableStateOf(SubColorType.Text) }
-            var currentColor by remember { mutableIntStateOf(getCurrentMPVColor(currentColorType)) }
+            var currentColor by remember { mutableIntStateOf(getCurrentMPVColor(mpv, currentColorType)) }
             LaunchedEffect(currentColorType) {
-                currentColor = getCurrentMPVColor(currentColorType)
+                currentColor = getCurrentMPVColor(mpv, currentColorType)
             }
             Row(
                 horizontalArrangement = Arrangement.Center,
@@ -119,8 +121,8 @@ fun SubtitleSettingsColorsCard(
                 Spacer(Modifier.weight(1f))
                 TextButton(
                     onClick = {
-                        resetColors(preferences, currentColorType)
-                        currentColor = getCurrentMPVColor(currentColorType)
+                        resetColors(mpv, preferences, currentColorType)
+                        currentColor = getCurrentMPVColor(mpv, currentColorType)
                     },
                 ) {
                     Row(
@@ -137,7 +139,7 @@ fun SubtitleSettingsColorsCard(
                 onColorChange = {
                     currentColor = it
                     currentColorType.preference(preferences).set(it)
-                    MPVLib.setPropertyString(currentColorType.property, it.toColorHexString())
+                    mpv.setPropertyString(currentColorType.property, it.toColorHexString())
                 },
             )
         }
@@ -160,37 +162,37 @@ enum class SubColorType(
     val preference: (SubtitlePreferences) -> Preference<Int>,
 ) {
     Text(
-        MR.strings.player_sheets_subtitles_color_text,
+        AYMR.strings.player_sheets_subtitles_color_text,
         "sub-color",
         preference = SubtitlePreferences::textColorSubtitles,
     ),
     Border(
-        MR.strings.player_sheets_subtitles_color_border,
-        "sub-border-color",
+        AYMR.strings.player_sheets_subtitles_color_border,
+        "sub-outline-color",
         preference = SubtitlePreferences::borderColorSubtitles,
     ),
     Background(
-        MR.strings.player_sheets_subtitles_color_background,
+        AYMR.strings.player_sheets_subtitles_color_background,
         "sub-back-color",
         preference = SubtitlePreferences::backgroundColorSubtitles,
     ),
 }
 
-fun resetColors(preferences: SubtitlePreferences, type: SubColorType) {
+fun resetColors(mpv: MPV, preferences: SubtitlePreferences, type: SubColorType) {
     when (type) {
         SubColorType.Text -> {
-            MPVLib.setPropertyString("sub-color", preferences.textColorSubtitles().deleteAndGet().toColorHexString())
+            mpv.setPropertyString("sub-color", preferences.textColorSubtitles().deleteAndGet().toColorHexString())
         }
 
         SubColorType.Border -> {
-            MPVLib.setPropertyString(
-                "sub-border-color",
+            mpv.setPropertyString(
+                "sub-outline-color",
                 preferences.borderColorSubtitles().deleteAndGet().toColorHexString(),
             )
         }
 
         SubColorType.Background -> {
-            MPVLib.setPropertyString(
+            mpv.setPropertyString(
                 "sub-back-color",
                 preferences.backgroundColorSubtitles().deleteAndGet().toColorHexString(),
             )
@@ -198,8 +200,8 @@ fun resetColors(preferences: SubtitlePreferences, type: SubColorType) {
     }
 }
 
-val getCurrentMPVColor: (SubColorType) -> Int = { colorType ->
-    MPVLib.getPropertyString(colorType.property)?.let {
+fun getCurrentMPVColor(mpv: MPV, colorType: SubColorType): Int {
+    return mpv.getPropertyString(colorType.property)?.let {
         android.graphics.Color.parseColor(it.uppercase())
     }!!
 }
@@ -212,7 +214,7 @@ fun SubtitlesColorPicker(
 ) {
     Column(modifier) {
         TintedSliderItem(
-            stringResource(MR.strings.player_sheets_sub_color_red),
+            stringResource(AYMR.strings.player_sheets_sub_color_red),
             color.red,
             color.red.toString(),
             onChange = { onColorChange(color.copyAsArgb(red = it)) },
@@ -221,7 +223,7 @@ fun SubtitlesColorPicker(
         )
 
         TintedSliderItem(
-            stringResource(MR.strings.player_sheets_sub_color_green),
+            stringResource(AYMR.strings.player_sheets_sub_color_green),
             color.green,
             color.green.toString(),
             onChange = { onColorChange(color.copyAsArgb(green = it)) },
@@ -230,7 +232,7 @@ fun SubtitlesColorPicker(
         )
 
         TintedSliderItem(
-            stringResource(MR.strings.player_sheets_sub_color_blue),
+            stringResource(AYMR.strings.player_sheets_sub_color_blue),
             color.blue,
             color.blue.toString(),
             onChange = { onColorChange(color.copyAsArgb(blue = it)) },
@@ -239,7 +241,7 @@ fun SubtitlesColorPicker(
         )
 
         TintedSliderItem(
-            stringResource(MR.strings.player_sheets_sub_color_alpha),
+            stringResource(AYMR.strings.player_sheets_sub_color_alpha),
             color.alpha,
             color.alpha.toString(),
             onChange = { onColorChange(color.copyAsArgb(alpha = it)) },

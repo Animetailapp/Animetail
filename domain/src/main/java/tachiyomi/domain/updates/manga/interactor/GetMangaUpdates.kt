@@ -13,8 +13,21 @@ class GetMangaUpdates(
         return repository.awaitWithRead(read, after, limit = 500)
     }
 
-    fun subscribe(instant: Instant): Flow<List<MangaUpdatesWithRelations>> {
-        return repository.subscribeAllMangaUpdates(instant.toEpochMilli(), limit = 500)
+    fun subscribe(
+        instant: Instant,
+        unread: Boolean? = null,
+        started: Boolean? = null,
+        bookmarked: Boolean? = null,
+        hideExcludedScanlators: Boolean = false,
+    ): Flow<List<MangaUpdatesWithRelations>> {
+        return repository.subscribeAllMangaUpdates(
+            instant.toEpochMilli(),
+            limit = 500,
+            unread = unread,
+            started = started,
+            bookmarked = bookmarked,
+            hideExcludedScanlators = hideExcludedScanlators,
+        )
     }
 
     fun subscribe(read: Boolean, after: Long): Flow<List<MangaUpdatesWithRelations>> {

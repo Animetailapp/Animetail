@@ -35,6 +35,7 @@ import mihon.feature.upcoming.anime.UpcomingAnimeScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.injectLazy
 
@@ -73,7 +74,7 @@ fun Screen.animeUpdatesTab(
     }
 
     return TabContent(
-        titleRes = MR.strings.label_anime_updates,
+        titleRes = AYMR.strings.label_anime_updates,
         searchEnabled = false,
         content = { contentPadding, _ ->
             AnimeUpdateScreen(
@@ -86,6 +87,7 @@ fun Screen.animeUpdatesTab(
                 onUpdateLibrary = screenModel::updateLibrary,
                 onDownloadEpisode = screenModel::downloadEpisodes,
                 onMultiBookmarkClicked = screenModel::bookmarkUpdates,
+                onMultiFillermarkClicked = screenModel::fillermarkUpdates,
                 onMultiMarkAsSeenClicked = screenModel::markUpdatesSeen,
                 onMultiDeleteClicked = screenModel::showConfirmDeleteEpisodes,
                 onUpdateSelected = screenModel::toggleSelection,
@@ -93,7 +95,6 @@ fun Screen.animeUpdatesTab(
                     scope.launchIO {
                         openEpisode(updateItem, altPlayer)
                     }
-                    Unit
                 },
             )
 
@@ -106,6 +107,7 @@ fun Screen.animeUpdatesTab(
                         isManga = false,
                     )
                 }
+
                 is AnimeUpdatesScreenModel.Dialog.ShowQualities -> {
                     EpisodeOptionsDialogScreen.onDismissDialog = onDismissDialog
                     NavigatorAdaptiveSheet(
@@ -119,12 +121,13 @@ fun Screen.animeUpdatesTab(
                         onDismissRequest = onDismissDialog,
                     )
                 }
+
                 null -> {}
             }
 
             LaunchedEffect(Unit) {
                 // AM (DISCORD) -->
-                DiscordRPCService.setAnimeScreen(context, DiscordScreen.UPDATES)
+                DiscordRPCService.setScreen(context, DiscordScreen.UPDATES)
                 // <-- AM (DISCORD)
                 screenModel.events.collectLatest { event ->
                     when (event) {
@@ -133,6 +136,7 @@ fun Screen.animeUpdatesTab(
                                 MR.strings.internal_error,
                             ),
                         )
+
                         is AnimeUpdatesScreenModel.Event.LibraryUpdateTriggered -> {
                             val msg = if (event.started) {
                                 MR.strings.updating_library

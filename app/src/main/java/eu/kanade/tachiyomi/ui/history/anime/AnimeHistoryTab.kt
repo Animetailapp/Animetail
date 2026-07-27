@@ -22,6 +22,7 @@ import eu.kanade.presentation.history.HistoryDeleteDialog
 import eu.kanade.presentation.history.anime.AnimeHistoryScreen
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
+import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
 import eu.kanade.tachiyomi.ui.browse.anime.migration.search.MigrateAnimeDialog
 import eu.kanade.tachiyomi.ui.browse.anime.migration.search.MigrateAnimeDialogScreenModel
 import eu.kanade.tachiyomi.ui.category.CategoriesTab
@@ -37,6 +38,7 @@ import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.injectLazy
 
@@ -65,7 +67,7 @@ fun Screen.animeHistoryTab(
                 extPlayer,
             )
         } else {
-            snackbarHostState.showSnackbar(context.stringResource(MR.strings.no_next_episode))
+            snackbarHostState.showSnackbar(context.stringResource(AYMR.strings.no_next_episode))
         }
     }
 
@@ -83,7 +85,7 @@ fun Screen.animeHistoryTab(
     }
 
     return TabContent(
-        titleRes = MR.strings.label_anime_history,
+        titleRes = AYMR.strings.label_anime_history,
         searchEnabled = true,
         content = { contentPadding, _ ->
             AnimeHistoryScreen(
@@ -111,12 +113,14 @@ fun Screen.animeHistoryTab(
                         isManga = false,
                     )
                 }
+
                 is AnimeHistoryScreenModel.Dialog.DeleteAll -> {
                     HistoryDeleteAllDialog(
                         onDismissRequest = onDismissRequest,
                         onDelete = screenModel::removeAllHistory,
                     )
                 }
+
                 is AnimeHistoryScreenModel.Dialog.DuplicateAnime -> {
                     DuplicateAnimeDialog(
                         onDismissRequest = onDismissRequest,
@@ -129,6 +133,7 @@ fun Screen.animeHistoryTab(
                         },
                     )
                 }
+
                 is AnimeHistoryScreenModel.Dialog.ChangeCategory -> {
                     ChangeCategoryDialog(
                         initialSelection = dialog.initialSelection,
@@ -139,6 +144,7 @@ fun Screen.animeHistoryTab(
                         },
                     )
                 }
+
                 is AnimeHistoryScreenModel.Dialog.Migrate -> {
                     MigrateAnimeDialog(
                         oldAnime = dialog.oldAnime,
@@ -146,9 +152,13 @@ fun Screen.animeHistoryTab(
                         screenModel = MigrateAnimeDialogScreenModel(),
                         onDismissRequest = onDismissRequest,
                         onClickTitle = { navigator.push(AnimeScreen(dialog.oldAnime.id)) },
+                        onClickSeasons = {
+                            navigator.push(MigrateSeasonSelectScreen(dialog.oldAnime, dialog.newAnime))
+                        },
                         onPopScreen = { navigator.replace(AnimeScreen(dialog.oldAnime.id)) },
                     )
                 }
+
                 null -> {}
             }
 
@@ -160,14 +170,16 @@ fun Screen.animeHistoryTab(
 
             LaunchedEffect(Unit) {
                 // AM (DISCORD) -->
-                DiscordRPCService.setAnimeScreen(context, DiscordScreen.HISTORY)
+                DiscordRPCService.setScreen(context, DiscordScreen.HISTORY)
                 // <-- AM (DISCORD)
                 screenModel.events.collectLatest { e ->
                     when (e) {
                         AnimeHistoryScreenModel.Event.InternalError ->
                             snackbarHostState.showSnackbar(context.stringResource(MR.strings.internal_error))
+
                         AnimeHistoryScreenModel.Event.HistoryCleared ->
                             snackbarHostState.showSnackbar(context.stringResource(MR.strings.clear_history_completed))
+
                         is AnimeHistoryScreenModel.Event.OpenEpisode -> openEpisode(context, e.episode)
                     }
                 }

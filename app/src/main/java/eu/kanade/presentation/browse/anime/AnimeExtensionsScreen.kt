@@ -46,7 +46,7 @@ import eu.kanade.presentation.browse.manga.ExtensionHeader
 import eu.kanade.presentation.browse.manga.ExtensionTrustDialog
 import eu.kanade.presentation.components.WarningBanner
 import eu.kanade.presentation.entries.components.DotSeparatorNoSpaceText
-import eu.kanade.presentation.more.settings.screen.browse.AnimeExtensionReposScreen
+import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.extension.InstallStep
@@ -93,6 +93,7 @@ fun AnimeExtensionScreen(
     ) {
         when {
             state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
             state.isEmpty -> {
                 val msg = if (!searchQuery.isNullOrEmpty()) {
                     MR.strings.no_results_found
@@ -104,13 +105,14 @@ fun AnimeExtensionScreen(
                     modifier = Modifier.padding(contentPadding),
                     actions = persistentListOf(
                         EmptyScreenAction(
-                            stringRes = MR.strings.label_extension_repos,
+                            stringRes = MR.strings.extensionStores,
                             icon = Icons.Outlined.Settings,
-                            onClick = { navigator.push(AnimeExtensionReposScreen()) },
+                            onClick = { navigator.push(ExtensionStoresScreen(isManga = false)) },
                         ),
                     ),
                 )
             }
+
             else -> {
                 AnimeExtensionContent(
                     state = state,
@@ -190,6 +192,7 @@ private fun AnimeExtensionContent(
                             action = action,
                         )
                     }
+
                     is AnimeExtensionUiModel.Header.Text -> {
                         ExtensionHeader(
                             text = header.text,
@@ -216,7 +219,9 @@ private fun AnimeExtensionContent(
                     onClickItem = {
                         when (it) {
                             is AnimeExtension.Available -> onInstallExtension(it)
+
                             is AnimeExtension.Installed -> onOpenExtension(it)
+
                             is AnimeExtension.Untrusted -> {
                                 trustState = it
                             }
@@ -234,6 +239,7 @@ private fun AnimeExtensionContent(
                     onClickItemAction = {
                         when (it) {
                             is AnimeExtension.Available -> onInstallExtension(it)
+
                             is AnimeExtension.Installed -> {
                                 if (it.hasUpdate) {
                                     onUpdateExtension(it)
@@ -426,6 +432,7 @@ private fun AnimeExtensionItemActions(
                     )
                 }
             }
+
             installStep == InstallStep.Error -> {
                 IconButton(onClick = { onClickItemAction(extension) }) {
                     Icon(
@@ -434,6 +441,7 @@ private fun AnimeExtensionItemActions(
                     )
                 }
             }
+
             installStep == InstallStep.Idle -> {
                 when (extension) {
                     is AnimeExtension.Installed -> {
@@ -453,6 +461,7 @@ private fun AnimeExtensionItemActions(
                             }
                         }
                     }
+
                     is AnimeExtension.Untrusted -> {
                         IconButton(onClick = { onClickItemAction(extension) }) {
                             Icon(
@@ -461,6 +470,7 @@ private fun AnimeExtensionItemActions(
                             )
                         }
                     }
+
                     is AnimeExtension.Available -> {
                         if (extension.sources.isNotEmpty()) {
                             IconButton(

@@ -89,7 +89,7 @@ class AnimeExtensionDetailsScreenModel(
                 }
             }
             launch {
-                preferences.incognitoAnimeExtensions()
+                preferences.incognitoAnimeExtensions
                     .changes()
                     .map { pkgName in it }
                     .distinctUntilChanged()

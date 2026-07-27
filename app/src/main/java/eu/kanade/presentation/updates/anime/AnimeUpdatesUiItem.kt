@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Icon
@@ -48,6 +49,7 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.domain.updates.anime.model.AnimeUpdatesWithRelations
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.ListGroupHeader
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
@@ -106,6 +108,7 @@ internal fun LazyListScope.animeUpdatesUiItems(
                     text = relativeDateText(item.date),
                 )
             }
+
             is AnimeUpdatesUiModel.Item -> {
                 val updatesItem = item.item
                 AnimeUpdatesUiItem(
@@ -116,7 +119,7 @@ internal fun LazyListScope.animeUpdatesUiItems(
                         .takeIf { !updatesItem.update.seen && it > 0L }
                         ?.let {
                             stringResource(
-                                MR.strings.episode_progress,
+                                AYMR.strings.episode_progress,
                                 formatProgress(it),
                                 formatProgress(updatesItem.update.totalSeconds),
                             )
@@ -132,6 +135,7 @@ internal fun LazyListScope.animeUpdatesUiItems(
                                 true,
                                 false,
                             )
+
                             else -> onClickUpdate(updatesItem, false)
                         }
                     },
@@ -228,6 +232,18 @@ private fun AnimeUpdatesUiItem(
                     )
                     Spacer(modifier = Modifier.width(2.dp))
                 }
+                if (update.fillermark) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Label,
+                        contentDescription = stringResource(AYMR.strings.action_filter_fillermarked),
+                        modifier = Modifier
+                            .sizeIn(
+                                maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp },
+                            ),
+                        tint = MaterialTheme.colorScheme.tertiary,
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                }
                 Text(
                     text = update.episodeName,
                     maxLines = 1,
@@ -252,7 +268,7 @@ private fun AnimeUpdatesUiItem(
 // AM (FILE_SIZE) -->
         var fileSizeAsync: Long? by remember { mutableStateOf(updatesItem.fileSize) }
         if (downloadStateProvider() == AnimeDownload.State.DOWNLOADED &&
-            storagePreferences.showEpisodeFileSize().get() &&
+            storagePreferences.showEpisodeFileSize.get() &&
             fileSizeAsync == null
         ) {
             LaunchedEffect(update, Unit) {

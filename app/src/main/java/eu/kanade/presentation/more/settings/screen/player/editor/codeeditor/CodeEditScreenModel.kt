@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
+import animetail.feature.mpvfiles.MpvConfig.Companion.MPV_DIR
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.hippo.unifile.UniFile
@@ -16,7 +17,7 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.storage.service.StorageManager
-import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.FileOutputStream
@@ -107,13 +108,17 @@ class CodeEditScreenModel(
 
     fun save() {
         val file = currentFile.value ?: kotlin.run {
-            context.toast(MR.strings.editor_save_error)
+            context.toast(AYMR.strings.editor_save_error)
             return
         }
+        // AM -->
+        val internalFile = UniFile.fromFile(context.filesDir)!!.createDirectory(MPV_DIR)!!
+            .createFile(filePath)!!
+        // <-- AM
 
         val content = (mutableState.value as? CodeEditScreenState.Success)
             ?.content?.annotatedString?.text ?: kotlin.run {
-            context.toast(MR.strings.editor_save_error)
+            context.toast(AYMR.strings.editor_save_error)
             return
         }
 
@@ -121,11 +126,18 @@ class CodeEditScreenModel(
             file.openOutputStream()
                 .also { (it as? FileOutputStream)?.channel?.truncate(0) }
                 .use { it.write(content.toByteArray()) }
+
+            // AM -->
+            internalFile.openOutputStream()
+                .also { (it as? FileOutputStream)?.channel?.truncate(0) }
+                .use { it.write(content.toByteArray()) }
+            // <-- AM
+
             _hasModified.update { _ -> false }
-            context.toast(context.stringResource(MR.strings.editor_save_success))
+            context.toast(context.stringResource(AYMR.strings.editor_save_success))
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
-            context.toast(e.message ?: context.stringResource(MR.strings.editor_save_error))
+            context.toast(e.message ?: context.stringResource(AYMR.strings.editor_save_error))
         }
     }
 

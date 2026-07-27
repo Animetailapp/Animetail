@@ -50,6 +50,7 @@ class GlobalMangaSearchScreen(
             LaunchedEffect(state.items) {
                 when (val result = state.items.values.singleOrNull()) {
                     MangaSearchItemResult.Loading -> return@LaunchedEffect
+
                     is MangaSearchItemResult.Success -> {
                         val manga = result.result.singleOrNull()
                         if (manga != null) {
@@ -59,6 +60,7 @@ class GlobalMangaSearchScreen(
                             showSingleLoadingScreen = false
                         }
                     }
+
                     else -> showSingleLoadingScreen = false
                 }
             }

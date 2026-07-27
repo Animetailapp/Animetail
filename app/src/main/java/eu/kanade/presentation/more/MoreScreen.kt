@@ -1,22 +1,24 @@
 package eu.kanade.presentation.more
 
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.Label
+import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.QueryStats
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.VideoSettings
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.dp
 import eu.kanade.domain.ui.model.NavStyle
 import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
@@ -24,6 +26,8 @@ import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.ui.more.DownloadQueueState
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.pluralStringResource
@@ -45,20 +49,22 @@ fun MoreScreen(
     onClickDownloadQueue: () -> Unit,
     onClickCategories: () -> Unit,
     onClickStats: () -> Unit,
+    onClickNetworkStream: () -> Unit,
     onClickStorage: () -> Unit,
     onClickDataAndStorage: () -> Unit,
     onClickPlayerSettings: () -> Unit,
     onClickSettings: () -> Unit,
+    onClickSupport: () -> Unit,
     onClickAbout: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
 
     Scaffold { contentPadding ->
-        ScrollbarLazyColumn(
-            modifier = Modifier.padding(contentPadding),
-        ) {
+        ScrollbarLazyColumn(contentPadding = contentPadding) {
             item {
-                LogoHeader()
+                LogoHeader(
+                    iconPadding = PaddingValues(vertical = 32.dp),
+                )
             }
             item {
                 SwitchPreferenceWidget(
@@ -72,7 +78,7 @@ fun MoreScreen(
             item {
                 SwitchPreferenceWidget(
                     title = stringResource(MR.strings.pref_incognito_mode),
-                    subtitle = stringResource(MR.strings.pref_incognito_mode_summary),
+                    subtitle = stringResource(AYMR.strings.pref_incognito_mode_summary),
                     icon = ImageVector.vectorResource(R.drawable.ic_glasses_24dp),
                     checked = incognitoMode,
                     onCheckedChanged = onIncognitoModeChange,
@@ -95,6 +101,7 @@ fun MoreScreen(
                     title = stringResource(MR.strings.label_download_queue),
                     subtitle = when (downloadQueueState) {
                         DownloadQueueState.Stopped -> null
+
                         is DownloadQueueState.Paused -> {
                             val pending = downloadQueueState.pending
                             if (pending == 0) {
@@ -125,7 +132,7 @@ fun MoreScreen(
             }
             item {
                 TextPreferenceWidget(
-                    title = stringResource(MR.strings.general_categories),
+                    title = stringResource(AYMR.strings.general_categories),
                     icon = Icons.AutoMirrored.Outlined.Label,
                     onPreferenceClick = onClickCategories,
                 )
@@ -135,6 +142,14 @@ fun MoreScreen(
                     title = stringResource(MR.strings.label_stats),
                     icon = Icons.Outlined.QueryStats,
                     onPreferenceClick = onClickStats,
+                )
+            }
+            item {
+                TextPreferenceWidget(
+                    title = stringResource(TLMR.strings.network_stream),
+                    subtitle = stringResource(TLMR.strings.network_stream_summary),
+                    icon = Icons.Outlined.Link,
+                    onPreferenceClick = onClickNetworkStream,
                 )
             }
             item {
@@ -156,9 +171,16 @@ fun MoreScreen(
             }
             item {
                 TextPreferenceWidget(
-                    title = stringResource(MR.strings.label_player_settings),
+                    title = stringResource(AYMR.strings.label_player_settings),
                     icon = Icons.Outlined.VideoSettings,
                     onPreferenceClick = onClickPlayerSettings,
+                )
+            }
+            item {
+                TextPreferenceWidget(
+                    title = stringResource(MR.strings.label_support_us),
+                    icon = Icons.Default.VolunteerActivism,
+                    onPreferenceClick = onClickSupport,
                 )
             }
             item {

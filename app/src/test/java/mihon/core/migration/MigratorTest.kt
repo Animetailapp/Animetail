@@ -26,8 +26,8 @@ class MigratorTest {
     lateinit var migrationStrategyFactory: MigrationStrategyFactory
 
     @BeforeEach
-    fun initilize() {
-        migrationContext = MigrationContext(false)
+    fun initialize() {
+        migrationContext = MigrationContext(false, 0)
         migrationJobFactory = spyk(MigrationJobFactory(migrationContext, CoroutineScope(Dispatchers.Main + Job())))
         migrationCompletedListener = spyk<MigrationCompletedListener>(block = {})
         migrationStrategyFactory = spyk(MigrationStrategyFactory(migrationJobFactory, migrationCompletedListener))
@@ -45,7 +45,7 @@ class MigratorTest {
 
         verify { migrationJobFactory.create(capture(migrations)) }
         assertEquals(1, migrations.captured.size)
-        verify { migrationCompletedListener() }
+        verify(timeout = 3000) { migrationCompletedListener() }
     }
 
     @Test
@@ -86,7 +86,7 @@ class MigratorTest {
 
         verify { migrationJobFactory.create(capture(migrations)) }
         assertEquals(2, migrations.captured.size)
-        verify { migrationCompletedListener() }
+        verify(timeout = 3000) { migrationCompletedListener() }
     }
 
     @Test
@@ -114,7 +114,7 @@ class MigratorTest {
 
         verify { migrationJobFactory.create(capture(migrations)) }
         assertEquals(10, migrations.captured.size)
-        verify { migrationCompletedListener() }
+        verify(timeout = 3000) { migrationCompletedListener() }
     }
 
     @Test
@@ -135,7 +135,7 @@ class MigratorTest {
 
         verify { migrationJobFactory.create(capture(migrations)) }
         assertEquals(2, migrations.captured.size)
-        verify { migrationCompletedListener() }
+        verify(timeout = 3000) { migrationCompletedListener() }
     }
 
     companion object {

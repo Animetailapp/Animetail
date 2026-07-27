@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import mihon.feature.support.SupportUsScreen
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -65,8 +66,8 @@ data object MoreTab : Tab {
 
     @Composable
     override fun Content() {
-        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
+        val context = LocalContext.current
         val screenModel = rememberScreenModel { MoreScreenModel() }
         val downloadQueueState by screenModel.downloadQueueState.collectAsState()
         val navStyle = currentNavigationStyle()
@@ -85,18 +86,19 @@ data object MoreTab : Tab {
             onClickDownloadQueue = { navigator.push(DownloadsTab) },
             onClickCategories = { navigator.push(CategoriesTab) },
             onClickStats = { navigator.push(StatsTab) },
+            onClickNetworkStream = { navigator.push(NetworkStreamScreen) },
             onClickStorage = { navigator.push(StorageTab) },
             onClickDataAndStorage = { navigator.push(SettingsScreen(SettingsScreen.Destination.DataAndStorage)) },
-            onClickPlayerSettings = { navigator.push(PlayerSettingsScreen) },
+            onClickPlayerSettings = { navigator.push(PlayerSettingsScreen(mainSettings = false)) },
             onClickSettings = { navigator.push(SettingsScreen()) },
+            onClickSupport = { navigator.push(SupportUsScreen()) },
             onClickAbout = { navigator.push(SettingsScreen(SettingsScreen.Destination.About)) },
         )
 
         LaunchedEffect(Unit) {
             (context as? MainActivity)?.ready = true
             // AM (DISCORD) -->
-            DiscordRPCService.setAnimeScreen(context, DiscordScreen.MORE)
-            DiscordRPCService.setMangaScreen(context, DiscordScreen.MORE)
+            DiscordRPCService.setScreen(context, DiscordScreen.MORE)
             // <-- AM (DISCORD)
         }
     }
@@ -111,12 +113,12 @@ private class MoreScreenModel(
     // SY <--
 ) : ScreenModel {
 
-    var downloadedOnly by preferences.downloadedOnly().asState(screenModelScope)
-    var incognitoMode by preferences.incognitoMode().asState(screenModelScope)
+    var downloadedOnly by preferences.downloadedOnly.asState(screenModelScope)
+    var incognitoMode by preferences.incognitoMode.asState(screenModelScope)
 
     // SY -->
-    val showNavUpdates by uiPreferences.showNavUpdates().asState(screenModelScope)
-    val showNavHistory by uiPreferences.showNavHistory().asState(screenModelScope)
+    val showNavUpdates by uiPreferences.showNavUpdates.asState(screenModelScope)
+    val showNavHistory by uiPreferences.showNavHistory.asState(screenModelScope)
     // SY <--
 
     private var _downloadQueueState: MutableStateFlow<DownloadQueueState> = MutableStateFlow(

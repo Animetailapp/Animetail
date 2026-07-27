@@ -3,22 +3,22 @@ package eu.kanade.domain.extension.manga.interactor
 import android.content.pm.PackageInfo
 import androidx.core.content.pm.PackageInfoCompat
 import eu.kanade.domain.source.service.SourcePreferences
-import mihon.domain.extensionrepo.manga.repository.MangaExtensionRepoRepository
+import mihon.domain.extension.manga.repository.MangaExtensionStoreRepository
 import tachiyomi.core.common.preference.getAndSet
 
 class TrustMangaExtension(
-    private val mangaExtensionRepoRepository: MangaExtensionRepoRepository,
+    private val mangaExtensionStoreRepository: MangaExtensionStoreRepository,
     private val preferences: SourcePreferences,
 ) {
 
     suspend fun isTrusted(pkgInfo: PackageInfo, fingerprints: List<String>): Boolean {
-        val trustedFingerprints = mangaExtensionRepoRepository.getAll().map { it.signingKeyFingerprint }.toHashSet()
+        val trustedFingerprints = mangaExtensionStoreRepository.getAll().map { it.signingKey }.toHashSet()
         val key = "${pkgInfo.packageName}:${PackageInfoCompat.getLongVersionCode(pkgInfo)}:${fingerprints.last()}"
-        return trustedFingerprints.any { fingerprints.contains(it) } || key in preferences.trustedExtensions().get()
+        return trustedFingerprints.any { fingerprints.contains(it) } || key in preferences.trustedExtensions.get()
     }
 
     fun trust(pkgName: String, versionCode: Long, signatureHash: String) {
-        preferences.trustedExtensions().getAndSet { exts ->
+        preferences.trustedExtensions.getAndSet { exts ->
             // Remove previously trusted versions
             val removed = exts.filterNot { it.startsWith("$pkgName:") }.toMutableSet()
 
@@ -27,6 +27,6 @@ class TrustMangaExtension(
     }
 
     fun revokeAll() {
-        preferences.trustedExtensions().delete()
+        preferences.trustedExtensions.delete()
     }
 }

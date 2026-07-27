@@ -13,10 +13,10 @@ class GetAnimeExtensionsByType(
 ) {
 
     fun subscribe(): Flow<AnimeExtensions> {
-        val showNsfwSources = preferences.showNsfwSource().get()
+        val showNsfwSources = preferences.showNsfwSource.get()
 
         return combine(
-            preferences.enabledLanguages().changes(),
+            preferences.enabledLanguages.changes(),
             extensionManager.installedExtensionsFlow,
             extensionManager.untrustedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
@@ -35,23 +35,14 @@ class GetAnimeExtensionsByType(
             val available = _available
                 .filter { extension ->
                     _installed.none {
-                        // KMK -->
-                        it.signatureHash == extension.signatureHash &&
-                            // KMK <--
-                            it.pkgName == extension.pkgName
+                        it.pkgName == extension.pkgName
                     } &&
                         _untrusted.none {
-                            // KMK -->
-                            it.signatureHash == extension.signatureHash &&
-                                // KMK <--
-                                it.pkgName == extension.pkgName
+                            it.pkgName == extension.pkgName
                         } &&
                         (showNsfwSources || !extension.isNsfw)
                 }
                 .flatMap { ext ->
-                    if (ext.sources.isEmpty()) {
-                        return@flatMap if (ext.lang in enabledLanguages) listOf(ext) else emptyList()
-                    }
                     ext.sources.filter { it.lang in enabledLanguages }
                         .map {
                             ext.copy(

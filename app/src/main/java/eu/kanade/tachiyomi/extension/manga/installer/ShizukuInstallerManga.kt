@@ -17,6 +17,7 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
 import java.io.BufferedReader
 import java.io.InputStream
+import java.io.OutputStream
 
 class ShizukuInstallerManga(private val service: Service) : InstallerManga(service) {
 
@@ -89,17 +90,43 @@ class ShizukuInstallerManga(private val service: Service) : InstallerManga(servi
     }
 
     private fun exec(command: String, stdin: InputStream? = null): ShellResult {
-        @Suppress("DEPRECATION")
-        val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+        val process = createProcess(command)
         if (stdin != null) {
-            process.outputStream.use { stdin.copyTo(it) }
+            process.outputStream().use { stdin.copyTo(it) }
         }
-        val output = process.inputStream.bufferedReader().use(BufferedReader::readText)
+        val output = process.inputStream().bufferedReader().use(BufferedReader::readText)
         val resultCode = process.waitFor()
         return ShellResult(resultCode, output)
     }
 
+    private fun createProcess(command: String): ReflectiveProcess {
+        val method = Shizuku::class.java.getDeclaredMethod(
+            "newProcess",
+            Array<String>::class.java,
+            Array<String>::class.java,
+            String::class.java,
+        )
+        method.isAccessible = true
+        return ReflectiveProcess(
+            method.invoke(null, arrayOf("sh", "-c", command), null, null)!!,
+        )
+    }
+
     private data class ShellResult(val resultCode: Int, val out: String)
+
+    private class ReflectiveProcess(private val delegate: Any) {
+        fun outputStream(): OutputStream {
+            return delegate.javaClass.getMethod("getOutputStream").invoke(delegate) as OutputStream
+        }
+
+        fun inputStream(): InputStream {
+            return delegate.javaClass.getMethod("getInputStream").invoke(delegate) as InputStream
+        }
+
+        fun waitFor(): Int {
+            return delegate.javaClass.getMethod("waitFor").invoke(delegate) as Int
+        }
+    }
 
     init {
         Shizuku.addBinderDeadListener(shizukuDeadListener)

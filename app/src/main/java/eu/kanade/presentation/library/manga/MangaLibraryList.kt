@@ -62,11 +62,11 @@ internal fun MangaLibraryList(
                     lastModified = manga.coverLastModified,
                 ),
                 badge = {
-                    DownloadsBadge(count = libraryItem.downloadCount)
-                    UnviewedBadge(count = libraryItem.unreadCount)
+                    DownloadsBadge(count = libraryItem.badges.downloadCount)
+                    UnviewedBadge(count = libraryItem.badges.unreadCount)
                     LanguageBadge(
-                        isLocal = libraryItem.isLocal,
-                        sourceLanguage = libraryItem.sourceLanguage,
+                        isLocal = libraryItem.badges.isLocal,
+                        sourceLanguage = libraryItem.badges.sourceLanguage,
                     )
                 },
                 onLongClick = { onLongClick(libraryItem.libraryManga) },

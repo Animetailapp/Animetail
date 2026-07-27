@@ -15,7 +15,7 @@ class GetAnimeExtensionSources(
         val isMultiLangSingleSource =
             isMultiSource && extension.sources.map { it.name }.distinct().size == 1
 
-        return preferences.disabledAnimeSources().changes().map { disabledSources ->
+        return preferences.disabledAnimeSources.changes().map { disabledSources ->
             fun AnimeSource.isEnabled() = id.toString() !in disabledSources
 
             extension.sources

@@ -8,7 +8,6 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.extension.anime.interactor.GetAnimeExtensionsByType
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.presentation.components.SEARCH_DEBOUNCE_MILLIS
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
@@ -65,6 +64,7 @@ class AnimeExtensionsScreenModel(
                             } ||
                                 extension.name.contains(input, ignoreCase = true)
                         }
+
                         is AnimeExtension.Installed -> {
                             extension.sources.any {
                                 it.name.contains(input, ignoreCase = true) ||
@@ -80,6 +80,7 @@ class AnimeExtensionsScreenModel(
                             } ||
                                 extension.name.contains(input, ignoreCase = true)
                         }
+
                         is AnimeExtension.Untrusted -> extension.name.contains(
                             input,
                             ignoreCase = true,
@@ -91,7 +92,7 @@ class AnimeExtensionsScreenModel(
 
         screenModelScope.launchIO {
             combine(
-                state.map { it.searchQuery }.distinctUntilChanged().debounce(SEARCH_DEBOUNCE_MILLIS),
+                state.map { it.searchQuery }.distinctUntilChanged().debounce(0.25.seconds),
                 currentDownloads,
                 getExtensions.subscribe(),
             ) { query, downloads, (_updates, _installed, _available, _untrusted) ->
@@ -143,11 +144,11 @@ class AnimeExtensionsScreenModel(
         }
         screenModelScope.launchIO { findAvailableExtensions() }
 
-        preferences.animeExtensionUpdatesCount().changes()
+        preferences.animeExtensionUpdatesCount.changes()
             .onEach { mutableState.update { state -> state.copy(updates = it) } }
             .launchIn(screenModelScope)
 
-        basePreferences.extensionInstaller().changes()
+        basePreferences.extensionInstaller.changes()
             .onEach { mutableState.update { state -> state.copy(installer = it) } }
             .launchIn(screenModelScope)
     }

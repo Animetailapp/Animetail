@@ -28,12 +28,11 @@ class AnimeCategoriesRestorer(
                     val order = nextOrder++
                     animeHandler.awaitOneExecutable {
                         categoriesQueries.insert(it.name, order, it.flags)
-                        categoriesQueries.selectLastInsertedRowId()
                     }
                         .let { id -> it.toCategory(id).copy(order = order) }
                 }
 
-            libraryPreferences.categorizedDisplaySettings().set(
+            libraryPreferences.categorizedDisplaySettings.set(
                 (dbCategories + categories)
                     .distinctBy { it.flags }
                     .size > 1,

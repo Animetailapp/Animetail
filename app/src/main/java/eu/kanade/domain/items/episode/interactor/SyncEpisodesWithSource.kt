@@ -119,6 +119,7 @@ class SyncEpisodesWithSource(
                         downloadManager.isEpisodeDownloaded(
                             dbEpisode.name,
                             dbEpisode.scanlator,
+                            dbEpisode.url,
                             anime.title,
                             anime.source,
                         )
@@ -130,11 +131,22 @@ class SyncEpisodesWithSource(
                         name = episode.name,
                         episodeNumber = episode.episodeNumber,
                         scanlator = episode.scanlator,
+                        summary = episode.summary,
                         sourceOrder = episode.sourceOrder,
                     )
                     if (episode.dateUpload != 0L) {
                         toChangeEpisode = toChangeEpisode.copy(
                             dateUpload = sourceEpisode.dateUpload,
+                        )
+                    }
+                    if (!toChangeEpisode.fillermark) {
+                        toChangeEpisode = toChangeEpisode.copy(
+                            fillermark = sourceEpisode.fillermark,
+                        )
+                    }
+                    if (toChangeEpisode.previewUrl.isNullOrBlank()) {
+                        toChangeEpisode = toChangeEpisode.copy(
+                            previewUrl = sourceEpisode.previewUrl,
                         )
                     }
                     updatedEpisodes.add(toChangeEpisode)
@@ -175,7 +187,7 @@ class SyncEpisodesWithSource(
         val deletedEpisodeNumberDateFetchMap = removedEpisodes.sortedByDescending { it.dateFetch }
             .associate { it.episodeNumber to it.dateFetch }
 
-        val markDuplicateAsRead = libraryPreferences.markDuplicateSeenEpisodeAsSeen().get()
+        val markDuplicateAsRead = libraryPreferences.markDuplicateSeenEpisodeAsSeen.get()
             .contains(LibraryPreferences.MARK_DUPLICATE_EPISODE_SEEN_NEW)
 
         // Date fetch is set in such a way that the upper ones will have bigger value than the lower ones

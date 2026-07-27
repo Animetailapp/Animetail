@@ -55,6 +55,7 @@ fun MangaSourceIcon(
                 modifier = modifier.then(defaultModifier),
             )
         }
+
         icon != null -> {
             Image(
                 bitmap = icon,
@@ -62,6 +63,7 @@ fun MangaSourceIcon(
                 modifier = modifier.then(defaultModifier),
             )
         }
+
         source.id == LocalMangaSource.ID -> {
             Image(
                 painter = painterResource(R.mipmap.ic_local_source),
@@ -69,6 +71,7 @@ fun MangaSourceIcon(
                 modifier = modifier.then(defaultModifier),
             )
         }
+
         else -> {
             Image(
                 painter = painterResource(R.mipmap.ic_default_source),
@@ -96,15 +99,18 @@ fun MangaExtensionIcon(
                     .clip(MaterialTheme.shapes.extraSmall),
             )
         }
+
         is MangaExtension.Installed -> {
             val icon by extension.getIcon(density)
             when (icon) {
                 Result.Loading -> Box(modifier = modifier)
+
                 is Result.Success -> Image(
                     bitmap = (icon as Result.Success<ImageBitmap>).value,
                     contentDescription = null,
                     modifier = modifier,
                 )
+
                 Result.Error -> Image(
                     bitmap = ImageBitmap.imageResource(id = R.mipmap.ic_default_source),
                     contentDescription = null,
@@ -112,6 +118,7 @@ fun MangaExtensionIcon(
                 )
             }
         }
+
         is MangaExtension.Untrusted -> Image(
             imageVector = Icons.Filled.Dangerous,
             contentDescription = null,

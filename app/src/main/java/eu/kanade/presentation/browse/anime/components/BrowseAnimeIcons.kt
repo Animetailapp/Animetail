@@ -55,6 +55,7 @@ fun AnimeSourceIcon(
                 modifier = modifier.then(defaultModifier),
             )
         }
+
         icon != null -> {
             Image(
                 bitmap = icon,
@@ -62,6 +63,7 @@ fun AnimeSourceIcon(
                 modifier = modifier.then(defaultModifier),
             )
         }
+
         source.id == LocalAnimeSource.ID -> {
             Image(
                 painter = painterResource(R.mipmap.ic_local_source),
@@ -69,6 +71,7 @@ fun AnimeSourceIcon(
                 modifier = modifier.then(defaultModifier),
             )
         }
+
         else -> {
             Image(
                 painter = painterResource(R.mipmap.ic_default_source),
@@ -96,15 +99,18 @@ fun AnimeExtensionIcon(
                     .clip(MaterialTheme.shapes.extraSmall),
             )
         }
+
         is AnimeExtension.Installed -> {
             val icon by extension.getIcon(density)
             when (icon) {
                 is Result.Loading -> Box(modifier = modifier)
+
                 is Result.Success -> Image(
                     bitmap = (icon as Result.Success<ImageBitmap>).value,
                     contentDescription = null,
                     modifier = modifier,
                 )
+
                 Result.Error -> Image(
                     bitmap = ImageBitmap.imageResource(id = R.mipmap.ic_default_source),
                     contentDescription = null,
@@ -112,6 +118,7 @@ fun AnimeExtensionIcon(
                 )
             }
         }
+
         is AnimeExtension.Untrusted -> Image(
             imageVector = Icons.Filled.Dangerous,
             contentDescription = null,

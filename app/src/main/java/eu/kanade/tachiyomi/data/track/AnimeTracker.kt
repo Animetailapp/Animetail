@@ -4,15 +4,16 @@ import android.app.Application
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
 import eu.kanade.domain.track.anime.model.toDomainTrack
+import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.collections.immutable.ImmutableList
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -27,7 +28,7 @@ interface AnimeTracker {
     // Common functions
     fun getCompletionStatus(): Long
 
-    fun getScoreList(): ImmutableList<String>
+    fun getScoreList(): List<String>
 
     fun indexToScore(index: Int): Double {
         return index.toDouble()
@@ -56,14 +57,16 @@ interface AnimeTracker {
     suspend fun refresh(track: AnimeTrack): AnimeTrack
 
     // TODO: move this to an interactor, and update all trackers based on common data
-    suspend fun register(item: AnimeTrack, animeId: Long) {
-        item.anime_id = animeId
+    // AM -->
+    suspend fun register(item: AnimeTrack, anime: Anime) {
+        item.anime_id = anime.id
         try {
-            addTracks.bind(this, item, animeId)
+            addTracks.bind(this, item, anime)
         } catch (e: Throwable) {
             withUIContext { Injekt.get<Application>().toast(e.message) }
         }
     }
+    // <-- AM
 
     suspend fun setRemoteAnimeStatus(track: AnimeTrack, status: Long) {
         track.status = status
@@ -110,6 +113,17 @@ interface AnimeTracker {
 
     suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? {
         throw NotImplementedError("Not implemented.")
+    }
+
+    /**
+     * Fetch cast and staff credits for a given title.
+     * Default implementation returns null. Trackers that can provide cast should override.
+     *
+     * @param title Title to lookup for credits (may be null).
+     * @return List of [Credit] or null when not available.
+     */
+    suspend fun fetchCastByTitle(title: String?): List<Credit>? {
+        return null
     }
 
     private suspend fun updateRemote(track: AnimeTrack): Unit = withIOContext {

@@ -18,7 +18,8 @@
 -keep,allowoptimization class rx.** { public protected *; }
 -keep,allowoptimization class app.cash.quickjs.** { public protected *; }
 -keep,allowoptimization class uy.kohesive.injekt.** { public protected *; }
--keep,allowoptimization class is.xyz.mpv.** { public protected *; }
+-keep,allowoptimization class com.squareup.zstd.** { public protected *; }
+-keep,allowoptimization class is.xyz.mpv.** { *; }
 -keep,allowoptimization class com.arthenica.** { public protected *; }
 
 # From extensions-lib
@@ -29,6 +30,10 @@
 -keep,allowoptimization class eu.kanade.tachiyomi.network.RequestsKt { public protected *; }
 -keep,allowoptimization class eu.kanade.tachiyomi.AppInfo { public protected *; }
 -keep,allowoptimization class eu.kanade.tachiyomi.torrentutils.** { public protected *; }
+-keepclassmembers class * implements java.io.Serializable {
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}
 
 ##---------------Begin: proguard configuration for RxJava 1.x  ----------
 -dontwarn sun.misc.**
@@ -81,7 +86,6 @@
 
 # XmlUtil
 -keep public enum nl.adaptivity.xmlutil.EventType { *; }
-
 # Firebase
 -keep class com.google.firebase.installations.** { *; }
 -keep interface com.google.firebase.installations.** { *; }
@@ -109,7 +113,16 @@
 -dontwarn org.ietf.jgss.GSSName
 -dontwarn org.ietf.jgss.Oid
 
+# Optional OEM WindowManager extension APIs accessed reflectively by androidx.window
+-dontwarn androidx.window.extensions.**
+-dontwarn androidx.window.sidecar.**
+
 # Apache Commons Compress
 -keep class * extends org.apache.commons.compress.archivers.zip.ZipExtraField { <init>(); }
 
--keep public enum nl.adaptivity.xmlutil.EventType { *; }
+# Discord RPC Manager JNI Calls
+-keep class eu.kanade.tachiyomi.data.connections.discord.DiscordRpcManager { *; }
+-keep class com.discord.socialsdk.** { *; }
+
+# TorrServer JNI Calls
+-keep class xyz.secozzi.torrserver.** { *; }

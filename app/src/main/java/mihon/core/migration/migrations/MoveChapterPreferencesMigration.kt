@@ -17,18 +17,18 @@ class MoveChapterPreferencesMigration : Migration {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
         val preferences = listOf(
-            libraryPreferences.filterChapterByRead(),
-            libraryPreferences.filterChapterByDownloaded(),
-            libraryPreferences.filterChapterByBookmarked(),
-            libraryPreferences.sortChapterBySourceOrNumber(),
-            libraryPreferences.displayChapterByNameOrNumber(),
-            libraryPreferences.sortChapterByAscendingOrDescending(),
-            libraryPreferences.filterEpisodeBySeen(),
-            libraryPreferences.filterEpisodeByDownloaded(),
-            libraryPreferences.filterEpisodeByBookmarked(),
-            libraryPreferences.sortEpisodeBySourceOrNumber(),
-            libraryPreferences.displayEpisodeByNameOrNumber(),
-            libraryPreferences.sortEpisodeByAscendingOrDescending(),
+            libraryPreferences.filterChapterByRead,
+            libraryPreferences.filterChapterByDownloaded,
+            libraryPreferences.filterChapterByBookmarked,
+            libraryPreferences.sortChapterBySourceOrNumber,
+            libraryPreferences.displayChapterByNameOrNumber,
+            libraryPreferences.sortChapterByAscendingOrDescending,
+            libraryPreferences.filterEpisodeBySeen,
+            libraryPreferences.filterEpisodeByDownloaded,
+            libraryPreferences.filterEpisodeByBookmarked,
+            libraryPreferences.sortEpisodeBySourceOrNumber,
+            libraryPreferences.displayEpisodeByNameOrNumber,
+            libraryPreferences.sortEpisodeByAscendingOrDescending,
         )
 
         prefs.edit {

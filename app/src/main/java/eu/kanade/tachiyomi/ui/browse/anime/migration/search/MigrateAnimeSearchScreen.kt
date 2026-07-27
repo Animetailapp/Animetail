@@ -8,6 +8,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.anime.MigrateAnimeSearchScreen
 import eu.kanade.presentation.util.Screen
+import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 
 class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
@@ -40,10 +41,18 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
                     AnimeSourceSearchScreen(dialogState.anime!!, it.id, state.searchQuery),
                 )
             },
-            onClickItem = {
-                dialogScreenModel.setDialog(
-                    (AnimeMigrateSearchScreenDialogScreenModel.Dialog.Migrate(it)),
-                )
+            onClickItem = { targetAnime ->
+                val migrationListScreen = navigator.items
+                    .filterIsInstance<mihon.feature.migration.list.AnimeMigrationListScreen>()
+                    .firstOrNull()
+                if (migrationListScreen != null) {
+                    migrationListScreen.addMatchOverride(animeId, targetAnime.id)
+                    navigator.pop()
+                } else {
+                    dialogScreenModel.setDialog(
+                        (AnimeMigrateSearchScreenDialogScreenModel.Dialog.Migrate(targetAnime)),
+                    )
+                }
             },
             onLongClickItem = { navigator.push(AnimeScreen(it.id, true)) },
         )
@@ -58,6 +67,7 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
                     onClickTitle = {
                         navigator.push(AnimeScreen(dialog.anime.id, true))
                     },
+                    onClickSeasons = { navigator.push(MigrateSeasonSelectScreen(dialogState.anime!!, dialog.anime)) },
                     onPopScreen = {
                         if (navigator.lastItem is AnimeScreen) {
                             val lastItem = navigator.lastItem
@@ -69,6 +79,7 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
                     },
                 )
             }
+
             else -> {}
         }
     }

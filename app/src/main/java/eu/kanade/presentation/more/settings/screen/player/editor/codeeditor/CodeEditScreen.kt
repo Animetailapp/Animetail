@@ -69,6 +69,7 @@ class CodeEditScreen(private val filePath: String) : Screen() {
 
         when (dialogShown) {
             null -> {}
+
             CodeEditDialogs.GoBack -> {
                 UnsavedChangesDialog(
                     onDismissRequest = screenModel::dismissDialog,
@@ -110,11 +111,13 @@ class CodeEditScreen(private val filePath: String) : Screen() {
                 CodeEditScreenState.Loading -> {
                     LoadingScreen()
                 }
+
                 is CodeEditScreenState.Error -> {
                     EmptyScreen(
                         message = (state as CodeEditScreenState.Error).throwable.message ?: "Unknown exception",
                     )
                 }
+
                 is CodeEditScreenState.Success -> {
                     CodeEditorContent(
                         state = state as CodeEditScreenState.Success,

@@ -16,9 +16,14 @@ actual class LocalMangaSourceFileSystem(
     }
 
     actual fun getMangaDirectory(name: String): UniFile? {
-        return getBaseDirectory()
-            ?.findFile(name)
-            ?.takeIf { it.isDirectory }
+        return name
+            .split('/', '\\')
+            .filter { it.isNotBlank() }
+            .fold(getBaseDirectory()) { directory, part ->
+                directory
+                    ?.findFile(part)
+                    ?.takeIf { it.isDirectory }
+            }
     }
 
     actual fun getFilesInMangaDirectory(name: String): List<UniFile> {

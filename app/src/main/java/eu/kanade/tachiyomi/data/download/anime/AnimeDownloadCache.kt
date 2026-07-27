@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
@@ -64,17 +65,17 @@ import kotlin.time.Duration.Companion.seconds
  */
 class AnimeDownloadCache(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val provider: AnimeDownloadProvider = Injekt.get(),
     private val sourceManager: AnimeSourceManager = Injekt.get(),
     private val extensionManager: AnimeExtensionManager = Injekt.get(),
     private val storageManager: StorageManager = Injekt.get(),
 ) {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     private val _changes: Channel<Unit> = Channel(Channel.UNLIMITED)
     val changes = _changes.receiveAsFlow()
         .onStart { emit(Unit) }
+        .flowOn(Dispatchers.IO)
         .shareIn(scope, SharingStarted.Lazily, 1)
 
     /**
@@ -95,7 +96,7 @@ class AnimeDownloadCache(
         .stateIn(scope, SharingStarted.WhileSubscribed(), false)
 
     private val diskCacheFile: File
-        get() = File(context.cacheDir, "dl_index_cache_v3")
+        get() = File(context.cacheDir, "dl_anime_index_cache_v3")
 
     private val rootDownloadsDirMutex = Mutex()
     private var rootDownloadsDir = RootDirectory(storageManager.getDownloadsDirectory())
@@ -135,13 +136,14 @@ class AnimeDownloadCache(
     fun isEpisodeDownloaded(
         episodeName: String,
         episodeScanlator: String?,
+        episodeUrl: String,
         animeTitle: String,
         sourceId: Long,
         skipCache: Boolean,
     ): Boolean {
         if (skipCache) {
             val source = sourceManager.getOrStub(sourceId)
-            return provider.findEpisodeDir(episodeName, episodeScanlator, animeTitle, source) != null
+            return provider.findEpisodeDir(episodeName, episodeScanlator, episodeUrl, animeTitle, source) != null
         }
 
         renewCache()
@@ -153,6 +155,7 @@ class AnimeDownloadCache(
                 return provider.getValidEpisodeDirNames(
                     episodeName,
                     episodeScanlator,
+                    episodeUrl,
                 ).any { it in animeDir.episodeDirs }
             }
         }
@@ -259,7 +262,7 @@ class AnimeDownloadCache(
         rootDownloadsDirMutex.withLock {
             val sourceDir = rootDownloadsDir.sourceDirs[anime.source] ?: return
             val animeDir = sourceDir.animeDirs[provider.getAnimeDirName(anime.title)] ?: return
-            provider.getValidEpisodeDirNames(episode.name, episode.scanlator).forEach {
+            provider.getValidEpisodeDirNames(episode.name, episode.scanlator, episode.url).forEach {
                 if (it in animeDir.episodeDirs) {
                     animeDir.episodeDirs -= it
                 }
@@ -280,7 +283,7 @@ class AnimeDownloadCache(
             val sourceDir = rootDownloadsDir.sourceDirs[anime.source] ?: return
             val animeDir = sourceDir.animeDirs[provider.getAnimeDirName(anime.title)] ?: return
             episodes.forEach { episode ->
-                provider.getValidEpisodeDirNames(episode.name, episode.scanlator).forEach {
+                provider.getValidEpisodeDirNames(episode.name, episode.scanlator, episode.url).forEach {
                     if (it in animeDir.episodeDirs) {
                         animeDir.episodeDirs -= it
                     }
@@ -303,6 +306,22 @@ class AnimeDownloadCache(
             if (sourceDir.animeDirs.containsKey(animeDirName)) {
                 sourceDir.animeDirs -= animeDirName
             }
+        }
+
+        notifyChanges()
+    }
+
+    suspend fun renameAnime(anime: Anime, oldDir: UniFile, newTitle: String) {
+        rootDownloadsDirMutex.withLock {
+            val sourceDir = rootDownloadsDir.sourceDirs[anime.source] ?: return
+            val oldName = oldDir.name ?: provider.getAnimeDirName(anime.title)
+            val animeDir = sourceDir.animeDirs[oldName] ?: return
+            val newName = provider.getAnimeDirName(newTitle)
+
+            if (oldName == newName) return
+
+            sourceDir.animeDirs -= oldName
+            sourceDir.animeDirs += newName to animeDir
         }
 
         notifyChanges()
@@ -337,63 +356,69 @@ class AnimeDownloadCache(
                 _isInitializing.emit(true)
             }
 
-            // Try to wait until extensions and sources have loaded
-            var sources = emptyList<AnimeSource>()
-            withTimeoutOrNull(30.seconds) {
-                extensionManager.isInitialized.first { it }
-                sourceManager.isInitialized.first { it }
+            try {
+                // Try to wait until extensions and sources have loaded
+                var sources = emptyList<AnimeSource>()
+                withTimeoutOrNull(30.seconds) {
+                    extensionManager.isInitialized.first { it }
+                    sourceManager.isInitialized.first { it }
 
-                sources = getSources()
-            }
+                    sources = getSources()
+                }
 
-            val sourceMap = sources.associate {
-                provider.getSourceDirName(it).lowercase() to it.id
-            }
+                val sourceMap = sources.associate {
+                    provider.getSourceDirName(it).lowercase() to it.id
+                }
 
-            rootDownloadsDirMutex.withLock {
-                val updatedRootDir = RootDirectory(storageManager.getDownloadsDirectory())
+                rootDownloadsDirMutex.withLock {
+                    val updatedRootDir = RootDirectory(storageManager.getDownloadsDirectory())
 
-                updatedRootDir.sourceDirs = updatedRootDir.dir?.listFiles().orEmpty()
-                    .filter { it.isDirectory && !it.name.isNullOrBlank() }
-                    .mapNotNull { dir ->
-                        val sourceId = sourceMap[dir.name!!.lowercase()]
-                        sourceId?.let { it to SourceDirectory(dir) }
-                    }
-                    .toMap()
+                    updatedRootDir.sourceDirs = updatedRootDir.dir?.listFiles().orEmpty()
+                        .filter { it.isDirectory && !it.name.isNullOrBlank() }
+                        .mapNotNull { dir ->
+                            val sourceId = sourceMap[dir.name!!.lowercase()]
+                            sourceId?.let { it to SourceDirectory(dir) }
+                        }
+                        .toMap()
 
-                updatedRootDir.sourceDirs.values.map { sourceDir ->
-                    async {
-                        sourceDir.animeDirs = sourceDir.dir?.listFiles().orEmpty()
-                            .filter { it.isDirectory && !it.name.isNullOrBlank() }
-                            .associate { it.name!! to AnimeDirectory(it) }
-                        sourceDir.animeDirs.values.forEach { animeDir ->
-                            val episodeDirs = animeDir.dir?.listFiles().orEmpty()
-                                .mapNotNull {
-                                    when {
-                                        // Ignore incomplete downloads
-                                        it.name?.endsWith(AnimeDownloader.TMP_DIR_SUFFIX) == true -> null
-                                        // Folder of videos
-                                        it.isDirectory -> it.name
-                                        // MP4 files
-                                        it.isFile && it.extension == "mp4" -> it.nameWithoutExtension
-                                        // MKV files
-                                        it.isFile && it.extension == "mkv" -> it.nameWithoutExtension
-                                        // Anything else is irrelevant
-                                        else -> null
+                    updatedRootDir.sourceDirs.values.map { sourceDir ->
+                        async {
+                            sourceDir.animeDirs = sourceDir.dir?.listFiles().orEmpty()
+                                .filter { it.isDirectory && !it.name.isNullOrBlank() }
+                                .associate { it.name!! to AnimeDirectory(it) }
+                            sourceDir.animeDirs.values.forEach { animeDir ->
+                                val episodeDirs = animeDir.dir?.listFiles().orEmpty()
+                                    .mapNotNull {
+                                        when {
+                                            // Ignore incomplete downloads
+                                            it.name?.endsWith(AnimeDownloader.TMP_DIR_SUFFIX) == true -> null
+
+                                            // Folder of videos
+                                            it.isDirectory -> it.name
+
+                                            // MP4 files
+                                            it.isFile && it.extension == "mp4" -> it.nameWithoutExtension
+
+                                            // MKV files
+                                            it.isFile && it.extension == "mkv" -> it.nameWithoutExtension
+
+                                            // Anything else is irrelevant
+                                            else -> null
+                                        }
                                     }
-                                }
-                                .toMutableSet()
+                                    .toMutableSet()
 
-                            animeDir.episodeDirs = episodeDirs
+                                animeDir.episodeDirs = episodeDirs
+                            }
                         }
                     }
+                        .awaitAll()
+
+                    rootDownloadsDir = updatedRootDir
                 }
-                    .awaitAll()
-
-                rootDownloadsDir = updatedRootDir
+            } finally {
+                _isInitializing.value = false
             }
-
-            _isInitializing.emit(false)
         }.also {
             it.invokeOnCompletion(onCancelling = true) { exception ->
                 if (exception != null && exception !is CancellationException) {

@@ -24,8 +24,10 @@ data class AnimeSource(
     val key: () -> String = {
         when {
             isUsedLast -> "$id-lastused"
+
             // SY -->
             category != null -> "$id-$category"
+
             // SY <--
             else -> "$id"
         }

@@ -11,8 +11,6 @@ import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.source.MangaSource
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import okhttp3.Dns
 import okhttp3.OkHttpClient
 import tachiyomi.domain.entries.manga.model.Manga
@@ -54,7 +52,7 @@ class Komga(id: Long) : BaseTracker(id, "Komga"), EnhancedMangaTracker, MangaTra
 
     override fun getCompletionStatus(): Long = COMPLETED
 
-    override fun getScoreList(): ImmutableList<String> = persistentListOf()
+    override fun getScoreList(): List<String> = listOf()
 
     override fun displayScore(track: DomainTrack): String = ""
 

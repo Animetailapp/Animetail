@@ -7,7 +7,8 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import tachiyomi.data.handlers.manga.MangaDatabaseHandler
+import tachiyomi.data.Database
+import tachiyomi.data.subscribeToList
 import tachiyomi.domain.source.manga.model.MangaSourceWithCount
 import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.domain.source.manga.repository.MangaSourceRepository
@@ -17,7 +18,7 @@ import tachiyomi.domain.source.manga.model.Source as DomainSource
 
 class MangaSourceRepositoryImpl(
     private val sourceManager: MangaSourceManager,
-    private val handler: MangaDatabaseHandler,
+    private val database: Database,
 ) : MangaSourceRepository {
 
     override fun getMangaSources(): Flow<List<DomainSource>> {
@@ -39,10 +40,12 @@ class MangaSourceRepositoryImpl(
     }
 
     override fun getMangaSourcesWithFavoriteCount(): Flow<List<Pair<DomainSource, Long>>> {
-        return combine(
-            handler.subscribeToList { mangasQueries.getSourceIdWithFavoriteCount() },
-            sourceManager.catalogueSources,
-        ) { sourceIdWithFavoriteCount, _ -> sourceIdWithFavoriteCount }
+        val sourceIdWithFavoriteCountFlow = database.mangasQueries
+            .getSourceIdWithFavoriteCount()
+            .subscribeToList()
+        return combine(sourceIdWithFavoriteCountFlow, sourceManager.catalogueSources) { sourceIdWithFavoriteCount, _ ->
+            sourceIdWithFavoriteCount
+        }
             .map {
                 it.map { (sourceId, count) ->
                     val source = sourceManager.getOrStub(sourceId)
@@ -55,17 +58,18 @@ class MangaSourceRepositoryImpl(
     }
 
     override fun getMangaSourcesWithNonLibraryManga(): Flow<List<MangaSourceWithCount>> {
-        val sourceIdWithNonLibraryManga =
-            handler.subscribeToList { mangasQueries.getSourceIdsWithNonLibraryManga() }
-        return sourceIdWithNonLibraryManga.map { sourceId ->
-            sourceId.map { (sourceId, count) ->
-                val source = sourceManager.getOrStub(sourceId)
-                val domainSource = mapSourceToDomainSource(source).copy(
-                    isStub = source is StubMangaSource,
-                )
-                MangaSourceWithCount(domainSource, count)
+        return database.mangasQueries
+            .getSourceIdsWithNonLibraryManga()
+            .subscribeToList()
+            .map { sourceId ->
+                sourceId.map { (sourceId, count) ->
+                    val source = sourceManager.getOrStub(sourceId)
+                    val domainSource = mapSourceToDomainSource(source).copy(
+                        isStub = source is StubMangaSource,
+                    )
+                    MangaSourceWithCount(domainSource, count)
+                }
             }
-        }
     }
 
     override fun searchManga(

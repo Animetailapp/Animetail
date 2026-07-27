@@ -22,7 +22,7 @@ class AnimeWidgetManager(
     fun Context.init(scope: LifecycleCoroutineScope) {
         combine(
             getUpdates.subscribe(seen = false, after = BaseAnimeUpdatesGridGlanceWidget.DateLimit.toEpochMilli()),
-            securityPreferences.useAuthenticator().changes(),
+            securityPreferences.useAuthenticator.changes(),
             transform = { a, b -> a to b },
         )
             .distinctUntilChanged { old, new ->
@@ -37,7 +37,7 @@ class AnimeWidgetManager(
                     logcat(LogPriority.ERROR, e) { "Failed to update widget" }
                 }
             }
-            .flowOn(Dispatchers.IO)
+            .flowOn(Dispatchers.Main)
             .launchIn(scope)
     }
 }

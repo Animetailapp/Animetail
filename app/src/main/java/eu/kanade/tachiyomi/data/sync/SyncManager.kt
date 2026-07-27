@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.data.sync
 
 import android.content.Context
 import android.net.Uri
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import data.Chapters
 import dataanime.Episodes
 import eu.kanade.domain.sync.SyncPreferences
@@ -166,7 +167,7 @@ class SyncManager(
         }
 
         // Stop the sync early if the remote backup is null or empty
-        if (remoteBackup.backupManga?.size == 0 && remoteBackup.backupAnime?.size == 0) {
+        if (remoteBackup.backupManga.size == 0 && remoteBackup.backupAnime.size == 0) {
             notifier.showSyncError("No data found on remote server.")
             return
         }
@@ -267,7 +268,7 @@ class SyncManager(
             chaptersQueries.getChaptersByMangaId(
                 localManga.id,
                 0,
-            ).executeAsList()
+            ).awaitAsList()
         }
         val localCategories = getMangaCategories.await(localManga.id).map { it.order }
 
@@ -288,7 +289,7 @@ class SyncManager(
 
     @Suppress("ReturnCount")
     private suspend fun isAnimeDifferent(localAnime: Anime, remoteAnime: BackupAnime): Boolean {
-        val localEpisodes = animeHandler.await { episodesQueries.getEpisodesByAnimeId(localAnime.id).executeAsList() }
+        val localEpisodes = animeHandler.await { episodesQueries.getEpisodesByAnimeId(localAnime.id).awaitAsList() }
         val localCategories = getAnimeCategories.await(localAnime.id).map { it.order }
 
         if (areEpisodesDifferent(localEpisodes, remoteAnime.episodes)) {
@@ -384,6 +385,7 @@ class SyncManager(
                             logcat(LogPriority.DEBUG, logTag) { "Already up-to-date favorite: ${remoteManga.title}" }
                         }
                     }
+
                     // Handle non-favorites
                     !remoteManga.favorite -> {
                         logcat(LogPriority.DEBUG, logTag) { "Adding to non-favorites: ${remoteManga.title}" }
@@ -430,6 +432,7 @@ class SyncManager(
                             logcat(LogPriority.DEBUG, logTag) { "Already up-to-date favorite: ${remoteAnime.title}" }
                         }
                     }
+
                     // Handle non-favorites
                     !remoteAnime.favorite -> {
                         logcat(LogPriority.DEBUG, logTag) { "Adding to non-favorites: ${remoteAnime.title}" }
@@ -463,7 +466,7 @@ class SyncManager(
             localMangaMap[key]?.let { localManga ->
                 if (localManga.favorite != nonFavorite.favorite) {
                     val updatedManga = localManga.copy(favorite = nonFavorite.favorite)
-                    mangaRestorer.updateManga(updatedManga)
+                    mangaRestorer.updateMangaInDb(updatedManga)
                 }
             }
         }

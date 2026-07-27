@@ -17,10 +17,6 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
 import eu.kanade.tachiyomi.util.lang.toLocalDate
-import kotlinx.collections.immutable.PersistentList
-import kotlinx.collections.immutable.mutate
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -65,9 +61,9 @@ class AnimeUpdatesScreenModel(
     private val _events: Channel<Event> = Channel(Int.MAX_VALUE)
     val events: Flow<Event> = _events.receiveAsFlow()
 
-    val lastUpdated by libraryPreferences.lastUpdatedTimestamp().asState(screenModelScope)
+    val lastUpdated by libraryPreferences.lastUpdatedTimestamp.asState(screenModelScope)
 
-    val useExternalDownloader = downloadPreferences.useExternalDownloader().get()
+    val useExternalDownloader = downloadPreferences.useExternalDownloader.get()
 
     // First and last selected index in list
     private val selectedPositions: Array<Int> = arrayOf(-1, -1)
@@ -78,7 +74,7 @@ class AnimeUpdatesScreenModel(
             // Set date limit for recent episodes
 
             val limit = ZonedDateTime.now().minusMonths(3).toInstant()
-            combine(
+            combine<List<AnimeUpdatesWithRelations>, Unit, List<AnimeDownload>, List<AnimeUpdatesWithRelations>>(
                 getUpdates.subscribe(limit).distinctUntilChanged(),
                 downloadCache.changes,
                 downloadManager.queueState,
@@ -104,13 +100,14 @@ class AnimeUpdatesScreenModel(
         }
     }
 
-    private fun List<AnimeUpdatesWithRelations>.toUpdateItems(): PersistentList<AnimeUpdatesItem> {
+    private fun List<AnimeUpdatesWithRelations>.toUpdateItems(): List<AnimeUpdatesItem> {
         return this
             .map { update ->
                 val activeDownload = downloadManager.getQueuedDownloadOrNull(update.episodeId)
                 val downloaded = downloadManager.isEpisodeDownloaded(
                     update.episodeName,
                     update.scanlator,
+                    update.episodeUrl,
                     update.animeTitle,
                     update.sourceId,
                 )
@@ -129,7 +126,7 @@ class AnimeUpdatesScreenModel(
                     // <-- AM (FILE_SIZE)
                 )
             }
-            .toPersistentList()
+            .toList()
     }
 
     fun updateLibrary(): Boolean {
@@ -147,15 +144,15 @@ class AnimeUpdatesScreenModel(
      */
     private fun updateDownloadState(download: AnimeDownload) {
         mutableState.update { state ->
-            val newItems = state.items.mutate { list ->
-                val modifiedIndex = list.indexOfFirst { it.update.episodeId == download.episode.id }
-                if (modifiedIndex < 0) return@mutate
-
-                val item = list[modifiedIndex]
-                list[modifiedIndex] = item.copy(
-                    downloadStateProvider = { download.status },
-                    downloadProgressProvider = { download.progress },
-                )
+            val newItems = state.items.toMutableList().apply {
+                val modifiedIndex = indexOfFirst { it.update.episodeId == download.episode.id }
+                if (modifiedIndex >= 0) {
+                    val item = this[modifiedIndex]
+                    this[modifiedIndex] = item.copy(
+                        downloadStateProvider = { download.status },
+                        downloadProgressProvider = { download.progress },
+                    )
+                }
             }
             state.copy(items = newItems)
         }
@@ -171,17 +168,21 @@ class AnimeUpdatesScreenModel(
                         downloadManager.startDownloads()
                     }
                 }
+
                 EpisodeDownloadAction.START_NOW -> {
                     val episodeId = items.singleOrNull()?.update?.episodeId ?: return@launch
                     startDownloadingNow(episodeId)
                 }
+
                 EpisodeDownloadAction.CANCEL -> {
                     val episodeId = items.singleOrNull()?.update?.episodeId ?: return@launch
                     cancelDownload(episodeId)
                 }
+
                 EpisodeDownloadAction.DELETE -> {
                     deleteEpisodes(items)
                 }
+
                 EpisodeDownloadAction.SHOW_QUALITIES -> {
                     val update = items.singleOrNull()?.update ?: return@launch
                     showQualitiesDialog(update)
@@ -191,7 +192,7 @@ class AnimeUpdatesScreenModel(
         }
     }
 
-    private fun startDownloadingNow(episodeId: Long) {
+    private suspend fun startDownloadingNow(episodeId: Long) {
         downloadManager.startDownloadNow(episodeId)
     }
 
@@ -227,6 +228,20 @@ class AnimeUpdatesScreenModel(
             updates
                 .filterNot { it.update.bookmark == bookmark }
                 .map { EpisodeUpdate(id = it.update.episodeId, bookmark = bookmark) }
+                .let { updateEpisode.awaitAll(it) }
+        }
+        toggleAllSelection(false)
+    }
+
+    /**
+     * Fillermarks the given list of episodes.
+     * @param updates the list of episodes to fillermark.
+     */
+    fun fillermarkUpdates(updates: List<AnimeUpdatesItem>, fillermark: Boolean) {
+        screenModelScope.launchIO {
+            updates
+                .filterNot { it.update.fillermark == fillermark }
+                .map { EpisodeUpdate(id = it.update.episodeId, fillermark = fillermark) }
                 .let { updateEpisode.awaitAll(it) }
         }
         toggleAllSelection(false)
@@ -345,7 +360,7 @@ class AnimeUpdatesScreenModel(
                     }
                 }
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems.toList())
         }
     }
 
@@ -355,7 +370,7 @@ class AnimeUpdatesScreenModel(
                 selectedEpisodeIds.addOrRemove(it.update.episodeId, selected)
                 it.copy(selected = selected)
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems.toList())
         }
 
         selectedPositions[0] = -1
@@ -368,7 +383,7 @@ class AnimeUpdatesScreenModel(
                 selectedEpisodeIds.addOrRemove(it.update.episodeId, !it.selected)
                 it.copy(selected = !it.selected)
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems.toList())
         }
         selectedPositions[0] = -1
         selectedPositions[1] = -1
@@ -379,13 +394,13 @@ class AnimeUpdatesScreenModel(
     }
 
     fun resetNewUpdatesCount() {
-        libraryPreferences.newAnimeUpdatesCount().set(0)
+        libraryPreferences.newAnimeUpdatesCount.set(0)
     }
 
     @Immutable
     data class State(
         val isLoading: Boolean = true,
-        val items: PersistentList<AnimeUpdatesItem> = persistentListOf(),
+        val items: List<AnimeUpdatesItem> = listOf(),
         val dialog: Dialog? = null,
     ) {
         val selected = items.filter { it.selected }
@@ -399,6 +414,7 @@ class AnimeUpdatesScreenModel(
                     val afterDate = after?.item?.update?.dateFetch?.toLocalDate()
                     when {
                         beforeDate != afterDate && afterDate != null -> AnimeUpdatesUiModel.Header(afterDate)
+
                         // Return null to avoid adding a separator between two items.
                         else -> null
                     }

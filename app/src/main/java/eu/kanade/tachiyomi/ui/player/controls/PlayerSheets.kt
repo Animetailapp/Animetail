@@ -22,6 +22,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import dev.vivvvek.seeker.Segment
+import eu.kanade.tachiyomi.ui.player.ArtType
 import eu.kanade.tachiyomi.ui.player.Decoder
 import eu.kanade.tachiyomi.ui.player.Panels
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel.VideoTrack
@@ -34,6 +35,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.PlaybackSpeedShe
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ScreenshotSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.SubtitlesSheet
+import `is`.xyz.mpv.MPV
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.domain.custombuttons.model.CustomButton
@@ -41,6 +43,7 @@ import java.io.InputStream
 
 @Composable
 fun PlayerSheets(
+    mpv: MPV,
     sheetShown: Sheets,
 
     // subtitles sheet
@@ -83,10 +86,11 @@ fun PlayerSheets(
     buttons: ImmutableList<CustomButton>,
 
     // Screenshot sheet
+    isLocalSource: Boolean,
     showSubtitles: Boolean,
     onToggleShowSubtitles: (Boolean) -> Unit,
     cachePath: String,
-    onSetAsCover: (() -> InputStream) -> Unit,
+    onSetAsArt: (ArtType, (() -> InputStream)) -> Unit,
     onShare: (() -> InputStream) -> Unit,
     onSave: (() -> InputStream) -> Unit,
     takeScreenshot: (String, Boolean) -> InputStream?,
@@ -98,6 +102,7 @@ fun PlayerSheets(
 ) {
     when (sheetShown) {
         Sheets.None -> {}
+
         Sheets.SubtitleTracks -> {
             val subtitlesPicker = rememberLauncherForActivityResult(
                 ActivityResultContracts.OpenDocument(),
@@ -160,6 +165,7 @@ fun PlayerSheets(
 
         Sheets.More -> {
             MoreSheet(
+                mpv = mpv,
                 selectedDecoder = decoder,
                 onSelectDecoder = onUpdateDecoder,
                 remainingTime = sleepTimerTimeRemaining,
@@ -172,7 +178,8 @@ fun PlayerSheets(
 
         Sheets.PlaybackSpeed -> {
             PlaybackSpeedSheet(
-                speed,
+                mpv = mpv,
+                speed = speed,
                 onSpeedChange = onSpeedChange,
                 onDismissRequest = onDismissRequest,
             )
@@ -180,11 +187,12 @@ fun PlayerSheets(
 
         Sheets.Screenshot -> {
             ScreenshotSheet(
+                isLocalSource = isLocalSource,
                 hasSubTracks = subtitles.isNotEmpty(),
                 showSubtitles = showSubtitles,
                 onToggleShowSubtitles = onToggleShowSubtitles,
                 cachePath = cachePath,
-                onSetAsCover = onSetAsCover,
+                onSetAsArt = onSetAsArt,
                 onShare = onShare,
                 onSave = onSave,
                 takeScreenshot = takeScreenshot,

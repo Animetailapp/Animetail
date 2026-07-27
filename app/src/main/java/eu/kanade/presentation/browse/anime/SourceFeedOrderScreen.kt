@@ -58,6 +58,7 @@ fun SourceFeedOrderScreen(
     ) { paddingValues ->
         when {
             state.isLoading -> LoadingScreen()
+
             state.items
                 .filterIsInstance<SourceFeedUI.SourceSavedSearch>()
                 .isEmpty() -> EmptyScreen(

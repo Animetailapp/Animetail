@@ -15,7 +15,7 @@ class GetExtensionSources(
         val isMultiLangSingleSource =
             isMultiSource && extension.sources.map { it.name }.distinct().size == 1
 
-        return preferences.disabledMangaSources().changes().map { disabledSources ->
+        return preferences.disabledMangaSources.changes().map { disabledSources ->
             fun MangaSource.isEnabled() = id.toString() !in disabledSources
 
             extension.sources

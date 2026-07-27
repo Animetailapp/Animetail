@@ -51,6 +51,15 @@ interface AnimeSource {
     }
 
     /**
+     * Get all the available seasons for an anime
+     *
+     * @since extensions-lib 16
+     * @param anime the anime to fetch seasons for.
+     * @return the anime list for the anime.
+     */
+    suspend fun getSeasonList(anime: SAnime): List<SAnime>
+
+    /**
      * Get the list of hoster for an episode. The first hoster in the list should
      * be the preferred hoster.
      *
@@ -104,6 +113,7 @@ interface AnimeSource {
         throw IllegalStateException("Not used")
 
     // KMK -->
+
     /**
      * Get all the available related animes for a anime.
      *

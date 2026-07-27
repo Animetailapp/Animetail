@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import kotlinx.coroutines.CoroutineScope
 import mihon.core.archive.archiveReader
 import mihon.core.archive.epubReader
 import tachiyomi.core.common.i18n.stringResource
@@ -24,6 +25,7 @@ import uy.kohesive.injekt.injectLazy
  */
 class ChapterLoader(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val downloadManager: MangaDownloadManager,
     private val downloadProvider: MangaDownloadProvider,
     private val manga: Manga,
@@ -57,7 +59,7 @@ class ChapterLoader(
 
                 // If the chapter is partially read, set the starting page to the last the user read
                 // otherwise use the requested page.
-                if (!chapter.chapter.read || readerPreferences.preserveReadingPosition().get() || page != null) {
+                if (!chapter.chapter.read || readerPreferences.preserveReadingPosition.get() || page != null) {
                     chapter.requestedPage = page ?: chapter.chapter.last_page_read
                 }
 
@@ -84,6 +86,7 @@ class ChapterLoader(
         val isDownloaded = downloadManager.isChapterDownloaded(
             chapterName = dbChapter.name,
             chapterScanlator = dbChapter.scanlator,
+            chapterUrl = dbChapter.url,
             mangaTitle = manga.ogTitle,
             sourceId = manga.source,
             skipCache = true,
@@ -96,6 +99,7 @@ class ChapterLoader(
                 downloadManager,
                 downloadProvider,
             )
+
             source is LocalMangaSource -> source.getFormat(chapter.chapter).let { format ->
                 when (format) {
                     is Format.Directory -> DirectoryPageLoader(format.file)
@@ -103,10 +107,13 @@ class ChapterLoader(
                     is Format.Epub -> EpubPageLoader(format.file.epubReader(context))
                 }
             }
-            source is HttpSource -> HttpPageLoader(chapter, source)
+
+            source is HttpSource -> HttpPageLoader(chapter, source, scope)
+
             source is StubMangaSource -> error(
                 context.stringResource(MR.strings.source_not_installed, source.toString()),
             )
+
             else -> error(context.stringResource(MR.strings.loader_not_implemented_error))
         }
     }

@@ -17,11 +17,11 @@ class MigrateSortingModeMigration : Migration {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
         val oldMangaSortingMode = prefs.getInt(
-            libraryPreferences.mangaSortingMode().key(),
+            libraryPreferences.mangaSortingMode.key(),
             0,
         )
         val oldAnimeSortingMode = prefs.getInt(
-            libraryPreferences.animeSortingMode().key(),
+            libraryPreferences.animeSortingMode.key(),
             0,
         )
         val oldSortingDirection = prefs.getBoolean("library_sorting_ascending", true)
@@ -56,14 +56,14 @@ class MigrateSortingModeMigration : Migration {
         }
 
         prefs.edit(commit = true) {
-            remove(libraryPreferences.mangaSortingMode().key())
-            remove(libraryPreferences.animeSortingMode().key())
+            remove(libraryPreferences.mangaSortingMode.key())
+            remove(libraryPreferences.animeSortingMode.key())
             remove("library_sorting_ascending")
         }
 
         prefs.edit {
-            putString(libraryPreferences.mangaSortingMode().key(), newMangaSortingMode)
-            putString(libraryPreferences.animeSortingMode().key(), newAnimeSortingMode)
+            putString(libraryPreferences.mangaSortingMode.key(), newMangaSortingMode)
+            putString(libraryPreferences.animeSortingMode.key(), newAnimeSortingMode)
             putString("library_sorting_ascending", newSortingDirection)
         }
 

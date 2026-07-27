@@ -7,6 +7,7 @@ import android.app.SearchManager
 import android.app.assist.AssistContent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -20,19 +21,32 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,6 +61,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.unit.dp
 import androidx.core.animation.doOnEnd
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen
@@ -55,6 +71,7 @@ import androidx.core.util.Consumer
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.interpolator.view.animation.LinearOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
+import animetail.feature.mpvfiles.MpvConfig
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
@@ -63,12 +80,12 @@ import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.domain.source.anime.interactor.GetAnimeIncognitoState
 import eu.kanade.domain.source.manga.interactor.GetMangaIncognitoState
+import eu.kanade.presentation.components.AdaptiveSheet
 import eu.kanade.presentation.components.AppStateBanners
 import eu.kanade.presentation.components.DownloadedOnlyBannerBackgroundColor
 import eu.kanade.presentation.components.IncognitoModeBannerBackgroundColor
 import eu.kanade.presentation.components.IndexingBannerBackgroundColor
-import eu.kanade.presentation.more.settings.screen.browse.AnimeExtensionReposScreen
-import eu.kanade.presentation.more.settings.screen.browse.MangaExtensionReposScreen
+import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.presentation.more.settings.screen.data.RestoreBackupScreen
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.DefaultNavigatorScreenTransition
@@ -78,6 +95,7 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
+import eu.kanade.tachiyomi.data.connections.discord.DiscordRpcManager
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
@@ -118,6 +136,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import mihon.core.migration.Migrator
+import mihon.feature.support.SupportUsScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
@@ -126,10 +145,15 @@ import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.release.interactor.GetApplicationRelease
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
+import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Instant
+import kotlin.time.times
 
 class MainActivity : BaseActivity() {
 
@@ -152,6 +176,10 @@ class MainActivity : BaseActivity() {
     private val connectionsPreferences: ConnectionsPreferences by injectLazy()
     // <-- AM (CONNECTIONS)
 
+    // AM -->
+    private val mpvConfig: MpvConfig by injectLazy()
+    // <-- AM
+
     init {
         registerSecureActivity(this)
     }
@@ -173,6 +201,10 @@ class MainActivity : BaseActivity() {
             setupTabletModeForTV()
         }
 
+        try {
+            com.discord.socialsdk.DiscordSocialSdkInit.setEngineActivity(this)
+        } catch (_: Exception) {}
+
         val didMigration = Migrator.awaitAndRelease()
 
         // Do not let the launcher create a new activity http://stackoverflow.com/questions/16283079
@@ -181,12 +213,17 @@ class MainActivity : BaseActivity() {
             return
         }
 
+        // AM (DISCORD) -->
+        // Initialize Discord RPC Manager early so native library is loaded
+        DiscordRpcManager.init(applicationContext)
+        // <-- AM (DISCORD)
+
         setComposeContent {
             val context = LocalContext.current
 
             var incognito by remember { mutableStateOf(getMangaIncognitoState.await(null)) }
             var incognitoAnime by remember { mutableStateOf(getAnimeIncognitoState.await(null)) }
-            val downloadOnly by preferences.downloadedOnly().collectAsState()
+            val downloadOnly by preferences.downloadedOnly.collectAsState()
             val indexing by downloadCache.isInitializing.collectAsState()
             val indexingAnime by animeDownloadCache.isInitializing.collectAsState()
 
@@ -223,7 +260,7 @@ class MainActivity : BaseActivity() {
                         handleIntentAction(intent, navigator)
 
                         // Reset Incognito Mode on relaunch
-                        preferences.incognitoMode().set(false)
+                        preferences.incognitoMode.set(false)
                     }
                 }
                 LaunchedEffect(navigator.lastItem) {
@@ -275,7 +312,7 @@ class MainActivity : BaseActivity() {
 
                 // Pop source-related screens when incognito mode is turned off
                 LaunchedEffect(Unit) {
-                    preferences.incognitoMode().changes()
+                    preferences.incognitoMode.changes()
                         .drop(1)
                         .filter { !it }
                         .onEach {
@@ -320,6 +357,7 @@ class MainActivity : BaseActivity() {
 
                 CheckForUpdates()
                 ShowOnboarding()
+                ShowDonationCampaign()
             }
 
             var showChangelog by remember { mutableStateOf(didMigration && !BuildConfig.DEBUG) }
@@ -348,11 +386,11 @@ class MainActivity : BaseActivity() {
         val startTime = System.currentTimeMillis()
         splashScreen?.setKeepOnScreenCondition {
             val elapsed = System.currentTimeMillis() - startTime
-            elapsed <= SPLASH_MIN_DURATION || !ready && elapsed <= SPLASH_MAX_DURATION
+            elapsed <= SPLASH_MIN_DURATION || (!ready && elapsed <= SPLASH_MAX_DURATION)
         }
         setSplashScreenExitAnimation(splashScreen)
 
-        if (isLaunch && libraryPreferences.autoClearItemCache().get()) {
+        if (isLaunch && libraryPreferences.autoClearItemCache.get()) {
             lifecycleScope.launchIO {
                 chapterCache.clear()
             }
@@ -439,8 +477,128 @@ class MainActivity : BaseActivity() {
         val navigator = LocalNavigator.currentOrThrow
 
         LaunchedEffect(Unit) {
-            if (!preferences.shownOnboardingFlow().get() && navigator.lastItem !is OnboardingScreen) {
+            if (!preferences.shownOnboardingFlow.get() && navigator.lastItem !is OnboardingScreen) {
                 navigator.push(OnboardingScreen())
+            }
+        }
+    }
+
+    @Composable
+    private fun ShowDonationCampaign() {
+        val navigator = LocalNavigator.currentOrThrow
+
+        var showCampaign by remember { mutableStateOf(false) }
+        if (showCampaign) {
+            val uriHandler = LocalUriHandler.current
+            val dismissSupportMessage = {
+                preferences.donationCampaignShown.set(true)
+                showCampaign = false
+            }
+            AdaptiveSheet(
+                onDismissRequest = dismissSupportMessage,
+                enableImplicitDismiss = false,
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Column(
+                        modifier = Modifier
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp)
+                            .weight(1f, fill = false)
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(MR.strings.donationCampaign_title),
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                        Text(
+                            text = stringResource(MR.strings.donationCampaign_paragraph1),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = stringResource(MR.strings.donationCampaign_paragraph2),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = stringResource(MR.strings.donationCampaign_paragraph3),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Button(
+                        modifier = Modifier
+                            .padding(top = MaterialTheme.padding.small)
+                            .padding(horizontal = MaterialTheme.padding.medium)
+                            .fillMaxWidth(),
+                        onClick = {
+                            navigator.push(SupportUsScreen())
+                            dismissSupportMessage()
+                        },
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VolunteerActivism,
+                                contentDescription = null,
+                            )
+                            Text(
+                                text = stringResource(MR.strings.label_support_us),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+                        modifier = Modifier
+                            .padding(bottom = MaterialTheme.padding.small)
+                            .padding(horizontal = MaterialTheme.padding.medium),
+                    ) {
+                        OutlinedButton(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            onClick = { uriHandler.openUri(Constants.URL_DISCORD) },
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+                            ) {
+                                Text(
+                                    text = stringResource(MR.strings.donationCampaign_contactPlatform),
+                                )
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Default.OpenInNew,
+                                    contentDescription = null,
+                                )
+                            }
+                        }
+                        OutlinedButton(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            onClick = dismissSupportMessage,
+                        ) {
+                            Text(
+                                text = stringResource(MR.strings.donationCampaign_dismiss),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            try {
+                val firstInstallTime = packageManager.getPackageInfo(packageName, 0).firstInstallTime
+                val eligibleTime = Instant.fromEpochMilliseconds(firstInstallTime).plus(6 * 30.days)
+                showCampaign = (Clock.System.now() >= eligibleTime && !preferences.donationCampaignShown.get())
+            } catch (_: PackageManager.NameNotFoundException) {
             }
         }
     }
@@ -501,30 +659,41 @@ class MainActivity : BaseActivity() {
 
         val tabToOpen = when (intent.action) {
             Constants.SHORTCUT_ANIMELIB -> HomeScreen.Tab.AnimeLib()
+
             Constants.SHORTCUT_LIBRARY -> HomeScreen.Tab.Library()
+
             Constants.SHORTCUT_MANGA -> {
                 val idToOpen = intent.extras?.getLong(Constants.MANGA_EXTRA) ?: return false
                 navigator.popUntilRoot()
                 HomeScreen.Tab.Library(idToOpen)
             }
+
             Constants.SHORTCUT_ANIME -> {
                 val idToOpen = intent.extras?.getLong(Constants.ANIME_EXTRA) ?: return false
                 navigator.popUntilRoot()
                 HomeScreen.Tab.AnimeLib(idToOpen)
             }
+
             Constants.SHORTCUT_UPDATES -> HomeScreen.Tab.Updates
+
             Constants.SHORTCUT_HISTORY -> HomeScreen.Tab.History
+
             Constants.SHORTCUT_SOURCES -> HomeScreen.Tab.Browse(false)
+
             Constants.SHORTCUT_ANIMEEXTENSIONS -> HomeScreen.Tab.Browse(true, true)
+
             Constants.SHORTCUT_EXTENSIONS -> HomeScreen.Tab.Browse(true)
+
             Constants.SHORTCUT_DOWNLOADS -> {
                 navigator.popUntilRoot()
                 HomeScreen.Tab.More(toDownloads = true)
             }
+
             Constants.SHORTCUT_ANIME_DOWNLOADS -> {
                 navigator.popUntilRoot()
                 HomeScreen.Tab.More(toDownloads = true)
             }
+
             Intent.ACTION_SEARCH, Intent.ACTION_SEND, "com.google.android.gms.actions.SEARCH_ACTION" -> {
                 // If the intent match the "standard" Android search intent
                 // or the Google-specific search intent (triggered by saying or typing "search *query* on *Tachiyomi*" in Google Search/Google Assistant)
@@ -545,6 +714,7 @@ class MainActivity : BaseActivity() {
                             navigator.push(GlobalMangaSearchScreen(query))
                             navigator.push(DeepLinkMangaScreen(query))
                         }
+
                         DeepLinkScreenType.ANIME -> {
                             navigator.push(GlobalAnimeSearchScreen(query))
                             navigator.push(DeepLinkAnimeScreen(query))
@@ -553,6 +723,7 @@ class MainActivity : BaseActivity() {
                 }
                 null
             }
+
             INTENT_SEARCH -> { // Used by extensions (url intent handlers)
                 val query = intent.getStringExtra(INTENT_SEARCH_QUERY)
                 if (!query.isNullOrEmpty()) {
@@ -562,6 +733,7 @@ class MainActivity : BaseActivity() {
                 }
                 null
             }
+
             INTENT_ANIMESEARCH -> { // Same as above
                 val query = intent.getStringExtra(INTENT_SEARCH_QUERY)
                 if (!query.isNullOrEmpty()) {
@@ -571,27 +743,30 @@ class MainActivity : BaseActivity() {
                 }
                 null
             }
+
             Intent.ACTION_VIEW -> {
                 // Handling opening of backup files
                 if (intent.data.toString().endsWith(".tachibk")) {
                     navigator.popUntilRoot()
                     navigator.push(RestoreBackupScreen(intent.data.toString()))
                 }
-                // Deep link to add anime extension repo
-                else if (intent.scheme == "animetail" && intent.data?.host == "add-repo") {
+                // Deep link to add manga extension store
+                else if (intent.isAddMangaExtensionStoreIntent()) {
                     intent.data?.getQueryParameter("url")?.let { repoUrl ->
                         navigator.popUntilRoot()
-                        navigator.push(AnimeExtensionReposScreen(repoUrl))
+                        navigator.push(ExtensionStoresScreen(isManga = true, url = repoUrl))
                     }
-                } // Deep link to add extension repo
-                else if (intent.scheme == "tachiyomi" && intent.data?.host == "add-repo") {
+                }
+                // Deep link to add anime extension store
+                else if (intent.isAddAnimeExtensionStoreIntent()) {
                     intent.data?.getQueryParameter("url")?.let { repoUrl ->
                         navigator.popUntilRoot()
-                        navigator.push(MangaExtensionReposScreen(repoUrl))
+                        navigator.push(ExtensionStoresScreen(isManga = false, url = repoUrl))
                     }
                 }
                 null
             }
+
             else -> return false
         }
 
@@ -614,7 +789,7 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    /**Add commentMore actions
+    /**
      * Configura la navegación optimizada para Android TV
      * siguiendo las directrices de Google para aplicaciones en TV
      */
@@ -687,17 +862,17 @@ class MainActivity : BaseActivity() {
 
         // Establecer el ordenamiento predeterminado de episodios por número
         // en lugar de por orden de fuente para facilitar la navegación
-        libraryPreferences.sortEpisodeBySourceOrNumber().set(
+        libraryPreferences.sortEpisodeBySourceOrNumber.set(
             tachiyomi.domain.entries.anime.model.Anime.EPISODE_SORTING_NUMBER,
         )
 
         // Establecer el orden ascendente para que los episodios aparezcan del primero al último
-        libraryPreferences.sortEpisodeByAscendingOrDescending().set(
+        libraryPreferences.sortEpisodeByAscendingOrDescending.set(
             tachiyomi.domain.entries.anime.model.Anime.EPISODE_SORT_ASC,
         )
 
         // Mostrar número de episodio en vez de nombre para mayor claridad
-        libraryPreferences.displayEpisodeByNameOrNumber().set(
+        libraryPreferences.displayEpisodeByNameOrNumber.set(
             tachiyomi.domain.entries.anime.model.Anime.EPISODE_DISPLAY_NUMBER,
         )
     }
@@ -711,14 +886,37 @@ class MainActivity : BaseActivity() {
         val uiPreferences: eu.kanade.domain.ui.UiPreferences by injectLazy()
 
         // Comprobar el modo tableta actual
-        val currentTabletMode = uiPreferences.tabletUiMode().get()
+        val currentTabletMode = uiPreferences.tabletUiMode.get()
 
         // Si no está configurado como "ALWAYS", actualizarlo
         if (currentTabletMode != eu.kanade.domain.ui.model.TabletUiMode.ALWAYS) {
-            uiPreferences.tabletUiMode().set(eu.kanade.domain.ui.model.TabletUiMode.ALWAYS)
+            uiPreferences.tabletUiMode.set(eu.kanade.domain.ui.model.TabletUiMode.ALWAYS)
         }
     }
 
+    // AM -->
+    override fun onResume() {
+        super.onResume()
+        mpvConfig.copyFiles()
+    }
+    override fun onDestroy() {
+        try {
+            com.discord.socialsdk.DiscordSocialSdkInit.setEngineActivity(null)
+        } catch (_: Exception) {}
+        super.onDestroy()
+    }
+
+    // <-- AM
+
+    private fun Intent.isAddMangaExtensionStoreIntent(): Boolean {
+        return (scheme == "tachiyomi" && data?.host == "add-repo") ||
+            (scheme == "mihon" && data?.host == "extension-store")
+    }
+
+    private fun Intent.isAddAnimeExtensionStoreIntent(): Boolean {
+        return (scheme == "animetail" && data?.host == "add-repo") ||
+            (scheme == "animetail" && data?.host == "extension-store")
+    }
     companion object {
         const val INTENT_SEARCH = "eu.kanade.tachiyomi.SEARCH"
         const val INTENT_ANIMESEARCH = "eu.kanade.tachiyomi.ANIMESEARCH"

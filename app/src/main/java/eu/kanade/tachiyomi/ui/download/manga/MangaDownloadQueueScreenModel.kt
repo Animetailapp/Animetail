@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import kotlin.time.Duration.Companion.milliseconds
 
 class MangaDownloadQueueScreenModel(
     private val downloadManager: MangaDownloadManager = Injekt.get(),
@@ -86,6 +87,7 @@ class MangaDownloadQueueScreenModel(
                         }
                         reorder(newDownloads)
                     }
+
                     R.id.move_to_top_series, R.id.move_to_bottom_series -> {
                         val (selectedSeries, otherSeries) = adapter?.currentItems
                             ?.filterIsInstance<MangaDownloadItem>()
@@ -98,9 +100,11 @@ class MangaDownloadQueueScreenModel(
                             reorder(otherSeries + selectedSeries)
                         }
                     }
+
                     R.id.cancel_download -> {
                         cancel(listOf(item.download))
                     }
+
                     R.id.cancel_series -> {
                         val allDownloadsForSeries = adapter?.currentItems
                             ?.filterIsInstance<MangaDownloadItem>()
@@ -195,12 +199,15 @@ class MangaDownloadQueueScreenModel(
                 // Initial update of the downloaded pages
                 onUpdateDownloadedPages(download)
             }
+
             MangaDownload.State.DOWNLOADED -> {
                 cancelProgressJob(download)
                 onUpdateProgress(download)
                 onUpdateDownloadedPages(download)
             }
+
             MangaDownload.State.ERROR -> cancelProgressJob(download)
+
             else -> {
                 /* unused */
             }
@@ -215,13 +222,13 @@ class MangaDownloadQueueScreenModel(
     private fun launchProgressJob(download: MangaDownload) {
         val job = screenModelScope.launch {
             while (download.pages == null) {
-                delay(50)
+                delay(50.milliseconds)
             }
 
             val progressFlows = download.pages!!.map(Page::progressFlow)
             combine(progressFlows, Array<Int>::sum)
                 .distinctUntilChanged()
-                .debounce(50)
+                .debounce(50.milliseconds)
                 .collectLatest {
                     onUpdateProgress(download)
                 }

@@ -74,7 +74,7 @@ private suspend fun Call.await(callStack: Array<StackTraceElement>): Response {
         val callback =
             object : Callback {
                 override fun onResponse(call: Call, response: Response) {
-                    continuation.resume(response) {
+                    continuation.resume(response) { _, _, _ ->
                         response.body.close()
                     }
                 }
@@ -117,14 +117,18 @@ suspend fun Call.awaitSuccess(): Response {
     return response
 }
 
-fun OkHttpClient.newCachelessCallWithProgress(request: Request, listener: ProgressListener): Call {
+fun OkHttpClient.newCachelessCallWithProgress(
+    request: Request,
+    listener: ProgressListener,
+    existingSize: Long = 0L,
+): Call {
     val progressClient = newBuilder()
         .cache(null)
         .callTimeout(30, java.util.concurrent.TimeUnit.HOURS)
         .addNetworkInterceptor { chain ->
             val originalResponse = chain.proceed(chain.request())
             originalResponse.newBuilder()
-                .body(ProgressResponseBody(originalResponse.body, listener))
+                .body(ProgressResponseBody(originalResponse.body, listener, existingSize))
                 .build()
         }
         .build()
@@ -132,18 +136,18 @@ fun OkHttpClient.newCachelessCallWithProgress(request: Request, listener: Progre
     return progressClient.newCall(request)
 }
 
-context(Json)
+context(_: Json)
 inline fun <reified T> Response.parseAs(): T {
     return decodeFromJsonResponse(serializer(), this)
 }
 
-context(Json)
+context(json: Json)
 fun <T> decodeFromJsonResponse(
     deserializer: DeserializationStrategy<T>,
     response: Response,
 ): T {
     return response.body.source().use {
-        decodeFromBufferedSource(deserializer, it)
+        json.decodeFromBufferedSource(deserializer, it)
     }
 }
 

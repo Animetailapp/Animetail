@@ -21,6 +21,20 @@ interface PreferenceStore {
         deserializer: (String) -> T,
     ): Preference<T>
 
+    fun <T> getObjectFromInt(
+        key: String,
+        defaultValue: T,
+        serializer: (T) -> Int,
+        deserializer: (Int) -> T,
+    ): Preference<T>
+
+    fun <T> getObjectSetFromStringSet(
+        key: String,
+        defaultValue: Set<T>,
+        serializer: (T) -> String,
+        deserializer: (String) -> T?,
+    ): Preference<Set<T>>
+
     fun getAll(): Map<String, *>
 }
 
@@ -37,6 +51,50 @@ inline fun <reified T : Enum<T>> PreferenceStore.getEnum(
                 enumValueOf(it)
             } catch (e: IllegalArgumentException) {
                 defaultValue
+            }
+        },
+    )
+}
+
+fun <T> PreferenceStore.getObjectFromString(
+    key: String,
+    defaultValue: T,
+    serializer: (T) -> String,
+    deserializer: (String) -> T,
+): Preference<T> {
+    return getObject(
+        key = key,
+        defaultValue = defaultValue,
+        serializer = serializer,
+        deserializer = deserializer,
+    )
+}
+
+fun PreferenceStore.getLongArray(
+    key: String,
+    defaultValue: List<Long>,
+): Preference<List<Long>> {
+    return getObjectFromString(
+        key = key,
+        defaultValue = defaultValue,
+        serializer = { it.joinToString(",") },
+        deserializer = { it.split(",").mapNotNull { l -> l.toLongOrNull() } },
+    )
+}
+
+inline fun <reified T : Enum<T>> PreferenceStore.getEnumSet(
+    key: String,
+    defaultValue: Set<T>,
+): Preference<Set<T>> {
+    return getObjectSetFromStringSet(
+        key = key,
+        defaultValue = defaultValue,
+        serializer = { it.name },
+        deserializer = {
+            try {
+                enumValueOf<T>(it)
+            } catch (_: IllegalArgumentException) {
+                null
             }
         },
     )

@@ -51,7 +51,9 @@ class MangaExtensionInstallService : Service() {
                 BasePreferences.ExtensionInstaller.PACKAGEINSTALLER -> PackageInstallerInstallerManga(
                     this,
                 )
+
                 BasePreferences.ExtensionInstaller.SHIZUKU -> ShizukuInstallerManga(this)
+
                 else -> {
                     logcat(LogPriority.ERROR) { "Not implemented for installer $installerUsed" }
                     stopSelf()

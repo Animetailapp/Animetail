@@ -1,18 +1,25 @@
 package eu.kanade.tachiyomi.di
 
 import android.app.Application
-import android.os.Build
 import androidx.core.content.ContextCompat
-import androidx.sqlite.db.SupportSQLiteDatabase
-import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
-import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import animetail.feature.mpvfiles.MpvConfig
+import aniyomi.core.common.torrent.TorrentServerApi
+import aniyomi.core.common.torrent.TorrentServerUtils
+import app.cash.sqldelight.db.SqlDriver
+import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConfiguration
+import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDatabaseType
+import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDriver
+import data.Chapters
 import data.History
 import data.Mangas
 import dataanime.Animehistory
 import dataanime.Animes
 import eu.kanade.domain.track.anime.store.DelayedAnimeTrackingStore
 import eu.kanade.domain.track.manga.store.DelayedMangaTrackingStore
-import eu.kanade.tachiyomi.BuildConfig
+import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
 import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
@@ -33,17 +40,24 @@ import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.anime.AndroidAnimeSourceManager
 import eu.kanade.tachiyomi.source.manga.AndroidMangaSourceManager
 import eu.kanade.tachiyomi.ui.player.ExternalIntents
-import io.requery.android.database.sqlite.RequerySQLiteOpenHelperFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.plus
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
-import nl.adaptivity.xmlutil.XmlDeclMode.Charset
+import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.core.XmlVersion
+import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
 import nl.adaptivity.xmlutil.serialization.XML
+import nl.adaptivity.xmlutil.serialization.XmlConfig
 import tachiyomi.core.common.storage.AndroidStorageFolderProvider
 import tachiyomi.data.AnimeUpdateStrategyColumnAdapter
+import tachiyomi.data.CastColumnAdapter
 import tachiyomi.data.Database
 import tachiyomi.data.DateColumnAdapter
+import tachiyomi.data.FetchTypeColumnAdapter
 import tachiyomi.data.MangaUpdateStrategyColumnAdapter
+import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.StringListColumnAdapter
 import tachiyomi.data.handlers.anime.AndroidAnimeDatabaseHandler
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
@@ -53,7 +67,10 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.mi.data.AnimeDatabase
+import tachiyomi.source.local.entries.anime.LocalAnimeFetchTypeManager
+import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
 import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
+import tachiyomi.source.local.image.anime.LocalEpisodeThumbnailManager
 import tachiyomi.source.local.image.manga.LocalMangaCoverManager
 import tachiyomi.source.local.io.anime.LocalAnimeSourceFileSystem
 import tachiyomi.source.local.io.manga.LocalMangaSourceFileSystem
@@ -62,62 +79,46 @@ import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.api.addSingleton
 import uy.kohesive.injekt.api.addSingletonFactory
 import uy.kohesive.injekt.api.get
+import java.lang.ref.WeakReference
+
+private val mangaSqlDriverLock = Any()
+private val animeSqlDriverLock = Any()
 
 class AppModule(val app: Application) : InjektModule {
+
+    private var mangaSqlDriverRef: WeakReference<SqlDriver>? = null
+    private var animeSqlDriverRef: WeakReference<SqlDriver>? = null
 
     override fun InjektRegistrar.registerInjectables() {
         addSingleton(app)
 
-        val sqlDriverManga = AndroidSqliteDriver(
-            schema = Database.Schema,
-            context = app,
-            name = "tachiyomi.db",
-            factory = if (BuildConfig.DEBUG && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                // Support database inspector in Android Studio
-                FrameworkSQLiteOpenHelperFactory()
-            } else {
-                RequerySQLiteOpenHelperFactory()
-            },
-            callback = object : AndroidSqliteDriver.Callback(Database.Schema) {
-                override fun onOpen(db: SupportSQLiteDatabase) {
-                    super.onOpen(db)
-                    setPragma(db, "foreign_keys = ON")
-                    setPragma(db, "journal_mode = WAL")
-                    setPragma(db, "synchronous = NORMAL")
-                }
-                private fun setPragma(db: SupportSQLiteDatabase, pragma: String) {
-                    val cursor = db.query("PRAGMA $pragma")
-                    cursor.moveToFirst()
-                    cursor.close()
-                }
-            },
-        )
+        val sqlDriverManga =
+            synchronized(mangaSqlDriverLock) {
+                mangaSqlDriverRef?.get() ?: AndroidxSqliteDriver(
+                    BundledSQLiteDriver(),
+                    databaseType = AndroidxSqliteDatabaseType.FileProvider {
+                        app.getDatabasePath("tachiyomi.db").absolutePath
+                    },
+                    schema = Database.Schema,
+                    configuration = AndroidxSqliteConfiguration(
+                        isForeignKeyConstraintsEnabled = true,
+                    ),
+                ).also { mangaSqlDriverRef = WeakReference(it) }
+            }
 
-        val sqlDriverAnime = AndroidSqliteDriver(
-            schema = AnimeDatabase.Schema,
-            context = app,
-            name = "tachiyomi.animedb",
-            factory = if (BuildConfig.DEBUG && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                // Support database inspector in Android Studio
-                FrameworkSQLiteOpenHelperFactory()
-            } else {
-                RequerySQLiteOpenHelperFactory()
-            },
-            callback = object : AndroidSqliteDriver.Callback(AnimeDatabase.Schema) {
-                override fun onOpen(db: SupportSQLiteDatabase) {
-                    super.onOpen(db)
-                    setPragma(db, "foreign_keys = ON")
-                    setPragma(db, "journal_mode = WAL")
-                    setPragma(db, "synchronous = NORMAL")
-                }
-                private fun setPragma(db: SupportSQLiteDatabase, pragma: String) {
-                    val cursor = db.query("PRAGMA $pragma")
-                    cursor.moveToFirst()
-                    cursor.close()
-                }
-            },
-        )
-
+        val sqlDriverAnime =
+            synchronized(animeSqlDriverLock) {
+                animeSqlDriverRef?.get() ?: AndroidxSqliteDriver(
+                    BundledSQLiteDriver(),
+                    databaseType = AndroidxSqliteDatabaseType.FileProvider {
+                        app.getDatabasePath("tachiyomi.animedb").absolutePath
+                    },
+                    schema = AnimeDatabase.Schema,
+                    configuration = AndroidxSqliteConfiguration(
+                        isForeignKeyConstraintsEnabled = true,
+                    ),
+                ).also { animeSqlDriverRef = WeakReference(it) }
+            }
         addSingletonFactory {
             Database(
                 driver = sqlDriverManga,
@@ -127,6 +128,10 @@ class AppModule(val app: Application) : InjektModule {
                 mangasAdapter = Mangas.Adapter(
                     genreAdapter = StringListColumnAdapter,
                     update_strategyAdapter = MangaUpdateStrategyColumnAdapter,
+                    memoAdapter = MemoColumnAdapter,
+                ),
+                chaptersAdapter = Chapters.Adapter(
+                    memoAdapter = MemoColumnAdapter,
                 ),
             )
         }
@@ -140,6 +145,8 @@ class AppModule(val app: Application) : InjektModule {
                 animesAdapter = Animes.Adapter(
                     genreAdapter = StringListColumnAdapter,
                     update_strategyAdapter = AnimeUpdateStrategyColumnAdapter,
+                    fetch_typeAdapter = FetchTypeColumnAdapter,
+                    castAdapter = CastColumnAdapter,
                 ),
             )
         }
@@ -164,42 +171,45 @@ class AppModule(val app: Application) : InjektModule {
                 explicitNulls = false
             }
         }
-        addSingletonFactory {
-            XML {
-                defaultPolicy {
+        addSingletonFactory<XML> {
+            XML.v1 {
+                policy {
                     ignoreUnknownChildren()
+                    autoPolymorphic = true
                 }
-                autoPolymorphic = true
-                xmlDeclMode = Charset
-                indent = 2
+                xmlDeclMode = XmlDeclMode.Charset
                 xmlVersion = XmlVersion.XML10
+                setIndent(2)
             }
         }
         addSingletonFactory<ProtoBuf> {
             ProtoBuf
         }
 
+        addSingletonFactory<CoroutineScope> { ProcessLifecycleOwner.get().lifecycleScope + SupervisorJob() }
+
         addSingletonFactory { ChapterCache(app, get()) }
 
         addSingletonFactory { MangaCoverCache(app) }
         addSingletonFactory { AnimeCoverCache(app) }
+        addSingletonFactory { AnimeBackgroundCache(app) }
 
-        addSingletonFactory { NetworkHelper(app, get()) }
+        addSingletonFactory { NetworkHelper(app, get(), get()) }
         addSingletonFactory { JavaScriptEngine(app) }
 
-        addSingletonFactory<MangaSourceManager> { AndroidMangaSourceManager(app, get(), get()) }
-        addSingletonFactory<AnimeSourceManager> { AndroidAnimeSourceManager(app, get(), get()) }
+        addSingletonFactory<MangaSourceManager> { AndroidMangaSourceManager(app, get(), get(), get()) }
+        addSingletonFactory<AnimeSourceManager> { AndroidAnimeSourceManager(app, get(), get(), get()) }
 
-        addSingletonFactory { MangaExtensionManager(app) }
-        addSingletonFactory { AnimeExtensionManager(app) }
+        addSingletonFactory { MangaExtensionManager(app, get()) }
+        addSingletonFactory { AnimeExtensionManager(app, get()) }
 
         addSingletonFactory { MangaDownloadProvider(app) }
-        addSingletonFactory { MangaDownloadManager(app) }
-        addSingletonFactory { MangaDownloadCache(app) }
+        addSingletonFactory { MangaDownloadManager(app, get()) }
+        addSingletonFactory { MangaDownloadCache(app, get()) }
 
         addSingletonFactory { AnimeDownloadProvider(app) }
-        addSingletonFactory { AnimeDownloadManager(app) }
-        addSingletonFactory { AnimeDownloadCache(app) }
+        addSingletonFactory { AnimeDownloadManager(app, get()) }
+        addSingletonFactory { AnimeDownloadCache(app, get()) }
 
         addSingletonFactory { TrackerManager(app) }
         addSingletonFactory { DelayedAnimeTrackingStore(app) }
@@ -213,15 +223,24 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { LocalMangaCoverManager(app, get()) }
 
         addSingletonFactory { LocalAnimeSourceFileSystem(get()) }
+        addSingletonFactory { LocalAnimeBackgroundManager(app, get()) }
         addSingletonFactory { LocalAnimeCoverManager(app, get()) }
+        addSingletonFactory { LocalAnimeFetchTypeManager(app, get()) }
+        addSingletonFactory { LocalEpisodeThumbnailManager(app, get()) }
 
-        addSingletonFactory { StorageManager(app, get()) }
+        addSingletonFactory { StorageManager(app, get(), get(), get<AndroidStorageFolderProvider>()) }
 
         addSingletonFactory { ExternalIntents() }
+
+        // AM -->
+        addSingletonFactory { MpvConfig(app, get(), get(), get()) }
+        // <-- AM
 
         // AM (CONNECTIONS) -->
         addSingletonFactory { ConnectionsManager() }
         // <-- AM (CONNECTIONS)
+        addSingletonFactory { TorrentServerApi(get(), get()) }
+        addSingletonFactory { TorrentServerUtils(get(), get()) }
 
         // Asynchronously init expensive components for a faster cold start
         ContextCompat.getMainExecutor(app).execute {

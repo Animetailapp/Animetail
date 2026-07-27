@@ -11,8 +11,6 @@ import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.source.MangaSource
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.domain.entries.manga.model.Manga as DomainManga
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
@@ -47,7 +45,7 @@ class Suwayomi(id: Long) : BaseTracker(id, "Suwayomi"), EnhancedMangaTracker, Ma
 
     override fun getCompletionStatus(): Long = COMPLETED
 
-    override fun getScoreList(): ImmutableList<String> = persistentListOf()
+    override fun getScoreList(): List<String> = listOf()
 
     override fun displayScore(track: DomainTrack): String = ""
 

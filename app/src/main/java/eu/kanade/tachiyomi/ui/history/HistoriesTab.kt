@@ -61,7 +61,7 @@ data object HistoriesTab : Tab {
     override fun isEnabled(): Boolean {
         val scope = rememberCoroutineScope()
         return remember {
-            Injekt.get<UiPreferences>().showNavHistory().asState(scope)
+            Injekt.get<UiPreferences>().showNavHistory.asState(scope)
         }.value
     }
     // SY <--
@@ -89,6 +89,8 @@ data object HistoriesTab : Tab {
             onChangeMangaSearchQuery = mangaHistoryScreenModel::search,
             animeSearchQuery = animeSearchQuery,
             onChangeAnimeSearchQuery = animeHistoryScreenModel::search,
+            animeExtensionsTabIndex = TAB_ANIME,
+            mangaExtensionsTabIndex = TAB_MANGA,
             // KMK -->
             feedScreenModel = feedScreenModel,
             // KMK <--

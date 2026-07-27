@@ -16,6 +16,7 @@ import kotlinx.collections.immutable.persistentListOf
 import okhttp3.Dns
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
@@ -43,8 +44,8 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedAnimeTracker, An
     override fun getStatusListAnime(): List<Long> = listOf(UNSEEN, WATCHING, COMPLETED)
 
     override fun getStatusForAnime(status: Long): StringResource? = when (status) {
-        UNSEEN -> MR.strings.unseen
-        WATCHING -> MR.strings.watching
+        UNSEEN -> AYMR.strings.unseen
+        WATCHING -> AYMR.strings.watching
         COMPLETED -> MR.strings.completed
         else -> null
     }
@@ -99,6 +100,15 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedAnimeTracker, An
         } catch (e: Exception) {
             null
         }
+
+    // AM -->
+    override suspend fun matchSeason(anime: Anime): AnimeTrackSearch {
+        return AnimeTrackSearch.create(id).apply {
+            title = anime.title
+            tracking_url = anime.url
+        }
+    }
+    // <-- AM
 
     override fun isTrackFrom(track: DomainTrack, anime: Anime, source: AnimeSource?): Boolean =
         track.remoteUrl == anime.url && source?.let { accept(it) } == true

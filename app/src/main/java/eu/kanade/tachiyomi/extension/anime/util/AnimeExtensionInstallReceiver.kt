@@ -58,6 +58,7 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
                     }
                 }
             }
+
             Intent.ACTION_PACKAGE_REPLACED, ACTION_EXTENSION_REPLACED -> {
                 scope.launch {
                     when (val result = getExtensionFromIntent(context, intent)) {
@@ -67,6 +68,7 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
                     }
                 }
             }
+
             Intent.ACTION_PACKAGE_REMOVED, ACTION_EXTENSION_REMOVED -> {
                 if (isReplacing(intent)) return
 
@@ -106,7 +108,7 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
      * Returns the package name of the installed, updated or removed application.
      */
     private fun getPackageNameFromIntent(intent: Intent?): String? {
-        return intent?.data?.encodedSchemeSpecificPart ?: return null
+        return intent?.data?.encodedSchemeSpecificPart
     }
 
     /**

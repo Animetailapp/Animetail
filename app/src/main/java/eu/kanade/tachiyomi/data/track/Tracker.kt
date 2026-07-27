@@ -5,7 +5,6 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
 import okhttp3.OkHttpClient
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
@@ -32,7 +31,7 @@ interface Tracker {
 
     fun getCompletionStatus(): Long
 
-    fun getScoreList(): ImmutableList<String>
+    fun getScoreList(): List<String>
 
     suspend fun login(username: String, password: String)
 
@@ -47,6 +46,10 @@ interface Tracker {
 
     fun getPassword(): String
 
+    fun getDisplayUsername(): String
+
+    fun saveDisplayUsername(displayName: String)
+
     fun saveCredentials(username: String, password: String)
 
     val animeService: AnimeTracker
@@ -57,4 +60,10 @@ interface Tracker {
 
     suspend fun getMangaMetadata(track: DomainMangaTrack): TrackMangaMetadata?
     suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata?
+
+    /**
+     * Indicates whether this tracker can be used to fetch metadata/credits even if not "logged in".
+     * Default implementation requires being logged in, implementations may override (e.g. TMDB uses API key).
+     */
+    fun isAvailableForUse(): Boolean = isLoggedIn
 }

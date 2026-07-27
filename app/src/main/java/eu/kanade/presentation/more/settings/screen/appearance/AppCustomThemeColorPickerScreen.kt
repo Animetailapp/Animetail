@@ -37,10 +37,10 @@ class AppCustomThemeColorPickerScreen : Screen() {
         val navigator = LocalNavigator.currentOrThrow
         val controller = rememberColorPickerController()
 
-        val customColorPref = uiPreferences.colorTheme()
+        val customColorPref = uiPreferences.colorTheme
         val customColor by customColorPref.collectAsState()
 
-        val appThemePref = uiPreferences.appTheme()
+        val appThemePref = uiPreferences.appTheme
 
         val currentColor by remember {
             mutableIntStateOf(customColor)

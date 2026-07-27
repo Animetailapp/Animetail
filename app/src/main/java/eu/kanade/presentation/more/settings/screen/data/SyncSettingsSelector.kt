@@ -76,7 +76,7 @@ class SyncSettingsSelector : Screen() {
 
     @Composable
     private fun Options(
-        options: ImmutableList<BackupOptions.Entry>,
+        options: List<BackupOptions.Entry>,
         state: SyncSettingsSelectorModel.State,
         model: SyncSettingsSelectorModel,
     ) {

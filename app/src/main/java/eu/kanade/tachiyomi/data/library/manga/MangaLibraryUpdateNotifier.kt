@@ -29,8 +29,9 @@ import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.library.manga.LibraryManga
@@ -43,7 +44,7 @@ import java.text.NumberFormat
 
 class MangaLibraryUpdateNotifier(
     private val context: Context,
-
+    private val scope: CoroutineScope = Injekt.get(),
     private val securityPreferences: SecurityPreferences = Injekt.get(),
     private val sourceManager: MangaSourceManager = Injekt.get(),
 ) {
@@ -101,7 +102,7 @@ class MangaLibraryUpdateNotifier(
                 ),
             )
 
-        if (!securityPreferences.hideNotificationContent().get()) {
+        if (!securityPreferences.hideNotificationContent.get()) {
             val updatingText = manga.joinToString("\n") { it.title.chop(40) }
             progressNotificationBuilder.setStyle(NotificationCompat.BigTextStyle().bigText(updatingText))
         }
@@ -177,7 +178,7 @@ class MangaLibraryUpdateNotifier(
             Notifications.CHANNEL_NEW_CHAPTERS_EPISODES,
         ) {
             setContentTitle(context.stringResource(MR.strings.notification_new_chapters))
-            if (updates.size == 1 && !securityPreferences.hideNotificationContent().get()) {
+            if (updates.size == 1 && !securityPreferences.hideNotificationContent.get()) {
                 setContentText(updates.first().first.title.chop(NOTIF_TITLE_MAX_LEN))
             } else {
                 setContentText(
@@ -188,7 +189,7 @@ class MangaLibraryUpdateNotifier(
                     ),
                 )
 
-                if (!securityPreferences.hideNotificationContent().get()) {
+                if (!securityPreferences.hideNotificationContent.get()) {
                     setStyle(
                         NotificationCompat.BigTextStyle().bigText(
                             updates.joinToString("\n") {
@@ -212,8 +213,8 @@ class MangaLibraryUpdateNotifier(
         }
 
         // Per-manga notification
-        if (!securityPreferences.hideNotificationContent().get()) {
-            launchUI {
+        if (!securityPreferences.hideNotificationContent.get()) {
+            scope.launch {
                 context.notify(
                     updates.map { (manga, chapters) ->
                         NotificationManagerCompat.NotificationWithIdAndTag(
@@ -327,6 +328,7 @@ class MangaLibraryUpdateNotifier(
                     chapters.size,
                 )
             }
+
             // Only 1 chapter has a parsed chapter number
             1 -> {
                 val remaining = chapters.size - displayableChapterNumbers.size
@@ -345,6 +347,7 @@ class MangaLibraryUpdateNotifier(
                     )
                 }
             }
+
             // Everything else (i.e. multiple parsed chapter numbers)
             else -> {
                 val shouldTruncate = displayableChapterNumbers.size > NOTIF_MAX_CHAPTERS

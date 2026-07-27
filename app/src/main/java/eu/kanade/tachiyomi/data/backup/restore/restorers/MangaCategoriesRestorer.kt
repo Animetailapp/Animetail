@@ -25,14 +25,13 @@ class MangaCategoriesRestorer(
                     val dbCategory = dbCategoriesByName[it.name]
                     if (dbCategory != null) return@map dbCategory
                     val order = nextOrder++
-                    mangaHandler.awaitOneExecutable {
+                    mangaHandler.await {
                         categoriesQueries.insert(it.name, order, it.flags)
-                        categoriesQueries.selectLastInsertedRowId()
                     }
                         .let { id -> it.toCategory(id).copy(order = order) }
                 }
 
-            libraryPreferences.categorizedDisplaySettings().set(
+            libraryPreferences.categorizedDisplaySettings.set(
                 (dbCategories + categories)
                     .distinctBy { it.flags }
                     .size > 1,

@@ -45,7 +45,7 @@ interface Tab : cafe.adriel.voyager.navigator.tab.Tab {
     // SY <--
 
     @Composable
-    fun currentNavigationStyle(): NavStyle = uiPreferences.navStyle().collectAsState().value
+    fun currentNavigationStyle(): NavStyle = uiPreferences.navStyle.collectAsState().value
 }
 
 abstract class Screen : Screen {

@@ -26,7 +26,9 @@ import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.model.FilterList
+import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
+import eu.kanade.tachiyomi.util.removeBackgrounds
 import eu.kanade.tachiyomi.util.removeCovers
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -44,7 +46,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import tachiyomi.core.common.preference.CheckboxState
@@ -85,6 +86,7 @@ class BrowseAnimeSourceScreenModel(
     sourcePreferences: SourcePreferences = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     private val coverCache: AnimeCoverCache = Injekt.get(),
+    private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
     private val getRemoteAnime: GetRemoteAnime = Injekt.get(),
     private val getDuplicateAnimelibAnime: GetDuplicateLibraryAnime = Injekt.get(),
     private val getCategories: GetAnimeCategories = Injekt.get(),
@@ -94,7 +96,7 @@ class BrowseAnimeSourceScreenModel(
     private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
     private val updateAnime: UpdateAnime = Injekt.get(),
     private val addTracks: AddAnimeTracks = Injekt.get(),
-    private val getIncognitoState: GetAnimeIncognitoState = Injekt.get(),
+    getIncognitoState: GetAnimeIncognitoState = Injekt.get(),
     // SY -->
     uiPreferences: UiPreferences = Injekt.get(),
     private val deleteSavedSearchById: DeleteSavedSearchById = Injekt.get(),
@@ -103,12 +105,12 @@ class BrowseAnimeSourceScreenModel(
     // SY <--
 ) : StateScreenModel<BrowseAnimeSourceScreenModel.State>(State(Listing.valueOf(listingQuery))) {
 
-    var displayMode by sourcePreferences.sourceDisplayMode().asState(screenModelScope)
+    var displayMode by sourcePreferences.sourceDisplayMode.asState(screenModelScope)
 
     var source = sourceManager.getOrStub(sourceId)
 
     // SY -->
-    val startExpanded by uiPreferences.expandFilters().asState(screenModelScope)
+    val startExpanded by uiPreferences.expandFilters.asState(screenModelScope)
 
     private val filterSerializer = FilterSerializer()
 
@@ -145,7 +147,7 @@ class BrowseAnimeSourceScreenModel(
             }.join()
 
             if (!getIncognitoState.await(source.id)) {
-                sourcePreferences.lastUsedSource().set(source.id)
+                sourcePreferences.lastUsedSource.set(source.id)
             }
 
             // SY -->
@@ -184,7 +186,7 @@ class BrowseAnimeSourceScreenModel(
     /**
      * Flow of Pager flow tied to [State.listing]
      */
-    private val hideInLibraryItems = sourcePreferences.hideInAnimeLibraryItems().get()
+    private val hideInLibraryItems = sourcePreferences.hideInAnimeLibraryItems.get()
     val animePagerFlowFlow = state.map { it.listing }
         .distinctUntilChanged()
         .map { listing ->
@@ -206,9 +208,9 @@ class BrowseAnimeSourceScreenModel(
     fun getColumnsPreference(orientation: Int): GridCells {
         val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
         val columns = if (isLandscape) {
-            libraryPreferences.animeLandscapeColumns()
+            libraryPreferences.animeLandscapeColumns
         } else {
-            libraryPreferences.animePortraitColumns()
+            libraryPreferences.animePortraitColumns
         }.get()
         return if (columns == 0) GridCells.Adaptive(128.dp) else GridCells.Fixed(columns)
     }
@@ -217,9 +219,9 @@ class BrowseAnimeSourceScreenModel(
     fun getColumnsPreferenceForCurrentOrientation(orientation: Int): Int {
         val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
         return if (isLandscape) {
-            libraryPreferences.animeLandscapeColumns()
+            libraryPreferences.animeLandscapeColumns
         } else {
-            libraryPreferences.animePortraitColumns()
+            libraryPreferences.animePortraitColumns
         }.get()
     }
 
@@ -351,6 +353,7 @@ class BrowseAnimeSourceScreenModel(
 
             if (!new.favorite) {
                 new = new.removeCovers(coverCache)
+                new = new.removeBackgrounds(backgroundCache)
             } else {
                 setAnimeDefaultEpisodeFlags.await(anime)
                 addTracks.bindEnhancedTrackers(anime, source)
@@ -363,7 +366,7 @@ class BrowseAnimeSourceScreenModel(
     fun addFavorite(anime: Anime) {
         screenModelScope.launch {
             val categories = getCategories()
-            val defaultCategoryId = libraryPreferences.defaultAnimeCategory().get()
+            val defaultCategoryId = libraryPreferences.defaultAnimeCategory.get()
             val defaultCategory = categories.find { it.id == defaultCategoryId.toLong() }
 
             when {
@@ -373,6 +376,7 @@ class BrowseAnimeSourceScreenModel(
 
                     changeAnimeFavorite(anime)
                 }
+
                 // Automatic 'Default' or no categories
                 defaultCategoryId == 0 || categories.isEmpty() -> {
                     moveAnimeToCategories(anime)
@@ -509,6 +513,7 @@ class BrowseAnimeSourceScreenModel(
     // KMK <--
 
     // EXH -->
+
     /** Show a dialog to enter name for new saved search */
     fun onSaveSearch() {
         screenModelScope.launchIO {

@@ -58,6 +58,8 @@ inline fun <reified T> Preference<T>.deleteAndGet(): T {
     return get()
 }
 
+operator fun <T> Preference<T>.invoke(): Preference<T> = this
+
 operator fun <T> Preference<Set<T>>.plusAssign(item: T) {
     set(get() + item)
 }

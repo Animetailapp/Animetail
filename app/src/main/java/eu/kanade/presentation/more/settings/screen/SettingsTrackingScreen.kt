@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,20 +49,21 @@ import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.anilist.AnilistApi
 import eu.kanade.tachiyomi.data.track.bangumi.BangumiApi
+import eu.kanade.tachiyomi.data.track.hikka.HikkaApi
+import eu.kanade.tachiyomi.data.track.mangabaka.MangaBakaApi
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeListApi
 import eu.kanade.tachiyomi.data.track.shikimori.ShikimoriApi
 import eu.kanade.tachiyomi.data.track.simkl.SimklApi
+import eu.kanade.tachiyomi.data.track.trakt.TraktApi
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toPersistentMap
-import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
@@ -79,7 +80,7 @@ object SettingsTrackingScreen : SearchableSettings {
         val uriHandler = LocalUriHandler.current
         IconButton(onClick = { uriHandler.openUri("https://aniyomi.org/help/guides/tracking/") }) {
             Icon(
-                imageVector = Icons.Outlined.HelpOutline,
+                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
                 contentDescription = stringResource(MR.strings.tracking_guide),
             )
         }
@@ -88,11 +89,11 @@ object SettingsTrackingScreen : SearchableSettings {
     @Composable
     override fun getPreferences(): List<Preference> {
         val context = LocalContext.current
+        val scope = rememberCoroutineScope()
         val trackPreferences = remember { Injekt.get<TrackPreferences>() }
         val trackerManager = remember { Injekt.get<TrackerManager>() }
         val mangaSourceManager = remember { Injekt.get<MangaSourceManager>() }
         val animeSourceManager = remember { Injekt.get<AnimeSourceManager>() }
-        val autoTrackStatePref = trackPreferences.autoUpdateTrackOnMarkRead()
 
         var dialog by remember { mutableStateOf<Any?>(null) }
         dialog?.run {
@@ -104,6 +105,14 @@ object SettingsTrackingScreen : SearchableSettings {
                         onDismissRequest = { dialog = null },
                     )
                 }
+
+                is ApiKeyDialog -> {
+                    TrackingApiKeyDialog(
+                        tracker = tracker,
+                        onDismissRequest = { dialog = null },
+                    )
+                }
+
                 is LogoutDialog -> {
                     TrackingLogoutDialog(
                         tracker = tracker,
@@ -137,27 +146,43 @@ object SettingsTrackingScreen : SearchableSettings {
 
         return listOf(
             Preference.PreferenceItem.SwitchPreference(
-                preference = trackPreferences.autoUpdateTrack(),
-                title = stringResource(MR.strings.pref_auto_update_manga_sync),
+                preference = trackPreferences.autoUpdateTrack,
+                title = stringResource(AYMR.strings.pref_auto_update_manga_sync),
             ),
             Preference.PreferenceItem.SwitchPreference(
-                preference = trackPreferences.trackOnAddingToLibrary(),
-                title = stringResource(MR.strings.pref_track_on_add_library),
+                preference = trackPreferences.trackOnAddingToLibrary,
+                title = stringResource(AYMR.strings.pref_track_on_add_library),
             ),
             Preference.PreferenceItem.SwitchPreference(
-                preference = trackPreferences.showNextEpisodeAiringTime(),
-                title = stringResource(MR.strings.pref_show_next_episode_airing_time),
+                preference = trackPreferences.showNextEpisodeAiringTime,
+                title = stringResource(AYMR.strings.pref_show_next_episode_airing_time),
             ),
             Preference.PreferenceItem.ListPreference(
-                preference = trackPreferences.autoUpdateTrackOnMarkRead(),
+                preference = trackPreferences.autoUpdateTrackOnMarkRead,
                 entries = AutoTrackState.entries
                     .associateWith { stringResource(it.titleRes) }
-                    .toPersistentMap(),
-                title = stringResource(MR.strings.pref_auto_update_manga_on_mark_read),
+                    .toMap(),
+                title = stringResource(AYMR.strings.pref_auto_update_manga_on_mark_read),
             ),
+            // AM -->
+            Preference.PreferenceItem.SwitchPreference(
+                preference = trackPreferences.syncEnhancedTrackers(),
+                title = stringResource(TLMR.strings.pref_tracking_sync_enhanced),
+            ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = trackPreferences.smartTrackerSync(),
+                title = stringResource(TLMR.strings.pref_smart_sync_tracker),
+                subtitle = stringResource(TLMR.strings.pref_smart_sync_tracker_summary),
+            ),
+            // <-- AM
             Preference.PreferenceGroup(
                 title = stringResource(MR.strings.services),
-                preferenceItems = persistentListOf(
+                preferenceItems = listOf(
+                    Preference.PreferenceItem.TrackerPreference(
+                        tracker = trackerManager.mangaBaka,
+                        login = { context.openInBrowser(MangaBakaApi.authUrl(), forceDefaultBrowser = true) },
+                        logout = { dialog = LogoutDialog(trackerManager.mangaBaka) },
+                    ),
                     Preference.PreferenceItem.TrackerPreference(
                         tracker = trackerManager.myAnimeList,
                         login = {
@@ -209,14 +234,39 @@ object SettingsTrackingScreen : SearchableSettings {
                         logout = { dialog = LogoutDialog(trackerManager.simkl) },
                     ),
                     Preference.PreferenceItem.TrackerPreference(
-                        tracker = trackerManager.bangumi,
+                        tracker = trackerManager.tmdb,
+                        login = {
+                            // If API key not set, ask user to provide it first
+                            val currentApiKey = trackPreferences.trackApiKey(trackerManager.tmdb).get()
+                            if (currentApiKey.isBlank()) {
+                                dialog = LoginDialog(trackerManager.tmdb, MR.strings.username)
+                            } else {
+                                scope.launchIO {
+                                    try {
+                                        val url = trackerManager.tmdb.getAuthUrl()
+                                        context.openInBrowser(url, forceDefaultBrowser = true)
+                                    } catch (e: Exception) {
+                                        withUIContext { context.toast(e.message ?: "TMDB auth error") }
+                                    }
+                                }
+                            }
+                        },
+                        logout = { dialog = LogoutDialog(trackerManager.tmdb) },
+                    ),
+                    Preference.PreferenceItem.TrackerPreference(
+                        tracker = trackerManager.trakt,
                         login = {
                             context.openInBrowser(
-                                BangumiApi.authUrl(),
+                                TraktApi.authUrl(),
                                 forceDefaultBrowser = true,
                             )
                         },
-                        logout = { dialog = LogoutDialog(trackerManager.bangumi) },
+                        logout = { dialog = LogoutDialog(trackerManager.trakt) },
+                    ),
+                    Preference.PreferenceItem.TrackerPreference(
+                        tracker = trackerManager.hikka,
+                        login = { context.openInBrowser(HikkaApi.authUrl(), forceDefaultBrowser = true) },
+                        logout = { dialog = LogoutDialog(trackerManager.hikka) },
                     ),
                     Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.tracking_info)),
                 ),
@@ -240,7 +290,7 @@ object SettingsTrackingScreen : SearchableSettings {
                                     logout = service::logout,
                                 )
                             } + listOf(Preference.PreferenceItem.InfoPreference(enhancedTrackerInfo))
-                    ).toImmutableList(),
+                    ).toList(),
             ),
         )
     }
@@ -405,11 +455,97 @@ object SettingsTrackingScreen : SearchableSettings {
     }
 }
 
+@Composable
+private fun TrackingApiKeyDialog(
+    tracker: Tracker,
+    onDismissRequest: () -> Unit,
+) {
+    val context = LocalContext.current
+    val trackPreferences = remember { Injekt.get<TrackPreferences>() }
+    val networkHelper = remember { Injekt.get<eu.kanade.tachiyomi.network.NetworkHelper>() }
+    val scope = rememberCoroutineScope()
+
+    var apiKey by remember { mutableStateOf(TextFieldValue(trackPreferences.trackApiKey(tracker).get())) }
+    var processing by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(TLMR.strings.pref_sync_api_key),
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onDismissRequest) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = stringResource(MR.strings.action_close),
+                    )
+                }
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = apiKey,
+                    onValueChange = { apiKey = it },
+                    label = { Text(text = stringResource(TLMR.strings.pref_sync_api_key)) },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !processing && apiKey.text.isNotBlank(),
+                onClick = {
+                    scope.launchIO {
+                        processing = true
+                        try {
+                            // Validate API key by requesting /3/configuration
+                            val url = "https://api.themoviedb.org/3/configuration?api_key=${apiKey.text}"
+                            val req = okhttp3.Request.Builder().url(url).get().build()
+                            val resp = networkHelper.client.newCall(req).execute()
+                            val ok = try {
+                                resp.use { r -> r.isSuccessful && r.body.string().contains("images") }
+                            } catch (_: Exception) {
+                                false
+                            }
+
+                            if (ok) {
+                                trackPreferences.setApiKey(tracker, apiKey.text)
+                                withUIContext {
+                                    onDismissRequest()
+                                    context.toast(MR.strings.login_success)
+                                }
+                            } else {
+                                withUIContext { context.toast(TLMR.strings.login_error) }
+                            }
+                        } catch (_: Exception) {
+                            withUIContext { context.toast(TLMR.strings.login_error) }
+                        } finally {
+                            processing = false
+                        }
+                    }
+                },
+            ) {
+                val id = if (processing) MR.strings.loading else TLMR.strings.save
+                Text(text = stringResource(id))
+            }
+        },
+    )
+}
+
 private data class LoginDialog(
     val tracker: Tracker,
     val uNameStringRes: StringResource,
 )
 
 private data class LogoutDialog(
+    val tracker: Tracker,
+)
+
+private data class ApiKeyDialog(
     val tracker: Tracker,
 )

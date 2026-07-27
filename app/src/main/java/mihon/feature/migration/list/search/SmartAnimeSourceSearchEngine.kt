@@ -1,0 +1,27 @@
+package mihon.feature.migration.list.search
+
+import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
+import eu.kanade.tachiyomi.animesource.model.SAnime
+import mihon.domain.anime.model.toDomainAnime
+import tachiyomi.domain.entries.anime.model.Anime
+
+class SmartAnimeSourceSearchEngine(extraSearchParams: String?) : BaseSmartSearchEngine<SAnime>(extraSearchParams) {
+
+    override fun getTitle(result: SAnime) = result.title
+
+    suspend fun regularSearch(source: AnimeCatalogueSource, title: String): Anime? {
+        return regularSearch(makeSearchAction(source), title)?.let {
+            it.toDomainAnime(source.id)
+        }
+    }
+
+    suspend fun deepSearch(source: AnimeCatalogueSource, title: String): Anime? {
+        return deepSearch(makeSearchAction(source), title)?.let {
+            it.toDomainAnime(source.id)
+        }
+    }
+
+    private fun makeSearchAction(source: AnimeCatalogueSource): SearchAction<SAnime> = { query ->
+        source.getSearchAnime(1, query, source.getFilterList()).animes
+    }
+}

@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -56,8 +57,10 @@ import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsDecoderS
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsGesturesScreen
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsPlayerScreen
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsSubtitleScreen
+import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsTorrentScreen
 import eu.kanade.presentation.util.Screen
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
@@ -125,7 +128,7 @@ class SettingsSearchScreen(
                                         Text(
                                             text = stringResource(
                                                 resource = if (isPlayer) {
-                                                    MR.strings.action_search_player_settings
+                                                    AYMR.strings.action_search_player_settings
                                                 } else {
                                                     MR.strings.action_search_settings
                                                 },
@@ -179,8 +182,9 @@ private fun SearchResult(
     if (searchKey.isEmpty()) return
 
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
+    val context = LocalContext.current
 
-    val index = if (isPlayer) getPlayerIndex() else getIndex()
+    val index = if (isPlayer) getPlayerIndex() else getIndex() + getPlayerIndex()
     val result by produceState<List<SearchResultItem>?>(initialValue = null, searchKey) {
         value = index.asSequence()
             .flatMap { settingsData ->
@@ -199,6 +203,7 @@ private fun SearchResult(
                                     emptySequence()
                                 }
                             }
+
                             is Preference.PreferenceItem<*> -> sequenceOf(null to p)
                         }
                     }
@@ -216,8 +221,13 @@ private fun SearchResult(
                             route = settingsData.route,
                             title = p.title,
                             breadcrumbs = getLocalizedBreadcrumb(
-                                path = settingsData.title,
-                                node = categoryTitle,
+                                nodes = buildList {
+                                    if (!isPlayer && settingsData.playerSettings) {
+                                        add(AYMR.strings.label_player_settings.getString(context))
+                                    }
+                                    add(settingsData.title)
+                                    if (categoryTitle != null) add(categoryTitle)
+                                },
                                 isLtr = isLtr,
                             ),
                             highlightKey = p.title,
@@ -234,9 +244,11 @@ private fun SearchResult(
     ) {
         when {
             it == null -> {}
+
             it.isEmpty() -> {
                 EmptyScreen(stringResource(MR.strings.no_results_found))
             }
+
             else -> {
                 LazyColumn(
                     modifier = modifier.fillMaxSize(),
@@ -295,33 +307,31 @@ private fun getPlayerIndex() = playerSettingScreens
             title = stringResource(screen.getTitleRes()),
             route = screen,
             contents = screen.getPreferences(),
+            playerSettings = true,
         )
     }
 
-private fun getLocalizedBreadcrumb(path: String, node: String?, isLtr: Boolean): String {
-    return if (node == null) {
-        path
+private fun getLocalizedBreadcrumb(nodes: List<String>, isLtr: Boolean): String {
+    return if (isLtr) {
+        // This locale reads left to right.
+        nodes.joinToString(" > ")
     } else {
-        if (isLtr) {
-            // This locale reads left to right.
-            "$path > $node"
-        } else {
-            // This locale reads right to left.
-            "$node < $path"
-        }
+        // This locale reads right to left.
+        nodes.reversed().joinToString(" < ")
     }
 }
 
-private val playerSettingScreens = listOf(
+private val playerSettingScreens: List<SearchableSettings> = listOf(
     PlayerSettingsPlayerScreen,
     PlayerSettingsGesturesScreen,
     PlayerSettingsDecoderScreen,
     PlayerSettingsSubtitleScreen,
     PlayerSettingsAudioScreen,
+    PlayerSettingsTorrentScreen,
     PlayerSettingsAdvancedScreen,
 )
 
-private val settingScreens = listOf(
+private val settingScreens: List<SearchableSettings> = listOf(
     SettingsAppearanceScreen,
     SettingsLibraryScreen,
     SettingsReaderScreen,
@@ -340,6 +350,7 @@ private data class SettingsData(
     val title: String,
     val route: VoyagerScreen,
     val contents: List<Preference>,
+    val playerSettings: Boolean = false,
 )
 
 private data class SearchResultItem(

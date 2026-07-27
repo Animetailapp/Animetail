@@ -53,10 +53,12 @@ fun MigrateAnimeSourceScreen(
     val context = LocalContext.current
     when {
         state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
         state.isEmpty -> EmptyScreen(
             stringRes = MR.strings.information_empty_library,
             modifier = Modifier.padding(contentPadding),
         )
+
         else ->
             MigrateAnimeSourceList(
                 list = state.items,
@@ -107,6 +109,7 @@ private fun MigrateAnimeSourceList(
                             Icons.Outlined.SortByAlpha,
                             contentDescription = stringResource(MR.strings.action_sort_alpha),
                         )
+
                         SetMigrateSorting.Mode.TOTAL -> Icon(
                             Icons.Outlined.Numbers,
                             contentDescription = stringResource(MR.strings.action_sort_count),
@@ -119,6 +122,7 @@ private fun MigrateAnimeSourceList(
                             Icons.Outlined.ArrowUpward,
                             contentDescription = stringResource(MR.strings.action_asc),
                         )
+
                         SetMigrateSorting.Direction.DESCENDING -> Icon(
                             Icons.Outlined.ArrowDownward,
                             contentDescription = stringResource(MR.strings.action_desc),

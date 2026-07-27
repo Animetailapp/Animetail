@@ -1,6 +1,7 @@
 package tachiyomi.data.custombutton
 
 import android.database.sqlite.SQLiteException
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.custombuttons.exception.SaveCustomButtonException
@@ -28,7 +29,9 @@ class CustomButtonRepositoryImpl(
         onStartup: String,
     ) {
         try {
-            handler.await { custom_buttonsQueries.insert(name, false, sortIndex, content, longPressContent, onStartup) }
+            handler.await {
+                custom_buttonsQueries.insert(name, false, sortIndex, content, longPressContent, onStartup).awaitAsOne()
+            }
         } catch (ex: SQLiteException) {
             throw SaveCustomButtonException(ex)
         }
@@ -41,10 +44,8 @@ class CustomButtonRepositoryImpl(
     }
 
     override suspend fun updatePartialCustomButtons(updates: List<CustomButtonUpdate>) {
-        handler.await(inTransaction = true) {
-            for (update in updates) {
-                updatePartialBlocking(update)
-            }
+        for (update in updates) {
+            updatePartialCustomButton(update)
         }
     }
 
@@ -52,7 +53,7 @@ class CustomButtonRepositoryImpl(
         return handler.await { custom_buttonsQueries.delete(customButtonId) }
     }
 
-    private fun AnimeDatabase.updatePartialBlocking(update: CustomButtonUpdate) {
+    private suspend fun AnimeDatabase.updatePartialBlocking(update: CustomButtonUpdate) {
         custom_buttonsQueries.update(
             name = update.name,
             isFavorite = update.isFavorite,

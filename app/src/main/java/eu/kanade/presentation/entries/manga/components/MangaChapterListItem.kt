@@ -199,12 +199,14 @@ private fun getSwipeAction(
             isUndo = read,
             onSwipe = onSwipe,
         )
+
         LibraryPreferences.ChapterSwipeAction.ToggleBookmark -> swipeAction(
             icon = if (!bookmark) Icons.Outlined.BookmarkAdd else Icons.Outlined.BookmarkRemove,
             background = background,
             isUndo = bookmark,
             onSwipe = onSwipe,
         )
+
         LibraryPreferences.ChapterSwipeAction.Download -> swipeAction(
             icon = when (downloadState) {
                 MangaDownload.State.NOT_DOWNLOADED, MangaDownload.State.ERROR -> Icons.Outlined.Download
@@ -214,6 +216,7 @@ private fun getSwipeAction(
             background = background,
             onSwipe = onSwipe,
         )
+
         LibraryPreferences.ChapterSwipeAction.Disabled -> null
     }
 }

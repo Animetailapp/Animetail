@@ -10,8 +10,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
@@ -27,8 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenModel
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.TabText
@@ -37,7 +35,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Composable
 fun TabbedScreen(
     titleRes: StringResource?,
-    tabs: ImmutableList<TabContent>,
+    tabs: List<TabContent>,
     modifier: Modifier = Modifier,
     state: PagerState = rememberPagerState { tabs.size },
     mangaSearchQuery: String? = null,
@@ -45,6 +43,8 @@ fun TabbedScreen(
     animeSearchQuery: String? = null,
     scrollable: Boolean = false,
     onChangeAnimeSearchQuery: (String?) -> Unit = {},
+    animeExtensionsTabIndex: Int = -1,
+    mangaExtensionsTabIndex: Int = -1,
     // KMK -->
     feedScreenModel: FeedScreenModel,
     // KMK <--
@@ -59,17 +59,20 @@ fun TabbedScreen(
     Scaffold(
         topBar = {
             if (titleRes != null) {
-                val tab = tabs[state.currentPage]
+                val currentPage = state.currentPage.coerceIn(0, tabs.lastIndex)
+                val tab = tabs[currentPage]
                 val searchEnabled = tab.searchEnabled
 
-                val actualQuery = when (state.currentPage % 2) {
-                    1 -> mangaSearchQuery // History and Browse
-                    else -> animeSearchQuery
+                val actualQuery = when (currentPage) {
+                    mangaExtensionsTabIndex -> mangaSearchQuery
+                    animeExtensionsTabIndex -> animeSearchQuery
+                    else -> null
                 }
 
-                val actualOnChange = when (state.currentPage % 2) {
-                    1 -> onChangeMangaSearchQuery // History and Browse
-                    else -> onChangeAnimeSearchQuery
+                val actualOnChange = when (currentPage) {
+                    mangaExtensionsTabIndex -> onChangeMangaSearchQuery
+                    animeExtensionsTabIndex -> onChangeAnimeSearchQuery
+                    else -> ({})
                 }
 
                 SearchToolbar(
@@ -100,7 +103,7 @@ fun TabbedScreen(
         ) {
             FlexibleTabRow(
                 scrollable = scrollable,
-                selectedTabIndex = state.currentPage,
+                selectedTabIndex = state.currentPage.coerceIn(0, tabs.lastIndex),
             ) {
                 tabs.forEachIndexed { index, tab ->
                     Tab(
@@ -135,7 +138,7 @@ data class TabContent(
     val titleRes: StringResource,
     val badgeNumber: Int? = null,
     val searchEnabled: Boolean = false,
-    val actions: ImmutableList<AppBar.AppBarAction> = persistentListOf(),
+    val actions: List<AppBar.AppBarAction> = listOf(),
     val content: @Composable (contentPadding: PaddingValues, snackbarHostState: SnackbarHostState) -> Unit,
     val numberTitle: Int = 0,
     val cancelAction: () -> Unit = {},
@@ -149,7 +152,7 @@ private fun FlexibleTabRow(
     block: @Composable () -> Unit,
 ) {
     return if (scrollable) {
-        ScrollableTabRow(
+        PrimaryScrollableTabRow(
             selectedTabIndex = selectedTabIndex,
             edgePadding = 13.dp,
             modifier = Modifier.zIndex(1f),

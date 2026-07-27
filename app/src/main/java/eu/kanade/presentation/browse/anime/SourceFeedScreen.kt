@@ -132,6 +132,7 @@ fun SourceFeedScreen(
         Crossfade(targetState = isLoading, label = "source_feed") { state ->
             when (state) {
                 true -> LoadingScreen()
+
                 false -> {
                     SourceFeedList(
                         items = items,
@@ -187,7 +188,9 @@ fun SourceFeedList(
                 subtitle = null,
                 onClick = when (item) {
                     is SourceFeedUI.Browse -> onClickBrowse
+
                     is SourceFeedUI.Latest -> onClickLatest
+
                     is SourceFeedUI.SourceSavedSearch -> {
                         { onClickSavedSearch(item.savedSearch) }
                     }
@@ -214,9 +217,11 @@ fun SourceFeedItem(
         results == null -> {
             GlobalSearchLoadingResultItem()
         }
+
         results.isEmpty() -> {
             GlobalSearchErrorResultItem(message = stringResource(MR.strings.no_results_found))
         }
+
         else -> {
             GlobalSearchCardRow(
                 titles = item.results.orEmpty(),

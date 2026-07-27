@@ -3,16 +3,16 @@ package eu.kanade.tachiyomi.ui.library.manga
 import eu.kanade.tachiyomi.source.manga.getNameForMangaInfo
 import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import tachiyomi.source.local.LocalSource
+
+private const val LOCAL_SOURCE_ID_ALIAS = "local"
 
 class MangaLibraryItem(
     val libraryManga: LibraryManga,
-    var downloadCount: Long = -1,
-    var unreadCount: Long = -1,
-    var isLocal: Boolean = false,
-    var sourceLanguage: String = "",
-    private val sourceManager: MangaSourceManager = Injekt.get(),
+    val downloadCount: Int,
+    val unreadCount: Long,
+    val isLocal: Boolean,
+    val badges: Badges,
 ) {
     /**
      * Checks if a query matches the manga
@@ -20,11 +20,19 @@ class MangaLibraryItem(
      * @param constraint the query to check.
      * @return true if the manga matches the query, false otherwise.
      */
-    fun matches(constraint: String): Boolean {
-        val sourceName by lazy { sourceManager.getOrStub(libraryManga.manga.source).getNameForMangaInfo() }
+    fun matches(constraint: String, sourceManager: MangaSourceManager): Boolean {
+        val source = sourceManager.getOrStub(libraryManga.manga.source)
+        val sourceName by lazy { source.getNameForMangaInfo() }
         if (constraint.startsWith("id:", true)) {
             val id = constraint.substringAfter("id:").toLongOrNull()
             return libraryManga.id == id
+        } else if (constraint.startsWith("src:", true)) {
+            val querySource = constraint.substringAfter("src:")
+            return if (querySource.equals(LOCAL_SOURCE_ID_ALIAS, ignoreCase = true)) {
+                source.id == LocalSource.ID
+            } else {
+                source.id == querySource.toLongOrNull()
+            }
         }
         return libraryManga.manga.title.contains(constraint, true) ||
             (libraryManga.manga.author?.contains(constraint, true) ?: false) ||
@@ -56,4 +64,11 @@ class MangaLibraryItem(
             predicate(constraint)
         }
     }
+
+    data class Badges(
+        val downloadCount: Int,
+        val unreadCount: Long,
+        val isLocal: Boolean,
+        val sourceLanguage: String,
+    )
 }

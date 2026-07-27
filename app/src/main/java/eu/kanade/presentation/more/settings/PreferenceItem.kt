@@ -86,6 +86,7 @@ internal fun PreferenceItem(
                     },
                 )
             }
+
             is Preference.PreferenceItem.SliderPreference -> {
                 BaseSliderItem(
                     label = item.title,
@@ -105,6 +106,7 @@ internal fun PreferenceItem(
                     ),
                 )
             }
+
             is Preference.PreferenceItem.ListPreference<*> -> {
                 val value by item.preference.collectAsState()
                 ListPreferenceWidget(
@@ -122,6 +124,7 @@ internal fun PreferenceItem(
                     },
                 )
             }
+
             is Preference.PreferenceItem.BasicListPreference -> {
                 ListPreferenceWidget(
                     value = item.value,
@@ -132,28 +135,35 @@ internal fun PreferenceItem(
                     onValueChange = { scope.launch { item.onValueChanged(it) } },
                 )
             }
-            is Preference.PreferenceItem.MultiSelectListPreference -> {
+
+            is Preference.PreferenceItem.MultiSelectListPreference<*> -> {
                 val values by item.preference.collectAsState()
                 MultiSelectListPreferenceWidget(
-                    preference = item,
                     values = values,
+                    title = item.title,
+                    subtitle = item.internalSubtitleProvider(values, item.entries),
+                    icon = item.icon,
+                    entries = item.entries,
                     onValuesChange = { newValues ->
                         scope.launch {
-                            if (item.onValueChanged(newValues)) {
-                                item.preference.set(newValues.toMutableSet())
+                            if (item.internalOnValueChanged(newValues)) {
+                                item.internalSet(newValues)
                             }
                         }
                     },
                 )
             }
+
             is Preference.PreferenceItem.TextPreference -> {
                 TextPreferenceWidget(
                     title = item.title,
                     subtitle = item.subtitle,
                     icon = item.icon,
+                    widget = item.widget,
                     onPreferenceClick = item.onClick,
                 )
             }
+
             is Preference.PreferenceItem.EditTextPreference -> {
                 val values by item.preference.collectAsState()
                 EditTextPreferenceWidget(
@@ -168,6 +178,7 @@ internal fun PreferenceItem(
                     },
                 )
             }
+
             is Preference.PreferenceItem.MultiLineEditTextPreference -> {
                 val values by item.preference.collectAsState()
                 EditTextPreferenceWidget(
@@ -184,6 +195,7 @@ internal fun PreferenceItem(
                     canBeBlank = item.canBeBlank,
                 )
             }
+
             is Preference.PreferenceItem.MPVConfPreference -> {
                 val values by item.preference.collectAsState()
                 EditTextPreferenceWidget(
@@ -201,6 +213,7 @@ internal fun PreferenceItem(
                     formatSubtitle = false,
                 )
             }
+
             is Preference.PreferenceItem.EditTextInfoPreference -> {
                 val values by item.preference.collectAsState()
                 EditTextPreferenceWidget(
@@ -216,18 +229,23 @@ internal fun PreferenceItem(
                     },
                     singleLine = true,
                     canBeBlank = true,
+                    validate = item.validate,
+                    errorMessage = item.errorMessage,
+                    keyboardOptions = item.keyboardOptions,
                 )
             }
+
             is Preference.PreferenceItem.TrackerPreference -> {
                 val isLoggedIn by item.tracker.let { tracker ->
                     tracker.isLoggedInFlow.collectAsState(tracker.isLoggedIn)
                 }
                 TrackingPreferenceWidget(
                     tracker = item.tracker,
-                    checked = isLoggedIn,
+                    isLoggedIn = isLoggedIn,
                     onClick = { if (isLoggedIn) item.logout() else item.login() },
                 )
             }
+
             // AM (CONNECTIONS) -->
             is Preference.PreferenceItem.ConnectionsPreference -> {
                 val uName by Injekt.get<PreferenceStore>()
@@ -241,10 +259,12 @@ internal fun PreferenceItem(
                     )
                 }
             }
+
             // <-- AM (CONNECTIONS)
             is Preference.PreferenceItem.InfoPreference -> {
                 InfoWidget(text = item.title)
             }
+
             is Preference.PreferenceItem.CustomPreference -> {
                 item.content()
             }

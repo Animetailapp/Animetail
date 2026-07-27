@@ -5,6 +5,7 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.track.anime.model.toDbTrack
 import eu.kanade.domain.track.manga.model.toDbTrack
 import eu.kanade.tachiyomi.R
+import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.AnimeTracker
@@ -17,11 +18,9 @@ import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
@@ -64,7 +63,7 @@ class Anilist(id: Long) :
 
     override val supportsPrivateTracking: Boolean = true
 
-    private val scorePreference = trackPreferences.anilistScoreType()
+    private val scorePreference = trackPreferences.anilistScoreType
 
     init {
         // If the preference is an int from APIv1, logout user to force using APIv2
@@ -99,10 +98,10 @@ class Anilist(id: Long) :
     }
 
     override fun getStatusForAnime(status: Long): StringResource? = when (status) {
-        WATCHING -> MR.strings.watching
-        PLAN_TO_WATCH -> MR.strings.plan_to_watch
+        WATCHING -> AYMR.strings.watching
+        PLAN_TO_WATCH -> AYMR.strings.plan_to_watch
         COMPLETED -> MR.strings.completed
-        REWATCHING -> MR.strings.repeating_anime
+        REWATCHING -> AYMR.strings.repeating_anime
         ON_HOLD -> MR.strings.paused
         DROPPED -> MR.strings.dropped
         else -> null
@@ -118,18 +117,23 @@ class Anilist(id: Long) :
 
     override fun getCompletionStatus(): Long = COMPLETED
 
-    override fun getScoreList(): ImmutableList<String> {
+    override fun getScoreList(): List<String> {
         return when (scorePreference.get()) {
             // 10 point
-            POINT_10 -> IntRange(0, 10).map(Int::toString).toImmutableList()
+            POINT_10 -> IntRange(0, 10).map(Int::toString).toList()
+
             // 100 point
-            POINT_100 -> IntRange(0, 100).map(Int::toString).toImmutableList()
+            POINT_100 -> IntRange(0, 100).map(Int::toString).toList()
+
             // 5 stars
-            POINT_5 -> IntRange(0, 5).map { "$it ★" }.toImmutableList()
+            POINT_5 -> IntRange(0, 5).map { "$it ★" }.toList()
+
             // Smiley
-            POINT_3 -> persistentListOf("-", "😦", "😐", "😊")
+            POINT_3 -> listOf("-", "😦", "😐", "😊")
+
             // 10 point decimal
-            POINT_10_DECIMAL -> IntRange(0, 100).map { (it / 10f).toString() }.toImmutableList()
+            POINT_10_DECIMAL -> IntRange(0, 100).map { (it / 10f).toString() }.toList()
+
             else -> throw Exception("Unknown score type")
         }
     }
@@ -148,20 +152,25 @@ class Anilist(id: Long) :
         return when (scorePreference.get()) {
             // 10 point
             POINT_10 -> index * 10.0
+
             // 100 point
             POINT_100 -> index.toDouble()
+
             // 5 stars
             POINT_5 -> when (index) {
                 0 -> 0.0
                 else -> index * 20.0 - 10.0
             }
+
             // Smiley
             POINT_3 -> when (index) {
                 0 -> 0.0
                 else -> index * 25.0 + 10.0
             }
+
             // 10 point decimal
             POINT_10_DECIMAL -> index.toDouble()
+
             else -> throw Exception("Unknown score type")
         }
     }
@@ -174,12 +183,14 @@ class Anilist(id: Long) :
                 0.0 -> "0 ★"
                 else -> "${((score + 10) / 20).toInt()} ★"
             }
+
             POINT_3 -> when {
                 score == 0.0 -> "0"
                 score <= 35 -> "😦"
                 score <= 60 -> "😐"
                 else -> "😊"
             }
+
             else -> track.toApiScore()
         }
     }
@@ -192,12 +203,14 @@ class Anilist(id: Long) :
                 0.0 -> "0 ★"
                 else -> "${((score + 10) / 20).toInt()} ★"
             }
+
             POINT_3 -> when {
                 score == 0.0 -> "0"
                 score <= 35 -> "😦"
                 score <= 60 -> "😐"
                 else -> "😊"
             }
+
             else -> track.toApiScore()
         }
     }
@@ -298,7 +311,7 @@ class Anilist(id: Long) :
         }
     }
 
-    override suspend fun bind(track: AnimeTrack, hasReadChapters: Boolean): AnimeTrack {
+    override suspend fun bind(track: AnimeTrack, hasSeenEpisodes: Boolean): AnimeTrack {
         val remoteTrack = api.findLibAnime(track, getUsername().toInt())
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack, copyRemotePrivate = false)
@@ -306,13 +319,13 @@ class Anilist(id: Long) :
 
             if (track.status != COMPLETED) {
                 val isRereading = track.status == REWATCHING
-                track.status = if (!isRereading && hasReadChapters) WATCHING else track.status
+                track.status = if (!isRereading && hasSeenEpisodes) WATCHING else track.status
             }
 
             update(track)
         } else {
             // Set default fields if it's not found in the list
-            track.status = if (hasReadChapters) WATCHING else PLAN_TO_WATCH
+            track.status = if (hasSeenEpisodes) WATCHING else PLAN_TO_WATCH
             track.score = 0.0
             add(track)
         }
@@ -348,9 +361,10 @@ class Anilist(id: Long) :
         try {
             val oauth = api.createOAuth(token)
             interceptor.setAuth(oauth)
-            val (username, scoreType) = api.getCurrentUser()
-            scorePreference.set(scoreType)
-            saveCredentials(username.toString(), oauth.accessToken)
+            val currentUser = api.getCurrentUser()
+            scorePreference.set(currentUser.mediaListOptions.scoreFormat)
+            saveDisplayUsername(currentUser.name)
+            saveCredentials(currentUser.id.toString(), oauth.accessToken)
         } catch (e: Throwable) {
             logout()
         }
@@ -379,5 +393,9 @@ class Anilist(id: Long) :
         } catch (e: Exception) {
             null
         }
+    }
+
+    override suspend fun fetchCastByTitle(title: String?): List<Credit>? {
+        return api.fetchCastByTitle(title)
     }
 }

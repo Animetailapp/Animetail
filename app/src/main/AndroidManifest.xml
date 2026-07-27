@@ -40,7 +40,7 @@
         tools:ignore="ProtectedPermissions" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <!-- Remove permission from Firebase dependency -->
     <uses-permission
@@ -76,8 +76,8 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
             </intent-filter>
 
-            <!-- Deep link to add manga repos -->
-            <intent-filter android:label="@string/action_add_repo">
+            <!-- Legacy deeplink to add extension store -->
+            <intent-filter android:label="@string/action_addExtensionStore">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
@@ -87,15 +87,15 @@
                 <data android:host="add-repo" />
             </intent-filter>
 
-            <!-- Deep link to add manga repos -->
-            <intent-filter android:label="@string/action_add_repo">
+            <!-- Deeplink to add extension store -->
+            <intent-filter android:label="@string/action_addExtensionStore">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="animetail" />
-                <data android:host="add-repo" />
+                <data android:host="extension-store" />
             </intent-filter>
 
             <!-- Open backup files -->
@@ -273,9 +273,13 @@
 
                 <data android:host="anilist-auth" />
                 <data android:host="bangumi-auth" />
+                <data android:host="mangabaka-auth" />
                 <data android:host="myanimelist-auth" />
                 <data android:host="shikimori-auth" />
                 <data android:host="simkl-auth"/>
+                <data android:host="tmdb-auth"/>
+                <data android:host="trakt-auth"/>
+                <data android:host="hikka-auth" />
             </intent-filter>
         </activity>
         <activity
@@ -296,29 +300,25 @@
         <activity android:label="Discord Login"
             android:name=".ui.setting.connections.DiscordLoginActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
-            android:exported="false"
-            tools:ignore="AppLinkUrlError">
+            android:exported="false" />
+
+        <activity
+            android:name="com.discord.socialsdk.AuthenticationActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
             <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="account.samsung.com" android:path="/accounts/oauth/callback"/>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="discord-1173423931865170070" />
             </intent-filter>
         </activity>
+
         <service
             android:name=".data.connections.discord.DiscordRPCService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https"
-                    android:host="account.samsung.com"
-                    android:path="/accounts/oauth/callback"/>
-            </intent-filter>
-        </service>
+            android:foregroundServiceType="dataSync" />
 
         <receiver
             android:name=".data.notification.NotificationReceiver"
@@ -348,14 +348,13 @@
             tools:node="merge" />
 
         <service
-            android:name=".data.torrentServer.service.TorrentServerService"
-            android:foregroundServiceType="dataSync"
-            />
+            android:name=".data.torrent.service.TorrentServerService"
+            android:foregroundServiceType="dataSync" />
 
         <service
             android:name=".util.LocalHttpServerService"
-            android:exported="false" />
-
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

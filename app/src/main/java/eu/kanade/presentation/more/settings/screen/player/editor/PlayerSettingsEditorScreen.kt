@@ -27,6 +27,7 @@ object PlayerSettingsEditorScreen : Screen() {
 
         when (dialog) {
             null -> {}
+
             EditorFileDialog.Create -> {
                 FileCreateDialog(
                     initialName = null,
@@ -36,6 +37,7 @@ object PlayerSettingsEditorScreen : Screen() {
                     onConfirm = screenModel::createFile,
                 )
             }
+
             is EditorFileDialog.Edit -> {
                 val name = (dialog as EditorFileDialog.Edit).item.name
                 FileCreateDialog(
@@ -46,6 +48,7 @@ object PlayerSettingsEditorScreen : Screen() {
                     onConfirm = { screenModel.editFile(name, it) },
                 )
             }
+
             is EditorFileDialog.Delete -> {
                 val name = (dialog as EditorFileDialog.Delete).item.name
                 FileDeleteDialog(

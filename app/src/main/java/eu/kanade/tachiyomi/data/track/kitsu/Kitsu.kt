@@ -15,11 +15,9 @@ import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.injectLazy
 import java.text.DecimalFormat
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
@@ -68,8 +66,8 @@ class Kitsu(id: Long) :
     }
 
     override fun getStatusForManga(status: Long): StringResource? = when (status) {
-        READING -> MR.strings.currently_reading
-        PLAN_TO_READ -> MR.strings.want_to_read
+        READING -> AYMR.strings.currently_reading
+        PLAN_TO_READ -> AYMR.strings.want_to_read
         COMPLETED -> MR.strings.completed
         ON_HOLD -> MR.strings.on_hold
         DROPPED -> MR.strings.dropped
@@ -77,8 +75,8 @@ class Kitsu(id: Long) :
     }
 
     override fun getStatusForAnime(status: Long): StringResource? = when (status) {
-        WATCHING -> MR.strings.currently_watching
-        PLAN_TO_WATCH -> MR.strings.want_to_watch
+        WATCHING -> AYMR.strings.currently_watching
+        PLAN_TO_WATCH -> AYMR.strings.want_to_watch
         COMPLETED -> MR.strings.completed
         ON_HOLD -> MR.strings.on_hold
         DROPPED -> MR.strings.dropped
@@ -95,9 +93,9 @@ class Kitsu(id: Long) :
 
     override fun getCompletionStatus(): Long = COMPLETED
 
-    override fun getScoreList(): ImmutableList<String> {
+    override fun getScoreList(): List<String> {
         val df = DecimalFormat("0.#")
-        return (listOf("0") + IntRange(2, 20).map { df.format(it / 2f) }).toImmutableList()
+        return (listOf("0") + IntRange(2, 20).map { df.format(it / 2f) }).toList()
     }
 
     override fun indexToScore(index: Int): Double {
@@ -184,19 +182,19 @@ class Kitsu(id: Long) :
         }
     }
 
-    override suspend fun bind(track: AnimeTrack, hasWatchedEpisodes: Boolean): AnimeTrack {
+    override suspend fun bind(track: AnimeTrack, hasSeenEpisodes: Boolean): AnimeTrack {
         val remoteTrack = api.findLibAnime(track, getUserId())
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack, copyRemotePrivate = false)
             track.remote_id = remoteTrack.remote_id
 
             if (track.status != COMPLETED) {
-                track.status = if (hasWatchedEpisodes) WATCHING else track.status
+                track.status = if (hasSeenEpisodes) WATCHING else track.status
             }
 
             update(track)
         } else {
-            track.status = if (hasWatchedEpisodes) WATCHING else PLAN_TO_WATCH
+            track.status = if (hasSeenEpisodes) WATCHING else PLAN_TO_WATCH
             track.score = 0.0
             add(track)
         }
@@ -234,8 +232,9 @@ class Kitsu(id: Long) :
     override suspend fun login(username: String, password: String) {
         val token = api.login(username, password)
         interceptor.newAuth(token)
-        val userId = api.getCurrentUser()
-        saveCredentials(username, userId)
+        val currentUser = api.getCurrentUser()
+        saveDisplayUsername(currentUser.attributes.name)
+        saveCredentials(username, currentUser.id)
     }
 
     override fun logout() {

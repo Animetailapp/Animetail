@@ -18,6 +18,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -136,8 +137,6 @@ internal class PermissionStep : OnboardingStep {
     ) {
         ListItem(
             modifier = modifier,
-            headlineContent = { Text(text = title) },
-            supportingContent = { Text(text = subtitle) },
             trailingContent = {
                 OutlinedButton(
                     enabled = !granted,
@@ -154,7 +153,31 @@ internal class PermissionStep : OnboardingStep {
                     }
                 }
             },
+            supportingContent = { Text(text = subtitle) },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            content = { Text(text = title) },
+        )
+    }
+
+    @Composable
+    private fun PermissionSwitch(
+        title: String,
+        subtitle: String,
+        granted: Boolean,
+        modifier: Modifier = Modifier,
+        onToggleChange: (Boolean) -> Unit,
+    ) {
+        ListItem(
+            modifier = modifier,
+            trailingContent = {
+                Switch(
+                    checked = granted,
+                    onCheckedChange = onToggleChange,
+                )
+            },
+            supportingContent = { Text(text = subtitle) },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            content = { Text(text = title) },
         )
     }
 }

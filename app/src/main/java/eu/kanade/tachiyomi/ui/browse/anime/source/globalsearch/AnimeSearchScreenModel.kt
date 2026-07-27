@@ -10,10 +10,6 @@ import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
-import kotlinx.collections.immutable.PersistentMap
-import kotlinx.collections.immutable.mutate
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
@@ -46,9 +42,9 @@ abstract class AnimeSearchScreenModel(
     private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
     private var searchJob: Job? = null
 
-    private val enabledLanguages = sourcePreferences.enabledLanguages().get()
-    private val disabledSources = sourcePreferences.disabledAnimeSources().get()
-    protected val pinnedSources = sourcePreferences.pinnedAnimeSources().get()
+    private val enabledLanguages = sourcePreferences.enabledLanguages.get()
+    private val disabledSources = sourcePreferences.disabledAnimeSources.get()
+    protected val pinnedSources = sourcePreferences.pinnedAnimeSources.get()
 
     private var lastQuery: String? = null
     private var lastSourceFilter: AnimeSourceFilter? = null
@@ -65,7 +61,7 @@ abstract class AnimeSearchScreenModel(
 
     init {
         screenModelScope.launch {
-            preferences.globalSearchFilterState().changes().collectLatest { state ->
+            preferences.globalSearchFilterState.changes().collectLatest { state ->
                 mutableState.update { it.copy(onlyShowHasResults = state) }
             }
         }
@@ -118,7 +114,7 @@ abstract class AnimeSearchScreenModel(
     }
 
     fun toggleFilterResults() {
-        preferences.globalSearchFilterState().toggle()
+        preferences.globalSearchFilterState.toggle()
     }
 
     fun search() {
@@ -140,13 +136,13 @@ abstract class AnimeSearchScreenModel(
             updateItems(
                 sources
                     .associateWith { existingResults[it] ?: AnimeSearchItemResult.Loading }
-                    .toPersistentMap(),
+                    .toMap(),
             )
         } else {
             updateItems(
                 sources
                     .associateWith { AnimeSearchItemResult.Loading }
-                    .toPersistentMap(),
+                    .toMap(),
             )
         }
 
@@ -179,19 +175,19 @@ abstract class AnimeSearchScreenModel(
         }
     }
 
-    private fun updateItems(items: PersistentMap<AnimeCatalogueSource, AnimeSearchItemResult>) {
+    private fun updateItems(items: Map<AnimeCatalogueSource, AnimeSearchItemResult>) {
         mutableState.update {
             it.copy(
                 items = items
                     .toSortedMap(sortComparator(items))
-                    .toPersistentMap(),
+                    .toMap(),
             )
         }
     }
 
     private fun updateItem(source: AnimeCatalogueSource, result: AnimeSearchItemResult) {
-        val newItems = state.value.items.mutate {
-            it[source] = result
+        val newItems = state.value.items.toMutableMap().apply {
+            this[source] = result
         }
         updateItems(newItems)
     }
@@ -202,7 +198,7 @@ abstract class AnimeSearchScreenModel(
         val searchQuery: String? = null,
         val sourceFilter: AnimeSourceFilter = AnimeSourceFilter.PinnedOnly,
         val onlyShowHasResults: Boolean = false,
-        val items: PersistentMap<AnimeCatalogueSource, AnimeSearchItemResult> = persistentMapOf(),
+        val items: Map<AnimeCatalogueSource, AnimeSearchItemResult> = mapOf(),
     ) {
         val progress: Int = items.count { it.value !is AnimeSearchItemResult.Loading }
         val total: Int = items.size

@@ -24,6 +24,7 @@ import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.core.common.Constants
+import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreenModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.SourceFilterAnimeDialog
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
@@ -139,6 +140,7 @@ data class AnimeSourceSearchScreen(
                     // SY <--
                 )
             }
+
             is BrowseAnimeSourceScreenModel.Dialog.Migrate -> {
                 MigrateAnimeDialog(
                     oldAnime = oldAnime,
@@ -146,6 +148,7 @@ data class AnimeSourceSearchScreen(
                     screenModel = rememberScreenModel { MigrateAnimeDialogScreenModel() },
                     onDismissRequest = onDismissRequest,
                     onClickTitle = { navigator.push(AnimeScreen(dialog.newAnime.id)) },
+                    onClickSeasons = { navigator.push(MigrateSeasonSelectScreen(oldAnime, dialog.newAnime)) },
                     onPopScreen = {
                         scope.launch {
                             navigator.popUntilRoot()
@@ -155,6 +158,7 @@ data class AnimeSourceSearchScreen(
                     },
                 )
             }
+
             else -> {}
         }
     }

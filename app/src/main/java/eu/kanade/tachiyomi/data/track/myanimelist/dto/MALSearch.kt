@@ -5,14 +5,26 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MALSearchResult(
     val data: List<MALSearchResultNode>,
+    val paging: MALSearchPaging,
 )
 
 @Serializable
 data class MALSearchResultNode(
-    val node: MALSearchResultItem,
+    val node: MALManga,
 )
 
 @Serializable
-data class MALSearchResultItem(
-    val id: Int,
+data class MALAnimeSearchResult(
+    val data: List<MALAnimeSearchResultNode>,
+    val paging: MALSearchPaging,
+)
+
+@Serializable
+data class MALAnimeSearchResultNode(
+    val node: MALAnime,
+)
+
+@Serializable
+data class MALSearchPaging(
+    val next: String?,
 )

@@ -6,7 +6,6 @@ import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.model.Anime
@@ -120,7 +119,7 @@ class AnimeDownloadStore(
      * @param download the download to serialize.
      */
     private fun serialize(download: AnimeDownload): String {
-        val obj = AnimeDownloadObject(download.anime.id, download.episode.id!!, counter++)
+        val obj = AnimeDownloadObject(download.anime.id, download.episode.id, counter++)
         return json.encodeToString(obj)
     }
 

@@ -34,7 +34,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -43,12 +43,12 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.core.util.ifAnimeSourcesLoaded
+import eu.kanade.presentation.browse.RemoveEntryDialog
+import eu.kanade.presentation.browse.SavedSearchCreateDialog
+import eu.kanade.presentation.browse.SavedSearchDeleteDialog
 import eu.kanade.presentation.browse.anime.BrowseAnimeSourceContent
 import eu.kanade.presentation.browse.anime.MissingSourceScreen
 import eu.kanade.presentation.browse.anime.components.BrowseAnimeSourceToolbar
-import eu.kanade.presentation.browse.anime.components.RemoveEntryDialog
-import eu.kanade.presentation.browse.anime.components.SavedSearchCreateDialog
-import eu.kanade.presentation.browse.anime.components.SavedSearchDeleteDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.entries.anime.DuplicateAnimeDialog
 import eu.kanade.presentation.util.AssistContentScreen
@@ -57,6 +57,7 @@ import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.ui.browse.anime.extension.details.AnimeSourcePreferencesScreen
+import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
 import eu.kanade.tachiyomi.ui.browse.anime.migration.search.MigrateAnimeDialog
 import eu.kanade.tachiyomi.ui.browse.anime.migration.search.MigrateAnimeDialogScreenModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreenModel.Listing
@@ -114,7 +115,6 @@ data class BrowseAnimeSourceScreen(
         val navigateUp: () -> Unit = {
             when {
                 !state.isUserQuery && state.toolbarQuery != null -> screenModel.setToolbarQuery(null)
-
                 else -> navigator.pop()
             }
         }
@@ -162,9 +162,7 @@ data class BrowseAnimeSourceScreen(
                 Column(
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.surface)
-                        .onGloballyPositioned { layoutCoordinates ->
-                            topBarHeight = layoutCoordinates.size.height
-                        },
+                        .onSizeChanged { topBarHeight = it.height },
                 ) {
                     BrowseAnimeSourceToolbar(
                         searchQuery = state.toolbarQuery,
@@ -379,12 +377,14 @@ data class BrowseAnimeSourceScreen(
                             anime.favorite -> screenModel.setDialog(
                                 BrowseAnimeSourceScreenModel.Dialog.RemoveAnime(anime),
                             )
+
                             duplicateAnime != null -> screenModel.setDialog(
                                 BrowseAnimeSourceScreenModel.Dialog.AddDuplicateAnime(
                                     anime,
                                     duplicateAnime,
                                 ),
                             )
+
                             else -> screenModel.addFavorite(anime)
                         }
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -418,6 +418,7 @@ data class BrowseAnimeSourceScreen(
                     // SY <--
                 )
             }
+
             is BrowseAnimeSourceScreenModel.Dialog.AddDuplicateAnime -> {
                 DuplicateAnimeDialog(
                     onDismissRequest = onDismissRequest,
@@ -438,11 +439,13 @@ data class BrowseAnimeSourceScreen(
                     screenModel = MigrateAnimeDialogScreenModel(),
                     onDismissRequest = onDismissRequest,
                     onClickTitle = { navigator.push(AnimeScreen(dialog.oldAnime.id)) },
+                    onClickSeasons = { navigator.push(MigrateSeasonSelectScreen(dialog.oldAnime, dialog.newAnime)) },
                     onPopScreen = {
                         onDismissRequest()
                     },
                 )
             }
+
             is BrowseAnimeSourceScreenModel.Dialog.RemoveAnime -> {
                 RemoveEntryDialog(
                     onDismissRequest = onDismissRequest,
@@ -452,6 +455,7 @@ data class BrowseAnimeSourceScreen(
                     entryToRemove = dialog.anime.title,
                 )
             }
+
             is BrowseAnimeSourceScreenModel.Dialog.ChangeAnimeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -463,11 +467,13 @@ data class BrowseAnimeSourceScreen(
                     },
                 )
             }
+
             is BrowseAnimeSourceScreenModel.Dialog.CreateSavedSearch -> SavedSearchCreateDialog(
                 onDismissRequest = onDismissRequest,
                 currentSavedSearches = dialog.currentSavedSearches,
                 saveSearch = screenModel::saveSearch,
             )
+
             is BrowseAnimeSourceScreenModel.Dialog.DeleteSavedSearch -> SavedSearchDeleteDialog(
                 onDismissRequest = onDismissRequest,
                 name = dialog.name,
@@ -475,6 +481,7 @@ data class BrowseAnimeSourceScreen(
                     screenModel.deleteSearch(dialog.idToDelete)
                 },
             )
+
             else -> {}
         }
 

@@ -65,7 +65,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -73,9 +72,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil3.compose.AsyncImage
 import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaQueueItem
+import com.google.android.gms.cast.MediaSeekOptions
 import com.google.android.gms.cast.MediaStatus
 import com.google.android.gms.cast.MediaTrack
 import com.google.android.gms.cast.framework.CastContext
@@ -145,9 +146,11 @@ fun ExpandedControllerScreen(
                         logcat(LogPriority.ERROR) { "Error initializing cast client: ${e.message}" }
                     }
                 }
+
                 Lifecycle.Event.ON_PAUSE -> {
                     client?.unregisterCallback(mediaCallback)
                 }
+
                 else -> {}
             }
         }
@@ -299,7 +302,13 @@ fun ExpandedControllerScreen(
                         ) {
                             Slider(
                                 value = currentPosition.toFloat(),
-                                onValueChange = { client?.seek(it.toLong()) },
+                                onValueChange = {
+                                    client?.seek(
+                                        MediaSeekOptions.Builder()
+                                            .setPosition(it.toLong())
+                                            .build(),
+                                    )
+                                },
                                 valueRange = 0f..duration.toFloat(),
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = SliderDefaults.colors(
@@ -366,7 +375,13 @@ fun ExpandedControllerScreen(
                             )
                         }
                         FilledIconButton(
-                            onClick = { client?.seek(currentPosition - 30000) },
+                            onClick = {
+                                client?.seek(
+                                    MediaSeekOptions.Builder()
+                                        .setPosition(currentPosition - 30000)
+                                        .build(),
+                                )
+                            },
                             colors = IconButtonDefaults.filledIconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
                             ),
@@ -398,7 +413,13 @@ fun ExpandedControllerScreen(
                         }
 
                         FilledIconButton(
-                            onClick = { client?.seek(currentPosition + 30000) },
+                            onClick = {
+                                client?.seek(
+                                    MediaSeekOptions.Builder()
+                                        .setPosition(currentPosition + 30000)
+                                        .build(),
+                                )
+                            },
                             colors = IconButtonDefaults.filledIconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
                             ),

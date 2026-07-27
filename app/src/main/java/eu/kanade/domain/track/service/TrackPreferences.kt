@@ -3,6 +3,7 @@ package eu.kanade.domain.track.service
 import eu.kanade.domain.track.model.AutoTrackState
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
+import eu.kanade.tachiyomi.data.track.mangabaka.MangaBaka
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
@@ -13,6 +14,11 @@ class TrackPreferences(
 
     fun trackUsername(tracker: Tracker) = preferenceStore.getString(
         Preference.privateKey("pref_mangasync_username_${tracker.id}"),
+        "",
+    )
+
+    fun trackDisplayUsername(tracker: Tracker) = preferenceStore.getString(
+        Preference.privateKey("pref_mangasync_displayname_${tracker.id}"),
         "",
     )
 
@@ -34,18 +40,35 @@ class TrackPreferences(
 
     fun trackToken(tracker: Tracker) = preferenceStore.getString(Preference.privateKey("track_token_${tracker.id}"), "")
 
-    fun anilistScoreType() = preferenceStore.getString("anilist_score_type", Anilist.POINT_10)
+    fun trackApiKey(tracker: Tracker) = preferenceStore.getString(
+        Preference.privateKey("track_api_key_${tracker.id}"),
+        "",
+    )
 
-    fun autoUpdateTrack() = preferenceStore.getBoolean("pref_auto_update_manga_sync_key", true)
+    fun setApiKey(tracker: Tracker, apiKey: String) {
+        trackApiKey(tracker).set(apiKey)
+    }
 
-    fun trackOnAddingToLibrary() = preferenceStore.getBoolean("track_on_adding_to_library", true)
+    val anilistScoreType: Preference<String> = preferenceStore.getString("anilist_score_type", Anilist.POINT_10)
 
-    fun showNextEpisodeAiringTime() = preferenceStore.getBoolean(
+    val mangabakaScoreType: Preference<String> = preferenceStore.getString("mangabaka_score_type", MangaBaka.STEP_1)
+
+    val autoUpdateTrack: Preference<Boolean> = preferenceStore.getBoolean("pref_auto_update_manga_sync_key", true)
+
+    val trackOnAddingToLibrary: Preference<Boolean> = preferenceStore.getBoolean("track_on_adding_to_library", true)
+
+    val showNextEpisodeAiringTime: Preference<Boolean> = preferenceStore.getBoolean(
         "show_next_episode_airing_time",
         true,
     )
 
-    fun autoUpdateTrackOnMarkRead() = preferenceStore.getEnum(
+    // AM -->
+    fun syncEnhancedTrackers() = preferenceStore.getBoolean("sync_enhanced_trackers", true)
+
+    fun smartTrackerSync() = preferenceStore.getBoolean("smart_sync_trackers", true)
+    // <-- AM
+
+    val autoUpdateTrackOnMarkRead: Preference<AutoTrackState> = preferenceStore.getEnum(
         "pref_auto_update_manga_on_mark_read",
         AutoTrackState.ALWAYS,
     )

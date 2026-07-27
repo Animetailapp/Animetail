@@ -40,6 +40,8 @@ import eu.kanade.presentation.library.manga.MangaLibrarySettingsDialog
 import eu.kanade.presentation.more.onboarding.GETTING_STARTED_URL
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
+import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
+import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateJob
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearchScreen
@@ -49,11 +51,11 @@ import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import mihon.feature.migration.config.MangaMigrationConfigScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.category.model.Category
@@ -61,6 +63,7 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.domain.library.manga.model.MangaLibraryGroup
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
@@ -76,7 +79,7 @@ data object MangaLibraryTab : Tab {
         @Composable
         get() {
             val fromMore = currentNavigationStyle() == NavStyle.MOVE_MANGA_TO_MORE
-            val title = MR.strings.label_manga_library
+            val title = AYMR.strings.label_manga_library
             val isSelected = LocalTabNavigator.current.current.key == key
             val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_library_enter)
             val index: UShort = if (fromMore) 5u else 1u
@@ -113,10 +116,13 @@ data object MangaLibraryTab : Tab {
                 group = state.groupType,
                 groupExtra = when (state.groupType) {
                     MangaLibraryGroup.BY_DEFAULT -> null
+
                     MangaLibraryGroup.BY_SOURCE,
                     MangaLibraryGroup.BY_TRACK_STATUS, MangaLibraryGroup.BY_TAG,
                     -> category?.id?.toString()
+
                     MangaLibraryGroup.BY_STATUS -> category?.id?.minus(1)?.toString()
+
                     else -> null
                 },
             )
@@ -142,7 +148,7 @@ data object MangaLibraryTab : Tab {
             null
         }
 
-        val defaultTitle = stringResource(MR.strings.label_manga_library)
+        val defaultTitle = stringResource(AYMR.strings.label_manga_library)
 
         Scaffold(
             topBar = { scrollBehavior ->
@@ -204,6 +210,10 @@ data object MangaLibraryTab : Tab {
                     onDownloadClicked = screenModel::runDownloadActionSelection
                         .takeIf { state.selection.fastAll { !it.manga.isLocal() } },
                     onDeleteClicked = screenModel::openDeleteMangaDialog,
+                    onMigrateClicked = {
+                        val selection = state.selection.map { it.manga.id }
+                        navigator.push(MangaMigrationConfigScreen(selection))
+                    },
                     // SY -->
                     onClickResetInfo = screenModel::resetInfo.takeIf { state.showResetInfo },
                     // SY <--
@@ -214,12 +224,13 @@ data object MangaLibraryTab : Tab {
         ) { contentPadding ->
             when {
                 state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
                 state.searchQuery.isNullOrEmpty() && !state.hasActiveFilters && state.isLibraryEmpty -> {
                     val handler = LocalUriHandler.current
                     EmptyScreen(
                         stringRes = MR.strings.information_empty_library,
                         modifier = Modifier.padding(contentPadding),
-                        actions = persistentListOf(
+                        actions = listOf(
                             EmptyScreenAction(
                                 stringRes = MR.strings.getting_started_guide,
                                 icon = Icons.AutoMirrored.Outlined.HelpOutline,
@@ -228,6 +239,7 @@ data object MangaLibraryTab : Tab {
                         ),
                     )
                 }
+
                 else -> {
                     MangaLibraryContent(
                         categories = state.categories,
@@ -294,6 +306,7 @@ data object MangaLibraryTab : Tab {
                     // SY <--
                 )
             }
+
             is MangaLibraryScreenModel.Dialog.ChangeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -309,6 +322,7 @@ data object MangaLibraryTab : Tab {
                     },
                 )
             }
+
             is MangaLibraryScreenModel.Dialog.DeleteManga -> {
                 DeleteLibraryEntryDialog(
                     containsLocalEntry = dialog.manga.any(Manga::isLocal),
@@ -320,6 +334,7 @@ data object MangaLibraryTab : Tab {
                     isManga = true,
                 )
             }
+
             null -> {}
         }
 
@@ -337,6 +352,9 @@ data object MangaLibraryTab : Tab {
         LaunchedEffect(state.isLoading) {
             if (!state.isLoading) {
                 (context as? MainActivity)?.ready = true
+                // AM (DISCORD) -->
+                DiscordRPCService.setScreen(context, DiscordScreen.LIBRARY)
+                // <-- AM (DISCORD)
             }
         }
 

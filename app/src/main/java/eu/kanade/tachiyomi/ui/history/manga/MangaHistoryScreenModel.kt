@@ -9,8 +9,6 @@ import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.track.manga.interactor.AddMangaTracks
 import eu.kanade.presentation.history.manga.MangaHistoryUiModel
 import eu.kanade.tachiyomi.util.lang.toLocalDate
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -97,6 +95,7 @@ class MangaHistoryScreenModel(
                 val afterDate = after?.item?.readAt?.time?.toLocalDate()
                 when {
                     beforeDate != afterDate && afterDate != null -> MangaHistoryUiModel.Header(afterDate)
+
                     // Return null to avoid adding a separator between two items.
                     else -> null
                 }
@@ -199,7 +198,7 @@ class MangaHistoryScreenModel(
         screenModelScope.launchIO {
             // Move to default category if applicable
             val categories = getCategories()
-            val defaultCategoryId = libraryPreferences.defaultMangaCategory().get().toLong()
+            val defaultCategoryId = libraryPreferences.defaultCategory.get().toLong()
             val defaultCategory = categories.find { it.id == defaultCategoryId }
 
             when {
@@ -240,7 +239,7 @@ class MangaHistoryScreenModel(
                 currentState.copy(
                     dialog = Dialog.ChangeCategory(
                         manga = manga,
-                        initialSelection = categories.mapAsCheckboxState { it.id in selection }.toImmutableList(),
+                        initialSelection = categories.mapAsCheckboxState { it.id in selection },
                     ),
                 )
             }
@@ -260,7 +259,7 @@ class MangaHistoryScreenModel(
         data class DuplicateManga(val manga: Manga, val duplicate: Manga) : Dialog
         data class ChangeCategory(
             val manga: Manga,
-            val initialSelection: ImmutableList<CheckboxState<Category>>,
+            val initialSelection: List<CheckboxState<Category>>,
         ) : Dialog
         data class Migrate(val newManga: Manga, val oldManga: Manga) : Dialog
     }

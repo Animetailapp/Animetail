@@ -76,10 +76,13 @@ object ImageUtil {
             // https://coil-kt.github.io/coil/getting_started/#supported-image-formats
             when (type.format) {
                 Format.Gif -> true
+
                 // Animated WebP on Android 9+
                 Format.Webp -> type.isAnimated && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+
                 // Animated Heif on Android 11+
                 Format.Heif -> type.isAnimated && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+
                 else -> false
             }
         } catch (e: Exception) {
@@ -202,6 +205,7 @@ object ImageUtil {
     }
 
     // SY -->
+
     /**
      * Split the image into left and right parts, then merge them into a
      * new image with added center padding scaled relative to the height of the display view
@@ -250,8 +254,11 @@ object ImageUtil {
         imageSource: BufferedSource,
     ): Boolean {
         val options = extractImageOptions(imageSource)
-
-        return (options.outHeight / options.outWidth) > 3
+        return TallImageSplitCalculator.shouldSplit(
+            imageWidth = options.outWidth,
+            imageHeight = options.outHeight,
+            optimalImageHeight = optimalImageHeight,
+        )
     }
 
     /**
@@ -281,7 +288,6 @@ object ImageUtil {
         val options = extractImageOptions(imageSource).apply {
             inJustDecodeBounds = false
         }
-
         val splitDataList = options.splitData
 
         return try {
@@ -328,8 +334,7 @@ object ImageUtil {
             val imageHeight = outHeight
             val imageWidth = outWidth
 
-            // -1 so it doesn't try to split when imageHeight = optimalImageHeight
-            val partCount = (imageHeight - 1) / optimalImageHeight + 1
+            val partCount = TallImageSplitCalculator.calculatePartCount(imageHeight, optimalImageHeight)
             val optimalSplitHeight = imageHeight / partCount
 
             logcat {
@@ -382,9 +387,6 @@ object ImageUtil {
         return maxOf(width, height) <= hardwareBitmapThreshold
     }
 
-    /**
-     * Algorithm for determining what background to accompany a comic/manga page
-     */
     /**
      * Algorithm for determining what background to accompany a comic/manga page
      */
@@ -523,6 +525,7 @@ object ImageUtil {
                     overallWhitePixels = 0
                     break@outer
                 }
+
                 blackStreak -> {
                     darkBG = true
                     if (x == right || x == rightOffsetX) {
@@ -537,6 +540,7 @@ object ImageUtil {
                         break@outer
                     }
                 }
+
                 whiteStreak || whitePixels > 22 -> darkBG = false
             }
         }
@@ -571,12 +575,15 @@ object ImageUtil {
             darkBG && botCornersIsWhite -> {
                 intArrayOf(blackColor, blackColor, whiteColor, whiteColor)
             }
+
             darkBG && topCornersIsWhite -> {
                 intArrayOf(whiteColor, whiteColor, blackColor, blackColor)
             }
+
             darkBG -> {
                 return ColorDrawable(blackColor)
             }
+
             topIsBlackStreak ||
                 (
                     topCornersIsDark &&
@@ -585,6 +592,7 @@ object ImageUtil {
                     ) -> {
                 intArrayOf(blackColor, blackColor, whiteColor, whiteColor)
             }
+
             bottomIsBlackStreak ||
                 (
                     botCornersIsDark &&
@@ -593,6 +601,7 @@ object ImageUtil {
                     ) -> {
                 intArrayOf(whiteColor, whiteColor, blackColor, blackColor)
             }
+
             else -> {
                 return ColorDrawable(whiteColor)
             }

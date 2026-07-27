@@ -17,13 +17,13 @@ class GetEnabledMangaSources(
 
     fun subscribe(): Flow<List<Source>> {
         return combine(
-            preferences.pinnedMangaSources().changes(),
-            preferences.enabledLanguages().changes(),
+            preferences.pinnedMangaSources.changes(),
+            preferences.enabledLanguages.changes(),
             combine(
-                preferences.disabledMangaSources().changes(),
-                preferences.lastUsedMangaSource().changes(),
+                preferences.disabledMangaSources.changes(),
+                preferences.lastUsedSource.changes(),
                 // SY -->
-                preferences.dataSaverExcludedSources().changes(),
+                preferences.dataSaverExcludedSources.changes(),
                 // SY <--
             ) { a, b, c -> Triple(a, b, c) },
             repository.getMangaSources(),

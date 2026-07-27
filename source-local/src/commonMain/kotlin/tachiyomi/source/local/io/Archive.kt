@@ -9,7 +9,7 @@ object ArchiveAnime {
         listOf("avi", "flv", "mkv", "mov", "mp4", "webm", "wmv", "torrent", "m3u", "m3u8")
 
     fun isSupported(file: UniFile): Boolean = with(file) {
-        return file.extension in SUPPORTED_ARCHIVE_TYPES
+        return file.extension?.lowercase() in SUPPORTED_ARCHIVE_TYPES
     }
 }
 

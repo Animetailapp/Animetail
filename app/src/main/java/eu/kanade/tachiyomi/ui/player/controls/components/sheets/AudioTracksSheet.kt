@@ -42,7 +42,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel.VideoTrack
 import kotlinx.collections.immutable.ImmutableList
-import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -65,7 +65,7 @@ fun AudioTracksSheet(
         selectedIndex = selectedIndex,
         header = {
             TrackSheetTitle(
-                title = stringResource(MR.strings.pref_player_audio),
+                title = stringResource(AYMR.strings.pref_player_audio),
                 actions = {
                     TextButton(onClick = onOpenDelayPanel) {
                         Row(
@@ -73,14 +73,14 @@ fun AudioTracksSheet(
                             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
                         ) {
                             Icon(imageVector = Icons.Default.MoreTime, contentDescription = null)
-                            Text(text = stringResource(MR.strings.player_sheets_track_delay))
+                            Text(text = stringResource(AYMR.strings.player_sheets_track_delay))
                         }
                     }
                 },
             )
 
             AddTrackRow(
-                title = stringResource(MR.strings.player_sheets_add_ext_audio),
+                title = stringResource(AYMR.strings.player_sheets_add_ext_audio),
                 onClick = onAddAudioTrack,
             )
         },

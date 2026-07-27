@@ -13,10 +13,10 @@ class GetMangaExtensionsByType(
 ) {
 
     fun subscribe(): Flow<MangaExtensions> {
-        val showNsfwSources = preferences.showNsfwSource().get()
+        val showNsfwSources = preferences.showNsfwSource.get()
 
         return combine(
-            preferences.enabledLanguages().changes(),
+            preferences.enabledLanguages.changes(),
             extensionManager.installedExtensionsFlow,
             extensionManager.untrustedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
@@ -35,16 +35,10 @@ class GetMangaExtensionsByType(
             val available = _available
                 .filter { extension ->
                     _installed.none {
-                        // KMK -->
-                        it.signatureHash == extension.signatureHash &&
-                            // KMK <--
-                            it.pkgName == extension.pkgName
+                        it.pkgName == extension.pkgName
                     } &&
                         _untrusted.none {
-                            // KMK -->
-                            it.signatureHash == extension.signatureHash &&
-                                // KMK <--
-                                it.pkgName == extension.pkgName
+                            it.pkgName == extension.pkgName
                         } &&
                         (showNsfwSources || !extension.isNsfw)
                 }

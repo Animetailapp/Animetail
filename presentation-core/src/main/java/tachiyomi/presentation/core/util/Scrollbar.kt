@@ -24,13 +24,12 @@ package tachiyomi.presentation.core.util
  * SOFTWARE.
  */
 
-/**
+/*
  * Code taken from https://gist.github.com/mxalbert1996/33a360fcab2105a31e5355af98216f5a
  * with some modifications to handle contentPadding.
  *
  * Modifiers for regular scrollable list is omitted.
  */
-
 import android.view.ViewConfiguration
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -66,10 +65,13 @@ import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastSumBy
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.sample
 import tachiyomi.presentation.core.components.Scroller.STICKY_HEADER_KEY_PREFIX
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Draws horizontal scrollbar to a LazyList.
@@ -211,10 +213,11 @@ private fun Modifier.drawScrollbar(
     val alpha = remember { Animatable(0f) }
     LaunchedEffect(scrolled, alpha) {
         scrolled
-            .sample(100)
+            .sample(0.1.seconds)
             .collectLatest {
                 alpha.snapTo(1f)
-                alpha.animateTo(0f, animationSpec = FadeOutAnimationSpec)
+                delay(ScrollBarVisibilityDurationMillis.milliseconds)
+                alpha.animateTo(0f, animationSpec = ImmediateFadeOutAnimationSpec)
             }
     }
 
@@ -236,9 +239,9 @@ private fun Modifier.drawScrollbar(
         }
 }
 
-private val FadeOutAnimationSpec = tween<Float>(
+private val ScrollBarVisibilityDurationMillis = ViewConfiguration.getScrollDefaultDelay().toLong()
+private val ImmediateFadeOutAnimationSpec = tween<Float>(
     durationMillis = ViewConfiguration.getScrollBarFadeDuration(),
-    delayMillis = ViewConfiguration.getScrollDefaultDelay(),
 )
 
 @Preview(widthDp = 400, heightDp = 400, showBackground = true)

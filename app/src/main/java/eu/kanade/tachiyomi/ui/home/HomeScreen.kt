@@ -87,17 +87,17 @@ object HomeScreen : Screen() {
     private const val TAB_NAVIGATOR_KEY = "HomeTabs"
 
     val uiPreferences: UiPreferences by injectLazy()
-    private val defaultTab = uiPreferences.startScreen().get().tab
-    private val moreTab = uiPreferences.navStyle().get().moreTab
+    private val defaultTab = uiPreferences.startScreen.get().tab
+    private val moreTab = uiPreferences.navStyle.get().moreTab
 
     @Composable
     override fun Content() {
-        val navStyle by uiPreferences.navStyle().collectAsState()
+        val navStyle by uiPreferences.navStyle.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         // SY -->
         val scope = rememberCoroutineScope()
         val alwaysShowLabel by remember {
-            Injekt.get<UiPreferences>().bottomBarLabels().asState(scope)
+            Injekt.get<UiPreferences>().bottomBarLabels.asState(scope)
         }
         // SY <--
         val context = LocalContext.current
@@ -220,9 +220,13 @@ object HomeScreen : Screen() {
                     openTabEvent.receiveAsFlow().collectLatest {
                         tabNavigator.current = when (it) {
                             is Tab.AnimeLib -> AnimeLibraryTab
+
                             is Tab.Library -> MangaLibraryTab
+
                             is Tab.Updates -> UpdatesTab
+
                             is Tab.History -> HistoriesTab
+
                             is Tab.Browse -> {
                                 if (it.toExtensions) {
                                     if (!it.anime) {
@@ -233,6 +237,7 @@ object HomeScreen : Screen() {
                                 }
                                 BrowseTab
                             }
+
                             is Tab.More -> MoreTab
                         }
 
@@ -326,10 +331,10 @@ object HomeScreen : Screen() {
                         val count by produceState(initialValue = 0) {
                             val pref = Injekt.get<LibraryPreferences>()
                             combine(
-                                pref.newAnimeUpdatesCount().changes(),
-                                pref.newMangaUpdatesCount().changes(),
+                                pref.newAnimeUpdatesCount.changes(),
+                                pref.newMangaUpdatesCount.changes(),
                             ) { countAnime, countManga -> countAnime + countManga }
-                                .collectLatest { value = if (pref.newShowUpdatesCount().get()) it else 0 }
+                                .collectLatest { value = if (pref.newShowUpdatesCount.get()) it else 0 }
                         }
                         if (count > 0) {
                             Badge {
@@ -345,12 +350,13 @@ object HomeScreen : Screen() {
                             }
                         }
                     }
+
                     BrowseTab::class.isInstance(tab) -> {
                         val count by produceState(initialValue = 0) {
                             val pref = Injekt.get<SourcePreferences>()
                             combine(
-                                pref.mangaExtensionUpdatesCount().changes(),
-                                pref.animeExtensionUpdatesCount().changes(),
+                                pref.extensionUpdatesCount.changes(),
+                                pref.animeExtensionUpdatesCount.changes(),
                             ) { extCount, animeExtCount -> extCount + animeExtCount }
                                 .collectLatest { value = it }
                         }

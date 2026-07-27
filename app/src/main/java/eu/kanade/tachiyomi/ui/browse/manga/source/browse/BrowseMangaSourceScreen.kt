@@ -30,7 +30,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
@@ -38,7 +38,7 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.core.util.ifMangaSourcesLoaded
-import eu.kanade.presentation.browse.anime.components.RemoveEntryDialog
+import eu.kanade.presentation.browse.RemoveEntryDialog
 import eu.kanade.presentation.browse.manga.BrowseSourceContent
 import eu.kanade.presentation.browse.manga.MissingSourceScreen
 import eu.kanade.presentation.browse.manga.components.BrowseMangaSourceToolbar
@@ -94,6 +94,7 @@ data class BrowseMangaSourceScreen(
                 !state.isUserQuery && state.toolbarQuery != null -> screenModel.setToolbarQuery(
                     null,
                 )
+
                 else -> navigator.pop()
             }
         }
@@ -133,9 +134,7 @@ data class BrowseMangaSourceScreen(
                 Column(
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.surface)
-                        .onGloballyPositioned { layoutCoordinates ->
-                            topBarHeight = layoutCoordinates.size.height
-                        },
+                        .onSizeChanged { topBarHeight = it.height },
                 ) {
                     BrowseMangaSourceToolbar(
                         searchQuery = state.toolbarQuery,
@@ -238,12 +237,14 @@ data class BrowseMangaSourceScreen(
                             manga.favorite -> screenModel.setDialog(
                                 BrowseMangaSourceScreenModel.Dialog.RemoveManga(manga),
                             )
+
                             duplicateManga != null -> screenModel.setDialog(
                                 BrowseMangaSourceScreenModel.Dialog.AddDuplicateManga(
                                     manga,
                                     duplicateManga,
                                 ),
                             )
+
                             else -> screenModel.addFavorite(manga)
                         }
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -263,6 +264,7 @@ data class BrowseMangaSourceScreen(
                     onUpdate = screenModel::setFilters,
                 )
             }
+
             is BrowseMangaSourceScreenModel.Dialog.AddDuplicateManga -> {
                 DuplicateMangaDialog(
                     onDismissRequest = onDismissRequest,
@@ -288,6 +290,7 @@ data class BrowseMangaSourceScreen(
                     },
                 )
             }
+
             is BrowseMangaSourceScreenModel.Dialog.RemoveManga -> {
                 RemoveEntryDialog(
                     onDismissRequest = onDismissRequest,
@@ -297,6 +300,7 @@ data class BrowseMangaSourceScreen(
                     entryToRemove = dialog.manga.title,
                 )
             }
+
             is BrowseMangaSourceScreenModel.Dialog.ChangeMangaCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -311,6 +315,7 @@ data class BrowseMangaSourceScreen(
                     },
                 )
             }
+
             else -> {}
         }
 

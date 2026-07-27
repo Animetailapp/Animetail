@@ -44,6 +44,7 @@ fun AnimeUpdateScreen(
     onUpdateLibrary: () -> Boolean,
     onDownloadEpisode: (List<AnimeUpdatesItem>, EpisodeDownloadAction) -> Unit,
     onMultiBookmarkClicked: (List<AnimeUpdatesItem>, bookmark: Boolean) -> Unit,
+    onMultiFillermarkClicked: (List<AnimeUpdatesItem>, fillermark: Boolean) -> Unit,
     onMultiMarkAsSeenClicked: (List<AnimeUpdatesItem>, seen: Boolean) -> Unit,
     onMultiDeleteClicked: (List<AnimeUpdatesItem>) -> Unit,
     onUpdateSelected: (AnimeUpdatesItem, Boolean, Boolean, Boolean) -> Unit,
@@ -57,6 +58,7 @@ fun AnimeUpdateScreen(
                 selected = state.selected,
                 onDownloadEpisode = onDownloadEpisode,
                 onMultiBookmarkClicked = onMultiBookmarkClicked,
+                onMultiFillermarkClicked = onMultiFillermarkClicked,
                 onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
                 onMultiDeleteClicked = onMultiDeleteClicked,
                 onOpenEpisode = onOpenEpisode,
@@ -66,10 +68,12 @@ fun AnimeUpdateScreen(
     ) { contentPadding ->
         when {
             state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
             state.items.isEmpty() -> EmptyScreen(
                 stringRes = MR.strings.information_no_recent,
                 modifier = Modifier.padding(contentPadding),
             )
+
             else -> {
                 val scope = rememberCoroutineScope()
                 var isRefreshing by remember { mutableStateOf(false) }
@@ -114,6 +118,7 @@ private fun AnimeUpdatesBottomBar(
     selected: List<AnimeUpdatesItem>,
     onDownloadEpisode: (List<AnimeUpdatesItem>, EpisodeDownloadAction) -> Unit,
     onMultiBookmarkClicked: (List<AnimeUpdatesItem>, bookmark: Boolean) -> Unit,
+    onMultiFillermarkClicked: (List<AnimeUpdatesItem>, fillermark: Boolean) -> Unit,
     onMultiMarkAsSeenClicked: (List<AnimeUpdatesItem>, seen: Boolean) -> Unit,
     onMultiDeleteClicked: (List<AnimeUpdatesItem>) -> Unit,
     onOpenEpisode: (AnimeUpdatesItem, altPlayer: Boolean) -> Unit,
@@ -128,6 +133,12 @@ private fun AnimeUpdatesBottomBar(
         onRemoveBookmarkClicked = {
             onMultiBookmarkClicked.invoke(selected, false)
         }.takeIf { selected.fastAll { it.update.bookmark } },
+        onFillermarkClicked = {
+            onMultiFillermarkClicked.invoke(selected, true)
+        }.takeIf { selected.fastAny { !it.update.fillermark } },
+        onRemoveFillermarkClicked = {
+            onMultiFillermarkClicked.invoke(selected, false)
+        }.takeIf { selected.fastAll { it.update.fillermark } },
         onMarkAsViewedClicked = {
             onMultiMarkAsSeenClicked(selected, true)
         }.takeIf { selected.fastAny { !it.update.seen } },

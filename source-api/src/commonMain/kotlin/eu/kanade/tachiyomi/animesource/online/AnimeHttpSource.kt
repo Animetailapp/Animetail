@@ -1,11 +1,15 @@
 package eu.kanade.tachiyomi.animesource.online
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.Hoster
+import eu.kanade.tachiyomi.animesource.model.HttpServer
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
+import eu.kanade.tachiyomi.animesource.model.ThumbnailInfo
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.NetworkHelper
@@ -69,6 +73,16 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      */
     open val client: OkHttpClient
         get() = network.client
+
+    /**
+     * Enable the use of a local http server.
+     *
+     * Extensions are responsible for starting the server, but the app
+     * will handle closing.
+     *
+     * @since extensions-lib 17
+     */
+    open val server: HttpServer? = null
 
     /**
      * Generates a unique ID for the source based on the provided [name], [lang] and
@@ -250,6 +264,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     protected abstract fun animeDetailsParse(response: Response): SAnime
 
     // KMK -->
+
     /**
      * Whether parsing related animes in anime page or extension provide custom related animes request.
      *
@@ -348,6 +363,43 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     protected abstract fun episodeVideoParse(response: Response): SEpisode
 
     /**
+     * Get all the available seasons for an anime.
+     * Normally it's not needed to override this method.
+     *
+     * @since extensions-lib 16
+     * @param anime the anime to look for seasons.
+     * @return the seasons for the anime.
+     */
+    override suspend fun getSeasonList(anime: SAnime): List<SAnime> {
+        return client.newCall(seasonListRequest(anime))
+            .awaitSuccess()
+            .let { response ->
+                seasonListParse(response)
+            }
+    }
+
+    /**
+     * Returns the request for updating the season list. Override only if it's needed to override
+     * the url, send different headers or request method like POST.
+     *
+     * @since extensions-lib 16
+     * @param anime the anime to look for seasons.
+     * @return the request for getting the seasons.
+     */
+    protected open fun seasonListRequest(anime: SAnime): Request {
+        return GET(baseUrl + anime.url, headers)
+    }
+
+    /**
+     * Parses the response from the site and returns a list of episodes.
+     *
+     * @since extensions-lib 16
+     * @param response the response from the site.
+     * @return the list of seasons.
+     */
+    protected abstract fun seasonListParse(response: Response): List<SAnime>
+
+    /**
      * Get the list of hoster for an episode. The first hoster in the list should
      * be the preferred hoster.
      *
@@ -359,7 +411,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
         return client.newCall(hosterListRequest(episode))
             .awaitSuccess()
             .let { response ->
-                hosterListParse(response).sortHosters()
+                hosterListParse(response)
             }
     }
 
@@ -395,7 +447,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
         return client.newCall(videoListRequest(hoster))
             .awaitSuccess()
             .let { response ->
-                videoListParse(response, hoster).sortVideos()
+                videoListParse(response, hoster)
             }
     }
 
@@ -434,24 +486,47 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     }
 
     /**
+     * Return info for thumbnails to be used as a preview when seeking.
+     *
+     * @since extensions-lib 17
+     * @param video the video information.
+     * @return the info for thumbnails. Return null if no thumbnails exist.
+     */
+    open suspend fun getVideoThumbnails(video: Video): ThumbnailInfo? {
+        return null
+    }
+
+    /**
+     * Return bitmap for the image tiles.
+     *
+     * @since extensions-lib 17
+     * @param url the url for the image tiles
+     * @return the image bitmap
+     */
+    open suspend fun getImageTile(url: String): Bitmap? {
+        return client.newCall(GET(url, headers)).execute().body.byteStream().use {
+            BitmapFactory.decodeStream(it)
+        }
+    }
+
+    /**
      * Get the list of videos a episode has. Videos should be returned
      * in the expected order; the index is ignored.
      *
      * @param episode the episode.
      * @return the videos for the episode.
      */
-    @Suppress("DEPRECATION")
     override suspend fun getVideoList(episode: SEpisode): List<Video> {
+        @Suppress("DEPRECATION")
         return fetchVideoList(episode).awaitSingle()
     }
 
-    @Suppress("DEPRECATION")
     @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getVideoList"))
     override fun fetchVideoList(episode: SEpisode): Observable<List<Video>> {
         return client.newCall(videoListRequest(episode))
             .asObservableSuccess()
             .map { response ->
-                videoListParse(response).sort()
+                videoListParse(response)
             }
     }
 
@@ -477,7 +552,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @since extensions-lib 16
      */
-    protected open fun List<Hoster>.sortHosters(): List<Hoster> {
+    open fun List<Hoster>.sortHosters(): List<Hoster> {
         return this
     }
 
@@ -486,8 +561,9 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @since extensions-lib 16
      */
-    protected open fun List<Video>.sortVideos(): List<Video> {
-        return this
+    open fun List<Video>.sortVideos(): List<Video> {
+        @Suppress("DEPRECATION")
+        return sort()
     }
 
     /**
@@ -524,7 +600,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param video the chapter whose page list has to be fetched
      */
     protected open fun videoUrlRequest(video: Video): Request {
-        return GET(video.videoPageUrl, headers)
+        return GET(video.url, headers)
     }
 
     /**
@@ -555,7 +631,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
         tries: Int,
     ): Long {
         val headers = Headers.Builder().addAll(video.headers ?: headers).add("Range", "bytes=0-1").build()
-        val request = GET(video.videoUrl!!, headers)
+        val request = GET(video.videoUrl, headers)
         val response = client.newCall(request).execute()
         // parse the response headers to get the size of the video, in particular the content-range header
         val contentRange = response.header("Content-Range")
@@ -594,7 +670,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
                 // logcat(LogPriority.ERROR) { "Error: end-start is less than 0" }
                 null
             }
-        return GET(video.videoUrl!!, newHeaders ?: headers)
+        return GET(video.videoUrl, newHeaders ?: headers)
     }
 
     /**
@@ -608,7 +684,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     fun safeVideoRequest(
         video: Video,
     ): Request {
-        return GET(video.videoUrl!!, video.headers ?: headers)
+        return GET(video.videoUrl, video.headers ?: headers)
     }
 
     /**

@@ -119,6 +119,7 @@ private fun DiscordAccountsScreenContent() {
                         modifier = Modifier.align(Alignment.Center),
                     )
                 }
+
                 state.error != null -> {
                     Text(
                         text = state.error!!,
@@ -128,6 +129,7 @@ private fun DiscordAccountsScreenContent() {
                             .padding(16.dp),
                     )
                 }
+
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),

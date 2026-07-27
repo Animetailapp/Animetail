@@ -51,12 +51,14 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import eu.kanade.tachiyomi.ui.player.controls.CARDS_MAX_WIDTH
-import tachiyomi.i18n.MR
+import `is`.xyz.mpv.MPV
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 fun SubtitleSettingsPanel(
+    mpv: MPV,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -67,9 +69,9 @@ fun SubtitleSettingsPanel(
         val subSettingsCards = createRef()
         val cards: @Composable (Int, Modifier) -> Unit = { value, cardsModifier ->
             when (value) {
-                0 -> SubtitleSettingsTypographyCard(cardsModifier)
-                1 -> SubtitleSettingsColorsCard(cardsModifier)
-                2 -> SubtitlesMiscellaneousCard(cardsModifier)
+                0 -> SubtitleSettingsTypographyCard(mpv, cardsModifier)
+                1 -> SubtitleSettingsColorsCard(mpv, cardsModifier)
+                2 -> SubtitlesMiscellaneousCard(mpv, cardsModifier)
                 else -> {}
             }
         }
@@ -86,7 +88,7 @@ fun SubtitleSettingsPanel(
                 TopAppBar(
                     title = {
                         Text(
-                            text = stringResource(MR.strings.player_sheets_subtitles_settings_title),
+                            text = stringResource(AYMR.strings.player_sheets_subtitles_settings_title),
                             style = MaterialTheme.typography.headlineMedium.copy(shadow = Shadow(blurRadius = 20f)),
                         )
                     },
@@ -126,7 +128,7 @@ fun SubtitleSettingsPanel(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = stringResource(MR.strings.player_sheets_subtitles_settings_title),
+                        text = stringResource(AYMR.strings.player_sheets_subtitles_settings_title),
                         style = MaterialTheme.typography.headlineMedium.copy(
                             shadow = Shadow(blurRadius = 20f),
                         ),

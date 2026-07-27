@@ -5,17 +5,20 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
+import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
-import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.Locale
+import java.util.MissingResourceException
 
-object PlayerSettingsSubtitleScreen : SearchableSettings {
+object PlayerSettingsSubtitleScreen : Screen(), SearchableSettings {
 
     @ReadOnlyComposable
     @Composable
-    override fun getTitleRes() = MR.strings.pref_player_subtitle
+    override fun getTitleRes() = AYMR.strings.pref_player_subtitle
 
     @Composable
     override fun getPreferences(): List<Preference> {
@@ -24,22 +27,64 @@ object PlayerSettingsSubtitleScreen : SearchableSettings {
         val langPref = subtitlePreferences.preferredSubLanguages()
         val whitelist = subtitlePreferences.subtitleWhitelist()
         val blacklist = subtitlePreferences.subtitleBlacklist()
+        val blackBars = subtitlePreferences.subtitleBlackBars()
 
         return listOf(
             Preference.PreferenceItem.EditTextInfoPreference(
                 preference = langPref,
-                dialogSubtitle = stringResource(MR.strings.pref_player_subtitle_lang_info),
-                title = stringResource(MR.strings.pref_player_subtitle_lang),
+                dialogSubtitle = stringResource(AYMR.strings.pref_player_subtitle_lang_info),
+                title = stringResource(AYMR.strings.pref_player_subtitle_lang),
+                validate = { pref ->
+                    val langs = pref.split(",").filter(String::isNotEmpty).map(String::trim)
+                    langs.forEach {
+                        try {
+                            val locale = Locale.forLanguageTag(it)
+                            if (locale.isO3Language == locale.language &&
+                                locale.language == locale.getDisplayName(Locale.ENGLISH)
+                            ) {
+                                throw MissingResourceException("", "", "")
+                            }
+                        } catch (_: MissingResourceException) {
+                            return@EditTextInfoPreference false
+                        }
+                    }
+
+                    true
+                },
+                errorMessage = { pref ->
+                    val langs = pref.split(",").filter(String::isNotEmpty).map(String::trim)
+                    langs.forEach {
+                        try {
+                            val locale = Locale.forLanguageTag(it)
+                            if (locale.isO3Language == locale.language &&
+                                locale.language == locale.getDisplayName(Locale.ENGLISH)
+                            ) {
+                                throw MissingResourceException("", "", "")
+                            }
+                        } catch (_: MissingResourceException) {
+                            return@EditTextInfoPreference stringResource(
+                                AYMR.strings.pref_player_subtitle_invalid_lang,
+                                it,
+                            )
+                        }
+                    }
+                    ""
+                },
             ),
             Preference.PreferenceItem.EditTextInfoPreference(
                 preference = whitelist,
-                dialogSubtitle = stringResource(MR.strings.pref_player_subtitle_whitelist_info),
-                title = stringResource(MR.strings.pref_player_subtitle_whitelist),
+                dialogSubtitle = stringResource(AYMR.strings.pref_player_subtitle_whitelist_info),
+                title = stringResource(AYMR.strings.pref_player_subtitle_whitelist),
             ),
             Preference.PreferenceItem.EditTextInfoPreference(
                 preference = blacklist,
-                dialogSubtitle = stringResource(MR.strings.pref_player_subtitle_blacklist_info),
-                title = stringResource(MR.strings.pref_player_subtitle_blacklist),
+                dialogSubtitle = stringResource(AYMR.strings.pref_player_subtitle_blacklist_info),
+                title = stringResource(AYMR.strings.pref_player_subtitle_blacklist),
+            ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = blackBars,
+                title = stringResource(AYMR.strings.pref_player_subtitle_black_bars),
+                subtitle = stringResource(AYMR.strings.pref_player_subtitle_black_bars_summary),
             ),
         )
     }

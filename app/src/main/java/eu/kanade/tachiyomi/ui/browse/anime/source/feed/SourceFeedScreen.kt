@@ -186,6 +186,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                     },
                 )
             }
+
             is SourceFeedScreenModel.Dialog.DeleteFeed -> {
                 SourceFeedDeleteDialog(
                     onDismissRequest = onDismissRequest,
@@ -195,6 +196,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                     },
                 )
             }
+
             // KMK -->
             is SourceFeedScreenModel.Dialog.FeedActions -> {
                 FeedActionsDialog(
@@ -208,12 +210,14 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                     onMoveDown = { screenModel.moveDown(it) },
                 )
             }
+
             is SourceFeedScreenModel.Dialog.SortAlphabetically -> {
                 FeedSortAlphabeticallyDialog(
                     onDismissRequest = screenModel::dismissDialog,
                     onSort = { screenModel.sortAlphabetically() },
                 )
             }
+
             // KMK <--
             is SourceFeedScreenModel.Dialog.Filter -> {
                 SourceFilterAnimeDialog(
@@ -262,6 +266,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                     shouldShowSavingButton = false,
                 )
             }
+
             null -> Unit
         }
         // KMK <--

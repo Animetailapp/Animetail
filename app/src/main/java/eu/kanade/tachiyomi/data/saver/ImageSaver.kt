@@ -26,6 +26,8 @@ import java.io.File
 import java.io.InputStream
 import java.time.Instant
 
+typealias ImageBackground = Image.Cover
+
 class ImageSaver(
     val context: Context,
 ) {
@@ -174,13 +176,13 @@ sealed class Image(
                         ByteArrayInputStream(baos.toByteArray())
                     }
                 }
+
                 is Page -> inputStream
             }
         }
 }
 
 sealed interface Location {
-    @ConsistentCopyVisibility
     data class Pictures(val relativePath: String) : Location {
         companion object {
             fun create(relativePath: String = ""): Pictures {
@@ -194,6 +196,7 @@ sealed interface Location {
     fun directory(context: Context): File {
         return when (this) {
             Cache -> context.cacheImageDir
+
             is Pictures -> {
                 val file = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),

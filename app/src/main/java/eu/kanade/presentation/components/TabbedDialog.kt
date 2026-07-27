@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.TabText
@@ -42,7 +41,7 @@ object TabbedDialogPaddings {
 @Composable
 fun TabbedDialog(
     onDismissRequest: () -> Unit,
-    tabTitles: ImmutableList<String>,
+    tabTitles: List<String>,
     modifier: Modifier = Modifier,
     tabOverflowMenuContent: (@Composable ColumnScope.(() -> Unit) -> Unit)? = null,
     onOverflowMenuClicked: (() -> Unit)? = null,

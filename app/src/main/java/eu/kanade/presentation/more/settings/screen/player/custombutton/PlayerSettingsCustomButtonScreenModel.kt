@@ -1,6 +1,7 @@
 package eu.kanade.presentation.more.settings.screen.player.custombutton
 
 import androidx.compose.runtime.Immutable
+import animetail.feature.mpvfiles.MpvConfig
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.icerock.moko.resources.StringResource
@@ -8,9 +9,11 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.custombuttons.interactor.CreateCustomButton
 import tachiyomi.domain.custombuttons.interactor.DeleteCustomButton
 import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
@@ -30,6 +33,9 @@ class PlayerSettingsCustomButtonScreenModel(
     private val updateCustomButton: UpdateCustomButton = Injekt.get(),
     private val reorderCustomButton: ReorderCustomButton = Injekt.get(),
     private val toggleFavoriteCustomButton: ToggleFavoriteCustomButton = Injekt.get(),
+    // AM -->
+    private val mpvConfig: MpvConfig = Injekt.get(),
+    // <-- AM
 ) : StateScreenModel<CustomButtonScreenState>(CustomButtonScreenState.Loading) {
 
     private val _events: Channel<CustomButtonEvent> = Channel()
@@ -46,6 +52,16 @@ class PlayerSettingsCustomButtonScreenModel(
                     }
                 }
         }
+
+        // AM -->
+        screenModelScope.launchIO {
+            getCustomButtons.subscribeAll()
+                .distinctUntilChanged()
+                .collectLatest { customButtons ->
+                    mpvConfig.setupCustomButtons(customButtons)
+                }
+        }
+        // <-- AM
     }
 
     fun createCustomButton(name: String, content: String, longPressContent: String, onStartup: String) {
@@ -54,6 +70,7 @@ class PlayerSettingsCustomButtonScreenModel(
                 is CreateCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -65,6 +82,7 @@ class PlayerSettingsCustomButtonScreenModel(
                 is ToggleFavoriteCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -76,6 +94,7 @@ class PlayerSettingsCustomButtonScreenModel(
                 is UpdateCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -87,6 +106,7 @@ class PlayerSettingsCustomButtonScreenModel(
                 is DeleteCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
                 )
+
                 else -> {}
             }
         }
@@ -98,6 +118,7 @@ class PlayerSettingsCustomButtonScreenModel(
                 is ReorderCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
                 )
+
                 else -> {}
             }
         }

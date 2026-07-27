@@ -42,7 +42,7 @@ class ReorderFeed(
             val newPosition = when (moveTo) {
                 MoveTo.UP -> currentIndex - 1
                 MoveTo.DOWN -> currentIndex + 1
-            }.toInt()
+            }
 
             try {
                 Collections.swap(feeds, currentIndex, newPosition)

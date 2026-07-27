@@ -29,6 +29,12 @@ class ChildFirstPathClassLoader(
             } catch (_: ClassNotFoundException) {}
         }
 
+        if (c == null && name != null && isParentFirstPackage(name)) {
+            try {
+                c = super.loadClass(name, resolve)
+            } catch (_: ClassNotFoundException) {}
+        }
+
         if (c == null) {
             c = try {
                 findClass(name)
@@ -42,6 +48,21 @@ class ChildFirstPathClassLoader(
         }
 
         return c
+    }
+
+    private fun isParentFirstPackage(name: String): Boolean {
+        return name.startsWith("eu.kanade.tachiyomi.source.") ||
+            name.startsWith("eu.kanade.tachiyomi.animesource.") ||
+            name.startsWith("eu.kanade.tachiyomi.network.") ||
+            name.startsWith("tachiyomi.") ||
+            name.startsWith("uy.kohesive.injekt.") ||
+            name.startsWith("keiyoushi.") ||
+            name.startsWith("rx.") ||
+            name.startsWith("okhttp3.") ||
+            name.startsWith("kotlin.") ||
+            name.startsWith("kotlinx.") ||
+            name.startsWith("android.") ||
+            name.startsWith("androidx.")
     }
 
     override fun getResource(name: String?): URL? {

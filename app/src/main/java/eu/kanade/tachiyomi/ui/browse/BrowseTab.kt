@@ -34,7 +34,6 @@ import eu.kanade.tachiyomi.ui.browse.manga.extension.mangaExtensionsTab
 import eu.kanade.tachiyomi.ui.browse.manga.migration.sources.migrateMangaSourceTab
 import eu.kanade.tachiyomi.ui.browse.manga.source.mangaSourcesTab
 import eu.kanade.tachiyomi.ui.main.MainActivity
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
@@ -64,14 +63,19 @@ data object BrowseTab : Tab {
         navigator.push(GlobalAnimeSearchScreen())
     }
 
-    private val switchToTabNumberChannel = Channel<Int>(1, BufferOverflow.DROP_OLDEST)
+    private enum class ExtensionTabTarget {
+        ANIME,
+        MANGA,
+    }
+
+    private val switchToExtensionTabChannel = Channel<ExtensionTabTarget>(1, BufferOverflow.DROP_OLDEST)
 
     fun showExtension() {
-        switchToTabNumberChannel.trySend(3) // Manga extensions: tab no. 3
+        switchToExtensionTabChannel.trySend(ExtensionTabTarget.MANGA)
     }
 
     fun showAnimeExtension() {
-        switchToTabNumberChannel.trySend(2) // Anime extensions: tab no. 2
+        switchToExtensionTabChannel.trySend(ExtensionTabTarget.ANIME)
     }
 
     @Composable
@@ -79,8 +83,8 @@ data object BrowseTab : Tab {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         // SY -->
-        val hideFeedTab by remember { Injekt.get<UiPreferences>().hideFeedTab().asState(scope) }
-        val feedTabInFront by remember { Injekt.get<UiPreferences>().feedTabInFront().asState(scope) }
+        val hideFeedTab by remember { Injekt.get<UiPreferences>().hideFeedTab.asState(scope) }
+        val feedTabInFront by remember { Injekt.get<UiPreferences>().feedTabInFront.asState(scope) }
         // SY <--
 
         // Hoisted for extensions tab's search bar
@@ -90,22 +94,26 @@ data object BrowseTab : Tab {
         val animeExtensionsScreenModel = rememberScreenModel { AnimeExtensionsScreenModel() }
         val animeExtensionsState by animeExtensionsScreenModel.state.collectAsState()
 
+        val animeExtensionsTabContent = animeExtensionsTab(animeExtensionsScreenModel)
+        val mangaExtensionsTabContent = mangaExtensionsTab(mangaExtensionsScreenModel)
+
         // KMK -->
         val feedScreenModel = rememberScreenModel { FeedScreenModel() }
         // KMK <--
 
         val tabs = when {
             hideFeedTab ->
-                persistentListOf(
+                listOf(
                     animeSourcesTab(),
                     mangaSourcesTab(),
-                    animeExtensionsTab(animeExtensionsScreenModel),
-                    mangaExtensionsTab(mangaExtensionsScreenModel),
+                    animeExtensionsTabContent,
+                    mangaExtensionsTabContent,
                     migrateAnimeSourceTab(),
                     migrateMangaSourceTab(),
                 )
+
             feedTabInFront ->
-                persistentListOf(
+                listOf(
                     feedTab(
                         // KMK -->
                         feedScreenModel,
@@ -113,13 +121,14 @@ data object BrowseTab : Tab {
                     ),
                     animeSourcesTab(),
                     mangaSourcesTab(),
-                    animeExtensionsTab(animeExtensionsScreenModel),
-                    mangaExtensionsTab(mangaExtensionsScreenModel),
+                    animeExtensionsTabContent,
+                    mangaExtensionsTabContent,
                     migrateAnimeSourceTab(),
                     migrateMangaSourceTab(),
                 )
+
             else ->
-                persistentListOf(
+                listOf(
                     animeSourcesTab(),
                     mangaSourcesTab(),
                     feedTab(
@@ -127,12 +136,19 @@ data object BrowseTab : Tab {
                         feedScreenModel,
                         // KMK <--
                     ),
-                    animeExtensionsTab(animeExtensionsScreenModel),
-                    mangaExtensionsTab(mangaExtensionsScreenModel),
+                    animeExtensionsTabContent,
+                    mangaExtensionsTabContent,
                     migrateAnimeSourceTab(),
                     migrateMangaSourceTab(),
                 )
             // SY <--
+        }
+
+        val animeExtensionsTabIndex = remember(tabs, animeExtensionsTabContent) {
+            tabs.indexOf(animeExtensionsTabContent)
+        }
+        val mangaExtensionsTabIndex = remember(tabs, mangaExtensionsTabContent) {
+            tabs.indexOf(mangaExtensionsTabContent)
         }
 
         val state = rememberPagerState { tabs.size }
@@ -141,25 +157,34 @@ data object BrowseTab : Tab {
             titleRes = MR.strings.browse,
             tabs = tabs,
             state = state,
-            mangaSearchQuery = animeExtensionsState.searchQuery,
-            onChangeMangaSearchQuery = animeExtensionsScreenModel::search,
-            animeSearchQuery = mangaExtensionsState.searchQuery,
-            onChangeAnimeSearchQuery = mangaExtensionsScreenModel::search,
+            mangaSearchQuery = mangaExtensionsState.searchQuery,
+            onChangeMangaSearchQuery = mangaExtensionsScreenModel::search,
+            animeSearchQuery = animeExtensionsState.searchQuery,
+            onChangeAnimeSearchQuery = animeExtensionsScreenModel::search,
+            animeExtensionsTabIndex = animeExtensionsTabIndex,
+            mangaExtensionsTabIndex = mangaExtensionsTabIndex,
             // KMK -->
             feedScreenModel = feedScreenModel,
             // KMK <--
             scrollable = true,
         )
-        LaunchedEffect(Unit) {
-            switchToTabNumberChannel.receiveAsFlow()
-                .collectLatest { state.scrollToPage(it) }
+        LaunchedEffect(animeExtensionsTabIndex, mangaExtensionsTabIndex) {
+            switchToExtensionTabChannel.receiveAsFlow()
+                .collectLatest { target ->
+                    val tabIndex = when (target) {
+                        ExtensionTabTarget.ANIME -> animeExtensionsTabIndex
+                        ExtensionTabTarget.MANGA -> mangaExtensionsTabIndex
+                    }
+                    if (tabIndex >= 0) {
+                        state.scrollToPage(tabIndex)
+                    }
+                }
         }
 
         LaunchedEffect(Unit) {
             (context as? MainActivity)?.ready = true
             // AM (DISCORD) -->
-            DiscordRPCService.setAnimeScreen(context, DiscordScreen.BROWSE)
-            DiscordRPCService.setMangaScreen(context, DiscordScreen.BROWSE)
+            DiscordRPCService.setScreen(context, DiscordScreen.BROWSE)
             // <-- AM (DISCORD)
         }
     }

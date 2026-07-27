@@ -121,6 +121,7 @@ class SyncChaptersWithSource(
                         downloadManager.isChapterDownloaded(
                             dbChapter.name,
                             dbChapter.scanlator,
+                            dbChapter.url,
                             manga.title,
                             manga.source,
                         )
@@ -133,6 +134,7 @@ class SyncChaptersWithSource(
                         chapterNumber = chapter.chapterNumber,
                         scanlator = chapter.scanlator,
                         sourceOrder = chapter.sourceOrder,
+                        memo = chapter.memo,
                     )
                     if (chapter.dateUpload != 0L) {
                         toChangeChapter = toChangeChapter.copy(dateUpload = chapter.dateUpload)
@@ -175,7 +177,7 @@ class SyncChaptersWithSource(
         val deletedChapterNumberDateFetchMap = removedChapters.sortedByDescending { it.dateFetch }
             .associate { it.chapterNumber to it.dateFetch }
 
-        val markDuplicateAsRead = libraryPreferences.markDuplicateReadChapterAsRead().get()
+        val markDuplicateAsRead = libraryPreferences.markDuplicateReadChapterAsRead.get()
             .contains(LibraryPreferences.MARK_DUPLICATE_CHAPTER_READ_NEW)
 
         // Date fetch is set in such a way that the upper ones will have bigger value than the lower ones

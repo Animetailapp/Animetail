@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -77,6 +78,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.entries.components.DotSeparatorText
 import eu.kanade.presentation.entries.components.ItemCover
@@ -92,6 +94,8 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.clickableNoIndication
 import tachiyomi.presentation.core.util.secondaryItemAlpha
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
@@ -173,12 +177,15 @@ fun AnimeInfoBox(
 fun AnimeActionRow(
     favorite: Boolean,
     trackingCount: Int,
+    // AM -->
+    isSyncingTrackers: Boolean,
+    // <-- AM
     nextUpdate: Instant?,
     isUserIntervalMode: Boolean,
     onAddToLibraryClicked: () -> Unit,
     onWebViewClicked: (() -> Unit)?,
     onWebViewLongClicked: (() -> Unit)?,
-    onTrackingClicked: () -> Unit,
+    onTrackingClicked: (() -> Unit)?,
     onEditIntervalClicked: (() -> Unit)?,
     onEditCategory: (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -211,7 +218,9 @@ fun AnimeActionRow(
         AnimeActionButton(
             title = when (nextUpdateDays) {
                 null -> stringResource(MR.strings.not_applicable)
+
                 0 -> stringResource(MR.strings.manga_interval_expected_update_soon)
+
                 else -> pluralStringResource(
                     MR.plurals.day,
                     count = nextUpdateDays,
@@ -222,16 +231,40 @@ fun AnimeActionRow(
             color = if (isUserIntervalMode) MaterialTheme.colorScheme.primary else defaultActionButtonColor,
             onClick = { onEditIntervalClicked?.invoke() },
         )
-        AnimeActionButton(
-            title = if (trackingCount == 0) {
-                stringResource(MR.strings.manga_tracking_tab)
-            } else {
-                pluralStringResource(MR.plurals.num_trackers, count = trackingCount, trackingCount)
-            },
-            icon = if (trackingCount == 0) Icons.Outlined.Sync else Icons.Outlined.Done,
-            color = if (trackingCount == 0) defaultActionButtonColor else MaterialTheme.colorScheme.primary,
-            onClick = onTrackingClicked,
-        )
+        if (onTrackingClicked != null) {
+            // AM -->
+            AnimeActionButton(
+                title = if (trackingCount == 0) {
+                    stringResource(MR.strings.manga_tracking_tab)
+                } else {
+                    pluralStringResource(MR.plurals.num_trackers, count = trackingCount, trackingCount)
+                },
+                color = if (isSyncingTrackers) {
+                    MaterialTheme.colorScheme.primary
+                } else if (trackingCount == 0) {
+                    defaultActionButtonColor
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                onClick = onTrackingClicked,
+            ) {
+                if (isSyncingTrackers) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Icon(
+                        imageVector = if (trackingCount == 0) Icons.Outlined.Sync else Icons.Outlined.Done,
+                        contentDescription = null,
+                        tint = if (trackingCount == 0) defaultActionButtonColor else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+            // <-- AM
+        }
 
         if (onWebViewClicked != null) {
             AnimeActionButton(
@@ -250,8 +283,10 @@ fun ExpandableAnimeDescription(
     defaultExpandState: Boolean,
     description: String?,
     tagsProvider: () -> List<String>?,
+    notes: String,
     onTagSearch: (String) -> Unit,
     onCopyTagToClipboard: (tag: String) -> Unit,
+    onEditNotes: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -271,6 +306,8 @@ fun ExpandableAnimeDescription(
             expandedDescription = desc,
             shrunkDescription = trimmedDescription,
             expanded = expanded,
+            notes = notes,
+            onEditNotesClicked = onEditNotes,
             modifier = Modifier
                 .padding(top = 8.dp)
                 .padding(horizontal = 16.dp)
@@ -355,21 +392,40 @@ private fun AnimeAndSourceTitlesLarge(
     isAndroidTV: Boolean = false,
     showTitle: Boolean = true,
 ) {
+    // KMK -->
+    val uiPreferences = remember { Injekt.get<UiPreferences>() }
+    val usePanoramaCover = uiPreferences.usePanoramaCoverMangaInfo.get()
+    // KMK <--
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ItemCover.Book(
-            modifier = Modifier.fillMaxWidth(0.65f),
-            data = ImageRequest.Builder(LocalContext.current)
-                .data(anime)
-                .crossfade(true)
-                .build(),
-            contentDescription = stringResource(MR.strings.manga_cover),
-            onClick = onCoverClick,
-        )
+        // KMK -->
+        if (usePanoramaCover) {
+            ItemCover.Thumb(
+                modifier = Modifier.fillMaxWidth(),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(anime)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
+            )
+        } else {
+            // KMK <--
+            ItemCover.Book(
+                modifier = Modifier.fillMaxWidth(0.65f),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(anime)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
         AnimeContentInfo(
             title = anime.title,
@@ -396,37 +452,68 @@ private fun AnimeAndSourceTitlesSmall(
     isAndroidTV: Boolean = false,
     showTitle: Boolean = true,
 ) {
-    Row(
+    // KMK -->
+    val uiPreferences = remember { Injekt.get<UiPreferences>() }
+    val usePanoramaCover = uiPreferences.usePanoramaCoverMangaInfo.get()
+    val topAlignCover = uiPreferences.topAlignCover.get()
+    // KMK <--
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        ItemCover.Book(
-            modifier = Modifier
-                .sizeIn(maxWidth = 100.dp)
-                .align(Alignment.Top),
-            data = ImageRequest.Builder(LocalContext.current)
-                .data(anime)
-                .crossfade(true)
-                .build(),
-            contentDescription = stringResource(MR.strings.manga_cover),
-            onClick = onCoverClick,
-        )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            AnimeContentInfo(
-                title = anime.title,
-                author = anime.author,
-                artist = anime.artist,
-                status = anime.status,
-                sourceName = sourceName,
-                isStubSource = isStubSource,
-                doSearch = doSearch,
-                showTitle = showTitle,
+        // KMK -->
+        if (usePanoramaCover) {
+            // Show panoramic cover at full width first
+            ItemCover.Thumb(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(anime)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
             )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        // KMK <--
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // KMK -->
+            if (!usePanoramaCover) {
+                // KMK <--
+                ItemCover.Book(
+                    modifier = Modifier
+                        .sizeIn(maxWidth = 100.dp)
+                        .align(if (topAlignCover) Alignment.Top else Alignment.CenterVertically),
+                    data = ImageRequest.Builder(LocalContext.current)
+                        .data(anime)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = stringResource(MR.strings.manga_cover),
+                    onClick = onCoverClick,
+                )
+            }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                AnimeContentInfo(
+                    title = anime.title,
+                    author = anime.author,
+                    artist = anime.artist,
+                    status = anime.status,
+                    sourceName = sourceName,
+                    isStubSource = isStubSource,
+                    doSearch = doSearch,
+                    showTitle = showTitle,
+                )
+            }
         }
     }
 }
@@ -589,7 +676,9 @@ private fun ColumnScope.AnimeContentInfo(
 private fun AnimeSummary(
     expandedDescription: String,
     shrunkDescription: String,
+    notes: String,
     expanded: Boolean,
+    onEditNotesClicked: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val animProgress by animateFloatAsState(if (expanded) 1f else 0f)
@@ -598,25 +687,41 @@ private fun AnimeSummary(
         contents = listOf(
             {
                 Text(
-                    text = "\n\n", // Shows at least 3 lines
+                    // Shows at least 3 lines if no notes
+                    // when there are notes show 6
+                    text = if (notes.isBlank()) "\n\n" else "\n\n\n\n\n",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
             {
-                Text(
-                    text = expandedDescription,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            },
-            {
-                SelectionContainer {
-                    Text(
-                        text = if (expanded) expandedDescription else shrunkDescription,
-                        maxLines = Int.MAX_VALUE,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.secondaryItemAlpha(),
+                Column {
+                    AnimeNotesSection(
+                        content = notes,
+                        expanded = true,
+                        onEditNotes = onEditNotesClicked,
                     )
+                    Text(
+                        text = expandedDescription,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            },
+            {
+                Column {
+                    AnimeNotesSection(
+                        content = notes,
+                        expanded = expanded,
+                        onEditNotes = onEditNotesClicked,
+                    )
+                    SelectionContainer {
+                        Text(
+                            text = if (expanded) expandedDescription else shrunkDescription,
+                            maxLines = Int.MAX_VALUE,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.secondaryItemAlpha(),
+                        )
+                    }
                 }
             },
             {
@@ -688,6 +793,31 @@ private fun RowScope.AnimeActionButton(
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    AnimeActionButton(
+        title = title,
+        color = color,
+        onClick = onClick,
+        onLongClick = onLongClick,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+// AM -->
+@Composable
+private fun RowScope.AnimeActionButton(
+    title: String,
+    color: Color,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+// <-- AM
     TextButton(
         onClick = onClick,
         modifier = Modifier
@@ -696,12 +826,7 @@ private fun RowScope.AnimeActionButton(
         onLongClick = onLongClick,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(20.dp),
-            )
+            content()
             Spacer(Modifier.height(4.dp))
             Text(
                 text = title,

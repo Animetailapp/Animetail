@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.util.system.buildNotificationChannel
 import eu.kanade.tachiyomi.util.system.buildNotificationChannelGroup
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 
 /**
  * Class to manage the basic information of all the notifications used in the app.
@@ -77,6 +78,7 @@ object Notifications {
     const val ID_TORRENT_SERVER = -801
 
     // AM (DISCORD) -->
+
     /**
      * Notification channel used for Discord RPC
      */
@@ -153,7 +155,7 @@ object Notifications {
                     setShowBadge(false)
                 },
                 buildNotificationChannel(CHANNEL_NEW_CHAPTERS_EPISODES, IMPORTANCE_DEFAULT) {
-                    setName(context.stringResource(MR.strings.channel_new_chapters_episodes))
+                    setName(context.stringResource(AYMR.strings.channel_new_chapters_episodes))
                 },
                 buildNotificationChannel(CHANNEL_DOWNLOADER_PROGRESS, IMPORTANCE_LOW) {
                     setName(context.stringResource(MR.strings.channel_progress))
@@ -180,7 +182,7 @@ object Notifications {
                     setName(context.stringResource(MR.strings.pref_incognito_mode))
                 },
                 buildNotificationChannel(CHANNEL_TORRENT_SERVER, IMPORTANCE_LOW) {
-                    setName("Torrent server")
+                    setName(context.stringResource(AYMR.strings.pref_category_torrentserver))
                     setShowBadge(false)
                 },
                 // AM (DISCORD) -->

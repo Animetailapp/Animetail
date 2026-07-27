@@ -71,7 +71,9 @@ internal class RateLimitInterceptor(
 
         val request = chain.request()
         when (host) {
-            null, request.url.host -> {} // need rate limit
+            null, request.url.host -> {}
+
+            // need rate limit
             else -> return chain.proceed(request)
         }
 

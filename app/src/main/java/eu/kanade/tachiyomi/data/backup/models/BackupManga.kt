@@ -2,7 +2,9 @@ package eu.kanade.tachiyomi.data.backup.models
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.protobuf.ProtoNumber
+import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.domain.entries.manga.model.CustomMangaInfo
 import tachiyomi.domain.entries.manga.model.Manga
 
@@ -43,8 +45,12 @@ data class BackupManga(
     @ProtoNumber(105) var updateStrategy: UpdateStrategy = UpdateStrategy.ALWAYS_UPDATE,
     @ProtoNumber(106) var lastModifiedAt: Long = 0,
     @ProtoNumber(107) var favoriteModifiedAt: Long? = null,
+    // Mihon values start here
     @ProtoNumber(108) var excludedScanlators: List<String> = emptyList(),
     @ProtoNumber(109) var version: Long = 0,
+    @ProtoNumber(110) var notes: String = "",
+    @ProtoNumber(111) var initialized: Boolean = false,
+    @ProtoNumber(112) var memo: ByteArray = byteArrayOf(),
 
     @ProtoNumber(602) var customStatus: Int = 0,
 
@@ -77,6 +83,9 @@ data class BackupManga(
             lastModifiedAt = this@BackupManga.lastModifiedAt,
             favoriteModifiedAt = this@BackupManga.favoriteModifiedAt,
             version = this@BackupManga.version,
+            notes = this@BackupManga.notes,
+            initialized = this@BackupManga.initialized,
+            memo = MemoColumnAdapter.decode(this@BackupManga.memo),
         )
     }
 

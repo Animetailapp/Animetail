@@ -16,7 +16,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentContainerView
 import androidx.fragment.app.FragmentManager
@@ -167,7 +166,9 @@ class MangaSourcePreferencesFragment : PreferenceFragmentCompat() {
 
         fun getInstance(sourceId: Long): MangaSourcePreferencesFragment {
             val fragment = MangaSourcePreferencesFragment()
-            fragment.arguments = bundleOf(SOURCE_ID to sourceId)
+            fragment.arguments = Bundle().apply {
+                putLong(SOURCE_ID, sourceId)
+            }
             return fragment
         }
     }

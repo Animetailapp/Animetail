@@ -1,6 +1,7 @@
 package eu.kanade.presentation.more.settings.screen.advanced
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,13 +18,17 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -38,18 +43,23 @@ import eu.kanade.presentation.browse.anime.components.AnimeSourceIcon
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.util.Screen
+import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
-import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
+import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.core.common.util.lang.withNonCancellableContext
+import tachiyomi.data.source.anime.mapSourceToDomainSource
 import tachiyomi.domain.source.anime.interactor.GetAnimeSourcesWithNonLibraryAnime
 import tachiyomi.domain.source.anime.model.AnimeSource
-import tachiyomi.domain.source.anime.model.AnimeSourceWithCount
+import tachiyomi.domain.source.anime.model.AnimeSourceWithIds
+import tachiyomi.domain.source.anime.model.StubAnimeSource
+import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.mi.data.AnimeDatabase
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
@@ -71,15 +81,20 @@ class ClearAnimeDatabaseScreen : Screen() {
 
         when (val s = state) {
             is ClearAnimeDatabaseScreenModel.State.Loading -> LoadingScreen()
+
             is ClearAnimeDatabaseScreenModel.State.Ready -> {
                 if (s.showConfirmation) {
+                    var keepWatchedAnime by remember { mutableStateOf(true) }
                     AlertDialog(
+                        title = {
+                            Text(text = stringResource(MR.strings.are_you_sure))
+                        },
                         onDismissRequest = model::hideConfirmation,
                         confirmButton = {
                             TextButton(
                                 onClick = {
                                     scope.launchUI {
-                                        model.removeAnimeBySourceId()
+                                        model.removeAnimeBySourceId(keepWatchedAnime)
                                         model.clearSelection()
                                         model.hideConfirmation()
                                         context.toast(MR.strings.clear_database_completed)
@@ -95,7 +110,32 @@ class ClearAnimeDatabaseScreen : Screen() {
                             }
                         },
                         text = {
-                            Text(text = stringResource(MR.strings.clear_database_confirmation))
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(text = stringResource(MR.strings.clear_database_text))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = stringResource(MR.strings.clear_db_exclude_read),
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    Switch(
+                                        checked = keepWatchedAnime,
+                                        onCheckedChange = { keepWatchedAnime = it },
+                                    )
+                                }
+                                if (!keepWatchedAnime) {
+                                    Text(
+                                        text = stringResource(MR.strings.clear_database_history_warning),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
                         },
                     )
                 }
@@ -103,7 +143,7 @@ class ClearAnimeDatabaseScreen : Screen() {
                 Scaffold(
                     topBar = { scrollBehavior ->
                         AppBar(
-                            title = stringResource(MR.strings.pref_clear_anime_database),
+                            title = stringResource(AYMR.strings.pref_clear_anime_database),
                             navigateUp = navigator::pop,
                             actions = {
                                 if (s.items.isNotEmpty()) {
@@ -216,13 +256,36 @@ private class ClearAnimeDatabaseScreenModel : StateScreenModel<ClearAnimeDatabas
 ) {
     private val getSourcesWithNonLibraryAnime: GetAnimeSourcesWithNonLibraryAnime = Injekt.get()
     private val database: AnimeDatabase = Injekt.get()
+    private val sourceManager: AnimeSourceManager = Injekt.get()
 
     init {
         screenModelScope.launchIO {
             getSourcesWithNonLibraryAnime.subscribe()
                 .collectLatest { list ->
+                    val items = list.groupBy { it.sourceId }
+                        .map { (sourceId, deletableAnime) ->
+                            val source = sourceManager.getOrStub(sourceId)
+                            val domainSource = mapSourceToDomainSource(source).copy(
+                                isStub = source is StubAnimeSource,
+                            )
+
+                            val ids = mutableListOf<Long>()
+                            val orphaned = mutableListOf<Long>()
+
+                            deletableAnime.forEach {
+                                ids.add(it.animeId)
+                                if (it.fetchType == FetchType.Seasons) {
+                                    val (childrenIds, orphanedIds) = getDeletableChildren(it.animeId)
+                                    ids.addAll(childrenIds)
+                                    orphaned.addAll(orphanedIds)
+                                }
+                            }
+
+                            AnimeSourceWithIds(domainSource, ids, orphaned)
+                        }
+
                     mutableState.update { old ->
-                        val items = list.sortedBy { it.name }
+                        val items = items.sortedBy { it.name }
                         when (old) {
                             State.Loading -> State.Ready(items)
                             is State.Ready -> old.copy(items = items)
@@ -232,9 +295,40 @@ private class ClearAnimeDatabaseScreenModel : StateScreenModel<ClearAnimeDatabas
         }
     }
 
-    suspend fun removeAnimeBySourceId() = withNonCancellableContext {
+    /**
+     * Get all children of an anime that can be deleted, as well as any orphans.
+     * Children that are favorited needs their parentId removed or else they won't be
+     * able to be removed later.
+     */
+    private suspend fun getDeletableChildren(animeId: Long): Pair<List<Long>, List<Long>> {
+        val ids = mutableListOf<Long>()
+        val orphaned = mutableListOf<Long>()
+        val children = getSourcesWithNonLibraryAnime.getDeletableChildren(animeId)
+        children.forEach { c ->
+            if (c.favorite) {
+                orphaned.add(c.id)
+            } else {
+                ids.add(c.id)
+                if (c.fetchType == FetchType.Seasons) {
+                    val (childrenIds, orphanedIds) = getDeletableChildren(c.id)
+                    ids.addAll(childrenIds)
+                    orphaned.addAll(orphanedIds)
+                }
+            }
+        }
+        return Pair(ids, orphaned)
+    }
+
+    suspend fun removeAnimeBySourceId(keepWatchedAnime: Boolean) = withNonCancellableContext {
         val state = state.value as? State.Ready ?: return@withNonCancellableContext
-        database.animesQueries.deleteAnimesNotInLibraryBySourceIds(state.selection)
+        val selected = state.items.filter { it.id in state.selection }
+
+        val animeIds = selected.flatMap { it.ids }
+        val orphaned = selected.flatMap { it.orphaned }
+            .filterNot { it in animeIds }
+
+        database.animesQueries.deleteNonLibraryAnime(animeIds, keepWatchedAnime.toLong())
+        database.animesQueries.removeParentIdByIds(orphaned)
         database.animehistoryQueries.removeResettedHistory()
     }
 
@@ -284,7 +378,7 @@ private class ClearAnimeDatabaseScreenModel : StateScreenModel<ClearAnimeDatabas
 
         @Immutable
         data class Ready(
-            val items: List<AnimeSourceWithCount>,
+            val items: List<AnimeSourceWithIds>,
             val selection: List<Long> = emptyList(),
             val showConfirmation: Boolean = false,
         ) : State

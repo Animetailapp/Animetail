@@ -5,15 +5,17 @@ SELECT
     episodes._id AS episodeId,
     episodes.name AS episodeName,
     episodes.scanlator,
+    episodes.url AS episodeUrl,
     episodes.seen,
     episodes.bookmark,
+    episodes.fillermark,
     episodes.last_second_seen,
     episodes.total_seconds AS totalSeconds,
     animes.source,
     animes.favorite,
     animes.thumbnail_url AS thumbnailUrl,
     animes.cover_last_modified AS coverLastModified,
-    episodes.date_upload AS dateUpload,
+    CASE WHEN episodes.date_upload_override > 0 THEN episodes.date_upload_override ELSE episodes.date_upload END AS dateUpload,
     episodes.date_fetch AS datefetch
 FROM animes JOIN episodes
 ON animes._id = episodes.anime_id

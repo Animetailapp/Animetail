@@ -31,10 +31,10 @@ import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.entries.manga.model.downloadedFilter
 import eu.kanade.presentation.components.TabbedDialog
 import eu.kanade.presentation.components.TabbedDialogPaddings
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.RadioItem
 import tachiyomi.presentation.core.components.SortItem
@@ -66,11 +66,11 @@ fun ChapterSettingsDialog(
         )
     }
 
-    val downloadedOnly = remember { Injekt.get<BasePreferences>().downloadedOnly().get() }
+    val downloadedOnly = remember { Injekt.get<BasePreferences>().downloadedOnly.get() }
 
     TabbedDialog(
         onDismissRequest = onDismissRequest,
-        tabTitles = persistentListOf(
+        tabTitles = listOf(
             stringResource(MR.strings.action_filter),
             stringResource(MR.strings.action_sort),
             stringResource(MR.strings.action_display),
@@ -111,6 +111,7 @@ fun ChapterSettingsDialog(
                         onScanlatorFilterClicked = onScanlatorFilterClicked,
                     )
                 }
+
                 1 -> {
                     SortPage(
                         sortingMode = manga?.sorting ?: 0,
@@ -118,6 +119,7 @@ fun ChapterSettingsDialog(
                         onItemSelected = onSortModeChanged,
                     )
                 }
+
                 2 -> {
                     DisplayPage(
                         displayMode = manga?.displayMode ?: 0,
@@ -243,7 +245,7 @@ private fun SetAsDefaultDialog(
                 Text(text = stringResource(MR.strings.confirm_set_chapter_settings))
 
                 LabeledCheckbox(
-                    label = stringResource(MR.strings.also_set_chapter_settings_for_library),
+                    label = stringResource(AYMR.strings.also_set_chapter_settings_for_library),
                     checked = optionalChecked,
                     onCheckedChange = { optionalChecked = it },
                 )

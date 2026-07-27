@@ -46,9 +46,10 @@ import eu.kanade.tachiyomi.ui.player.controls.CARDS_MAX_WIDTH
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
 import eu.kanade.tachiyomi.ui.player.controls.panelCardsColors
 import eu.kanade.tachiyomi.ui.player.settings.DecoderPreferences
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import tachiyomi.core.common.preference.deleteAndGet
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -57,6 +58,7 @@ import uy.kohesive.injekt.api.get
 
 @Composable
 fun VideoFiltersPanel(
+    mpv: MPV,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -72,6 +74,7 @@ fun VideoFiltersPanel(
                 linkTo(parent.top, parent.bottom, bias = 0.8f)
                 end.linkTo(parent.end)
             },
+            mpv = mpv,
             onClose = onDismissRequest,
         )
     }
@@ -80,6 +83,7 @@ fun VideoFiltersPanel(
 @Composable
 fun FiltersCard(
     modifier: Modifier = Modifier,
+    mpv: MPV,
     onClose: () -> Unit,
 ) {
     val decoderPreferences = remember { Injekt.get<DecoderPreferences>() }
@@ -96,7 +100,7 @@ fun FiltersCard(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                stringResource(MR.strings.player_sheets_filters_title),
+                stringResource(AYMR.strings.player_sheets_filters_title),
                 style = MaterialTheme.typography.headlineMedium,
             )
             Row(
@@ -106,7 +110,7 @@ fun FiltersCard(
                 TextButton(
                     onClick = {
                         VideoFilters.entries.forEach {
-                            MPVLib.setPropertyInt(it.mpvProperty, it.preference(decoderPreferences).deleteAndGet())
+                            mpv.setPropertyInt(it.mpvProperty, it.preference(decoderPreferences).deleteAndGet())
                         }
                     },
                 ) {
@@ -124,7 +128,7 @@ fun FiltersCard(
                     valueText = value.toString(),
                     onChange = {
                         filter.preference(decoderPreferences).set(it)
-                        MPVLib.setPropertyInt(filter.mpvProperty, it)
+                        mpv.setPropertyInt(filter.mpvProperty, it)
                     },
                     max = 100,
                     min = -100,
@@ -140,7 +144,7 @@ fun FiltersCard(
                     horizontalAlignment = Alignment.Start,
                 ) {
                     Icon(Icons.Outlined.Info, null)
-                    Text(stringResource(MR.strings.player_sheets_filters_warning))
+                    Text(stringResource(AYMR.strings.player_sheets_filters_warning))
                 }
             }
         }

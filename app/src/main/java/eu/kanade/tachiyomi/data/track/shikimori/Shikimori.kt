@@ -15,11 +15,9 @@ import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMOAuth
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
@@ -44,7 +42,6 @@ class Shikimori(id: Long) :
 
         private val SCORE_LIST = IntRange(0, 10)
             .map(Int::toString)
-            .toImmutableList()
     }
 
     private val json: Json by injectLazy()
@@ -53,7 +50,7 @@ class Shikimori(id: Long) :
 
     private val api by lazy { ShikimoriApi(id, client, interceptor) }
 
-    override fun getScoreList(): ImmutableList<String> = SCORE_LIST
+    override fun getScoreList(): List<String> = SCORE_LIST
 
     override fun indexToScore(index: Int): Double {
         return index.toDouble()
@@ -112,7 +109,7 @@ class Shikimori(id: Long) :
     }
 
     override suspend fun bind(track: MangaTrack, hasReadChapters: Boolean): MangaTrack {
-        val remoteTrack = api.findLibManga(track, getUsername())
+        val remoteTrack = api.findLibManga(track)
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack)
             track.library_id = remoteTrack.library_id
@@ -131,21 +128,21 @@ class Shikimori(id: Long) :
         }
     }
 
-    override suspend fun bind(track: AnimeTrack, hasReadChapters: Boolean): AnimeTrack {
-        val remoteTrack = api.findLibAnime(track, getUsername())
+    override suspend fun bind(track: AnimeTrack, hasSeenEpisodes: Boolean): AnimeTrack {
+        val remoteTrack = api.findLibAnime(track)
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack)
             track.library_id = remoteTrack.library_id
 
             if (track.status != COMPLETED) {
                 val isRereading = track.status == REREADING
-                track.status = if (!isRereading && hasReadChapters) READING else track.status
+                track.status = if (!isRereading && hasSeenEpisodes) READING else track.status
             }
 
             update(track)
         } else {
             // Set default fields if it's not found in the list
-            track.status = if (hasReadChapters) READING else PLAN_TO_READ
+            track.status = if (hasSeenEpisodes) READING else PLAN_TO_READ
             track.score = 0.0
             add(track)
         }
@@ -160,7 +157,7 @@ class Shikimori(id: Long) :
     }
 
     override suspend fun refresh(track: MangaTrack): MangaTrack {
-        api.findLibManga(track, getUsername())?.let { remoteTrack ->
+        api.findLibManga(track, isRefresh = true)?.let { remoteTrack ->
             track.library_id = remoteTrack.library_id
             track.copyPersonalFrom(remoteTrack)
             track.total_chapters = remoteTrack.total_chapters
@@ -169,7 +166,7 @@ class Shikimori(id: Long) :
     }
 
     override suspend fun refresh(track: AnimeTrack): AnimeTrack {
-        api.findLibAnime(track, getUsername())?.let { remoteTrack ->
+        api.findLibAnime(track, isRefresh = true)?.let { remoteTrack ->
             track.library_id = remoteTrack.library_id
             track.copyPersonalFrom(remoteTrack)
             track.total_episodes = remoteTrack.total_episodes
@@ -180,6 +177,7 @@ class Shikimori(id: Long) :
     override suspend fun getMangaMetadata(track: DomainMangaTrack): TrackMangaMetadata? {
         return api.getMangaMetadata(track)
     }
+
     override suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? {
         return api.getAnimeMetadata(track)
     }
@@ -207,12 +205,12 @@ class Shikimori(id: Long) :
     }
 
     override fun getStatusForAnime(status: Long): StringResource? = when (status) {
-        READING -> MR.strings.watching
-        PLAN_TO_READ -> MR.strings.plan_to_watch
+        READING -> AYMR.strings.watching
+        PLAN_TO_READ -> AYMR.strings.plan_to_watch
         COMPLETED -> MR.strings.completed
         ON_HOLD -> MR.strings.on_hold
         DROPPED -> MR.strings.dropped
-        REREADING -> MR.strings.repeating_anime
+        REREADING -> AYMR.strings.repeating_anime
         else -> null
     }
 
@@ -233,7 +231,8 @@ class Shikimori(id: Long) :
             val oauth = api.accessToken(code)
             interceptor.newAuth(oauth)
             val user = api.getCurrentUser()
-            saveCredentials(user.toString(), oauth.accessToken)
+            saveDisplayUsername(user.nickname)
+            saveCredentials(user.id, oauth.accessToken)
         } catch (e: Throwable) {
             logout()
         }

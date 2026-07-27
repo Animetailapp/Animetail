@@ -15,8 +15,8 @@ class GetLanguagesWithMangaSources(
 
     fun subscribe(): Flow<SortedMap<String, List<Source>>> {
         return combine(
-            preferences.enabledLanguages().changes(),
-            preferences.disabledMangaSources().changes(),
+            preferences.enabledLanguages.changes(),
+            preferences.disabledMangaSources.changes(),
             repository.getOnlineMangaSources(),
         ) { enabledLanguage, disabledSource, onlineSources ->
             val sortedSources = onlineSources.sortedWith(

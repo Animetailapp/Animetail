@@ -18,21 +18,21 @@ class TrackSelect(
             subtitlePreferences.preferredSubLanguages().get()
         } else {
             audioPreferences.preferredAudioLanguages().get()
-        }.split(",").filter { it.isNotEmpty() }
+        }.split(",").filter(String::isNotEmpty).map(String::trim)
 
         val whitelist = if (subtitle) {
             subtitlePreferences.subtitleWhitelist().get()
         } else {
             ""
-        }.split(",").filter { it.isNotEmpty() }
+        }.split(",").filter(String::isNotEmpty).map(String::trim)
 
         val blacklist = if (subtitle) {
             subtitlePreferences.subtitleBlacklist().get()
         } else {
             ""
-        }.split(",").filter { it.isNotEmpty() }
+        }.split(",").filter(String::isNotEmpty).map(String::trim)
 
-        val locales = prefLangs.map(::Locale).ifEmpty {
+        val locales = prefLangs.map(Locale::forLanguageTag).ifEmpty {
             listOf(LocaleListCompat.getDefault()[0]!!)
         }
 

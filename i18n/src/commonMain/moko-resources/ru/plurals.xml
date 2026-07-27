@@ -55,16 +55,16 @@
         <item quantity="other">%1$s глав</item>
     </plurals>
     <plurals name="num_trackers">
-        <item quantity="one">%d отслеживание</item>
-        <item quantity="few">%d отслеживания</item>
-        <item quantity="many">%d отслеживаний</item>
-        <item quantity="other">%d отслеживаний</item>
+        <item quantity="one">%d сервис отслеживания</item>
+        <item quantity="few">%d сервиса отслеживания</item>
+        <item quantity="many">%d сервисов отслеживания</item>
+        <item quantity="other">%d сервисов отслеживания</item>
     </plurals>
     <plurals name="missing_chapters_warning">
-        <item quantity="one">Отсутствует %d глава</item>
-        <item quantity="few">Отсутствуют %d главы</item>
-        <item quantity="many">Отсутствуют %d глав</item>
-        <item quantity="other">Отсутствуют %d глав</item>
+        <item quantity="one">Была пропущена %d глава, поскольку она отсутствует в источнике или была отфильтрована</item>
+        <item quantity="few">Были пропущены %d главы, поскольку они отсутствуют в источнике или были отфильтрованы</item>
+        <item quantity="many">Было пропущено %d глав, поскольку они отсутствуют в источнике или были отфильтрованы</item>
+        <item quantity="other">Было пропущено %d глав, поскольку они отсутствуют в источнике или были отфильтрованы</item>
     </plurals>
     <plurals name="relative_time">
         <item quantity="one">Вчера</item>
@@ -84,6 +84,12 @@
         <item quantity="many">Следующие %d глав</item>
         <item quantity="other">Следующие %d глав</item>
     </plurals>
+    <plurals name="missing_chapters">
+        <item quantity="one">Отсутствует %1$s глава</item>
+        <item quantity="few">Отсутствуют %1$s главы</item>
+        <item quantity="many">Отсутствуют %1$s глав</item>
+        <item quantity="other">Отсутствуют %1$s глав</item>
+    </plurals>
     <plurals name="day">
         <item quantity="one">1 день</item>
         <item quantity="few">%d дня</item>
@@ -96,52 +102,40 @@
         <item quantity="many">%d репозиториев</item>
         <item quantity="other">%d репозиториев</item>
     </plurals>
-    <plurals name="notification_episodes_multiple_and_more">
-        <item quantity="one"/>
-        <item quantity="few"/>
-        <item quantity="many"/>
-        <item quantity="other"/>
-    </plurals>
-    <plurals name="notification_episodes_generic">
-        <item quantity="one"/>
-        <item quantity="few"/>
-        <item quantity="many"/>
-        <item quantity="other"/>
-    </plurals>
-    <plurals name="anime_num_episodes">
-        <item quantity="one"/>
-        <item quantity="few"/>
-        <item quantity="many"/>
-        <item quantity="other"/>
-    </plurals>
-    <plurals name="next_unseen_episodes">
-        <item quantity="one"/>
-        <item quantity="few"/>
-        <item quantity="many"/>
-        <item quantity="other"/>
-    </plurals>
-    <plurals name="seconds">
-        <item quantity="one"/>
-        <item quantity="few"/>
-        <item quantity="many"/>
-        <item quantity="other"/>
-    </plurals>
-    <plurals name="notification_new_episodes_summary">
-        <item quantity="one"/>
-        <item quantity="few"/>
-        <item quantity="many"/>
-        <item quantity="other"/>
-    </plurals>
-    <plurals name="download_amount_anime">
-        <item quantity="one"/>
-        <item quantity="few"/>
-        <item quantity="many"/>
-        <item quantity="other"/>
+    <plurals name="upcoming_relative_time">
+        <item quantity="one">Завтра</item>
+        <item quantity="few">В течении %1$d дней</item>
+        <item quantity="many">В течении %1$d дней</item>
+        <item quantity="other">В течении %1$d дней</item>
     </plurals>
     <plurals name="pref_pages">
         <item quantity="one">1 страница</item>
         <item quantity="few">%1$s страницы</item>
         <item quantity="many">%1$s страниц</item>
         <item quantity="other">%1$s страниц</item>
+    </plurals>
+    <plurals name="migrationListScreen.migrateDialog.migrateTitle">
+        <item quantity="one">Перенести %1$d серию?</item>
+        <item quantity="few">Перенести %1$d серии?</item>
+        <item quantity="many">Перенести %1$d серий?</item>
+        <item quantity="other">Перенести %1$d серий?</item>
+    </plurals>
+    <plurals name="migrationListScreen.migrateDialog.skipText">
+        <item quantity="one">Серия была пропущена</item>
+        <item quantity="few">%1$d серии было прощено</item>
+        <item quantity="many">%1$d серий было прощено</item>
+        <item quantity="other">%1$d серий было прощено</item>
+    </plurals>
+    <plurals name="migrationListScreen.migrateDialog.copyTitle">
+        <item quantity="one">Копировать %1$d серию?</item>
+        <item quantity="few">Копировать %1$d серии?</item>
+        <item quantity="many">Копировать %1$d серий?</item>
+        <item quantity="other">Копировать %1$d серий?</item>
+    </plurals>
+    <plurals name="notification_update_error">
+        <item quantity="one">%1$d ошибка обновления</item>
+        <item quantity="few">%1$d ошибки обновлений</item>
+        <item quantity="many">%1$d ошибок обновлений</item>
+        <item quantity="other">%1$d ошибок обновлений</item>
     </plurals>
 </resources>

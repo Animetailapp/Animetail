@@ -55,6 +55,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import mihon.feature.migration.config.AnimeMigrationConfigScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.category.model.Category
@@ -63,6 +64,7 @@ import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.library.anime.LibraryAnime
 import tachiyomi.domain.library.anime.model.AnimeLibraryGroup
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
@@ -78,7 +80,7 @@ data object AnimeLibraryTab : Tab {
     override val options: TabOptions
         @Composable
         get() {
-            val title = MR.strings.label_anime_library
+            val title = AYMR.strings.label_anime_library
             val isSelected = LocalTabNavigator.current.current.key == key
             val image = AnimatedImageVector.animatedVectorResource(
                 R.drawable.anim_animelibrary_leave,
@@ -116,10 +118,13 @@ data object AnimeLibraryTab : Tab {
                 group = state.groupType,
                 groupExtra = when (state.groupType) {
                     AnimeLibraryGroup.BY_DEFAULT -> null
+
                     AnimeLibraryGroup.BY_SOURCE, AnimeLibraryGroup.BY_TRACK_STATUS,
                     AnimeLibraryGroup.BY_TAG,
                     -> category?.id?.toString()
+
                     AnimeLibraryGroup.BY_STATUS -> category?.id?.minus(1)?.toString()
+
                     else -> null
                 },
             )
@@ -142,7 +147,7 @@ data object AnimeLibraryTab : Tab {
             )
         }
 
-        val defaultTitle = stringResource(MR.strings.label_anime_library)
+        val defaultTitle = stringResource(AYMR.strings.label_anime_library)
 
         Scaffold(
             topBar = { scrollBehavior ->
@@ -203,6 +208,10 @@ data object AnimeLibraryTab : Tab {
                     onDownloadClicked = screenModel::runDownloadActionSelection
                         .takeIf { state.selection.fastAll { !it.anime.isLocal() } },
                     onDeleteClicked = screenModel::openDeleteAnimeDialog,
+                    onMigrateClicked = {
+                        val selection = state.selection.map { it.anime.id }
+                        navigator.push(AnimeMigrationConfigScreen(selection))
+                    },
                     onClickResetInfo = screenModel::resetInfo.takeIf { state.showResetInfo },
                     isManga = false,
                 )
@@ -211,6 +220,7 @@ data object AnimeLibraryTab : Tab {
         ) { contentPadding ->
             when {
                 state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
                 state.searchQuery.isNullOrEmpty() && !state.hasActiveFilters && state.isLibraryEmpty -> {
                     val handler = LocalUriHandler.current
                     EmptyScreen(
@@ -225,6 +235,7 @@ data object AnimeLibraryTab : Tab {
                         ),
                     )
                 }
+
                 else -> {
                     AnimeLibraryContent(
                         categories = state.categories,
@@ -279,6 +290,7 @@ data object AnimeLibraryTab : Tab {
                     // SY <--
                 )
             }
+
             is AnimeLibraryScreenModel.Dialog.ChangeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -293,6 +305,7 @@ data object AnimeLibraryTab : Tab {
                     },
                 )
             }
+
             is AnimeLibraryScreenModel.Dialog.DeleteAnime -> {
                 DeleteLibraryEntryDialog(
                     containsLocalEntry = dialog.anime.any(Anime::isLocal),
@@ -304,6 +317,7 @@ data object AnimeLibraryTab : Tab {
                     isManga = false,
                 )
             }
+
             null -> {}
         }
 
@@ -322,7 +336,7 @@ data object AnimeLibraryTab : Tab {
             if (!state.isLoading) {
                 (context as? MainActivity)?.ready = true
                 // AM (DISCORD) -->
-                DiscordRPCService.setAnimeScreen(context, DiscordScreen.LIBRARY)
+                DiscordRPCService.setScreen(context, DiscordScreen.LIBRARY)
                 // <-- AM (DISCORD)
             }
         }

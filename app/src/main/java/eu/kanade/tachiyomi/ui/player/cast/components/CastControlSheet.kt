@@ -49,10 +49,11 @@ fun CastControlSheet(
             .padding(16.dp),
     ) {
         ListItem(
-            headlineContent = { Text(viewModel.mediaTitle.value) },
             leadingContent = { Icon(Icons.Default.PlayArrow, null) },
             modifier = Modifier.clickable { showPlayerDialog = true },
-        )
+        ) {
+            Text(viewModel.mediaTitle.value)
+        }
 
         HorizontalDivider()
 

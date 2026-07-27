@@ -32,6 +32,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
@@ -71,19 +72,21 @@ import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
 import eu.kanade.tachiyomi.ui.player.controls.components.SeekbarWithTimers
 import eu.kanade.tachiyomi.ui.player.controls.components.TextPlayerUpdate
+import eu.kanade.tachiyomi.ui.player.controls.components.ThumbnailPreview
 import eu.kanade.tachiyomi.ui.player.controls.components.VolumeSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.toFixed
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
-import `is`.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPV
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
+import tachiyomi.source.local.entries.anime.LocalAnimeSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -113,20 +116,28 @@ fun PlayerControls(
     val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsState()
     val duration by viewModel.duration.collectAsState()
     val position by viewModel.pos.collectAsState()
+    val seekPosition by viewModel.seekPosition.collectAsState()
+    val isSeeking by viewModel.isSeeking.collectAsState()
     val paused by viewModel.paused.collectAsState()
     val gestureSeekAmount by viewModel.gestureSeekAmount.collectAsState()
     val doubleTapSeekAmount by viewModel.doubleTapSeekAmount.collectAsState()
+    val showDoubleTapOvals by playerPreferences.showDoubleTapOvals().collectAsState()
+    val showSeekIcon by playerPreferences.showSeekIcon().collectAsState()
+    val showSeekTime by playerPreferences.showSeekTimeWhileSeeking().collectAsState()
     val seekText by viewModel.seekText.collectAsState()
     val currentChapter by viewModel.currentChapter.collectAsState()
-    val chapters by viewModel.chapters.collectAsState()
+    val indexedChapters by viewModel.chapters.collectAsState()
     val currentBrightness by viewModel.currentBrightness.collectAsState()
 
     val playerTimeToDisappear by playerPreferences.playerTimeToDisappear().collectAsState()
-    var isSeeking by remember { mutableStateOf(false) }
     var resetControls by remember { mutableStateOf(true) }
 
     val customButtons by viewModel.customButtons.collectAsState()
     val customButton by viewModel.primaryButton.collectAsState()
+
+    val chapters = remember(indexedChapters) {
+        indexedChapters.map { it.toSegment() }.toImmutableList()
+    }
 
     LaunchedEffect(
         controlsShown,
@@ -149,7 +160,14 @@ fun PlayerControls(
         viewModel = viewModel,
         interactionSource = interactionSource,
     )
-    DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, interactionSource)
+    DoubleTapToSeekOvals(
+        doubleTapSeekAmount,
+        seekText,
+        showDoubleTapOvals,
+        showSeekIcon,
+        showSeekTime,
+        interactionSource,
+    )
     CompositionLocalProvider(
         LocalRippleConfiguration provides playerRippleConfiguration,
         LocalPlayerButtonsClickEvent provides { resetControls = !resetControls },
@@ -177,7 +195,7 @@ fun PlayerControls(
                     volumeSlider, brightnessSlider,
                     unlockControlsButton,
                     bottomRightControls, bottomLeftControls,
-                    centerControls, seekbar, playerUpdates,
+                    centerControls, thumbnail, seekbar, playerUpdates,
                 ) = createRefs()
 
                 val hasPreviousEpisode by viewModel.hasPreviousEpisode.collectAsState()
@@ -305,12 +323,15 @@ fun PlayerControls(
                     when (currentPlayerUpdate) {
                         // is PlayerUpdates.DoubleSpeed -> DoubleSpeedPlayerUpdate()
                         is PlayerUpdates.AspectRatio -> TextPlayerUpdate(stringResource(aspectRatio.titleRes))
+
                         is PlayerUpdates.ShowText -> TextPlayerUpdate(
                             (currentPlayerUpdate as PlayerUpdates.ShowText).value,
                         )
+
                         is PlayerUpdates.ShowTextResource -> TextPlayerUpdate(
                             stringResource((currentPlayerUpdate as PlayerUpdates.ShowTextResource).textResource),
                         )
+
                         else -> {}
                     }
                 }
@@ -331,7 +352,7 @@ fun PlayerControls(
                 }
                 AnimatedVisibility(
                     visible =
-                    (controlsShown && !areControlsLocked || gestureSeekAmount != null) ||
+                    ((controlsShown && !areControlsLocked) || gestureSeekAmount != null) ||
                         isLoading ||
                         isLoadingEpisode,
                     enter = fadeIn(playerControlsEnterAnimationSpec()),
@@ -361,6 +382,7 @@ fun PlayerControls(
                         exit = fadeOut(playerControlsExitAnimationSpec()),
                     )
                 }
+
                 AnimatedVisibility(
                     visible = (controlsShown || seekBarShown) && !areControlsLocked,
                     enter = if (!reduceMotion) {
@@ -383,21 +405,27 @@ fun PlayerControls(
                     val readAhead by viewModel.readAhead.collectAsState()
                     val preciseSeeking by gesturePreferences.playerSmoothSeek().collectAsState()
                     SeekbarWithTimers(
-                        position = position,
+                        playerPosition = position,
+                        seekPosition = seekPosition,
+                        isSeeking = isSeeking,
                         duration = duration,
                         readAheadValue = readAhead,
                         onValueChange = {
-                            isSeeking = true
-                            viewModel.updatePlayBackPos(it)
-                            viewModel.seekTo(it.toInt(), preciseSeeking)
+                            viewModel.updateSeekPos(it)
+                            viewModel.updateIsSeeking(true)
                         },
-                        onValueChangeFinished = { isSeeking = false },
+                        onValueChangeFinished = {
+                            viewModel.updatePlayBackPos(seekPosition)
+                            viewModel.updateIsSeeking(false)
+                            viewModel.seekTo(seekPosition.toInt(), preciseSeeking)
+                        },
                         timersInverted = Pair(false, invertDuration),
                         durationTimerOnCLick = { playerPreferences.invertDuration().set(!invertDuration) },
                         positionTimerOnClick = {},
-                        chapters = chapters.map { it.toSegment() }.toImmutableList(),
+                        chapters = chapters,
                     )
                 }
+
                 val mediaTitle by viewModel.mediaTitle.collectAsState()
                 val animeTitle by viewModel.animeTitle.collectAsState()
                 AnimatedVisibility(
@@ -496,6 +524,7 @@ fun PlayerControls(
                 ) {
                     val activity = LocalContext.current as PlayerActivity
                     BottomRightPlayerControls(
+                        mpv = viewModel.mpv,
                         customButton = customButton,
                         customButtonTitle = customButtonTitle,
                         skipIntroButton = skipIntroButton,
@@ -546,11 +575,23 @@ fun PlayerControls(
                         onLockControls = viewModel::lockControls,
                         onCycleRotation = viewModel::cycleScreenRotations,
                         onPlaybackSpeedChange = {
-                            MPVLib.setPropertyDouble("speed", it.toDouble())
+                            viewModel.mpv.setPropertyDouble("speed", it.toDouble())
                         },
                         onOpenSheet = viewModel::showSheet,
                     )
                 }
+
+                val thumbnailImage by viewModel.thumbnailImage.collectAsState()
+                ThumbnailPreview(
+                    visible = isSeeking,
+                    image = thumbnailImage,
+                    positionS = seekPosition.toLong(),
+                    durationS = duration.toLong(),
+                    chapters = chapters,
+                    modifier = Modifier.fillMaxWidth().constrainAs(thumbnail) {
+                        bottom.linkTo(seekbar.top, spacing.medium)
+                    },
+                )
             }
         }
 
@@ -568,10 +609,12 @@ fun PlayerControls(
         val speed by viewModel.playbackSpeed.collectAsState()
         val sleepTimerTimeRemaining by viewModel.remainingTime.collectAsState()
         val showSubtitles by subtitlePreferences.screenshotSubtitles().collectAsState()
+        val currentSource by viewModel.currentSource.collectAsState()
         val showFailedHosters by playerPreferences.showFailedHosters().collectAsState()
         val emptyHosters by playerPreferences.showEmptyHosters().collectAsState()
 
         PlayerSheets(
+            mpv = viewModel.mpv,
             sheetShown = sheetShown,
             subtitles = subtitles.toImmutableList(),
             selectedSubtitles = selectedSubtitles.toList().toImmutableList(),
@@ -592,7 +635,7 @@ fun PlayerControls(
             displayHosters = Pair(showFailedHosters, emptyHosters),
 
             chapter = currentChapter?.toSegment(),
-            chapters = chapters.map { it.toSegment() }.toImmutableList(),
+            chapters = chapters,
             onSeekToChapter = {
                 viewModel.selectChapter(it)
                 viewModel.dismissSheet()
@@ -601,15 +644,16 @@ fun PlayerControls(
             decoder = decoder,
             onUpdateDecoder = viewModel::updateDecoder,
             speed = speed,
-            onSpeedChange = { MPVLib.setPropertyDouble("speed", it.toFixed(2).toDouble()) },
+            onSpeedChange = { viewModel.mpv.setPropertyDouble("speed", it.toFixed(2).toDouble()) },
             sleepTimerTimeRemaining = sleepTimerTimeRemaining,
             onStartSleepTimer = viewModel::startTimer,
             buttons = customButtons.getButtons().toImmutableList(),
 
+            isLocalSource = currentSource?.id == LocalAnimeSource.ID,
             showSubtitles = showSubtitles,
             onToggleShowSubtitles = { subtitlePreferences.screenshotSubtitles().set(it) },
             cachePath = viewModel.cachePath,
-            onSetAsCover = viewModel::setAsCover,
+            onSetAsArt = viewModel::setAsArt,
             onShare = { viewModel.shareImage(it, viewModel.pos.value.toInt()) },
             onSave = { viewModel.saveImage(it, viewModel.pos.value.toInt()) },
             takeScreenshot = viewModel::takeScreenshot,
@@ -623,6 +667,7 @@ fun PlayerControls(
         )
         val panel by viewModel.panelShown.collectAsState()
         PlayerPanels(
+            mpv = viewModel.mpv,
             panelShown = panel,
             onDismissRequest = { viewModel.showPanel(Panels.None) },
         )
@@ -640,6 +685,7 @@ fun PlayerControls(
             dateRelativeTime = viewModel.relativeTime,
             dateFormat = viewModel.dateFormat,
             onBookmarkClicked = viewModel::bookmarkEpisode,
+            onFillermarkClicked = viewModel::fillermarkEpisode,
             onEpisodeClicked = {
                 viewModel.showDialog(Dialogs.None)
                 activity.changeEpisode(it)

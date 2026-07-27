@@ -28,8 +28,8 @@ class AnimeSourcesFilterScreenModel(
         screenModelScope.launch {
             combine(
                 getLanguagesWithSources.subscribe(),
-                preferences.enabledLanguages().changes(),
-                preferences.disabledAnimeSources().changes(),
+                preferences.enabledLanguages.changes(),
+                preferences.disabledAnimeSources.changes(),
             ) { a, b, c -> Triple(a, b, c) }
                 .catch { throwable ->
                     mutableState.update {

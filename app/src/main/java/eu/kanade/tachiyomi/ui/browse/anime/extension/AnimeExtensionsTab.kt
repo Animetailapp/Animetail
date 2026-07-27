@@ -15,13 +15,14 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.anime.AnimeExtensionScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
-import eu.kanade.presentation.more.settings.screen.browse.AnimeExtensionReposScreen
+import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.ui.browse.anime.extension.details.AnimeExtensionDetailsScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.isPackageInstalled
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
@@ -35,7 +36,7 @@ fun animeExtensionsTab(
     var privateExtensionToUninstall by remember { mutableStateOf<AnimeExtension?>(null) }
 
     return TabContent(
-        titleRes = MR.strings.label_anime_extensions,
+        titleRes = AYMR.strings.label_anime_extensions,
         badgeNumber = state.updates.takeIf { it > 0 },
         searchEnabled = true,
         actions = persistentListOf(
@@ -48,8 +49,8 @@ fun animeExtensionsTab(
                 },
             ),
             AppBar.OverflowAction(
-                title = stringResource(MR.strings.label_extension_repos),
-                onClick = { navigator.push(AnimeExtensionReposScreen()) },
+                title = stringResource(MR.strings.extensionStores),
+                onClick = { navigator.push(ExtensionStoresScreen(isManga = false)) },
             ),
         ),
         content = { contentPadding, _ ->
@@ -62,6 +63,7 @@ fun animeExtensionsTab(
                         is AnimeExtension.Available -> extensionsScreenModel.installExtension(
                             extension,
                         )
+
                         else -> {
                             if (context.isPackageInstalled(extension.pkgName)) {
                                 extensionsScreenModel.uninstallExtension(extension)

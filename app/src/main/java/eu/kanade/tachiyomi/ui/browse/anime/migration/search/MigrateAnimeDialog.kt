@@ -4,10 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -18,24 +23,33 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.toMutableStateList
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.StateScreenModel
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
+import eu.kanade.domain.entries.anime.model.hasCustomBackground
 import eu.kanade.domain.entries.anime.model.hasCustomCover
 import eu.kanade.domain.entries.anime.model.toSAnime
 import eu.kanade.domain.items.episode.interactor.SyncEpisodesWithSource
+import eu.kanade.presentation.components.IndicatorSize
 import eu.kanade.tachiyomi.animesource.AnimeSource
+import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.animesource.model.SEpisode
+import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.ui.browse.anime.migration.AnimeMigrationFlags
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.update
+import logcat.LogPriority
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.anime.interactor.SetAnimeCategories
 import tachiyomi.domain.entries.anime.model.Anime
@@ -47,6 +61,7 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -62,6 +77,7 @@ internal fun MigrateAnimeDialog(
     screenModel: MigrateAnimeDialogScreenModel,
     onDismissRequest: () -> Unit,
     onClickTitle: () -> Unit,
+    onClickSeasons: () -> Unit,
     onPopScreen: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -69,6 +85,7 @@ internal fun MigrateAnimeDialog(
 
     val flags = remember { AnimeMigrationFlags.getFlags(oldAnime, screenModel.migrateFlags.get()) }
     val selectedFlags = remember { flags.map { it.isDefaultSelected }.toMutableStateList() }
+    val canMigrate = remember { oldAnime.fetchType == newAnime.fetchType }
 
     if (state.isMigrating) {
         LoadingScreen(
@@ -85,12 +102,37 @@ internal fun MigrateAnimeDialog(
                 Column(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                 ) {
-                    flags.forEachIndexed { index, flag ->
-                        LabeledCheckbox(
-                            label = stringResource(flag.titleId),
-                            checked = selectedFlags[index],
-                            onCheckedChange = { selectedFlags[index] = it },
-                        )
+                    if (canMigrate) {
+                        flags.forEachIndexed { index, flag ->
+                            LabeledCheckbox(
+                                label = stringResource(flag.titleId),
+                                checked = selectedFlags[index],
+                                onCheckedChange = { selectedFlags[index] = it },
+                            )
+                        }
+                    } else {
+                        val message = if (oldAnime.fetchType == FetchType.Seasons) {
+                            AYMR.strings.label_cant_migrate_season
+                        } else {
+                            AYMR.strings.label_cant_migrate_episode
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ErrorOutline,
+                                contentDescription = null,
+                                modifier = Modifier.size(IndicatorSize),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                            Text(
+                                text = stringResource(message),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
                 }
             },
@@ -104,41 +146,54 @@ internal fun MigrateAnimeDialog(
                             onClickTitle()
                         },
                     ) {
-                        Text(text = stringResource(MR.strings.action_show_anime))
+                        Text(text = stringResource(AYMR.strings.action_show_anime))
+                    }
+
+                    if (newAnime.fetchType != FetchType.Episodes) {
+                        TextButton(
+                            onClick = {
+                                onDismissRequest()
+                                onClickSeasons()
+                            },
+                        ) {
+                            Text(text = stringResource(AYMR.strings.label_show_seasons))
+                        }
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    TextButton(
-                        onClick = {
-                            scope.launchIO {
-                                screenModel.migrateAnime(
-                                    oldAnime,
-                                    newAnime,
-                                    false,
-                                    AnimeMigrationFlags.getSelectedFlagsBitMap(selectedFlags, flags),
-                                )
-                                withUIContext { onPopScreen() }
-                            }
-                        },
-                    ) {
-                        Text(text = stringResource(MR.strings.copy))
-                    }
-                    TextButton(
-                        onClick = {
-                            scope.launchIO {
-                                screenModel.migrateAnime(
-                                    oldAnime,
-                                    newAnime,
-                                    true,
-                                    AnimeMigrationFlags.getSelectedFlagsBitMap(selectedFlags, flags),
-                                )
+                    if (canMigrate) {
+                        TextButton(
+                            onClick = {
+                                scope.launchIO {
+                                    screenModel.migrateAnime(
+                                        oldAnime,
+                                        newAnime,
+                                        false,
+                                        AnimeMigrationFlags.getSelectedFlagsBitMap(selectedFlags, flags),
+                                    )
+                                    withUIContext { onPopScreen() }
+                                }
+                            },
+                        ) {
+                            Text(text = stringResource(MR.strings.copy))
+                        }
+                        TextButton(
+                            onClick = {
+                                scope.launchIO {
+                                    screenModel.migrateAnime(
+                                        oldAnime,
+                                        newAnime,
+                                        true,
+                                        AnimeMigrationFlags.getSelectedFlagsBitMap(selectedFlags, flags),
+                                    )
 
-                                withUIContext { onPopScreen() }
-                            }
-                        },
-                    ) {
-                        Text(text = stringResource(MR.strings.migrate))
+                                    withUIContext { onPopScreen() }
+                                }
+                            },
+                        ) {
+                            Text(text = stringResource(MR.strings.migrate))
+                        }
                     }
                 }
             },
@@ -158,6 +213,7 @@ internal class MigrateAnimeDialogScreenModel(
     private val getTracks: GetAnimeTracks = Injekt.get(),
     private val insertTrack: InsertAnimeTrack = Injekt.get(),
     private val coverCache: AnimeCoverCache = Injekt.get(),
+    private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
     private val preferenceStore: PreferenceStore = Injekt.get(),
 ) : StateScreenModel<MigrateAnimeDialogScreenModel.State>(State()) {
 
@@ -182,7 +238,13 @@ internal class MigrateAnimeDialogScreenModel(
         mutableState.update { it.copy(isMigrating = true) }
 
         try {
-            val episodes = source.getEpisodeList(newAnime.toSAnime())
+            val episodes = try {
+                source.getEpisodeList(newAnime.toSAnime())
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+                emptyList()
+            }
 
             migrateAnimeInternal(
                 oldSource = prevSource,
@@ -193,9 +255,9 @@ internal class MigrateAnimeDialogScreenModel(
                 replace = replace,
                 flags = flags,
             )
-        } catch (_: Throwable) {
-            // Explicitly stop if an error occurred; the dialog normally gets popped at the end
-            // anyway
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+            logcat(LogPriority.ERROR, e)
             mutableState.update { it.copy(isMigrating = false) }
         }
     }
@@ -212,11 +274,15 @@ internal class MigrateAnimeDialogScreenModel(
         val migrateEpisodes = AnimeMigrationFlags.hasEpisodes(flags)
         val migrateCategories = AnimeMigrationFlags.hasCategories(flags)
         val migrateCustomCover = AnimeMigrationFlags.hasCustomCover(flags)
+        val migrateCustomBackground = AnimeMigrationFlags.hasCustomBackground(flags)
         val deleteDownloaded = AnimeMigrationFlags.hasDeleteDownloaded(flags)
+        val migrateNotes = AnimeMigrationFlags.hasNotes(flags)
 
         try {
             syncEpisodesWithSource.await(sourceEpisodes, newAnime, newSource)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            logcat(LogPriority.ERROR, e)
             // Worst case, chapters won't be synced
         }
 
@@ -239,10 +305,15 @@ internal class MigrateAnimeDialogScreenModel(
                         updatedEpisode = updatedEpisode.copy(
                             dateFetch = prevEpisode.dateFetch,
                             bookmark = prevEpisode.bookmark,
+                            fillermark = prevEpisode.fillermark,
+                            lastSecondSeen = prevEpisode.lastSecondSeen,
+                            totalSeconds = prevEpisode.totalSeconds,
                         )
                     }
 
-                    if (maxEpisodeSeen != null && updatedEpisode.episodeNumber <= maxEpisodeSeen) {
+                    if (prevEpisode?.seen == true ||
+                        (maxEpisodeSeen != null && updatedEpisode.episodeNumber <= maxEpisodeSeen)
+                    ) {
                         updatedEpisode = updatedEpisode.copy(seen = true)
                     }
                 }
@@ -268,7 +339,13 @@ internal class MigrateAnimeDialogScreenModel(
                 .firstOrNull { it.isTrackFrom(updatedTrack, oldAnime, oldSource) }
 
             if (service != null) {
-                service.migrateTrack(updatedTrack, newAnime, newSource)
+                try {
+                    service.migrateTrack(updatedTrack, newAnime, newSource)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                    updatedTrack
+                }
             } else {
                 updatedTrack
             }
@@ -279,7 +356,12 @@ internal class MigrateAnimeDialogScreenModel(
         // Delete downloaded
         if (deleteDownloaded) {
             if (oldSource != null) {
-                downloadManager.deleteAnime(oldAnime, oldSource)
+                try {
+                    downloadManager.deleteAnime(oldAnime, oldSource)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                }
             }
         }
 
@@ -289,10 +371,28 @@ internal class MigrateAnimeDialogScreenModel(
 
         // Update custom cover (recheck if custom cover exists)
         if (migrateCustomCover && oldAnime.hasCustomCover()) {
-            coverCache.setCustomCoverToCache(
-                newAnime,
-                coverCache.getCustomCoverFile(oldAnime.id).inputStream(),
-            )
+            try {
+                coverCache.setCustomCoverToCache(
+                    newAnime,
+                    coverCache.getCustomCoverFile(oldAnime.id).inputStream(),
+                )
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+            }
+        }
+
+        // Update custom background (recheck if custom background exists)
+        if (migrateCustomBackground && oldAnime.hasCustomBackground()) {
+            try {
+                backgroundCache.setCustomBackgroundToCache(
+                    newAnime,
+                    backgroundCache.getCustomBackgroundFile(oldAnime.id).inputStream(),
+                )
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+            }
         }
 
         updateAnime.await(
@@ -302,6 +402,7 @@ internal class MigrateAnimeDialogScreenModel(
                 episodeFlags = oldAnime.episodeFlags,
                 viewerFlags = oldAnime.viewerFlags,
                 dateAdded = if (replace) oldAnime.dateAdded else Instant.now().toEpochMilli(),
+                notes = if (migrateNotes) oldAnime.notes else null,
             ),
         )
     }

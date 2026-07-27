@@ -56,36 +56,40 @@
         <item quantity="one">Επόμενο κεφάλαιο</item>
         <item quantity="other">Επόμενα %d κεφάλαια</item>
     </plurals>
+    <plurals name="missing_chapters">
+        <item quantity="one">Λείπει %1$s κεφάλαιο</item>
+        <item quantity="other">Λείπουν %1$s κεφάλαια</item>
+    </plurals>
     <plurals name="day">
         <item quantity="one">1 ημέρα</item>
         <item quantity="other">%d ημέρες</item>
     </plurals>
-    <plurals name="seconds">
-        <item quantity="one"/>
-        <item quantity="other"/>
+    <plurals name="num_repos">
+        <item quantity="one">%d αποθετήριο</item>
+        <item quantity="other">%d αποθετήρια</item>
     </plurals>
-    <plurals name="download_amount_anime">
-        <item quantity="one"/>
-        <item quantity="other"/>
+    <plurals name="migrationListScreen.migrateDialog.migrateTitle">
+        <item quantity="one">Μεταφορά %1$d καταχώρησης;</item>
+        <item quantity="other">Μεταφορά %1$d καταχωρήσεων;</item>
     </plurals>
-    <plurals name="anime_num_episodes">
-        <item quantity="one"/>
-        <item quantity="other"/>
+    <plurals name="migrationListScreen.migrateDialog.copyTitle">
+        <item quantity="one">Αντιγραφή %1$d καταχώρησης;</item>
+        <item quantity="other">Αντιγραφή %1$d καταχωρήσεων;</item>
     </plurals>
-    <plurals name="next_unseen_episodes">
-        <item quantity="one"/>
-        <item quantity="other"/>
+    <plurals name="upcoming_relative_time">
+        <item quantity="one">Αύριο</item>
+        <item quantity="other">Σε %1$d ημέρες</item>
     </plurals>
-    <plurals name="notification_new_episodes_summary">
-        <item quantity="one"/>
-        <item quantity="other"/>
+    <plurals name="pref_pages">
+        <item quantity="one">1 σελίδα</item>
+        <item quantity="other">%1$s σελίδες</item>
     </plurals>
-    <plurals name="notification_episodes_generic">
-        <item quantity="one"/>
-        <item quantity="other"/>
+    <plurals name="migrationListScreen.migrateDialog.skipText">
+        <item quantity="one">Μια καταχώρηση παραλείφθηκε</item>
+        <item quantity="other">%1$d καταχωρήσεις παραλείφθηκαν</item>
     </plurals>
-    <plurals name="notification_episodes_multiple_and_more">
-        <item quantity="one"/>
-        <item quantity="other"/>
+    <plurals name="notification_update_error">
+        <item quantity="one">%1$d ενημέρωση απέτυχε</item>
+        <item quantity="other">%1$d ενημερώσεις απέτυχαν</item>
     </plurals>
 </resources>

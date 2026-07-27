@@ -12,6 +12,7 @@ internal class MangaHistoryWithRelationsProvider : PreviewParameterProvider<Mang
         mangaId = 3L,
         title = "Test Title",
         chapterNumber = 10.2,
+        lastPageRead = 4L,
         readAt = Date(1697247357L),
         readDuration = 123L,
         coverData = tachiyomi.domain.entries.manga.model.MangaCover(
@@ -29,6 +30,7 @@ internal class MangaHistoryWithRelationsProvider : PreviewParameterProvider<Mang
         mangaId = 3L,
         title = "Test Title",
         chapterNumber = 10.2,
+        lastPageRead = 0L,
         readAt = null,
         readDuration = 123L,
         coverData = tachiyomi.domain.entries.manga.model.MangaCover(
@@ -46,6 +48,7 @@ internal class MangaHistoryWithRelationsProvider : PreviewParameterProvider<Mang
         mangaId = 3L,
         title = "Test Title",
         chapterNumber = -2.0,
+        lastPageRead = 1L,
         readAt = Date(1697247357L),
         readDuration = 123L,
         coverData = tachiyomi.domain.entries.manga.model.MangaCover(

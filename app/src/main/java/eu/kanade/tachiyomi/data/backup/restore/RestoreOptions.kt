@@ -1,14 +1,14 @@
 package eu.kanade.tachiyomi.data.backup.restore
 
 import dev.icerock.moko.resources.StringResource
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 
 data class RestoreOptions(
     val libraryEntries: Boolean = true,
     val categories: Boolean = true,
     val appSettings: Boolean = true,
-    val extensionRepoSettings: Boolean = true,
+    val extensionStores: Boolean = true,
     val customButtons: Boolean = true,
     val sourceSettings: Boolean = true,
     val extensions: Boolean = false,
@@ -18,7 +18,7 @@ data class RestoreOptions(
         libraryEntries,
         categories,
         appSettings,
-        extensionRepoSettings,
+        extensionStores,
         customButtons,
         sourceSettings,
         extensions,
@@ -27,13 +27,13 @@ data class RestoreOptions(
     fun canRestore() = libraryEntries ||
         categories ||
         appSettings ||
-        extensionRepoSettings ||
+        extensionStores ||
         customButtons ||
         sourceSettings ||
         extensions
 
     companion object {
-        val options = persistentListOf(
+        val options = listOf(
             Entry(
                 label = MR.strings.label_library,
                 getter = RestoreOptions::libraryEntries,
@@ -50,12 +50,12 @@ data class RestoreOptions(
                 setter = { options, enabled -> options.copy(appSettings = enabled) },
             ),
             Entry(
-                label = MR.strings.extensionRepo_settings,
-                getter = RestoreOptions::extensionRepoSettings,
-                setter = { options, enabled -> options.copy(extensionRepoSettings = enabled) },
+                label = MR.strings.extensionStores,
+                getter = RestoreOptions::extensionStores,
+                setter = { options, enabled -> options.copy(extensionStores = enabled) },
             ),
             Entry(
-                label = MR.strings.custom_button_settings,
+                label = AYMR.strings.custom_button_settings,
                 getter = RestoreOptions::customButtons,
                 setter = { options, enabled -> options.copy(customButtons = enabled) },
             ),
@@ -75,7 +75,7 @@ data class RestoreOptions(
             libraryEntries = array[0],
             categories = array[1],
             appSettings = array[2],
-            extensionRepoSettings = array[3],
+            extensionStores = array[3],
             customButtons = array[4],
             sourceSettings = array[5],
             extensions = array[6],

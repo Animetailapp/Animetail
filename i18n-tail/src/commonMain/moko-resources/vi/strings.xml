@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="tracking_status" comment="tracking_status Only Stuff in Animetail Library Grouping">Tracking status</string>
+  <string name="tracking_status">Tracking status</string>
   <string name="tag">Tags</string>
   <string name="ungrouped">Ungrouped</string>
   <string name="not_tracked">Not tracked</string>
-  <string name="group" comment="group More Info Menu">Group</string>
-  <string name="anime_library_group_updates" comment="anime_library_group_updates Library settings">Anime Library dynamic category updates</string>
+  <string name="group">Group</string>
+  <string name="anime_library_group_updates">Anime Library dynamic category updates</string>
   <string name="manga_library_group_updates">Manga Library dynamic category updates</string>
   <string name="library_group_updates_global">Always launch global updates</string>
   <string name="library_group_updates_all_but_ungrouped">Launch global updates only for ungrouped, category updates for others</string>
   <string name="library_group_updates_all">Launch category updates all the time</string>
-  <string name="reset_tags" comment="reset_tags Entry Info Edit">Reset Tags</string>
+  <string name="reset_tags">Reset Tags</string>
   <string name="add_tag">Add Tag</string>
   <string name="title_hint">Title: %1$s</string>
   <string name="description_hint">Description: %1$s</string>
@@ -18,13 +18,13 @@
   <string name="artist_hint">Artist: %1$s</string>
   <string name="custom_entry_info">Custom entry info</string>
   <string name="reset_info">Reset Info</string>
-  <string name="pref_category_cast" comment="pref_category_cast Cast">Cast Settings</string>
+  <string name="pref_category_cast">Cast Settings</string>
   <string name="pref_enable_cast">Enable or disable Cast</string>
   <string name="action_cast">Send to Cast</string>
-  <string name="pref_show_downloaded_episode_file_size" comment="pref_show_downloaded_episode_file_size Preferences">Show downloaded episode file size</string>
-  <string name="pref_category_fork" comment="pref_category_fork Subsections">Fork Settings</string>
-  <string name="action_edit_info" comment="action_edit_info Actions">Edit info</string>
-  <string name="special_services" comment="special_services Connections section">Special Services</string>
+  <string name="pref_show_downloaded_episode_file_size">Show downloaded episode file size</string>
+  <string name="pref_category_fork">Fork Settings</string>
+  <string name="action_edit_info">Edit info</string>
+  <string name="special_services">Special Services</string>
   <string name="pref_category_connections">Connections</string>
   <string name="pref_connections_summary">Discord, more to come..</string>
   <string name="connections_info">Special Services that are unique to Animetail and enhance the way you use the app</string>
@@ -42,22 +42,22 @@
   <string name="pref_discord_incognito">Discord Incognito mode</string>
   <string name="pref_discord_incognito_summary">Overridden when Incognito Mode is enabled</string>
   <string name="pref_discord_incognito_categories_details">Entries in included categories will not be displayed in Discord</string>
-  <string name="browsing" comment="browsing Discord section">Browsing</string>
+  <string name="browsing">Browsing</string>
   <string name="scrolling">Scrolling through</string>
   <string name="messing">Messing around with</string>
   <string name="video">Video</string>
   <string name="comic">Comic</string>
-  <string name="install_amnis" comment="install_amnis Torrent">Amnis Player needs to be installed</string>
+  <string name="install_amnis">Amnis Player needs to be installed</string>
   <string name="pref_category_torrentserver">TorrentServer Preferences</string>
   <string name="pref_torrentserver_port">TorrentServer Port</string>
   <string name="torrentserver_is_running">Torrent Server is running</string>
   <string name="pref_torrent_trackers">Torrent Trackers</string>
   <string name="pref_reset_torrent_trackers_string">Reset default torrent trackers string</string>
-  <string name="pref_page_preload_amount" comment="pref_page_preload_amount Prefs">Page preload amount</string>
-  <string name="preserve_reading_position" comment="preserve_reading_position Reader Reader Settings">Preserve reading position on read entries</string>
+  <string name="pref_page_preload_amount">Page preload amount</string>
+  <string name="preserve_reading_position">Preserve reading position on read entries</string>
   <string name="reader_bottom_buttons">Reader Bottom Buttons</string>
   <string name="reader_bottom_buttons_summary">Customize what buttons appear at the bottom of the reader</string>
-  <string name="action_set_first_page_cover" comment="action_set_first_page_cover Reader Actions">Set first page as cover</string>
+  <string name="action_set_first_page_cover">Set first page as cover</string>
   <string name="action_set_second_page_cover">Set second page as cover</string>
   <string name="action_save_first_page">Save first page</string>
   <string name="action_save_second_page">Save second page</string>
@@ -65,25 +65,24 @@
   <string name="action_share_second_page">Share second page</string>
   <string name="action_save_combined_page">Save combined page</string>
   <string name="action_share_combined_page">Share combined page</string>
-  <string name="share_pages_info" comment="share_pages_info Reader Sharing">%1$s: %2$s, pages %3$s</string>
-  <string name="page_layout" comment="page_layout Double page spread">Page layout</string>
+  <string name="share_pages_info">%1$s: %2$s, pages %3$s</string>
+  <string name="page_layout">Page layout</string>
   <string name="shift_double_pages">Shift one page over</string>
   <string name="double_pages">Double pages</string>
   <string name="single_page">Single page</string>
   <string name="automatic_orientation">Automatic (based on orientation)</string>
   <string name="automatic_can_still_switch">While using automatic page layout, you can still switch between layouts while reading without overriding this setting</string>
   <string name="invert_double_pages">Invert double pages </string>
-  <string name="center_margin" comment="center_margin Center margin">Center Margin</string>
+  <string name="center_margin">Center Margin</string>
   <string name="center_margin_none">None</string>
   <string name="center_margin_double_page">Add to double Page</string>
   <string name="center_margin_wide_page">Add to wide Page</string>
   <string name="center_margin_double_and_wide_page">Add to both</string>
   <string name="pref_center_margin">Center margin type</string>
   <string name="pref_center_margin_summary">Insert spacer to accommodate deadspace on foldable devices.</string>
-  <string name="pref_custom_color" comment="pref_custom_color Custom Color Picker">Custom Color Picker</string>
+  <string name="pref_custom_color">Custom Color Picker</string>
   <string name="custom_color_description">Pick a color for the custom Theme</string>
   <string name="theme_custom">Custom Theme</string>
-  <string name="label_backup" comment="label_backup Cross Device Sync">Backup</string>
   <string name="label_sync">Sync</string>
   <string name="label_triggers">Triggers</string>
   <string name="pref_backup_and_sync_summary">Manual &amp; automatic backups and sync</string>
@@ -138,15 +137,15 @@
   <string name="sync_on_app_start">Sync on App Start</string>
   <string name="sync_on_app_resume">Sync on App Resume</string>
   <string name="sync_library">Sync library</string>
-  <string name="extensions_page_need_refresh" comment="extensions_page_need_refresh repo management">Refresh extension page to update list.</string>
-  <string name="pref_category_navbar" comment="pref_category_navbar navigation">Navbar</string>
+  <string name="extensions_page_need_refresh">Refresh extension page to update list.</string>
+  <string name="pref_category_navbar">Navbar</string>
   <string name="pref_hide_updates_button">Show updates in the nav</string>
   <string name="pref_hide_history_button">Show history in the nav</string>
   <string name="pref_show_bottom_bar_labels">Always show nav labels</string>
-  <string name="select_tracker" comment="select_tracker tracker anime e manga details">Select a tracker</string>
+  <string name="select_tracker">Select a tracker</string>
   <string name="entry_not_tracked">Entry is not tracked.</string>
   <string name="fill_from_tracker">Fill from tracker</string>
-  <string name="flare_solver_user_agent_update_success" comment="flare_solver_user_agent_update_success FlareSolverr">FlareSolverr is working. User agent updated. Please restart the app</string>
+  <string name="flare_solver_user_agent_update_success">FlareSolverr is working. User agent updated. Please restart the app</string>
   <string name="flare_solver_update_user_agent_failed">FlareSolverr is not working. User agent not updated. Please check your settings</string>
   <string name="flare_solver_error">Error contacting FlareSolverr</string>
   <string name="flare_solver_error_webview">Error resolving with WebView</string>
@@ -156,22 +155,13 @@
   <string name="pref_flare_solverr_url_summary">URL of the FlareSolverr instance to use for example http://192.168.1.202:8191/v1</string>
   <string name="pref_test_flare_solverr_and_update_user_agent">Test FlareSolverr and update user agent</string>
   <string name="pref_test_flare_solverr_and_update_user_agent_summary">Test FlareSolverr to update the user agent. Only required once; then toggle as needed.</string>
-  <string-array name="title_cast_quality">
-    <item>Choose Cast Quality/Provider</item>
-    <item>Select Quality</item>
-  </string-array>
+  <string name="title_cast_quality">Select Quality</string>
   <string name="cast_not_connected">Cast not connected</string>
-  <string-array name="cast_video_added_to_queue">
-    <item>Video added to queue</item>
-    <item>Video added to queue</item>
-  </string-array>
-  <string-array name="cast_error_loading">
-    <item>Error loading video from Cast</item>
-    <item>Error loading video</item>
-  </string-array>
+  <string name="cast_video_added_to_queue">Video added to queue</string>
+  <string name="cast_error_loading">Error loading video</string>
   <string name="server_local_notification_casting">The local server is running. Tap to stop it.</string>
   <string name="server_local_notification_channel_description">Local server notification channel</string>
-  <string name="eh_autoscroll" comment="eh_autoscroll Auto scroll">Autoscroll</string>
+  <string name="eh_autoscroll">Autoscroll</string>
   <string name="eh_retry_all">Retry all</string>
   <string name="eh_boost_page">Boost page</string>
   <string name="eh_autoscroll_help">Autoscroll help</string>
@@ -192,7 +182,7 @@
   </plurals>
   <string name="pref_category_castserver">Cast Server</string>
   <string name="pref_cast_server_port">Cast Server Port</string>
-  <string name="pref_category_discord_customization" comment="pref_category_discord_customization Discord RPC Customization">Discord Customization</string>
+  <string name="pref_category_discord_customization">Discord Customization</string>
   <string name="pref_discord_custom_message">Custom Message</string>
   <string name="pref_discord_custom_message_summary">Custom message that will be displayed on Discord</string>
   <string name="pref_discord_show_progress">Show Progress</string>
@@ -205,7 +195,7 @@
   <string name="pref_discord_show_download_button_summary">Displays a button to download the app</string>
   <string name="pref_discord_show_discord_button">Show Discord Button</string>
   <string name="pref_discord_show_discord_button_summary">Displays a button to join the Discord server</string>
-  <string name="cast_queue_title" comment="cast_queue_title Cast Queue Management">Playback Queue</string>
+  <string name="cast_queue_title">Playback Queue</string>
   <string name="action_clear_queue">Clear Queue</string>
   <string name="cast_remove_from_queue">Remove from queue</string>
   <string name="move_to_top">Move to Top</string>
@@ -218,7 +208,7 @@
   <string name="queue">Queue</string>
   <string name="move_to_bottom">Move to Bottom</string>
   <string name="action_end_session">End Cast Session</string>
-  <string name="cast_available_devices" comment="cast_available_devices Cast device picker">Available Devices</string>
+  <string name="cast_available_devices">Available Devices</string>
   <string name="cast_media_info">Media Info</string>
   <string name="cast_previous_video">Previous Video</string>
   <string name="cast_next_video">Next Video</string>
@@ -233,10 +223,7 @@
   <string name="cast_end_session_confirm">End Session</string>
   <string name="cast_end_session_cancel">Cancel</string>
   <string name="playback_speed">Playback Speed</string>
-  <string-array name="cast_subtitle_settings">
-    <item comment="cast_subtitle_settings&#10;Cast Subtitle Settings">Subtitle Settings</item>
-    <item>Subtitle Settings</item>
-  </string-array>
+  <string name="cast_subtitle_settings">Subtitle Settings</string>
   <string name="cast_subtitle_font_size">Font Size</string>
   <string name="cast_subtitle_text_color">Text Color</string>
   <string name="cast_subtitle_background">Background</string>
@@ -272,7 +259,7 @@
   <string name="action_bulk_select">Bulk selection mode</string>
   <string name="action_move_up">Move Up</string>
   <string name="action_move_down">Move Down</string>
-  <string name="too_many_in_feed" comment="too_many_in_feed Feed Tab">Too many sources in your feed, cannot add more than 20</string>
+  <string name="too_many_in_feed">Too many sources in your feed, cannot add more than 20</string>
   <string name="action_sort_feed">Sort feeds</string>
   <string name="sort_feed_confirmation">Would you like to sort the feeds alphabetically?</string>
   <string name="saved_searches_feeds">Saved Searches &amp; Feeds</string>
@@ -284,7 +271,7 @@
   <string name="feed_delete">Delete feed item?</string>
   <string name="feed_tab_empty">You don\'t have any sources in your feed, navigate to the top right to add one</string>
   <string name="feed_add">Add %1$s to feed?</string>
-  <string name="saved_searches" comment="saved_searches Saved Searches">Saved Searches</string>
+  <string name="saved_searches">Saved Searches</string>
   <string name="save_search">Save current search query?</string>
   <string name="save_search_hint">My search name</string>
   <string name="save_search_failed_to_load">Failed to load saved searches!</string>
@@ -293,9 +280,9 @@
   <string name="save_search_delete_message">Are you sure you wish to delete your saved search query: \'%1$s\'?</string>
   <string name="save_search_invalid">Saved search invalid, filters have changed</string>
   <string name="save_search_invalid_name">Invalid saved search name</string>
-  <string name="no_source_categories" comment="no_source_categories Source Categories">No source categories available</string>
+  <string name="no_source_categories">No source categories available</string>
   <string name="invalid_category_name">Invalid category name</string>
-  <string name="pref_source_related_mangas" comment="pref_source_related_mangas Browse settings">Suggestions</string>
+  <string name="pref_source_related_mangas">Suggestions</string>
   <string name="pref_source_related_mangas_summary">Show source-website\'s Suggestions while viewing entry</string>
   <string name="related_mangas_website_suggestions">Website Suggestions</string>
   <string name="related_mangas_more">More like these...</string>
@@ -310,4 +297,52 @@
   <string name="pref_source_related_animes_summary">Show source-website\'s Suggestions while viewing entry</string>
   <string name="pref_source_navigation">Replace latest button</string>
   <string name="pref_source_navigation_summery">Replace latest button with a custom browse view that includes both latest and browse</string>
+  <string name="app_cast_id">F033F567</string>
+  <string name="media_route_menu_title">EXTEND</string>
+  <string name="pref_flare_solverr_timeout">FlareSolverr Timeout</string>
+  <string name="pref_flare_solverr_timeout_summary">Maximum time to wait for a solution</string>
+  <string name="pref_show_cast">Show Cast</string>
+  <string name="pref_show_cast_summary">Show cast information on anime details page</string>
+  <string name="login_error">Login error</string>
+  <string name="save">Save</string>
+  <string name="pref_doh_custom_url" comment="pref_doh_custom_url Doh Custom">Custom DoH URL</string>
+  <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>
+  <string name="error_doh_custom_invalid">Invalid DoH URL</string>
+  <string name="error_doh_custom_must_use_https">Custom DoH must use https</string>
+  <string name="pref_doh_custom_bootstrap">Custom DoH bootstrap hosts</string>
+  <string name="pref_doh_custom_bootstrap_summary">Comma separated IPs (optional). Example: 1.1.1.1,8.8.8.8</string>
+  <string name="error_doh_custom_bootstrap_invalid">Invalid bootstrap host: %1$s</string>
+  <string name="pref_show_episode_timestamp" comment="pref_show_episode_timestamp Episode/Chapter Timestamps">Show episode timestamps</string>
+  <string name="pref_show_episode_timestamp_summary">Show the release date/time on the episode list. Disable this when an extension reports unreliable data</string>
+  <string name="pref_show_chapter_timestamp">Show chapter timestamps</string>
+  <string name="pref_show_chapter_timestamp_summary">Show the release date/time on the chapter list. Disable this when an extension reports unreliable data</string>
+  <string name="network_stream" comment="network_stream Network Stream">Network stream</string>
+  <string name="network_stream_summary">Play a direct link inside the built-in player</string>
+  <string name="network_stream_url_label">Stream URL</string>
+  <string name="network_stream_url_placeholder">https://example.com/video.m3u8</string>
+  <string name="network_stream_invalid_url">Enter a valid URL</string>
+  <string name="network_stream_title_label">Title (optional)</string>
+  <string name="network_stream_subtitle_label">Subtitle URL (optional)</string>
+  <string name="network_stream_invalid_subtitle">Enter a valid subtitle URL</string>
+  <string name="network_stream_subtitle_language_label">Subtitle label (optional)</string>
+  <string name="network_stream_referer_label">Referer header</string>
+  <string name="network_stream_user_agent_label">User-Agent header</string>
+  <string name="network_stream_headers_label">Additional headers</string>
+  <string name="network_stream_headers_hint">Header-Name: Header value</string>
+  <string name="network_stream_header_error">Header on line %1$d must use the format \"Name: Value\"</string>
+  <string name="network_stream_play">Play stream</string>
+  <string name="network_stream_reset">Clear fields</string>
+  <string name="show_splash_ovals_on_double_tap_to_seek" comment="show_splash_ovals_on_double_tap_to_seek Video Player">Show ripple when double tap seeking</string>
+  <string name="show_seek_icon">Show seek icon</string>
+  <string name="show_seek_time">Show seek time</string>
+  <string name="player_sheets_subtitles_ass_no" comment="player_sheets_subtitles_ass_no Player - subtitles">No</string>
+  <string name="player_sheets_subtitles_ass_yes">Yes</string>
+  <string name="player_sheets_subtitles_ass_scale">Scale</string>
+  <string name="player_sheets_subtitles_ass_force">Force</string>
+  <string name="player_sheets_subtitles_ass_strip">Strip</string>
+  <string name="action_set_date" comment="action_set_date Tracking">Set date</string>
+  <string name="action_set_date_title">Set upload date</string>
+  <string name="pref_tracking_sync_enhanced">Sync progress from enhanced trackers</string>
+  <string name="pref_smart_sync_tracker">Smart sync seasons</string>
+  <string name="pref_smart_sync_tracker_summary">Skip completed items and stop at entry in progress</string>
 </resources>

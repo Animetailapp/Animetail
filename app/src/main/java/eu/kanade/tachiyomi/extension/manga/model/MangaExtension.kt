@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.manga.model
 
 import android.graphics.drawable.Drawable
 import eu.kanade.tachiyomi.source.MangaSource
+import mihon.domain.extension.model.ExtensionStore
 import tachiyomi.domain.source.manga.model.StubMangaSource
 
 sealed class MangaExtension {
@@ -38,7 +39,7 @@ sealed class MangaExtension {
         val hasUpdate: Boolean = false,
         val isObsolete: Boolean = false,
         val isShared: Boolean,
-        val repoUrl: String? = null,
+        val store: ExtensionStore? = null,
     ) : MangaExtension()
 
     data class Available(
@@ -54,9 +55,9 @@ sealed class MangaExtension {
         override val repoName: String,
         // KMK <--
         val sources: List<MangaSource>,
-        val apkName: String,
+        val apkUrl: String,
         val iconUrl: String,
-        val repoUrl: String,
+        val store: ExtensionStore,
     ) : MangaExtension() {
 
         data class MangaSource(

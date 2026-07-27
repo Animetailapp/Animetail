@@ -3,16 +3,16 @@ package eu.kanade.tachiyomi.ui.library.anime
 import eu.kanade.tachiyomi.source.anime.getNameForAnimeInfo
 import tachiyomi.domain.library.anime.LibraryAnime
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import tachiyomi.source.local.entries.anime.LocalAnimeSource
 
-data class AnimeLibraryItem(
+private const val LOCAL_SOURCE_ID_ALIAS = "local"
+
+class AnimeLibraryItem(
     val libraryAnime: LibraryAnime,
-    var downloadCount: Long = -1,
-    var unseenCount: Long = -1,
-    var isLocal: Boolean = false,
-    var sourceLanguage: String = "",
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
+    val downloadCount: Int,
+    val unseenCount: Long,
+    val isLocal: Boolean,
+    val badges: Badges,
 ) {
     /**
      * Checks if a query matches the anime
@@ -20,11 +20,19 @@ data class AnimeLibraryItem(
      * @param constraint the query to check.
      * @return true if the anime matches the query, false otherwise.
      */
-    fun matches(constraint: String): Boolean {
-        val sourceName by lazy { sourceManager.getOrStub(libraryAnime.anime.source).getNameForAnimeInfo() }
+    fun matches(constraint: String, sourceManager: AnimeSourceManager): Boolean {
+        val source = sourceManager.getOrStub(libraryAnime.anime.source)
+        val sourceName by lazy { source.getNameForAnimeInfo() }
         if (constraint.startsWith("id:", true)) {
             val id = constraint.substringAfter("id:").toLongOrNull()
             return libraryAnime.id == id
+        } else if (constraint.startsWith("src:", true)) {
+            val querySource = constraint.substringAfter("src:")
+            return if (querySource.equals(LOCAL_SOURCE_ID_ALIAS, ignoreCase = true)) {
+                source.id == LocalAnimeSource.ID
+            } else {
+                source.id == querySource.toLongOrNull()
+            }
         }
         return libraryAnime.anime.title.contains(constraint, true) ||
             (libraryAnime.anime.author?.contains(constraint, true) ?: false) ||
@@ -56,4 +64,11 @@ data class AnimeLibraryItem(
             predicate(constraint)
         }
     }
+
+    data class Badges(
+        val downloadCount: Int,
+        val unseenCount: Long,
+        val isLocal: Boolean,
+        val sourceLanguage: String,
+    )
 }

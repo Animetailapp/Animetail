@@ -29,10 +29,12 @@ fun Manga.prepUpdateCover(coverCache: MangaCoverCache, remoteManga: SManga, refr
         isLocal() -> {
             this.copy(coverLastModified = Instant.now().toEpochMilli())
         }
+
         hasCustomCover(coverCache) -> {
             coverCache.deleteFromCache(this, false)
             this
         }
+
         else -> {
             coverCache.deleteFromCache(this, false)
             this.copy(coverLastModified = Instant.now().toEpochMilli())
@@ -43,7 +45,7 @@ fun Manga.prepUpdateCover(coverCache: MangaCoverCache, remoteManga: SManga, refr
 fun Manga.removeCovers(coverCache: MangaCoverCache = Injekt.get()): Manga {
     if (isLocal()) return this
     return if (coverCache.deleteFromCache(this, true) > 0) {
-        return copy(coverLastModified = Instant.now().toEpochMilli())
+        copy(coverLastModified = Instant.now().toEpochMilli())
     } else {
         this
     }

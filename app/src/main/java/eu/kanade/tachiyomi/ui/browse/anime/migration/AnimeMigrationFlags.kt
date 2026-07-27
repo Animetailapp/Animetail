@@ -1,11 +1,15 @@
 package eu.kanade.tachiyomi.ui.browse.anime.migration
 
 import dev.icerock.moko.resources.StringResource
+import eu.kanade.domain.entries.anime.model.hasCustomBackground
 import eu.kanade.domain.entries.anime.model.hasCustomCover
+import eu.kanade.tachiyomi.animesource.model.FetchType
+import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.injectLazy
 
 data class AnimeMigrationFlag(
@@ -28,10 +32,13 @@ object AnimeMigrationFlags {
 
     private const val EPISODES = 0b00001
     private const val CATEGORIES = 0b00010
+    private const val CUSTOM_BACKGROUND = 0b00100
     private const val CUSTOM_COVER = 0b01000
     private const val DELETE_DOWNLOADED = 0b10000
+    private const val NOTES = 0b100000
 
     private val coverCache: AnimeCoverCache by injectLazy()
+    private val backgroundCache: AnimeBackgroundCache by injectLazy()
     private val downloadCache: AnimeDownloadCache by injectLazy()
 
     fun hasEpisodes(value: Int): Boolean {
@@ -46,14 +53,25 @@ object AnimeMigrationFlags {
         return value and CUSTOM_COVER != 0
     }
 
+    fun hasCustomBackground(value: Int): Boolean {
+        return value and CUSTOM_BACKGROUND != 0
+    }
+
     fun hasDeleteDownloaded(value: Int): Boolean {
         return value and DELETE_DOWNLOADED != 0
+    }
+
+    fun hasNotes(value: Int): Boolean {
+        return value and NOTES != 0
     }
 
     /** Returns information about applicable flags with default selections. */
     fun getFlags(anime: Anime?, defaultSelectedBitMap: Int): List<AnimeMigrationFlag> {
         val flags = mutableListOf<AnimeMigrationFlag>()
-        flags += AnimeMigrationFlag.create(EPISODES, defaultSelectedBitMap, MR.strings.episodes)
+
+        if (anime?.fetchType == FetchType.Episodes) {
+            flags += AnimeMigrationFlag.create(EPISODES, defaultSelectedBitMap, AYMR.strings.episodes)
+        }
         flags += AnimeMigrationFlag.create(CATEGORIES, defaultSelectedBitMap, MR.strings.categories)
 
         if (anime != null) {
@@ -64,12 +82,22 @@ object AnimeMigrationFlags {
                     MR.strings.custom_cover,
                 )
             }
+            if (anime.hasCustomBackground(backgroundCache)) {
+                flags += AnimeMigrationFlag.create(
+                    CUSTOM_BACKGROUND,
+                    defaultSelectedBitMap,
+                    AYMR.strings.custom_background,
+                )
+            }
             if (downloadCache.getDownloadCount(anime) > 0) {
                 flags += AnimeMigrationFlag.create(
                     DELETE_DOWNLOADED,
                     defaultSelectedBitMap,
                     MR.strings.delete_downloaded,
                 )
+            }
+            if (anime.notes.isNotBlank()) {
+                flags += AnimeMigrationFlag.create(NOTES, defaultSelectedBitMap, MR.strings.action_notes)
             }
         }
         return flags

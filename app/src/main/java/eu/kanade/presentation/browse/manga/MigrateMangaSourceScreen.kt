@@ -26,7 +26,6 @@ import eu.kanade.presentation.browse.manga.components.BaseMangaSourceItem
 import eu.kanade.presentation.browse.manga.components.MangaSourceIcon
 import eu.kanade.tachiyomi.ui.browse.manga.migration.sources.MigrateMangaSourceScreenModel
 import eu.kanade.tachiyomi.util.system.copyToClipboard
-import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.source.manga.model.Source
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.Badge
@@ -53,10 +52,12 @@ fun MigrateMangaSourceScreen(
     val context = LocalContext.current
     when {
         state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
         state.isEmpty -> EmptyScreen(
             stringRes = MR.strings.information_empty_library,
             modifier = Modifier.padding(contentPadding),
         )
+
         else ->
             MigrateSourceList(
                 list = state.items,
@@ -76,7 +77,7 @@ fun MigrateMangaSourceScreen(
 
 @Composable
 private fun MigrateSourceList(
-    list: ImmutableList<Pair<Source, Long>>,
+    list: List<Pair<Source, Long>>,
     contentPadding: PaddingValues,
     onClickItem: (Source) -> Unit,
     onLongClickItem: (Source) -> Unit,
@@ -107,6 +108,7 @@ private fun MigrateSourceList(
                             Icons.Outlined.SortByAlpha,
                             contentDescription = stringResource(MR.strings.action_sort_alpha),
                         )
+
                         SetMigrateSorting.Mode.TOTAL -> Icon(
                             Icons.Outlined.Numbers,
                             contentDescription = stringResource(MR.strings.action_sort_count),
@@ -119,6 +121,7 @@ private fun MigrateSourceList(
                             Icons.Outlined.ArrowUpward,
                             contentDescription = stringResource(MR.strings.action_asc),
                         )
+
                         SetMigrateSorting.Direction.DESCENDING -> Icon(
                             Icons.Outlined.ArrowDownward,
                             contentDescription = stringResource(MR.strings.action_desc),

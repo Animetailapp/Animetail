@@ -96,10 +96,21 @@ fun CastMiniController(
                                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                         )
-                        (context as? ComponentActivity)?.overridePendingTransition(
-                            R.anim.fade_in,
-                            R.anim.slide_out_up,
-                        )
+                        (context as? ComponentActivity)?.let { activity ->
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                                activity.overrideActivityTransition(
+                                    android.app.Activity.OVERRIDE_TRANSITION_OPEN,
+                                    R.anim.fade_in,
+                                    R.anim.slide_out_up,
+                                )
+                            } else {
+                                @Suppress("DEPRECATION")
+                                activity.overridePendingTransition(
+                                    R.anim.fade_in,
+                                    R.anim.slide_out_up,
+                                )
+                            }
+                        }
                     },
                 ),
         ) {

@@ -33,10 +33,8 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.WheelNumberPicker
 import tachiyomi.presentation.core.components.WheelTextPicker
@@ -101,12 +99,12 @@ fun TrackItemSelector(
     onDismissRequest: () -> Unit,
     isManga: Boolean,
 ) {
-    val titleText = if (isManga) MR.strings.chapters else MR.strings.episodes
+    val titleText = if (isManga) MR.strings.chapters else AYMR.strings.episodes
     BaseSelector(
         title = stringResource(titleText),
         content = {
             WheelNumberPicker(
-                items = range.toImmutableList(),
+                items = range.toList(),
                 modifier = Modifier.align(Alignment.Center),
                 startIndex = selection,
                 onSelectionChanged = { onSelectionChange(it) },
@@ -121,7 +119,7 @@ fun TrackItemSelector(
 fun TrackScoreSelector(
     selection: String,
     onSelectionChange: (String) -> Unit,
-    selections: ImmutableList<String>,
+    selections: List<String>,
     onConfirm: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
@@ -239,7 +237,7 @@ private fun TrackStatusSelectorPreviews() {
             TrackStatusSelector(
                 selection = 1,
                 onSelectionChange = {},
-                selections = persistentMapOf(
+                selections = mapOf(
                     // Anilist values
                     1L to MR.strings.reading,
                     2L to MR.strings.plan_to_read,
@@ -247,8 +245,8 @@ private fun TrackStatusSelectorPreviews() {
                     4L to MR.strings.on_hold,
                     5L to MR.strings.dropped,
                     6L to MR.strings.repeating,
-                    7L to MR.strings.watching,
-                    8L to MR.strings.plan_to_watch,
+                    7L to AYMR.strings.watching,
+                    8L to AYMR.strings.plan_to_watch,
                 ),
                 onConfirm = {},
                 onDismissRequest = {},

@@ -27,7 +27,8 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
-import tachiyomi.i18n.MR
+import kotlinx.coroutines.launch
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 data object CategoriesTab : Tab {
@@ -39,7 +40,7 @@ data object CategoriesTab : Tab {
             val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_updates_enter)
             return TabOptions(
                 index = 7u,
-                title = stringResource(MR.strings.general_categories),
+                title = stringResource(AYMR.strings.general_categories),
                 icon = rememberAnimatedVectorPainter(image, isSelected),
             )
         }
@@ -68,7 +69,7 @@ data object CategoriesTab : Tab {
         val state = rememberPagerState { tabs.size }
 
         TabbedScreen(
-            titleRes = MR.strings.general_categories,
+            titleRes = AYMR.strings.general_categories,
             tabs = tabs,
             state = state,
             // KMK -->
@@ -85,14 +86,18 @@ data object CategoriesTab : Tab {
         }
 
         LaunchedEffect(Unit) {
-            mangaCategoryScreenModel.events.collectLatest { event ->
-                if (event is MangaCategoryEvent.LocalizedMessage) {
-                    context.toast(event.stringRes)
+            launch {
+                mangaCategoryScreenModel.events.collectLatest { event ->
+                    if (event is MangaCategoryEvent.LocalizedMessage) {
+                        context.toast(event.stringRes)
+                    }
                 }
             }
-            animeCategoryScreenModel.events.collectLatest { event ->
-                if (event is AnimeCategoryEvent.LocalizedMessage) {
-                    context.toast(event.stringRes)
+            launch {
+                animeCategoryScreenModel.events.collectLatest { event ->
+                    if (event is AnimeCategoryEvent.LocalizedMessage) {
+                        context.toast(event.stringRes)
+                    }
                 }
             }
         }

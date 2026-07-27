@@ -556,6 +556,7 @@ fun EntryListItem(
     onClickContinueViewing: (() -> Unit)? = null,
     entries: Int = 0,
     containerHeight: Int = 0,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val isAndroidTV = remember {
@@ -568,7 +569,7 @@ fun EntryListItem(
     // Obtener colores del tema para usar en drawBehind
     val primaryColor = MaterialTheme.colorScheme.primary
     Row(
-        modifier = Modifier
+        modifier = modifier
             .selectedBackground(isSelected)
             .drawBehind {
                 if (isSelected) {
@@ -595,6 +596,7 @@ fun EntryListItem(
             .height(
                 when (entries) {
                     0 -> 76.dp
+
                     else -> {
                         val density = LocalDensity.current
                         with(density) { (containerHeight / entries).toDp() } - (3 / entries).dp

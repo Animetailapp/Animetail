@@ -17,10 +17,10 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.tachiyomi.ui.browse.manga.source.browse.BrowseMangaSourceScreen
 import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearchScreen
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
@@ -30,8 +30,8 @@ fun Screen.mangaSourcesTab(): TabContent {
     val state by screenModel.state.collectAsState()
 
     return TabContent(
-        titleRes = MR.strings.label_manga_sources,
-        actions = persistentListOf(
+        titleRes = AYMR.strings.label_manga_sources,
+        actions = listOf(
             AppBar.Action(
                 title = stringResource(MR.strings.action_global_search),
                 icon = Icons.Outlined.TravelExplore,

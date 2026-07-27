@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi
 
 import android.annotation.SuppressLint
+import android.app.ActivityManager
 import android.app.Application
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -30,8 +31,8 @@ import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
 import eu.kanade.tachiyomi.crash.CrashActivity
 import eu.kanade.tachiyomi.crash.GlobalExceptionHandler
-import eu.kanade.tachiyomi.data.coil.AnimeCoverFetcher
 import eu.kanade.tachiyomi.data.coil.AnimeCoverKeyer
+import eu.kanade.tachiyomi.data.coil.AnimeImageFetcher
 import eu.kanade.tachiyomi.data.coil.AnimeKeyer
 import eu.kanade.tachiyomi.data.coil.BufferedSourceFetcher
 import eu.kanade.tachiyomi.data.coil.MangaCoverFetcher
@@ -107,6 +108,10 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         Injekt.importModule(SYDomainModule())
         // SY <--
 
+        if (!isMainProcess()) {
+            return
+        }
+
         setupNotificationChannels()
 
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
@@ -114,7 +119,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         val scope = ProcessLifecycleOwner.get().lifecycleScope
 
         // Show notification to disable Incognito Mode when it's enabled
-        basePreferences.incognitoMode().changes()
+        basePreferences.incognitoMode.changes()
             .onEach { enabled ->
                 if (enabled) {
                     disableIncognitoReceiver.register()
@@ -142,15 +147,15 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             }
             .launchIn(ProcessLifecycleOwner.get().lifecycleScope)
 
-        basePreferences.hardwareBitmapThreshold().let { preference ->
+        basePreferences.hardwareBitmapThreshold.let { preference ->
             if (!preference.isSet()) preference.set(GLUtil.DEVICE_TEXTURE_LIMIT)
         }
 
-        basePreferences.hardwareBitmapThreshold().changes()
+        basePreferences.hardwareBitmapThreshold.changes()
             .onEach { ImageUtil.hardwareBitmapThreshold = it }
             .launchIn(scope)
 
-        setAppCompatDelegateThemeMode(Injekt.get<UiPreferences>().themeMode().get())
+        setAppCompatDelegateThemeMode(Injekt.get<UiPreferences>().themeMode.get())
 
         // Updates widget update
         with(MangaWidgetManager(Injekt.get(), Injekt.get())) {
@@ -161,16 +166,20 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             init(ProcessLifecycleOwner.get().lifecycleScope)
         }
 
-        if (!LogcatLogger.isInstalled && networkPreferences.verboseLogging().get()) {
-            LogcatLogger.install(AndroidLogcatLogger(LogPriority.VERBOSE))
+        if (!LogcatLogger.isInstalled) {
+            val minLogPriority = when {
+                networkPreferences.verboseLogging().get() -> LogPriority.VERBOSE
+                BuildConfig.DEBUG -> LogPriority.DEBUG
+                else -> LogPriority.INFO
+            }
+            AndroidLogcatLogger.installOnDebuggableApp(this, minLogPriority)
         }
 
         initializeMigrator()
 
         val syncPreferences: SyncPreferences = Injekt.get()
         val syncTriggerOpt = syncPreferences.getSyncTriggerOptions()
-        if (syncPreferences.isSyncEnabled() && syncTriggerOpt.syncOnAppStart
-        ) {
+        if (syncPreferences.isSyncEnabled() && syncTriggerOpt.syncOnAppStart) {
             SyncDataJob.startNow(this@App)
         }
     }
@@ -202,8 +211,8 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                 add(BufferedSourceFetcher.Factory())
                 add(MangaCoverFetcher.MangaFactory(callFactoryLazy))
                 add(MangaCoverFetcher.MangaCoverFactory(callFactoryLazy))
-                add(AnimeCoverFetcher.AnimeFactory(callFactoryLazy))
-                add(AnimeCoverFetcher.AnimeCoverFactory(callFactoryLazy))
+                add(AnimeImageFetcher.AnimeFactory(callFactoryLazy))
+                add(AnimeImageFetcher.AnimeCoverFactory(callFactoryLazy))
                 // Keyer
                 add(AnimeKeyer())
                 add(MangaKeyer())
@@ -227,8 +236,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
 
         val syncPreferences: SyncPreferences = Injekt.get()
         val syncTriggerOpt = syncPreferences.getSyncTriggerOptions()
-        if (syncPreferences.isSyncEnabled() && syncTriggerOpt.syncOnAppResume
-        ) {
+        if (syncPreferences.isSyncEnabled() && syncTriggerOpt.syncOnAppResume) {
             SyncDataJob.startNow(this@App)
         }
 
@@ -279,7 +287,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         private var registered = false
 
         override fun onReceive(context: Context, intent: Intent) {
-            basePreferences.incognitoMode().set(false)
+            basePreferences.incognitoMode.set(false)
         }
 
         fun register() {
@@ -299,6 +307,17 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                 unregisterReceiver(this)
                 registered = false
             }
+        }
+    }
+
+    private fun isMainProcess(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageName == getProcessName()
+        } else {
+            val pid = android.os.Process.myPid()
+            val am = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            val processName = am?.runningAppProcesses?.firstOrNull { it.pid == pid }?.processName
+            processName == null || packageName == processName
         }
     }
 }

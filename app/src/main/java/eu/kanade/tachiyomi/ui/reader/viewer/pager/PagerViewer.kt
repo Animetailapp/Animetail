@@ -104,11 +104,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         pager.offscreenPageLimit = 1
         pager.id = R.id.reader_pager
         pager.adapter = adapter
-        pager.addOnPageChangeListener(
-            // SY -->
-            pagerListener,
-            // SY <--
-        )
+        pager.addOnPageChangeListener(pagerListener)
         pager.tapListener = { event ->
             val viewPosition = IntArray(2)
             pager.getLocationOnScreen(viewPosition)
@@ -203,8 +199,10 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                         page.number > (currentPage as ReaderPage).number
                     }
                 }
+
                 currentPage is ChapterTransition.Prev && page is ReaderPage ->
                     false
+
                 else -> true
             }
             currentPage = page
@@ -291,6 +289,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * Sets the active [chapters] on this pager.
      */
     private fun setChaptersInternal(chapters: ViewerChapters) {
+        // Remove listener so the change in item doesn't trigger it
+        pager.removeOnPageChangeListener(pagerListener)
+
         val forceTransition = config.alwaysShowChapterTransition ||
             adapter.items.getOrNull(
                 pager.currentItem,
@@ -304,6 +305,10 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
             moveToPage(pages[min(chapters.currChapter.requestedPage, pages.lastIndex)])
             pager.isVisible = true
         }
+
+        pager.addOnPageChangeListener(pagerListener)
+        // Manually call onPageChange to update the UI
+        onPageChange(pager.currentItem)
     }
 
     /**
@@ -414,6 +419,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                     if (!config.volumeKeysInverted) moveDown() else moveUp()
                 }
             }
+
             KeyEvent.KEYCODE_VOLUME_UP -> {
                 if (!config.volumeKeysEnabled || activity.viewModel.state.value.menuVisible) {
                     return false
@@ -421,21 +427,29 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                     if (!config.volumeKeysInverted) moveUp() else moveDown()
                 }
             }
+
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
                 if (isUp) {
                     if (ctrlPressed) moveToNext() else moveRight()
                 }
             }
+
             KeyEvent.KEYCODE_DPAD_LEFT -> {
                 if (isUp) {
                     if (ctrlPressed) moveToPrevious() else moveLeft()
                 }
             }
+
             KeyEvent.KEYCODE_DPAD_DOWN -> if (isUp) moveDown()
+
             KeyEvent.KEYCODE_DPAD_UP -> if (isUp) moveUp()
+
             KeyEvent.KEYCODE_PAGE_DOWN -> if (isUp) moveDown()
+
             KeyEvent.KEYCODE_PAGE_UP -> if (isUp) moveUp()
+
             KeyEvent.KEYCODE_MENU -> if (isUp) activity.toggleMenu()
+
             else -> return false
         }
         return true
@@ -474,13 +488,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
 
     // SY -->
     fun setChaptersDoubleShift(chapters: ViewerChapters) {
-        // Remove Listener since we're about to change the size of the items
-        // If we don't the size change could put us on a new chapter
-        pager.removeOnPageChangeListener(pagerListener)
         setChaptersInternal(chapters)
-        pager.addOnPageChangeListener(pagerListener)
-        // Since we removed the listener while shifting, call page change to update the ui
-        onPageChange(pager.currentItem)
     }
 
     fun updateShifting(page: ReaderPage? = null) {

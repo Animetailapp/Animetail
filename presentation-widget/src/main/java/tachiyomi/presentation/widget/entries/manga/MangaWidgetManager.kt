@@ -25,7 +25,7 @@ class MangaWidgetManager(
                 read = false,
                 after = BaseMangaUpdatesGridGlanceWidget.DateLimit.toEpochMilli(),
             ),
-            securityPreferences.useAuthenticator().changes(),
+            securityPreferences.useAuthenticator.changes(),
             transform = { a, b -> a to b },
         )
             .distinctUntilChanged { old, new ->

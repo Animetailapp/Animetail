@@ -17,15 +17,17 @@ fun AnimeSource.toStubSource(): StubAnimeSource = StubAnimeSource(id = id, lang 
 
 fun AnimeSource.getNameForAnimeInfo(): String {
     val preferences = Injekt.get<SourcePreferences>()
-    val enabledLanguages = preferences.enabledLanguages().get()
+    val enabledLanguages = preferences.enabledLanguages.get()
         .filterNot { it in listOf("all", "other") }
     val hasOneActiveLanguages = enabledLanguages.size == 1
     val isInEnabledLanguages = lang in enabledLanguages
     return when {
         // For edge cases where user disables a source they got manga of in their library.
         hasOneActiveLanguages && !isInEnabledLanguages -> toString()
+
         // Hide the language tag when only one language is used.
         hasOneActiveLanguages && isInEnabledLanguages -> name
+
         else -> toString()
     }
 }
@@ -39,13 +41,11 @@ fun AnimeSource?.isNsfw(): Boolean {
         .find { ext -> ext.sources.any { it.id == this.id } }!!
     return sourceUsed.isNsfw
 }
-// <-- AM (DISCORD)
 
-// (TORRENT) -->
+// <-- AM (DISCORD)
 fun AnimeSource?.isSourceForTorrents(): Boolean {
     if (this == null || this.isLocalOrStub()) return false
     val sourceUsed = Injekt.get<AnimeExtensionManager>().installedExtensionsFlow.value
         .find { ext -> ext.sources.any { it.id == this.id } }!!
     return sourceUsed.isTorrent
 }
-// <-- (TORRENT)

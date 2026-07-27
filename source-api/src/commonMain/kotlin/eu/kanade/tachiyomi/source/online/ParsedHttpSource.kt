@@ -198,4 +198,34 @@ abstract class ParsedHttpSource : HttpSource() {
      * @param document the parsed document.
      */
     protected abstract fun imageUrlParse(document: Document): String
+
+    // KMK -->
+
+    /**
+     * Parses the response from the site and returns a list of related mangas.
+     * Normally it's not needed to override this method.
+     *
+     * @since komikku/extensions-lib 1.6
+     * @param response the response from the site.
+     */
+    override fun relatedMangaListParse(response: Response): List<SManga> {
+        return response.asJsoup()
+            .select(relatedMangaListSelector()).map { relatedMangaFromElement(it) }
+    }
+
+    /**
+     * Returns the Jsoup selector that returns a list of [Element] corresponding to each related manga.
+     *
+     * @since komikku/extensions-lib 1.6
+     */
+    protected open fun relatedMangaListSelector(): String = popularMangaSelector()
+
+    /**
+     * Returns a manga from the given element.
+     *
+     * @since komikku/extensions-lib 1.6
+     * @param element an element obtained from [relatedMangaListSelector].
+     */
+    protected open fun relatedMangaFromElement(element: Element): SManga = popularMangaFromElement(element)
+    // KMK <--
 }
