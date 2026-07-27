@@ -842,6 +842,7 @@ class MainActivity : BaseActivity() {
                         true
                     }
                 }
+
                 else -> false
             }
         }

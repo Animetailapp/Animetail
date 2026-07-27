@@ -815,6 +815,7 @@ private fun RowScope.AnimeActionButton(
     color: Color,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
 // <-- AM

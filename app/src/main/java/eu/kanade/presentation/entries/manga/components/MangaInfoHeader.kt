@@ -172,7 +172,6 @@ fun MangaInfoBox(
 }
 
 @Composable
-
 fun ExpandableMangaDescription(
     defaultExpandState: Boolean,
     description: String?,

@@ -220,7 +220,6 @@ fun AnimeEpisodeListItem(
                             summary = summary,
                         )
                     }
-
                 }
 
                 Row(
