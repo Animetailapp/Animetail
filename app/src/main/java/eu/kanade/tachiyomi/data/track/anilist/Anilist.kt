@@ -339,6 +339,14 @@ class Anilist(id: Long) :
         return api.searchAnime(query)
     }
 
+    suspend fun getPopularAnime(): List<AnimeTrackSearch> {
+        return api.getPopularAnime()
+    }
+
+    suspend fun getPopularManga(): List<MangaTrackSearch> {
+        return api.getPopularManga()
+    }
+
     override suspend fun refresh(track: MangaTrack): MangaTrack {
         val remoteTrack = api.getLibManga(track, getUsername().toInt())
         track.copyPersonalFrom(remoteTrack)

@@ -228,8 +228,12 @@ object SettingsAppearanceScreen : SearchableSettings {
                     entries = NavStyle.entries
                         .associateWith { stringResource(it.titleRes) }
                         .toMap(),
-                    title = "Navigation Style",
+                    title = stringResource(MR.strings.pref_navigation_style),
                     onValueChanged = { true },
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.showHomeTab,
+                    title = stringResource(MR.strings.pref_show_home_tab),
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = uiPreferences.dateFormat,

@@ -239,7 +239,7 @@ object SettingsTrackingScreen : SearchableSettings {
                             // If API key not set, ask user to provide it first
                             val currentApiKey = trackPreferences.trackApiKey(trackerManager.tmdb).get()
                             if (currentApiKey.isBlank()) {
-                                dialog = LoginDialog(trackerManager.tmdb, MR.strings.username)
+                                dialog = ApiKeyDialog(trackerManager.tmdb)
                             } else {
                                 scope.launchIO {
                                     try {
