@@ -72,7 +72,12 @@ object CastColumnAdapter : ColumnAdapter<List<Credit>, String> {
 
 object MemoColumnAdapter : ColumnAdapter<JsonObject, ByteArray> {
     override fun decode(databaseValue: ByteArray): JsonObject {
-        return Json.decodeFromString<JsonObject>(databaseValue.decodeToString())
+        if (databaseValue.isEmpty()) return JsonObject(emptyMap())
+        return try {
+            Json.decodeFromString<JsonObject>(databaseValue.decodeToString())
+        } catch (_: Exception) {
+            JsonObject(emptyMap())
+        }
     }
 
     override fun encode(value: JsonObject): ByteArray {
