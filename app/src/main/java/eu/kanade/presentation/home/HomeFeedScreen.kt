@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -57,6 +58,7 @@ import eu.kanade.tachiyomi.ui.home.HomeTab
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
@@ -140,6 +142,16 @@ fun HomeFeedScreen(
     }
 
     val isAndroidTV = remember { context.packageManager.hasSystemFeature("android.software.leanback") }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isAndroidTV) {
+        if (isAndroidTV) {
+            delay(300)
+            try {
+                focusRequester.requestFocus()
+            } catch (_: Exception) {}
+        }
+    }
 
     if (state.isLoading) {
         LoadingScreen(modifier = modifier)
@@ -205,6 +217,7 @@ fun HomeFeedScreen(
                     MediaFormatFilterChips(
                         selectedMediaType = selectedMediaType,
                         onMediaTypeSelected = { selectedMediaType = it },
+                        focusRequester = focusRequester,
                     )
                 }
 

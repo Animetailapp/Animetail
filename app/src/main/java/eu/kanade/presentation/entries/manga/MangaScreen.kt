@@ -54,7 +54,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -186,7 +188,6 @@ fun MangaScreen(
     val onSettingsClicked: (() -> Unit)? = {
         navigator.push(MangaSourcePreferencesScreen(state.source.id))
     }.takeIf { state.source is ConfigurableSource }
-
     if (!isTabletUi) {
         MangaScreenSmallImpl(
             state = state,
@@ -748,11 +749,15 @@ fun MangaScreenLargeImpl(
         context.packageManager.hasSystemFeature("android.software.leanback")
     }
 
+    val focusRequester = remember { FocusRequester() }
+
     // Enfocar la lista de capítulos al cargar la pantalla en Android TV
     LaunchedEffect(isAndroidTV) {
         if (isAndroidTV) {
             delay(300)
-            // El requestFocus está implícito en la estructura del layout
+            try {
+                focusRequester.requestFocus()
+            } catch (_: Exception) {}
         }
     }
     BackHandler(onBack = {
@@ -906,6 +911,7 @@ fun MangaScreenLargeImpl(
                                                 .padding(horizontal = 16.dp, vertical = 12.dp)
                                                 .clip(MaterialTheme.shapes.medium)
                                                 .background(MaterialTheme.colorScheme.primaryContainer)
+                                                .focusRequester(focusRequester)
                                                 .clickable { onContinueReading() }
                                                 .padding(vertical = 12.dp, horizontal = 16.dp),
                                             verticalAlignment = Alignment.CenterVertically,

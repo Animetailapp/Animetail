@@ -54,6 +54,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -110,6 +112,7 @@ fun MediaFormatFilterChips(
     selectedMediaType: MediaType,
     onMediaTypeSelected: (MediaType) -> Unit,
     modifier: Modifier = Modifier,
+    focusRequester: FocusRequester? = null,
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
@@ -119,13 +122,23 @@ fun MediaFormatFilterChips(
         items(MediaType.entries.toTypedArray()) { mediaType ->
             val isSelected = selectedMediaType == mediaType
             val label = mediaType.getLabel()
+            var isFocused by remember { mutableStateOf(false) }
+
+            val chipModifier = if (mediaType == MediaType.ALL && focusRequester != null) {
+                Modifier
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { isFocused = it.isFocused }
+            } else {
+                Modifier.onFocusChanged { isFocused = it.isFocused }
+            }
+
             FilterChip(
                 selected = isSelected,
                 onClick = { onMediaTypeSelected(mediaType) },
                 label = {
                     Text(
                         text = label,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        fontWeight = if (isSelected || isFocused) FontWeight.Bold else FontWeight.Normal,
                     )
                 },
                 leadingIcon = {
@@ -141,7 +154,18 @@ fun MediaFormatFilterChips(
                     selectedLabelColor = Color.White,
                     selectedLeadingIconColor = Color.White,
                 ),
+                border = if (isFocused) {
+                    FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = isSelected,
+                        borderColor = MaterialTheme.colorScheme.primary,
+                        borderWidth = 2.dp,
+                    )
+                } else {
+                    null
+                },
                 shape = RoundedCornerShape(20.dp),
+                modifier = chipModifier,
             )
         }
     }

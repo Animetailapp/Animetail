@@ -5,10 +5,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
@@ -47,6 +50,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
@@ -207,7 +213,6 @@ fun AnimeScreen(
     val onSettingsClicked: (() -> Unit)? = {
         navigator.push(AnimeSourcePreferencesScreen(state.source.id))
     }.takeIf { state.source is ConfigurableAnimeSource }
-
     if (!isTabletUi) {
         AnimeScreenSmallImpl(
             state = state,
@@ -868,6 +873,19 @@ fun AnimeScreenLargeImpl(
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
 
+    val context = LocalContext.current
+    val isAndroidTV = remember { context.packageManager.hasSystemFeature("android.software.leanback") }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isAndroidTV) {
+        if (isAndroidTV) {
+            delay(300)
+            try {
+                focusRequester.requestFocus()
+            } catch (_: Exception) {}
+        }
+    }
+
     val seasons = remember(state) { state.processedSeasons }
     val episodes = remember(state) { state.processedEpisodes }
     val listItem = remember(state) { state.episodeListItems }
@@ -971,7 +989,7 @@ fun AnimeScreenLargeImpl(
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             floatingActionButton = {
                 val isFABVisible = remember(episodes) {
-                    episodes.fastAny { !it.episode.seen } && !isAnySelected
+                    episodes.fastAny { !it.episode.seen } && !isAnySelected && !isAndroidTV
                 }
                 AnimatedVisibility(
                     visible = isFABVisible,
@@ -999,7 +1017,7 @@ fun AnimeScreenLargeImpl(
             PullRefresh(
                 refreshing = state.isRefreshingData,
                 onRefresh = onRefresh,
-                enabled = !isAnySelected,
+                enabled = !isAnySelected && !isAndroidTV,
                 indicatorPadding = PaddingValues(
                     start = insetPadding.calculateStartPadding(layoutDirection),
                     top = with(density) { topBarHeight.toDp() },
@@ -1040,6 +1058,7 @@ fun AnimeScreenLargeImpl(
                                 onTrackingClicked = onTrackingClicked,
                                 onEditIntervalClicked = onEditIntervalClicked,
                                 onEditCategory = onEditCategoryClicked,
+                                isAndroidTV = isAndroidTV,
                             )
                             ExpandableAnimeDescription(
                                 defaultExpandState = true,
@@ -1076,6 +1095,39 @@ fun AnimeScreenLargeImpl(
                                 bottom = contentPadding.calculateBottomPadding(),
                             ),
                         ) {
+                            if (isAndroidTV) {
+                                item(key = "start_button_large", span = { GridItemSpan(maxLineSpan) }) {
+                                    val isWatching = remember(state.episodes) {
+                                        state.episodes.fastAny { it.episode.seen }
+                                    }
+                                    val buttonText = stringResource(
+                                        if (isWatching) MR.strings.action_resume else MR.strings.action_start,
+                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 8.dp)
+                                            .clip(MaterialTheme.shapes.medium)
+                                            .background(MaterialTheme.colorScheme.primaryContainer)
+                                            .focusRequester(focusRequester)
+                                            .clickable { onContinueWatching() }
+                                            .padding(vertical = 12.dp, horizontal = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.PlayArrow,
+                                            contentDescription = null,
+                                            modifier = Modifier.padding(end = 8.dp),
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        )
+                                        Text(
+                                            text = buttonText,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        )
+                                    }
+                                }
+                            }
                             // KMK -->
                             if (state.source !is StubAnimeSource &&
                                 relatedAnimesEnabled
