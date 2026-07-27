@@ -1,5 +1,6 @@
 package eu.kanade.presentation.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,14 +47,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -197,15 +203,23 @@ fun ContinueWatchingReadingCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+
     Card(
         modifier = modifier
             .width(220.dp)
+            .onFocusChanged { isFocused = it.isFocused }
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
+        border = if (isFocused) BorderStroke(2.5.dp, MaterialTheme.colorScheme.primary) else null,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = if (isFocused) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHigh
+            },
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isFocused) 10.dp else 6.dp),
     ) {
         Column {
             Box(
@@ -414,12 +428,17 @@ fun HeroMediaBanner(
     onPrimaryAction: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(270.dp),
+            .height(270.dp)
+            .onFocusChanged { isFocused = it.isFocused }
+            .clickable(onClick = onPrimaryAction),
         shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        border = if (isFocused) BorderStroke(3.dp, MaterialTheme.colorScheme.primary) else null,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isFocused) 12.dp else 6.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Imagen de portada principal
@@ -583,27 +602,30 @@ private fun <T> CompactSegmentedControl(
         ) {
             options.forEach { (value, label) ->
                 val isSelected = value == selected
-                val surfaceColor = if (isSelected) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    Color.Transparent
+                var isFocused by remember { mutableStateOf(false) }
+                val surfaceColor = when {
+                    isSelected -> MaterialTheme.colorScheme.primaryContainer
+                    isFocused -> MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                    else -> Color.Transparent
                 }
-                val textColor = if (isSelected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                val textColor = when {
+                    isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                    isFocused -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
                 Surface(
                     color = surfaceColor,
                     shape = RoundedCornerShape(6.dp),
+                    border = if (isFocused) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
                     modifier = Modifier
                         .weight(1f)
+                        .onFocusChanged { isFocused = it.isFocused }
                         .clickable { onSelect(value) },
                 ) {
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontWeight = if (isSelected || isFocused) FontWeight.Bold else FontWeight.Medium,
                         color = textColor,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         maxLines = 1,

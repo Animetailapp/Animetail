@@ -139,6 +139,8 @@ fun HomeFeedScreen(
         }
     }
 
+    val isAndroidTV = remember { context.packageManager.hasSystemFeature("android.software.leanback") }
+
     if (state.isLoading) {
         LoadingScreen(modifier = modifier)
         return
@@ -189,7 +191,7 @@ fun HomeFeedScreen(
         tachiyomi.presentation.core.components.material.PullRefresh(
             refreshing = state.isRefreshing,
             onRefresh = { model.refresh() },
-            enabled = true,
+            enabled = !isAndroidTV,
             indicatorPadding = padding,
         ) {
             LazyColumn(
