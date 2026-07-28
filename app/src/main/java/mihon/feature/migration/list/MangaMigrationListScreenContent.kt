@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.entries.components.ItemCover
-import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.presentation.util.rememberResourceBitmapPainter
 import eu.kanade.tachiyomi.R
@@ -121,7 +120,7 @@ fun MangaMigrationListScreenContent(
                 val result by item.searchResult.collectAsState()
                 Row(
                     modifier = Modifier
-                        .animateItemFastScroll()
+                        .animateItem()
                         .fillMaxWidth()
                         .padding(horizontal = MaterialTheme.padding.medium, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
