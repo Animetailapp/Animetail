@@ -182,7 +182,6 @@ class HomeFeedScreenModel(
         updateStateWithData()
     }
 
-
     private fun fetchRemoteTrendsAsync() {
         // 1. Tendencias de AniList (Anime)
         screenModelScope.launch(Dispatchers.IO) {
@@ -247,7 +246,10 @@ class HomeFeedScreenModel(
             try {
                 val tmdbAvailable = trackerManager.tmdb.isAvailableForUse()
                 val tmdbLoggedIn = trackerManager.tmdb.isLoggedIn
-                android.util.Log.d("HomeFeedDebug", "TMDB check: isAvailableForUse=$tmdbAvailable, isLoggedIn=$tmdbLoggedIn")
+                android.util.Log.d(
+                    "HomeFeedDebug",
+                    "TMDB check: isAvailableForUse=$tmdbAvailable, isLoggedIn=$tmdbLoggedIn",
+                )
                 if (tmdbLoggedIn || tmdbAvailable) {
                     val movies = try {
                         trackerManager.tmdb.getTrendingMovies().also {
@@ -296,7 +298,10 @@ class HomeFeedScreenModel(
                     }
 
                     remoteMovieSeriesState.value = movies + series
-                    android.util.Log.d("HomeFeedDebug", "remoteMovieSeriesState updated with ${movies.size + series.size} items")
+                    android.util.Log.d(
+                        "HomeFeedDebug",
+                        "remoteMovieSeriesState updated with ${movies.size + series.size} items",
+                    )
                 } else {
                     android.util.Log.w("HomeFeedDebug", "TMDB skipped: not logged in and not available for use")
                 }
@@ -445,8 +450,6 @@ class HomeFeedScreenModel(
             }
         }
     }
-
-
 
     @Synchronized
     private fun updateStateWithData(
@@ -673,8 +676,12 @@ class HomeFeedScreenModel(
 
             val finalPopularAnime = when (heroSource) {
                 HeroSource.LIBRARY_ONLY -> animeItems.filter { it.mediaType == MediaType.ANIME }
+
                 HeroSource.TRACKERS_ONLY -> processedRemoteAnime
-                HeroSource.BOTH -> processedRemoteAnime.ifEmpty { animeItems.filter { it.mediaType == MediaType.ANIME } }
+
+                HeroSource.BOTH -> processedRemoteAnime.ifEmpty {
+                    animeItems.filter { it.mediaType == MediaType.ANIME }
+                }
             }
 
             val finalPopularManga = when (heroSource) {
@@ -685,14 +692,28 @@ class HomeFeedScreenModel(
 
             val movieItems = when (heroSource) {
                 HeroSource.LIBRARY_ONLY -> animeItems.filter { it.mediaType == MediaType.MOVIES }
+
                 HeroSource.TRACKERS_ONLY -> movieSeriesList.filter { it.mediaType == MediaType.MOVIES }
-                HeroSource.BOTH -> movieSeriesList.filter { it.mediaType == MediaType.MOVIES }.ifEmpty { animeItems.filter { it.mediaType == MediaType.MOVIES } }
+
+                HeroSource.BOTH -> movieSeriesList.filter { it.mediaType == MediaType.MOVIES }.ifEmpty {
+                    animeItems.filter {
+                        it.mediaType ==
+                            MediaType.MOVIES
+                    }
+                }
             }
 
             val seriesItems = when (heroSource) {
                 HeroSource.LIBRARY_ONLY -> animeItems.filter { it.mediaType == MediaType.SERIES }
+
                 HeroSource.TRACKERS_ONLY -> movieSeriesList.filter { it.mediaType == MediaType.SERIES }
-                HeroSource.BOTH -> movieSeriesList.filter { it.mediaType == MediaType.SERIES }.ifEmpty { animeItems.filter { it.mediaType == MediaType.SERIES } }
+
+                HeroSource.BOTH -> movieSeriesList.filter { it.mediaType == MediaType.SERIES }.ifEmpty {
+                    animeItems.filter {
+                        it.mediaType ==
+                            MediaType.SERIES
+                    }
+                }
             }
 
             val displayPopularAnime = if (filter != HomeMediaFilter.MANGA_ONLY) finalPopularAnime else emptyList()
@@ -708,8 +729,13 @@ class HomeFeedScreenModel(
 
             val candidatePool = when (heroSource) {
                 HeroSource.LIBRARY_ONLY -> (animeItems + mangaItems)
+
                 HeroSource.TRACKERS_ONLY -> (processedRemoteAnime + processedRemoteManga + movieSeriesList)
-                HeroSource.BOTH -> (processedRemoteAnime + processedRemoteManga + movieSeriesList + animeItems + mangaItems)
+
+                HeroSource.BOTH -> (
+                    processedRemoteAnime + processedRemoteManga + movieSeriesList + animeItems +
+                        mangaItems
+                    )
             }
                 .distinctBy { "${it.mediaType.name}_${it.id}_${it.title.lowercase().trim()}" }
 
@@ -731,7 +757,11 @@ class HomeFeedScreenModel(
             val unifiedRecommended = filteredRecs.shuffled()
 
             val allRemoteHeroItems = if (movieSeriesList.isNotEmpty()) {
-                (movieSeriesList.shuffled().take(4) + (processedRemoteAnime + processedRemoteManga).shuffled().take(3)).shuffled()
+                (
+                    movieSeriesList.shuffled().take(
+                        4,
+                    ) + (processedRemoteAnime + processedRemoteManga).shuffled().take(3)
+                    ).shuffled()
             } else {
                 (processedRemoteAnime + processedRemoteManga).shuffled()
             }
@@ -748,11 +778,14 @@ class HomeFeedScreenModel(
                 HeroSource.BOTH -> allRemoteHeroItems.ifEmpty { fallbackCarousel }
             }
 
-            android.util.Log.d("HomeFeedDebug", "HomeFeed State build: heroList=${currentHeroList.size}, " +
-                "allRemoteHero=${allRemoteHeroItems.size}, fallback=${fallbackCarousel.size}, " +
-                "remoteAnime=${processedRemoteAnime.size}, remoteManga=${processedRemoteManga.size}, " +
-                "movies=${movieItems.size}, series=${seriesItems.size}, " +
-                "heroSource=$heroSource")
+            android.util.Log.d(
+                "HomeFeedDebug",
+                "HomeFeed State build: heroList=${currentHeroList.size}, " +
+                    "allRemoteHero=${allRemoteHeroItems.size}, fallback=${fallbackCarousel.size}, " +
+                    "remoteAnime=${processedRemoteAnime.size}, remoteManga=${processedRemoteManga.size}, " +
+                    "movies=${movieItems.size}, series=${seriesItems.size}, " +
+                    "heroSource=$heroSource",
+            )
 
             mutableState.value = State(
                 isLoading = false,
@@ -814,9 +847,11 @@ class HomeFeedScreenModel(
                     MediaType.SERIES
                 }
             }
+
             titleClean.contains("serie") || sourceClean.contains("series") ||
                 sourceClean.contains("tv") || genreClean.contains("dorama") ||
                 genreClean.contains("drama") -> MediaType.SERIES
+
             else -> MediaType.ANIME
         }
     }
