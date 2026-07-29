@@ -243,6 +243,8 @@
     <string name="label_recommended_for_you">Recomendados para ti</string>
     <string name="label_popular_anime">Anime populares</string>
     <string name="label_popular_manga">Manga populares</string>
+    <string name="label_popular_movies">Películas populares</string>
+    <string name="label_popular_series">Series populares</string>
     <string name="action_watch_now">Ver ahora</string>
     <string name="action_read_now">Leer ahora</string>
     <string name="label_featured">DESTACADO</string>

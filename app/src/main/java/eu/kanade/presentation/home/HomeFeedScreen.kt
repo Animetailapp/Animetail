@@ -15,12 +15,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -206,6 +210,13 @@ fun HomeFeedScreen(
             enabled = !isAndroidTV,
             indicatorPadding = padding,
         ) {
+            if (state.isLoading) {
+                LoadingScreen(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                )
+            } else {
             LazyColumn(
                 modifier = modifier
                     .fillMaxSize()
@@ -222,10 +233,15 @@ fun HomeFeedScreen(
                 }
 
                 // 2. Banner Destacado (Hero Carousel con avance automático de 7+ ítems)
-                if (state.showFeatured && state.heroList.isNotEmpty()) {
+                val filteredHeroList = if (selectedMediaType == MediaType.ALL) {
+                    state.heroList
+                } else {
+                    state.heroList.filter { it.mediaType == selectedMediaType }
+                }
+                if (state.showFeatured && filteredHeroList.isNotEmpty()) {
                     item {
                         HeroMediaCarousel(
-                            heroList = state.heroList,
+                            heroList = filteredHeroList,
                             onItemClick = onContinueItemClick,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             autoScrollHero = state.autoScrollHero,
@@ -318,8 +334,50 @@ fun HomeFeedScreen(
                     }
                 }
 
-                // 6. Sección "Anime populares"
-                if (state.showPopularAnime && state.animeList.isNotEmpty()) {
+                // 6. Sección "Películas populares" (TMDB)
+                if (state.showPopularMovies && state.movieList.isNotEmpty() &&
+                    (selectedMediaType == MediaType.ALL || selectedMediaType == MediaType.MOVIES)
+                ) {
+                    item {
+                        SectionHeader(title = stringResource(MR.strings.label_popular_movies))
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(state.movieList) { item ->
+                                MediaPosterCard(
+                                    item = item,
+                                    onClick = { onItemClick(item) },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 7. Sección "Series populares" (TMDB)
+                if (state.showPopularSeries && state.seriesList.isNotEmpty() &&
+                    (selectedMediaType == MediaType.ALL || selectedMediaType == MediaType.SERIES)
+                ) {
+                    item {
+                        SectionHeader(title = stringResource(MR.strings.label_popular_series))
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(state.seriesList) { item ->
+                                MediaPosterCard(
+                                    item = item,
+                                    onClick = { onItemClick(item) },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 8. Sección "Anime populares"
+                if (state.showPopularAnime && state.animeList.isNotEmpty() &&
+                    (selectedMediaType == MediaType.ALL || selectedMediaType == MediaType.ANIME)
+                ) {
                     item {
                         SectionHeader(title = stringResource(MR.strings.label_popular_anime))
                         LazyRow(
@@ -336,8 +394,10 @@ fun HomeFeedScreen(
                     }
                 }
 
-                // 7. Sección "Manga populares"
-                if (state.showPopularManga && state.mangaList.isNotEmpty()) {
+                // 9. Sección "Manga populares"
+                if (state.showPopularManga && state.mangaList.isNotEmpty() &&
+                    (selectedMediaType == MediaType.ALL || selectedMediaType == MediaType.MANGA)
+                ) {
                     item {
                         SectionHeader(title = stringResource(MR.strings.label_popular_manga))
                         LazyRow(
@@ -354,6 +414,7 @@ fun HomeFeedScreen(
                     }
                 }
             }
+            } // end else (not loading)
         }
     }
 }
@@ -374,6 +435,40 @@ fun SectionHeader(
         ),
         modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp),
     )
+}
+
+/**
+ * Insignia de calificación de estrellas.
+ */
+@Composable
+fun RatingBadge(
+    rating: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(6.dp),
+        color = Color(0xCC1A1A1A), // Fondo oscuro semitransparente
+        contentColor = Color.White,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = null,
+                tint = Color(0xFFFFC107), // Color dorado
+                modifier = Modifier.size(10.dp),
+            )
+            Text(
+                text = rating,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
 }
 
 /**
@@ -413,6 +508,16 @@ fun MediaPosterCard(
                         .align(Alignment.TopStart)
                         .padding(6.dp),
                 )
+
+                // Badge de calificación en la esquina inferior derecha
+                if (item.rating.isNotBlank()) {
+                    RatingBadge(
+                        rating = item.rating,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(6.dp),
+                    )
+                }
             }
         }
 

@@ -264,6 +264,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
     override fun logout() {
         super.logout()
         trackPreferences.trackToken(this).delete()
+        trackPreferences.trackApiKey(this).set("")
     }
 
     override suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? {

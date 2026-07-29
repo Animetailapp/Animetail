@@ -13,6 +13,7 @@ import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserViewerData
+import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
@@ -48,6 +49,10 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     private val authClient = client.newBuilder()
         .addInterceptor(interceptor)
+        .rateLimit(permits = 85, period = 1.minutes)
+        .build()
+
+    private val publicClient = client.newBuilder()
         .rateLimit(permits = 85, period = 1.minutes)
         .build()
 
@@ -359,32 +364,36 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     suspend fun getPopularAnime(): List<AnimeTrackSearch> {
         return withIOContext {
-            val query = $$"""
-            |query PopularAnime {
-                |Page (perPage: 10) {
-                    |media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
-                        |id
-                        |title {
-                            |userPreferred
-                        |}
-                        |coverImage {
-                            |large
-                        |}
-                        |format
-                        |status
-                        |episodes
-                        |description
-                        |averageScore
-                    |}
-                |}
-            |}
-            |
-            """.trimMargin()
+            val query = """
+            query PopularAnime {
+                Page (perPage: 15) {
+                    media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
+                        id
+                        title {
+                            userPreferred
+                        }
+                        coverImage {
+                            large
+                        }
+                        format
+                        status
+                        episodes
+                        description
+                        averageScore
+                        startDate {
+                            year
+                            month
+                            day
+                        }
+                    }
+                }
+            }
+            """.trimIndent()
             val payload = buildJsonObject {
                 put("query", query)
             }
             with(json) {
-                authClient.newCall(
+                publicClient.newCall(
                     POST(
                         API_URL,
                         body = payload.toString().toRequestBody(jsonMime),
@@ -393,39 +402,55 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .awaitSuccess()
                     .parseAs<ALSearchResult>()
                     .data.page.media
-                    .map { it.toALAnime().toTrack() }
+                    .map { item ->
+                        AnimeTrackSearch.create(TrackerManager.ANILIST).apply {
+                            remote_id = item.id
+                            title = item.title.userPreferred
+                            total_episodes = item.episodes ?: 0
+                            cover_url = item.coverImage.large
+                            summary = item.description?.htmlDecode() ?: ""
+                            score = (item.averageScore ?: 0).toDouble()
+                            tracking_url = AnilistApi.animeUrl(remote_id)
+                            publishing_status = item.status ?: ""
+                            publishing_type = item.format?.replace("_", "-") ?: ""
+                        }
+                    }
             }
         }
     }
 
     suspend fun getPopularManga(): List<MangaTrackSearch> {
         return withIOContext {
-            val query = $$"""
-            |query PopularManga {
-                |Page (perPage: 10) {
-                    |media(sort: TRENDING_DESC, type: MANGA, format_not_in: [NOVEL], isAdult: false) {
-                        |id
-                        |title {
-                            |userPreferred
-                        |}
-                        |coverImage {
-                            |large
-                        |}
-                        |format
-                        |status
-                        |chapters
-                        |description
-                        |averageScore
-                    |}
-                |}
-            |}
-            |
-            """.trimMargin()
+            val query = """
+            query PopularManga {
+                Page (perPage: 15) {
+                    media(sort: TRENDING_DESC, type: MANGA, format_not_in: [NOVEL], isAdult: false) {
+                        id
+                        title {
+                            userPreferred
+                        }
+                        coverImage {
+                            large
+                        }
+                        format
+                        status
+                        chapters
+                        description
+                        averageScore
+                        startDate {
+                            year
+                            month
+                            day
+                        }
+                    }
+                }
+            }
+            """.trimIndent()
             val payload = buildJsonObject {
                 put("query", query)
             }
             with(json) {
-                authClient.newCall(
+                publicClient.newCall(
                     POST(
                         API_URL,
                         body = payload.toString().toRequestBody(jsonMime),
@@ -434,7 +459,19 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .awaitSuccess()
                     .parseAs<ALSearchResult>()
                     .data.page.media
-                    .map { it.toALManga().toTrack() }
+                    .map { item ->
+                        MangaTrackSearch.create(TrackerManager.ANILIST).apply {
+                            remote_id = item.id
+                            title = item.title.userPreferred
+                            total_chapters = item.chapters ?: 0
+                            cover_url = item.coverImage.large
+                            summary = item.description?.htmlDecode() ?: ""
+                            score = (item.averageScore ?: 0).toDouble()
+                            tracking_url = AnilistApi.mangaUrl(remote_id)
+                            publishing_status = item.status ?: ""
+                            publishing_type = item.format?.replace("_", "-") ?: ""
+                        }
+                    }
             }
         }
     }
