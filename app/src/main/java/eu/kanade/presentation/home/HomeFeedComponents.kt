@@ -428,7 +428,9 @@ fun HeroMediaBanner(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 placeholder = androidx.compose.ui.graphics.painter.ColorPainter(Color(0x1F888888)),
-                error = eu.kanade.presentation.util.rememberResourceBitmapPainter(id = eu.kanade.tachiyomi.R.drawable.cover_error),
+                error = eu.kanade.presentation.util.rememberResourceBitmapPainter(
+                    id = eu.kanade.tachiyomi.R.drawable.cover_error,
+                ),
             )
 
             // Gradiente cinematográfico oscuro
