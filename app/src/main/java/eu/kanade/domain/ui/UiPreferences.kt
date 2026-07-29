@@ -76,6 +76,8 @@ class UiPreferences(
     val homeShowRecommended: Preference<Boolean> = preferenceStore.getBoolean("home_show_recommended", true)
     val homeShowPopularAnime: Preference<Boolean> = preferenceStore.getBoolean("home_show_popular_anime", true)
     val homeShowPopularManga: Preference<Boolean> = preferenceStore.getBoolean("home_show_popular_manga", true)
+    val homeShowPopularMovies: Preference<Boolean> = preferenceStore.getBoolean("home_show_popular_movies", true)
+    val homeShowPopularSeries: Preference<Boolean> = preferenceStore.getBoolean("home_show_popular_series", true)
 
     // SY <--
     // KMK -->

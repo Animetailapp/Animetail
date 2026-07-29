@@ -34,6 +34,8 @@
     <string name="label_recommended_for_you">Recommended for you</string>
     <string name="label_popular_anime">Popular anime</string>
     <string name="label_popular_manga">Popular manga</string>
+    <string name="label_popular_movies">Popular movies</string>
+    <string name="label_popular_series">Popular series</string>
     <string name="action_watch_now">Watch now</string>
     <string name="action_read_now">Read now</string>
     <string name="label_featured">FEATURED</string>

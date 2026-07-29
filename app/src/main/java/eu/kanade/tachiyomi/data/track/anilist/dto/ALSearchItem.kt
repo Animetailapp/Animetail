@@ -8,14 +8,14 @@ data class ALSearchItem(
     val title: ALItemTitle,
     val coverImage: ItemCover,
     val description: String?,
-    val format: String?,
-    val status: String?,
-    val startDate: ALFuzzyDate,
-    val chapters: Long?,
-    val episodes: Long?,
-    val averageScore: Int?,
-    val staff: ALStaff?,
-    val studios: ALStudios?,
+    val format: String? = null,
+    val status: String? = null,
+    val startDate: ALFuzzyDate = ALFuzzyDate(null, null, null),
+    val chapters: Long? = null,
+    val episodes: Long? = null,
+    val averageScore: Int? = null,
+    val staff: ALStaff? = null,
+    val studios: ALStudios? = null,
     val countryOfOrigin: String = "",
 ) {
     fun toALManga(): ALManga = ALManga(
@@ -38,7 +38,7 @@ data class ALSearchItem(
         startDateFuzzy = startDate.toEpochMilli(),
         totalChapters = chapters ?: 0,
         averageScore = averageScore ?: -1,
-        staff = staff!!,
+        staff = staff ?: ALStaff(emptyList()),
     )
 
     fun toALAnime(): ALAnime = ALAnime(
@@ -51,7 +51,7 @@ data class ALSearchItem(
         startDateFuzzy = startDate.toEpochMilli(),
         totalEpisodes = episodes ?: 0,
         averageScore = averageScore ?: -1,
-        studios = studios!!,
+        studios = studios ?: ALStudios(emptyList()),
     )
 }
 

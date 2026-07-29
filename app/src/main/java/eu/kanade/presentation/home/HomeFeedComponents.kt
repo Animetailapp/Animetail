@@ -422,11 +422,13 @@ fun HeroMediaBanner(
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Imagen de portada principal
-            eu.kanade.presentation.entries.components.ItemCover.Book(
-                data = coverData ?: coverUrl,
+            AsyncImage(
+                model = coverData ?: coverUrl,
                 contentDescription = title,
                 modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                placeholder = androidx.compose.ui.graphics.painter.ColorPainter(Color(0x1F888888)),
+                error = eu.kanade.presentation.util.rememberResourceBitmapPainter(id = eu.kanade.tachiyomi.R.drawable.cover_error),
             )
 
             // Gradiente cinematográfico oscuro
@@ -736,6 +738,16 @@ fun HomeFeedSettingsDialog(
                         label = stringResource(MR.strings.show_recommended),
                         checked = state.showRecommended,
                         onClick = { onToggleSection("recommended") },
+                    )
+                    CheckboxItem(
+                        label = stringResource(MR.strings.label_popular_movies),
+                        checked = state.showPopularMovies,
+                        onClick = { onToggleSection("popular_movies") },
+                    )
+                    CheckboxItem(
+                        label = stringResource(MR.strings.label_popular_series),
+                        checked = state.showPopularSeries,
+                        onClick = { onToggleSection("popular_series") },
                     )
                     CheckboxItem(
                         label = stringResource(MR.strings.show_popular_anime),

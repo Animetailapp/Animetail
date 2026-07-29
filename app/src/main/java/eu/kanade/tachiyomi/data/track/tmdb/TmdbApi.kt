@@ -4,6 +4,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import logcat.LogPriority
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -22,13 +23,11 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
     }
 
     private fun buildUrl(path: String, params: Map<String, String> = emptyMap()): String {
-        val urlBuilder = HttpUrl.Builder()
-            .scheme("https")
-            .host(HOST)
-            .addPathSegments(path)
+        val cleanPath = path.removePrefix("/")
+        val urlBuilder = "https://$HOST/$cleanPath".toHttpUrl().newBuilder()
 
         // Add API key in query for v3 endpoints
-        urlBuilder.addQueryParameter("api_key", apiKey)
+        urlBuilder.addQueryParameter("api_key", apiKey.trim())
 
         if (sessionId.isNotBlank()) {
             urlBuilder.addQueryParameter("session_id", sessionId)
