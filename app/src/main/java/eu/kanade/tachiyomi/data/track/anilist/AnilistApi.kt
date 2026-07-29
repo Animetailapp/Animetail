@@ -263,6 +263,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                             |}
                         |}
                         |title {
+                            |english
+                            |romaji
+                            |native
                             |userPreferred
                         |}
                         |coverImage {
@@ -321,6 +324,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                             |}
                         |}
                         |title {
+                            |english
+                            |romaji
+                            |native
                             |userPreferred
                         |}
                         |coverImage {
@@ -370,6 +376,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
                         id
                         title {
+                            english
+                            romaji
+                            native
                             userPreferred
                         }
                         coverImage {
@@ -405,7 +414,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .map { item ->
                         AnimeTrackSearch.create(TrackerManager.ANILIST).apply {
                             remote_id = item.id
-                            title = item.title.userPreferred
+                            title = item.title.preferred
                             total_episodes = item.episodes ?: 0
                             cover_url = item.coverImage.large
                             summary = item.description?.htmlDecode() ?: ""
@@ -427,6 +436,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     media(sort: TRENDING_DESC, type: MANGA, format_not_in: [NOVEL], isAdult: false) {
                         id
                         title {
+                            english
+                            romaji
+                            native
                             userPreferred
                         }
                         coverImage {
@@ -462,7 +474,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .map { item ->
                         MangaTrackSearch.create(TrackerManager.ANILIST).apply {
                             remote_id = item.id
-                            title = item.title.userPreferred
+                            title = item.title.preferred
                             total_chapters = item.chapters ?: 0
                             cover_url = item.coverImage.large
                             summary = item.description?.htmlDecode() ?: ""
@@ -500,6 +512,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         |media {
                             |id
                             |title {
+                                |english
+                                |romaji
+                                |native
                                 |userPreferred
                             |}
                             |coverImage {
@@ -581,6 +596,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         |media {
                             |id
                             |title {
+                                |english
+                                |romaji
+                                |native
                                 |userPreferred
                             |}
                             |coverImage {
@@ -683,6 +701,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                 |Media (id: ${'$'}animeid) {
                     |id
                     |title {
+                        |english
+                        |romaji
+                        |native
                         |userPreferred
                     |}
                     |coverImage {
@@ -730,7 +751,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         val media = it.data.media
                         TrackAnimeMetadata(
                             remoteId = media.id,
-                            title = media.title.userPreferred,
+                            title = media.title.preferred,
                             thumbnailUrl = media.coverImage.large,
                             description = media.description?.htmlDecode()?.ifEmpty { null },
                             authors = media.staff.edges
@@ -755,6 +776,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                 |Media (id: ${'$'}mangaId) {
                     |id
                     |title {
+                        |english
+                        |romaji
+                        |native
                         |userPreferred
                     |}
                     |coverImage {
@@ -794,7 +818,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         val media = it.data.media
                         TrackMangaMetadata(
                             remoteId = media.id,
-                            title = media.title.userPreferred,
+                            title = media.title.preferred,
                             thumbnailUrl = media.coverImage.large,
                             description = media.description?.htmlDecode()?.ifEmpty { null },
                             authors = media.staff.edges

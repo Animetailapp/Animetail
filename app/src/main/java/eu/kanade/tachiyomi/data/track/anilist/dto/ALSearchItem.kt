@@ -20,7 +20,7 @@ data class ALSearchItem(
 ) {
     fun toALManga(): ALManga = ALManga(
         remoteId = id,
-        title = title.userPreferred,
+        title = title.preferred,
         imageUrl = coverImage.large,
         description = description,
         format = if (format != null && format != "MANGA") {
@@ -43,7 +43,7 @@ data class ALSearchItem(
 
     fun toALAnime(): ALAnime = ALAnime(
         remoteId = id,
-        title = title.userPreferred,
+        title = title.preferred,
         imageUrl = coverImage.large,
         description = description,
         format = format?.replace("_", "-") ?: "",
@@ -57,8 +57,21 @@ data class ALSearchItem(
 
 @Serializable
 data class ALItemTitle(
+    val english: String? = null,
+    val romaji: String? = null,
+    val native: String? = null,
     val userPreferred: String,
-)
+) {
+    val preferred: String
+        get() {
+            val lang = java.util.Locale.getDefault().language
+            return if (lang == "ja") {
+                native ?: userPreferred
+            } else {
+                english ?: userPreferred
+            }
+        }
+}
 
 @Serializable
 data class ItemCover(
