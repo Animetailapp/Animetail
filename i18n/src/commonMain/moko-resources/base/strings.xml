@@ -66,7 +66,7 @@
     <string name="items_count_format">%d items</string>
     <string name="hide_completed_recommended">Hide completed items in recommendations</string>
     <string name="content_filter_title">Content Filter</string>
-    <string name="home_enable_tmdb">Enable TMDB (Popular Movies &amp; Series)</string>
+    <string name="home_enable_tmdb">Enable TMDB (Popular Movies &amp; Series, Recommendations)</string>
     <string name="home_enable_anilist">Enable AniList (Popular Anime &amp; Manga, Recommendations)</string>
     <string name="additional_filters_title">Additional Filters</string>
     <string name="visible_sections_title">Visible Sections</string>
