@@ -66,6 +66,8 @@ class UiPreferences(
     val homeHeroSource: Preference<Int> = preferenceStore.getInt("home_hero_source", 0)
     val homeItemsPerSection: Preference<Int> = preferenceStore.getInt("home_items_per_section", 12)
     val homeHideCompleted: Preference<Boolean> = preferenceStore.getBoolean("home_hide_completed", false)
+    val homeEnableTmdb: Preference<Boolean> = preferenceStore.getBoolean("home_enable_tmdb", true)
+    val homeEnableAnilist: Preference<Boolean> = preferenceStore.getBoolean("home_enable_anilist", true)
 
     val homeShowFeatured: Preference<Boolean> = preferenceStore.getBoolean("home_show_featured", true)
     val homeShowContinue: Preference<Boolean> = preferenceStore.getBoolean("home_show_continue", true)

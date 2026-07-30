@@ -170,6 +170,8 @@ fun HomeFeedScreen(
             onSetHeroSource = { model.setHeroSource(it) },
             onSetItemsPerSection = { model.setItemsPerSection(it) },
             onToggleHideCompleted = { model.toggleHideCompletedInRecommended() },
+            onToggleEnableTmdb = { model.toggleEnableTmdb() },
+            onToggleEnableAnilist = { model.toggleEnableAnilist() },
             onDismissRequest = { showSettingsDialog = false },
         )
     }
