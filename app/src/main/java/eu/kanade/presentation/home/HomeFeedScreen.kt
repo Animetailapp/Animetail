@@ -70,28 +70,6 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 /**
- * Modelo de item para representar animes, mangas, películas y series en la Home.
- */
-data class HomeItemData(
-    val id: Long,
-    val isAnime: Boolean = true,
-    val inLibrary: Boolean = false,
-    val episodeId: Long? = null,
-    val chapterId: Long? = null,
-    val title: String,
-    val subtitle: String,
-    val coverUrl: String? = null,
-    val coverData: Any? = null,
-    val mediaType: MediaType,
-    val rating: String = "",
-    val progress: Float = 0f,
-    val remainingInfo: String = "",
-    val synopsis: String = "",
-    val genres: String = "",
-    val lastUpdatedTimestamp: Long = 0L,
-)
-
-/**
  * Pantalla completa de Inicio (Home Feed) conectada a datos reales de la base de datos.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -263,267 +241,89 @@ fun HomeFeedScreen(
                     }
 
                     // 4. Sección Inteligente "Porque viste / leíste [Título]..."
-                    if (state.showBecauseYouWatched && state.becauseYouWatchedTitle != null &&
-                        state.becauseYouWatchedList.isNotEmpty()
-                    ) {
+                    if (state.showBecauseYouWatched && state.becauseYouWatchedTitle != null) {
                         item {
                             val headerText = if (state.becauseYouWatchedIsAnime) {
                                 stringResource(MR.strings.because_you_watched, state.becauseYouWatchedTitle!!)
                             } else {
                                 stringResource(MR.strings.because_you_read, state.becauseYouWatchedTitle!!)
                             }
-                            val filteredBecause = if (selectedMediaType == MediaType.ALL) {
-                                state.becauseYouWatchedList
-                            } else {
-                                state.becauseYouWatchedList.filter { it.mediaType == selectedMediaType }
-                            }.take(state.itemsPerSection)
-
-                            if (filteredBecause.isNotEmpty()) {
-                                SectionHeader(title = headerText)
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                ) {
-                                    items(filteredBecause) { item ->
-                                        MediaPosterCard(
-                                            item = item,
-                                            onClick = { onItemClick(item) },
-                                        )
-                                    }
-                                }
-                            }
+                            HomeFeedSection(
+                                title = headerText,
+                                items = state.becauseYouWatchedList,
+                                selectedMediaType = selectedMediaType,
+                                itemsPerSection = state.itemsPerSection,
+                                onItemClick = onItemClick,
+                            )
                         }
                     }
 
                     // 5. Sección "Recomendados para ti"
-                    if (state.showRecommended && state.recommendedList.isNotEmpty()) {
+                    if (state.showRecommended) {
                         item {
-                            val filteredRecs = if (selectedMediaType == MediaType.ALL) {
-                                state.recommendedList
-                            } else {
-                                state.recommendedList.filter { it.mediaType == selectedMediaType }
-                            }.take(state.itemsPerSection)
-
-                            if (filteredRecs.isNotEmpty()) {
-                                SectionHeader(title = stringResource(MR.strings.label_recommended_for_you))
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                ) {
-                                    items(filteredRecs) { item ->
-                                        MediaPosterCard(
-                                            item = item,
-                                            onClick = { onItemClick(item) },
-                                        )
-                                    }
-                                }
-                            }
+                            HomeFeedSection(
+                                title = stringResource(MR.strings.label_recommended_for_you),
+                                items = state.recommendedList,
+                                selectedMediaType = selectedMediaType,
+                                itemsPerSection = state.itemsPerSection,
+                                onItemClick = onItemClick,
+                            )
                         }
                     }
 
                     // 6. Sección "Películas populares" (TMDB)
-                    if (state.showPopularMovies && state.movieList.isNotEmpty() &&
-                        (selectedMediaType == MediaType.ALL || selectedMediaType == MediaType.MOVIES)
-                    ) {
+                    if (state.showPopularMovies) {
                         item {
-                            SectionHeader(title = stringResource(MR.strings.label_popular_movies))
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                items(state.movieList) { item ->
-                                    MediaPosterCard(
-                                        item = item,
-                                        onClick = { onItemClick(item) },
-                                    )
-                                }
-                            }
+                            HomeFeedSection(
+                                title = stringResource(MR.strings.label_popular_movies),
+                                items = state.movieList,
+                                selectedMediaType = selectedMediaType,
+                                itemsPerSection = state.itemsPerSection,
+                                onItemClick = onItemClick,
+                            )
                         }
                     }
 
                     // 7. Sección "Series populares" (TMDB)
-                    if (state.showPopularSeries && state.seriesList.isNotEmpty() &&
-                        (selectedMediaType == MediaType.ALL || selectedMediaType == MediaType.SERIES)
-                    ) {
+                    if (state.showPopularSeries) {
                         item {
-                            SectionHeader(title = stringResource(MR.strings.label_popular_series))
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                items(state.seriesList) { item ->
-                                    MediaPosterCard(
-                                        item = item,
-                                        onClick = { onItemClick(item) },
-                                    )
-                                }
-                            }
+                            HomeFeedSection(
+                                title = stringResource(MR.strings.label_popular_series),
+                                items = state.seriesList,
+                                selectedMediaType = selectedMediaType,
+                                itemsPerSection = state.itemsPerSection,
+                                onItemClick = onItemClick,
+                            )
                         }
                     }
 
                     // 8. Sección "Anime populares"
-                    if (state.showPopularAnime && state.animeList.isNotEmpty() &&
-                        (selectedMediaType == MediaType.ALL || selectedMediaType == MediaType.ANIME)
-                    ) {
+                    if (state.showPopularAnime) {
                         item {
-                            SectionHeader(title = stringResource(MR.strings.label_popular_anime))
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                items(state.animeList) { item ->
-                                    MediaPosterCard(
-                                        item = item,
-                                        onClick = { onItemClick(item) },
-                                    )
-                                }
-                            }
+                            HomeFeedSection(
+                                title = stringResource(MR.strings.label_popular_anime),
+                                items = state.animeList,
+                                selectedMediaType = selectedMediaType,
+                                itemsPerSection = state.itemsPerSection,
+                                onItemClick = onItemClick,
+                            )
                         }
                     }
 
                     // 9. Sección "Manga populares"
-                    if (state.showPopularManga && state.mangaList.isNotEmpty() &&
-                        (selectedMediaType == MediaType.ALL || selectedMediaType == MediaType.MANGA)
-                    ) {
+                    if (state.showPopularManga) {
                         item {
-                            SectionHeader(title = stringResource(MR.strings.label_popular_manga))
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                items(state.mangaList) { item ->
-                                    MediaPosterCard(
-                                        item = item,
-                                        onClick = { onItemClick(item) },
-                                    )
-                                }
-                            }
+                            HomeFeedSection(
+                                title = stringResource(MR.strings.label_popular_manga),
+                                items = state.mangaList,
+                                selectedMediaType = selectedMediaType,
+                                itemsPerSection = state.itemsPerSection,
+                                onItemClick = onItemClick,
+                            )
                         }
                     }
                 }
             } // end else (not loading)
         }
-    }
-}
-
-/**
- * Encabezado de sección reutilizable.
- */
-@Composable
-fun SectionHeader(
-    title: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium.copy(
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-        ),
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-    )
-}
-
-/**
- * Insignia de calificación de estrellas.
- */
-@Composable
-fun RatingBadge(
-    rating: String,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(6.dp),
-        color = Color(0xCC1A1A1A), // Fondo oscuro semitransparente
-        contentColor = Color.White,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Star,
-                contentDescription = null,
-                tint = Color(0xFFFFC107), // Color dorado
-                modifier = Modifier.size(10.dp),
-            )
-            Text(
-                text = rating,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                fontWeight = FontWeight.Bold,
-            )
-        }
-    }
-}
-
-/**
- * Tarjeta de Póster vertical con ratio 2:3 y badge de formato.
- */
-@Composable
-fun MediaPosterCard(
-    item: HomeItemData,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .width(110.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(bottom = 4.dp),
-    ) {
-        Surface(
-            modifier = Modifier
-                .width(110.dp)
-                .height(160.dp)
-                .clip(RoundedCornerShape(12.dp)),
-            shadowElevation = 4.dp,
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                eu.kanade.presentation.entries.components.ItemCover.Book(
-                    data = item.coverData ?: item.coverUrl,
-                    contentDescription = item.title,
-                    modifier = Modifier.fillMaxSize(),
-                )
-
-                // Badge de tipo de medio en la esquina superior izquierda
-                MediaFormatBadge(
-                    mediaType = item.mediaType,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(6.dp),
-                )
-
-                // Badge de calificación en la esquina inferior derecha
-                if (item.rating.isNotBlank()) {
-                    RatingBadge(
-                        rating = item.rating,
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(6.dp),
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Text(
-            text = item.title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-
-        Text(
-            text = item.subtitle,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
     }
 }
