@@ -632,6 +632,8 @@ fun HomeFeedSettingsDialog(
     onSetHeroSource: (HeroSource) -> Unit,
     onSetItemsPerSection: (Int) -> Unit,
     onToggleHideCompleted: () -> Unit,
+    onToggleEnableTmdb: () -> Unit,
+    onToggleEnableAnilist: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     TabbedDialog(
@@ -691,6 +693,16 @@ fun HomeFeedSettingsDialog(
                         label = stringResource(MR.strings.hide_completed_recommended),
                         checked = state.hideCompletedInRecommended,
                         onClick = onToggleHideCompleted,
+                    )
+                    CheckboxItem(
+                        label = stringResource(MR.strings.home_enable_tmdb),
+                        checked = state.enableTmdb,
+                        onClick = onToggleEnableTmdb,
+                    )
+                    CheckboxItem(
+                        label = stringResource(MR.strings.home_enable_anilist),
+                        checked = state.enableAnilist,
+                        onClick = onToggleEnableAnilist,
                     )
                 }
 

@@ -98,6 +98,8 @@ class HomeFeedScreenModel(
         val heroSource: HeroSource = HeroSource.BOTH,
         val itemsPerSection: Int = 12,
         val hideCompletedInRecommended: Boolean = false,
+        val enableTmdb: Boolean = true,
+        val enableAnilist: Boolean = true,
     )
 
     // In-memory caches updated by individual observers
@@ -182,10 +184,26 @@ class HomeFeedScreenModel(
         updateStateWithData()
     }
 
+    fun toggleEnableTmdb() {
+        uiPreferences.homeEnableTmdb.set(!uiPreferences.homeEnableTmdb.get())
+        updateStateWithData()
+        fetchRemoteTrendsAsync()
+    }
+
+    fun toggleEnableAnilist() {
+        uiPreferences.homeEnableAnilist.set(!uiPreferences.homeEnableAnilist.get())
+        updateStateWithData()
+        fetchRemoteTrendsAsync()
+    }
+
     private fun fetchRemoteTrendsAsync() {
         // 1. Tendencias de AniList (Anime)
         screenModelScope.launch(Dispatchers.IO) {
             try {
+                if (!uiPreferences.homeEnableAnilist.get()) {
+                    remoteAnimeState.value = emptyList()
+                    return@launch
+                }
                 android.util.Log.d("HomeFeedDebug", "Fetching AniList popular anime...")
                 val popularAnime = trackerManager.aniList.getPopularAnime()
                 android.util.Log.d("HomeFeedDebug", "AniList popular anime returned ${popularAnime.size} items")
@@ -217,6 +235,10 @@ class HomeFeedScreenModel(
         // 2. Tendencias de AniList (Manga)
         screenModelScope.launch(Dispatchers.IO) {
             try {
+                if (!uiPreferences.homeEnableAnilist.get()) {
+                    remoteMangaState.value = emptyList()
+                    return@launch
+                }
                 android.util.Log.d("HomeFeedDebug", "Fetching AniList popular manga...")
                 val popularManga = trackerManager.aniList.getPopularManga()
                 android.util.Log.d("HomeFeedDebug", "AniList popular manga returned ${popularManga.size} items")
@@ -244,6 +266,10 @@ class HomeFeedScreenModel(
         // 3. Tendencias de TMDB (Películas y Series)
         screenModelScope.launch(Dispatchers.IO) {
             try {
+                if (!uiPreferences.homeEnableTmdb.get()) {
+                    remoteMovieSeriesState.value = emptyList()
+                    return@launch
+                }
                 val tmdbAvailable = trackerManager.tmdb.isAvailableForUse()
                 val tmdbLoggedIn = trackerManager.tmdb.isLoggedIn
                 android.util.Log.d(
@@ -333,6 +359,8 @@ class HomeFeedScreenModel(
                     uiPreferences.homeHeroSource.changes(),
                     uiPreferences.homeItemsPerSection.changes(),
                     uiPreferences.homeHideCompleted.changes(),
+                    uiPreferences.homeEnableTmdb.changes(),
+                    uiPreferences.homeEnableAnilist.changes(),
                 )
                     .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing uiPreferences", e) }
                     .collect {
@@ -494,6 +522,9 @@ class HomeFeedScreenModel(
             val showPopularManga = uiPreferences.homeShowPopularManga.get()
             val showPopularMovies = uiPreferences.homeShowPopularMovies.get()
             val showPopularSeries = uiPreferences.homeShowPopularSeries.get()
+
+            val enableTmdb = uiPreferences.homeEnableTmdb.get()
+            val enableAnilist = uiPreferences.homeEnableAnilist.get()
 
             val pinnedAnimeSources = sourcePreferences.pinnedAnimeSources.get()
             val pinnedMangaSources = sourcePreferences.pinnedMangaSources.get()
@@ -813,6 +844,8 @@ class HomeFeedScreenModel(
                 heroSource = heroSource,
                 itemsPerSection = limit,
                 hideCompletedInRecommended = hideCompleted,
+                enableTmdb = enableTmdb,
+                enableAnilist = enableAnilist,
             )
         } catch (e: Exception) {
             android.util.Log.e("HomeFeedDebug", "Error building home feed state", e)
