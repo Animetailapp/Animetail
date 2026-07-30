@@ -778,7 +778,6 @@ class HomeFeedScreenModel(
                             item.genres.split(",").any { g -> g.trim().lowercase() in targetGenres } &&
                             (!hideCompleted || item.progress < 1.0f)
                     }
-                    .take(limit)
             } else {
                 emptyList()
             }
@@ -786,6 +785,18 @@ class HomeFeedScreenModel(
             val filteredRecs = candidatePool
                 .filter { !hideCompleted || it.progress < 1.0f }
             val unifiedRecommended = filteredRecs.shuffled()
+
+            val displayBecauseYouWatched = when (filter) {
+                HomeMediaFilter.VIDEO_ONLY -> becauseYouWatchedList.filter { it.mediaType != MediaType.MANGA }
+                HomeMediaFilter.MANGA_ONLY -> becauseYouWatchedList.filter { it.mediaType == MediaType.MANGA }
+                HomeMediaFilter.ALL -> becauseYouWatchedList
+            }
+
+            val displayRecommended = when (filter) {
+                HomeMediaFilter.VIDEO_ONLY -> unifiedRecommended.filter { it.mediaType != MediaType.MANGA }
+                HomeMediaFilter.MANGA_ONLY -> unifiedRecommended.filter { it.mediaType == MediaType.MANGA }
+                HomeMediaFilter.ALL -> unifiedRecommended
+            }
 
             val allRemoteHeroItems = if (movieSeriesList.isNotEmpty()) {
                 (
@@ -825,8 +836,8 @@ class HomeFeedScreenModel(
                 continueList = unifiedContinue,
                 becauseYouWatchedTitle = lastInteractedItem?.title,
                 becauseYouWatchedIsAnime = lastInteractedItem?.isAnime ?: true,
-                becauseYouWatchedList = becauseYouWatchedList,
-                recommendedList = unifiedRecommended.take(limit),
+                becauseYouWatchedList = displayBecauseYouWatched,
+                recommendedList = displayRecommended,
                 animeList = displayPopularAnime.take(limit),
                 mangaList = displayPopularManga.take(limit),
                 movieList = displayPopularMovies.take(limit),
