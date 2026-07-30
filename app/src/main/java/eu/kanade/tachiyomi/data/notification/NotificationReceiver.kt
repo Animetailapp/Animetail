@@ -110,9 +110,11 @@ class NotificationReceiver : BroadcastReceiver() {
 
             // Cancel library update and dismiss notification
             ACTION_CANCEL_LIBRARY_UPDATE -> cancelLibraryUpdate(context)
+
             ACTION_CANCEL_ANIME_LIBRARY_UPDATE -> cancelAnimeLibraryUpdate(context)
 
             ACTION_CANCEL_SYNC -> cancelSync(context)
+
             // Open reader activity
             ACTION_OPEN_CHAPTER -> {
                 openChapter(

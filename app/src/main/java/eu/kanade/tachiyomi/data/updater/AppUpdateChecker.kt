@@ -27,7 +27,6 @@ class AppUpdateChecker {
                 ),
             )
 
-
             result
         }
     }

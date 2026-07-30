@@ -9,7 +9,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.work.WorkInfo
 import eu.kanade.tachiyomi.data.updater.AppUpdateDownloadJob
-import eu.kanade.tachiyomi.extension.util.ExtensionInstaller
 import eu.kanade.tachiyomi.util.storage.getUriCompat
 import eu.kanade.tachiyomi.util.system.workManager
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -49,6 +48,7 @@ class NewUpdateScreenModel(
 
                 val stage = when {
                     workInfo.state == WorkInfo.State.FAILED -> Stage.Failed
+
                     workInfo.state.isFinished && progress == 100 -> {
                         if (AppUpdateDownloadJob.updateApk(context).exists()) {
                             Stage.Downloaded
@@ -56,7 +56,9 @@ class NewUpdateScreenModel(
                             Stage.Available
                         }
                     }
+
                     workInfo.state in listOf(WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING) -> Stage.Downloading
+
                     else -> Stage.Available
                 }
                 progress to stage
@@ -81,7 +83,7 @@ class NewUpdateScreenModel(
     fun installUpdate() {
         val apkFile = AppUpdateDownloadJob.updateApk(context)
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(apkFile.getUriCompat(context), ExtensionInstaller.APK_MIME)
+            setDataAndType(apkFile.getUriCompat(context), "application/vnd.android.package-archive")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
         }
         context.startActivity(intent)

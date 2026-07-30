@@ -43,11 +43,14 @@ fun NewUpdateScreen(
         subtitleText = versionName,
         acceptText = when (stage) {
             NewUpdateScreenModel.Stage.Available -> stringResource(MR.strings.update_check_confirm)
+
             NewUpdateScreenModel.Stage.Downloading -> stringResource(
                 MR.strings.downloading_with_progress,
                 downloadProgress(),
             )
+
             NewUpdateScreenModel.Stage.Downloaded -> stringResource(MR.strings.action_install)
+
             NewUpdateScreenModel.Stage.Failed -> stringResource(MR.strings.action_retry)
         },
         onAcceptClick = onAcceptUpdate,
