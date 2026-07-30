@@ -291,22 +291,24 @@ fun HomeFeedScreen(
                             } else {
                                 stringResource(MR.strings.because_you_read, state.becauseYouWatchedTitle!!)
                             }
-                            SectionHeader(title = headerText)
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                val filteredBecause = if (selectedMediaType == MediaType.ALL) {
-                                    state.becauseYouWatchedList
-                                } else {
-                                    state.becauseYouWatchedList.filter { it.mediaType == selectedMediaType }
-                                }
+                            val filteredBecause = if (selectedMediaType == MediaType.ALL) {
+                                state.becauseYouWatchedList
+                            } else {
+                                state.becauseYouWatchedList.filter { it.mediaType == selectedMediaType }
+                            }.take(state.itemsPerSection)
 
-                                items(filteredBecause) { item ->
-                                    MediaPosterCard(
-                                        item = item,
-                                        onClick = { onItemClick(item) },
-                                    )
+                            if (filteredBecause.isNotEmpty()) {
+                                SectionHeader(title = headerText)
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    items(filteredBecause) { item ->
+                                        MediaPosterCard(
+                                            item = item,
+                                            onClick = { onItemClick(item) },
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -315,22 +317,24 @@ fun HomeFeedScreen(
                     // 5. Sección "Recomendados para ti"
                     if (state.showRecommended && state.recommendedList.isNotEmpty()) {
                         item {
-                            SectionHeader(title = stringResource(MR.strings.label_recommended_for_you))
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                val filteredRecs = if (selectedMediaType == MediaType.ALL) {
-                                    state.recommendedList
-                                } else {
-                                    state.recommendedList.filter { it.mediaType == selectedMediaType }
-                                }
+                            val filteredRecs = if (selectedMediaType == MediaType.ALL) {
+                                state.recommendedList
+                            } else {
+                                state.recommendedList.filter { it.mediaType == selectedMediaType }
+                            }.take(state.itemsPerSection)
 
-                                items(filteredRecs) { item ->
-                                    MediaPosterCard(
-                                        item = item,
-                                        onClick = { onItemClick(item) },
-                                    )
+                            if (filteredRecs.isNotEmpty()) {
+                                SectionHeader(title = stringResource(MR.strings.label_recommended_for_you))
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    items(filteredRecs) { item ->
+                                        MediaPosterCard(
+                                            item = item,
+                                            onClick = { onItemClick(item) },
+                                        )
+                                    }
                                 }
                             }
                         }
