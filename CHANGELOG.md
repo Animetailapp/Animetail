@@ -28,6 +28,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Fixed app bars remaining visible after changing pages by tapping in the paged reader after using the chapter navigator slider ([@AntsyLich](https://github.com/AntsyLich)) ([#3567](https://github.com/mihonapp/mihon/pull/3567))
 - Fixed MangaBaka User Agent string ([@MajorTanya](https://github.com/MajorTanya)) ([#3578](https://github.com/mihonapp/mihon/pull/3578))
 - Fixed extension installation with shizuku installer ([@NGB-Was-Taken](https://github.com/NGB-Was-Taken)) ([#3630](https://github.com/mihonapp/mihon/pull/3630))
+- Fixed backup restore dropping library entries when the backup contains duplicate chapters ([@na-ji](https://github.com/na-ji)) ([#3667](https://github.com/mihonapp/mihon/pull/3667))
 - [Hikka](https://hikka.io/) tracker support ([@Lorg0n](https://github.com/Lorg0n)) ([#1386](https://github.com/mihonapp/mihon/pull/1386))
   - Fix Hikka not defaulting to "Plan to Read" for unread titles ([@MajorTanya](https://github.com/MajorTanya)) ([#3534](https://github.com/mihonapp/mihon/pull/3534))
   - Fix Hikka search throwing error due to unclosed response ([@MajorTanya](https://github.com/MajorTanya)) ([#3548](https://github.com/mihonapp/mihon/pull/3548))

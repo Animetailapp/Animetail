@@ -30,6 +30,17 @@ JOIN episodes EP
 ON H.episode_id = EP._id
 WHERE EP.url = :episodeUrl AND EP._id = H.episode_id;
 
+getHistoryByEpisodeUrlAndAnimeId:
+SELECT
+H._id,
+H.episode_id,
+H.last_seen
+FROM animehistory H
+JOIN episodes EP
+ON H.episode_id = EP._id
+WHERE EP.url = :episodeUrl AND EP.anime_id = :animeId AND EP._id = H.episode_id
+LIMIT 1;
+
 resetAnimeHistoryById:
 UPDATE animehistory
 SET last_seen = 0
