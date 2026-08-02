@@ -47,6 +47,9 @@ Features include:
 * Aniyomi:
     * Watching videos
     * View images
+    * Torrent streaming support
+    * Support for thumbnail preview when seeking in player
+    * Embedded HTTP server for extensions
     * Local reading/watching of downloaded content
     * A configurable reader with multiple viewers, reading directions and other settings.
     * A configurable player built on mpv-android with multiple options and settings
@@ -54,6 +57,11 @@ Features include:
     * Categories to organize your library
     * Light and dark themes
     * Create backups locally to read/watch offline or to your desired cloud service
+* Mihon:
+    * Advanced library search supporting logical/comparison operators, field-specific prefixes, and nested expressions
+    * Vertical chapter navigator for long strip mode with customizable height and reader settings
+    * Resumable image downloads
+    * Split extension lists support with `index.pb` format
 * Other fork features:
     * TachiyomiSY:
         * Data Saver
