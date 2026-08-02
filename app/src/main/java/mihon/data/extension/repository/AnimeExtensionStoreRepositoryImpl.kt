@@ -70,8 +70,8 @@ class AnimeExtensionStoreRepositoryImpl(
     }
 
     override suspend fun fetchExtensions(): List<AnimeExtension.Available> {
-        val disabledRepos = preferences.disabledRepos.get()
         return try {
+            val disabledRepos = preferences.disabledRepos.get()
             supervisorScope {
                 getAll()
                     .filter { it.indexUrl !in disabledRepos }
