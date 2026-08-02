@@ -392,11 +392,15 @@ class AnimeRestorer(
 
     private suspend fun restoreHistory(anime: Anime, backupHistory: List<BackupAnimeHistory>) {
         val toUpdate = backupHistory.mapNotNull { history ->
-            val dbHistory = handler.awaitOneOrNull { animehistoryQueries.getHistoryByEpisodeUrlAndAnimeId(history.url, anime.id) }
+            val dbHistory = handler.awaitOneOrNull {
+                animehistoryQueries.getHistoryByEpisodeUrlAndAnimeId(history.url, anime.id)
+            }
             val item = history.getHistoryImpl()
 
             if (dbHistory == null) {
-                val episode = handler.awaitOneOrNull { episodesQueries.getEpisodeByUrlAndAnimeId(history.url, anime.id) }
+                val episode = handler.awaitOneOrNull {
+                    episodesQueries.getEpisodeByUrlAndAnimeId(history.url, anime.id)
+                }
                 return@mapNotNull if (episode == null) {
                     // Episode doesn't exist; skip
                     null
