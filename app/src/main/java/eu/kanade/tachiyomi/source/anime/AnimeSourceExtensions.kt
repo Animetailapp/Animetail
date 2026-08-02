@@ -49,4 +49,3 @@ fun AnimeSource?.isSourceForTorrents(): Boolean {
         .find { ext -> ext.sources.any { it.id == this.id } }!!
     return sourceUsed.isTorrent
 }
-// <-- (TORRENT)

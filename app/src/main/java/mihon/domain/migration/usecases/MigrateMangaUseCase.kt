@@ -10,7 +10,9 @@ import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.data.track.EnhancedMangaTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import kotlinx.coroutines.CancellationException
+import logcat.LogPriority
 import mihon.domain.migration.models.MigrationFlag
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.manga.interactor.SetMangaCategories
 import tachiyomi.domain.entries.manga.model.Manga
@@ -46,11 +48,19 @@ class MigrateMangaUseCase(
         val flags = MigrationFlag.fromBit(sourcePreferences.migrationFlags.get())
 
         try {
-            val chapters = targetSource.getChapterList(target.toSManga())
+            val chapters = try {
+                targetSource.getChapterList(target.toSManga())
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+                emptyList()
+            }
 
             try {
                 syncChaptersWithSource.await(chapters, target, targetSource)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
                 // Worst case, chapters won't be synced
             }
 
@@ -73,10 +83,13 @@ class MigrateMangaUseCase(
                             updatedChapter = updatedChapter.copy(
                                 dateFetch = prevChapter.dateFetch,
                                 bookmark = prevChapter.bookmark,
+                                lastPageRead = prevChapter.lastPageRead,
                             )
                         }
 
-                        if (maxChapterRead != null && updatedChapter.chapterNumber <= maxChapterRead) {
+                        if (prevChapter?.read == true ||
+                            (maxChapterRead != null && updatedChapter.chapterNumber <= maxChapterRead)
+                        ) {
                             updatedChapter = updatedChapter.copy(read = true)
                         }
                     }
@@ -102,7 +115,13 @@ class MigrateMangaUseCase(
                     .firstOrNull { it.isTrackFrom(updatedTrack, current, currentSource) }
 
                 if (service != null) {
-                    service.migrateTrack(updatedTrack, target, targetSource)
+                    try {
+                        service.migrateTrack(updatedTrack, target, targetSource)
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+                        logcat(LogPriority.ERROR, e)
+                        updatedTrack
+                    }
                 } else {
                     updatedTrack
                 }
@@ -112,12 +131,22 @@ class MigrateMangaUseCase(
 
             // Delete downloaded
             if (MigrationFlag.REMOVE_DOWNLOAD in flags && currentSource != null) {
-                downloadManager.deleteManga(current, currentSource)
+                try {
+                    downloadManager.deleteManga(current, currentSource)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                }
             }
 
             // Update custom cover (recheck if custom cover exists)
             if (MigrationFlag.CUSTOM_COVER in flags && current.hasCustomCover(coverCache)) {
-                coverCache.setCustomCoverToCache(target, coverCache.getCustomCoverFile(current.id).inputStream())
+                try {
+                    coverCache.setCustomCoverToCache(target, coverCache.getCustomCoverFile(current.id).inputStream())
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                }
             }
 
             val currentMangaUpdate = MangaUpdate(
@@ -140,6 +169,7 @@ class MigrateMangaUseCase(
             if (e is CancellationException) {
                 throw e
             }
+            logcat(LogPriority.ERROR, e)
         }
     }
 }

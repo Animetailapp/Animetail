@@ -31,11 +31,14 @@ import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.ui.browse.manga.migration.MangaMigrationFlags
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.update
+import logcat.LogPriority
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.manga.interactor.SetMangaCategories
 import tachiyomi.domain.entries.manga.model.Manga
@@ -183,7 +186,13 @@ internal class MigrateMangaDialogScreenModel(
         mutableState.update { it.copy(isMigrating = true) }
 
         try {
-            val chapters = source.getChapterList(newManga.toSManga())
+            val chapters = try {
+                source.getChapterList(newManga.toSManga())
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+                emptyList()
+            }
 
             migrateMangaInternal(
                 oldSource = prevSource,
@@ -194,9 +203,9 @@ internal class MigrateMangaDialogScreenModel(
                 replace = replace,
                 flags = flags,
             )
-        } catch (_: Throwable) {
-            // Explicitly stop if an error occurred; the dialog normally gets popped at the end
-            // anyway
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+            logcat(LogPriority.ERROR, e)
             mutableState.update { it.copy(isMigrating = false) }
         }
     }
@@ -218,7 +227,9 @@ internal class MigrateMangaDialogScreenModel(
 
         try {
             syncChaptersWithSource.await(sourceChapters, newManga, newSource)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            logcat(LogPriority.ERROR, e)
             // Worst case, chapters won't be synced
         }
 
@@ -241,10 +252,13 @@ internal class MigrateMangaDialogScreenModel(
                         updatedChapter = updatedChapter.copy(
                             dateFetch = prevChapter.dateFetch,
                             bookmark = prevChapter.bookmark,
+                            lastPageRead = prevChapter.lastPageRead,
                         )
                     }
 
-                    if (maxChapterRead != null && updatedChapter.chapterNumber <= maxChapterRead) {
+                    if (prevChapter?.read == true ||
+                        (maxChapterRead != null && updatedChapter.chapterNumber <= maxChapterRead)
+                    ) {
                         updatedChapter = updatedChapter.copy(read = true)
                     }
                 }
@@ -270,7 +284,13 @@ internal class MigrateMangaDialogScreenModel(
                 .firstOrNull { it.isTrackFrom(updatedTrack, oldManga, oldSource) }
 
             if (service != null) {
-                service.migrateTrack(updatedTrack, newManga, newSource)
+                try {
+                    service.migrateTrack(updatedTrack, newManga, newSource)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                    updatedTrack
+                }
             } else {
                 updatedTrack
             }
@@ -281,7 +301,12 @@ internal class MigrateMangaDialogScreenModel(
         // Delete downloaded
         if (deleteDownloaded) {
             if (oldSource != null) {
-                downloadManager.deleteManga(oldManga, oldSource)
+                try {
+                    downloadManager.deleteManga(oldManga, oldSource)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                }
             }
         }
 
@@ -291,10 +316,15 @@ internal class MigrateMangaDialogScreenModel(
 
         // Update custom cover (recheck if custom cover exists)
         if (migrateCustomCover && oldManga.hasCustomCover()) {
-            coverCache.setCustomCoverToCache(
-                newManga,
-                coverCache.getCustomCoverFile(oldManga.id).inputStream(),
-            )
+            try {
+                coverCache.setCustomCoverToCache(
+                    newManga,
+                    coverCache.getCustomCoverFile(oldManga.id).inputStream(),
+                )
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+            }
         }
 
         updateManga.await(

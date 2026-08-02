@@ -42,6 +42,9 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Add support for `tachiyomix` 1.6 extensions ([@AntsyLich](https://github.com/AntsyLich))
 - Add support for `tachiyomix` extension index format ([@AntsyLich](https://github.com/AntsyLich)) ([#3349](https://github.com/mihonapp/mihon/pull/3349))
 - Added a description for the horizontal seek gesture setting ([@kenkoro](https://github.com/kenkoro)) ([#2224](https://github.com/aniyomiorg/aniyomi/pull/2224))
+- Added an http server for use in extensions ([@Secozzi](https://github.com/Secozzi)) ([#2348](https://github.com/aniyomiorg/aniyomi/pull/2348))
+- Added support for thumbnail preview when seeking ([@Secozzi](https://github.com/Secozzi)) ([#2343](https://github.com/aniyomiorg/aniyomi/pull/2343))
+- Add torrent streaming support ([@Secozzi](https://github.com/Secozzi)) ([#2346](https://github.com/aniyomiorg/aniyomi/pull/2346))
 - Add vertical chapter navigator for long strip mode ([@AntsyLich](https://github.com/AntsyLich)) ([#3377](https://github.com/mihonapp/mihon/pull/3377))
 - Add setting to control vertical chapter navigator height ([@AntsyLich](https://github.com/AntsyLich)) ([#3528](https://github.com/mihonapp/mihon/pull/3528))
 - Add option to set which readers use vertical chapter navigator ([@AntsyLich](https://github.com/AntsyLich)) ([#3528](https://github.com/mihonapp/mihon/pull/3528))
@@ -60,6 +63,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Fix crash when putting app in background ([@AntsyLich](https://github.com/AntsyLich)) ([#3523](https://github.com/mihonapp/mihon/pull/3523))
 - Fixed player crash when running out of available videos ([@Secozzi](https://github.com/Secozzi)) ([#150](https://github.com/quickdesh/Animiru/pull/150))
 - Swapped keyEvent listeners for left and right keyboard arrow keys as they were swapped in the code causing the opposite of the desired behavior([@alphastark](https://github.com/alphastark)) ([#2219](https://github.com/aniyomiorg/aniyomi/issues/2219))
+- Fix some malformed translated strings that made the player quit when Aniskip was enabled ([@686udjie](https://github.com/686udjie)) ([#2217](https://github.com/aniyomiorg/aniyomi/pull/2217))
 - Fix support for non-system SAF providers ([@AntsyLich](https://github.com/AntsyLich)) ([#3530](https://github.com/mihonapp/mihon/pull/3530))
 - Fix chapter's `memo` field not being updated for existing chapters ([@cuong-tran](https://github.com/cuong-tran)) ([#3538](https://github.com/mihonapp/mihon/pull/3538))
 - Fix app not reading `tachiyomix.extensionLib` extension metadata ([@AntsyLich](https://github.com/AntsyLich)) ([#3545](https://github.com/mihonapp/mihon/pull/3545), [#3559](https://github.com/mihonapp/mihon/pull/3559))
@@ -177,7 +181,6 @@ Same as v0.19.6
 - Fix extension install/update stuck at pending ([@AntsyLich](https://github.com/AntsyLich)) ([#3000](https://github.com/mihonapp/mihon/pull/3000))
 - Fix crash when downloading multiple chapters with Arabic locale ([@MajorTanya](https://github.com/MajorTanya)) ([#2676](https://github.com/mihonapp/mihon/pull/2676))
 
-## [v0.18.1.4] - 2025-10-28
 ## [v0.18.1.2] - 2025-10-28
 ### Fixed
 

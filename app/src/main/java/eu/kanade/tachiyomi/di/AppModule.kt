@@ -239,7 +239,6 @@ class AppModule(val app: Application) : InjektModule {
         // AM (CONNECTIONS) -->
         addSingletonFactory { ConnectionsManager() }
         // <-- AM (CONNECTIONS)
-
         addSingletonFactory { TorrentServerApi(get(), get()) }
         addSingletonFactory { TorrentServerUtils(get(), get()) }
 

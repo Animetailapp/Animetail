@@ -42,11 +42,14 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.ui.browse.anime.migration.AnimeMigrationFlags
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.update
+import logcat.LogPriority
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.anime.interactor.SetAnimeCategories
 import tachiyomi.domain.entries.anime.model.Anime
@@ -235,7 +238,13 @@ internal class MigrateAnimeDialogScreenModel(
         mutableState.update { it.copy(isMigrating = true) }
 
         try {
-            val episodes = source.getEpisodeList(newAnime.toSAnime())
+            val episodes = try {
+                source.getEpisodeList(newAnime.toSAnime())
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+                emptyList()
+            }
 
             migrateAnimeInternal(
                 oldSource = prevSource,
@@ -246,9 +255,9 @@ internal class MigrateAnimeDialogScreenModel(
                 replace = replace,
                 flags = flags,
             )
-        } catch (_: Throwable) {
-            // Explicitly stop if an error occurred; the dialog normally gets popped at the end
-            // anyway
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+            logcat(LogPriority.ERROR, e)
             mutableState.update { it.copy(isMigrating = false) }
         }
     }
@@ -271,7 +280,9 @@ internal class MigrateAnimeDialogScreenModel(
 
         try {
             syncEpisodesWithSource.await(sourceEpisodes, newAnime, newSource)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            logcat(LogPriority.ERROR, e)
             // Worst case, chapters won't be synced
         }
 
@@ -294,10 +305,15 @@ internal class MigrateAnimeDialogScreenModel(
                         updatedEpisode = updatedEpisode.copy(
                             dateFetch = prevEpisode.dateFetch,
                             bookmark = prevEpisode.bookmark,
+                            fillermark = prevEpisode.fillermark,
+                            lastSecondSeen = prevEpisode.lastSecondSeen,
+                            totalSeconds = prevEpisode.totalSeconds,
                         )
                     }
 
-                    if (maxEpisodeSeen != null && updatedEpisode.episodeNumber <= maxEpisodeSeen) {
+                    if (prevEpisode?.seen == true ||
+                        (maxEpisodeSeen != null && updatedEpisode.episodeNumber <= maxEpisodeSeen)
+                    ) {
                         updatedEpisode = updatedEpisode.copy(seen = true)
                     }
                 }
@@ -323,7 +339,13 @@ internal class MigrateAnimeDialogScreenModel(
                 .firstOrNull { it.isTrackFrom(updatedTrack, oldAnime, oldSource) }
 
             if (service != null) {
-                service.migrateTrack(updatedTrack, newAnime, newSource)
+                try {
+                    service.migrateTrack(updatedTrack, newAnime, newSource)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                    updatedTrack
+                }
             } else {
                 updatedTrack
             }
@@ -334,7 +356,12 @@ internal class MigrateAnimeDialogScreenModel(
         // Delete downloaded
         if (deleteDownloaded) {
             if (oldSource != null) {
-                downloadManager.deleteAnime(oldAnime, oldSource)
+                try {
+                    downloadManager.deleteAnime(oldAnime, oldSource)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                }
             }
         }
 
@@ -344,18 +371,28 @@ internal class MigrateAnimeDialogScreenModel(
 
         // Update custom cover (recheck if custom cover exists)
         if (migrateCustomCover && oldAnime.hasCustomCover()) {
-            coverCache.setCustomCoverToCache(
-                newAnime,
-                coverCache.getCustomCoverFile(oldAnime.id).inputStream(),
-            )
+            try {
+                coverCache.setCustomCoverToCache(
+                    newAnime,
+                    coverCache.getCustomCoverFile(oldAnime.id).inputStream(),
+                )
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+            }
         }
 
         // Update custom background (recheck if custom background exists)
         if (migrateCustomBackground && oldAnime.hasCustomBackground()) {
-            backgroundCache.setCustomBackgroundToCache(
-                newAnime,
-                backgroundCache.getCustomBackgroundFile(oldAnime.id).inputStream(),
-            )
+            try {
+                backgroundCache.setCustomBackgroundToCache(
+                    newAnime,
+                    backgroundCache.getCustomBackgroundFile(oldAnime.id).inputStream(),
+                )
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+            }
         }
 
         updateAnime.await(

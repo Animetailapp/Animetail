@@ -10,7 +10,9 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import kotlinx.coroutines.CancellationException
+import logcat.LogPriority
 import mihon.domain.migration.models.MigrationFlag
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.anime.interactor.SetAnimeCategories
 import tachiyomi.domain.entries.anime.model.Anime
@@ -46,11 +48,19 @@ class MigrateAnimeUseCase(
         val flags = MigrationFlag.fromBit(sourcePreferences.migrationFlags.get())
 
         try {
-            val episodes = targetSource.getEpisodeList(target.toSAnime())
+            val episodes = try {
+                targetSource.getEpisodeList(target.toSAnime())
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+                emptyList()
+            }
 
             try {
                 syncEpisodesWithSource.await(episodes, target, targetSource)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
                 // Worst case, episodes won't be synced
             }
 
@@ -73,10 +83,15 @@ class MigrateAnimeUseCase(
                             updatedEpisode = updatedEpisode.copy(
                                 dateFetch = prevEpisode.dateFetch,
                                 bookmark = prevEpisode.bookmark,
+                                fillermark = prevEpisode.fillermark,
+                                lastSecondSeen = prevEpisode.lastSecondSeen,
+                                totalSeconds = prevEpisode.totalSeconds,
                             )
                         }
 
-                        if (maxEpisodeSeen != null && updatedEpisode.episodeNumber <= maxEpisodeSeen) {
+                        if (prevEpisode?.seen == true ||
+                            (maxEpisodeSeen != null && updatedEpisode.episodeNumber <= maxEpisodeSeen)
+                        ) {
                             updatedEpisode = updatedEpisode.copy(seen = true)
                         }
                     }
@@ -102,7 +117,13 @@ class MigrateAnimeUseCase(
                     .firstOrNull { it.isTrackFrom(updatedTrack, current, currentSource) }
 
                 if (service != null) {
-                    service.migrateTrack(updatedTrack, target, targetSource)
+                    try {
+                        service.migrateTrack(updatedTrack, target, targetSource)
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+                        logcat(LogPriority.ERROR, e)
+                        updatedTrack
+                    }
                 } else {
                     updatedTrack
                 }
@@ -112,12 +133,22 @@ class MigrateAnimeUseCase(
 
             // Delete downloaded
             if (MigrationFlag.REMOVE_DOWNLOAD in flags && currentSource != null) {
-                downloadManager.deleteAnime(current, currentSource)
+                try {
+                    downloadManager.deleteAnime(current, currentSource)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                }
             }
 
             // Update custom cover (recheck if custom cover exists)
             if (MigrationFlag.CUSTOM_COVER in flags && current.hasCustomCover(coverCache)) {
-                coverCache.setCustomCoverToCache(target, coverCache.getCustomCoverFile(current.id).inputStream())
+                try {
+                    coverCache.setCustomCoverToCache(target, coverCache.getCustomCoverFile(current.id).inputStream())
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                }
             }
 
             val currentAnimeUpdate = AnimeUpdate(
@@ -140,6 +171,7 @@ class MigrateAnimeUseCase(
             if (e is CancellationException) {
                 throw e
             }
+            logcat(LogPriority.ERROR, e)
         }
     }
 }

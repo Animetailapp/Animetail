@@ -53,12 +53,13 @@ internal object AnimeExtensionLoader {
     private const val METADATA_HAS_README = "tachiyomi.animeextension.hasReadme"
     private const val METADATA_HAS_CHANGELOG = "tachiyomi.animeextension.hasChangelog"
     private const val METADATA_TORRENT = "tachiyomi.animeextension.torrent"
-
     private const val METADATA_NAME = "tachiyomix.name"
     private const val METADATA_EXTENSION_LIB = "tachiyomix.extensionLib"
     private const val METADATA_CONTENT_WARNING = "tachiyomix.contentWarning"
 
-    private val SUPPORTED_LIB_VERSIONS = (12..16).map { it.toDouble() }
+    const val LIB_VERSION_MIN = 12
+    const val LIB_VERSION_MAX = 16
+    private val SUPPORTED_LIB_VERSIONS = (LIB_VERSION_MIN..LIB_VERSION_MAX).map { it.toDouble() }
 
     @Suppress("DEPRECATION")
     private val PACKAGE_FLAGS = PackageManager.GET_CONFIGURATIONS or
