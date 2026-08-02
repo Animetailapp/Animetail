@@ -83,7 +83,8 @@ fun FeedScreen(
     when {
         state.isLoading -> LoadingScreen()
 
-        state.isEmpty -> eu.kanade.presentation.home.HomeFeedScreen(
+        state.isEmpty -> EmptyScreen(
+            stringRes = TLMR.strings.feed_tab_empty,
             modifier = Modifier.padding(contentPadding),
         )
 

@@ -1,5 +1,6 @@
 package mihon.data.extension.repository
 
+import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -15,6 +16,7 @@ import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 class AnimeExtensionStoreRepositoryImpl(
     private val service: AnimeExtensionStoreService,
     private val handler: AnimeDatabaseHandler,
+    private val preferences: SourcePreferences,
 ) : AnimeExtensionStoreRepository {
     override suspend fun insert(indexUrl: String): Result<Unit> {
         return service.fetch(indexUrl).mapCatching { upsert(it) }
@@ -36,15 +38,18 @@ class AnimeExtensionStoreRepositoryImpl(
 
     override suspend fun refreshAll() {
         try {
-            getAll().forEach { store ->
-                service.fetch(store.indexUrl)
-                    .mapCatching { upsert(it) }
-                    .onFailure {
-                        logcat(LogPriority.ERROR, it) {
-                            "Failed to refresh extension store '${store.name} (${store.indexUrl})'"
+            val disabledRepos = preferences.disabledRepos.get()
+            getAll()
+                .filter { it.indexUrl !in disabledRepos }
+                .forEach { store ->
+                    service.fetch(store.indexUrl)
+                        .mapCatching { upsert(it) }
+                        .onFailure {
+                            logcat(LogPriority.ERROR, it) {
+                                "Failed to refresh extension store '${store.name} (${store.indexUrl})'"
+                            }
                         }
-                    }
-            }
+                }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
         }
@@ -66,16 +71,19 @@ class AnimeExtensionStoreRepositoryImpl(
 
     override suspend fun fetchExtensions(): List<AnimeExtension.Available> {
         return try {
+            val disabledRepos = preferences.disabledRepos.get()
             supervisorScope {
-                getAll().map { store ->
-                    async {
-                        service.getExtensions(store).onFailure {
-                            this@AnimeExtensionStoreRepositoryImpl.logcat(LogPriority.ERROR, it) {
-                                "Failed to fetch extensions for store '${store.name} (${store.indexUrl})'"
+                getAll()
+                    .filter { it.indexUrl !in disabledRepos }
+                    .map { store ->
+                        async {
+                            service.getExtensions(store).onFailure {
+                                this@AnimeExtensionStoreRepositoryImpl.logcat(LogPriority.ERROR, it) {
+                                    "Failed to fetch extensions for store '${store.name} (${store.indexUrl})'"
+                                }
                             }
                         }
                     }
-                }
                     .awaitAll()
                     .flatMap { it.getOrDefault(emptyList()) }
             }

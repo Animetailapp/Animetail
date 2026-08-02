@@ -403,7 +403,7 @@ class DomainModule : InjektModule {
         addFactory { AnimeExtensionStoreService(get(), get(), get()) }
         addFactory { MangaExtensionStoreService(get(), get(), get()) }
 
-        addSingletonFactory<AnimeExtensionStoreRepository> { AnimeExtensionStoreRepositoryImpl(get(), get()) }
+        addSingletonFactory<AnimeExtensionStoreRepository> { AnimeExtensionStoreRepositoryImpl(get(), get(), get()) }
         addFactory { GetAnimeExtensionStores(get()) }
         addFactory { GetAnimeExtensionStoreCountAsFlow(get()) }
         addFactory { AddAnimeExtensionStore(get()) }
@@ -412,7 +412,7 @@ class DomainModule : InjektModule {
         addFactory { ToggleAnimeIncognito(get()) }
         addFactory { GetAnimeIncognitoState(get(), get(), get()) }
 
-        addSingletonFactory<MangaExtensionStoreRepository> { MangaExtensionStoreRepositoryImpl(get(), get()) }
+        addSingletonFactory<MangaExtensionStoreRepository> { MangaExtensionStoreRepositoryImpl(get(), get(), get()) }
         addFactory { GetMangaExtensionStores(get()) }
         addFactory { GetMangaExtensionStoreCountAsFlow(get()) }
         addFactory { AddMangaExtensionStore(get()) }
