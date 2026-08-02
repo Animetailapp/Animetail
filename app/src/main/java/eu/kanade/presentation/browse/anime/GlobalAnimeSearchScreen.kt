@@ -12,7 +12,7 @@ import eu.kanade.presentation.browse.anime.components.GlobalAnimeSearchCardRow
 import eu.kanade.presentation.browse.anime.components.GlobalAnimeSearchToolbar
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSearchItemResult
-import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSearchScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSearchViewModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSourceFilter
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import tachiyomi.domain.entries.anime.model.Anime
@@ -20,7 +20,7 @@ import tachiyomi.presentation.core.components.material.Scaffold
 
 @Composable
 fun GlobalAnimeSearchScreen(
-    state: AnimeSearchScreenModel.State,
+    state: AnimeSearchViewModel.State,
     navigateUp: () -> Unit,
     onChangeSearchQuery: (String?) -> Unit,
     onSearch: (String) -> Unit,

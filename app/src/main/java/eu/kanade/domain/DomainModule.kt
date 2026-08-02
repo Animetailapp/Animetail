@@ -303,7 +303,7 @@ class DomainModule : InjektModule {
         addFactory { SetExcludedScanlators(get()) }
 
         addSingletonFactory<ReleaseService> { ReleaseServiceImpl(get(), get()) }
-        addFactory { GetApplicationRelease(get(), get()) }
+        addFactory { GetApplicationRelease(get()) }
 
         addSingletonFactory<AnimeTrackRepository> { AnimeTrackRepositoryImpl(get()) }
         addFactory { TrackEpisode(get(), get(), get(), get()) }

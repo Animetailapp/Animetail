@@ -6,7 +6,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.manga.MigrateMangaScreen
@@ -26,13 +27,18 @@ data class MigrateMangaScreen(
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { MigrateMangaScreenModel(sourceId) }
+        val viewModel = viewModel<MigrateMangaViewModel>(
+            factory = MigrateMangaViewModel.Factory,
+            extras = CreationExtras {
+                set(MigrateMangaViewModel.SOURCE_ID_KEY, sourceId)
+            },
+        )
 
-        val state by screenModel.state.collectAsState()
+        val state by viewModel.state.collectAsState()
 
         val isSelectionMode = state.selectedMangaIds.isNotEmpty()
         BackHandler(enabled = isSelectionMode) {
-            screenModel.clearSelection()
+            viewModel.clearSelection()
         }
 
         if (state.isLoading) {
@@ -43,7 +49,7 @@ data class MigrateMangaScreen(
         MigrateMangaScreen(
             navigateUp = {
                 if (isSelectionMode) {
-                    screenModel.clearSelection()
+                    viewModel.clearSelection()
                 } else {
                     navigator.pop()
                 }
@@ -52,28 +58,28 @@ data class MigrateMangaScreen(
             state = state,
             onClickItem = { manga ->
                 if (isSelectionMode) {
-                    screenModel.toggleSelection(manga)
+                    viewModel.toggleSelection(manga)
                 } else {
                     navigator.push(MigrateMangaSearchScreen(manga.id))
                 }
             },
             onClickCover = { manga ->
                 if (isSelectionMode) {
-                    screenModel.toggleSelection(manga)
+                    viewModel.toggleSelection(manga)
                 } else {
                     navigator.push(MangaScreen(manga.id))
                 }
             },
-            onLongClickItem = screenModel::toggleSelection,
-            onSelectAll = screenModel::selectAll,
-            onClearSelection = screenModel::clearSelection,
+            onLongClickItem = viewModel::toggleSelection,
+            onSelectAll = viewModel::selectAll,
+            onClearSelection = viewModel::clearSelection,
             onClickMigrate = {
                 navigator.push(mihon.feature.migration.config.MangaMigrationConfigScreen(state.selectedMangaIds))
             },
         )
 
         LaunchedEffect(Unit) {
-            screenModel.events.collectLatest { event ->
+            viewModel.events.collectLatest { event ->
                 when (event) {
                     MigrationMangaEvent.FailedFetchingFavorites -> {
                         context.toast(MR.strings.internal_error)

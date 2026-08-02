@@ -18,7 +18,7 @@ import eu.kanade.presentation.entries.components.EntryBottomActionMenu
 import eu.kanade.presentation.entries.manga.components.ChapterDownloadAction
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.ui.updates.manga.MangaUpdatesItem
-import eu.kanade.tachiyomi.ui.updates.manga.MangaUpdatesScreenModel
+import eu.kanade.tachiyomi.ui.updates.manga.MangaUpdatesViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
@@ -32,7 +32,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun MangaUpdateScreen(
-    state: MangaUpdatesScreenModel.State,
+    state: MangaUpdatesViewModel.State,
     snackbarHostState: SnackbarHostState,
     lastUpdated: Long,
     onClickCover: (MangaUpdatesItem) -> Unit,

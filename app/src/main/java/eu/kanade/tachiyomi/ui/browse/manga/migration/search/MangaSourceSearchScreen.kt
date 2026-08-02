@@ -17,7 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.core.util.ifMangaSourcesLoaded
@@ -26,7 +27,7 @@ import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.source.online.HttpSource
-import eu.kanade.tachiyomi.ui.browse.manga.source.browse.BrowseMangaSourceScreenModel
+import eu.kanade.tachiyomi.ui.browse.manga.source.browse.BrowseMangaSourceViewModel
 import eu.kanade.tachiyomi.ui.browse.manga.source.browse.SourceFilterMangaDialog
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
@@ -57,8 +58,14 @@ data class MangaSourceSearchScreen(
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
 
-        val screenModel = rememberScreenModel { BrowseMangaSourceScreenModel(sourceId, query) }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<BrowseMangaSourceViewModel>(
+            factory = BrowseMangaSourceViewModel.Factory,
+            extras = CreationExtras {
+                set(BrowseMangaSourceViewModel.SOURCE_ID_KEY, sourceId)
+                set(BrowseMangaSourceViewModel.LISTING_QUERY_KEY, query)
+            },
+        )
+        val state by viewModel.state.collectAsState()
 
         val snackbarHostState = remember { SnackbarHostState() }
 
@@ -66,9 +73,9 @@ data class MangaSourceSearchScreen(
             topBar = { scrollBehavior ->
                 SearchToolbar(
                     searchQuery = state.toolbarQuery ?: "",
-                    onChangeSearchQuery = screenModel::setToolbarQuery,
+                    onChangeSearchQuery = viewModel::setToolbarQuery,
                     onClickCloseSearch = navigator::pop,
-                    onSearch = screenModel::search,
+                    onSearch = viewModel::search,
                     scrollBehavior = scrollBehavior,
                 )
             },
@@ -76,7 +83,7 @@ data class MangaSourceSearchScreen(
                 SmallExtendedFloatingActionButton(
                     text = { Text(text = stringResource(MR.strings.action_filter)) },
                     icon = { Icon(Icons.Outlined.FilterList, contentDescription = null) },
-                    onClick = screenModel::openFilterSheet,
+                    onClick = viewModel::openFilterSheet,
                     modifier = Modifier.animateFloatingActionButton(
                         visible = state.filters.isNotEmpty(),
                         alignment = Alignment.BottomEnd,
@@ -86,17 +93,17 @@ data class MangaSourceSearchScreen(
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         ) { paddingValues ->
             val openMigrateDialog: (Manga) -> Unit = {
-                screenModel.setDialog(BrowseMangaSourceScreenModel.Dialog.Migrate(newManga = it, oldManga = oldManga))
+                viewModel.setDialog(BrowseMangaSourceViewModel.Dialog.Migrate(newManga = it, oldManga = oldManga))
             }
             BrowseSourceContent(
-                source = screenModel.source,
-                mangaList = screenModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
-                columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
-                displayMode = screenModel.displayMode,
+                source = viewModel.source,
+                mangaList = viewModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
+                columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
+                displayMode = viewModel.displayMode,
                 snackbarHostState = snackbarHostState,
                 contentPadding = paddingValues,
                 onWebViewClick = {
-                    val source = screenModel.source as? HttpSource ?: return@BrowseSourceContent
+                    val source = viewModel.source as? HttpSource ?: return@BrowseSourceContent
                     navigator.push(
                         WebViewScreen(
                             url = source.baseUrl,
@@ -112,23 +119,23 @@ data class MangaSourceSearchScreen(
             )
         }
 
-        val onDismissRequest = { screenModel.setDialog(null) }
+        val onDismissRequest = { viewModel.setDialog(null) }
         when (val dialog = state.dialog) {
-            is BrowseMangaSourceScreenModel.Dialog.Filter -> {
+            is BrowseMangaSourceViewModel.Dialog.Filter -> {
                 SourceFilterMangaDialog(
                     onDismissRequest = onDismissRequest,
                     filters = state.filters,
-                    onReset = screenModel::resetFilters,
-                    onFilter = { screenModel.search(filters = state.filters) },
-                    onUpdate = screenModel::setFilters,
+                    onReset = viewModel::resetFilters,
+                    onFilter = { viewModel.search(filters = state.filters) },
+                    onUpdate = viewModel::setFilters,
                 )
             }
 
-            is BrowseMangaSourceScreenModel.Dialog.Migrate -> {
+            is BrowseMangaSourceViewModel.Dialog.Migrate -> {
                 MigrateMangaDialog(
                     oldManga = oldManga,
                     newManga = dialog.newManga,
-                    screenModel = rememberScreenModel { MigrateMangaDialogScreenModel() },
+                    screenModel = MigrateMangaDialogScreenModel(),
                     onDismissRequest = onDismissRequest,
                     onClickTitle = { navigator.push(MangaScreen(dialog.newManga.id)) },
                     onPopScreen = {

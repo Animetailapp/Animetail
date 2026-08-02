@@ -29,7 +29,7 @@ import kotlin.math.roundToInt
 fun DownloadQueueScreen(
     contentPadding: PaddingValues,
     scope: CoroutineScope,
-    screenModel: MangaDownloadQueueScreenModel,
+    screenModel: MangaDownloadQueueViewModel,
     downloadList: List<MangaDownloadHeaderItem>,
     nestedScrollConnection: NestedScrollConnection,
 ) {

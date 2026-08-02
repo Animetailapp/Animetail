@@ -61,7 +61,6 @@ fun TabbedDialog(
                     modifier = Modifier.weight(1f),
                     selectedTabIndex = pagerState.currentPage,
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    divider = {},
                 ) {
                     tabTitles.fastForEachIndexed { index, tab ->
                         Tab(
@@ -75,7 +74,6 @@ fun TabbedDialog(
 
                 MoreMenu(onOverflowMenuClicked, tabOverflowMenuContent, overflowIcon)
             }
-            HorizontalDivider()
 
             HorizontalPager(
                 modifier = Modifier.animateContentSize(),

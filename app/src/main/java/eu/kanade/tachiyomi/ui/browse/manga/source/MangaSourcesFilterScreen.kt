@@ -5,7 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.manga.MangaSourcesFilterScreen
@@ -19,15 +19,15 @@ class MangaSourcesFilterScreen : Screen() {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { MangaSourcesFilterScreenModel() }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<MangaSourcesFilterViewModel>()
+        val state by viewModel.state.collectAsState()
 
-        if (state is MangaSourcesFilterScreenModel.State.Loading) {
+        if (state is MangaSourcesFilterViewModel.State.Loading) {
             LoadingScreen()
             return
         }
 
-        if (state is MangaSourcesFilterScreenModel.State.Error) {
+        if (state is MangaSourcesFilterViewModel.State.Error) {
             val context = LocalContext.current
             LaunchedEffect(Unit) {
                 context.toast(MR.strings.internal_error)
@@ -36,13 +36,13 @@ class MangaSourcesFilterScreen : Screen() {
             return
         }
 
-        val successState = state as MangaSourcesFilterScreenModel.State.Success
+        val successState = state as MangaSourcesFilterViewModel.State.Success
 
         MangaSourcesFilterScreen(
             navigateUp = navigator::pop,
             state = successState,
-            onClickLanguage = screenModel::toggleLanguage,
-            onClickSource = screenModel::toggleSource,
+            onClickLanguage = viewModel::toggleLanguage,
+            onClickSource = viewModel::toggleSource,
         )
     }
 }

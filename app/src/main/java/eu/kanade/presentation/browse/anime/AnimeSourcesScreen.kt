@@ -25,9 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.browse.anime.components.BaseAnimeSourceItem
-import eu.kanade.presentation.util.animateItemFastScroll
-import eu.kanade.tachiyomi.ui.browse.anime.source.AnimeSourcesScreenModel
-import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreenModel.Listing
+import eu.kanade.tachiyomi.ui.browse.anime.source.AnimeSourcesViewModel
+import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceViewModel.Listing
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.source.anime.model.AnimeSource
@@ -47,7 +46,7 @@ import tachiyomi.source.local.entries.anime.LocalAnimeSource
 
 @Composable
 fun AnimeSourcesScreen(
-    state: AnimeSourcesScreenModel.State,
+    state: AnimeSourcesViewModel.State,
     contentPadding: PaddingValues,
     onClickItem: (AnimeSource, Listing) -> Unit,
     onClickPin: (AnimeSource) -> Unit,
@@ -83,7 +82,7 @@ fun AnimeSourcesScreen(
                     when (model) {
                         is AnimeSourceUiModel.Header -> {
                             AnimeSourceHeader(
-                                modifier = Modifier.animateItemFastScroll(),
+                                modifier = Modifier.animateItem(),
                                 language = model.language,
                                 // SY -->
                                 isCategory = model.isCategory,

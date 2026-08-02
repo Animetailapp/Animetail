@@ -15,7 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -30,7 +30,7 @@ import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
-import eu.kanade.tachiyomi.ui.updates.UpdatesSettingsScreenModel
+import eu.kanade.tachiyomi.ui.updates.UpdatesSettingsViewModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -47,9 +47,9 @@ fun Screen.mangaUpdatesTab(
     fromMore: Boolean,
 ): TabContent {
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { MangaUpdatesScreenModel() }
-    val settingsScreenModel = rememberScreenModel { UpdatesSettingsScreenModel() }
-    val state by screenModel.state.collectAsState()
+    val viewModel = viewModel<MangaUpdatesViewModel>()
+    val settingsViewModel = viewModel<UpdatesSettingsViewModel>()
+    val state by viewModel.state.collectAsState()
 
     val scope = rememberCoroutineScope()
     val navigateUp: (() -> Unit)? = if (fromMore) {
@@ -70,17 +70,17 @@ fun Screen.mangaUpdatesTab(
         content = { contentPadding, _ ->
             MangaUpdateScreen(
                 state = state,
-                snackbarHostState = screenModel.snackbarHostState,
-                lastUpdated = screenModel.lastUpdated,
+                snackbarHostState = viewModel.snackbarHostState,
+                lastUpdated = viewModel.lastUpdated,
                 onClickCover = { item -> navigator.push(MangaScreen(item.update.mangaId)) },
-                onSelectAll = screenModel::toggleAllSelection,
-                onInvertSelection = screenModel::invertSelection,
-                onUpdateLibrary = screenModel::updateLibrary,
-                onDownloadChapter = screenModel::downloadChapters,
-                onMultiBookmarkClicked = screenModel::bookmarkUpdates,
-                onMultiMarkAsReadClicked = screenModel::markUpdatesRead,
-                onMultiDeleteClicked = screenModel::showConfirmDeleteChapters,
-                onUpdateSelected = screenModel::toggleSelection,
+                onSelectAll = viewModel::toggleAllSelection,
+                onInvertSelection = viewModel::invertSelection,
+                onUpdateLibrary = viewModel::updateLibrary,
+                onDownloadChapter = viewModel::downloadChapters,
+                onMultiBookmarkClicked = viewModel::bookmarkUpdates,
+                onMultiMarkAsReadClicked = viewModel::markUpdatesRead,
+                onMultiDeleteClicked = viewModel::showConfirmDeleteChapters,
+                onUpdateSelected = viewModel::toggleSelection,
                 onOpenChapter = {
                     val intent =
                         ReaderActivity.newIntent(context, it.update.mangaId, it.update.chapterId)
@@ -88,20 +88,20 @@ fun Screen.mangaUpdatesTab(
                 },
             )
 
-            val onDismissDialog = { screenModel.setDialog(null) }
+            val onDismissDialog = { viewModel.setDialog(null) }
             when (val dialog = state.dialog) {
-                is MangaUpdatesScreenModel.Dialog.DeleteConfirmation -> {
+                is MangaUpdatesViewModel.Dialog.DeleteConfirmation -> {
                     UpdatesDeleteConfirmationDialog(
                         onDismissRequest = onDismissDialog,
-                        onConfirm = { screenModel.deleteChapters(dialog.toDelete) },
+                        onConfirm = { viewModel.deleteChapters(dialog.toDelete) },
                         isManga = true,
                     )
                 }
 
-                is MangaUpdatesScreenModel.Dialog.FilterSheet -> {
+                is MangaUpdatesViewModel.Dialog.FilterSheet -> {
                     UpdatesFilterDialog(
                         onDismissRequest = onDismissDialog,
-                        screenModel = settingsScreenModel,
+                        viewModel = settingsViewModel,
                     )
                 }
 
@@ -112,21 +112,21 @@ fun Screen.mangaUpdatesTab(
                 // AM (DISCORD) -->
                 DiscordRPCService.setMangaScreen(context, DiscordScreen.UPDATES)
                 // <-- AM (DISCORD)
-                screenModel.events.collectLatest { event ->
+                viewModel.events.collectLatest { event ->
                     when (event) {
-                        MangaUpdatesScreenModel.Event.InternalError -> screenModel.snackbarHostState.showSnackbar(
+                        MangaUpdatesViewModel.Event.InternalError -> viewModel.snackbarHostState.showSnackbar(
                             context.stringResource(
                                 MR.strings.internal_error,
                             ),
                         )
 
-                        is MangaUpdatesScreenModel.Event.LibraryUpdateTriggered -> {
+                        is MangaUpdatesViewModel.Event.LibraryUpdateTriggered -> {
                             val msg = if (event.started) {
                                 MR.strings.updating_library
                             } else {
                                 MR.strings.update_already_running
                             }
-                            screenModel.snackbarHostState.showSnackbar(context.stringResource(msg))
+                            viewModel.snackbarHostState.showSnackbar(context.stringResource(msg))
                         }
                     }
                 }
@@ -142,25 +142,25 @@ fun Screen.mangaUpdatesTab(
                 }
             }
             DisposableEffect(Unit) {
-                screenModel.resetNewUpdatesCount()
+                viewModel.resetNewUpdatesCount()
 
                 onDispose {
-                    screenModel.resetNewUpdatesCount()
+                    viewModel.resetNewUpdatesCount()
                 }
             }
         },
         actions =
-        if (screenModel.state.collectAsState().value.selected.isNotEmpty()) {
+        if (state.selected.isNotEmpty()) {
             persistentListOf(
                 AppBar.Action(
                     title = stringResource(MR.strings.action_select_all),
                     icon = Icons.Outlined.SelectAll,
-                    onClick = { screenModel.toggleAllSelection(true) },
+                    onClick = { viewModel.toggleAllSelection(true) },
                 ),
                 AppBar.Action(
                     title = stringResource(MR.strings.action_select_inverse),
                     icon = Icons.Outlined.FlipToBack,
-                    onClick = { screenModel.invertSelection() },
+                    onClick = { viewModel.invertSelection() },
                 ),
             )
         } else {
@@ -173,7 +173,7 @@ fun Screen.mangaUpdatesTab(
                     } else {
                         LocalContentColor.current
                     },
-                    onClick = { screenModel.showFilterDialog() },
+                    onClick = { viewModel.showFilterDialog() },
                 ),
                 AppBar.Action(
                     title = stringResource(MR.strings.action_view_upcoming),
@@ -183,7 +183,7 @@ fun Screen.mangaUpdatesTab(
                 AppBar.Action(
                     title = stringResource(MR.strings.action_update_library),
                     icon = Icons.Outlined.Refresh,
-                    onClick = { screenModel.updateLibrary() },
+                    onClick = { viewModel.updateLibrary() },
                 ),
             )
         },

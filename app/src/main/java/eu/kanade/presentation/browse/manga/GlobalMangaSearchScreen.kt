@@ -12,7 +12,7 @@ import eu.kanade.presentation.browse.manga.components.GlobalMangaSearchCardRow
 import eu.kanade.presentation.browse.manga.components.GlobalMangaSearchToolbar
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.MangaSearchItemResult
-import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.MangaSearchScreenModel
+import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.MangaSearchViewModel
 import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.MangaSourceFilter
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import tachiyomi.domain.entries.manga.model.Manga
@@ -20,7 +20,7 @@ import tachiyomi.presentation.core.components.material.Scaffold
 
 @Composable
 fun GlobalMangaSearchScreen(
-    state: MangaSearchScreenModel.State,
+    state: MangaSearchViewModel.State,
     navigateUp: () -> Unit,
     onChangeSearchQuery: (String?) -> Unit,
     onSearch: (String) -> Unit,

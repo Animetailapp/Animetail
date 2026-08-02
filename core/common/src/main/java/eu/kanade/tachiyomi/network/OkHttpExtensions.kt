@@ -126,9 +126,19 @@ fun OkHttpClient.newCachelessCallWithProgress(
         .cache(null)
         .callTimeout(30, java.util.concurrent.TimeUnit.HOURS)
         .addNetworkInterceptor { chain ->
-            val originalResponse = chain.proceed(chain.request())
+            val request = chain.request()
+                .newBuilder()
+                .apply {
+                    if (existingSize > 0 && request.header("Range") == null) {
+                        header("Range", "bytes=$existingSize-")
+                    }
+                }
+                .build()
+
+            val originalResponse = chain.proceed(request)
+            val actualExistingSize = if (originalResponse.code == 206) existingSize else 0L
             originalResponse.newBuilder()
-                .body(ProgressResponseBody(originalResponse.body, listener, existingSize))
+                .body(ProgressResponseBody(originalResponse.body, listener, actualExistingSize))
                 .build()
         }
         .build()

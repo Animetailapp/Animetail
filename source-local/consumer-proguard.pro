@@ -1,0 +1,1 @@
+-keep class tachiyomi.source.local.** { public protected *; }

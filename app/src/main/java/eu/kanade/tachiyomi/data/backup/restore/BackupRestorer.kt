@@ -30,6 +30,8 @@ import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
+import tachiyomi.data.handlers.manga.MangaDatabaseHandler
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.Injekt
@@ -52,6 +54,8 @@ class BackupRestorer(
     private val animeRestorer: AnimeRestorer = AnimeRestorer(isSync),
     private val mangaRestorer: MangaRestorer = MangaRestorer(isSync),
     private val extensionsRestorer: ExtensionsRestorer = ExtensionsRestorer(context),
+    private val mangaHandler: MangaDatabaseHandler = Injekt.get(),
+    private val animeHandler: AnimeDatabaseHandler = Injekt.get(),
 ) {
 
     private var restoreAmount = 0
@@ -179,19 +183,43 @@ class BackupRestorer(
         backupAnimeCategories: List<BackupCategory>,
     ) = launch {
         animeRestorer.sortByNew(backupAnimes)
-            .forEach {
-                ensureActive()
-
-                val seasons = backupAnimes.filter { s -> s.parentId == it.id }
-                try {
-                    animeRestorer.restore(it, backupAnimeCategories, seasons)
+            .chunked(100)
+            .forEach { chunk ->
+                val restoredAsBatch = try {
+                    animeHandler.await(inTransaction = true) {
+                        chunk.forEach {
+                            ensureActive()
+                            val seasons = backupAnimes.filter { s -> s.parentId == it.id }
+                            animeRestorer.restore(it, backupAnimeCategories, seasons)
+                        }
+                    }
+                    true
                 } catch (e: Exception) {
-                    val sourceName = animeSourceMapping[it.source] ?: it.source.toString()
-                    errors.add(Date() to "${it.title} [$sourceName]: ${e.message}")
+                    ensureActive()
+                    logcat(LogPriority.WARN, e) { "Batch restore failed, retrying entry by entry" }
+                    false
                 }
 
-                restoreProgress += 1
-                notifier.showRestoreProgress(it.title, restoreProgress, restoreAmount, isSync)
+                if (restoredAsBatch) {
+                    restoreProgress += chunk.size
+                } else {
+                    chunk.forEach {
+                        ensureActive()
+
+                        val seasons = backupAnimes.filter { s -> s.parentId == it.id }
+                        try {
+                            animeRestorer.restore(it, backupAnimeCategories, seasons)
+                        } catch (e: Exception) {
+                            ensureActive()
+                            val sourceName = animeSourceMapping[it.source] ?: it.source.toString()
+                            errors.add(Date() to "${it.title} [$sourceName]: ${e.message}")
+                        }
+
+                        restoreProgress += 1
+                    }
+                }
+
+                notifier.showRestoreProgress(chunk.last().title, restoreProgress, restoreAmount, isSync)
             }
     }
 
@@ -200,18 +228,41 @@ class BackupRestorer(
         backupMangaCategories: List<BackupCategory>,
     ) = launch {
         mangaRestorer.sortByNew(backupMangas)
-            .forEach {
-                ensureActive()
-
-                try {
-                    mangaRestorer.restore(it, backupMangaCategories)
+            .chunked(100)
+            .forEach { chunk ->
+                val restoredAsBatch = try {
+                    mangaHandler.await(inTransaction = true) {
+                        chunk.forEach {
+                            ensureActive()
+                            mangaRestorer.restore(it, backupMangaCategories)
+                        }
+                    }
+                    true
                 } catch (e: Exception) {
-                    val sourceName = mangaSourceMapping[it.source] ?: it.source.toString()
-                    errors.add(Date() to "${it.title} [$sourceName]: ${e.message}")
+                    ensureActive()
+                    logcat(LogPriority.WARN, e) { "Batch restore failed, retrying entry by entry" }
+                    false
                 }
 
-                restoreProgress += 1
-                notifier.showRestoreProgress(it.title, restoreProgress, restoreAmount, isSync)
+                if (restoredAsBatch) {
+                    restoreProgress += chunk.size
+                } else {
+                    chunk.forEach {
+                        ensureActive()
+
+                        try {
+                            mangaRestorer.restore(it, backupMangaCategories)
+                        } catch (e: Exception) {
+                            ensureActive()
+                            val sourceName = mangaSourceMapping[it.source] ?: it.source.toString()
+                            errors.add(Date() to "${it.title} [$sourceName]: ${e.message}")
+                        }
+
+                        restoreProgress += 1
+                    }
+                }
+
+                notifier.showRestoreProgress(chunk.last().title, restoreProgress, restoreAmount, isSync)
             }
     }
 

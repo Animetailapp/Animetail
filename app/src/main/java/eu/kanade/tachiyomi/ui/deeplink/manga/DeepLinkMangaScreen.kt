@@ -6,7 +6,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.components.AppBar
@@ -28,10 +29,13 @@ class DeepLinkMangaScreen(
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel {
-            DeepLinkMangaScreenModel(query = query)
-        }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<DeepLinkMangaViewModel>(
+            factory = DeepLinkMangaViewModel.Factory,
+            extras = CreationExtras {
+                set(DeepLinkMangaViewModel.QUERY_KEY, query)
+            },
+        )
+        val state by viewModel.state.collectAsState()
         Scaffold(
             topBar = { scrollBehavior ->
                 AppBar(
@@ -42,16 +46,16 @@ class DeepLinkMangaScreen(
             },
         ) { contentPadding ->
             when (state) {
-                is DeepLinkMangaScreenModel.State.Loading -> {
+                is DeepLinkMangaViewModel.State.Loading -> {
                     LoadingScreen(Modifier.padding(contentPadding))
                 }
 
-                is DeepLinkMangaScreenModel.State.NoResults -> {
+                is DeepLinkMangaViewModel.State.NoResults -> {
                     navigator.replace(GlobalMangaSearchScreen(query))
                 }
 
-                is DeepLinkMangaScreenModel.State.Result -> {
-                    val resultState = state as DeepLinkMangaScreenModel.State.Result
+                is DeepLinkMangaViewModel.State.Result -> {
+                    val resultState = state as DeepLinkMangaViewModel.State.Result
                     if (resultState.chapterId == null) {
                         navigator.replace(
                             MangaScreen(

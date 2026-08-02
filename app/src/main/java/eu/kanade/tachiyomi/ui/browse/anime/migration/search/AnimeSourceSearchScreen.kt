@@ -15,6 +15,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -25,7 +27,7 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
-import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceViewModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.SourceFilterAnimeDialog
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
@@ -41,6 +43,7 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
+
 data class AnimeSourceSearchScreen(
     private val oldAnime: Anime,
     private val sourceId: Long,
@@ -57,8 +60,14 @@ data class AnimeSourceSearchScreen(
         val uriHandler = LocalUriHandler.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { BrowseAnimeSourceScreenModel(sourceId, query) }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<BrowseAnimeSourceViewModel>(
+            factory = BrowseAnimeSourceViewModel.Factory,
+            extras = CreationExtras {
+                set(BrowseAnimeSourceViewModel.SOURCE_ID_KEY, sourceId)
+                set(BrowseAnimeSourceViewModel.LISTING_QUERY_KEY, query)
+            },
+        )
+        val state by viewModel.state.collectAsState()
 
         val snackbarHostState = remember { SnackbarHostState() }
         // KMK -->
@@ -70,9 +79,9 @@ data class AnimeSourceSearchScreen(
             topBar = { scrollBehavior ->
                 SearchToolbar(
                     searchQuery = state.toolbarQuery ?: "",
-                    onChangeSearchQuery = screenModel::setToolbarQuery,
+                    onChangeSearchQuery = viewModel::setToolbarQuery,
                     onClickCloseSearch = navigator::pop,
-                    onSearch = screenModel::search,
+                    onSearch = viewModel::search,
                     scrollBehavior = scrollBehavior,
                 )
             },
@@ -81,24 +90,24 @@ data class AnimeSourceSearchScreen(
                     ExtendedFloatingActionButton(
                         text = { Text(text = stringResource(MR.strings.action_filter)) },
                         icon = { Icon(Icons.Outlined.FilterList, contentDescription = "") },
-                        onClick = screenModel::openFilterSheet,
+                        onClick = viewModel::openFilterSheet,
                     )
                 }
             },
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         ) { paddingValues ->
             val openMigrateDialog: (Anime) -> Unit = {
-                screenModel.setDialog(BrowseAnimeSourceScreenModel.Dialog.Migrate(newAnime = it, oldAnime = oldAnime))
+                viewModel.setDialog(BrowseAnimeSourceViewModel.Dialog.Migrate(newAnime = it, oldAnime = oldAnime))
             }
             BrowseAnimeSourceContent(
-                source = screenModel.source,
-                animeList = screenModel.animePagerFlowFlow.collectAsLazyPagingItems(),
-                columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
-                displayMode = screenModel.displayMode,
+                source = viewModel.source,
+                animeList = viewModel.animePagerFlowFlow.collectAsLazyPagingItems(),
+                columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
+                displayMode = viewModel.displayMode,
                 snackbarHostState = snackbarHostState,
                 contentPadding = paddingValues,
                 onWebViewClick = {
-                    val source = screenModel.source as? AnimeHttpSource ?: return@BrowseAnimeSourceContent
+                    val source = viewModel.source as? AnimeHttpSource ?: return@BrowseAnimeSourceContent
                     navigator.push(
                         WebViewScreen(
                             url = source.baseUrl,
@@ -114,22 +123,22 @@ data class AnimeSourceSearchScreen(
             )
         }
 
-        val onDismissRequest = { screenModel.setDialog(null) }
+        val onDismissRequest = { viewModel.setDialog(null) }
         when (val dialog = state.dialog) {
-            is BrowseAnimeSourceScreenModel.Dialog.Filter -> {
+            is BrowseAnimeSourceViewModel.Dialog.Filter -> {
                 SourceFilterAnimeDialog(
                     onDismissRequest = onDismissRequest,
                     filters = state.filters,
-                    onReset = screenModel::resetFilters,
-                    onFilter = { screenModel.search(filters = state.filters) },
-                    onUpdate = screenModel::setFilters,
+                    onReset = viewModel::resetFilters,
+                    onFilter = { viewModel.search(filters = state.filters) },
+                    onUpdate = viewModel::setFilters,
                     // SY -->
-                    startExpanded = screenModel.startExpanded,
+                    startExpanded = viewModel.startExpanded,
                     onSave = {},
                     // KMK -->
                     savedSearches = state.savedSearches,
                     onSavedSearch = { search ->
-                        screenModel.onSavedSearch(search) {
+                        viewModel.onSavedSearch(search) {
                             context.toast(it)
                         }
                     },
@@ -141,7 +150,7 @@ data class AnimeSourceSearchScreen(
                 )
             }
 
-            is BrowseAnimeSourceScreenModel.Dialog.Migrate -> {
+            is BrowseAnimeSourceViewModel.Dialog.Migrate -> {
                 MigrateAnimeDialog(
                     oldAnime = oldAnime,
                     newAnime = dialog.newAnime,

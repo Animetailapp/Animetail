@@ -21,7 +21,7 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.presentation.entries.manga.components.BaseMangaListItem
-import eu.kanade.tachiyomi.ui.browse.manga.migration.manga.MigrateMangaScreenModel
+import eu.kanade.tachiyomi.ui.browse.manga.migration.manga.MigrateMangaViewModel
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.i18n.MR
@@ -35,7 +35,7 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 fun MigrateMangaScreen(
     navigateUp: () -> Unit,
     title: String?,
-    state: MigrateMangaScreenModel.State,
+    state: MigrateMangaViewModel.State,
     onClickItem: (Manga) -> Unit,
     onClickCover: (Manga) -> Unit,
     onLongClickItem: (Manga) -> Unit,
@@ -106,7 +106,7 @@ fun MigrateMangaScreen(
 @Composable
 private fun MigrateMangaContent(
     contentPadding: PaddingValues,
-    state: MigrateMangaScreenModel.State,
+    state: MigrateMangaViewModel.State,
     onClickItem: (Manga) -> Unit,
     onClickCover: (Manga) -> Unit,
     onLongClickItem: (Manga) -> Unit,

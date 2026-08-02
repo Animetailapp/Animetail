@@ -47,7 +47,6 @@ import eu.kanade.presentation.browse.manga.ExtensionTrustDialog
 import eu.kanade.presentation.components.WarningBanner
 import eu.kanade.presentation.entries.components.DotSeparatorNoSpaceText
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
-import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
@@ -188,7 +187,7 @@ private fun AnimeExtensionContent(
                             }
                         ExtensionHeader(
                             textRes = header.textRes,
-                            modifier = Modifier.animateItemFastScroll(),
+                            modifier = Modifier.animateItem(),
                             action = action,
                         )
                     }
@@ -196,7 +195,7 @@ private fun AnimeExtensionContent(
                     is AnimeExtensionUiModel.Header.Text -> {
                         ExtensionHeader(
                             text = header.text,
-                            modifier = Modifier.animateItemFastScroll(),
+                            modifier = Modifier.animateItem(),
                         )
                     }
                 }
@@ -215,7 +214,7 @@ private fun AnimeExtensionContent(
             ) { item ->
                 AnimeExtensionItem(
                     item = item,
-                    modifier = Modifier.animateItemFastScroll(),
+                    modifier = Modifier.animateItem(),
                     onClickItem = {
                         when (it) {
                             is AnimeExtension.Available -> onInstallExtension(it)

@@ -12,8 +12,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import eu.kanade.presentation.components.relativeDateText
 import eu.kanade.presentation.history.manga.components.MangaHistoryItem
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
-import eu.kanade.presentation.util.animateItemFastScroll
-import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryScreenModel
+import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryViewModel
 import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
@@ -25,12 +24,12 @@ import java.time.LocalDate
 
 @Composable
 fun MangaHistoryScreen(
-    state: MangaHistoryScreenModel.State,
+    state: MangaHistoryViewModel.State,
     snackbarHostState: SnackbarHostState,
     onClickCover: (mangaId: Long) -> Unit,
     onClickResume: (mangaId: Long, chapterId: Long) -> Unit,
     onClickFavorite: (mangaId: Long) -> Unit,
-    onDialogChange: (MangaHistoryScreenModel.Dialog?) -> Unit,
+    onDialogChange: (MangaHistoryViewModel.Dialog?) -> Unit,
     searchQuery: String? = null,
 ) {
     Scaffold(
@@ -55,7 +54,7 @@ fun MangaHistoryScreen(
                     contentPadding = contentPadding,
                     onClickCover = { history -> onClickCover(history.mangaId) },
                     onClickResume = { history -> onClickResume(history.mangaId, history.chapterId) },
-                    onClickDelete = { item -> onDialogChange(MangaHistoryScreenModel.Dialog.Delete(item)) },
+                    onClickDelete = { item -> onDialogChange(MangaHistoryViewModel.Dialog.Delete(item)) },
                     onClickFavorite = { history -> onClickFavorite(history.mangaId) },
                 )
             }
@@ -88,7 +87,7 @@ private fun MangaHistoryScreenContent(
             when (item) {
                 is MangaHistoryUiModel.Header -> {
                     ListGroupHeader(
-                        modifier = Modifier.animateItemFastScroll(),
+                        modifier = Modifier.animateItem(),
                         text = relativeDateText(item.date),
                     )
                 }
@@ -96,7 +95,7 @@ private fun MangaHistoryScreenContent(
                 is MangaHistoryUiModel.Item -> {
                     val value = item.item
                     MangaHistoryItem(
-                        modifier = Modifier.animateItemFastScroll(),
+                        modifier = Modifier.animateItem(),
                         history = value,
                         onClickCover = { onClickCover(value) },
                         onClickResume = { onClickResume(value) },
@@ -118,7 +117,7 @@ sealed interface MangaHistoryUiModel {
 @Composable
 internal fun HistoryScreenPreviews(
     @PreviewParameter(MangaHistoryScreenModelStateProvider::class)
-    historyState: MangaHistoryScreenModel.State,
+    historyState: MangaHistoryViewModel.State,
 ) {
     TachiyomiPreviewTheme {
         MangaHistoryScreen(

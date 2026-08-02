@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import eu.kanade.domain.source.interactor.SetMigrateSorting
 import eu.kanade.presentation.browse.manga.components.BaseMangaSourceItem
 import eu.kanade.presentation.browse.manga.components.MangaSourceIcon
-import eu.kanade.tachiyomi.ui.browse.manga.migration.sources.MigrateMangaSourceScreenModel
+import eu.kanade.tachiyomi.ui.browse.manga.migration.sources.MigrateMangaSourceViewModel
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import tachiyomi.domain.source.manga.model.Source
 import tachiyomi.i18n.MR
@@ -43,7 +43,7 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 @Composable
 fun MigrateMangaSourceScreen(
-    state: MigrateMangaSourceScreenModel.State,
+    state: MigrateMangaSourceViewModel.State,
     contentPadding: PaddingValues,
     onClickItem: (Source) -> Unit,
     onToggleSortingDirection: () -> Unit,

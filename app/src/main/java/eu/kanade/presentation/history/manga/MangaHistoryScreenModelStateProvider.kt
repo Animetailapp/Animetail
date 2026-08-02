@@ -1,7 +1,7 @@
 package eu.kanade.presentation.history.manga
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryScreenModel
+import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryViewModel
 import tachiyomi.domain.entries.manga.model.MangaCover
 import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import java.time.Instant
@@ -10,9 +10,9 @@ import java.time.temporal.ChronoUnit
 import java.util.Date
 import kotlin.random.Random
 
-class MangaHistoryScreenModelStateProvider : PreviewParameterProvider<MangaHistoryScreenModel.State> {
+class MangaHistoryScreenModelStateProvider : PreviewParameterProvider<MangaHistoryViewModel.State> {
 
-    private val multiPage = MangaHistoryScreenModel.State(
+    private val multiPage = MangaHistoryViewModel.State(
         searchQuery = null,
         list =
         listOf(HistoryUiModelExamples.headerToday)
@@ -26,7 +26,7 @@ class MangaHistoryScreenModelStateProvider : PreviewParameterProvider<MangaHisto
         dialog = null,
     )
 
-    private val shortRecent = MangaHistoryScreenModel.State(
+    private val shortRecent = MangaHistoryViewModel.State(
         searchQuery = null,
         list = listOf(
             HistoryUiModelExamples.headerToday,
@@ -35,7 +35,7 @@ class MangaHistoryScreenModelStateProvider : PreviewParameterProvider<MangaHisto
         dialog = null,
     )
 
-    private val shortFuture = MangaHistoryScreenModel.State(
+    private val shortFuture = MangaHistoryViewModel.State(
         searchQuery = null,
         list = listOf(
             HistoryUiModelExamples.headerTomorrow,
@@ -44,23 +44,23 @@ class MangaHistoryScreenModelStateProvider : PreviewParameterProvider<MangaHisto
         dialog = null,
     )
 
-    private val empty = MangaHistoryScreenModel.State(
+    private val empty = MangaHistoryViewModel.State(
         searchQuery = null,
         list = listOf(),
         dialog = null,
     )
 
-    private val loadingWithSearchQuery = MangaHistoryScreenModel.State(
+    private val loadingWithSearchQuery = MangaHistoryViewModel.State(
         searchQuery = "Example Search Query",
     )
 
-    private val loading = MangaHistoryScreenModel.State(
+    private val loading = MangaHistoryViewModel.State(
         searchQuery = null,
         list = null,
         dialog = null,
     )
 
-    override val values: Sequence<MangaHistoryScreenModel.State> = sequenceOf(
+    override val values: Sequence<MangaHistoryViewModel.State> = sequenceOf(
         multiPage,
         shortRecent,
         shortFuture,

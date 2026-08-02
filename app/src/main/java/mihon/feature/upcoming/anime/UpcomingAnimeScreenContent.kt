@@ -43,7 +43,7 @@ import java.time.YearMonth
 
 @Composable
 fun UpcomingAnimeScreenContent(
-    state: UpcomingAnimeScreenModel.State,
+    state: UpcomingAnimeViewModel.State,
     setSelectedYearMonth: (YearMonth) -> Unit,
     onClickUpcoming: (anime: Anime) -> Unit,
     modifier: Modifier = Modifier,

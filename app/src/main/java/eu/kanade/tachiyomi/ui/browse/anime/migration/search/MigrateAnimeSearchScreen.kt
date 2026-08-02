@@ -3,6 +3,9 @@ package eu.kanade.tachiyomi.ui.browse.anime.migration.search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -17,8 +20,14 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { MigrateAnimeSearchScreenModel(animeId = animeId) }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<MigrateAnimeSearchViewModel>(
+            factory = viewModelFactory {
+                initializer {
+                    MigrateAnimeSearchViewModel(animeId = animeId)
+                }
+            },
+        )
+        val state by viewModel.state.collectAsState()
 
         val dialogScreenModel = rememberScreenModel {
             AnimeMigrateSearchScreenDialogScreenModel(
@@ -31,11 +40,11 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
             state = state,
             fromSourceId = dialogState.anime?.source,
             navigateUp = navigator::pop,
-            onChangeSearchQuery = screenModel::updateSearchQuery,
-            onSearch = { screenModel.search() },
-            getAnime = { screenModel.getAnime(it) },
-            onChangeSearchFilter = screenModel::setSourceFilter,
-            onToggleResults = screenModel::toggleFilterResults,
+            onChangeSearchQuery = viewModel::updateSearchQuery,
+            onSearch = { viewModel.search() },
+            getAnime = viewModel::getAnime,
+            onChangeSearchFilter = viewModel::setSourceFilter,
+            onToggleResults = viewModel::toggleFilterResults,
             onClickSource = {
                 navigator.push(
                     AnimeSourceSearchScreen(dialogState.anime!!, it.id, state.searchQuery),

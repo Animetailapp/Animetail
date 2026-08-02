@@ -9,7 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -50,9 +50,9 @@ fun Screen.mangaHistoryTab(
     val snackbarHostState = SnackbarHostState()
 
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { MangaHistoryScreenModel() }
-    val state by screenModel.state.collectAsState()
-    val searchQuery by screenModel.query.collectAsState()
+    val viewModel = viewModel<MangaHistoryViewModel>()
+    val state by viewModel.state.collectAsState()
+    val searchQuery = state.searchQuery ?: ""
 
     suspend fun openChapter(context: Context, chapter: Chapter?) {
         if (chapter != null) {
@@ -85,48 +85,48 @@ fun Screen.mangaHistoryTab(
                 searchQuery = searchQuery,
                 snackbarHostState = snackbarHostState,
                 onClickCover = { navigator.push(MangaScreen(it)) },
-                onClickResume = screenModel::getNextChapterForManga,
-                onDialogChange = screenModel::setDialog,
-                onClickFavorite = screenModel::addFavorite,
+                onClickResume = viewModel::getNextChapterForManga,
+                onDialogChange = viewModel::setDialog,
+                onClickFavorite = viewModel::addFavorite,
             )
 
-            val onDismissRequest = { screenModel.setDialog(null) }
+            val onDismissRequest = { viewModel.setDialog(null) }
             when (val dialog = state.dialog) {
-                is MangaHistoryScreenModel.Dialog.Delete -> {
+                is MangaHistoryViewModel.Dialog.Delete -> {
                     HistoryDeleteDialog(
                         onDismissRequest = onDismissRequest,
                         onDelete = { all ->
                             if (all) {
-                                screenModel.removeAllFromHistory(dialog.history.mangaId)
+                                viewModel.removeAllFromHistory(dialog.history.mangaId)
                             } else {
-                                screenModel.removeFromHistory(dialog.history)
+                                viewModel.removeFromHistory(dialog.history)
                             }
                         },
                         isManga = true,
                     )
                 }
 
-                is MangaHistoryScreenModel.Dialog.DeleteAll -> {
+                is MangaHistoryViewModel.Dialog.DeleteAll -> {
                     HistoryDeleteAllDialog(
                         onDismissRequest = onDismissRequest,
-                        onDelete = screenModel::removeAllHistory,
+                        onDelete = viewModel::removeAllHistory,
                     )
                 }
 
-                is MangaHistoryScreenModel.Dialog.DuplicateManga -> {
+                is MangaHistoryViewModel.Dialog.DuplicateManga -> {
                     DuplicateMangaDialog(
                         onDismissRequest = onDismissRequest,
                         onConfirm = {
-                            screenModel.addFavorite(dialog.manga)
+                            viewModel.addFavorite(dialog.manga)
                         },
                         onOpenManga = { navigator.push(MangaScreen(dialog.duplicate.id)) },
                         onMigrate = {
-                            screenModel.showMigrateDialog(dialog.manga, dialog.duplicate)
+                            viewModel.showMigrateDialog(dialog.manga, dialog.duplicate)
                         },
                     )
                 }
 
-                is MangaHistoryScreenModel.Dialog.ChangeCategory -> {
+                is MangaHistoryViewModel.Dialog.ChangeCategory -> {
                     ChangeCategoryDialog(
                         initialSelection = dialog.initialSelection,
                         onDismissRequest = onDismissRequest,
@@ -135,12 +135,12 @@ fun Screen.mangaHistoryTab(
                             CategoriesTab.showMangaCategory()
                         },
                         onConfirm = { include, _ ->
-                            screenModel.moveMangaToCategoriesAndAddToLibrary(dialog.manga, include)
+                            viewModel.moveMangaToCategoriesAndAddToLibrary(dialog.manga, include)
                         },
                     )
                 }
 
-                is MangaHistoryScreenModel.Dialog.Migrate -> {
+                is MangaHistoryViewModel.Dialog.Migrate -> {
                     MigrateMangaDialog(
                         oldManga = dialog.oldManga,
                         newManga = dialog.newManga,
@@ -164,22 +164,22 @@ fun Screen.mangaHistoryTab(
                 // AM (DISCORD) -->
                 DiscordRPCService.setMangaScreen(context, DiscordScreen.HISTORY)
                 // <-- AM (DISCORD)
-                screenModel.events.collectLatest { e ->
+                viewModel.events.collectLatest { e ->
                     when (e) {
-                        MangaHistoryScreenModel.Event.InternalError ->
+                        MangaHistoryViewModel.Event.InternalError ->
                             snackbarHostState.showSnackbar(context.stringResource(MR.strings.internal_error))
 
-                        MangaHistoryScreenModel.Event.HistoryCleared ->
+                        MangaHistoryViewModel.Event.HistoryCleared ->
                             snackbarHostState.showSnackbar(context.stringResource(MR.strings.clear_history_completed))
 
-                        is MangaHistoryScreenModel.Event.OpenChapter -> openChapter(context, e.chapter)
+                        is MangaHistoryViewModel.Event.OpenChapter -> openChapter(context, e.chapter)
                     }
                 }
             }
 
             LaunchedEffect(Unit) {
                 resumeLastChapterReadEvent.receiveAsFlow().collectLatest {
-                    openChapter(context, screenModel.getNextChapter())
+                    openChapter(context, viewModel.getNextChapter())
                 }
             }
         },
@@ -188,7 +188,7 @@ fun Screen.mangaHistoryTab(
             AppBar.Action(
                 title = stringResource(MR.strings.pref_clear_history),
                 icon = Icons.Outlined.DeleteSweep,
-                onClick = { screenModel.setDialog(MangaHistoryScreenModel.Dialog.DeleteAll) },
+                onClick = { viewModel.setDialog(MangaHistoryViewModel.Dialog.DeleteAll) },
             ),
         ),
         navigateUp = navigateUp,
