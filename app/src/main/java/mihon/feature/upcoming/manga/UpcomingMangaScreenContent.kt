@@ -27,6 +27,8 @@ import eu.kanade.presentation.components.relativeDateText
 import eu.kanade.presentation.util.isTabletUi
 import eu.kanade.tachiyomi.core.common.Constants
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.YearMonth
 import mihon.feature.upcoming.components.calendar.Calendar
 import mihon.feature.upcoming.manga.components.UpcomingItem
 import tachiyomi.domain.entries.manga.model.Manga
@@ -36,8 +38,6 @@ import tachiyomi.presentation.core.components.TwoPanelBox
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import java.time.LocalDate
-import java.time.YearMonth
 
 @Composable
 fun UpcomingMangaScreenContent(

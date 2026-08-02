@@ -126,3 +126,6 @@
 
 # TorrServer JNI Calls
 -keep class xyz.secozzi.torrserver.** { *; }
+
+# KotlinX Datetime
+-keep,allowoptimization class kotlinx.datetime.** { public protected *; }

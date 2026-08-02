@@ -11,7 +11,7 @@ import tachiyomi.source.local.image.manga.LocalMangaCoverManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.InputStream
-import java.time.Instant
+import kotlin.time.Clock
 
 /**
  * Call before updating [Manga.thumbnail_url] to ensure old cover can be cleared from cache
@@ -45,7 +45,7 @@ fun Manga.prepUpdateCover(coverCache: MangaCoverCache, remoteManga: SManga, refr
 fun Manga.removeCovers(coverCache: MangaCoverCache = Injekt.get()): Manga {
     if (isLocal()) return this
     return if (coverCache.deleteFromCache(this, true) > 0) {
-        copy(coverLastModified = Instant.now().toEpochMilli())
+        copy(coverLastModified = Clock.System.now().toEpochMilliseconds())
     } else {
         this
     }

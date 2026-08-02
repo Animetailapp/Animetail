@@ -23,7 +23,7 @@ import tachiyomi.domain.items.chapter.model.toChapterUpdate
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
-import java.time.Instant
+import kotlin.time.Clock
 
 class MigrateMangaUseCase(
     private val sourcePreferences: SourcePreferences,
@@ -160,7 +160,7 @@ class MigrateMangaUseCase(
                 favorite = true,
                 chapterFlags = current.chapterFlags,
                 viewerFlags = current.viewerFlags,
-                dateAdded = if (replace) current.dateAdded else Instant.now().toEpochMilli(),
+                dateAdded = if (replace) current.dateAdded else Clock.System.now().toEpochMilliseconds(),
                 notes = if (MigrationFlag.NOTES in flags) current.notes else null,
             )
 
