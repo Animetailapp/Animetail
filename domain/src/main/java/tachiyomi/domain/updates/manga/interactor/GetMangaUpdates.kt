@@ -19,6 +19,8 @@ class GetMangaUpdates(
         started: Boolean? = null,
         bookmarked: Boolean? = null,
         hideExcludedScanlators: Boolean = false,
+        includedCategories: List<Long>,
+        excludedCategories: List<Long>,
     ): Flow<List<MangaUpdatesWithRelations>> {
         return repository.subscribeAllMangaUpdates(
             instant.toEpochMilliseconds(),
@@ -27,6 +29,8 @@ class GetMangaUpdates(
             started = started,
             bookmarked = bookmarked,
             hideExcludedScanlators = hideExcludedScanlators,
+            includedCategories = includedCategories,
+            excludedCategories = excludedCategories,
         )
     }
 
