@@ -12,6 +12,8 @@ import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import logcat.LogPriority
 import okhttp3.OkHttpClient
 import org.json.JSONObject
@@ -47,6 +49,18 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
 
     private val sessionId: String
         get() = trackPreferences.trackToken(this).get()
+
+    override val isLoggedIn: Boolean
+        get() = getUsername().isNotEmpty() && (getPassword().isNotEmpty() || sessionId.isNotBlank())
+
+    override val isLoggedInFlow: Flow<Boolean> by lazy {
+        combine(
+            trackPreferences.trackUsername(this).changes(),
+            trackPreferences.trackToken(this).changes(),
+        ) { username, token ->
+            username.isNotEmpty() && token.isNotEmpty()
+        }
+    }
 
     private val api: TmdbApi
         get() = TmdbApi(client, apiKey, sessionId)
@@ -223,18 +237,19 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
         try {
             val oauth = api.createSession(code)
             val sessionId = oauth.optString("session_id")
-            // persist session id so other calls that require a session can run
+            if (sessionId.isBlank()) throw Exception("Session ID is blank")
             trackPreferences.trackToken(this).set(sessionId)
-            try {
+            val username = try {
                 val account = api.getAccount()
-                val username = account.optString("username").ifEmpty { account.optString("name", "tmdb") }
-                saveCredentials(username, sessionId)
+                account.optString("username").ifEmpty { account.optString("name", "tmdb") }
             } catch (e: Exception) {
-                saveCredentials("tmdb", sessionId)
+                "tmdb"
             }
+            saveCredentials(username, sessionId)
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR) { "TMDB login: failed with error ${e.message}" }
-            logout()
+            trackPreferences.setCredentials(this, "", "")
+            trackPreferences.trackToken(this).delete()
         }
     }
 
@@ -249,7 +264,7 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
     override fun logout() {
         super.logout()
         trackPreferences.trackToken(this).delete()
-        trackPreferences.trackApiKey(this).delete()
+        trackPreferences.trackApiKey(this).set("")
     }
 
     override suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? {
@@ -429,5 +444,37 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
 
     override fun isAvailableForUse(): Boolean {
         return apiKey.isNotBlank()
+    }
+
+    suspend fun getTrendingMovies(): List<AnimeTrackSearch> {
+        val lang = Locale.getDefault().toLanguageTag()
+        val results = api.getTrendingMovies(lang)
+        return results.map { r ->
+            AnimeTrackSearch.create(this@Tmdb.id).apply {
+                remote_id = r.id
+                title = r.title
+                tracking_url = "https://www.themoviedb.org/movie/${r.id}"
+                summary = r.overview
+                cover_url = r.posterPath?.let { TmdbApi.IMAGE_BASE + it } ?: ""
+                publishing_type = "Movie"
+                score = r.voteAverage
+            }
+        }
+    }
+
+    suspend fun getTrendingTv(): List<AnimeTrackSearch> {
+        val lang = Locale.getDefault().toLanguageTag()
+        val results = api.getTrendingTv(lang)
+        return results.map { r ->
+            AnimeTrackSearch.create(this@Tmdb.id).apply {
+                remote_id = r.id
+                title = r.title
+                tracking_url = "https://www.themoviedb.org/tv/${r.id}"
+                summary = r.overview
+                cover_url = r.posterPath?.let { TmdbApi.IMAGE_BASE + it } ?: ""
+                publishing_type = "TV"
+                score = r.voteAverage
+            }
+        }
     }
 }

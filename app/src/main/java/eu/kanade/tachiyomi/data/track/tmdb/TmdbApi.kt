@@ -4,6 +4,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import logcat.LogPriority
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -22,13 +23,11 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
     }
 
     private fun buildUrl(path: String, params: Map<String, String> = emptyMap()): String {
-        val urlBuilder = HttpUrl.Builder()
-            .scheme("https")
-            .host(HOST)
-            .addPathSegments(path)
+        val cleanPath = path.removePrefix("/")
+        val urlBuilder = "https://$HOST/$cleanPath".toHttpUrl().newBuilder()
 
         // Add API key in query for v3 endpoints
-        urlBuilder.addQueryParameter("api_key", apiKey)
+        urlBuilder.addQueryParameter("api_key", apiKey.trim())
 
         if (sessionId.isNotBlank()) {
             urlBuilder.addQueryParameter("session_id", sessionId)
@@ -245,6 +244,61 @@ class TmdbApi(private val client: OkHttpClient, private val apiKey: String, priv
             return JSONObject(body)
         }
     }
+    suspend fun getTrendingMovies(language: String? = null): List<TmdbSearchResult> {
+        val params = mutableMapOf<String, String>()
+        val lang = language?.ifBlank { java.util.Locale.getDefault().toLanguageTag() }
+            ?: java.util.Locale.getDefault().toLanguageTag()
+        params["language"] = lang
+        val url = buildUrl("3/trending/movie/week", params)
+        val json = executeUrl(url)
+        val results = json.optJSONArray("results") ?: return emptyList()
+        val list = mutableListOf<TmdbSearchResult>()
+        for (i in 0 until results.length()) {
+            val item = results.getJSONObject(i)
+            val titleText = item.optString("title").ifBlank {
+                item.optString("original_title").ifBlank { "Movie" }
+            }
+            list.add(
+                TmdbSearchResult(
+                    id = item.optLong("id"),
+                    title = titleText,
+                    overview = item.optString("overview"),
+                    posterPath = item.optString("poster_path").takeIf { it.isNotBlank() },
+                    mediaType = "movie",
+                    voteAverage = item.optDouble("vote_average", 0.0),
+                ),
+            )
+        }
+        return list
+    }
+
+    suspend fun getTrendingTv(language: String? = null): List<TmdbSearchResult> {
+        val params = mutableMapOf<String, String>()
+        val lang = language?.ifBlank { java.util.Locale.getDefault().toLanguageTag() }
+            ?: java.util.Locale.getDefault().toLanguageTag()
+        params["language"] = lang
+        val url = buildUrl("3/trending/tv/week", params)
+        val json = executeUrl(url)
+        val results = json.optJSONArray("results") ?: return emptyList()
+        val list = mutableListOf<TmdbSearchResult>()
+        for (i in 0 until results.length()) {
+            val item = results.getJSONObject(i)
+            val titleText = item.optString("name").ifBlank {
+                item.optString("original_name").ifBlank { "Series" }
+            }
+            list.add(
+                TmdbSearchResult(
+                    id = item.optLong("id"),
+                    title = titleText,
+                    overview = item.optString("overview"),
+                    posterPath = item.optString("poster_path").takeIf { it.isNotBlank() },
+                    mediaType = "tv",
+                    voteAverage = item.optDouble("vote_average", 0.0),
+                ),
+            )
+        }
+        return list
+    }
 }
 
 data class TmdbSearchResult(
@@ -253,6 +307,7 @@ data class TmdbSearchResult(
     val overview: String,
     val posterPath: String?,
     val mediaType: String,
+    val voteAverage: Double = 0.0,
 )
 
 data class TmdbMovieDetail(

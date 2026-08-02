@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
@@ -236,17 +237,19 @@ object SettingsTrackingScreen : SearchableSettings {
                     Preference.PreferenceItem.TrackerPreference(
                         tracker = trackerManager.tmdb,
                         login = {
-                            // If API key not set, ask user to provide it first
                             val currentApiKey = trackPreferences.trackApiKey(trackerManager.tmdb).get()
                             if (currentApiKey.isBlank()) {
-                                dialog = LoginDialog(trackerManager.tmdb, MR.strings.username)
+                                dialog = ApiKeyDialog(trackerManager.tmdb)
                             } else {
                                 scope.launchIO {
                                     try {
                                         val url = trackerManager.tmdb.getAuthUrl()
                                         context.openInBrowser(url, forceDefaultBrowser = true)
                                     } catch (e: Exception) {
-                                        withUIContext { context.toast(e.message ?: "TMDB auth error") }
+                                        withUIContext {
+                                            context.toast(e.message ?: "TMDB auth error")
+                                            dialog = ApiKeyDialog(trackerManager.tmdb)
+                                        }
                                     }
                                 }
                             }
@@ -532,6 +535,23 @@ private fun TrackingApiKeyDialog(
             ) {
                 val id = if (processing) MR.strings.loading else TLMR.strings.save
                 Text(text = stringResource(id))
+            }
+        },
+        dismissButton = {
+            if (trackPreferences.trackApiKey(tracker).get().isNotBlank()) {
+                TextButton(
+                    onClick = {
+                        trackPreferences.trackApiKey(tracker).set("")
+                        tracker.logout()
+                        onDismissRequest()
+                        context.toast(MR.strings.logout_success)
+                    },
+                ) {
+                    Text(
+                        text = stringResource(MR.strings.action_delete),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         },
     )
