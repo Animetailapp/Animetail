@@ -29,6 +29,10 @@ Discover and watch anime, cartoons, series, and more – easier than ever on you
 
 Features include:
 * Animetail:
+    * Multimedia Home Feed with Movies, Series, Anime, and Manga recommendations
+    * Hero Media Carousel with auto-scrolling (4s), indicator dots, and TMDB/AniList trends integration
+    * Direct launch from "Continue watching & reading" cards with exact progress formatting
+    * Real tracking scores (MAL/AniList/TMDB) and rating badges on media items
     * Support for Cast functionality
     * Support themes monet
     * Android tv compatibility (only banner)
