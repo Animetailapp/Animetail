@@ -17,10 +17,11 @@ class GetAnimeExtensionsByType(
 
         return combine(
             preferences.enabledLanguages.changes(),
+            preferences.disabledRepos.changes(),
             extensionManager.installedExtensionsFlow,
             extensionManager.untrustedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
-        ) { enabledLanguages, _installed, _untrusted, _available ->
+        ) { enabledLanguages, disabledRepos, _installed, _untrusted, _available ->
             val (updates, installed) = _installed
                 .filter { (showNsfwSources || !it.isNsfw) }
                 .sortedWith(
@@ -34,9 +35,10 @@ class GetAnimeExtensionsByType(
 
             val available = _available
                 .filter { extension ->
-                    _installed.none {
-                        it.pkgName == extension.pkgName
-                    } &&
+                    extension.store.indexUrl !in disabledRepos &&
+                        _installed.none {
+                            it.pkgName == extension.pkgName
+                        } &&
                         _untrusted.none {
                             it.pkgName == extension.pkgName
                         } &&
