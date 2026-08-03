@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.util.lang.convertEpochMillisZone
+import kotlinx.datetime.TimeZone
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withNonCancellableContext
@@ -24,7 +25,6 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.ZoneOffset
 
 class AddAnimeTracks(
     private val insertTrack: InsertAnimeTrack,
@@ -105,8 +105,8 @@ class AddAnimeTracks(
 
                             firstReadChapterDate?.let {
                                 val startDate = firstReadChapterDate.time.convertEpochMillisZone(
-                                    ZoneOffset.systemDefault(),
-                                    ZoneOffset.UTC,
+                                    TimeZone.currentSystemDefault(),
+                                    TimeZone.UTC,
                                 )
                                 track = track.copy(
                                     startDate = startDate,

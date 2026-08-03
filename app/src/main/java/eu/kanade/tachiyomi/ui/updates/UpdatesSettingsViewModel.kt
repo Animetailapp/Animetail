@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.preference.getAndSet
-import tachiyomi.domain.category.interactor.GetCategories
+import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.updates.service.UpdatesPreferences
 import uy.kohesive.injekt.Injekt
@@ -12,7 +12,7 @@ import uy.kohesive.injekt.api.get
 
 class UpdatesSettingsViewModel(
     val updatesPreferences: UpdatesPreferences = Injekt.get(),
-    val getCategories: GetCategories = Injekt.get(),
+    val getCategories: GetMangaCategories = Injekt.get(),
 ) : ViewModel() {
 
     val includedCategories = updatesPreferences.filterIncludedCategories
@@ -26,6 +26,7 @@ class UpdatesSettingsViewModel(
             }
 
             in excludedCategories.get() -> excludedCategories.getAndSet { it - category.id }
+
             else -> includedCategories.getAndSet { it + category.id }
         }
     }

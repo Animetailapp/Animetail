@@ -29,6 +29,8 @@ import eu.kanade.tachiyomi.core.common.Constants
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.YearMonth
 import mihon.feature.upcoming.anime.components.UpcomingItem
 import mihon.feature.upcoming.components.calendar.Calendar
 import tachiyomi.domain.entries.anime.model.Anime
@@ -38,8 +40,6 @@ import tachiyomi.presentation.core.components.TwoPanelBox
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import java.time.LocalDate
-import java.time.YearMonth
 
 @Composable
 fun UpcomingAnimeScreenContent(

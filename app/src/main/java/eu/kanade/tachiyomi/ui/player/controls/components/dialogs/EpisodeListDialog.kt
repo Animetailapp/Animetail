@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.entries.components.DotSeparatorText
 import eu.kanade.presentation.util.formatEpisodeNumber
 import eu.kanade.tachiyomi.data.database.models.anime.Episode
+import eu.kanade.tachiyomi.util.lang.toLocalDate
 import eu.kanade.tachiyomi.util.lang.toRelativeString
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.aniyomi.AYMR
@@ -96,10 +97,7 @@ fun EpisodeListDialog(
                     val date = (episode.date_upload_override.takeIf { it > 0L } ?: episode.date_upload)
                         .takeIf { it > 0L }
                         ?.let {
-                            LocalDate.ofInstant(
-                                Instant.ofEpochMilli(it),
-                                ZoneId.systemDefault(),
-                            ).toRelativeString(
+                            it.toLocalDate().toRelativeString(
                                 context = context,
                                 relative = dateRelativeTime,
                                 dateFormat = dateFormat,

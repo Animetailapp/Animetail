@@ -23,9 +23,9 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.util.system.isReleaseBuildType
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.datetime.atStartOfDayIn
 import tachiyomi.domain.entries.anime.interactor.AnimeFetchInterval
 import tachiyomi.domain.entries.manga.interactor.MangaFetchInterval
 import tachiyomi.i18n.MR

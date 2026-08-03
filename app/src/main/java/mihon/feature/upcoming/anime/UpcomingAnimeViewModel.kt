@@ -14,13 +14,17 @@ import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.YearMonth
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.yearMonth
 import mihon.core.viewmodel.StateViewModel
 import mihon.domain.upcoming.anime.interactor.GetUpcomingAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.LocalDate
-import java.time.YearMonth
+import kotlin.time.Clock
 
 class UpcomingAnimeViewModel(
     private val getUpcomingAnime: GetUpcomingAnime = Injekt.get(),
@@ -47,8 +51,14 @@ class UpcomingAnimeViewModel(
             .insertSeparatorsReversed { before, after ->
                 if (after != null) animeCount++
 
-                val beforeDate = before?.anime?.expectedNextUpdate?.toLocalDate()
-                val afterDate = after?.anime?.expectedNextUpdate?.toLocalDate()
+                val beforeDate = before?.anime
+                    ?.expectedNextUpdate
+                    ?.toLocalDateTime(TimeZone.currentSystemDefault())
+                    ?.date
+                val afterDate = after?.anime
+                    ?.expectedNextUpdate
+                    ?.toLocalDateTime(TimeZone.currentSystemDefault())
+                    ?.date
 
                 if (beforeDate != afterDate && afterDate != null) {
                     UpcomingAnimeUIModel.Header(afterDate, animeCount).also { animeCount = 0 }
@@ -82,7 +92,10 @@ class UpcomingAnimeViewModel(
     }
 
     data class State(
-        val selectedYearMonth: YearMonth = YearMonth.now(),
+        val selectedYearMonth: YearMonth = Clock.System.now()
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .date
+            .yearMonth,
         val items: ImmutableList<UpcomingAnimeUIModel> = persistentListOf(),
         val events: ImmutableMap<LocalDate, Int> = persistentMapOf(),
         val headerIndexes: ImmutableMap<LocalDate, Int> = persistentMapOf(),

@@ -22,6 +22,7 @@ import eu.kanade.tachiyomi.ui.updates.anime.AnimeUpdatesItem
 import eu.kanade.tachiyomi.ui.updates.anime.AnimeUpdatesViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.material.PullRefresh
@@ -30,7 +31,6 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.LocalDate
 import kotlin.time.Duration.Companion.seconds
 
 @Composable

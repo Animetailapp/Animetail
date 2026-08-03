@@ -27,7 +27,7 @@ fun Manga.prepUpdateCover(coverCache: MangaCoverCache, remoteManga: SManga, refr
 
     return when {
         isLocal() -> {
-            this.copy(coverLastModified = Instant.now().toEpochMilli())
+            this.copy(coverLastModified = Clock.System.now().toEpochMilliseconds())
         }
 
         hasCustomCover(coverCache) -> {
@@ -37,7 +37,7 @@ fun Manga.prepUpdateCover(coverCache: MangaCoverCache, remoteManga: SManga, refr
 
         else -> {
             coverCache.deleteFromCache(this, false)
-            this.copy(coverLastModified = Instant.now().toEpochMilli())
+            this.copy(coverLastModified = Clock.System.now().toEpochMilliseconds())
         }
     }
 }

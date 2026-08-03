@@ -57,9 +57,9 @@ import eu.kanade.presentation.track.components.TrackLogoIcon
 import eu.kanade.tachiyomi.data.track.MangaTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.ui.entries.manga.track.MangaTrackItem
+import eu.kanade.tachiyomi.util.lang.toJavaLocalDate
 import eu.kanade.tachiyomi.util.lang.toLocalDate
 import eu.kanade.tachiyomi.util.system.copyToClipboard
-import kotlinx.datetime.toJavaLocalDate
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import java.time.format.DateTimeFormatter
@@ -113,7 +113,7 @@ fun MangaTrackInfoDialogHome(
                     onScoreClick = { onScoreClick(item) }
                         .takeIf { supportsScoring },
                     startDate = remember(item.track.startDate) {
-                        dateFormat.format(item.track.startDate.toLocalDate().toJavaLocalDate())
+                        dateFormat.format(item.track.startDate.toJavaLocalDate())
                     }
                         .takeIf { supportsReadingDates && item.track.startDate != 0L },
                     onStartDateClick = { onStartDateEdit(item) } // TODO

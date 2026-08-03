@@ -87,11 +87,9 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import tachiyomi.domain.track.manga.model.MangaTrack as DbMangaTrack
 import kotlin.time.Clock
 import kotlin.time.Instant
+import tachiyomi.domain.track.manga.model.MangaTrack as DbMangaTrack
 
 data class MangaTrackInfoDialogHomeScreen(
     private val mangaId: Long,
@@ -545,11 +543,13 @@ private data class TrackDateSelectorScreen(
                     val finishDate = Instant.fromEpochMilliseconds(track.finishDate).toLocalDateTime(TimeZone.UTC)
                     targetDate <= finishDate
                 }
+
                 // Disallow setting finish date before start date
                 !start && track.startDate > 0 -> {
                     val startDate = Instant.fromEpochMilliseconds(track.startDate).toLocalDateTime(TimeZone.UTC)
                     startDate <= targetDate
                 }
+
                 else -> {
                     true
                 }
@@ -566,11 +566,13 @@ private data class TrackDateSelectorScreen(
                     val finishDate = Instant.fromEpochMilliseconds(track.finishDate).toLocalDateTime(TimeZone.UTC)
                     year <= finishDate.year
                 }
+
                 // Disallow setting finish year before start year
                 !start && track.startDate > 0 -> {
                     val startDate = Instant.fromEpochMilliseconds(track.startDate).toLocalDateTime(TimeZone.UTC)
                     startDate.year <= year
                 }
+
                 else -> {
                     true
                 }

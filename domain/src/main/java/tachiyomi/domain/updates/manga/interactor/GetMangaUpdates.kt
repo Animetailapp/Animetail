@@ -1,9 +1,9 @@
 package tachiyomi.domain.updates.manga.interactor
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
 import tachiyomi.domain.updates.manga.model.MangaUpdatesWithRelations
 import tachiyomi.domain.updates.manga.repository.MangaUpdatesRepository
-import kotlinx.datetime.Instant
 
 class GetMangaUpdates(
     private val repository: MangaUpdatesRepository,

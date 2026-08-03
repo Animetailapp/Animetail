@@ -40,9 +40,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
 import uy.kohesive.injekt.injectLazy
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
-import kotlin.time.Instant
 
 class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 

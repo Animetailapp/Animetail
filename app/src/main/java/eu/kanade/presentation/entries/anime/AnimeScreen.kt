@@ -121,8 +121,8 @@ import tachiyomi.source.local.entries.anime.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
-import java.time.Instant
 import java.util.concurrent.TimeUnit
+import kotlin.time.Instant
 
 @Composable
 @Suppress("ParameterNaming", "LongMethod")

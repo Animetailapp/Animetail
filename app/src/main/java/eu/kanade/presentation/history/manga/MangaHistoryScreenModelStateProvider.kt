@@ -2,9 +2,9 @@ package eu.kanade.presentation.history.manga
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryViewModel
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.datetime.LocalDate
 import tachiyomi.domain.entries.manga.model.MangaCover
 import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import java.util.Date
@@ -76,7 +76,9 @@ class MangaHistoryScreenModelStateProvider : PreviewParameterProvider<MangaHisto
     private object HistoryUiModelExamples {
         val headerToday = header()
         val headerTomorrow =
-            MangaHistoryUiModel.Header(Clock.System.now().plus(1.days).toLocalDateTime(TimeZone.currentSystemDefault()).date)
+            MangaHistoryUiModel.Header(
+                Clock.System.now().plus(1.days).toLocalDateTime(TimeZone.currentSystemDefault()).date,
+            )
 
         fun header(instantBuilder: (Instant) -> Instant = { it }) =
             MangaHistoryUiModel.Header(

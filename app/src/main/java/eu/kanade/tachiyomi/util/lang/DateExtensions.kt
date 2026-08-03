@@ -62,6 +62,7 @@ fun LocalDate.toRelativeString(
     val difference = (today - this).days
     return when {
         difference < -7 -> dateFormat.format(this.toJavaLocalDate())
+
         difference < 0 -> context.pluralStringResource(
             MR.plurals.upcoming_relative_time,
             difference.absoluteValue,
