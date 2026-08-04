@@ -77,4 +77,6 @@ class WebViewViewModel(
             logcat { "Cleared $cleared cookies for: $url" }
         }
     }
+
+    fun defaultUserAgentProvider() = network.defaultUserAgentProvider()
 }

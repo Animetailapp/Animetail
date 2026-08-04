@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
 import logcat.LogPriority
 import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.util.lang.launchIO
@@ -42,7 +45,7 @@ import tachiyomi.domain.updates.anime.interactor.GetAnimeUpdates
 import tachiyomi.domain.updates.anime.model.AnimeUpdatesWithRelations
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.ZonedDateTime
+import kotlin.time.Clock
 
 class AnimeUpdatesViewModel(
     private val sourceManager: AnimeSourceManager = Injekt.get(),
@@ -73,7 +76,7 @@ class AnimeUpdatesViewModel(
         viewModelScope.launchIO {
             // Set date limit for recent episodes
 
-            val limit = ZonedDateTime.now().minusMonths(3).toInstant()
+            val limit = Clock.System.now().minus(3, DateTimeUnit.MONTH, TimeZone.currentSystemDefault())
             combine<List<AnimeUpdatesWithRelations>, Unit, List<AnimeDownload>, List<AnimeUpdatesWithRelations>>(
                 getUpdates.subscribe(limit).distinctUntilChanged(),
                 downloadCache.changes,

@@ -10,8 +10,8 @@ import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.entries.anime.interactor.GetCustomAnimeInfo
 import uy.kohesive.injekt.injectLazy
 import java.io.Serializable
-import java.time.Instant
 import kotlin.math.pow
+import kotlin.time.Instant
 
 @Immutable
 data class Anime(
@@ -74,7 +74,7 @@ data class Anime(
     val expectedNextUpdate: Instant?
         get() = nextUpdate
             .takeIf { status != SAnime.COMPLETED.toLong() }
-            ?.let { Instant.ofEpochMilli(it) }
+            ?.let { Instant.fromEpochMilliseconds(it) }
 
     val sorting: Long
         get() = episodeFlags and EPISODE_SORTING_MASK

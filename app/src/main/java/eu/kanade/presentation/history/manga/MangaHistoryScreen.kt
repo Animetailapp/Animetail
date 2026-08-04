@@ -13,6 +13,7 @@ import eu.kanade.presentation.components.relativeDateText
 import eu.kanade.presentation.history.manga.components.MangaHistoryItem
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryViewModel
+import kotlinx.datetime.LocalDate
 import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
@@ -20,7 +21,6 @@ import tachiyomi.presentation.core.components.ListGroupHeader
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
-import java.time.LocalDate
 
 @Composable
 fun MangaHistoryScreen(

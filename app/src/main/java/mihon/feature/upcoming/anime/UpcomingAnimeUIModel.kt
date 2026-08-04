@@ -1,7 +1,7 @@
 package mihon.feature.upcoming.anime
 
+import kotlinx.datetime.LocalDate
 import tachiyomi.domain.entries.anime.model.Anime
-import java.time.LocalDate
 
 sealed interface UpcomingAnimeUIModel {
     data class Header(val date: LocalDate, val animeCount: Int) : UpcomingAnimeUIModel

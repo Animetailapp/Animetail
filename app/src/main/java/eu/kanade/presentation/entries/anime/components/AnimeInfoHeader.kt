@@ -85,6 +85,8 @@ import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.util.system.copyToClipboard
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.daysUntil
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
@@ -96,9 +98,9 @@ import tachiyomi.presentation.core.util.clickableNoIndication
 import tachiyomi.presentation.core.util.secondaryItemAlpha
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 private val whitespaceLineRegex = Regex("[\\r\\n]{2,}", setOf(RegexOption.MULTILINE))
 
@@ -185,8 +187,8 @@ fun AnimeActionRow(
     // TODO: show something better when using custom interval
     val nextUpdateDays = remember(nextUpdate) {
         return@remember if (nextUpdate != null) {
-            val now = Instant.now()
-            now.until(nextUpdate, ChronoUnit.DAYS).toInt().coerceAtLeast(0)
+            val now = Clock.System.now()
+            now.daysUntil(nextUpdate, TimeZone.currentSystemDefault()).coerceAtLeast(0)
         } else {
             null
         }

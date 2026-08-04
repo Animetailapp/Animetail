@@ -31,6 +31,9 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
 import logcat.LogPriority
 import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.TriState
@@ -49,7 +52,7 @@ import tachiyomi.domain.updates.manga.model.MangaUpdatesWithRelations
 import tachiyomi.domain.updates.service.UpdatesPreferences
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.ZonedDateTime
+import kotlin.time.Clock
 
 class MangaUpdatesViewModel(
     private val sourceManager: MangaSourceManager = Injekt.get(),
@@ -77,7 +80,7 @@ class MangaUpdatesViewModel(
     init {
         viewModelScope.launchIO {
             // Set date limit for recent chapters
-            val limit = ZonedDateTime.now().minusMonths(3).toInstant()
+            val limit = Clock.System.now().minus(3, DateTimeUnit.MONTH, TimeZone.currentSystemDefault())
 
             combine(
                 // needed for SQL filters (unread, started, bookmarked, etc)
@@ -90,6 +93,8 @@ class MangaUpdatesViewModel(
                             started = it.filterStarted.toBooleanOrNull(),
                             bookmarked = it.filterBookmarked.toBooleanOrNull(),
                             hideExcludedScanlators = it.filterExcludedScanlators,
+                            includedCategories = it.filterIncludedCategories,
+                            excludedCategories = it.filterExcludedCategories,
                         ).distinctUntilChanged()
                     },
                 downloadCache.changes,
@@ -424,13 +429,18 @@ class MangaUpdatesViewModel(
             updatesPreferences.filterStarted.changes(),
             updatesPreferences.filterBookmarked.changes(),
             updatesPreferences.filterExcludedScanlators.changes(),
-        ) { downloaded, unread, started, bookmarked, excludedScanlators ->
+            updatesPreferences.filterIncludedCategories.changes(),
+            updatesPreferences.filterExcludedCategories.changes(),
+        ) {
+            @Suppress("UNCHECKED_CAST")
             ItemPreferences(
-                filterDownloaded = downloaded,
-                filterUnread = unread,
-                filterStarted = started,
-                filterBookmarked = bookmarked,
-                filterExcludedScanlators = excludedScanlators,
+                filterDownloaded = it[0] as TriState,
+                filterUnread = it[1] as TriState,
+                filterStarted = it[2] as TriState,
+                filterBookmarked = it[3] as TriState,
+                filterExcludedScanlators = it[4] as Boolean,
+                filterIncludedCategories = it[5] as List<Long>,
+                filterExcludedCategories = it[6] as List<Long>,
             )
         }
     }
@@ -446,6 +456,8 @@ class MangaUpdatesViewModel(
         val filterStarted: TriState,
         val filterBookmarked: TriState,
         val filterExcludedScanlators: Boolean,
+        val filterIncludedCategories: List<Long>,
+        val filterExcludedCategories: List<Long>,
     )
 
     @Immutable

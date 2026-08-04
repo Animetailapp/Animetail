@@ -94,7 +94,7 @@ import tachiyomi.presentation.core.util.shouldExpandFAB
 import tachiyomi.source.local.entries.manga.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.Instant
+import kotlin.time.Instant
 
 @Composable
 @Suppress("ParameterNaming", "LongMethod")
