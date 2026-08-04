@@ -148,7 +148,7 @@ private fun ColumnScope.CategoryFilterSheet(
     val excluded by viewModel.updatesPreferences.filterExcludedCategories.collectAsState()
     val included by viewModel.updatesPreferences.filterIncludedCategories.collectAsState()
 
-    val selected = remember {
+    val selected = remember(allCategories, included, excluded) {
         allCategories.map { category ->
             when (category.id) {
                 in included -> TriState.ENABLED_IS
