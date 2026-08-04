@@ -27,7 +27,11 @@ interface MangaRepository {
 
     suspend fun getDuplicateLibraryManga(id: Long, title: String): List<Manga>
 
-    suspend fun getUpcomingManga(statuses: Set<Long>): Flow<List<Manga>>
+    suspend fun getUpcomingManga(
+        statuses: Set<Long>,
+        excludedCategories: List<Long>,
+        includedCategories: List<Long>,
+    ): Flow<List<Manga>>
 
     suspend fun resetMangaViewerFlags(): Boolean
 
