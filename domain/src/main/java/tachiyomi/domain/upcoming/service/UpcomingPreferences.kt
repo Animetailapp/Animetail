@@ -8,13 +8,23 @@ class UpcomingPreferences(
     preferenceStore: PreferenceStore,
 ) {
 
-    val filterIncludedCategories: Preference<List<Long>> = preferenceStore.getLongArray(
-        "pref_filter_upcoming_included_categories",
+    val mangaFilterIncludedCategories: Preference<List<Long>> = preferenceStore.getLongArray(
+        "pref_filter_upcoming_manga_included_categories",
         emptyList(),
     )
 
-    val filterExcludedCategories: Preference<List<Long>> = preferenceStore.getLongArray(
-        "pref_filter_upcoming_excluded_categories",
+    val mangaFilterExcludedCategories: Preference<List<Long>> = preferenceStore.getLongArray(
+        "pref_filter_upcoming_manga_excluded_categories",
+        emptyList(),
+    )
+
+    val animeFilterIncludedCategories: Preference<List<Long>> = preferenceStore.getLongArray(
+        "pref_filter_upcoming_anime_included_categories",
+        emptyList(),
+    )
+
+    val animeFilterExcludedCategories: Preference<List<Long>> = preferenceStore.getLongArray(
+        "pref_filter_upcoming_anime_excluded_categories",
         emptyList(),
     )
 }

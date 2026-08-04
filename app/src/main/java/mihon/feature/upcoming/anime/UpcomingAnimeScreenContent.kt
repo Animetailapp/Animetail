@@ -9,9 +9,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material3.Badge
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,11 +23,10 @@ import androidx.compose.ui.text.font.FontWeight
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.components.AppBar
+import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.relativeDateText
 import eu.kanade.presentation.util.isTabletUi
 import eu.kanade.tachiyomi.core.common.Constants
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.YearMonth
@@ -40,12 +39,15 @@ import tachiyomi.presentation.core.components.TwoPanelBox
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.theme.active
 
 @Composable
 fun UpcomingAnimeScreenContent(
     state: UpcomingAnimeViewModel.State,
     setSelectedYearMonth: (YearMonth) -> Unit,
     onClickUpcoming: (anime: Anime) -> Unit,
+    onClickFilter: () -> Unit,
+    hasActiveFilters: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -58,7 +60,12 @@ fun UpcomingAnimeScreenContent(
         }
     }
     Scaffold(
-        topBar = { UpcomingToolbar() },
+        topBar = {
+            UpcomingToolbar(
+                hasFilters = hasActiveFilters,
+                onClickFilter = onClickFilter,
+            )
+        },
         modifier = modifier,
     ) { paddingValues ->
         if (isTabletUi()) {
@@ -88,7 +95,10 @@ fun UpcomingAnimeScreenContent(
 }
 
 @Composable
-private fun UpcomingToolbar() {
+private fun UpcomingToolbar(
+    hasFilters: Boolean,
+    onClickFilter: () -> Unit,
+) {
     val navigator = LocalNavigator.currentOrThrow
     val uriHandler = LocalUriHandler.current
 
@@ -96,12 +106,21 @@ private fun UpcomingToolbar() {
         title = stringResource(MR.strings.label_upcoming),
         navigateUp = navigator::pop,
         actions = {
-            IconButton(onClick = { uriHandler.openUri(Constants.URL_HELP_UPCOMING) }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                    contentDescription = stringResource(MR.strings.upcoming_guide),
-                )
-            }
+            AppBarActions(
+                listOf(
+                    AppBar.Action(
+                        title = stringResource(MR.strings.action_filter),
+                        icon = Icons.Outlined.FilterList,
+                        iconTint = if (hasFilters) MaterialTheme.colorScheme.active else LocalContentColor.current,
+                        onClick = onClickFilter,
+                    ),
+                    AppBar.Action(
+                        title = stringResource(MR.strings.upcoming_guide),
+                        icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                        onClick = { uriHandler.openUri(Constants.URL_HELP_UPCOMING) },
+                    ),
+                ),
+            )
         },
     )
 }
@@ -136,8 +155,8 @@ private fun DateHeading(
 @Composable
 private fun UpcomingAnimeScreenSmallImpl(
     listState: LazyListState,
-    items: ImmutableList<UpcomingAnimeUIModel>,
-    events: ImmutableMap<LocalDate, Int>,
+    items: List<UpcomingAnimeUIModel>,
+    events: Map<LocalDate, Int>,
     paddingValues: PaddingValues,
     selectedYearMonth: YearMonth,
     setSelectedYearMonth: (YearMonth) -> Unit,
@@ -188,8 +207,8 @@ private fun UpcomingAnimeScreenSmallImpl(
 @Composable
 private fun UpcomingAnimeScreenLargeImpl(
     listState: LazyListState,
-    items: ImmutableList<UpcomingAnimeUIModel>,
-    events: ImmutableMap<LocalDate, Int>,
+    items: List<UpcomingAnimeUIModel>,
+    events: Map<LocalDate, Int>,
     paddingValues: PaddingValues,
     selectedYearMonth: YearMonth,
     setSelectedYearMonth: (YearMonth) -> Unit,

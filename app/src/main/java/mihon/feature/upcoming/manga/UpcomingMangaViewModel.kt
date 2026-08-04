@@ -49,7 +49,11 @@ class UpcomingMangaViewModel(
                     )
                         .distinctUntilChanged()
                         .map { items ->
-                            items to (prefs.filterExcludedCategories.isNotEmpty() || prefs.filterIncludedCategories.isNotEmpty())
+                            items to
+                                (
+                                    prefs.filterExcludedCategories.isNotEmpty() ||
+                                        prefs.filterIncludedCategories.isNotEmpty()
+                                    )
                         }
                 }
                 .collectLatest { (items, hasFilters) ->
@@ -137,6 +141,7 @@ class UpcomingMangaViewModel(
             }
 
             in excludedCategories.get() -> excludedCategories.getAndSet { it - category.id }
+
             else -> includedCategories.getAndSet { it + category.id }
         }
     }

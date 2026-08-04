@@ -86,8 +86,8 @@ private fun ColumnScope.CategoryFilterSheet(
         return
     }
 
-    val excluded by viewModel.upcomingPreferences.filterExcludedCategories.collectAsState()
-    val included by viewModel.upcomingPreferences.filterIncludedCategories.collectAsState()
+    val excluded by viewModel.upcomingPreferences.mangaFilterExcludedCategories.collectAsState()
+    val included by viewModel.upcomingPreferences.mangaFilterIncludedCategories.collectAsState()
 
     val selected = remember {
         allCategories.map { category ->
