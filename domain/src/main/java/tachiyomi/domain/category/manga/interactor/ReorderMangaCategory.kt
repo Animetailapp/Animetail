@@ -7,7 +7,6 @@ import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.category.model.CategoryUpdate
 
 class ReorderMangaCategory(
     private val categoryRepository: MangaCategoryRepository,
@@ -29,14 +28,7 @@ class ReorderMangaCategory(
             try {
                 categories.add(newIndex, categories.removeAt(currentIndex))
 
-                val updates = categories.mapIndexed { index, category ->
-                    CategoryUpdate(
-                        id = category.id,
-                        order = index.toLong(),
-                    )
-                }
-
-                categoryRepository.updatePartialMangaCategories(updates)
+                categoryRepository.updateMangaCategoryAllOrders(orderedIds = categories.map { it.id })
                 Result.Success
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e)

@@ -2,7 +2,6 @@ package tachiyomi.domain.category.manga.repository
 
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.category.model.CategoryUpdate
 
 interface MangaCategoryRepository {
 
@@ -26,11 +25,15 @@ interface MangaCategoryRepository {
 
     suspend fun insertMangaCategory(category: Category)
 
-    suspend fun updatePartialMangaCategory(update: CategoryUpdate)
+    suspend fun updateMangaCategoryName(categoryId: Long, name: String)
 
-    suspend fun updatePartialMangaCategories(updates: List<CategoryUpdate>)
+    suspend fun updateMangaCategoryFlags(categoryId: Long, flags: Long)
+
+    suspend fun updateMangaCategoryHidden(categoryId: Long, hidden: Boolean)
 
     suspend fun updateAllMangaCategoryFlags(flags: Long?)
+
+    suspend fun updateMangaCategoryAllOrders(orderedIds: List<Long>)
 
     suspend fun deleteMangaCategory(categoryId: Long)
 }
