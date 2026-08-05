@@ -7,7 +7,6 @@ import tachiyomi.data.Database
 import tachiyomi.data.subscribeToList
 import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.category.model.CategoryUpdate
 
 class MangaCategoryRepositoryImpl(
     private val database: Database,
@@ -75,28 +74,28 @@ class MangaCategoryRepositoryImpl(
         )
     }
 
-    override suspend fun updatePartialMangaCategory(update: CategoryUpdate) {
-        database.updatePartialBlocking(update)
+    override suspend fun updateMangaCategoryName(categoryId: Long, name: String) {
+        database.categoriesQueries.updateName(name = name, categoryId = categoryId)
     }
 
-    override suspend fun updatePartialMangaCategories(updates: List<CategoryUpdate>) {
-        updates.forEach { update ->
-            updatePartialMangaCategory(update)
-        }
+    override suspend fun updateMangaCategoryFlags(categoryId: Long, flags: Long) {
+        database.categoriesQueries.updateFlags(flags = flags, categoryId = categoryId)
     }
 
-    private suspend fun Database.updatePartialBlocking(update: CategoryUpdate) {
-        categoriesQueries.update(
-            name = update.name,
-            order = update.order,
-            flags = update.flags,
-            hidden = update.hidden?.let { if (it) 1L else 0L },
-            categoryId = update.id,
-        )
+    override suspend fun updateMangaCategoryHidden(categoryId: Long, hidden: Boolean) {
+        database.categoriesQueries.updateHidden(hidden = if (hidden) 1L else 0L, categoryId = categoryId)
     }
 
     override suspend fun updateAllMangaCategoryFlags(flags: Long?) {
-        database.categoriesQueries.updateAllFlags(flags)
+        database.categoriesQueries.updateAllFlags(flags = flags)
+    }
+
+    override suspend fun updateMangaCategoryAllOrders(orderedIds: List<Long>) {
+        database.transaction {
+            orderedIds.forEachIndexed { index, id ->
+                database.categoriesQueries.updateOrder(order = index.toLong(), categoryId = id)
+            }
+        }
     }
 
     override suspend fun deleteMangaCategory(categoryId: Long) {

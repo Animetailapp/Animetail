@@ -5,8 +5,6 @@ import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.category.anime.repository.AnimeCategoryRepository
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.category.model.CategoryUpdate
-import tachiyomi.mi.data.AnimeDatabase
 
 class AnimeCategoryRepositoryImpl(
     private val handler: AnimeDatabaseHandler,
@@ -66,31 +64,35 @@ class AnimeCategoryRepositoryImpl(
         }
     }
 
-    override suspend fun updatePartialAnimeCategory(update: CategoryUpdate) {
+    override suspend fun updateAnimeCategoryName(categoryId: Long, name: String) {
         handler.await {
-            updatePartialBlocking(update)
+            categoriesQueries.updateName(name = name, categoryId = categoryId)
         }
     }
 
-    override suspend fun updatePartialAnimeCategories(updates: List<CategoryUpdate>) {
-        for (update in updates) {
-            updatePartialAnimeCategory(update)
+    override suspend fun updateAnimeCategoryFlags(categoryId: Long, flags: Long) {
+        handler.await {
+            categoriesQueries.updateFlags(flags = flags, categoryId = categoryId)
         }
     }
 
-    private suspend fun AnimeDatabase.updatePartialBlocking(update: CategoryUpdate) {
-        categoriesQueries.update(
-            name = update.name,
-            order = update.order,
-            flags = update.flags,
-            hidden = update.hidden?.let { if (it) 1L else 0L },
-            categoryId = update.id,
-        )
+    override suspend fun updateAnimeCategoryHidden(categoryId: Long, hidden: Boolean) {
+        handler.await {
+            categoriesQueries.updateHidden(hidden = if (hidden) 1L else 0L, categoryId = categoryId)
+        }
     }
 
     override suspend fun updateAllAnimeCategoryFlags(flags: Long?) {
         handler.await {
-            categoriesQueries.updateAllFlags(flags)
+            categoriesQueries.updateAllFlags(flags = flags)
+        }
+    }
+
+    override suspend fun updateAnimeCategoryAllOrders(orderedIds: List<Long>) {
+        handler.await(inTransaction = true) {
+            orderedIds.forEachIndexed { index, id ->
+                categoriesQueries.updateOrder(order = index.toLong(), categoryId = id)
+            }
         }
     }
 
