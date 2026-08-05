@@ -5,7 +5,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
-import kotlinx.datetime.minus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toJavaLocalDate
 import kotlinx.datetime.toJavaLocalDateTime
@@ -95,7 +94,7 @@ fun LocalDateTime.toRelativeString(
     val now = Clock.System.now().toLocalDateTime(timeZone)
     val difference = Clock.System.now() - this.toInstant(timeZone)
     val timeDifference = difference.inWholeDays
-    val dateDifference = (now.date - this.date).days
+    val dateDifference = this.date.daysUntil(now.date)
     return when {
         timeDifference < -7 -> dateFormat.format(this.toJavaLocalDateTime())
 
