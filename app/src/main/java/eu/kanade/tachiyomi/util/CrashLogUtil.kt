@@ -6,6 +6,7 @@ import eu.kanade.domain.base.BasePreferences
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
+import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.util.storage.getUriCompat
 import eu.kanade.tachiyomi.util.system.WebViewUtil
 import eu.kanade.tachiyomi.util.system.createFileInCacheDir
@@ -25,6 +26,7 @@ class CrashLogUtil(
     private val mangaExtensionManager: MangaExtensionManager = Injekt.get(),
     private val animeExtensionManager: AnimeExtensionManager = Injekt.get(),
     private val preferences: BasePreferences = Injekt.get(),
+    private val networkPreferences: NetworkPreferences = Injekt.get(),
 ) {
 
     suspend fun dumpLogs(exception: Throwable? = null) = withNonCancellableContext {
@@ -36,7 +38,8 @@ class CrashLogUtil(
             getAnimeExtensionsInfo()?.let { file.appendText("$it\n\n") }
             exception?.let { file.appendText("$it\n\n") }
 
-            Runtime.getRuntime().exec("logcat *:E -d -v year -v zone -f ${file.absolutePath}").waitFor()
+            val logPriority = if (networkPreferences.verboseLogging.get()) "V" else "E"
+            Runtime.getRuntime().exec("logcat *:$logPriority -d -v year -v zone -f ${file.absolutePath}").waitFor()
 
             val uri = file.getUriCompat(context)
             context.startActivity(uri.toShareIntent(context, "text/plain"))
