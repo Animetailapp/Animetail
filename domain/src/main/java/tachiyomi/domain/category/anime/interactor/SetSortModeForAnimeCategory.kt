@@ -2,7 +2,6 @@ package tachiyomi.domain.category.anime.interactor
 
 import tachiyomi.domain.category.anime.repository.AnimeCategoryRepository
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.category.model.CategoryUpdate
 import tachiyomi.domain.library.anime.model.AnimeLibraryGroup
 import tachiyomi.domain.library.anime.model.AnimeLibrarySort
 import tachiyomi.domain.library.model.plus
@@ -31,12 +30,7 @@ class SetSortModeForAnimeCategory(
             preferences.randomAnimeSortSeed.set(Random.nextInt())
         }
         if (category != null && preferences.categorizedDisplaySettings.get()) {
-            categoryRepository.updatePartialAnimeCategory(
-                CategoryUpdate(
-                    id = category.id,
-                    flags = flags,
-                ),
-            )
+            categoryRepository.updateAnimeCategoryFlags(categoryId = category.id, flags = flags)
         } else {
             preferences.animeSortingMode.set(AnimeLibrarySort(type, direction))
             categoryRepository.updateAllAnimeCategoryFlags(flags)

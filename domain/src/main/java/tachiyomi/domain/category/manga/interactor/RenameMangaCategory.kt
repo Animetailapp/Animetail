@@ -5,20 +5,14 @@ import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.category.model.CategoryUpdate
 
 class RenameMangaCategory(
     private val categoryRepository: MangaCategoryRepository,
 ) {
 
     suspend fun await(categoryId: Long, name: String) = withNonCancellableContext {
-        val update = CategoryUpdate(
-            id = categoryId,
-            name = name,
-        )
-
         try {
-            categoryRepository.updatePartialMangaCategory(update)
+            categoryRepository.updateMangaCategoryName(categoryId = categoryId, name = name)
             Result.Success
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)

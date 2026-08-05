@@ -102,7 +102,6 @@ import tachiyomi.domain.category.anime.interactor.ResetAnimeCategoryFlags
 import tachiyomi.domain.category.anime.interactor.SetAnimeCategories
 import tachiyomi.domain.category.anime.interactor.SetAnimeDisplayMode
 import tachiyomi.domain.category.anime.interactor.SetSortModeForAnimeCategory
-import tachiyomi.domain.category.anime.interactor.UpdateAnimeCategory
 import tachiyomi.domain.category.anime.repository.AnimeCategoryRepository
 import tachiyomi.domain.category.manga.interactor.CreateMangaCategoryWithName
 import tachiyomi.domain.category.manga.interactor.DeleteMangaCategory
@@ -115,7 +114,6 @@ import tachiyomi.domain.category.manga.interactor.ResetMangaCategoryFlags
 import tachiyomi.domain.category.manga.interactor.SetMangaCategories
 import tachiyomi.domain.category.manga.interactor.SetMangaDisplayMode
 import tachiyomi.domain.category.manga.interactor.SetSortModeForMangaCategory
-import tachiyomi.domain.category.manga.interactor.UpdateMangaCategory
 import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.custombuttons.interactor.CreateCustomButton
 import tachiyomi.domain.custombuttons.interactor.DeleteCustomButton
@@ -234,7 +232,6 @@ class DomainModule : InjektModule {
         addFactory { CreateAnimeCategoryWithName(get(), get()) }
         addFactory { RenameAnimeCategory(get()) }
         addFactory { ReorderAnimeCategory(get()) }
-        addFactory { UpdateAnimeCategory(get()) }
         addFactory { HideAnimeCategory(get()) }
         addFactory { DeleteAnimeCategory(get(), get(), get()) }
 
@@ -247,7 +244,6 @@ class DomainModule : InjektModule {
         addFactory { CreateMangaCategoryWithName(get(), get()) }
         addFactory { RenameMangaCategory(get()) }
         addFactory { ReorderMangaCategory(get()) }
-        addFactory { UpdateMangaCategory(get()) }
         addFactory { HideMangaCategory(get()) }
         addFactory { DeleteMangaCategory(get(), get(), get()) }
 
