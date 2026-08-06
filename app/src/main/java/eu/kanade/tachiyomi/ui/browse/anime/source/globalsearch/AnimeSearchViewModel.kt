@@ -8,8 +8,12 @@ import androidx.lifecycle.viewModelScope
 import eu.kanade.domain.entries.anime.model.toDomainAnime
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
-import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
+import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.mutate
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
@@ -52,8 +56,8 @@ abstract class AnimeSearchViewModel(
 
     protected var extensionFilter: String? = null
 
-    private val sortComparator = { map: Map<AnimeCatalogueSource, AnimeSearchItemResult> ->
-        compareBy<AnimeCatalogueSource>(
+    private val sortComparator = { map: Map<AnimeSource, AnimeSearchItemResult> ->
+        compareBy<AnimeSource>(
             { (map[it] as? AnimeSearchItemResult.Success)?.isEmpty ?: true },
             { "${it.id}" !in pinnedSources },
             { "${it.name.lowercase()} (${it.lang})" },
@@ -79,8 +83,8 @@ abstract class AnimeSearchViewModel(
         }
     }
 
-    open fun getEnabledSources(): List<AnimeCatalogueSource> {
-        return sourceManager.getCatalogueSources()
+    open fun getEnabledSources(): List<AnimeSource> {
+        return sourceManager.getAll()
             .filter { it.lang in enabledLanguages && "${it.id}" !in disabledSources }
             .sortedWith(
                 compareBy(
@@ -90,7 +94,7 @@ abstract class AnimeSearchViewModel(
             )
     }
 
-    private fun getSelectedSources(): List<AnimeCatalogueSource> {
+    private fun getSelectedSources(): List<AnimeSource> {
         val enabledSources = getEnabledSources()
 
         val filter = extensionFilter
@@ -101,7 +105,6 @@ abstract class AnimeSearchViewModel(
         return extensionManager.installedExtensionsFlow.value
             .filter { it.pkgName == filter }
             .flatMap { it.sources }
-            .filterIsInstance<AnimeCatalogueSource>()
             .filter { it in enabledSources }
     }
 
@@ -137,13 +140,13 @@ abstract class AnimeSearchViewModel(
             updateItems(
                 sources
                     .associateWith { existingResults[it] ?: AnimeSearchItemResult.Loading }
-                    .toMap(),
+                    .toPersistentMap(),
             )
         } else {
             updateItems(
                 sources
                     .associateWith { AnimeSearchItemResult.Loading }
-                    .toMap(),
+                    .toPersistentMap(),
             )
         }
 
@@ -176,7 +179,7 @@ abstract class AnimeSearchViewModel(
         }
     }
 
-    private fun updateItems(items: Map<AnimeCatalogueSource, AnimeSearchItemResult>) {
+    private fun updateItems(items: PersistentMap<AnimeSource, AnimeSearchItemResult>) {
         mutableState.update {
             it.copy(
                 items = items
@@ -186,9 +189,9 @@ abstract class AnimeSearchViewModel(
         }
     }
 
-    private fun updateItem(source: AnimeCatalogueSource, result: AnimeSearchItemResult) {
-        val newItems = state.value.items.toMutableMap().apply {
-            this[source] = result
+    private fun updateItem(source: AnimeSource, result: AnimeSearchItemResult) {
+        val newItems = state.value.items.mutate {
+            it[source] = result
         }
         updateItems(newItems)
     }
@@ -199,7 +202,7 @@ abstract class AnimeSearchViewModel(
         val searchQuery: String? = null,
         val sourceFilter: AnimeSourceFilter = AnimeSourceFilter.PinnedOnly,
         val onlyShowHasResults: Boolean = false,
-        val items: Map<AnimeCatalogueSource, AnimeSearchItemResult> = mapOf(),
+        val items: PersistentMap<AnimeSource, AnimeSearchItemResult> = persistentMapOf(),
     ) {
         val progress: Int = items.count { it.value !is AnimeSearchItemResult.Loading }
         val total: Int = items.size

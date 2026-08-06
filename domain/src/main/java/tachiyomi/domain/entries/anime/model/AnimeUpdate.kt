@@ -2,6 +2,7 @@ package tachiyomi.domain.entries.anime.model
 
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
 import eu.kanade.tachiyomi.animesource.model.FetchType
+import kotlinx.serialization.json.JsonObject
 
 data class AnimeUpdate(
     val id: Long,
@@ -34,6 +35,7 @@ data class AnimeUpdate(
     val seasonFlags: Long? = null,
     val seasonNumber: Double? = null,
     val seasonSourceOrder: Long? = null,
+    val memo: JsonObject? = null,
 )
 
 fun Anime.toAnimeUpdate(): AnimeUpdate {
@@ -68,5 +70,6 @@ fun Anime.toAnimeUpdate(): AnimeUpdate {
         seasonFlags = seasonFlags,
         seasonNumber = seasonNumber,
         seasonSourceOrder = seasonSourceOrder,
+        memo = memo,
     )
 }

@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
+import eu.kanade.tachiyomi.animesource.AnimeSource
 
 class GlobalAnimeSearchViewModel(
     initialQuery: String = "",
@@ -39,7 +39,7 @@ class GlobalAnimeSearchViewModel(
         }
     }
 
-    override fun getEnabledSources(): List<AnimeCatalogueSource> {
+    override fun getEnabledSources(): List<AnimeSource> {
         return super.getEnabledSources()
             .filter { state.value.sourceFilter != AnimeSourceFilter.PinnedOnly || "${it.id}" in pinnedSources }
     }

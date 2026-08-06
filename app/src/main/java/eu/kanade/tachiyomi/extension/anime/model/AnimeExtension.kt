@@ -15,7 +15,6 @@ sealed class AnimeExtension {
     abstract val lang: String?
     abstract val isNsfw: Boolean
     abstract val isTorrent: Boolean
-
     // KMK -->
     abstract val signatureHash: String
     abstract val repoName: String?

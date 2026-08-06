@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.data.backup.models.BackupEpisode
 import tachiyomi.data.AnimeUpdateStrategyColumnAdapter
 import tachiyomi.data.CastColumnAdapter
 import tachiyomi.data.FetchTypeColumnAdapter
+import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.entries.anime.interactor.AnimeFetchInterval
@@ -161,6 +162,7 @@ class AnimeRestorer(
                 cast = anime.cast?.let(CastColumnAdapter::encode),
                 backgroundUrl = anime.backgroundUrl,
                 backgroundLastModified = anime.backgroundLastModified,
+                memo = anime.memo.let(MemoColumnAdapter::encode),
             )
         }
         return anime
@@ -266,6 +268,7 @@ class AnimeRestorer(
                     episode.previewUrl,
                     episode.fillermark,
                     episode.dateUploadOverride,
+                    episode.memo,
                 )
             }
         }
@@ -294,6 +297,7 @@ class AnimeRestorer(
                     version = episode.version,
                     isSyncing = 0,
                     dateUploadOverride = episode.dateUploadOverride,
+                    memo = episode.memo.let(MemoColumnAdapter::encode),
                 )
             }
         }
@@ -336,6 +340,7 @@ class AnimeRestorer(
                 backgroundUrl = anime.backgroundUrl,
                 cast = anime.cast,
                 backgroundLastModified = anime.backgroundLastModified,
+                memo = anime.memo,
             )
         }
     }

@@ -12,6 +12,7 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.withIOContext
 import uy.kohesive.injekt.injectLazy
+import kotlinx.serialization.Serializable
 import java.time.Instant
 import kotlin.time.Duration.Companion.days
 
@@ -75,4 +76,65 @@ internal class AnimeExtensionApi {
 
         return extensionsWithUpdate
     }
+    private fun List<AnimeExtensionJsonObject>.toExtensions(repoUrl: String): List<AnimeExtension.Available> {
+        return this
+            .filter {
+                val libVersion = it.extractLibVersion()
+                libVersion >= AnimeExtensionLoader.LIB_VERSION_MIN && libVersion <= AnimeExtensionLoader.LIB_VERSION_MAX
+            }
+            .map {
+                AnimeExtension.Available(
+                    name = it.name.substringAfter("Aniyomi: "),
+                    pkgName = it.pkg,
+                    versionName = it.version,
+                    versionCode = it.code,
+                    libVersion = it.extractLibVersion(),
+                    lang = it.lang,
+                    isNsfw = it.nsfw == 1,
+                    isTorrent = it.torrent == 1,
+                    sources = it.sources?.map(extensionAnimeSourceMapper).orEmpty(),
+                    apkName = it.apk,
+                    iconUrl = "$repoUrl/icon/${it.pkg}.png",
+                    repoUrl = repoUrl,
+                )
+            }
+    }
+
+    fun getApkUrl(extension: AnimeExtension.Available): String {
+        return "${extension.repoUrl}/apk/${extension.apkName}"
+    }
+
+    private fun AnimeExtensionJsonObject.extractLibVersion(): Double {
+        return version.substringBeforeLast('.').toDouble()
+    }
+}
+
+@Serializable
+private data class AnimeExtensionJsonObject(
+    val name: String,
+    val pkg: String,
+    val apk: String,
+    val lang: String,
+    val code: Long,
+    val version: String,
+    val nsfw: Int,
+    val torrent: Int = 0,
+    val sources: List<AnimeExtensionSourceJsonObject>?,
+)
+
+@Serializable
+private data class AnimeExtensionSourceJsonObject(
+    val id: Long,
+    val lang: String,
+    val name: String,
+    val baseUrl: String,
+)
+
+private val extensionAnimeSourceMapper: (AnimeExtensionSourceJsonObject) -> AnimeExtension.Available.AnimeSource = {
+    AnimeExtension.Available.AnimeSource(
+        id = it.id,
+        lang = it.lang,
+        name = it.name,
+        baseUrl = it.baseUrl,
+    )
 }

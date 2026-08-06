@@ -2,24 +2,24 @@ package tachiyomi.source.local.entries.anime
 
 import android.content.Context
 import com.hippo.unifile.UniFile
-import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.UnmeteredSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
+import eu.kanade.tachiyomi.animesource.model.SAnimeEpisodeUpdate
+import eu.kanade.tachiyomi.animesource.model.SAnimeSeasonUpdate
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.util.lang.compareToCaseInsensitiveNaturalOrder
 import eu.kanade.tachiyomi.util.storage.toFFmpegString
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 import logcat.LogPriority
-import rx.Observable
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.storage.nameWithoutExtension
@@ -52,7 +52,7 @@ class LocalAnimeSource(
     private val backgroundManager: LocalAnimeBackgroundManager,
     private val thumbnailManager: LocalEpisodeThumbnailManager,
     private val fetchTypeManager: LocalAnimeFetchTypeManager,
-) : AnimeCatalogueSource, UnmeteredSource {
+) : AnimeSource, UnmeteredSource {
 
     private val json: Json by injectLazy()
 
@@ -158,7 +158,16 @@ class LocalAnimeSource(
         }
     }
 
-    // Old fetch functions
+    override suspend fun getAnimeSeasonUpdate(
+        anime: SAnime,
+        seasons: List<SAnime>,
+        fetchDetails: Boolean,
+        fetchSeasons: Boolean,
+    ): SAnimeSeasonUpdate = supervisorScope {
+        val asyncAnime = if (fetchDetails) async { getOldAnimeDetails(anime) } else null
+        val asyncSeasons = if (fetchSeasons) async { getOldSeasonList(anime) } else null
+        SAnimeSeasonUpdate(asyncAnime?.await() ?: anime, asyncSeasons?.await() ?: seasons)
+    }
 
     // TODO: Should be replaced when Anime Extensions get to 1.15
 
@@ -185,6 +194,17 @@ class LocalAnimeSource(
         }
     }
 
+    override suspend fun getAnimeEpisodeUpdate(
+        anime: SAnime,
+        episodes: List<SEpisode>,
+        fetchDetails: Boolean,
+        fetchEpisodes: Boolean,
+    ): SAnimeEpisodeUpdate = supervisorScope {
+        val asyncAnime = if (fetchDetails) async { getOldAnimeDetails(anime) } else null
+        val asyncEpisodes = if (fetchEpisodes) async { getOldEpisodeList(anime) } else null
+        SAnimeEpisodeUpdate(asyncAnime?.await() ?: anime, asyncEpisodes?.await() ?: episodes)
+    }
+
     private fun SAnime.toJson(): AnimeDetails {
         // Map SAnime fields to AnimeDetails, including cast if present
         return AnimeDetails(
@@ -202,7 +222,7 @@ class LocalAnimeSource(
     // SY <--
 
     // Anime details related
-    override suspend fun getAnimeDetails(anime: SAnime): SAnime = withIOContext {
+    private suspend fun getOldAnimeDetails(anime: SAnime): SAnime = withIOContext {
         coverManager.find(anime.url)?.let {
             anime.thumbnail_url = it.uri.toString()
         }
@@ -241,7 +261,7 @@ class LocalAnimeSource(
     }
 
     // Seasons
-    override suspend fun getSeasonList(anime: SAnime): List<SAnime> = withIOContext {
+    private suspend fun getOldSeasonList(anime: SAnime): List<SAnime> = withIOContext {
         val animeDirs = fileSystem.getFilesInAnimeDirectory(anime.url)
             // Filter out files that are hidden and is not a folder
             .filter { it.isDirectory && !it.name.orEmpty().startsWith('.') }
@@ -265,7 +285,7 @@ class LocalAnimeSource(
     }
 
     // Episodes
-    override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = withIOContext {
+    private suspend fun getOldEpisodeList(anime: SAnime): List<SEpisode> = withIOContext {
         val episodesData = fileSystem.getFilesInAnimeDirectory(anime.url)
             .firstOrNull {
                 it.extension == "json" && it.nameWithoutExtension == "episodes"

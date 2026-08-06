@@ -87,6 +87,12 @@ object Notifications {
     // <-- AM (DISCORD)
 
     /**
+     * Notification channel and ids used for http server
+     */
+    const val CHANNEL_HTTP_SERVER = "http_server_channel"
+    const val ID_HTTP_SERVER = -901
+
+    /**
      * Notification channel and ids used for app and extension updates.
      */
     private const val GROUP_APK_UPDATES = "group_apk_updates"
@@ -188,6 +194,10 @@ object Notifications {
                     setName(context.getString(R.string.pref_discord_rpc))
                 },
                 // <-- AM (DISCORD)
+                buildNotificationChannel(CHANNEL_HTTP_SERVER, IMPORTANCE_LOW) {
+                    setName(context.stringResource(AYMR.strings.pref_http_server_name))
+                    setShowBadge(false)
+                },
                 buildNotificationChannel(CHANNEL_APP_UPDATE, IMPORTANCE_DEFAULT) {
                     setGroup(GROUP_APK_UPDATES)
                     setName(context.stringResource(MR.strings.channel_app_updates))

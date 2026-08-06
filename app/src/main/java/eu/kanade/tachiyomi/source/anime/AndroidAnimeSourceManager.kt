@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.source.anime
 
 import android.content.Context
-import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
@@ -44,9 +43,7 @@ class AndroidAnimeSourceManager(
 
     private val stubSourcesMap = ConcurrentHashMap<Long, StubAnimeSource>()
 
-    override val catalogueSources: Flow<List<AnimeCatalogueSource>> = sourcesMapFlow.map {
-        it.values.filterIsInstance<AnimeCatalogueSource>()
-    }
+    override val sources: Flow<List<AnimeSource>> = sourcesMapFlow.map { it.values.toList() }
 
     init {
         scope.launchIO {
@@ -96,12 +93,14 @@ class AndroidAnimeSourceManager(
         }
     }
 
-    override fun getOnlineSources() = sourcesMapFlow.value.values.filterIsInstance<AnimeHttpSource>()
+    override fun getAll(): List<AnimeSource> = sourcesMapFlow.value.values.toList()
 
-    override fun getCatalogueSources() = sourcesMapFlow.value.values.filterIsInstance<AnimeCatalogueSource>()
+    override fun getOnlineSources(): List<AnimeHttpSource> {
+        return sourcesMapFlow.value.values.filterIsInstance<AnimeHttpSource>()
+    }
 
     override fun getStubSources(): List<StubAnimeSource> {
-        val onlineSourceIds = getOnlineSources().map { it.id }
+        val onlineSourceIds = getAll().map { it.id }
         return stubSourcesMap.values.filterNot { it.id in onlineSourceIds }
     }
 

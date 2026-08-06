@@ -18,6 +18,7 @@ import data.History
 import data.Mangas
 import dataanime.Animehistory
 import dataanime.Animes
+import dataanime.Episodes
 import eu.kanade.domain.track.anime.store.DelayedAnimeTrackingStore
 import eu.kanade.domain.track.manga.store.DelayedMangaTrackingStore
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
@@ -147,6 +148,10 @@ class AppModule(val app: Application) : InjektModule {
                     update_strategyAdapter = AnimeUpdateStrategyColumnAdapter,
                     fetch_typeAdapter = FetchTypeColumnAdapter,
                     castAdapter = CastColumnAdapter,
+                    memoAdapter = MemoColumnAdapter,
+                ),
+                episodesAdapter = Episodes.Adapter(
+                    memoAdapter = MemoColumnAdapter,
                 ),
             )
         }

@@ -3,6 +3,7 @@ package tachiyomi.data.entries.anime
 import aniyomi.domain.anime.SeasonAnime
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
 import eu.kanade.tachiyomi.animesource.model.FetchType
+import kotlinx.serialization.json.JsonObject
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.library.anime.LibraryAnime
 import tachiyomi.domain.source.anime.model.DeletableAnime
@@ -43,6 +44,7 @@ object AnimeMapper {
         backgroundUrl: String?,
         cast: List<eu.kanade.tachiyomi.animesource.model.Credit>?,
         backgroundLastModified: Long,
+        memo: JsonObject,
     ): Anime = Anime(
         id = id,
         source = source,
@@ -78,6 +80,7 @@ object AnimeMapper {
         seasonFlags = seasonFlags,
         seasonNumber = seasonNumber,
         seasonSourceOrder = seasonSourceOrder,
+        memo = memo,
     )
 
     fun mapLibraryAnime(
@@ -114,6 +117,7 @@ object AnimeMapper {
         backgroundUrl: String?,
         cast: List<eu.kanade.tachiyomi.animesource.model.Credit>?,
         backgroundLastModified: Long,
+        memo: JsonObject,
         totalCount: Long,
         seenCount: Double,
         latestUpload: Long,
@@ -157,6 +161,7 @@ object AnimeMapper {
             backgroundUrl,
             cast,
             backgroundLastModified,
+            memo,
         ),
         category = category,
         totalCount = totalCount,
@@ -202,6 +207,7 @@ object AnimeMapper {
         backgroundUrl: String?,
         cast: List<eu.kanade.tachiyomi.animesource.model.Credit>?,
         backgroundLastModified: Long,
+        memo: JsonObject,
         totalCount: Long,
         seenCount: Double,
         latestUpload: Long,
@@ -244,6 +250,7 @@ object AnimeMapper {
             backgroundUrl,
             cast,
             backgroundLastModified,
+            memo,
         ),
         totalCount = totalCount,
         seenCount = seenCount.toLong(),

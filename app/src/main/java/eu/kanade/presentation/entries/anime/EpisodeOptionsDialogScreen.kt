@@ -541,6 +541,9 @@ private fun VideoList(
                                 currentVideo.videoUrl,
                             ).toClipEntry()
                             clipboard.setClipEntry(clipEntry)
+                            if (currentVideo.usesHttpServer()) {
+                                MainActivity.startHttpServerService(context, anime.source)
+                            }
                             context.toast(copiedString)
                         }
                     },
@@ -551,6 +554,7 @@ private fun VideoList(
                                 anime.id,
                                 episode.id,
                                 true,
+                                anime.source,
                                 currentVideo,
                             )
                         }
@@ -562,6 +566,7 @@ private fun VideoList(
                                 anime.id,
                                 episode.id,
                                 false,
+                                anime.source,
                                 currentVideo,
                                 selectedHosterVideoIndex.first,
                                 selectedHosterVideoIndex.second,

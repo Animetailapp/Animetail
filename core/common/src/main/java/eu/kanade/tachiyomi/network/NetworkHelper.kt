@@ -111,8 +111,6 @@ class NetworkHelper(
         }
     }
 
-    val nonCloudflareClient = clientBuilder.build()
-
     val client = clientBuilder
         .addInterceptor(
             CloudflareInterceptor(context, cookieJar, preferences, scope) { defaultUserAgentProvider() },

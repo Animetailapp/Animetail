@@ -434,7 +434,7 @@ class AnimeDownloadCache(
     }
 
     private fun getSources(): List<AnimeSource> {
-        return sourceManager.getOnlineSources() + sourceManager.getStubSources()
+        return sourceManager.getAll() + sourceManager.getStubSources()
     }
 
     private fun notifyChanges() {
