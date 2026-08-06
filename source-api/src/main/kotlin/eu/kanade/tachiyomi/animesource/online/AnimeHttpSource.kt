@@ -15,12 +15,10 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.asObservableSuccess
 import eu.kanade.tachiyomi.network.awaitSuccess
-<<<<<<< HEAD:source-api/src/main/kotlin/eu/kanade/tachiyomi/animesource/online/AnimeHttpSource.kt
 import eu.kanade.tachiyomi.network.newCachelessCallWithProgress
+import eu.kanade.tachiyomi.network.ProgressListener
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-=======
->>>>>>> upstream/main:source-api/src/commonMain/kotlin/eu/kanade/tachiyomi/animesource/online/AnimeHttpSource.kt
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -581,6 +579,8 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     open fun createHttpServer(): HttpServer? {
         return server
     }
+
+    /**
      * Return info for thumbnails to be used as a preview when seeking.
      *
      * @since extensions-lib 17
