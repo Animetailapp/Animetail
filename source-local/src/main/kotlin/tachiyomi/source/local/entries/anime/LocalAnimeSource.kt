@@ -169,8 +169,6 @@ class LocalAnimeSource(
         SAnimeSeasonUpdate(asyncAnime?.await() ?: anime, asyncSeasons?.await() ?: seasons)
     }
 
-
-
     // SY -->
     fun updateAnimeInfo(anime: SAnime) {
         val directory = fileSystem.getFilesInBaseDirectory().map { File(it.filePath, anime.url) }.find {

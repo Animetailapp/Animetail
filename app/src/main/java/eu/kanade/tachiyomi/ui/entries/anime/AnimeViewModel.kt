@@ -417,6 +417,7 @@ class AnimeViewModel(
                             downloadNewEpisodes(update.newEpisodes)
                         }
                     }
+
                     FetchType.Seasons -> {
                         val update = updateAnimeFromRemote.awaitSeasonsUpdate(
                             source = state.source,
@@ -442,9 +443,11 @@ class AnimeViewModel(
                 is NoEpisodesException -> {
                     context.stringResource(AYMR.strings.no_episodes_error)
                 }
+
                 is NoSeasonsException -> {
                     context.stringResource(AYMR.strings.no_seasons_error)
                 }
+
                 else -> {
                     logcat(LogPriority.ERROR, e)
                     with(context) { e.formattedMessage }

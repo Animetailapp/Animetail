@@ -6,13 +6,13 @@ import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionLoader
+import kotlinx.serialization.Serializable
 import mihon.domain.extension.anime.interactor.UpdateAnimeExtensionStores
 import mihon.domain.extension.anime.repository.AnimeExtensionStoreRepository
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.withIOContext
 import uy.kohesive.injekt.injectLazy
-import kotlinx.serialization.Serializable
 import java.time.Instant
 import kotlin.time.Duration.Companion.days
 

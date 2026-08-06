@@ -236,7 +236,6 @@ internal class MigrateAnimeDialogScreenModel(
         mutableState.update { it.copy(isMigrating = true) }
 
         try {
-
             migrateAnimeInternal(
                 oldSource = prevSource,
                 newSource = source,

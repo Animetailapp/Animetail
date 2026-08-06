@@ -162,12 +162,16 @@ class UpdateAnimeFromRemote(
             when {
                 // Never refresh covers if the url is empty to avoid "losing" existing covers
                 remoteAnime.thumbnail_url.isNullOrEmpty() -> null
+
                 !manualFetch && localAnime.thumbnailUrl == remoteAnime.thumbnail_url -> null
+
                 localAnime.isLocal() -> Instant.now().toEpochMilli()
+
                 localAnime.hasCustomCover(coverCache) -> {
                     coverCache.deleteFromCache(localAnime, false)
                     null
                 }
+
                 else -> {
                     coverCache.deleteFromCache(localAnime, false)
                     Instant.now().toEpochMilli()
@@ -178,12 +182,16 @@ class UpdateAnimeFromRemote(
             when {
                 // Never refresh backgrounds if the url is empty to avoid "losing" existing backgrounds
                 remoteAnime.background_url.isNullOrEmpty() -> null
+
                 !manualFetch && localAnime.backgroundUrl == remoteAnime.background_url -> null
+
                 localAnime.isLocal() -> Instant.now().toEpochMilli()
+
                 localAnime.hasCustomBackground(backgroundCache) -> {
                     backgroundCache.deleteFromCache(localAnime, false)
                     null
                 }
+
                 else -> {
                     backgroundCache.deleteFromCache(localAnime, false)
                     Instant.now().toEpochMilli()
