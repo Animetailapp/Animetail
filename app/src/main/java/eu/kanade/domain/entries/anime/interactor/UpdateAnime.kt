@@ -6,6 +6,14 @@ import tachiyomi.domain.entries.anime.model.AnimeUpdate
 import tachiyomi.domain.entries.anime.repository.AnimeRepository
 import java.time.Instant
 import java.time.ZonedDateTime
+import eu.kanade.domain.entries.anime.model.hasCustomBackground
+import eu.kanade.domain.entries.anime.model.hasCustomCover
+import eu.kanade.tachiyomi.animesource.model.SAnime
+import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
+import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
+import tachiyomi.source.local.entries.anime.isLocal
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 class UpdateAnime(
     private val animeRepository: AnimeRepository,

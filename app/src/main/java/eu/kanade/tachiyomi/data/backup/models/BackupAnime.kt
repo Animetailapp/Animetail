@@ -15,7 +15,7 @@ import tachiyomi.domain.entries.anime.model.CustomAnimeInfo
     "MagicNumber",
 )
 @Serializable
-class BackupAnime(
+data class BackupAnime(
     // in 1.x some of these values have different names
     @ProtoNumber(1) var source: Long,
     // url is called key in 1.x

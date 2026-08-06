@@ -197,7 +197,7 @@ data class BrowseAnimeSourceScreen(
                                 Text(text = stringResource(MR.strings.popular))
                             },
                         )
-                        if ((viewModel.source as? AnimeCatalogueSource)?.supportsLatest == true) {
+                        if (viewModel.source.supportsLatest) {
                             FilterChip(
                                 selected = state.listing == Listing.Latest,
                                 onClick = {

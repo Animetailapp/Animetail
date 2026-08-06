@@ -34,7 +34,7 @@ class MigrateAnimeSearchViewModel(
         }
     }
 
-    override fun getEnabledSources(): List<AnimeCatalogueSource> {
+    override fun getEnabledSources(): List<eu.kanade.tachiyomi.animesource.AnimeSource> {
         val migrationSources = sourcePreferences.migrationAnimeSources.get()
         return super.getEnabledSources()
             .filter { migrationSources.isEmpty() || it.id in migrationSources }

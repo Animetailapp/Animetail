@@ -93,15 +93,24 @@ internal class AnimeExtensionApi {
                     isNsfw = it.nsfw == 1,
                     isTorrent = it.torrent == 1,
                     sources = it.sources?.map(extensionAnimeSourceMapper).orEmpty(),
-                    apkName = it.apk,
+                    apkUrl = "$repoUrl/apk/${it.apk}",
                     iconUrl = "$repoUrl/icon/${it.pkg}.png",
-                    repoUrl = repoUrl,
+                    store = mihon.domain.extension.model.ExtensionStore(
+                        indexUrl = repoUrl,
+                        name = "Aniyomi",
+                        badgeLabel = "Aniyomi",
+                        signingKey = "NO_SIGNING_KEY",
+                        contact = mihon.domain.extension.model.ExtensionStore.Contact(website = "", discord = null),
+                        isLegacy = true,
+                    ),
+                    signatureHash = "NO_SIGNING_KEY",
+                    repoName = "Aniyomi",
                 )
             }
     }
 
     fun getApkUrl(extension: AnimeExtension.Available): String {
-        return "${extension.repoUrl}/apk/${extension.apkName}"
+        return extension.apkUrl
     }
 
     private fun AnimeExtensionJsonObject.extractLibVersion(): Double {
