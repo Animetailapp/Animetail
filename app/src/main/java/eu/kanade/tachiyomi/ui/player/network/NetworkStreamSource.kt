@@ -16,6 +16,7 @@ object NetworkStreamSource : AnimeSource {
     override val id: Long = Long.MIN_VALUE + 42
     override val name: String = "Network Stream"
 
+    @Suppress("DEPRECATION")
     override suspend fun getSeasonList(anime: SAnime): List<SAnime> = emptyList()
 
     override val supportsLatest: Boolean = false
