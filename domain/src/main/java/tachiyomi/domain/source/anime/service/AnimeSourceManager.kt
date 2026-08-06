@@ -22,6 +22,8 @@ interface AnimeSourceManager {
 
     fun getOnlineSources(): List<AnimeHttpSource>
 
+    fun getCatalogueSources(): List<AnimeCatalogueSource>
+
     // SY -->
     fun getVisibleOnlineSources(): List<HttpSource>
 

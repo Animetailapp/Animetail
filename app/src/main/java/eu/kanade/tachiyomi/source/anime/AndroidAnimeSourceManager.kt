@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.source.anime
 
 import android.content.Context
+import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
@@ -97,6 +98,10 @@ class AndroidAnimeSourceManager(
 
     override fun getOnlineSources(): List<AnimeHttpSource> {
         return sourcesMapFlow.value.values.filterIsInstance<AnimeHttpSource>()
+    }
+
+    override fun getCatalogueSources(): List<AnimeCatalogueSource> {
+        return sourcesMapFlow.value.values.filterIsInstance<AnimeCatalogueSource>()
     }
 
     override fun getStubSources(): List<StubAnimeSource> {
