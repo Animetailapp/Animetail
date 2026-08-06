@@ -28,4 +28,8 @@ open class HttpServer : NanoHTTPD(0) {
         super.stop()
         isRunning = false
     }
+
+    companion object {
+        const val PLACEHOLDER_URL = "http://localhost:1"
+    }
 }

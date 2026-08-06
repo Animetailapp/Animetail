@@ -1103,15 +1103,6 @@ class PlayerViewModel @JvmOverloads constructor(
         }
     }
 
-    fun stopHttpServer() {
-        val server = (currentSource.value as? AnimeHttpSource)?.server
-            ?: return
-
-        if (server.isRunning()) {
-            server.stop()
-        }
-    }
-
     // ====== OLD ======
 
     private val eventChannel = Channel<Event>()
@@ -1527,6 +1518,10 @@ class PlayerViewModel @JvmOverloads constructor(
 
         activity.setVideo(resolvedVideo)
         return true
+    }
+
+    fun updateVideo(video: Video) {
+        _currentVideo.update { _ -> video }
     }
 
     fun onVideoClicked(hosterIndex: Int, videoIndex: Int) {
