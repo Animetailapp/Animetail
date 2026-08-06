@@ -102,7 +102,7 @@ class ExternalIntents {
         if (video.usesHttpServer()) {
             val (success, port) = MainActivity.startHttpServerService(context, source.id)
             if (!success) {
-                launchUI {
+                withUIContext {
                     context.toast(AYMR.strings.http_server_start_failure)
                 }
                 return null

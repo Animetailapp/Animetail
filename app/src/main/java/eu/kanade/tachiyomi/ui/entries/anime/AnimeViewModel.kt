@@ -33,7 +33,6 @@ import eu.kanade.domain.entries.anime.model.toSAnime
 import eu.kanade.domain.items.episode.interactor.SetSeenStatus
 import eu.kanade.domain.items.episode.interactor.SyncEpisodesWithSource
 import eu.kanade.domain.source.service.SourcePreferences
-import mihon.domain.source.interactor.UpdateAnimeFromRemote
 import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
 import eu.kanade.domain.track.anime.interactor.RefreshAnimeTracks
 import eu.kanade.domain.track.anime.interactor.RefreshResult
@@ -829,6 +828,9 @@ class AnimeViewModel(
         }
     }
 
+    fun isTorrentEnabled(): Boolean {
+        return torrentPreferences.torrServerEnable().get()
+    }
 
     private suspend fun startTorrentServer(source: AnimeSource?) {
         if (isTorrentEnabled() && source.isSourceForTorrents()) {

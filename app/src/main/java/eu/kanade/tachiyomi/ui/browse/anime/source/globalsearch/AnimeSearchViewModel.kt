@@ -184,7 +184,7 @@ abstract class AnimeSearchViewModel(
             it.copy(
                 items = items
                     .toSortedMap(sortComparator(items))
-                    .toMap(),
+                    .toPersistentMap(),
             )
         }
     }
