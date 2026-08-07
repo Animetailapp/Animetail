@@ -86,7 +86,11 @@ interface AnimeSource {
         episodes: List<SEpisode>,
         fetchDetails: Boolean,
         fetchEpisodes: Boolean,
-    ): SAnimeEpisodeUpdate
+    ): SAnimeEpisodeUpdate {
+        val updatedAnime = if (fetchDetails) getAnimeDetails(anime) else anime
+        val updatedEpisodes = if (fetchEpisodes) getEpisodeList(anime) else episodes
+        return SAnimeEpisodeUpdate(updatedAnime, updatedEpisodes)
+    }
 
     /**
      * Fetches updated information for an anime.
@@ -109,7 +113,11 @@ interface AnimeSource {
         seasons: List<SAnime>,
         fetchDetails: Boolean,
         fetchSeasons: Boolean,
-    ): SAnimeSeasonUpdate
+    ): SAnimeSeasonUpdate {
+        val updatedAnime = if (fetchDetails) getAnimeDetails(anime) else anime
+        val updatedSeasons = if (fetchSeasons) getSeasonList(anime) else seasons
+        return SAnimeSeasonUpdate(updatedAnime, updatedSeasons)
+    }
 
     /**
      * Get the list of hoster for an episode. The first hoster in the list should
