@@ -75,6 +75,7 @@ import eu.kanade.tachiyomi.databinding.PlayerLayoutBinding
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.source.anime.isNsfw
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
+import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.controls.PlayerControls
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
@@ -92,6 +93,7 @@ import `is`.xyz.mpv.MPVNode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -113,6 +115,7 @@ import uy.kohesive.injekt.api.get
 import java.util.Calendar
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.time.Duration.Companion.seconds
 
 class PlayerActivity : BaseActivity() {
     private val viewModel by viewModels<PlayerViewModel>(factoryProducer = { PlayerViewModelProviderFactory(this) })
@@ -1117,13 +1120,35 @@ class PlayerActivity : BaseActivity() {
                 torrentLinkHandler(video.videoUrl, video.videoTitle, videoOptions)
             }
         } else {
-            mpv.command(
-                "loadfile",
-                parseVideoUrl(video.videoUrl) ?: return,
-                "replace",
-                "0",
-                videoOptions,
-            )
+            lifecycleScope.launchIO {
+                val sourceId = viewModel.currentSource.value?.id
+                var videoUrl: String = video.videoUrl
+                if (video.usesHttpServer() && sourceId != null) {
+                    val (success, port) = MainActivity.startHttpServerService(
+                        context = applicationContext,
+                        sourceId = sourceId,
+                    )
+
+                    if (!success) {
+                        launchUI {
+                            toast(AYMR.strings.http_server_start_failure)
+                        }
+                        return@launchIO
+                    }
+
+                    val newVideo = video.copyHttpServer(port)
+                    videoUrl = newVideo.videoUrl
+                    viewModel.updateVideo(newVideo)
+                }
+
+                mpv.command(
+                    "loadfile",
+                    parseVideoUrl(videoUrl) ?: return@launchIO,
+                    "replace",
+                    "0",
+                    videoOptions,
+                )
+            }
         }
         updateDiscordRPC(exitingPlayer = false)
     }
@@ -1162,7 +1187,6 @@ class PlayerActivity : BaseActivity() {
             val preferredPort = torrentPreferences.torrServerPort().get().toIntOrNull() ?: 8090
             torrentServerApi.setPort(preferredPort)
         }
-
         // check if link is from localSource
         if (videoUrl.startsWith("content://")) {
             val videoInputStream = applicationContext.contentResolver.openInputStream(videoUrl.toUri())
@@ -1202,7 +1226,7 @@ class PlayerActivity : BaseActivity() {
         )
     }
 
-    private fun parseVideoUrl(videoUrl: String?): String? {
+    fun parseVideoUrl(videoUrl: String?): String? {
         return videoUrl?.toUri()?.resolveUri(this)
             ?: videoUrl
     }

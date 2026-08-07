@@ -18,6 +18,7 @@ import data.History
 import data.Mangas
 import dataanime.Animehistory
 import dataanime.Animes
+import dataanime.Episodes
 import eu.kanade.domain.track.anime.store.DelayedAnimeTrackingStore
 import eu.kanade.domain.track.manga.store.DelayedMangaTrackingStore
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
@@ -117,7 +118,25 @@ class AppModule(val app: Application) : InjektModule {
                     configuration = AndroidxSqliteConfiguration(
                         isForeignKeyConstraintsEnabled = true,
                     ),
-                ).also { animeSqlDriverRef = WeakReference(it) }
+                ).also { driver ->
+                    kotlinx.coroutines.runBlocking {
+                        try {
+                            driver.execute(
+                                null,
+                                "ALTER TABLE animes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d';",
+                                0,
+                            ).await()
+                        } catch (_: Throwable) {}
+                        try {
+                            driver.execute(
+                                null,
+                                "ALTER TABLE episodes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d';",
+                                0,
+                            ).await()
+                        } catch (_: Throwable) {}
+                    }
+                    animeSqlDriverRef = WeakReference(driver)
+                }
             }
         addSingletonFactory {
             Database(
@@ -147,6 +166,10 @@ class AppModule(val app: Application) : InjektModule {
                     update_strategyAdapter = AnimeUpdateStrategyColumnAdapter,
                     fetch_typeAdapter = FetchTypeColumnAdapter,
                     castAdapter = CastColumnAdapter,
+                    memoAdapter = MemoColumnAdapter,
+                ),
+                episodesAdapter = Episodes.Adapter(
+                    memoAdapter = MemoColumnAdapter,
                 ),
             )
         }

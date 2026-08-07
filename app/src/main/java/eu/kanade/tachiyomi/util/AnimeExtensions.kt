@@ -79,7 +79,6 @@ fun Anime.prepUpdateBackground(
         }
     }
 }
-
 fun Anime.removeCovers(coverCache: AnimeCoverCache = Injekt.get()): Anime {
     if (isLocal()) return this
     return if (coverCache.deleteFromCache(this, true) > 0) {

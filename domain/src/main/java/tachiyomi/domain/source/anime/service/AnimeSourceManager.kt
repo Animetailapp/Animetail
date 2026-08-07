@@ -12,11 +12,13 @@ interface AnimeSourceManager {
 
     val isInitialized: StateFlow<Boolean>
 
-    val catalogueSources: Flow<List<AnimeCatalogueSource>>
+    val sources: Flow<List<AnimeSource>>
 
     fun get(sourceKey: Long): AnimeSource?
 
     fun getOrStub(sourceKey: Long): AnimeSource
+
+    fun getAll(): List<AnimeSource>
 
     fun getOnlineSources(): List<AnimeHttpSource>
 

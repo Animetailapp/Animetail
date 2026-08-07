@@ -30,12 +30,9 @@ import cafe.adriel.voyager.core.model.StateScreenModel
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.hasCustomBackground
 import eu.kanade.domain.entries.anime.model.hasCustomCover
-import eu.kanade.domain.entries.anime.model.toSAnime
-import eu.kanade.domain.items.episode.interactor.SyncEpisodesWithSource
 import eu.kanade.presentation.components.IndicatorSize
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.FetchType
-import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
@@ -45,6 +42,7 @@ import eu.kanade.tachiyomi.ui.browse.anime.migration.AnimeMigrationFlags
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.update
 import logcat.LogPriority
+import mihon.domain.source.interactor.UpdateAnimeFromRemote
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.launchIO
@@ -206,7 +204,6 @@ internal class MigrateAnimeDialogScreenModel(
     private val downloadManager: AnimeDownloadManager = Injekt.get(),
     private val updateAnime: UpdateAnime = Injekt.get(),
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
-    private val syncEpisodesWithSource: SyncEpisodesWithSource = Injekt.get(),
     private val updateEpisode: UpdateEpisode = Injekt.get(),
     private val getCategories: GetAnimeCategories = Injekt.get(),
     private val setAnimeCategories: SetAnimeCategories = Injekt.get(),
@@ -215,6 +212,7 @@ internal class MigrateAnimeDialogScreenModel(
     private val coverCache: AnimeCoverCache = Injekt.get(),
     private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
     private val preferenceStore: PreferenceStore = Injekt.get(),
+    private val updateAnimeFromRemote: UpdateAnimeFromRemote = Injekt.get(),
 ) : StateScreenModel<MigrateAnimeDialogScreenModel.State>(State()) {
 
     val migrateFlags: Preference<Int> by lazy {
@@ -238,20 +236,11 @@ internal class MigrateAnimeDialogScreenModel(
         mutableState.update { it.copy(isMigrating = true) }
 
         try {
-            val episodes = try {
-                source.getEpisodeList(newAnime.toSAnime())
-            } catch (e: Throwable) {
-                if (e is CancellationException) throw e
-                logcat(LogPriority.ERROR, e)
-                emptyList()
-            }
-
             migrateAnimeInternal(
                 oldSource = prevSource,
                 newSource = source,
                 oldAnime = oldAnime,
                 newAnime = newAnime,
-                sourceEpisodes = episodes,
                 replace = replace,
                 flags = flags,
             )
@@ -267,7 +256,6 @@ internal class MigrateAnimeDialogScreenModel(
         newSource: AnimeSource,
         oldAnime: Anime,
         newAnime: Anime,
-        sourceEpisodes: List<SEpisode>,
         replace: Boolean,
         flags: Int,
     ) {
@@ -278,13 +266,11 @@ internal class MigrateAnimeDialogScreenModel(
         val deleteDownloaded = AnimeMigrationFlags.hasDeleteDownloaded(flags)
         val migrateNotes = AnimeMigrationFlags.hasNotes(flags)
 
-        try {
-            syncEpisodesWithSource.await(sourceEpisodes, newAnime, newSource)
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-            logcat(LogPriority.ERROR, e)
-            // Worst case, chapters won't be synced
-        }
+        updateAnimeFromRemote.awaitEpisodesUpdate(
+            source = newSource,
+            anime = newAnime,
+            fetchEpisodes = true,
+        ).getOrThrow()
 
         // Update chapters read, bookmark and dateFetch
         if (migrateEpisodes) {

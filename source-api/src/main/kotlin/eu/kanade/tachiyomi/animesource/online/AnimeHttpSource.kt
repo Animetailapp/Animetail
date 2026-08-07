@@ -33,7 +33,6 @@ import java.security.MessageDigest
 /**
  * A simple implementation for sources from a website.
  */
-@Suppress("unused")
 abstract class AnimeHttpSource : AnimeCatalogueSource {
     /**
      * Network service.
@@ -46,10 +45,23 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     abstract val baseUrl: String
 
     /**
+     * Returns the base (home) URL of the website as a string.
+     *
+     * This is typically the root address that serves as the main entry point
+     * to the site's content, such as "https://aniyomi.org".
+     *
+     * This method is used in the browse screen to determine the URL
+     * opened when tapping "Open in WebView".
+     *
+     * @return The website’s home page URL. Defaults to [baseUrl].
+     */
+    open fun getHomeUrl(): String = baseUrl
+
+    /**
      * Version id used to generate the source id. If the site completely changes and urls are
      * incompatible, you may increase this value and it'll be considered as a new source.
      */
-    open val versionId = 1
+    open val versionId: Int = 1
 
     /**
      * ID of the source. By default it uses a generated id using the first 16 characters (64 bits)
@@ -61,7 +73,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * Note: the generated ID sets the sign bit to `0`.
      */
-    override val id by lazy { generateId(name, lang, versionId) }
+    override val id: Long by lazy { generateId(name, lang, versionId) }
 
     /**
      * Headers used for requests.
@@ -71,8 +83,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     /**
      * Default network client for doing requests.
      */
-    open val client: OkHttpClient
-        get() = network.client
+    open val client: OkHttpClient get() = network.client
 
     /**
      * Enable the use of a local http server.
@@ -110,14 +121,14 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
     /**
      * Headers builder for requests. Implementations can override this method for custom headers.
      */
-    protected open fun headersBuilder() = Headers.Builder().apply {
+    protected open fun headersBuilder(): Headers.Builder = Headers.Builder().apply {
         add("User-Agent", network.defaultUserAgentProvider())
     }
 
     /**
      * Visible name of the source.
      */
-    override fun toString() = "$name (${lang.uppercase()})"
+    override fun toString(): String = "$name (${lang.uppercase()})"
 
     /**
      * Returns an observable containing a page with a list of anime. Normally it's not needed to
@@ -125,8 +136,9 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param page the page number to retrieve.
      */
+    @Suppress("DEPRECATION")
     @Deprecated(
-        "Use the non-RxJava API instead",
+        "Use the suspend API instead",
         ReplaceWith("getPopularAnime"),
     )
     override fun fetchPopularAnime(page: Int): Observable<AnimesPage> {
@@ -142,14 +154,22 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param page the page number to retrieve.
      */
-    protected abstract fun popularAnimeRequest(page: Int): Request
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun popularAnimeRequest(page: Int): Request = throw UnsupportedOperationException()
 
     /**
      * Parses the response from the site and returns a [AnimesPage] object.
      *
      * @param response the response from the site.
      */
-    protected abstract fun popularAnimeParse(response: Response): AnimesPage
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun popularAnimeParse(response: Response): AnimesPage = throw UnsupportedOperationException()
 
     /**
      * Returns an observable containing a page with a list of anime. Normally it's not needed to
@@ -159,20 +179,14 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param query the search query.
      * @param filters the list of filters to apply.
      */
+    @Suppress("DEPRECATION")
     @Deprecated(
-        "Use the non-RxJava API instead",
+        "Use the suspend API instead",
         ReplaceWith("getSearchAnime"),
     )
     override fun fetchSearchAnime(page: Int, query: String, filters: AnimeFilterList): Observable<AnimesPage> {
-        return Observable.defer {
-            try {
-                client.newCall(searchAnimeRequest(page, query, filters)).asObservableSuccess()
-            } catch (e: NoClassDefFoundError) {
-                // RxJava doesn't handle Errors, which tends to happen during global searches
-                // if an old extension using non-existent classes is still around
-                throw RuntimeException(e)
-            }
-        }
+        return client.newCall(searchAnimeRequest(page, query, filters))
+            .asObservableSuccess()
             .map { response ->
                 searchAnimeParse(response)
             }
@@ -185,22 +199,35 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param query the search query.
      * @param filters the list of filters to apply.
      */
-    protected abstract fun searchAnimeRequest(page: Int, query: String, filters: AnimeFilterList): Request
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun searchAnimeRequest(
+        page: Int,
+        query: String,
+        filters: AnimeFilterList,
+    ): Request = throw UnsupportedOperationException()
 
     /**
      * Parses the response from the site and returns a [AnimesPage] object.
      *
      * @param response the response from the site.
      */
-    protected abstract fun searchAnimeParse(response: Response): AnimesPage
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun searchAnimeParse(response: Response): AnimesPage = throw UnsupportedOperationException()
 
     /**
      * Returns an observable containing a page with a list of latest anime updates.
      *
      * @param page the page number to retrieve.
      */
+    @Suppress("DEPRECATION")
     @Deprecated(
-        "Use the non-RxJava API instead",
+        "Use the suspend API instead",
         ReplaceWith("getLatestUpdates"),
     )
     override fun fetchLatestUpdates(page: Int): Observable<AnimesPage> {
@@ -216,28 +243,30 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param page the page number to retrieve.
      */
-    protected abstract fun latestUpdatesRequest(page: Int): Request
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun latestUpdatesRequest(page: Int): Request = throw UnsupportedOperationException()
 
     /**
      * Parses the response from the site and returns a [AnimesPage] object.
      *
      * @param response the response from the site.
      */
-    protected abstract fun latestUpdatesParse(response: Response): AnimesPage
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun latestUpdatesParse(response: Response): AnimesPage = throw UnsupportedOperationException()
 
-    /**
-     * Get the updated details for a anime.
-     * Normally it's not needed to override this method.
-     *
-     * @param anime the anime to be updated.
-     * @return the updated anime.
-     */
     @Suppress("DEPRECATION")
     override suspend fun getAnimeDetails(anime: SAnime): SAnime {
         return fetchAnimeDetails(anime).awaitSingle()
     }
 
-    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getAnimeDetails"))
+    @Suppress("DEPRECATION")
+    @Deprecated("Use the combined suspend API instead", replaceWith = ReplaceWith("getAnimeEpisodeUpdate"))
     override fun fetchAnimeDetails(anime: SAnime): Observable<SAnime> {
         return client.newCall(animeDetailsRequest(anime))
             .asObservableSuccess()
@@ -252,6 +281,10 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param anime the anime to be updated.
      */
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
     open fun animeDetailsRequest(anime: SAnime): Request {
         return GET(baseUrl + anime.url, headers)
     }
@@ -261,7 +294,11 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param response the response from the site.
      */
-    protected abstract fun animeDetailsParse(response: Response): SAnime
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun animeDetailsParse(response: Response): SAnime = throw UnsupportedOperationException()
 
     // KMK -->
 
@@ -329,6 +366,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
         return fetchEpisodeList(anime).awaitSingle()
     }
 
+    @Suppress("DEPRECATION")
     @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getEpisodeList"))
     override fun fetchEpisodeList(anime: SAnime): Observable<List<SEpisode>> {
         return client.newCall(episodeListRequest(anime))
@@ -344,6 +382,10 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param anime the anime to look for episodes.
      */
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
     protected open fun episodeListRequest(anime: SAnime): Request {
         return GET(baseUrl + anime.url, headers)
     }
@@ -353,14 +395,22 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param response the response from the site.
      */
-    protected abstract fun episodeListParse(response: Response): List<SEpisode>
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun episodeListParse(response: Response): List<SEpisode> = throw UnsupportedOperationException()
 
     /**
      * Parses the response from the site and returns a SEpisode Object.
      *
      * @param response the response from the site.
      */
-    protected abstract fun episodeVideoParse(response: Response): SEpisode
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun episodeVideoParse(response: Response): SEpisode = throw UnsupportedOperationException()
 
     /**
      * Get all the available seasons for an anime.
@@ -370,6 +420,11 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param anime the anime to look for seasons.
      * @return the seasons for the anime.
      */
+    @Suppress("DEPRECATION")
+    @Deprecated(
+        message = "Use the combined API instead",
+        ReplaceWith("getAnimeSeasonUpdate"),
+    )
     override suspend fun getSeasonList(anime: SAnime): List<SAnime> {
         return client.newCall(seasonListRequest(anime))
             .awaitSuccess()
@@ -386,6 +441,10 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param anime the anime to look for seasons.
      * @return the request for getting the seasons.
      */
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
     protected open fun seasonListRequest(anime: SAnime): Request {
         return GET(baseUrl + anime.url, headers)
     }
@@ -397,7 +456,11 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param response the response from the site.
      * @return the list of seasons.
      */
-    protected abstract fun seasonListParse(response: Response): List<SAnime>
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun seasonListParse(response: Response): List<SAnime> = throw UnsupportedOperationException()
 
     /**
      * Get the list of hoster for an episode. The first hoster in the list should
@@ -407,6 +470,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param episode the episode.
      * @return the hosters for the episode.
      */
+    @Suppress("DEPRECATION")
     override suspend fun getHosterList(episode: SEpisode): List<Hoster> {
         return client.newCall(hosterListRequest(episode))
             .awaitSuccess()
@@ -423,6 +487,10 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param episode the episode to look for hosters.
      * @return the request for getting the hosters.
      */
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
     protected open fun hosterListRequest(episode: SEpisode): Request {
         return GET(baseUrl + episode.url, headers)
     }
@@ -434,7 +502,11 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param response the response from the site.
      * @return the list of hosters.
      */
-    protected abstract fun hosterListParse(response: Response): List<Hoster>
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun hosterListParse(response: Response): List<Hoster> = throw UnsupportedOperationException()
 
     /**
      * Get the list of videos for a hoster.
@@ -443,6 +515,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param hoster the hoster.
      * @return the videos for the hoster.
      */
+    @Suppress("DEPRECATION")
     override suspend fun getVideoList(hoster: Hoster): List<Video> {
         return client.newCall(videoListRequest(hoster))
             .awaitSuccess()
@@ -459,6 +532,10 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param hoster the hoster to look for videos.
      * @return the request for getting the videos.
      */
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
     protected open fun videoListRequest(hoster: Hoster): Request {
         return GET(hoster.hosterUrl, headers)
     }
@@ -471,7 +548,14 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param hoster the hoster.
      * @return the list of videos.
      */
-    protected abstract fun videoListParse(response: Response, hoster: Hoster): List<Video>
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun videoListParse(
+        response: Response,
+        hoster: Hoster,
+    ): List<Video> = throw UnsupportedOperationException()
 
     /**
      * Returns the resolved video of the episode link. Override only if it's needed to resolve
@@ -483,6 +567,17 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      */
     open suspend fun resolveVideo(video: Video): Video? {
         return video
+    }
+
+    /**
+     * Enable the use of a local http server.
+     *
+     * Return an instance of HttpServer. The app will handle starting and closing of the server.
+     *
+     * @since extensions-lib 17
+     */
+    open fun createHttpServer(): HttpServer? {
+        return server
     }
 
     /**
@@ -521,7 +616,8 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
         return fetchVideoList(episode).awaitSingle()
     }
 
-    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getVideoList"))
+    @Suppress("DEPRECATION")
+    @Deprecated("Use the suspend API instead", replaceWith = ReplaceWith("getVideoList"))
     override fun fetchVideoList(episode: SEpisode): Observable<List<Video>> {
         return client.newCall(videoListRequest(episode))
             .asObservableSuccess()
@@ -536,6 +632,10 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param episode the episode to look for links.
      */
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
     protected open fun videoListRequest(episode: SEpisode): Request {
         return GET(baseUrl + episode.url, headers)
     }
@@ -545,7 +645,11 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param response the response from the site.
      */
-    protected abstract fun videoListParse(response: Response): List<Video>
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun videoListParse(response: Response): List<Video> = throw UnsupportedOperationException()
 
     /**
      * Sorts the hoster list. Override this according to the user's preference.
@@ -586,7 +690,8 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
         return fetchVideoUrl(video).awaitSingle()
     }
 
-    @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getVideoUrl"))
+    @Suppress("DEPRECATION")
+    @Deprecated("Use resolveVideo for lazy loading instead", replaceWith = ReplaceWith("resolveVideo"))
     open fun fetchVideoUrl(video: Video): Observable<String> {
         return client.newCall(videoUrlRequest(video))
             .asObservableSuccess()
@@ -599,6 +704,10 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param video the chapter whose page list has to be fetched
      */
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
     protected open fun videoUrlRequest(video: Video): Request {
         return GET(video.url, headers)
     }
@@ -608,7 +717,11 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param response the response from the site.
      */
-    protected abstract fun videoUrlParse(response: Response): String
+    @Deprecated(
+        message = "The helper functions are inherently limiting and hides the underlying implementation. " +
+            "Source developers should make their own implementation according to their needs.",
+    )
+    protected open fun videoUrlParse(response: Response): String = throw UnsupportedOperationException()
 
     /**
      * Returns the response of the source video.
@@ -693,6 +806,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param url the full url to the episode.
      */
+    @Suppress("Unused")
     fun SEpisode.setUrlWithoutDomain(url: String) {
         this.url = getUrlWithoutDomain(url)
     }
@@ -703,6 +817,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      *
      * @param url the full url to the anime.
      */
+    @Suppress("Unused")
     fun SAnime.setUrlWithoutDomain(url: String) {
         this.url = getUrlWithoutDomain(url)
     }
@@ -723,7 +838,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
                 out += "#" + uri.fragment
             }
             out
-        } catch (e: URISyntaxException) {
+        } catch (_: URISyntaxException) {
             orig
         }
     }
@@ -735,6 +850,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param anime the anime
      * @return url of the anime
      */
+    @Suppress("DEPRECATION")
     open fun getAnimeUrl(anime: SAnime): String {
         return animeDetailsRequest(anime).url.toString()
     }
@@ -746,6 +862,7 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param episode the episode
      * @return url of the episode
      */
+    @Suppress("Unused")
     open fun getEpisodeUrl(episode: SEpisode): String {
         return episode.url
     }
@@ -757,10 +874,6 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      * @param episode the episode to be added.
      * @param anime the anime of the episode.
      */
+    @Deprecated("All modifications should be done when constructing the episode")
     open fun prepareNewEpisode(episode: SEpisode, anime: SAnime) {}
-
-    /**
-     * Returns the list of filters for the source.
-     */
-    override fun getFilterList() = AnimeFilterList()
 }

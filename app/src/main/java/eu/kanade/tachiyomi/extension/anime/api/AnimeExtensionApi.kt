@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionLoader
+import kotlinx.serialization.Serializable
 import mihon.domain.extension.anime.interactor.UpdateAnimeExtensionStores
 import mihon.domain.extension.anime.repository.AnimeExtensionStoreRepository
 import tachiyomi.core.common.preference.Preference
@@ -75,4 +76,74 @@ internal class AnimeExtensionApi {
 
         return extensionsWithUpdate
     }
+    private fun List<AnimeExtensionJsonObject>.toExtensions(repoUrl: String): List<AnimeExtension.Available> {
+        return this
+            .filter {
+                val libVersion = it.extractLibVersion()
+                libVersion >= AnimeExtensionLoader.LIB_VERSION_MIN && libVersion <= AnimeExtensionLoader.LIB_VERSION_MAX
+            }
+            .map {
+                AnimeExtension.Available(
+                    name = it.name.substringAfter("Aniyomi: "),
+                    pkgName = it.pkg,
+                    versionName = it.version,
+                    versionCode = it.code,
+                    libVersion = it.extractLibVersion(),
+                    lang = it.lang,
+                    isNsfw = it.nsfw == 1,
+                    isTorrent = it.torrent == 1,
+                    sources = it.sources?.map(extensionAnimeSourceMapper).orEmpty(),
+                    apkUrl = "$repoUrl/apk/${it.apk}",
+                    iconUrl = "$repoUrl/icon/${it.pkg}.png",
+                    store = mihon.domain.extension.model.ExtensionStore(
+                        indexUrl = repoUrl,
+                        name = "Aniyomi",
+                        badgeLabel = "Aniyomi",
+                        signingKey = "NO_SIGNING_KEY",
+                        contact = mihon.domain.extension.model.ExtensionStore.Contact(website = "", discord = null),
+                        isLegacy = true,
+                    ),
+                    signatureHash = "NO_SIGNING_KEY",
+                    repoName = "Aniyomi",
+                )
+            }
+    }
+
+    fun getApkUrl(extension: AnimeExtension.Available): String {
+        return extension.apkUrl
+    }
+
+    private fun AnimeExtensionJsonObject.extractLibVersion(): Double {
+        return version.substringBeforeLast('.').toDouble()
+    }
+}
+
+@Serializable
+private data class AnimeExtensionJsonObject(
+    val name: String,
+    val pkg: String,
+    val apk: String,
+    val lang: String,
+    val code: Long,
+    val version: String,
+    val nsfw: Int,
+    val torrent: Int = 0,
+    val sources: List<AnimeExtensionSourceJsonObject>?,
+)
+
+@Serializable
+private data class AnimeExtensionSourceJsonObject(
+    val id: Long,
+    val lang: String,
+    val name: String,
+    val baseUrl: String,
+)
+
+private val extensionAnimeSourceMapper: (AnimeExtensionSourceJsonObject) -> AnimeExtension.Available.AnimeSource = {
+    AnimeExtension.Available.AnimeSource(
+        id = it.id,
+        lang = it.lang,
+        name = it.name,
+        baseUrl = it.baseUrl,
+    )
 }

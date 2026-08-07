@@ -110,7 +110,7 @@ data class AnimeSourceSearchScreen(
                     val source = viewModel.source as? AnimeHttpSource ?: return@BrowseAnimeSourceContent
                     navigator.push(
                         WebViewScreen(
-                            url = source.baseUrl,
+                            url = source.getHomeUrl(),
                             initialTitle = source.name,
                             sourceId = source.id,
                         ),

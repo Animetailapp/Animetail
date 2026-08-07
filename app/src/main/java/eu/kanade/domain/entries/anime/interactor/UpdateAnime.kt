@@ -104,10 +104,10 @@ class UpdateAnime(
                 status = remoteAnime.status.toLong(),
                 updateStrategy = remoteAnime.update_strategy,
                 initialized = true,
+                memo = remoteAnime.memo,
             ),
         )
     }
-
     suspend fun awaitUpdateFetchInterval(
         anime: Anime,
         dateTime: ZonedDateTime = ZonedDateTime.now(),

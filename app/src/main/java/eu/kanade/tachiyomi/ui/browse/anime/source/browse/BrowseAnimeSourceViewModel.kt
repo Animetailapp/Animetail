@@ -28,6 +28,7 @@ import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
+import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.FilterList
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
@@ -257,7 +258,6 @@ class BrowseAnimeSourceViewModel(
 
         reloadSavedSearches()
         // KMK <--
-
         mutableState.update { it.copy(filters = source.getFilterList()) }
     }
 
@@ -267,7 +267,6 @@ class BrowseAnimeSourceViewModel(
 
     fun setFilters(filters: FilterList) {
         if (source !is AnimeCatalogueSource) return
-
         mutableState.update {
             it.copy(
                 filters = filters,
@@ -293,7 +292,6 @@ class BrowseAnimeSourceViewModel(
             // KMK <--
         }
         // SY <--
-
         val input = state.value.listing as? Listing.Search
             ?: Listing.Search(query = null, filters = source.getFilterList())
 
@@ -316,7 +314,6 @@ class BrowseAnimeSourceViewModel(
         val source = source
         // KMK <--
         if (source !is AnimeCatalogueSource) return
-
         val defaultFilters = source.getFilterList()
         var genreExists = false
 

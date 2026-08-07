@@ -39,3 +39,7 @@ LEFT JOIN animehistorystatsView AS AHS ON M._id = AHS.anime_id
 LEFT JOIN animes_categories AS MC ON MC.anime_id = M._id
 LEFT JOIN animeseasonstatsView AS ASS ON M._id = ASS.parent_id
 WHERE M.favorite = 1;
+
+ALTER TABLE animes ADD COLUMN memo BLOB NOT NULL DEFAULT '{}';
+ALTER TABLE episodes ADD COLUMN memo BLOB NOT NULL DEFAULT '{}';
+
