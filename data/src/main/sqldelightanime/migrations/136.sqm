@@ -40,6 +40,6 @@ LEFT JOIN animes_categories AS MC ON MC.anime_id = M._id
 LEFT JOIN animeseasonstatsView AS ASS ON M._id = ASS.parent_id
 WHERE M.favorite = 1;
 
-ALTER TABLE animes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d';
-ALTER TABLE episodes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d';
+ALTER TABLE animes ADD COLUMN memo BLOB NOT NULL DEFAULT '{}';
+ALTER TABLE episodes ADD COLUMN memo BLOB NOT NULL DEFAULT '{}';
 
