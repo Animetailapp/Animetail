@@ -118,7 +118,25 @@ class AppModule(val app: Application) : InjektModule {
                     configuration = AndroidxSqliteConfiguration(
                         isForeignKeyConstraintsEnabled = true,
                     ),
-                ).also { animeSqlDriverRef = WeakReference(it) }
+                ).also { driver ->
+                    kotlinx.coroutines.runBlocking {
+                        try {
+                            driver.execute(
+                                null,
+                                "ALTER TABLE animes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d';",
+                                0,
+                            ).await()
+                        } catch (_: Throwable) {}
+                        try {
+                            driver.execute(
+                                null,
+                                "ALTER TABLE episodes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d';",
+                                0,
+                            ).await()
+                        } catch (_: Throwable) {}
+                    }
+                    animeSqlDriverRef = WeakReference(driver)
+                }
             }
         addSingletonFactory {
             Database(
