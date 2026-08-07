@@ -536,14 +536,18 @@ private fun VideoList(
                     onExtDownloadClicked = { downloadEpisode(!useExternalDownloader) },
                     onCopyClicked = {
                         scope.launch {
+                            var videoUrl = currentVideo.videoUrl
+                            if (currentVideo.usesHttpServer()) {
+                                val (success, port) = MainActivity.startHttpServerService(context, anime.source)
+                                if (success) {
+                                    videoUrl = currentVideo.copyHttpServer(port).videoUrl
+                                }
+                            }
                             val clipEntry = ClipData.newPlainText(
-                                currentVideo.videoUrl,
-                                currentVideo.videoUrl,
+                                videoUrl,
+                                videoUrl,
                             ).toClipEntry()
                             clipboard.setClipEntry(clipEntry)
-                            if (currentVideo.usesHttpServer()) {
-                                MainActivity.startHttpServerService(context, anime.source)
-                            }
                             context.toast(copiedString)
                         }
                     },

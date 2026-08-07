@@ -1129,16 +1129,16 @@ class PlayerActivity : BaseActivity() {
                         sourceId = sourceId,
                     )
 
-                    val newVideo = video.copyHttpServer(port)
-                    videoUrl = newVideo.videoUrl
-                    viewModel.updateVideo(newVideo)
-
                     if (!success) {
                         launchUI {
                             toast(AYMR.strings.http_server_start_failure)
                         }
                         return@launchIO
                     }
+
+                    val newVideo = video.copyHttpServer(port)
+                    videoUrl = newVideo.videoUrl
+                    viewModel.updateVideo(newVideo)
                 }
 
                 mpv.command(

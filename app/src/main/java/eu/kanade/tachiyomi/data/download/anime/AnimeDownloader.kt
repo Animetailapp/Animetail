@@ -456,13 +456,17 @@ class AnimeDownloader(
                         downloadVideo(download, tmpDir, filename)
                     } else {
                         isExternal = true
-                        val (success, port) = MainActivity.startHttpServerService(context, download.source.id)
-                        if (!success) throw Exception("Failed to start server")
+                        var extVideo = download.video!!
+                        if (extVideo.usesHttpServer()) {
+                            val (success, port) = MainActivity.startHttpServerService(context, download.source.id)
+                            if (!success) throw Exception("Failed to start server")
+                            extVideo = extVideo.copyHttpServer(port)
+                        }
                         val betterFileName = DiskUtil.buildValidFilename(
                             "${download.anime.title} - ${download.episode.name}",
                         )
                         downloadVideoExternal(
-                            video = download.video!!.copyHttpServer(port),
+                            video = extVideo,
                             source = download.source,
                             tmpDir = tmpDir,
                             filename = betterFileName,

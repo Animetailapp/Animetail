@@ -36,10 +36,8 @@ class HttpServerService : Service() {
             return START_NOT_STICKY
         }
 
-        if (isRunning.value) {
-            _isRunning.update { _ -> false }
-            httpServer?.stop()
-        }
+        httpServer?.stop()
+        httpServer = null
 
         val sourceId = intent?.getLongExtra(EXTRA_SOURCE_ID, -1L) ?: -1L
         val server = (sourceManager.get(sourceId) as? AnimeHttpSource)?.createHttpServer()
