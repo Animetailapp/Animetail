@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.ui.browse.manga.extension
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.base.BasePreferences
@@ -12,22 +13,24 @@ import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.system.LocaleHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
@@ -35,75 +38,86 @@ import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
 class MangaExtensionsViewModel(
-    preferences: SourcePreferences = Injekt.get(),
+    private val preferences: SourcePreferences = Injekt.get(),
     basePreferences: BasePreferences = Injekt.get(),
     private val extensionManager: MangaExtensionManager = Injekt.get(),
     private val getExtensions: GetMangaExtensionsByType = Injekt.get(),
-) : StateViewModel<MangaExtensionsViewModel.State>(State()) {
+) : ViewModel() {
 
     private val currentDownloads = MutableStateFlow<Map<String, InstallStep>>(hashMapOf())
 
+    private val context = Injekt.get<Application>()
+
+    // Public so BrowseTab's search bar can observe it without subscribing to the whole state.
+    val searchQuery: StateFlow<String?>
+        field = MutableStateFlow(null)
+
+    // Public so the tab badge can observe it without subscribing to the whole state.
+    val updatesCount = preferences.extensionUpdatesCount.changes()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), 0)
+
+    private val isRefreshing = MutableStateFlow(false)
+
+    private fun extensionMapper(map: Map<String, InstallStep>): (MangaExtension) -> MangaExtensionUiModel.Item = {
+        MangaExtensionUiModel.Item(it, map[it.pkgName] ?: InstallStep.Idle)
+    }
+
+    @Suppress("LocalVariableName")
+    private val items = combine(
+        searchQuery
+            .debounce(0.25.seconds)
+            .map { searchQueryPredicate(it ?: "") },
+        currentDownloads,
+        getExtensions.subscribe(),
+    ) { predicate, downloads, (_updates, _installed, _available, _untrusted) ->
+        buildMap {
+            val updates = _updates.filter(predicate).map(extensionMapper(downloads))
+            if (updates.isNotEmpty()) {
+                put(MangaExtensionUiModel.Header.Resource(MR.strings.ext_updates_pending), updates)
+            }
+
+            val installed = _installed.filter(predicate).map(extensionMapper(downloads))
+            val untrusted = _untrusted.filter(predicate).map(extensionMapper(downloads))
+            if (installed.isNotEmpty() || untrusted.isNotEmpty()) {
+                put(MangaExtensionUiModel.Header.Resource(MR.strings.ext_installed), installed + untrusted)
+            }
+
+            val languagesWithExtensions = _available
+                .filter(predicate)
+                .groupBy { it.lang }
+                .toSortedMap(LocaleHelper.comparator)
+                .map { (lang, exts) ->
+                    MangaExtensionUiModel.Header.Text(LocaleHelper.getSourceDisplayName(lang, context)) to
+                        exts.map(extensionMapper(downloads))
+                }
+            if (languagesWithExtensions.isNotEmpty()) {
+                putAll(languagesWithExtensions)
+            }
+        }
+    }
+        .flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), null)
+
+    val state: StateFlow<State> = combine(
+        items,
+        searchQuery,
+        isRefreshing,
+        preferences.extensionUpdatesCount.changes(),
+        basePreferences.extensionInstaller.changes(),
+    ) { items, searchQuery, isRefreshing, updates, installer ->
+        State(
+            isLoading = items == null,
+            isRefreshing = isRefreshing,
+            items = items.orEmpty(),
+            updates = updates,
+            installer = installer,
+            searchQuery = searchQuery,
+        )
+    }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
+
     init {
-        val context = Injekt.get<Application>()
-        val extensionMapper: (Map<String, InstallStep>) -> ((MangaExtension) -> MangaExtensionUiModel.Item) = { map ->
-            {
-                MangaExtensionUiModel.Item(it, map[it.pkgName] ?: InstallStep.Idle)
-            }
-        }
-
-        viewModelScope.launchIO {
-            combine(
-                state.map { it.searchQuery }
-                    .distinctUntilChanged()
-                    .debounce(0.25.seconds)
-                    .map { searchQueryPredicate(it ?: "") },
-                currentDownloads,
-                getExtensions.subscribe(),
-            ) { predicate, downloads, (_updates, _installed, _available, _untrusted) ->
-                buildMap {
-                    val updates = _updates.filter(predicate).map(extensionMapper(downloads))
-                    if (updates.isNotEmpty()) {
-                        put(MangaExtensionUiModel.Header.Resource(MR.strings.ext_updates_pending), updates)
-                    }
-
-                    val installed = _installed.filter(predicate).map(extensionMapper(downloads))
-                    val untrusted = _untrusted.filter(predicate).map(extensionMapper(downloads))
-                    if (installed.isNotEmpty() || untrusted.isNotEmpty()) {
-                        put(MangaExtensionUiModel.Header.Resource(MR.strings.ext_installed), installed + untrusted)
-                    }
-
-                    val languagesWithExtensions = _available
-                        .filter(predicate)
-                        .groupBy { it.lang }
-                        .toSortedMap(LocaleHelper.comparator)
-                        .map { (lang, exts) ->
-                            MangaExtensionUiModel.Header.Text(LocaleHelper.getSourceDisplayName(lang, context)) to
-                                exts.map(extensionMapper(downloads))
-                        }
-                    if (languagesWithExtensions.isNotEmpty()) {
-                        putAll(languagesWithExtensions)
-                    }
-                }
-            }
-                .collectLatest { items ->
-                    mutableState.update { state ->
-                        state.copy(
-                            isLoading = false,
-                            items = items,
-                        )
-                    }
-                }
-        }
-
         viewModelScope.launchIO { findAvailableExtensions() }
-
-        preferences.extensionUpdatesCount.changes()
-            .onEach { mutableState.update { state -> state.copy(updates = it) } }
-            .launchIn(viewModelScope)
-
-        basePreferences.extensionInstaller.changes()
-            .onEach { mutableState.update { state -> state.copy(installer = it) } }
-            .launchIn(viewModelScope)
     }
 
     fun searchQueryPredicate(query: String): (MangaExtension) -> Boolean {
@@ -137,9 +151,7 @@ class MangaExtensionsViewModel(
     }
 
     fun search(query: String?) {
-        mutableState.update {
-            it.copy(searchQuery = query)
-        }
+        searchQuery.update { query }
     }
 
     fun updateAllExtensions() {
@@ -189,14 +201,14 @@ class MangaExtensionsViewModel(
 
     fun findAvailableExtensions() {
         viewModelScope.launchIO {
-            mutableState.update { it.copy(isRefreshing = true) }
+            isRefreshing.update { true }
 
             extensionManager.findAvailableExtensions()
 
             // Fake slower refresh so it doesn't seem like it's not doing anything
             delay(1.seconds)
 
-            mutableState.update { it.copy(isRefreshing = false) }
+            isRefreshing.update { false }
         }
     }
 

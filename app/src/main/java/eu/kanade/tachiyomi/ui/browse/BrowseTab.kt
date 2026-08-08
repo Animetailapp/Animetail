@@ -6,11 +6,11 @@ import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.Navigator
@@ -90,10 +90,10 @@ data object BrowseTab : Tab {
 
         // Hoisted for extensions tab's search bar
         val mangaExtensionsViewModel = viewModel<MangaExtensionsViewModel>()
-        val mangaExtensionsState by mangaExtensionsViewModel.state.collectAsState()
+        val mangaExtensionsSearchQuery by mangaExtensionsViewModel.searchQuery.collectAsStateWithLifecycle()
 
         val animeExtensionsScreenModel = rememberScreenModel { AnimeExtensionsScreenModel() }
-        val animeExtensionsState by animeExtensionsScreenModel.state.collectAsState()
+        val animeExtensionsSearchQuery by animeExtensionsScreenModel.searchQuery.collectAsStateWithLifecycle()
 
         val animeExtensionsTabContent = animeExtensionsTab(animeExtensionsScreenModel)
         val mangaExtensionsTabContent = mangaExtensionsTab(mangaExtensionsViewModel)
@@ -158,9 +158,9 @@ data object BrowseTab : Tab {
             titleRes = MR.strings.browse,
             tabs = tabs,
             state = state,
-            mangaSearchQuery = mangaExtensionsState.searchQuery,
+            mangaSearchQuery = mangaExtensionsSearchQuery,
             onChangeMangaSearchQuery = mangaExtensionsViewModel::search,
-            animeSearchQuery = animeExtensionsState.searchQuery,
+            animeSearchQuery = animeExtensionsSearchQuery,
             onChangeAnimeSearchQuery = animeExtensionsScreenModel::search,
             animeExtensionsTabIndex = animeExtensionsTabIndex,
             mangaExtensionsTabIndex = mangaExtensionsTabIndex,

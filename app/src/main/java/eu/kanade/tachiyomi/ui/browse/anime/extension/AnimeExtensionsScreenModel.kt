@@ -2,7 +2,7 @@ package eu.kanade.tachiyomi.ui.browse.anime.extension
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
+import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.base.BasePreferences
@@ -13,18 +13,21 @@ import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.util.system.LocaleHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import tachiyomi.core.common.util.lang.launchIO
@@ -34,129 +37,120 @@ import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
 class AnimeExtensionsScreenModel(
-    preferences: SourcePreferences = Injekt.get(),
+    private val preferences: SourcePreferences = Injekt.get(),
     basePreferences: BasePreferences = Injekt.get(),
     private val extensionManager: AnimeExtensionManager = Injekt.get(),
     private val getExtensions: GetAnimeExtensionsByType = Injekt.get(),
-) : StateScreenModel<AnimeExtensionsScreenModel.State>(State()) {
+) : ScreenModel {
 
     private val currentDownloads = MutableStateFlow<Map<String, InstallStep>>(hashMapOf())
 
+    private val context = Injekt.get<Application>()
+
+    // Public so BrowseTab's search bar can observe it without subscribing to the whole state.
+    val searchQuery: StateFlow<String?>
+        field = MutableStateFlow(null)
+
+    // Public so the tab badge can observe it without subscribing to the whole state.
+    val updatesCount = preferences.animeExtensionUpdatesCount.changes()
+        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), 0)
+
+    private val isRefreshing = MutableStateFlow(false)
+
+    private fun extensionMapper(map: Map<String, InstallStep>): (AnimeExtension) -> AnimeExtensionUiModel.Item = {
+        AnimeExtensionUiModel.Item(it, map[it.pkgName] ?: InstallStep.Idle)
+    }
+
+    @Suppress("LocalVariableName")
+    private val items = combine(
+        searchQuery
+            .debounce(0.25.seconds)
+            .map { searchQueryPredicate(it ?: "") },
+        currentDownloads,
+        getExtensions.subscribe(),
+    ) { predicate, downloads, (_updates, _installed, _available, _untrusted) ->
+        buildMap {
+            val updates = _updates.filter(predicate).map(extensionMapper(downloads))
+            if (updates.isNotEmpty()) {
+                put(AnimeExtensionUiModel.Header.Resource(MR.strings.ext_updates_pending), updates)
+            }
+
+            val installed = _installed.filter(predicate).map(extensionMapper(downloads))
+            val untrusted = _untrusted.filter(predicate).map(extensionMapper(downloads))
+            if (installed.isNotEmpty() || untrusted.isNotEmpty()) {
+                put(AnimeExtensionUiModel.Header.Resource(MR.strings.ext_installed), installed + untrusted)
+            }
+
+            val languagesWithExtensions = _available
+                .filter(predicate)
+                .groupBy { it.lang }
+                .toSortedMap(LocaleHelper.comparator)
+                .map { (lang, exts) ->
+                    AnimeExtensionUiModel.Header.Text(LocaleHelper.getSourceDisplayName(lang, context)) to
+                        exts.map(extensionMapper(downloads))
+                }
+            if (languagesWithExtensions.isNotEmpty()) {
+                putAll(languagesWithExtensions)
+            }
+        }
+    }
+        .flowOn(Dispatchers.IO)
+        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), null)
+
+    val state: StateFlow<State> = combine(
+        items,
+        searchQuery,
+        isRefreshing,
+        preferences.animeExtensionUpdatesCount.changes(),
+        basePreferences.extensionInstaller.changes(),
+    ) { items, searchQuery, isRefreshing, updates, installer ->
+        State(
+            isLoading = items == null,
+            isRefreshing = isRefreshing,
+            items = items.orEmpty(),
+            updates = updates,
+            installer = installer,
+            searchQuery = searchQuery,
+        )
+    }
+        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
+
     init {
-        val context = Injekt.get<Application>()
-        val extensionMapper: (Map<String, InstallStep>) -> ((AnimeExtension) -> AnimeExtensionUiModel.Item) = { map ->
-            {
-                AnimeExtensionUiModel.Item(it, map[it.pkgName] ?: InstallStep.Idle)
-            }
-        }
-        val queryFilter: (String) -> ((AnimeExtension) -> Boolean) = { query ->
-            filter@{ extension ->
-                if (query.isEmpty()) return@filter true
-                query.split(",").any { _input ->
-                    val input = _input.trim()
-                    if (input.isEmpty()) return@any false
-                    when (extension) {
-                        is AnimeExtension.Available -> {
-                            extension.sources.any {
-                                it.name.contains(input, ignoreCase = true) ||
-                                    it.baseUrl.contains(input, ignoreCase = true) ||
-                                    it.id == input.toLongOrNull()
-                            } ||
-                                extension.name.contains(input, ignoreCase = true)
-                        }
-
-                        is AnimeExtension.Installed -> {
-                            extension.sources.any {
-                                it.name.contains(input, ignoreCase = true) ||
-                                    it.id == input.toLongOrNull() ||
-                                    if (it is AnimeHttpSource) {
-                                        it.getHomeUrl().contains(
-                                            input,
-                                            ignoreCase = true,
-                                        )
-                                    } else {
-                                        false
-                                    }
-                            } ||
-                                extension.name.contains(input, ignoreCase = true)
-                        }
-
-                        is AnimeExtension.Untrusted -> extension.name.contains(
-                            input,
-                            ignoreCase = true,
-                        )
-                    }
-                }
-            }
-        }
-
-        screenModelScope.launchIO {
-            combine(
-                state.map { it.searchQuery }.distinctUntilChanged().debounce(0.25.seconds),
-                currentDownloads,
-                getExtensions.subscribe(),
-            ) { query, downloads, (_updates, _installed, _available, _untrusted) ->
-                val searchQuery = query ?: ""
-
-                val itemsGroups: ItemGroups = mutableMapOf()
-
-                val updates = _updates.filter(queryFilter(searchQuery)).map(
-                    extensionMapper(downloads),
-                )
-                if (updates.isNotEmpty()) {
-                    itemsGroups[AnimeExtensionUiModel.Header.Resource(MR.strings.ext_updates_pending)] = updates
-                }
-
-                val installed = _installed.filter(queryFilter(searchQuery)).map(
-                    extensionMapper(downloads),
-                )
-                val untrusted = _untrusted.filter(queryFilter(searchQuery)).map(
-                    extensionMapper(downloads),
-                )
-                if (installed.isNotEmpty() || untrusted.isNotEmpty()) {
-                    itemsGroups[AnimeExtensionUiModel.Header.Resource(MR.strings.ext_installed)] = installed + untrusted
-                }
-
-                val languagesWithExtensions = _available
-                    .filter(queryFilter(searchQuery))
-                    .groupBy { it.lang }
-                    .toSortedMap(LocaleHelper.comparator)
-                    .map { (lang, exts) ->
-                        AnimeExtensionUiModel.Header.Text(
-                            LocaleHelper.getSourceDisplayName(lang, context),
-                        ) to exts.map(extensionMapper(downloads))
-                    }
-
-                if (languagesWithExtensions.isNotEmpty()) {
-                    itemsGroups.putAll(languagesWithExtensions)
-                }
-
-                itemsGroups
-            }
-                .collectLatest {
-                    mutableState.update { state ->
-                        state.copy(
-                            isLoading = false,
-                            items = it,
-                        )
-                    }
-                }
-        }
         screenModelScope.launchIO { findAvailableExtensions() }
+    }
 
-        preferences.animeExtensionUpdatesCount.changes()
-            .onEach { mutableState.update { state -> state.copy(updates = it) } }
-            .launchIn(screenModelScope)
+    fun searchQueryPredicate(query: String): (AnimeExtension) -> Boolean {
+        val subqueries = query.split(",")
+            .map { it.trim() }
+            .filterNot { it.isBlank() }
 
-        basePreferences.extensionInstaller.changes()
-            .onEach { mutableState.update { state -> state.copy(installer = it) } }
-            .launchIn(screenModelScope)
+        if (subqueries.isEmpty()) return { true }
+
+        return { extension ->
+            subqueries.any { subquery ->
+                if (extension.name.contains(subquery, ignoreCase = true)) return@any true
+
+                when (extension) {
+                    is AnimeExtension.Installed -> extension.sources.any { source ->
+                        source.name.contains(subquery, ignoreCase = true) ||
+                            (source as? AnimeHttpSource)?.getHomeUrl()?.contains(subquery, ignoreCase = true) == true ||
+                            source.id == subquery.toLongOrNull()
+                    }
+
+                    is AnimeExtension.Available -> extension.sources.any {
+                        it.name.contains(subquery, ignoreCase = true) ||
+                            it.baseUrl.contains(subquery, ignoreCase = true) ||
+                            it.id == subquery.toLongOrNull()
+                    }
+
+                    is AnimeExtension.Untrusted -> extension.name.contains(subquery, ignoreCase = true)
+                }
+            }
+        }
     }
 
     fun search(query: String?) {
-        mutableState.update {
-            it.copy(searchQuery = query)
-        }
+        searchQuery.update { query }
     }
 
     fun updateAllExtensions() {
@@ -205,13 +199,14 @@ class AnimeExtensionsScreenModel(
 
     fun findAvailableExtensions() {
         screenModelScope.launchIO {
-            mutableState.update { it.copy(isRefreshing = true) }
+            isRefreshing.update { true }
+
             extensionManager.findAvailableExtensions()
 
             // Fake slower refresh so it doesn't seem like it's not doing anything
             delay(1.seconds)
 
-            mutableState.update { it.copy(isRefreshing = false) }
+            isRefreshing.update { false }
         }
     }
 
