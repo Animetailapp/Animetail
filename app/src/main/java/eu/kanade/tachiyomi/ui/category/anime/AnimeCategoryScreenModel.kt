@@ -1,14 +1,20 @@
 package eu.kanade.tachiyomi.ui.category.anime
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
+import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.icerock.moko.resources.StringResource
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import tachiyomi.domain.category.anime.interactor.CreateAnimeCategoryWithName
@@ -23,6 +29,7 @@ import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import kotlin.time.Duration.Companion.seconds
 
 class AnimeCategoryScreenModel(
     private val getAllCategories: GetAnimeCategories = Injekt.get(),
@@ -33,30 +40,29 @@ class AnimeCategoryScreenModel(
     private val reorderCategory: ReorderAnimeCategory = Injekt.get(),
     private val renameCategory: RenameAnimeCategory = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
-) : StateScreenModel<AnimeCategoryScreenState>(AnimeCategoryScreenState.Loading) {
+) : ScreenModel {
 
     private val _events: Channel<AnimeCategoryEvent> = Channel()
     val events = _events.receiveAsFlow()
 
-    init {
-        screenModelScope.launch {
-            val allCategories = if (libraryPreferences.hideHiddenCategoriesSettings.get()) {
-                getVisibleCategories.subscribe()
-            } else {
-                getAllCategories.subscribe()
-            }
+    private val dialog = MutableStateFlow<AnimeCategoryDialog?>(null)
 
-            allCategories.collectLatest { categories ->
-                mutableState.update {
-                    AnimeCategoryScreenState.Success(
-                        categories = categories
-                            .filterNot(Category::isSystemCategory)
-                            .toImmutableList(),
-                    )
-                }
-            }
-        }
+    val state: StateFlow<AnimeCategoryScreenState> = combine(
+        if (libraryPreferences.hideHiddenCategoriesSettings.get()) {
+            getVisibleCategories.subscribe()
+        } else {
+            getAllCategories.subscribe()
+        },
+        dialog,
+    ) { categories, dialog ->
+        AnimeCategoryScreenState.Success(
+            categories = categories
+                .filterNot(Category::isSystemCategory)
+                .toImmutableList(),
+            dialog = dialog,
+        )
     }
+        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), AnimeCategoryScreenState.Loading)
 
     fun createCategory(name: String) {
         screenModelScope.launch {
@@ -119,21 +125,11 @@ class AnimeCategoryScreenModel(
     }
 
     fun showDialog(dialog: AnimeCategoryDialog) {
-        mutableState.update {
-            when (it) {
-                AnimeCategoryScreenState.Loading -> it
-                is AnimeCategoryScreenState.Success -> it.copy(dialog = dialog)
-            }
-        }
+        this.dialog.update { dialog }
     }
 
     fun dismissDialog() {
-        mutableState.update {
-            when (it) {
-                AnimeCategoryScreenState.Loading -> it
-                is AnimeCategoryScreenState.Success -> it.copy(dialog = null)
-            }
-        }
+        dialog.update { null }
     }
 }
 
