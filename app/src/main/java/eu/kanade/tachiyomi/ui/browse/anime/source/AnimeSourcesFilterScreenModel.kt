@@ -1,54 +1,47 @@
 package eu.kanade.tachiyomi.ui.browse.anime.source
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
+import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.domain.source.anime.interactor.GetLanguagesWithAnimeSources
 import eu.kanade.domain.source.anime.interactor.ToggleAnimeSource
 import eu.kanade.domain.source.interactor.ToggleLanguage
 import eu.kanade.domain.source.service.SourcePreferences
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import tachiyomi.domain.source.anime.model.AnimeSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.SortedMap
+import kotlin.time.Duration.Companion.seconds
 
 class AnimeSourcesFilterScreenModel(
     private val preferences: SourcePreferences = Injekt.get(),
     private val getLanguagesWithSources: GetLanguagesWithAnimeSources = Injekt.get(),
     private val toggleSource: ToggleAnimeSource = Injekt.get(),
     private val toggleLanguage: ToggleLanguage = Injekt.get(),
-) : StateScreenModel<AnimeSourcesFilterScreenModel.State>(State.Loading) {
+) : ScreenModel {
 
-    init {
-        screenModelScope.launch {
-            combine(
-                getLanguagesWithSources.subscribe(),
-                preferences.enabledLanguages.changes(),
-                preferences.disabledAnimeSources.changes(),
-            ) { a, b, c -> Triple(a, b, c) }
-                .catch { throwable ->
-                    mutableState.update {
-                        State.Error(
-                            throwable = throwable,
-                        )
-                    }
-                }
-                .collectLatest { (languagesWithSources, enabledLanguages, disabledSources) ->
-                    mutableState.update {
-                        State.Success(
-                            items = languagesWithSources,
-                            enabledLanguages = enabledLanguages,
-                            disabledSources = disabledSources,
-                        )
-                    }
-                }
-        }
+    val state: StateFlow<State> = combine(
+        getLanguagesWithSources.subscribe(),
+        preferences.enabledLanguages.changes(),
+        preferences.disabledAnimeSources.changes(),
+    ) { languagesWithSources, enabledLanguages, disabledSources ->
+        State.Success(
+            items = languagesWithSources,
+            enabledLanguages = enabledLanguages,
+            disabledSources = disabledSources,
+        )
     }
+        .catch<State> { throwable -> emit(State.Error(throwable = throwable)) }
+        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), State.Loading)
 
     fun toggleSource(source: AnimeSource) {
         toggleSource.await(source)
