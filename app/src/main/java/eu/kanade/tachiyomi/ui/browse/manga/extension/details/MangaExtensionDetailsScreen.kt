@@ -2,15 +2,16 @@ package eu.kanade.tachiyomi.ui.browse.manga.extension.details
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.manga.MangaExtensionDetailsScreen
 import eu.kanade.presentation.util.Screen
-import kotlinx.coroutines.flow.collectLatest
+import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 data class MangaExtensionDetailsScreen(
@@ -25,32 +26,30 @@ data class MangaExtensionDetailsScreen(
                 set(MangaExtensionDetailsViewModel.PKG_NAME_KEY, pkgName)
             },
         )
-        val state by viewModel.state.collectAsState()
-
-        if (state.isLoading) {
-            LoadingScreen()
-            return
-        }
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
         val navigator = LocalNavigator.currentOrThrow
 
-        MangaExtensionDetailsScreen(
-            navigateUp = navigator::pop,
-            state = state,
-            onClickSourcePreferences = { navigator.push(MangaSourcePreferencesScreen(it)) },
-            onClickEnableAll = { viewModel.toggleSources(true) },
-            onClickDisableAll = { viewModel.toggleSources(false) },
-            onClickClearCookies = viewModel::clearCookies,
-            onClickUninstall = viewModel::uninstallExtension,
-            onClickSource = viewModel::toggleSource,
-            onClickIncognito = viewModel::toggleIncognito,
-        )
+        when (val state = state) {
+            MangaExtensionDetailsViewModel.State.Loading -> LoadingScreen()
 
-        LaunchedEffect(Unit) {
-            viewModel.events.collectLatest { event ->
-                if (event is MangaExtensionDetailsEvent.Uninstalled) {
-                    navigator.pop()
-                }
+            MangaExtensionDetailsViewModel.State.Uninstalled -> {
+                LaunchedEffect(Unit) { navigator.pop() }
+                EmptyScreen(MR.strings.empty_screen)
+            }
+
+            is MangaExtensionDetailsViewModel.State.Success -> {
+                MangaExtensionDetailsScreen(
+                    navigateUp = navigator::pop,
+                    state = state,
+                    onClickSourcePreferences = { navigator.push(MangaSourcePreferencesScreen(it)) },
+                    onClickEnableAll = { viewModel.toggleSources(true) },
+                    onClickDisableAll = { viewModel.toggleSources(false) },
+                    onClickClearCookies = viewModel::clearCookies,
+                    onClickUninstall = viewModel::uninstallExtension,
+                    onClickSource = viewModel::toggleSource,
+                    onClickIncognito = viewModel::toggleIncognito,
+                )
             }
         }
     }
