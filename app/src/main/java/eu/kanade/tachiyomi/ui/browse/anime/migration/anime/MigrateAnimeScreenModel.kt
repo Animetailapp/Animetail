@@ -1,18 +1,26 @@
 package eu.kanade.tachiyomi.ui.browse.anime.migration.anime
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
+import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
@@ -22,63 +30,58 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import kotlin.time.Duration.Companion.seconds
 
 class MigrateAnimeScreenModel(
     private val sourceId: Long,
     private val sourceManager: AnimeSourceManager = Injekt.get(),
     private val getFavorites: GetAnimeFavorites = Injekt.get(),
-) : StateScreenModel<MigrateAnimeScreenModel.State>(State()) {
+) : ScreenModel {
 
     private val _events: Channel<MigrationAnimeEvent> = Channel()
     val events: Flow<MigrationAnimeEvent> = _events.receiveAsFlow()
 
-    init {
-        screenModelScope.launch {
-            mutableState.update { state ->
-                state.copy(source = sourceManager.getOrStub(sourceId))
-            }
+    private val source by lazy { sourceManager.getOrStub(sourceId) }
 
-            getFavorites.subscribe(sourceId)
-                .catch {
-                    logcat(LogPriority.ERROR, it)
-                    _events.send(MigrationAnimeEvent.FailedFetchingFavorites)
-                    mutableState.update { state ->
-                        state.copy(titleList = persistentListOf())
-                    }
-                }
-                .map { anime ->
-                    anime
-                        .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
-                        .toImmutableList()
-                }
-                .collectLatest { list ->
-                    mutableState.update { it.copy(titleList = list) }
-                }
+    private val selection = MutableStateFlow(emptySet<Long>())
+
+    private val favorites = getFavorites.subscribe(sourceId)
+        .catch {
+            logcat(LogPriority.ERROR, it)
+            _events.send(MigrationAnimeEvent.FailedFetchingFavorites)
+            emit(listOf())
         }
+        .map { anime ->
+            anime
+                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+                .toImmutableList()
+        }
+
+    val state: StateFlow<State> = combine(
+        favorites,
+        selection,
+    ) { titleList, selection ->
+        State(source = source, selectedAnimeIds = selection, titleList = titleList)
     }
+        .flowOn(Dispatchers.IO)
+        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
 
     fun toggleSelection(anime: Anime) {
-        mutableState.update { state ->
-            val selected = state.selectedAnimeIds.toMutableSet()
-            if (anime.id in selected) {
-                selected.remove(anime.id)
+        selection.update { selection ->
+            if (anime.id in selection) {
+                selection - anime.id
             } else {
-                selected.add(anime.id)
+                selection + anime.id
             }
-            state.copy(selectedAnimeIds = selected)
         }
     }
 
     fun selectAll() {
-        mutableState.update { state ->
-            state.copy(selectedAnimeIds = state.titles.map { it.id }.toSet())
-        }
+        selection.update { state.value.titles.map { it.id }.toSet() }
     }
 
     fun clearSelection() {
-        mutableState.update { state ->
-            state.copy(selectedAnimeIds = emptySet())
-        }
+        selection.update { emptySet() }
     }
 
     @Immutable

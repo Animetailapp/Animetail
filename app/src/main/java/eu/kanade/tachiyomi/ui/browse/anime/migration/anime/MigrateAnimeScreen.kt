@@ -3,9 +3,9 @@ package eu.kanade.tachiyomi.ui.browse.anime.migration.anime
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -28,7 +28,7 @@ data class MigrateAnimeScreen(
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel { MigrateAnimeScreenModel(sourceId) }
 
-        val state by screenModel.state.collectAsState()
+        val state by screenModel.state.collectAsStateWithLifecycle()
 
         val isSelectionMode = state.selectedAnimeIds.isNotEmpty()
         BackHandler(enabled = isSelectionMode) {

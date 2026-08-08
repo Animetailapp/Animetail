@@ -3,9 +3,9 @@ package eu.kanade.tachiyomi.ui.browse.manga.migration.manga
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -34,7 +34,7 @@ data class MigrateMangaScreen(
             },
         )
 
-        val state by viewModel.state.collectAsState()
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
         val isSelectionMode = state.selectedMangaIds.isNotEmpty()
         BackHandler(enabled = isSelectionMode) {
