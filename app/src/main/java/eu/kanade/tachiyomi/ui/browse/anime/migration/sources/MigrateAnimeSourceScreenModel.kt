@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.ui.browse.anime.migration.sources
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
+import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.domain.source.anime.interactor.GetAnimeSourcesWithFavoriteCount
 import eu.kanade.domain.source.interactor.SetMigrateSorting
@@ -9,74 +9,71 @@ import eu.kanade.domain.source.service.SourcePreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import logcat.LogPriority
+import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.anime.model.AnimeSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import kotlin.time.Duration.Companion.seconds
 
 class MigrateAnimeSourceScreenModel(
-    preferences: SourcePreferences = Injekt.get(),
+    private val preferences: SourcePreferences = Injekt.get(),
     private val getSourcesWithFavoriteCount: GetAnimeSourcesWithFavoriteCount = Injekt.get(),
-    private val setMigrateSorting: SetMigrateSorting = Injekt.get(),
-) : StateScreenModel<MigrateAnimeSourceScreenModel.State>(State()) {
+) : ScreenModel {
 
     private val _channel = Channel<Event>(Int.MAX_VALUE)
     val channel = _channel.receiveAsFlow()
 
-    init {
-        screenModelScope.launchIO {
-            getSourcesWithFavoriteCount.subscribe()
-                .catch {
-                    logcat(LogPriority.ERROR, it)
-                    _channel.send(Event.FailedFetchingSourcesWithCount)
-                }
-                .collectLatest { sources ->
-                    mutableState.update {
-                        it.copy(
-                            isLoading = false,
-                            items = sources.toImmutableList(),
-                        )
-                    }
-                }
-        }
-
-        preferences.migrationSortingDirection.changes()
-            .onEach { mutableState.update { state -> state.copy(sortingDirection = it) } }
-            .launchIn(screenModelScope)
-
-        preferences.migrationSortingMode.changes()
-            .onEach { mutableState.update { state -> state.copy(sortingMode = it) } }
-            .launchIn(screenModelScope)
+    val state: StateFlow<State> = combine(
+        getSourcesWithFavoriteCount.subscribe()
+            .catch {
+                logcat(LogPriority.ERROR, it)
+                _channel.send(Event.FailedFetchingSourcesWithCount)
+            },
+        preferences.migrationSortingMode.changes(),
+        preferences.migrationSortingDirection.changes(),
+    ) { sources, sortingMode, sortingDirection ->
+        State(
+            isLoading = false,
+            items = sources.toImmutableList(),
+            sortingMode = sortingMode,
+            sortingDirection = sortingDirection,
+        )
     }
+        .flowOn(Dispatchers.IO)
+        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
 
     fun toggleSortingMode() {
-        with(state.value) {
-            val newMode = when (sortingMode) {
+        preferences.migrationSortingMode.getAndSet { mode ->
+            when (mode) {
                 SetMigrateSorting.Mode.ALPHABETICAL -> SetMigrateSorting.Mode.TOTAL
                 SetMigrateSorting.Mode.TOTAL -> SetMigrateSorting.Mode.ALPHABETICAL
             }
-
-            setMigrateSorting.await(newMode, sortingDirection)
         }
     }
 
     fun toggleSortingDirection() {
-        with(state.value) {
-            val newDirection = when (sortingDirection) {
+        preferences.migrationSortingDirection.getAndSet { direction ->
+            when (direction) {
                 SetMigrateSorting.Direction.ASCENDING -> SetMigrateSorting.Direction.DESCENDING
                 SetMigrateSorting.Direction.DESCENDING -> SetMigrateSorting.Direction.ASCENDING
             }
-
-            setMigrateSorting.await(sortingMode, newDirection)
         }
     }
 
