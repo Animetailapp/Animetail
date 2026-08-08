@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material3.SnackbarHostState
-import cafe.adriel.voyager.core.model.StateScreenModel
+import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import coil3.asDrawable
 import coil3.imageLoader
@@ -20,6 +20,11 @@ import eu.kanade.tachiyomi.util.editBackground
 import eu.kanade.tachiyomi.util.editCover
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.toShareIntent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
@@ -34,6 +39,7 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import kotlin.time.Duration.Companion.seconds
 
 class AnimeImageScreenModel(
     private val animeId: Long,
@@ -44,17 +50,14 @@ class AnimeImageScreenModel(
     private val updateAnime: UpdateAnime = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     val pagerState: PagerState = PagerState(pageCount = { 2 }),
-) : StateScreenModel<Anime?>(null) {
+) : ScreenModel {
 
     private val isCover: Boolean
         get() = pagerState.currentPage != 1
 
-    init {
-        screenModelScope.launchIO {
-            getAnime.subscribe(animeId)
-                .collect { newAnime -> mutableState.update { newAnime } }
-        }
-    }
+    val state: StateFlow<Anime?> = getAnime.subscribe(animeId)
+        .flowOn(Dispatchers.IO)
+        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), null)
 
     fun saveImage(context: Context) {
         val savedStringResource = if (isCover) {
@@ -159,7 +162,6 @@ class AnimeImageScreenModel(
     }
 
     fun deleteCustomImage(context: Context) {
-        val animeId = state.value?.id ?: return
         screenModelScope.launchIO {
             try {
                 if (isCover) {

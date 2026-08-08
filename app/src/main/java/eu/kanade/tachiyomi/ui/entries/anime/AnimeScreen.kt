@@ -451,7 +451,7 @@ class AnimeScreen(
 
             AnimeViewModel.Dialog.FullImages -> {
                 val sm = rememberScreenModel { AnimeImageScreenModel(successState.anime.id) }
-                val anime by sm.state.collectAsState()
+                val anime by sm.state.collectAsStateWithLifecycle()
                 if (anime != null) {
                     val getContent = rememberLauncherForActivityResult(
                         ActivityResultContracts.GetContent(),
