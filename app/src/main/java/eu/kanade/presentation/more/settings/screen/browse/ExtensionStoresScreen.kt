@@ -2,9 +2,9 @@ package eu.kanade.presentation.more.settings.screen.browse
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -36,7 +36,7 @@ class ExtensionStoresScreen(
                 set(ExtensionStoresViewModel.IS_MANGA_KEY, isManga)
             },
         )
-        val state by viewModel.state.collectAsState()
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
         LaunchedEffect(url) {
             url?.let { viewModel.addFromDeeplink(url) }
