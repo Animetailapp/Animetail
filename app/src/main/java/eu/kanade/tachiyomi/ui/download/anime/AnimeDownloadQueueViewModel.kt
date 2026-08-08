@@ -8,22 +8,30 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.databinding.DownloadListBinding
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import kotlin.time.Duration.Companion.seconds
 
 class AnimeDownloadQueueViewModel(
     private val downloadManager: AnimeDownloadManager = Injekt.get(),
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(emptyList<AnimeDownloadHeaderItem>())
-    val state = _state.asStateFlow()
+    val state: StateFlow<List<AnimeDownloadHeaderItem>> = downloadManager.queueState
+        .map { downloads ->
+            downloads
+                .groupBy { it.source }
+                .map { entry ->
+                    AnimeDownloadHeaderItem(entry.key.id, entry.key.name, entry.value.size).apply {
+                        addSubItems(0, entry.value.map { AnimeDownloadItem(it, this) })
+                    }
+                }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), emptyList())
 
     lateinit var controllerBinding: DownloadListBinding
 
@@ -112,22 +120,6 @@ class AnimeDownloadQueueViewModel(
         }
     }
 
-    init {
-        viewModelScope.launch {
-            downloadManager.queueState
-                .map { downloads ->
-                    downloads
-                        .groupBy { it.source }
-                        .map { entry ->
-                            AnimeDownloadHeaderItem(entry.key.id, entry.key.name, entry.value.size).apply {
-                                addSubItems(0, entry.value.map { AnimeDownloadItem(it, this) })
-                            }
-                        }
-                }
-                .collect { newList -> _state.update { newList } }
-        }
-    }
-
     override fun onCleared() {
         super.onCleared()
         for (job in progressJobs.values) {
@@ -138,7 +130,7 @@ class AnimeDownloadQueueViewModel(
     }
 
     val isDownloaderRunning = downloadManager.isDownloaderRunning
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), false)
 
     fun getDownloadStatusFlow() = downloadManager.statusFlow()
     fun getDownloadProgressFlow() = downloadManager.progressFlow()
