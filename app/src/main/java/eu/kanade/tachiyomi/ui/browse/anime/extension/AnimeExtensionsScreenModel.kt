@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -229,7 +230,7 @@ class AnimeExtensionsScreenModel(
     }
 }
 
-typealias ItemGroups = MutableMap<AnimeExtensionUiModel.Header, List<AnimeExtensionUiModel.Item>>
+typealias ItemGroups = Map<AnimeExtensionUiModel.Header, List<AnimeExtensionUiModel.Item>>
 
 object AnimeExtensionUiModel {
     sealed interface Header {

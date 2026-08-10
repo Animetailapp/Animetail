@@ -44,7 +44,7 @@ class ExtensionStoresViewModel(
         val Factory = viewModelFactory {
             initializer {
                 ExtensionStoresViewModel(
-                    isManga = get(IS_MANGA_KEY)!!,
+                    isManga = this[IS_MANGA_KEY]!!,
                 )
             }
         }
@@ -167,7 +167,8 @@ class ExtensionStoresViewModel(
 
     fun addFromDeeplink(storeIndexUrl: String) {
         viewModelScope.launchIO {
-            val alreadyExists = (if (isManga) getMangaExtensionStores.get() else getAnimeExtensionStores.get()).any {
+            val stores = if (isManga) getMangaExtensionStores.await() else getAnimeExtensionStores.await()
+            val alreadyExists = stores.any {
                 it.indexUrl ==
                     storeIndexUrl
             }

@@ -384,7 +384,7 @@ class MangaDownloader(
 
             // Delete all temporary (unfinished) files
             tmpDir.listFiles()
-                ?.filter { it.extension == "tmp" }
+                ?.filter { it.name?.endsWith(".tmp") == true }
                 ?.forEach { it.delete() }
 
             download.status = MangaDownload.State.DOWNLOADING
