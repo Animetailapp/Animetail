@@ -80,7 +80,7 @@ internal class AnimeExtensionApi {
         return this
             .filter {
                 val libVersion = it.extractLibVersion()
-                libVersion >= AnimeExtensionLoader.LIB_VERSION_MIN && libVersion <= AnimeExtensionLoader.LIB_VERSION_MAX
+                libVersion in AnimeExtensionLoader.SUPPORTED_LIB_VERSIONS
             }
             .map {
                 AnimeExtension.Available(
