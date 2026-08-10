@@ -19,7 +19,7 @@ class EpisodeRepositoryImpl(
         return try {
             handler.await(inTransaction = true) {
                 episodes.map { episode ->
-                    val lastInsertId = episodesQueries.insert(
+                    val lastInsertId = episodesQueries.insertReturningId(
                         episode.animeId,
                         episode.url,
                         episode.name,

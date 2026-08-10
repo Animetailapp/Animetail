@@ -128,7 +128,7 @@ data class Video(
 
     companion object {
         const val MPV_ARGS_TAG = "ANIYOMI_MPV_ARGS"
-        private val localUrl = Regex("""http:\/\/localhost:\d+""")
+        private val localUrl = Regex("""http:\/\/(?:localhost|127\.0\.0\.1):8080""")
     }
 }
 
