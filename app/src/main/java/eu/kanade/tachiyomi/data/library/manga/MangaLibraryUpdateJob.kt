@@ -22,6 +22,7 @@ import aniyomi.util.nullIfBlank
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.entries.manga.model.toSManga
 import eu.kanade.domain.items.chapter.interactor.SyncChaptersWithSource
+import eu.kanade.domain.items.chapter.model.toSChapter
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
@@ -57,6 +58,7 @@ import tachiyomi.domain.entries.manga.interactor.GetLibraryManga
 import tachiyomi.domain.entries.manga.interactor.GetManga
 import tachiyomi.domain.entries.manga.interactor.MangaFetchInterval
 import tachiyomi.domain.entries.manga.model.Manga
+import tachiyomi.domain.items.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.items.chapter.model.NoChaptersException
 import tachiyomi.domain.library.manga.LibraryManga
@@ -93,6 +95,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
     private val getLibraryManga: GetLibraryManga = Injekt.get()
     private val getManga: GetManga = Injekt.get()
     private val updateManga: UpdateManga = Injekt.get()
+    private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get()
     private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get()
     private val getTracks: GetMangaTracks = Injekt.get()
     private val mangaFetchInterval: MangaFetchInterval = Injekt.get()
@@ -305,7 +308,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
 
         // Warn when excessively checking a single source
         val maxUpdatesFromSource = mangaToUpdate
-            .groupBy { it.manga.source + (0..4).random() }
+            .groupBy { it.manga.source }
             .filterKeys { sourceManager.get(it) !is UnmeteredSource }
             .maxOfOrNull { it.value.size } ?: 0
         if (maxUpdatesFromSource > MANGA_PER_SOURCE_QUEUE_WARNING_THRESHOLD) {
@@ -343,7 +346,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         val fetchWindow = mangaFetchInterval.getWindow(Clock.System.now().toLocalDateTime(timeZone).date, timeZone)
 
         coroutineScope {
-            mangaToUpdate.groupBy { it.manga.source + (0..4).random() }.values
+            mangaToUpdate.groupBy { it.manga.source }.values
                 .map { mangaInSource ->
                     async {
                         semaphore.withPermit {
@@ -432,20 +435,22 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
      */
     private suspend fun updateManga(manga: Manga, fetchWindow: Pair<Long, Long>): List<Chapter> {
         val source = sourceManager.getOrStub(manga.source)
+        val currentChapters = getChaptersByMangaId.await(manga.id).map { it.toSChapter() }
 
-        // Update manga metadata if needed
-        if (libraryPreferences.autoUpdateMetadata.get()) {
-            val networkManga = source.getMangaDetails(manga.toSManga())
-            updateManga.awaitUpdateFromSource(manga, networkManga, manualFetch = false, coverCache)
-        }
+        val mangaUpdate = source.getMangaUpdate(
+            manga = manga.toSManga(),
+            chapters = currentChapters,
+            fetchDetails = libraryPreferences.autoUpdateMetadata.get(),
+            fetchChapters = true,
+        )
 
-        val chapters = source.getChapterList(manga.toSManga())
+        updateManga.awaitUpdateFromSource(manga, mangaUpdate.manga, manualFetch = false, coverCache)
 
         // Get manga from database to account for if it was removed during the update and
         // to get latest data so it doesn't get overwritten later on
         val dbManga = getManga.await(manga.id)?.takeIf { it.favorite } ?: return emptyList()
 
-        return syncChaptersWithSource.await(chapters, dbManga, source, false, fetchWindow)
+        return syncChaptersWithSource.await(mangaUpdate.chapters, dbManga, source, false, fetchWindow)
     }
 
     private suspend fun withUpdateNotification(

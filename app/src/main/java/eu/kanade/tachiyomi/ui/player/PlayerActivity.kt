@@ -1121,9 +1121,12 @@ class PlayerActivity : BaseActivity() {
             }
         } else {
             lifecycleScope.launchIO {
-                val sourceId = viewModel.currentSource.value?.id
+                val source = viewModel.currentSource.value
+                val sourceId = source?.id
                 var videoUrl: String = video.videoUrl
-                if (video.usesHttpServer() && sourceId != null) {
+                if (video.usesHttpServer() && sourceId != null &&
+                    (source as? AnimeHttpSource)?.createHttpServer() != null
+                ) {
                     val (success, port) = MainActivity.startHttpServerService(
                         context = applicationContext,
                         sourceId = sourceId,

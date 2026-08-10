@@ -191,7 +191,10 @@ class MangaRestorer(
                 lastPageRead = chapter.lastPageRead,
             )
         } else {
-            chapter.copyFrom(dbChapter).let {
+            chapter.copyFrom(dbChapter).copy(
+                id = dbChapter.id,
+                bookmark = chapter.bookmark || dbChapter.bookmark,
+            ).let {
                 when {
                     dbChapter.read && !it.read -> it.copy(read = true, lastPageRead = dbChapter.lastPageRead)
 
