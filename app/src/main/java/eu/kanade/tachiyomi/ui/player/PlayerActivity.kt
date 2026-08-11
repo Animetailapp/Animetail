@@ -29,6 +29,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.res.AssetManager
 import android.content.res.Configuration
 import android.graphics.Rect
 import android.media.AudioManager
@@ -112,6 +113,9 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.util.Calendar
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -495,6 +499,8 @@ class PlayerActivity : BaseActivity() {
         val mpvInputFile = mpvDir.createFile("input.conf")!!
         advancedPlayerPreferences.mpvInput().get().let { mpvInputFile.writeText(it) }
 
+        copyAssets(mpvDir)
+
         val showBlackBars = if (subtitlePreferences.subtitleBlackBars().get()) "yes" else "no"
         mpv.setOptionString("sub-ass-force-margins", showBlackBars)
         mpv.setOptionString("sub-use-margins", showBlackBars)
@@ -503,6 +509,31 @@ class PlayerActivity : BaseActivity() {
 
         mpv.addLogObserver(playerObserver)
         mpv.addObserver(playerObserver)
+    }
+
+    private fun copyAssets(mpvDir: UniFile) {
+        val assetManager = assets
+        val files = arrayOf("subfont.ttf", "cacert.pem")
+        for (filename in files) {
+            var ins: InputStream? = null
+            var out: OutputStream? = null
+            try {
+                ins = assetManager.open(filename, AssetManager.ACCESS_STREAMING)
+                val outFile = mpvDir.createFile(filename)!!
+                // Skip if the file already exists with the same size
+                if (outFile.length() == ins.available().toLong()) {
+                    continue
+                }
+                out = outFile.openOutputStream()
+                ins.copyTo(out)
+                logcat(LogPriority.WARN) { "Copied asset file: $filename" }
+            } catch (e: IOException) {
+                logcat(LogPriority.ERROR, e) { "Failed to copy asset file: $filename" }
+            } finally {
+                ins?.close()
+                out?.close()
+            }
+        }
     }
 
     private fun setupPlayerAudio() {

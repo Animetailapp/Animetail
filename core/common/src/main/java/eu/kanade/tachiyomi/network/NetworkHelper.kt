@@ -101,15 +101,15 @@ class NetworkHelper(
 
                         builder.dohCustom(custom, bootstrapHosts)
                     } catch (e: Exception) {
-                        // Invalid URL: fall back to no DoH
-                        builder
+                        // Invalid URL: fall back to system DNS with sinkhole bypass
+                        builder.systemDnsWithDohFallback()
                     }
                 } else {
-                    builder
+                    builder.systemDnsWithDohFallback()
                 }
             }
 
-            else -> builder
+            else -> builder.systemDnsWithDohFallback()
         }
     }
 
