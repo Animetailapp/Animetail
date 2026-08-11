@@ -71,6 +71,7 @@ class SyncSeasonsWithSource(
                         ogTitle = season.ogTitle,
                         seasonNumber = season.seasonNumber,
                         seasonSourceOrder = season.seasonSourceOrder,
+                        memo = season.memo,
                     )
                     updatedSeasons.add(toChangeSeason)
                 }
