@@ -1,7 +1,8 @@
 package eu.kanade.tachiyomi.data.updater
 
 import eu.kanade.tachiyomi.BuildConfig
-import eu.kanade.tachiyomi.util.system.isPreviewBuildType
+import eu.kanade.tachiyomi.util.system.isFossBuildType
+import eu.kanade.tachiyomi.util.system.isNightlyBuildType
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.release.interactor.GetApplicationRelease
 import uy.kohesive.injekt.injectLazy
@@ -19,7 +20,8 @@ class AppUpdateChecker {
         return withIOContext {
             val result = getApplicationRelease.await(
                 GetApplicationRelease.Arguments(
-                    isPreviewBuildType,
+                    isFossBuildType,
+                    isNightlyBuildType,
                     BuildConfig.COMMIT_COUNT.toInt(),
                     BuildConfig.VERSION_NAME,
                     GITHUB_REPO,
@@ -33,7 +35,7 @@ class AppUpdateChecker {
 }
 
 val GITHUB_REPO: String by lazy {
-    if (isPreviewBuildType) {
+    if (isNightlyBuildType) {
         "Animetailapp/animetail-preview"
     } else {
         "Animetailapp/Animetail"
@@ -41,7 +43,7 @@ val GITHUB_REPO: String by lazy {
 }
 
 val RELEASE_TAG: String by lazy {
-    if (isPreviewBuildType) {
+    if (isNightlyBuildType) {
         "r${BuildConfig.COMMIT_COUNT}"
     } else {
         "v${BuildConfig.VERSION_NAME}"

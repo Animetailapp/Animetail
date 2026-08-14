@@ -48,7 +48,7 @@ android {
 
         val commonMatchingFallbacks = listOf(release.name)
 
-        create("preview") {
+        create("nightly") {
             initWith(release)
 
             applicationIdSuffix = ".debug"
@@ -75,7 +75,7 @@ android {
     }
 
     sourceSets {
-        getByName("preview").res.directories.add("src/debug/res")
+        getByName("nightly").res.directories.add("src/debug/res")
         getByName("benchmark").res.directories.add("src/debug/res")
     }
 
