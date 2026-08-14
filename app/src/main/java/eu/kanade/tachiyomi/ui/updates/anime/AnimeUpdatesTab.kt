@@ -9,9 +9,9 @@ import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -47,7 +47,7 @@ fun Screen.animeUpdatesTab(
     val navigator = LocalNavigator.currentOrThrow
     val viewModel = viewModel<AnimeUpdatesViewModel>()
     val scope = rememberCoroutineScope()
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     val navigateUp: (() -> Unit)? = if (fromMore) {
         {
