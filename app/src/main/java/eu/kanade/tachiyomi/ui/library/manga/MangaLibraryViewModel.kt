@@ -36,7 +36,9 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -47,7 +49,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
-import mihon.core.viewmodel.StateViewModel
 import mihon.domain.library.model.search.QueryNode
 import mihon.feature.library.matches
 import tachiyomi.core.common.preference.CheckboxState
@@ -108,7 +109,10 @@ class MangaLibraryViewModel(
     // SY -->
     private val getTracks: GetMangaTracks = Injekt.get(),
     // SY <--
-) : StateViewModel<MangaLibraryViewModel.State>(State()) {
+) : ViewModel() {
+
+    val state: StateFlow<MangaLibraryViewModel.State>
+        field = MutableStateFlow<MangaLibraryViewModel.State>(State())
 
     var activeCategoryIndex: Int by libraryPreferences.lastUsedCategory.asState(
         viewModelScope,

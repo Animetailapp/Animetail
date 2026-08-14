@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.deeplink.manga
 
 import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
@@ -13,8 +14,9 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ResolvableSource
 import eu.kanade.tachiyomi.source.online.UriType
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
-import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.entries.manga.interactor.GetMangaByUrlAndSourceId
 import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
@@ -32,7 +34,10 @@ class DeepLinkMangaViewModel(
     private val getChapterByUrlAndMangaId: GetChapterByUrlAndMangaId = Injekt.get(),
     private val getMangaByUrlAndSourceId: GetMangaByUrlAndSourceId = Injekt.get(),
     private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get(),
-) : StateViewModel<DeepLinkMangaViewModel.State>(State.Loading) {
+) : ViewModel() {
+
+    val state: StateFlow<DeepLinkMangaViewModel.State>
+        field = MutableStateFlow<DeepLinkMangaViewModel.State>(State.Loading)
 
     companion object {
         val QUERY_KEY = CreationExtras.Key<String>()
@@ -62,7 +67,7 @@ class DeepLinkMangaViewModel(
                 null
             }
 
-            mutableState.update {
+            state.update {
                 if (manga == null) {
                     State.NoResults
                 } else {

@@ -1,6 +1,7 @@
 package mihon.feature.migration.list
 
 import androidx.annotation.FloatRange
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
@@ -20,14 +21,16 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
-import mihon.core.viewmodel.StateViewModel
 import mihon.domain.migration.usecases.MigrateMangaUseCase
 import mihon.feature.migration.list.models.MigratingManga
 import mihon.feature.migration.list.models.MigratingManga.SearchResult
@@ -53,7 +56,10 @@ class MangaMigrationListViewModel(
     private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get(),
     private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
     private val migrateManga: MigrateMangaUseCase = Injekt.get(),
-) : StateViewModel<MangaMigrationListViewModel.State>(State()) {
+) : ViewModel() {
+
+    val state: StateFlow<MangaMigrationListViewModel.State>
+        field = MutableStateFlow<MangaMigrationListViewModel.State>(State())
 
     companion object {
         val MANGA_IDS_KEY = CreationExtras.Key<Collection<Long>>()
@@ -101,7 +107,7 @@ class MangaMigrationListViewModel(
                 }
                 .awaitAll()
                 .filterNotNull()
-            mutableState.update { it.copy(items = manga.toImmutableList()) }
+            state.update { it.copy(items = manga.toPersistentList()) }
             runMigrations(manga)
         }
     }
@@ -200,7 +206,7 @@ class MangaMigrationListViewModel(
     }
 
     private fun updateMigrationProgress() {
-        mutableState.update { state ->
+        state.update { state ->
             state.copy(
                 finishedCount = items.count { it.searchResult.value != SearchResult.Searching },
                 migrationComplete = migrationComplete(),
@@ -239,7 +245,7 @@ class MangaMigrationListViewModel(
 
     fun migrateMangas(replace: Boolean) {
         migrateJob = viewModelScope.launchIO {
-            mutableState.update { it.copy(dialog = Dialog.Progress(0f)) }
+            state.update { it.copy(dialog = Dialog.Progress(0f)) }
             val items = items
             try {
                 items.forEachIndexed { index, manga ->
@@ -252,13 +258,13 @@ class MangaMigrationListViewModel(
                         if (e is CancellationException) throw e
                         logcat(LogPriority.WARN, throwable = e)
                     }
-                    mutableState.update {
+                    state.update {
                         it.copy(dialog = Dialog.Progress((index.toFloat() / items.size).coerceAtMost(1f)))
                     }
                 }
                 navigateBack()
             } finally {
-                mutableState.update { it.copy(dialog = null) }
+                state.update { it.copy(dialog = null) }
                 migrateJob = null
             }
         }
@@ -303,6 +309,29 @@ class MangaMigrationListViewModel(
         )
     }
 
+    fun migrateNow(mangaId: Long, replace: Boolean) {
+        viewModelScope.launchIO {
+            val manga = items.find { it.manga.id == mangaId } ?: return@launchIO
+            val target = (manga.searchResult.value as? SearchResult.Success)?.manga ?: return@launchIO
+            migrateManga(current = manga.manga, target = target, replace = replace)
+
+            removeManga(mangaId)
+        }
+    }
+
+    fun removeManga(mangaId: Long) {
+        viewModelScope.launchIO {
+            val item = items.find { it.manga.id == mangaId } ?: return@launchIO
+            removeManga(item)
+            item.migrationScope.cancel()
+            updateMigrationProgress()
+        }
+    }
+
+    private fun removeManga(item: MigratingManga) {
+        state.update { it.copy(items = (it.items - item).toPersistentList()) }
+    }
+
     override fun onCleared() {
         items.forEach {
             it.migrationScope.cancel()
@@ -310,7 +339,7 @@ class MangaMigrationListViewModel(
     }
 
     fun showMigrateDialog(copy: Boolean) {
-        mutableState.update { state ->
+        state.update { state ->
             state.copy(
                 dialog = Dialog.Migrate(
                     copy = copy,
@@ -322,13 +351,13 @@ class MangaMigrationListViewModel(
     }
 
     fun showExitDialog() {
-        mutableState.update {
+        state.update {
             it.copy(dialog = Dialog.Exit)
         }
     }
 
     fun dismissDialog() {
-        mutableState.update { it.copy(dialog = null) }
+        state.update { it.copy(dialog = null) }
     }
 
     data class ChapterInfo(

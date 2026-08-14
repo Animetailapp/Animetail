@@ -37,6 +37,9 @@ import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -49,7 +52,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
-import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
@@ -111,7 +113,10 @@ class AnimeLibraryViewModel(
     // SY -->
     private val getTracks: GetAnimeTracks = Injekt.get(),
     // SY <--
-) : StateViewModel<AnimeLibraryViewModel.State>(State()) {
+) : ViewModel() {
+
+    val state: StateFlow<AnimeLibraryViewModel.State>
+        field = MutableStateFlow<AnimeLibraryViewModel.State>(State())
 
     var activeCategoryIndex: Int by libraryPreferences.lastUsedAnimeCategory.asState(
         viewModelScope,

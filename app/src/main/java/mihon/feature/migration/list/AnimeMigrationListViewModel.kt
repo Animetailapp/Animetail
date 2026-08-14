@@ -1,6 +1,7 @@
 package mihon.feature.migration.list
 
 import androidx.annotation.FloatRange
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
@@ -21,13 +22,14 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
-import mihon.core.viewmodel.StateViewModel
 import mihon.domain.migration.usecases.MigrateAnimeUseCase
 import mihon.feature.migration.list.models.MigratingAnime
 import mihon.feature.migration.list.models.MigratingAnime.SearchResult
@@ -53,7 +55,10 @@ class AnimeMigrationListViewModel(
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
     private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
     private val migrateAnime: MigrateAnimeUseCase = Injekt.get(),
-) : StateViewModel<AnimeMigrationListViewModel.State>(State()) {
+) : ViewModel() {
+
+    val state: StateFlow<AnimeMigrationListViewModel.State>
+        field = MutableStateFlow<AnimeMigrationListViewModel.State>(State())
 
     companion object {
         val ANIME_IDS_KEY = CreationExtras.Key<Collection<Long>>()

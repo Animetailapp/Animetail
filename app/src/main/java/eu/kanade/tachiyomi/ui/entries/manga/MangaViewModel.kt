@@ -9,8 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -54,10 +54,11 @@ import eu.kanade.tachiyomi.ui.entries.manga.RelatedManga.Companion.removeDuplica
 import eu.kanade.tachiyomi.ui.entries.manga.RelatedManga.Companion.sorted
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.util.chapter.getNextUnread
-import eu.kanade.tachiyomi.util.removeCovers
-import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -67,7 +68,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import logcat.LogPriority
-import mihon.core.viewmodel.StateViewModel
 import mihon.domain.items.chapter.interactor.FilterChaptersForDownload
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
@@ -151,7 +151,10 @@ class MangaViewModel(
     val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
     // KMK <--
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
-) : StateViewModel<MangaViewModel.State>(State.Loading) {
+) : ViewModel() {
+
+    val state: StateFlow<State>
+        field = MutableStateFlow<State>(State.Loading)
 
     companion object {
         val MANGA_ID_KEY = CreationExtras.Key<Long>()
@@ -208,7 +211,7 @@ class MangaViewModel(
      * Helper function to update the UI state only if it's currently in success state
      */
     private inline fun updateSuccessState(func: (State.Success) -> State.Success) {
-        mutableState.update {
+        state.update {
             when (it) {
                 State.Loading -> it
                 is State.Success -> func(it)
@@ -268,7 +271,7 @@ class MangaViewModel(
             val needRefreshChapter = chapters.isEmpty()
 
             // Show what we have earlier
-            mutableState.update {
+            state.update {
                 State.Success(
                     manga = manga,
                     source = Injekt.get<MangaSourceManager>().getOrStub(manga.source),
