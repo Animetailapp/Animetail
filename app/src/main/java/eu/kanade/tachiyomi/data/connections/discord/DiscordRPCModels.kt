@@ -8,7 +8,7 @@ package eu.kanade.tachiyomi.data.connections.discord
 
 import androidx.annotation.StringRes
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.util.system.isPreviewBuildType
+import eu.kanade.tachiyomi.util.system.isNightlyBuildType
 
 // Constant for logging tag
 const val RICH_PRESENCE_TAG = "discord_rpc"
@@ -63,7 +63,7 @@ enum class DiscordScreen(
 private const val BASE_URL = "https://cdn.discordapp.com/emojis/"
 private const val ANIMETAIL_IMAGE_URL = "${BASE_URL}1286834441981005824.webp?quality=lossless"
 private const val ANIMETAIL_PREVIEW_IMAGE_URL = "${BASE_URL}1286834519533420544.webp?quality=lossless"
-private val ANIMETAIL_IMAGE = if (isPreviewBuildType) {
+private val ANIMETAIL_IMAGE = if (isNightlyBuildType) {
     ANIMETAIL_PREVIEW_IMAGE_URL
 } else {
     ANIMETAIL_IMAGE_URL

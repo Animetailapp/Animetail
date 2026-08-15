@@ -81,7 +81,7 @@ class AnimeStatsViewModel(
                 trackerCount = loggedInTrackers.size,
             )
 
-            mutableState.update {
+            state.update {
                 StatsScreenState.SuccessAnime(
                     overview = overviewStatData,
                     titles = titlesStatData,

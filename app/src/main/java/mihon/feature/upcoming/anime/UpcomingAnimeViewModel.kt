@@ -52,6 +52,8 @@ class UpcomingAnimeViewModel(
             .yearMonth,
     )
 
+    private val dialog = MutableStateFlow<Dialog?>(null)
+
     private val hasActiveFilters = getUpcomingItemPreferenceFlow()
         .map { prefs ->
             listOf(

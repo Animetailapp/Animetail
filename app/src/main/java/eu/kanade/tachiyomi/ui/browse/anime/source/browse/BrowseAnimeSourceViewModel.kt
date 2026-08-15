@@ -35,6 +35,8 @@ import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
 import eu.kanade.tachiyomi.util.removeBackgrounds
 import eu.kanade.tachiyomi.util.removeCovers
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -43,13 +45,16 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
@@ -151,7 +156,7 @@ class BrowseAnimeSourceViewModel(
             // KMK <--
 
             viewModelScope.launchIO {
-                mutableState.update {
+                state.update {
                     var query: String? = null
                     var listing = it.listing
 
@@ -198,7 +203,7 @@ class BrowseAnimeSourceViewModel(
             getExhSavedSearch.subscribe(source.id, source::getFilterList)
                 .map { it.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, EXHSavedSearch::name)) }
                 .onEach { savedSearches ->
-                    mutableState.update { it.copy(savedSearches = savedSearches.toImmutableList()) }
+                    state.update { it.copy(savedSearches = savedSearches.toImmutableList()) }
                 }
                 .launchIn(viewModelScope)
             // SY <--
@@ -257,16 +262,16 @@ class BrowseAnimeSourceViewModel(
 
         reloadSavedSearches()
         // KMK <--
-        mutableState.update { it.copy(filters = source.getFilterList()) }
+        state.update { it.copy(filters = source.getFilterList()) }
     }
 
     fun setListing(listing: Listing) {
-        mutableState.update { it.copy(listing = listing, toolbarQuery = null) }
+        state.update { it.copy(listing = listing, toolbarQuery = null) }
     }
 
     fun setFilters(filters: FilterList) {
         if (source !is AnimeCatalogueSource) return
-        mutableState.update {
+        state.update {
             it.copy(
                 filters = filters,
             )
@@ -294,7 +299,7 @@ class BrowseAnimeSourceViewModel(
         val input = state.value.listing as? Listing.Search
             ?: Listing.Search(query = null, filters = source.getFilterList())
 
-        mutableState.update {
+        state.update {
             it.copy(
                 listing = input.copy(
                     query = query ?: input.query,
@@ -340,7 +345,7 @@ class BrowseAnimeSourceViewModel(
                 }
             }
         }
-        mutableState.update {
+        state.update {
             val listing = if (genreExists) {
                 Listing.Search(query = null, filters = defaultFilters)
             } else {
@@ -450,11 +455,11 @@ class BrowseAnimeSourceViewModel(
     }
 
     fun setDialog(dialog: Dialog?) {
-        mutableState.update { it.copy(dialog = dialog) }
+        state.update { it.copy(dialog = dialog) }
     }
 
     fun setToolbarQuery(query: String?) {
-        mutableState.update { it.copy(toolbarQuery = query) }
+        state.update { it.copy(toolbarQuery = query) }
     }
 
     sealed class Listing(open val query: String?, open val filters: FilterList) {
@@ -524,7 +529,7 @@ class BrowseAnimeSourceViewModel(
             getExhSavedSearch.await(source.id, (source as AnimeCatalogueSource)::getFilterList)
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, EXHSavedSearch::name))
                 .let { savedSearches ->
-                    mutableState.update { it.copy(savedSearches = savedSearches.toImmutableList()) }
+                    state.update { it.copy(savedSearches = savedSearches.toImmutableList()) }
                 }
         }
     }
@@ -536,7 +541,7 @@ class BrowseAnimeSourceViewModel(
     fun onSaveSearch() {
         viewModelScope.launchIO {
             val names = state.value.savedSearches.map { it.name }.toImmutableList()
-            mutableState.update { it.copy(dialog = Dialog.CreateSavedSearch(names)) }
+            state.update { it.copy(dialog = Dialog.CreateSavedSearch(names)) }
         }
     }
 
@@ -574,7 +579,7 @@ class BrowseAnimeSourceViewModel(
                 ?.takeUnless { allDefault }
                 ?: source.getFilterList()
 
-            mutableState.update {
+            state.update {
                 it.copy(
                     listing = Listing.Search(
                         query = search.query,
@@ -592,7 +597,7 @@ class BrowseAnimeSourceViewModel(
 
     /** Show dialog to delete saved search */
     fun onSavedSearchPress(search: EXHSavedSearch) {
-        mutableState.update { it.copy(dialog = Dialog.DeleteSavedSearch(search.id, search.name)) }
+        state.update { it.copy(dialog = Dialog.DeleteSavedSearch(search.id, search.name)) }
     }
 
     /** Save a search */

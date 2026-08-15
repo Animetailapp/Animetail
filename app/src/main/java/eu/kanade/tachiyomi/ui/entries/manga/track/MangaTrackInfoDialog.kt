@@ -213,8 +213,8 @@ data class MangaTrackInfoDialogHomeScreen(
         private val getTracks: GetMangaTracks = Injekt.get(),
     ) : ViewModel() {
 
-        val state: StateFlow<Model.State>
-            field = MutableStateFlow<Model.State>(State())
+        val state: StateFlow<State>
+            field = MutableStateFlow<State>(State())
 
         companion object {
             val MANGA_ID_KEY = CreationExtras.Key<Long>()
@@ -241,8 +241,6 @@ data class MangaTrackInfoDialogHomeScreen(
                     .distinctUntilChanged()
                     .map { it.mapToTrackItem() }
                     .collectLatest { trackItems -> state.update { it.copy(trackItems = trackItems) } }
-            }
-        }
             }
         }
 

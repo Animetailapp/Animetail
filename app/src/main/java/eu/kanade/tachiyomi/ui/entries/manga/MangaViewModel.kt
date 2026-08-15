@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.flowWithLifecycle
@@ -54,6 +55,8 @@ import eu.kanade.tachiyomi.ui.entries.manga.RelatedManga.Companion.removeDuplica
 import eu.kanade.tachiyomi.ui.entries.manga.RelatedManga.Companion.sorted
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.util.chapter.getNextUnread
+import eu.kanade.tachiyomi.util.removeCovers
+import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -1425,14 +1428,8 @@ class MangaViewModel(
 
     // SY -->
     fun showEditMangaInfoDialog() {
-        mutableState.update { state ->
-            when (state) {
-                State.Loading -> state
-
-                is State.Success -> {
-                    state.copy(dialog = Dialog.EditMangaInfo(state.manga))
-                }
-            }
+        updateSuccessState { state ->
+            state.copy(dialog = Dialog.EditMangaInfo(state.manga))
         }
     }
     // SY <--

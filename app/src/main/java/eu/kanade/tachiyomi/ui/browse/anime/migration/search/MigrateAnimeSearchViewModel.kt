@@ -23,7 +23,7 @@ class MigrateAnimeSearchViewModel(
         extensionFilter = initialExtensionFilter
         viewModelScope.launch {
             val anime = getAnime.await(animeId)!!
-            mutableState.update {
+            updateState {
                 it.copy(
                     fromSourceId = anime.source,
                     searchQuery = anime.title,

@@ -253,7 +253,7 @@ class AnimeViewModel(
      * Helper function to update the UI state only if it's currently in success state
      */
     private inline fun updateSuccessState(func: (State.Success) -> State.Success) {
-        mutableState.update {
+        state.update {
             when (it) {
                 State.Loading -> it
                 is State.Success -> func(it)
@@ -332,7 +332,7 @@ class AnimeViewModel(
                 cast = anime.cast ?: castCache[anime.id],
             )
             // Show what we have earlier
-            mutableState.update {
+            state.update {
                 State.Success(
                     anime = animeWithCast,
                     source = source,
@@ -1895,14 +1895,8 @@ class AnimeViewModel(
 
     // SY -->
     fun showEditAnimeInfoDialog() {
-        mutableState.update { state ->
-            when (state) {
-                State.Loading -> state
-
-                is State.Success -> {
-                    state.copy(dialog = Dialog.EditAnimeInfo(state.anime))
-                }
-            }
+        updateSuccessState { state ->
+            state.copy(dialog = Dialog.EditAnimeInfo(state.anime))
         }
     }
     // SY <--

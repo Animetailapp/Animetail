@@ -106,7 +106,7 @@ class AnimeMigrationListViewModel(
                 }
                 .awaitAll()
                 .filterNotNull()
-            mutableState.update { it.copy(items = anime.toImmutableList()) }
+            state.update { it.copy(items = anime.toPersistentList()) }
             runMigrations(anime)
         }
     }
@@ -205,7 +205,7 @@ class AnimeMigrationListViewModel(
     }
 
     private fun updateMigrationProgress() {
-        mutableState.update { state ->
+        state.update { state ->
             state.copy(
                 finishedCount = items.count { it.searchResult.value != SearchResult.Searching },
                 migrationComplete = migrationComplete(),
@@ -244,7 +244,7 @@ class AnimeMigrationListViewModel(
 
     fun migrateAnimes(replace: Boolean) {
         migrateJob = viewModelScope.launchIO {
-            mutableState.update { it.copy(dialog = Dialog.Progress(0f)) }
+            state.update { it.copy(dialog = Dialog.Progress(0f)) }
             val items = items
             try {
                 items.forEachIndexed { index, anime ->
@@ -257,23 +257,23 @@ class AnimeMigrationListViewModel(
                         if (e is CancellationException) throw e
                         logcat(LogPriority.WARN, throwable = e)
                     }
-                    mutableState.update {
+                    state.update {
                         it.copy(dialog = Dialog.Progress((index.toFloat() / items.size).coerceAtMost(1f)))
                     }
                 }
                 navigateBack()
             } finally {
-                mutableState.update { it.copy(dialog = null) }
+                state.update { it.copy(dialog = null) }
                 migrateJob = null
             }
         }
     }
 
     fun removeAnime(animeId: Long) {
-        mutableState.update { state ->
+        state.update { state ->
             val item = state.items.find { it.anime.id == animeId } ?: return@update state
             item.migrationScope.cancel()
-            state.copy(items = state.items.toPersistentList().remove(item))
+            state.copy(items = (state.items - item).toPersistentList())
         }
         updateMigrationProgress()
     }
@@ -316,7 +316,7 @@ class AnimeMigrationListViewModel(
     }
 
     fun showMigrateDialog(copy: Boolean) {
-        mutableState.update { state ->
+        state.update { state ->
             state.copy(
                 dialog = Dialog.Migrate(
                     copy = copy,
@@ -331,13 +331,13 @@ class AnimeMigrationListViewModel(
     }
 
     fun showExitDialog() {
-        mutableState.update {
+        state.update {
             it.copy(dialog = Dialog.Exit)
         }
     }
 
     fun dismissDialog() {
-        mutableState.update { it.copy(dialog = null) }
+        state.update { it.copy(dialog = null) }
     }
 
     data class EpisodeInfo(

@@ -163,7 +163,7 @@ class AnimeLibraryViewModel(
                     }
             }
                 .collectLatest {
-                    mutableState.update { state ->
+                    state.update { state ->
                         state.copy(
                             isLoading = false,
                             library = it,
@@ -178,7 +178,7 @@ class AnimeLibraryViewModel(
             libraryPreferences.showContinueReadingButton.changes(),
         ) { a, b, c -> arrayOf(a, b, c) }
             .onEach { (showCategoryTabs, showAnimeCount, showAnimeContinueButton) ->
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(
                         showCategoryTabs = showCategoryTabs,
                         showAnimeCount = showAnimeCount,
@@ -205,7 +205,7 @@ class AnimeLibraryViewModel(
         }
             .distinctUntilChanged()
             .onEach {
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(hasActiveFilters = it)
                 }
             }
@@ -214,7 +214,7 @@ class AnimeLibraryViewModel(
         // SY -->
         libraryPreferences.groupAnimeLibraryBy.changes()
             .onEach {
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(groupType = it)
                 }
             }
@@ -742,15 +742,15 @@ class AnimeLibraryViewModel(
     }
 
     fun showSettingsDialog() {
-        mutableState.update { it.copy(dialog = Dialog.SettingsSheet) }
+        state.update { it.copy(dialog = Dialog.SettingsSheet) }
     }
 
     fun clearSelection() {
-        mutableState.update { it.copy(selection = persistentListOf()) }
+        state.update { it.copy(selection = persistentListOf()) }
     }
 
     fun toggleSelection(anime: LibraryAnime) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 if (list.fastAny { it.id == anime.id }) {
                     list.removeAll { it.id == anime.id }
@@ -767,7 +767,7 @@ class AnimeLibraryViewModel(
      * same category as the given anime
      */
     fun toggleRangeSelection(anime: LibraryAnime) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val lastSelected = list.lastOrNull()
                 if (lastSelected?.category != anime.category) {
@@ -799,7 +799,7 @@ class AnimeLibraryViewModel(
     }
 
     fun selectAll(index: Int) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val categoryId = state.categories.getOrNull(index)?.id ?: -1
                 val selectedIds = list.fastMap { it.id }
@@ -814,7 +814,7 @@ class AnimeLibraryViewModel(
     }
 
     fun invertSelection(index: Int) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val categoryId = state.categories[index].id
                 val items = state.getAnimelibItemsByCategoryId(categoryId)?.fastMap { it.libraryAnime }.orEmpty()
@@ -829,7 +829,7 @@ class AnimeLibraryViewModel(
     }
 
     fun search(query: String?) {
-        mutableState.update { it.copy(searchQuery = query) }
+        state.update { it.copy(searchQuery = query) }
     }
 
     fun openChangeCategoryDialog() {
@@ -853,17 +853,17 @@ class AnimeLibraryViewModel(
                     }
                 }
                 .toImmutableList()
-            mutableState.update { it.copy(dialog = Dialog.ChangeCategory(animeList, preselected)) }
+            state.update { it.copy(dialog = Dialog.ChangeCategory(animeList, preselected)) }
         }
     }
 
     fun openDeleteAnimeDialog() {
         val nimeList = state.value.selection.map { it.anime }
-        mutableState.update { it.copy(dialog = Dialog.DeleteAnime(nimeList)) }
+        state.update { it.copy(dialog = Dialog.DeleteAnime(nimeList)) }
     }
 
     fun closeDialog() {
-        mutableState.update { it.copy(dialog = null) }
+        state.update { it.copy(dialog = null) }
     }
 
     sealed interface Dialog {

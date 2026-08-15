@@ -36,6 +36,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -153,7 +154,7 @@ class MangaLibraryViewModel(
                     }
             }
                 .collectLatest {
-                    mutableState.update { state ->
+                    state.update { state ->
                         state.copy(
                             isLoading = false,
                             library = it,
@@ -168,7 +169,7 @@ class MangaLibraryViewModel(
             libraryPreferences.showContinueReadingButton.changes(),
         ) { a, b, c -> arrayOf(a, b, c) }
             .onEach { (showCategoryTabs, showMangaCount, showMangaContinueButton) ->
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(
                         showCategoryTabs = showCategoryTabs,
                         showMangaCount = showMangaCount,
@@ -195,7 +196,7 @@ class MangaLibraryViewModel(
         }
             .distinctUntilChanged()
             .onEach {
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(hasActiveFilters = it)
                 }
             }
@@ -204,7 +205,7 @@ class MangaLibraryViewModel(
         // SY -->
         libraryPreferences.groupMangaLibraryBy.changes()
             .onEach {
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(groupType = it)
                 }
             }
@@ -717,15 +718,15 @@ class MangaLibraryViewModel(
     }
 
     fun showSettingsDialog() {
-        mutableState.update { it.copy(dialog = Dialog.SettingsSheet) }
+        state.update { it.copy(dialog = Dialog.SettingsSheet) }
     }
 
     fun clearSelection() {
-        mutableState.update { it.copy(selection = persistentListOf()) }
+        state.update { it.copy(selection = persistentListOf()) }
     }
 
     fun toggleSelection(manga: LibraryManga) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 if (list.fastAny { it.id == manga.id }) {
                     list.removeAll { it.id == manga.id }
@@ -742,7 +743,7 @@ class MangaLibraryViewModel(
      * same category as the given manga
      */
     fun toggleRangeSelection(manga: LibraryManga) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val lastSelected = list.lastOrNull()
                 if (lastSelected?.category != manga.category) {
@@ -774,7 +775,7 @@ class MangaLibraryViewModel(
     }
 
     fun selectAll(index: Int) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val categoryId = state.categories.getOrNull(index)?.id ?: -1
                 val selectedIds = list.fastMap { it.id }
@@ -789,7 +790,7 @@ class MangaLibraryViewModel(
     }
 
     fun invertSelection(index: Int) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val categoryId = state.categories[index].id
                 val items = state.getLibraryItemsByCategoryId(categoryId)?.fastMap { it.libraryManga }.orEmpty()
@@ -804,7 +805,7 @@ class MangaLibraryViewModel(
     }
 
     fun search(query: String?) {
-        mutableState.update { it.copy(searchQuery = query) }
+        state.update { it.copy(searchQuery = query) }
     }
 
     fun openChangeCategoryDialog() {
@@ -828,17 +829,17 @@ class MangaLibraryViewModel(
                     }
                 }
                 .toImmutableList()
-            mutableState.update { it.copy(dialog = Dialog.ChangeCategory(mangaList, preselected)) }
+            state.update { it.copy(dialog = Dialog.ChangeCategory(mangaList, preselected)) }
         }
     }
 
     fun openDeleteMangaDialog() {
         val mangaList = state.value.selection.map { it.manga }
-        mutableState.update { it.copy(dialog = Dialog.DeleteManga(mangaList)) }
+        state.update { it.copy(dialog = Dialog.DeleteManga(mangaList)) }
     }
 
     fun closeDialog() {
-        mutableState.update { it.copy(dialog = null) }
+        state.update { it.copy(dialog = null) }
     }
 
     sealed interface Dialog {

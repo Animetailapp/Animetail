@@ -624,7 +624,7 @@ open class WebGpuViewer(
         }
 
         // If page is already ready, just re-queue immediately
-        if (page.page.status == Page.State.Ready) {
+        if (page.page.status == Page.State.READY) {
             synchronized(lock) {
                 if (pageInCache(page) && !page.imagePage.isDecoded) {
                     page.state = PageState.IDLE
@@ -643,7 +643,7 @@ open class WebGpuViewer(
         }
 
         // Start the download
-        if (page.page.status == Page.State.Queue) {
+        if (page.page.status == Page.State.QUEUE) {
             scope.launch(Dispatchers.IO) {
                 loader.loadPage(page.page)
             }
@@ -686,13 +686,13 @@ open class WebGpuViewer(
 
                 page.page.statusFlow.takeWhile { state ->
                     when (state) {
-                        Page.State.Queue, Page.State.LoadPage, Page.State.DownloadImage -> true
-                        is Page.State.Error -> {
-                            Log.e("WebGpuViewer", "Page load error: ${state.error}")
+                        Page.State.QUEUE, Page.State.LOAD_PAGE, Page.State.DOWNLOAD_IMAGE -> true
+                        Page.State.ERROR -> {
+                            Log.e("WebGpuViewer", "Page load error")
                             false
                         }
 
-                        Page.State.Ready -> false
+                        Page.State.READY -> false
                     }
                 }.collect {}
 
@@ -702,7 +702,7 @@ open class WebGpuViewer(
                 synchronized(lock) {
                     if (pageInCache(page) && page.state == PageState.LOADING) {
                         page.state = PageState.IDLE
-                        if (page.page.status == Page.State.Ready && !page.imagePage.isDecoded) {
+                        if (page.page.status == Page.State.READY && !page.imagePage.isDecoded) {
                             queueForDecode(
                                 page,
                                 prioritize = currentPage?.let { pageKey(it) == pageKey(page) } ?: false,
@@ -719,7 +719,7 @@ open class WebGpuViewer(
 
     private suspend fun decodeReaderPage(page: ViewerReaderPage) {
         // If page isn't downloaded yet, start loading
-        if (page.page.status != Page.State.Ready) {
+        if (page.page.status != Page.State.READY) {
             startPageLoad(page)
             return
         }

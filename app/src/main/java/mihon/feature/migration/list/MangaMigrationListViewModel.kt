@@ -14,15 +14,13 @@ import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.manga.getNameForMangaInfo
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -271,10 +269,10 @@ class MangaMigrationListViewModel(
     }
 
     fun removeManga(mangaId: Long) {
-        mutableState.update { state ->
+        state.update { state ->
             val item = state.items.find { it.manga.id == mangaId } ?: return@update state
             item.migrationScope.cancel()
-            state.copy(items = state.items.toPersistentList().remove(item))
+            state.copy(items = (state.items - item).toPersistentList())
         }
         updateMigrationProgress()
     }
@@ -309,30 +307,8 @@ class MangaMigrationListViewModel(
         )
     }
 
-    fun migrateNow(mangaId: Long, replace: Boolean) {
-        viewModelScope.launchIO {
-            val manga = items.find { it.manga.id == mangaId } ?: return@launchIO
-            val target = (manga.searchResult.value as? SearchResult.Success)?.manga ?: return@launchIO
-            migrateManga(current = manga.manga, target = target, replace = replace)
-
-            removeManga(mangaId)
-        }
-    }
-
-    fun removeManga(mangaId: Long) {
-        viewModelScope.launchIO {
-            val item = items.find { it.manga.id == mangaId } ?: return@launchIO
-            removeManga(item)
-            item.migrationScope.cancel()
-            updateMigrationProgress()
-        }
-    }
-
-    private fun removeManga(item: MigratingManga) {
-        state.update { it.copy(items = (it.items - item).toPersistentList()) }
-    }
-
     override fun onCleared() {
+        super.onCleared()
         items.forEach {
             it.migrationScope.cancel()
         }
@@ -344,7 +320,10 @@ class MangaMigrationListViewModel(
                 dialog = Dialog.Migrate(
                     copy = copy,
                     totalCount = items.size,
-                    skippedCount = items.count { it.searchResult.value == SearchResult.NotFound },
+                    skippedCount = items.count {
+                        it.searchResult.value == SearchResult.Searching ||
+                            it.searchResult.value == SearchResult.NotFound
+                    },
                 ),
             )
         }

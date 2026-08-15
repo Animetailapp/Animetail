@@ -64,6 +64,7 @@ data object UpdatesTab : Tab {
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val fromMore = currentNavigationStyle() == NavStyle.MOVE_UPDATES_TO_MORE
         // KMK -->
         val feedScreenModel = rememberScreenModel { FeedScreenModel() }

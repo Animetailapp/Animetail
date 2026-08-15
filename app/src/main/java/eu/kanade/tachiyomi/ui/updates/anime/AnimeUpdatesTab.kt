@@ -162,7 +162,7 @@ fun Screen.animeUpdatesTab(
             }
         },
         actions =
-        if (viewModel.state.collectAsState().value.selected.isNotEmpty()) {
+        if (state.selected.isNotEmpty()) {
             persistentListOf(
                 AppBar.Action(
                     title = stringResource(MR.strings.action_select_all),

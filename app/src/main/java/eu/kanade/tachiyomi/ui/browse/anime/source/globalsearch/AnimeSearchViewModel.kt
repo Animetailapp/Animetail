@@ -17,6 +17,7 @@ import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -75,8 +76,8 @@ abstract class AnimeSearchViewModel(
 
     init {
         viewModelScope.launch {
-            preferences.globalSearchFilterState.changes().collectLatest { state ->
-                mutableState.update { it.copy(onlyShowHasResults = state) }
+            preferences.globalSearchFilterState.changes().collectLatest { onlyShowHasResults ->
+                state.update { it.copy(onlyShowHasResults = onlyShowHasResults) }
             }
         }
     }
@@ -118,11 +119,11 @@ abstract class AnimeSearchViewModel(
     }
 
     fun updateSearchQuery(query: String?) {
-        mutableState.update { it.copy(searchQuery = query) }
+        state.update { it.copy(searchQuery = query) }
     }
 
     fun setSourceFilter(filter: AnimeSourceFilter) {
-        mutableState.update { it.copy(sourceFilter = filter) }
+        state.update { it.copy(sourceFilter = filter) }
         search()
     }
 
@@ -189,7 +190,7 @@ abstract class AnimeSearchViewModel(
     }
 
     private fun updateItems(items: PersistentMap<AnimeSource, AnimeSearchItemResult>) {
-        mutableState.update {
+        state.update {
             it.copy(
                 items = items
                     .toSortedMap(sortComparator(items))
