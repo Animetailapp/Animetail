@@ -52,7 +52,15 @@ class UpcomingAnimeViewModel(
             .yearMonth,
     )
 
-    private val dialog = MutableStateFlow<Dialog?>(null)
+    private val hasActiveFilters = getUpcomingItemPreferenceFlow()
+        .map { prefs ->
+            listOf(
+                prefs.filterIncludedCategories,
+                prefs.filterExcludedCategories,
+            )
+                .any { it.isNotEmpty() }
+        }
+        .distinctUntilChanged()
 
     private val upcoming = getUpcomingItemPreferenceFlow()
         .distinctUntilChanged()
@@ -62,27 +70,23 @@ class UpcomingAnimeViewModel(
                 includedCategories = prefs.filterIncludedCategories,
             )
                 .distinctUntilChanged()
-                .map { items ->
-                    val upcomingItems = items.toUpcomingAnimeUIModels()
-                    val hasFilters = prefs.filterExcludedCategories.isNotEmpty() ||
-                        prefs.filterIncludedCategories.isNotEmpty()
-                    Triple(upcomingItems, upcomingItems.toEvents(), hasFilters)
-                }
+                .map { items -> items.toUpcomingAnimeUIModels() }
         }
         .flowOn(Dispatchers.IO)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), Triple(emptyList(), emptyMap(), false))
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), emptyList())
 
     val state: StateFlow<State> = combine(
         upcoming,
         selectedYearMonth,
         dialog,
-    ) { (items, events, hasFilters), selectedYearMonth, dialog ->
+        hasActiveFilters,
+    ) { upcoming, selectedYearMonth, dialog, hasActiveFilters ->
         State(
             selectedYearMonth = selectedYearMonth,
-            items = items,
-            events = events,
-            headerIndexes = items.getHeaderIndexes(),
-            hasActiveFilters = hasFilters,
+            items = upcoming,
+            events = upcoming.toEvents(),
+            headerIndexes = upcoming.getHeaderIndexes(),
+            hasActiveFilters = hasActiveFilters,
             dialog = dialog,
         )
     }
