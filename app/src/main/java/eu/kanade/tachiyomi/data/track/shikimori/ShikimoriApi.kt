@@ -175,6 +175,57 @@ class ShikimoriApi(
         }
     }
 
+    suspend fun getMangaDetails(id: Int): MangaTrackSearch? {
+        return withIOContext {
+            val query = $$"""
+            |query($query: String) {
+                |mangas(ids: $query, limit: 1, kind:"!light_novel,!novel") {
+                    |id
+                    |name
+                    |chapters
+                    |kind
+                    |poster {
+                        |mainUrl
+                    |}
+                    |score
+                    |url
+                    |status
+                    |airedOn {
+                        |date
+                    |}
+                    |description
+                    |personRoles {
+                        |person {
+                            |name
+                        |}
+                        |rolesEn
+                    |}
+                |}
+            |}
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("query", "$id")
+                }
+            }
+
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        GRAPHQL_API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<SMSearchResult>()
+                    .data.mangas
+                    .firstOrNull()
+                    ?.toTrack(trackId)
+            }
+        }
+    }
+
     suspend fun searchAnime(search: String): List<AnimeTrackSearch> {
         return withIOContext {
             val query = $$"""
@@ -220,6 +271,57 @@ class ShikimoriApi(
                     .parseAs<SMAnimeSearchResult>()
                     .data.animes
                     .map { it.toTrack(trackId) }
+            }
+        }
+    }
+
+    suspend fun getAnimeDetails(id: Int): AnimeTrackSearch? {
+        return withIOContext {
+            val query = $$"""
+            |query($query: String) {
+                |animes(ids: $query, limit: 1) {
+                    |id
+                    |name
+                    |episodes
+                    |kind
+                    |poster {
+                        |mainUrl
+                    |}
+                    |score
+                    |url
+                    |status
+                    |airedOn {
+                        |date
+                    |}
+                    |description
+                    |personRoles {
+                        |person {
+                            |name
+                        |}
+                        |rolesEn
+                    |}
+                |}
+            |}
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("query", "$id")
+                }
+            }
+
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        GRAPHQL_API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<SMAnimeSearchResult>()
+                    .data.animes
+                    .firstOrNull()
+                    ?.toTrack(trackId)
             }
         }
     }

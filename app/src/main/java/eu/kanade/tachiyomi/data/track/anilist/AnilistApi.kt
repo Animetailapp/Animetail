@@ -369,6 +369,150 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         }
     }
 
+    suspend fun getMangaDetails(id: Int): MangaTrackSearch? {
+        return withIOContext {
+            val query = $$"""
+            |query Search($manga_id: Int) {
+                |Page (perPage: 1) {
+                    |media(id: $manga_id, type: MANGA, format_not_in: [NOVEL]) {
+                        |id
+                        |staff {
+                            |edges {
+                                |role
+                                |id
+                                |node {
+                                    |name {
+                                        |full
+                                        |userPreferred
+                                        |native
+                                    |}
+                                |}
+                            |}
+                        |}
+                        |title {
+                            |userPreferred
+                        |}
+                        |coverImage {
+                            |large
+                        |}
+                        |format
+                        |countryOfOrigin
+                        |status
+                        |chapters
+                        |description
+                        |startDate {
+                            |year
+                            |month
+                            |day
+                        |}
+                        |averageScore
+                    |}
+                |}
+            |}
+            |
+            """.trimMargin()
+
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("manga_id", id)
+                }
+            }
+
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<ALSearchResult>()
+                    .data.page.media
+                    .firstOrNull()
+                    ?.toALManga()
+                    ?.toTrack()
+            }
+        }
+    }
+
+    suspend fun getAnimeDetails(id: Int): AnimeTrackSearch? {
+        return withIOContext {
+            val query = $$"""
+            |query Search($anime_id: Int) {
+                |Page (perPage: 1) {
+                    |media(id: $anime_id, type: ANIME) {
+                        |id
+                        |staff {
+                            |edges {
+                                |role
+                                |id
+                                |node {
+                                    |name {
+                                        |full
+                                        |userPreferred
+                                        |native
+                                    |}
+                                |}
+                            |}
+                        |}
+                        |characters {
+                            |edges {
+                                |isMain
+                                |node {
+                                    |name
+                                |}
+                            |}
+                        |}
+                        |title {
+                            |english
+                            |romaji
+                            |native
+                            |userPreferred
+                        |}
+                        |coverImage {
+                            |large
+                        |}
+                        |format
+                        |status
+                        |episodes
+                        |description
+                        |startDate {
+                            |year
+                            |month
+                            |day
+                        |}
+                        |averageScore
+                    |}
+                |}
+            |}
+            |
+            """.trimMargin()
+
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("anime_id", id)
+                }
+            }
+
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<ALSearchResult>()
+                    .data.page.media
+                    .firstOrNull()
+                    ?.toALAnime()
+                    ?.toTrack()
+            }
+        }
+    }
+
     suspend fun getPopularAnime(): List<AnimeTrackSearch> {
         return withIOContext {
             val query = """
@@ -883,92 +1027,79 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     }
                 }
 
-                with(json) {
-                    authClient.newCall(
-                        POST(
-                            API_URL,
-                            body = payload.toString().toRequestBody(jsonMime),
-                        ),
-                    )
-                        .awaitSuccess()
-                        .parseAs<JsonObject>()
-                        .let { root ->
+                val credits = mutableListOf<Credit>()
+                try {
+                    val search = client.newCall(
+                        POST(API_URL, body = payload.toString().toRequestBody(jsonMime)),
+                    ).execute()
+                    val bodyStr = search.body.string()
+                    // Use kotlinx.serialization Json object parsing
+                    val parsed = json.parseToJsonElement(bodyStr).jsonObject
+                    val page = parsed["data"]?.jsonObject?.get("Page")?.jsonObject
+                    val mediaArr = page?.get("media")?.jsonArray ?: return@withIOContext null
+                    if (mediaArr.isEmpty()) return@withIOContext null
+                    val first = mediaArr[0].jsonObject
 
-                            val credits = mutableListOf<Credit>()
-                            try {
-                                val search = this@AnilistApi.client.newCall(
-                                    POST(API_URL, body = payload.toString().toRequestBody(jsonMime)),
-                                ).execute()
-                                val bodyStr = search.body.string()
-                                // Use kotlinx.serialization Json object parsing
-                                val parsed = json.parseToJsonElement(bodyStr).jsonObject
-                                val page = parsed["data"]?.jsonObject?.get("Page")?.jsonObject
-                                val mediaArr = page?.get("media")?.jsonArray ?: return@withIOContext null
-                                if (mediaArr.isEmpty()) return@withIOContext null
-                                val first = mediaArr[0].jsonObject
-
-                                // Parse characters
-                                val characters = first["characters"]?.jsonObject
-                                    ?.get("edges")?.jsonArray
-                                characters?.forEach { edgeEl ->
-                                    val edge = edgeEl.jsonObject
-                                    val node = edge["node"]?.jsonObject
-                                    val charName = node?.get("name")?.jsonObject
-                                        ?.get("userPreferred")?.toString()?.trim('"')
-                                    val charImage = node?.get("image")?.jsonObject
-                                        ?.get("large")?.toString()?.trim('"')
-                                    val vas = edge["voiceActors"]?.jsonArray
-                                    val vaNames = mutableListOf<String>()
-                                    var vaImage: String? = null
-                                    vas?.forEach { vaEl ->
-                                        val va = vaEl.jsonObject
-                                        val vaName = va["name"]?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
-                                        val vaLang = va["language"]?.toString()?.trim('"')
-                                        if (!vaName.isNullOrBlank()) {
-                                            vaNames.add(if (!vaLang.isNullOrBlank()) "$vaName ($vaLang)" else vaName)
-                                        }
-                                        if (vaImage == null) {
-                                            vaImage = va["image"]?.jsonObject?.get("large")?.toString()?.trim('"')
-                                        }
-                                    }
-                                    val roleText = vaNames.joinToString(", ")
-                                    var finalImage: String? = charImage ?: vaImage
-                                    if (!finalImage.isNullOrBlank() && finalImage.startsWith("//")) {
-                                        finalImage = "https:$finalImage"
-                                    }
-                                    if (!charName.isNullOrBlank()) {
-                                        credits.add(
-                                            Credit(
-                                                name = charName,
-                                                role = roleText.ifBlank { null },
-                                                character = charName,
-                                                image_url = finalImage,
-                                            ),
-                                        )
-                                    }
-                                }
-
-                                // Parse staff
-                                val staff = first["staff"]?.jsonObject?.get("edges")?.jsonArray
-                                staff?.forEach { stEl ->
-                                    val sedge = stEl.jsonObject
-                                    val srole = sedge["role"]?.toString()?.trim('"')
-                                    val snode = sedge["node"]?.jsonObject
-                                    val sname = snode?.get(
-                                        "name",
-                                    )?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
-                                    var sImage = snode?.get("image")?.jsonObject?.get("large")?.toString()?.trim('"')
-                                    if (!sImage.isNullOrBlank() && sImage.startsWith("//")) sImage = "https:$sImage"
-                                    if (!sname.isNullOrBlank()) {
-                                        credits.add(Credit(name = sname, role = srole, image_url = sImage))
-                                    }
-                                }
-
-                                credits.ifEmpty { null }
-                            } catch (_: Exception) {
-                                null
+                    // Parse characters
+                    val characters = first["characters"]?.jsonObject
+                        ?.get("edges")?.jsonArray
+                    characters?.forEach { edgeEl ->
+                        val edge = edgeEl.jsonObject
+                        val node = edge["node"]?.jsonObject
+                        val charName = node?.get("name")?.jsonObject
+                            ?.get("userPreferred")?.toString()?.trim('"')
+                        val charImage = node?.get("image")?.jsonObject
+                            ?.get("large")?.toString()?.trim('"')
+                        val vas = edge["voiceActors"]?.jsonArray
+                        val vaNames = mutableListOf<String>()
+                        var vaImage: String? = null
+                        vas?.forEach { vaEl ->
+                            val va = vaEl.jsonObject
+                            val vaName = va["name"]?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
+                            val vaLang = va["language"]?.toString()?.trim('"')
+                            if (!vaName.isNullOrBlank()) {
+                                vaNames.add(if (!vaLang.isNullOrBlank()) "$vaName ($vaLang)" else vaName)
+                            }
+                            if (vaImage == null) {
+                                vaImage = va["image"]?.jsonObject?.get("large")?.toString()?.trim('"')
                             }
                         }
+                        val roleText = vaNames.joinToString(", ")
+                        var finalImage: String? = charImage ?: vaImage
+                        if (!finalImage.isNullOrBlank() && finalImage.startsWith("//")) {
+                            finalImage = "https:$finalImage"
+                        }
+                        if (!charName.isNullOrBlank()) {
+                            credits.add(
+                                Credit(
+                                    name = charName,
+                                    role = roleText.ifBlank { null },
+                                    character = charName,
+                                    image_url = finalImage,
+                                ),
+                            )
+                        }
+                    }
+
+                    // Parse staff
+                    val staff = first["staff"]?.jsonObject?.get("edges")?.jsonArray
+                    staff?.forEach { stEl ->
+                        val sedge = stEl.jsonObject
+                        val srole = sedge["role"]?.toString()?.trim('"')
+                        val snode = sedge["node"]?.jsonObject
+                        val sname = snode?.get(
+                            "name",
+                        )?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
+                        var sImage = snode?.get("image")?.jsonObject?.get("large")?.toString()?.trim('"')
+                        if (!sImage.isNullOrBlank() && sImage.startsWith("//")) sImage = "https:$sImage"
+                        if (!sname.isNullOrBlank()) {
+                            credits.add(Credit(name = sname, role = srole, image_url = sImage))
+                        }
+                    }
+
+                    credits.ifEmpty { null }
+                } catch (_: Exception) {
+                    null
                 }
             } catch (_: Exception) {
                 null

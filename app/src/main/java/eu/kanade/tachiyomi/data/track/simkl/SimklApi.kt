@@ -158,6 +158,27 @@ class SimklApi(private val client: OkHttpClient, interceptor: SimklInterceptor) 
         }
     }
 
+    suspend fun getAnimeDetails(id: Long): AnimeTrackSearch? {
+        return withIOContext {
+            val searchUrl = "$API_URL/search/id".toUri().buildUpon()
+                .appendQueryParameter("simkl", id.toString())
+                .appendQueryParameter("extended", "full")
+                .appendQueryParameter("client_id", CLIENT_ID)
+                .build()
+            with(json) {
+                try {
+                    client.newCall(GET(searchUrl.toString()))
+                        .awaitSuccess()
+                        .parseAs<List<SimklSearchResult>>()
+                        .firstOrNull()
+                        ?.toTrackSearch("anime")
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        }
+    }
+
     /**
      * Checks if the given [track] exists in the user's list and
      * returns all info about it or null if it isn't found.

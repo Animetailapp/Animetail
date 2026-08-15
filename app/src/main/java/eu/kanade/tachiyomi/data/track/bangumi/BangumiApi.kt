@@ -159,6 +159,20 @@ class BangumiApi(
         }
     }
 
+    suspend fun getMangaDetails(id: Int): MangaTrackSearch? {
+        return withIOContext {
+            val url = "$API_URL/v0/subjects/$id"
+
+            with(json) {
+                authClient.newCall(GET(url, headers = headersOf("Content-Type", APP_JSON)))
+                    .awaitSuccess()
+                    .parseAs<BGMSubject>()
+                    .takeIf { it.platform == null || it.platform == "漫画" }
+                    ?.toMangaTrackSearch(trackId)
+            }
+        }
+    }
+
     suspend fun searchAnime(search: String): List<AnimeTrackSearch> {
         // This API is marked as experimental in the documentation
         // but that has been the case since 2022 with few significant
@@ -183,6 +197,20 @@ class BangumiApi(
                     .parseAs<BGMSearchResult>()
                     .data
                     .map { it.toAnimeTrackSearch(trackId) }
+            }
+        }
+    }
+
+    suspend fun getAnimeDetails(id: Int): AnimeTrackSearch? {
+        return withIOContext {
+            val url = "$API_URL/v0/subjects/$id"
+
+            with(json) {
+                authClient.newCall(GET(url, headers = headersOf("Content-Type", APP_JSON)))
+                    .awaitSuccess()
+                    .parseAs<BGMSubject>()
+                    .takeIf { it.platform != "漫画" }
+                    ?.toAnimeTrackSearch(trackId)
             }
         }
     }

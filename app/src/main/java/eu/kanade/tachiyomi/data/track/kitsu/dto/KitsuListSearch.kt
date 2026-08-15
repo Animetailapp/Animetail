@@ -99,6 +99,46 @@ data class KitsuListSearchItemDataAttributes(
 )
 
 @Serializable
+data class KitsuSingleManga(
+    val data: KitsuListSearchItemIncluded,
+) {
+    fun toTrackSearch(): MangaTrackSearch {
+        return MangaTrackSearch.create(TrackerManager.KITSU).apply {
+            remote_id = data.id
+            title = data.attributes.canonicalTitle
+            total_chapters = data.attributes.chapterCount ?: 0
+            cover_url = data.attributes.posterImage?.original ?: ""
+            summary = data.attributes.synopsis ?: ""
+            tracking_url = KitsuApi.mangaUrl(remote_id)
+            score = data.attributes.averageRating?.toDoubleOrNull() ?: -1.0
+            publishing_status = data.attributes.status
+            publishing_type = data.attributes.mangaType ?: ""
+            start_date = data.attributes.startDate ?: ""
+        }
+    }
+}
+
+@Serializable
+data class KitsuSingleAnime(
+    val data: KitsuListSearchItemIncluded,
+) {
+    fun toTrackSearch(): AnimeTrackSearch {
+        return AnimeTrackSearch.create(TrackerManager.KITSU).apply {
+            remote_id = data.id
+            title = data.attributes.canonicalTitle
+            total_episodes = data.attributes.episodeCount ?: 0
+            cover_url = data.attributes.posterImage?.original ?: ""
+            summary = data.attributes.synopsis ?: ""
+            tracking_url = KitsuApi.animeUrl(remote_id)
+            score = data.attributes.averageRating?.toDoubleOrNull() ?: -1.0
+            publishing_status = data.attributes.status
+            publishing_type = data.attributes.showType ?: ""
+            start_date = data.attributes.startDate ?: ""
+        }
+    }
+}
+
+@Serializable
 data class KitsuListSearchItemIncluded(
     val id: Long,
     val attributes: KitsuListSearchItemIncludedAttributes,
@@ -115,4 +155,5 @@ data class KitsuListSearchItemIncludedAttributes(
     val synopsis: String?,
     val startDate: String?,
     val status: String,
+    val averageRating: String?,
 )
