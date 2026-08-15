@@ -143,10 +143,13 @@ class WebGpuConfig(
             } else {
                 ReaderPageImageView.ZoomStartPosition.LEFT
             }
+
             // Left
             2 -> ReaderPageImageView.ZoomStartPosition.LEFT
+
             // Right
             3 -> ReaderPageImageView.ZoomStartPosition.RIGHT
+
             // Center
             else -> ReaderPageImageView.ZoomStartPosition.CENTER
         }

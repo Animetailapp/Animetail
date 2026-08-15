@@ -394,7 +394,9 @@ open class WebGpuViewer(
         if (isContinuous) return false
         return when (config.dualPageView) {
             ReaderPreferences.DualPageView.NEVER -> false
+
             ReaderPreferences.DualPageView.ALWAYS -> true
+
             ReaderPreferences.DualPageView.WIDE -> {
                 val width = pager.state.width
                 val height = pager.state.height
@@ -548,6 +550,7 @@ open class WebGpuViewer(
 
                 when (config.cutoutMode) {
                     ReaderPreferences.CutoutMode.IGNORE -> avoidCutout = false
+
                     ReaderPreferences.CutoutMode.AVOID -> {
                         avoidCutout = true
                         alwaysAvoidCutout = false
@@ -687,6 +690,7 @@ open class WebGpuViewer(
                 page.page.statusFlow.takeWhile { state ->
                     when (state) {
                         Page.State.QUEUE, Page.State.LOAD_PAGE, Page.State.DOWNLOAD_IMAGE -> true
+
                         Page.State.ERROR -> {
                             Log.e("WebGpuViewer", "Page load error")
                             false
@@ -749,7 +753,9 @@ open class WebGpuViewer(
                         ?.findStringValue(TiffTag.TIFF_TAG_PAGE_NAME)
                     when (tag) {
                         "Left" -> Image.Position.LEFT
+
                         "Right" -> Image.Position.RIGHT
+
                         null -> if (isReversed) { // TODO: heuristics, use image size
                             if (page.page.index % 2 == 0) Image.Position.LEFT else Image.Position.RIGHT
                         } else {
@@ -1248,12 +1254,19 @@ open class WebGpuViewer(
             }
 
             KeyEvent.KEYCODE_DPAD_RIGHT -> if (isUp) if (ctrlPressed) moveToNext() else moveRight()
+
             KeyEvent.KEYCODE_DPAD_LEFT -> if (isUp) if (ctrlPressed) moveToPrevious() else moveLeft()
+
             KeyEvent.KEYCODE_DPAD_DOWN -> if (isUp) moveDown()
+
             KeyEvent.KEYCODE_DPAD_UP -> if (isUp) moveUp()
+
             KeyEvent.KEYCODE_PAGE_DOWN -> if (isUp) moveDown()
+
             KeyEvent.KEYCODE_PAGE_UP -> if (isUp) moveUp()
+
             KeyEvent.KEYCODE_MENU -> if (isUp) activity.toggleMenu()
+
             else -> return false
         }
         return true

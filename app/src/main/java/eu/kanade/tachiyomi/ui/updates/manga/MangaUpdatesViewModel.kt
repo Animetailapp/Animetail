@@ -99,7 +99,9 @@ class MangaUpdatesViewModel(
         downloadStates.update {
             // Terminal states are derived by the queried item itself, so drop the override instead
             // of letting it outlive reality, e.g. showing a since deleted chapter as downloaded.
-            if (download.status == MangaDownload.State.NOT_DOWNLOADED || download.status == MangaDownload.State.DOWNLOADED) {
+            if (download.status == MangaDownload.State.NOT_DOWNLOADED ||
+                download.status == MangaDownload.State.DOWNLOADED
+            ) {
                 it - chapterId
             } else {
                 it + (chapterId to DownloadProgress(download.status, download.progress))

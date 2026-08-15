@@ -246,6 +246,7 @@ object AboutScreen : Screen() {
                     }
                 }
             }
+
             isNightlyBuildType -> {
                 "Nightly r${BuildConfig.COMMIT_COUNT}".let {
                     if (withBuildDate) {

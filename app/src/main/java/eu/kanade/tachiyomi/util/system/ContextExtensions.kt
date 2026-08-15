@@ -131,9 +131,15 @@ private val ReaderGrayBackgroundColor = Color.rgb(0x20, 0x21, 0x25)
  * Automatic (3) resolves against the current night mode, matching the activity background.
  */
 fun Context.readerBackgroundColor(readerTheme: Int): Int = when (readerTheme) {
-    0 -> Color.WHITE // White
-    2 -> ReaderGrayBackgroundColor // Gray
-    3 -> if (isNightMode()) ReaderGrayBackgroundColor else Color.WHITE // Automatic
+    0 -> Color.WHITE
+
+    // White
+    2 -> ReaderGrayBackgroundColor
+
+    // Gray
+    3 -> if (isNightMode()) ReaderGrayBackgroundColor else Color.WHITE
+
+    // Automatic
     else -> Color.BLACK // Black
 }
 

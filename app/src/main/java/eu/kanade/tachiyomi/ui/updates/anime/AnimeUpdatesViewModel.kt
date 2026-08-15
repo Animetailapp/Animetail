@@ -94,7 +94,9 @@ class AnimeUpdatesViewModel(
     private fun updateDownloadState(download: AnimeDownload) {
         val episodeId = download.episode.id
         downloadStates.update {
-            if (download.status == AnimeDownload.State.NOT_DOWNLOADED || download.status == AnimeDownload.State.DOWNLOADED) {
+            if (download.status == AnimeDownload.State.NOT_DOWNLOADED ||
+                download.status == AnimeDownload.State.DOWNLOADED
+            ) {
                 it - episodeId
             } else {
                 it + (episodeId to DownloadProgress(download.status, download.progress))
