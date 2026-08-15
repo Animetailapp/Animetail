@@ -24,12 +24,6 @@ internal fun Project.android(block: CommonExtension.() -> Unit) {
 }
 
 fun Project.configureTest() {
-    configurations.findByName("testRuntimeOnly")?.let { testRuntimeOnly ->
-        dependencies {
-            add(testRuntimeOnly.name, libs.junit.platform.launcher)
-        }
-    }
-
     tasks.withType<Test> {
         useJUnitPlatform()
         testLogging {

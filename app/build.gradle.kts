@@ -269,10 +269,6 @@ dependencies {
 
     // Dependency injection
     implementation(libs.injekt)
-    // SY -->
-    implementation(libs.zip4j)
-    // SY <--
-
     // Image loading
     implementation(libs.bundles.coil)
     implementation(libs.subsamplingScaleImageView) {
