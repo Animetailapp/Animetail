@@ -52,7 +52,7 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.entries.EditCoverAction
-import eu.kanade.tachiyomi.data.coil.ImageDecoder2
+import eu.kanade.tachiyomi.data.coil.ImageDecoder
 import eu.kanade.tachiyomi.data.coil.newDecoder
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import kotlinx.coroutines.runBlocking
@@ -174,7 +174,7 @@ fun MangaCoverDialog(
                     .memoryCachePolicy(CachePolicy.DISABLED)
                     .newDecoder(true)
                     .target { result ->
-                        val res = (result as ImageDecoder2.DecodeResultImage).res
+                        val res = (result as ImageDecoder.DecodeResultImage).res
                         val page = runBlocking(WebGpuRenderer.dispatcher) {
                             ImagePage(res.image, res.width, res.height)
                         }.apply {
