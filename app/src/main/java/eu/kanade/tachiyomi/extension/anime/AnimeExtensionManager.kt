@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionInstaller
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionLoader
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -80,8 +81,10 @@ class AnimeExtensionManager(
     val installerCancelEvents = _installerCancelEvents.asSharedFlow()
 
     init {
-        initAnimeExtensions()
-        AnimeExtensionInstallReceiver(AnimeInstallationListener()).register(context)
+        scope.launch(Dispatchers.IO) {
+            initAnimeExtensions()
+            AnimeExtensionInstallReceiver(AnimeInstallationListener()).register(context)
+        }
     }
 
     private var subLanguagesEnabledOnFirstRun = preferences.enabledLanguages.isSet()

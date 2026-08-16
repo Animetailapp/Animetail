@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionInstaller
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionLoader
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -64,8 +65,10 @@ class MangaExtensionManager(
     val installerCancelEvents = _installerCancelEvents.asSharedFlow()
 
     init {
-        initMangaExtensions()
-        MangaExtensionInstallReceiver(MangaInstallationListener()).register(context)
+        scope.launch(Dispatchers.IO) {
+            initMangaExtensions()
+            MangaExtensionInstallReceiver(MangaInstallationListener()).register(context)
+        }
     }
 
     private var subLanguagesEnabledOnFirstRun = preferences.enabledLanguages.isSet()
