@@ -1,10 +1,12 @@
 package tachiyomi.domain.items.season.interactor
 
 import aniyomi.domain.anime.SeasonAnime
+import dev.zacsweers.metro.Inject
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.anime.repository.AnimeRepository
 
+@Inject
 class GetAnimeSeasonsByParentId(
     private val animeRepository: AnimeRepository,
 ) {

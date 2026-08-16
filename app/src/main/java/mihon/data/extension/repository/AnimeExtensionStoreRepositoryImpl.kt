@@ -1,5 +1,9 @@
 package mihon.data.extension.repository
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import kotlinx.coroutines.async
@@ -13,6 +17,9 @@ import mihon.domain.extension.model.ExtensionStore
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class AnimeExtensionStoreRepositoryImpl(
     private val service: AnimeExtensionStoreService,
     private val handler: AnimeDatabaseHandler,

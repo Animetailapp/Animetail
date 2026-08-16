@@ -1,6 +1,8 @@
 package eu.kanade.tachiyomi.data.track
 
-import android.content.Context
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.bangumi.Bangumi
 import eu.kanade.tachiyomi.data.track.hikka.Hikka
@@ -18,7 +20,9 @@ import eu.kanade.tachiyomi.data.track.tmdb.Tmdb
 import eu.kanade.tachiyomi.data.track.trakt.Trakt
 import kotlinx.coroutines.flow.combine
 
-class TrackerManager(context: Context) {
+@Inject
+@SingleIn(AppScope::class)
+class TrackerManager {
 
     companion object {
         const val ANILIST = 2L

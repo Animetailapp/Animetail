@@ -1,9 +1,11 @@
 package tachiyomi.domain.category.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.repository.MangaRepository
 
+@Inject
 class SetMangaCategories(
     private val mangaRepository: MangaRepository,
 ) {

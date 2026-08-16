@@ -1,5 +1,9 @@
 package tachiyomi.data.source.anime
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
@@ -13,6 +17,9 @@ import tachiyomi.domain.source.anime.repository.AnimeSourceRepository
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.source.anime.model.AnimeSource as DomainSource
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class AnimeSourceRepositoryImpl(
     private val sourceManager: AnimeSourceManager,
     private val handler: AnimeDatabaseHandler,

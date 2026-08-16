@@ -1,5 +1,6 @@
 package eu.kanade.domain.entries.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.anime.model.toDomainAnime
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.SAnime
@@ -14,6 +15,7 @@ import tachiyomi.domain.items.season.service.SeasonRecognition
 import tachiyomi.source.local.entries.anime.isLocal
 import java.time.ZonedDateTime
 
+@Inject
 class SyncSeasonsWithSource(
     private val updateAnime: UpdateAnime,
     private val animeRepository: AnimeRepository,

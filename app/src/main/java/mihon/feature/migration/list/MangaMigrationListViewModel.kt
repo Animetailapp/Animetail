@@ -3,9 +3,13 @@ package mihon.feature.migration.list
 import androidx.annotation.FloatRange
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.entries.manga.model.toSManga
 import eu.kanade.domain.items.chapter.interactor.SyncChaptersWithSource
@@ -40,38 +44,29 @@ import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@AssistedInject
 class MangaMigrationListViewModel(
-    mangaIds: Collection<Long>,
-    extraSearchQuery: String?,
-    private val preferences: SourcePreferences = Injekt.get(),
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val getManga: GetManga = Injekt.get(),
-    private val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
-    private val updateManga: UpdateManga = Injekt.get(),
-    private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get(),
-    private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
-    private val migrateManga: MigrateMangaUseCase = Injekt.get(),
+    @Assisted mangaIds: Collection<Long>,
+    @Assisted extraSearchQuery: String?,
+    private val preferences: SourcePreferences,
+    private val sourceManager: MangaSourceManager,
+    private val getManga: GetManga,
+    private val networkToLocalManga: NetworkToLocalManga,
+    private val updateManga: UpdateManga,
+    private val syncChaptersWithSource: SyncChaptersWithSource,
+    private val getChaptersByMangaId: GetChaptersByMangaId,
+    private val migrateManga: MigrateMangaUseCase,
 ) : ViewModel() {
 
     val state: StateFlow<MangaMigrationListViewModel.State>
         field = MutableStateFlow<MangaMigrationListViewModel.State>(State())
 
-    companion object {
-        val MANGA_IDS_KEY = CreationExtras.Key<Collection<Long>>()
-
-        val EXTRA_SEARCH_QUERY_KEY = CreationExtras.Key<String?>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                MangaMigrationListViewModel(
-                    mangaIds = get(MANGA_IDS_KEY)!!,
-                    extraSearchQuery = get(EXTRA_SEARCH_QUERY_KEY),
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(mangaIds: Collection<Long>, extraSearchQuery: String?): MangaMigrationListViewModel
     }
 
     private val smartSearchEngine = SmartSourceSearchEngine(extraSearchQuery)

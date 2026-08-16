@@ -1,10 +1,15 @@
 package tachiyomi.source.local.entries.anime
 
 import android.content.Context
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.model.FetchType
 import tachiyomi.source.local.io.ArchiveAnime
 import tachiyomi.source.local.io.anime.LocalAnimeSourceFileSystem
 
+@Inject
+@SingleIn(AppScope::class)
 class LocalAnimeFetchTypeManager(
     private val context: Context,
     private val fileSystem: LocalAnimeSourceFileSystem,

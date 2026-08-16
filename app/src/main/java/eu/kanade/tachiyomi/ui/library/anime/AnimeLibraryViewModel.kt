@@ -11,6 +11,11 @@ import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapNotNull
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.preference.PreferenceMutableState
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.fastFilterNot
@@ -82,8 +87,6 @@ import tachiyomi.domain.track.anime.model.AnimeTrack
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 import tachiyomi.source.local.entries.anime.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
@@ -92,26 +95,29 @@ import kotlin.time.Duration.Companion.seconds
  */
 typealias AnimeLibraryMap = Map<Category, List<AnimeLibraryItem>>
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @Suppress("LargeClass")
 class AnimeLibraryViewModel(
-    private val getLibraryAnime: GetLibraryAnime = Injekt.get(),
-    private val getCategories: GetVisibleAnimeCategories = Injekt.get(),
-    private val getTracksPerAnime: GetTracksPerAnime = Injekt.get(),
-    private val getNextEpisodes: GetNextEpisodes = Injekt.get(),
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
-    private val setSeenStatus: SetSeenStatus = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
-    private val setAnimeCategories: SetAnimeCategories = Injekt.get(),
-    private val preferences: BasePreferences = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val coverCache: AnimeCoverCache = Injekt.get(),
-    private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val downloadManager: AnimeDownloadManager = Injekt.get(),
-    private val downloadCache: AnimeDownloadCache = Injekt.get(),
-    private val trackerManager: TrackerManager = Injekt.get(),
+    private val getLibraryAnime: GetLibraryAnime,
+    private val getCategories: GetVisibleAnimeCategories,
+    private val getTracksPerAnime: GetTracksPerAnime,
+    private val getNextEpisodes: GetNextEpisodes,
+    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val setSeenStatus: SetSeenStatus,
+    private val updateAnime: UpdateAnime,
+    private val setAnimeCategories: SetAnimeCategories,
+    private val preferences: BasePreferences,
+    private val libraryPreferences: LibraryPreferences,
+    private val coverCache: AnimeCoverCache,
+    private val backgroundCache: AnimeBackgroundCache,
+    private val sourceManager: AnimeSourceManager,
+    private val downloadManager: AnimeDownloadManager,
+    private val downloadCache: AnimeDownloadCache,
+    private val trackerManager: TrackerManager,
     // SY -->
-    private val getTracks: GetAnimeTracks = Injekt.get(),
+    private val getTracks: GetAnimeTracks,
     // SY <--
 ) : ViewModel() {
 

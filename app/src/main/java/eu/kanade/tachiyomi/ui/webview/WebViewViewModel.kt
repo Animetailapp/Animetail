@@ -3,9 +3,13 @@ package eu.kanade.tachiyomi.ui.webview
 import android.content.Context
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.online.HttpSource
@@ -17,39 +21,33 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@AssistedInject
 class WebViewViewModel(
-    val sourceId: Long?,
-    private val MangaSourceManager: MangaSourceManager = Injekt.get(),
-    private val AnimeSourceManager: AnimeSourceManager = Injekt.get(),
-    private val network: NetworkHelper = Injekt.get(),
+    @Assisted val sourceId: Long?,
+    private val mangaSourceManager: MangaSourceManager,
+    private val animeSourceManager: AnimeSourceManager,
+    private val network: NetworkHelper,
 ) : ViewModel() {
 
-    companion object {
-        val SOURCE_ID_KEY = CreationExtras.Key<Long?>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                WebViewViewModel(
-                    sourceId = get(SOURCE_ID_KEY),
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(sourceId: Long?): WebViewViewModel
     }
 
     var headers = emptyMap<String, String>()
 
     init {
-        sourceId?.let { MangaSourceManager.get(it) as? HttpSource }?.let { mangasource ->
+        sourceId?.let { mangaSourceManager.get(it) as? HttpSource }?.let { mangasource ->
             try {
                 headers = mangasource.headers.toMultimap().mapValues { it.value.getOrNull(0) ?: "" }
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e) { "Failed to build headers" }
             }
         }
-        sourceId?.let { AnimeSourceManager.get(it) as? AnimeHttpSource }?.let { animesource ->
+        sourceId?.let { animeSourceManager.get(it) as? AnimeHttpSource }?.let { animesource ->
             try {
                 headers = animesource.headers.toMultimap().mapValues { it.value.getOrNull(0) ?: "" }
             } catch (e: Exception) {

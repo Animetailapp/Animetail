@@ -1,5 +1,6 @@
 package eu.kanade.domain.track.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.track.manga.model.toDbTrack
 import eu.kanade.domain.track.manga.model.toDomainTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
@@ -18,14 +19,14 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.history.manga.interactor.GetMangaHistory
 import tachiyomi.domain.items.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
 class AddMangaTracks(
     private val insertTrack: InsertMangaTrack,
     private val syncChapterProgressWithTrack: SyncChapterProgressWithTrack,
     private val getChaptersByMangaId: GetChaptersByMangaId,
     private val trackerManager: TrackerManager,
+    private val getHistory: GetMangaHistory,
 ) {
 
     // TODO: update all trackers based on common data
@@ -56,7 +57,7 @@ class AddMangaTracks(
                 }
 
                 if (track.startDate <= 0) {
-                    val firstReadChapterDate = Injekt.get<GetMangaHistory>().await(mangaId)
+                    val firstReadChapterDate = getHistory.await(mangaId)
                         .sortedBy { it.readAt }
                         .firstOrNull()
                         ?.readAt

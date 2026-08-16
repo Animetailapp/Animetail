@@ -2,6 +2,9 @@ package eu.kanade.tachiyomi.extension.anime
 
 import android.content.Context
 import android.graphics.drawable.Drawable
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.extension.anime.interactor.TrustAnimeExtension
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.ExtensionUpdateNotifier
@@ -32,8 +35,6 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.anime.model.StubAnimeSource
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.Locale
 
 /**
@@ -46,25 +47,21 @@ import java.util.Locale
  * @param context The application context.
  * @param preferences The application preferences.
  */
+@Inject
+@SingleIn(AppScope::class)
 class AnimeExtensionManager(
     private val context: Context,
-    private val scope: CoroutineScope,
-    private val preferences: SourcePreferences = Injekt.get(),
-    private val trustExtension: TrustAnimeExtension = Injekt.get(),
+    private val preferences: SourcePreferences,
+    private val trustExtension: TrustAnimeExtension,
+    private val api: AnimeExtensionApi,
+    private val installer: AnimeExtensionInstaller,
+    private val extensionUpdateNotifier: ExtensionUpdateNotifier,
 ) {
+
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _isInitialized = MutableStateFlow(false)
     val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
-
-    /**
-     * API where all the available anime extensions can be found.
-     */
-    private val api = AnimeExtensionApi()
-
-    /**
-     * The installer which installs, updates and uninstalls the anime extensions.
-     */
-    private val installer by lazy { AnimeExtensionInstaller(context, scope) }
 
     private val iconMap = mutableMapOf<String, Drawable>()
 
@@ -404,7 +401,7 @@ class AnimeExtensionManager(
         val pendingUpdateCount = installedExtensionsMapFlow.value.values.count { it.hasUpdate }
         preferences.animeExtensionUpdatesCount.set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
-            ExtensionUpdateNotifier(context).dismiss()
+            extensionUpdateNotifier.dismiss()
         }
     }
 

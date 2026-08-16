@@ -12,6 +12,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.system.cancelNotification
@@ -19,18 +20,25 @@ import eu.kanade.tachiyomi.util.system.isRunning
 import eu.kanade.tachiyomi.util.system.setForegroundSafely
 import eu.kanade.tachiyomi.util.system.workManager
 import logcat.LogPriority
+import mihon.app.di.AppGraph
+import mihon.app.di.appGraph
+import mihon.core.metro.metroGraph
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.concurrent.TimeUnit
 
 class SyncDataJob(private val context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
 
-    private val notifier = SyncNotifier(context)
+    private val graph: AppGraph = context.metroGraph()
+
+    @Inject private lateinit var syncManager: SyncManager
+
+    @Inject private lateinit var notifier: SyncNotifier
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun doWork(): Result {
+        graph.inject(this)
+
         if (tags.contains(TAG_AUTO)) {
             // Find a running manual worker. If exists, try again later
             if (context.workManager.isRunning(TAG_MANUAL)) {
@@ -41,7 +49,7 @@ class SyncDataJob(private val context: Context, workerParams: WorkerParameters) 
         setForegroundSafely()
 
         return try {
-            SyncManager(context).syncData()
+            syncManager.syncData()
             Result.success()
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
@@ -75,7 +83,7 @@ class SyncDataJob(private val context: Context, workerParams: WorkerParameters) 
 
         @Suppress("MagicNumber")
         fun setupTask(context: Context, prefInterval: Int? = null) {
-            val syncPreferences = Injekt.get<SyncPreferences>()
+            val syncPreferences = context.appGraph.syncPreferences
             val interval = prefInterval ?: syncPreferences.syncInterval().get()
 
             if (interval > 0) {

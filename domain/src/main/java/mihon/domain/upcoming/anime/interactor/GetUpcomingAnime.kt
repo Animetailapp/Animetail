@@ -1,10 +1,12 @@
 package mihon.domain.upcoming.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.anime.repository.AnimeRepository
 
+@Inject
 class GetUpcomingAnime(
     private val animeRepository: AnimeRepository,
 ) {

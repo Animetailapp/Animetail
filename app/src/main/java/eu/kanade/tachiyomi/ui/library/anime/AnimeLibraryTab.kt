@@ -24,12 +24,12 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.entries.components.LibraryBottomActionMenu
 import eu.kanade.presentation.library.DeleteLibraryEntryDialog
@@ -55,6 +55,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import mihon.feature.migration.config.AnimeMigrationConfigScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
@@ -104,8 +105,8 @@ data object AnimeLibraryTab : Tab {
         val scope = rememberCoroutineScope()
         val haptic = LocalHapticFeedback.current
 
-        val viewModel = viewModel<AnimeLibraryViewModel>()
-        val settingsViewModel = viewModel<AnimeLibrarySettingsViewModel>()
+        val viewModel = metroViewModel<AnimeLibraryViewModel>()
+        val settingsViewModel = metroViewModel<AnimeLibrarySettingsViewModel>()
         val state by viewModel.state.collectAsStateWithLifecycle()
 
         val snackbarHostState = remember { SnackbarHostState() }
@@ -137,7 +138,7 @@ data object AnimeLibraryTab : Tab {
         }
 
         suspend fun openEpisode(episode: Episode) {
-            val playerPreferences: PlayerPreferences by injectLazy()
+            val playerPreferences = context.appGraph.playerPreferences
             val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
             MainActivity.startPlayerActivity(
                 context,

@@ -1,5 +1,8 @@
 package mihon.core.migration.migrations
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoSet
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.source.service.SourcePreferences
 import logcat.LogPriority
 import mihon.core.migration.Migration
@@ -9,13 +12,16 @@ import mihon.domain.extension.manga.repository.MangaExtensionStoreRepository
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 
-class TrustExtensionRepositoryMigration : Migration {
+@Inject
+@ContributesIntoSet(AppScope::class)
+class TrustExtensionRepositoryMigration(
+    private val sourcePreferences: SourcePreferences,
+    private val animeRepository: AnimeExtensionStoreRepository,
+    private val mangaRepository: MangaExtensionStoreRepository,
+) : Migration {
     override val version: Float = 7f
 
     override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
-        val sourcePreferences = migrationContext.get<SourcePreferences>() ?: return@withIOContext false
-
-        val animeRepository = migrationContext.get<AnimeExtensionStoreRepository>() ?: return@withIOContext false
         for ((index, source) in sourcePreferences.animeExtensionRepos.get().withIndex()) {
             try {
                 animeRepository.insertFromPreference(
@@ -28,7 +34,6 @@ class TrustExtensionRepositoryMigration : Migration {
         }
         sourcePreferences.animeExtensionRepos.delete()
 
-        val mangaRepository = migrationContext.get<MangaExtensionStoreRepository>() ?: return@withIOContext false
         for ((index, source) in sourcePreferences.extensionRepos.get().withIndex()) {
             try {
                 mangaRepository.insertFromPreference(

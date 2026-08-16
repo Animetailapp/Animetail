@@ -1,6 +1,9 @@
 package eu.kanade.tachiyomi.source.anime
 
-import android.content.Context
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
@@ -9,7 +12,7 @@ import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,29 +20,28 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.source.anime.model.StubAnimeSource
 import tachiyomi.domain.source.anime.repository.AnimeStubSourceRepository
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import java.util.concurrent.ConcurrentHashMap
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class AndroidAnimeSourceManager(
-    private val context: Context,
-    private val scope: CoroutineScope,
     private val extensionManager: AnimeExtensionManager,
     private val sourceRepository: AnimeStubSourceRepository,
+    private val localSource: LocalAnimeSource,
+    private val downloadManager: Lazy<AnimeDownloadManager>,
 ) : AnimeSourceManager {
 
     private val _isInitialized = MutableStateFlow(false)
     override val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
 
-    private val downloadManager: AnimeDownloadManager by injectLazy()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val sourcesMapFlow = MutableStateFlow(ConcurrentHashMap<Long, AnimeSource>())
 
@@ -54,16 +56,7 @@ class AndroidAnimeSourceManager(
             extensionManager.installedExtensionsFlow
                 .collectLatest { extensions ->
                     val mutableMap = ConcurrentHashMap<Long, AnimeSource>(
-                        mapOf(
-                            LocalAnimeSource.ID to LocalAnimeSource(
-                                context,
-                                Injekt.get(),
-                                Injekt.get(),
-                                Injekt.get(),
-                                Injekt.get(),
-                                Injekt.get(),
-                            ),
-                        ),
+                        mapOf(LocalAnimeSource.ID to localSource),
                     )
                     extensions.forEach { extension ->
                         extension.sources.forEach {
@@ -118,7 +111,7 @@ class AndroidAnimeSourceManager(
             if (dbSource == source) return@launchIO
             sourceRepository.upsertStubAnimeSource(source.id, source.lang, source.name)
             if (dbSource != null) {
-                downloadManager.renameSource(dbSource, source)
+                downloadManager.value.renameSource(dbSource, source)
             }
         }
     }

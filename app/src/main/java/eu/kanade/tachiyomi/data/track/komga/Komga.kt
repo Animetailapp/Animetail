@@ -26,10 +26,11 @@ class Komga(id: Long) : BaseTracker(id, "Komga"), EnhancedMangaTracker, MangaTra
         const val COMPLETED = 3L
     }
 
-    override val client: OkHttpClient =
+    override val client: OkHttpClient by lazy {
         networkService.client.newBuilder()
             .dns(Dns.SYSTEM) // don't use DNS over HTTPS as it breaks IP addressing
             .build()
+    }
 
     val api by lazy { KomgaApi(id, client) }
 

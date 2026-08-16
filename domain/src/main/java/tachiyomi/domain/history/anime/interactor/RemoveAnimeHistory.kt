@@ -1,8 +1,10 @@
 package tachiyomi.domain.history.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.domain.history.anime.model.AnimeHistoryWithRelations
 import tachiyomi.domain.history.anime.repository.AnimeHistoryRepository
 
+@Inject
 class RemoveAnimeHistory(
     private val repository: AnimeHistoryRepository,
 ) {

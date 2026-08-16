@@ -1,5 +1,6 @@
 package tachiyomi.domain.entries.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -10,6 +11,7 @@ import tachiyomi.domain.entries.anime.repository.AnimeRepository
 import tachiyomi.domain.library.anime.LibraryAnime
 import kotlin.time.Duration.Companion.seconds
 
+@Inject
 class GetLibraryAnime(
     private val animeRepository: AnimeRepository,
 ) {

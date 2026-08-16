@@ -2,6 +2,9 @@ package eu.kanade.tachiyomi.extension.manga
 
 import android.content.Context
 import android.graphics.drawable.Drawable
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.extension.manga.interactor.TrustMangaExtension
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.ExtensionUpdateNotifier
@@ -32,23 +35,23 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.Locale
 
+@Inject
+@SingleIn(AppScope::class)
 class MangaExtensionManager(
     private val context: Context,
-    private val scope: CoroutineScope,
-    private val preferences: SourcePreferences = Injekt.get(),
-    private val trustExtension: TrustMangaExtension = Injekt.get(),
+    private val preferences: SourcePreferences,
+    private val trustExtension: TrustMangaExtension,
+    private val api: MangaExtensionApi,
+    private val installer: MangaExtensionInstaller,
+    private val extensionUpdateNotifier: ExtensionUpdateNotifier,
 ) {
+
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _isInitialized = MutableStateFlow(false)
     val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
-
-    private val api = MangaExtensionApi()
-
-    private val installer by lazy { MangaExtensionInstaller(context, scope) }
 
     private val iconMap = mutableMapOf<String, Drawable>()
 
@@ -305,7 +308,7 @@ class MangaExtensionManager(
         val pendingUpdateCount = installedExtensionsMapFlow.value.values.count { it.hasUpdate }
         preferences.extensionUpdatesCount.set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
-            ExtensionUpdateNotifier(context).dismiss()
+            extensionUpdateNotifier.dismiss()
         }
     }
 

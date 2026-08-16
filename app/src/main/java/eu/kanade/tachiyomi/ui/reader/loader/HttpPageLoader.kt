@@ -20,8 +20,6 @@ import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.suspendCancellableCoroutine
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.min
@@ -34,11 +32,9 @@ internal class HttpPageLoader(
     private val chapter: ReaderChapter,
     private val source: HttpSource,
     scope: CoroutineScope,
-    private val chapterCache: ChapterCache = Injekt.get(),
-    // SY -->
-    private val readerPreferences: ReaderPreferences = Injekt.get(),
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
-    // SY <--
+    private val chapterCache: ChapterCache,
+    private val readerPreferences: ReaderPreferences,
+    private val sourcePreferences: SourcePreferences,
 ) : PageLoader() {
 
     /**

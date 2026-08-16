@@ -32,7 +32,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -76,6 +75,7 @@ import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaSourcePreferen
 import eu.kanade.tachiyomi.ui.entries.manga.ChapterList
 import eu.kanade.tachiyomi.ui.entries.manga.MangaViewModel
 import eu.kanade.tachiyomi.util.system.copyToClipboard
+import mihon.app.di.appGraph
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.items.chapter.service.missingChaptersCount
@@ -92,8 +92,6 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.shouldExpandFAB
 import tachiyomi.source.local.entries.manga.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Instant
 
 @Composable
@@ -136,7 +134,7 @@ fun MangaScreen(
     // SY <--
 
     // KMK -->
-    getMangaState: @Composable (Manga) -> State<Manga>,
+    getMangaState: @Composable (Manga) -> androidx.compose.runtime.State<Manga>,
     onRelatedMangasScreenClick: () -> Unit,
     onRelatedMangaClick: (Manga) -> Unit,
     onRelatedMangaLongClick: (Manga) -> Unit,
@@ -308,7 +306,7 @@ private fun MangaScreenSmallImpl(
     // SY <--
 
     // KMK -->
-    getMangaState: @Composable (Manga) -> State<Manga>,
+    getMangaState: @Composable (Manga) -> androidx.compose.runtime.State<Manga>,
     onRelatedMangasScreenClick: () -> Unit,
     onRelatedMangaClick: (Manga) -> Unit,
     onRelatedMangaLongClick: (Manga) -> Unit,
@@ -340,9 +338,12 @@ private fun MangaScreenSmallImpl(
     }
 
     // KMK -->
-    val relatedMangasEnabled by Injekt.get<SourcePreferences>().relatedAnimes.collectAsState()
-    val expandRelatedMangas by Injekt.get<UiPreferences>().expandRelatedAnimes.collectAsState()
-    val showRelatedMangasInOverflow by Injekt.get<UiPreferences>().relatedAnimesInOverflow.collectAsState()
+    val context = LocalContext.current
+    val uiPreferences = remember { context.appGraph.uiPreferences }
+    val sourcePreferences = remember { context.appGraph.sourcePreferences }
+    val relatedMangasEnabled by sourcePreferences.relatedAnimes.collectAsState()
+    val expandRelatedMangas by uiPreferences.expandRelatedAnimes.collectAsState()
+    val showRelatedMangasInOverflow by uiPreferences.relatedAnimesInOverflow.collectAsState()
     // KMK <--
 
     BackHandler(onBack = {
@@ -632,7 +633,7 @@ fun MangaScreenLargeImpl(
     // SY <--
 
     // KMK -->
-    getMangaState: @Composable (Manga) -> State<Manga>,
+    getMangaState: @Composable (Manga) -> androidx.compose.runtime.State<Manga>,
     onRelatedMangasScreenClick: () -> Unit,
     onRelatedMangaClick: (Manga) -> Unit,
     onRelatedMangaLongClick: (Manga) -> Unit,
@@ -665,9 +666,12 @@ fun MangaScreenLargeImpl(
     }
 
     // KMK -->
-    val relatedMangasEnabled by Injekt.get<SourcePreferences>().relatedAnimes.collectAsState()
-    val expandRelatedMangas by Injekt.get<UiPreferences>().expandRelatedAnimes.collectAsState()
-    val showRelatedMangasInOverflow by Injekt.get<UiPreferences>().relatedAnimesInOverflow.collectAsState()
+    val context = LocalContext.current
+    val uiPreferences = remember { context.appGraph.uiPreferences }
+    val sourcePreferences = remember { context.appGraph.sourcePreferences }
+    val relatedMangasEnabled by sourcePreferences.relatedAnimes.collectAsState()
+    val expandRelatedMangas by uiPreferences.expandRelatedAnimes.collectAsState()
+    val showRelatedMangasInOverflow by uiPreferences.relatedAnimesInOverflow.collectAsState()
     // KMK <--
 
     val insetPadding = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal).asPaddingValues()

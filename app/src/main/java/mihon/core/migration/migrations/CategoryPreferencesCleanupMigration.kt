@@ -1,5 +1,8 @@
 package mihon.core.migration.migrations
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoSet
+import dev.zacsweers.metro.Inject
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
 import tachiyomi.core.common.util.lang.withIOContext
@@ -8,15 +11,17 @@ import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
 
-class CategoryPreferencesCleanupMigration : Migration {
+@Inject
+@ContributesIntoSet(AppScope::class)
+class CategoryPreferencesCleanupMigration(
+    private val libraryPreferences: LibraryPreferences,
+    private val downloadPreferences: DownloadPreferences,
+    private val getAnimeCategories: GetAnimeCategories,
+    private val getMangaCategories: GetMangaCategories,
+) : Migration {
     override val version: Float = 129f
 
     override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
-        val libraryPreferences = migrationContext.get<LibraryPreferences>() ?: return@withIOContext false
-        val downloadPreferences = migrationContext.get<DownloadPreferences>() ?: return@withIOContext false
-
-        val getAnimeCategories = migrationContext.get<GetAnimeCategories>() ?: return@withIOContext false
-        val getMangaCategories = migrationContext.get<GetMangaCategories>() ?: return@withIOContext false
         val allAnimeCategories = getAnimeCategories.await().map { it.id.toString() }.toSet()
         val allMangaCategories = getMangaCategories.await().map { it.id.toString() }.toSet()
 

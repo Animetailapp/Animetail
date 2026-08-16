@@ -1,10 +1,12 @@
 package eu.kanade.domain.entries.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import tachiyomi.domain.entries.manga.model.MangaUpdate
 import tachiyomi.domain.entries.manga.repository.MangaRepository
 
+@Inject
 class SetMangaViewerFlags(
     private val mangaRepository: MangaRepository,
 ) {

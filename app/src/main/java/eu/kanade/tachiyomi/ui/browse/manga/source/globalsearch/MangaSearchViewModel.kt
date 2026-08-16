@@ -27,18 +27,16 @@ import tachiyomi.domain.entries.manga.interactor.GetManga
 import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.concurrent.Executors
 
 abstract class MangaSearchViewModel(
     initialState: State = State(),
-    sourcePreferences: SourcePreferences = Injekt.get(),
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val extensionManager: MangaExtensionManager = Injekt.get(),
-    private val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
-    private val getManga: GetManga = Injekt.get(),
-    private val preferences: SourcePreferences = Injekt.get(),
+    sourcePreferences: SourcePreferences,
+    private val sourceManager: MangaSourceManager,
+    private val extensionManager: MangaExtensionManager,
+    private val networkToLocalManga: NetworkToLocalManga,
+    private val getManga: GetManga,
+    private val preferences: SourcePreferences,
 ) : ViewModel() {
 
     val state: StateFlow<State>

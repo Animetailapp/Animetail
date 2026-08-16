@@ -4,6 +4,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
@@ -47,24 +52,26 @@ import tachiyomi.domain.history.anime.model.AnimeHistoryWithRelations
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class AnimeHistoryViewModel(
-    private val addTracks: AddAnimeTracks = Injekt.get(),
-    private val getCategories: GetAnimeCategories = Injekt.get(),
-    private val getDuplicateLibraryAnime: GetDuplicateLibraryAnime = Injekt.get(),
-    private val getHistory: GetAnimeHistory = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val getNextEpisodes: GetNextEpisodes = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val removeHistory: RemoveAnimeHistory = Injekt.get(),
-    private val setAnimeCategories: SetAnimeCategories = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
-    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
+    private val addTracks: AddAnimeTracks,
+    private val getCategories: GetAnimeCategories,
+    private val getDuplicateLibraryAnime: GetDuplicateLibraryAnime,
+    private val getHistory: GetAnimeHistory,
+    private val getAnime: GetAnime,
+    private val getNextEpisodes: GetNextEpisodes,
+    private val libraryPreferences: LibraryPreferences,
+    private val removeHistory: RemoveAnimeHistory,
+    private val setAnimeCategories: SetAnimeCategories,
+    private val updateAnime: UpdateAnime,
+    private val sourceManager: AnimeSourceManager,
 ) : ViewModel() {
+
+    val snackbarHostState: SnackbarHostState = SnackbarHostState()
 
     private val _events: Channel<Event> = Channel(Channel.UNLIMITED)
     val events: Flow<Event> = _events.receiveAsFlow()

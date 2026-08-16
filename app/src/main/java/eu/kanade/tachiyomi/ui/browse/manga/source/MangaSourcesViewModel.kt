@@ -3,6 +3,11 @@ package eu.kanade.tachiyomi.ui.browse.manga.source
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.source.manga.interactor.GetEnabledMangaSources
 import eu.kanade.domain.source.manga.interactor.ToggleExcludeFromMangaDataSaver
@@ -30,19 +35,20 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.manga.model.Pin
 import tachiyomi.domain.source.manga.model.Source
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.TreeMap
 import kotlin.time.Duration.Companion.seconds
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class MangaSourcesViewModel(
-    private val preferences: BasePreferences = Injekt.get(),
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
-    private val getEnabledSources: GetEnabledMangaSources = Injekt.get(),
-    private val toggleSource: ToggleMangaSource = Injekt.get(),
-    private val toggleSourcePin: ToggleMangaSourcePin = Injekt.get(),
+    private val preferences: BasePreferences,
+    private val sourcePreferences: SourcePreferences,
+    private val getEnabledSources: GetEnabledMangaSources,
+    private val toggleSource: ToggleMangaSource,
+    private val toggleSourcePin: ToggleMangaSourcePin,
     // SY -->
-    private val toggleExcludeFromMangaDataSaver: ToggleExcludeFromMangaDataSaver = Injekt.get(),
+    private val toggleExcludeFromMangaDataSaver: ToggleExcludeFromMangaDataSaver,
     // SY <--
 ) : ViewModel() {
 

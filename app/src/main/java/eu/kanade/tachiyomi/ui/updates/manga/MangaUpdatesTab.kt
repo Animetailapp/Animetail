@@ -15,10 +15,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.presentation.updates.UpdatesDeleteConfirmationDialog
@@ -47,8 +47,8 @@ fun Screen.mangaUpdatesTab(
     fromMore: Boolean,
 ): TabContent {
     val navigator = LocalNavigator.currentOrThrow
-    val viewModel = viewModel<MangaUpdatesViewModel>()
-    val settingsViewModel = viewModel<UpdatesSettingsViewModel>()
+    val viewModel = metroViewModel<MangaUpdatesViewModel>()
+    val settingsViewModel = metroViewModel<UpdatesSettingsViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()

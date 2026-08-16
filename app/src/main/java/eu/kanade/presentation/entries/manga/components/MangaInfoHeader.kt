@@ -86,7 +86,6 @@ import coil3.request.crossfade
 import com.mikepenz.markdown.model.markdownAnnotator
 import com.mikepenz.markdown.model.markdownAnnotatorConfig
 import com.mikepenz.markdown.utils.getUnescapedTextInNode
-import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.entries.components.DotSeparatorText
 import eu.kanade.presentation.entries.components.ItemCover
@@ -95,6 +94,7 @@ import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
+import mihon.app.di.appGraph
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
 import org.intellij.markdown.ast.findChildOfType
@@ -106,9 +106,8 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.clickableNoIndication
+import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.secondaryItemAlpha
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.math.roundToInt
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -357,8 +356,9 @@ private fun MangaAndSourceTitlesLarge(
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
     // KMK -->
-    val uiPreferences = remember { Injekt.get<UiPreferences>() }
-    val usePanoramaCover = uiPreferences.usePanoramaCoverMangaInfo.get()
+    val context = LocalContext.current
+    val uiPreferences = remember { context.appGraph.uiPreferences }
+    val usePanoramaCover by uiPreferences.usePanoramaCoverMangaInfo.collectAsState()
     // KMK <--
 
     Column(
@@ -414,9 +414,10 @@ private fun MangaAndSourceTitlesSmall(
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
     // KMK -->
-    val uiPreferences = remember { Injekt.get<UiPreferences>() }
-    val usePanoramaCover = uiPreferences.usePanoramaCoverMangaInfo.get()
-    val topAlignCover = uiPreferences.topAlignCover.get()
+    val context = LocalContext.current
+    val uiPreferences = remember { context.appGraph.uiPreferences }
+    val usePanoramaCover by uiPreferences.usePanoramaCoverMangaInfo.collectAsState()
+    val topAlignCover by uiPreferences.topAlignCover.collectAsState()
     // KMK <--
 
     Column(
@@ -674,7 +675,8 @@ private fun MangaSummary(
     onEditNotesClicked: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val preferences = remember { Injekt.get<UiPreferences>() }
+    val context = LocalContext.current
+    val preferences = remember { context.appGraph.uiPreferences }
     val loadImages = remember { preferences.imagesInDescription.get() }
     val animProgress by animateFloatAsState(
         targetValue = if (expanded) 1f else 0f,

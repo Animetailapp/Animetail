@@ -1,5 +1,6 @@
 package mihon.domain.migration.usecases
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.hasCustomCover
 import eu.kanade.domain.entries.anime.model.toSAnime
@@ -25,6 +26,7 @@ import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
 import java.time.Instant
 
+@Inject
 class MigrateAnimeUseCase(
     private val sourcePreferences: SourcePreferences,
     private val trackerManager: TrackerManager,

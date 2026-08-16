@@ -1,11 +1,16 @@
 package aniyomi.core.common.torrent
 
 import aniyomi.core.common.torrent.model.Torrent
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import xyz.secozzi.torrserver.TorrServer
 import java.io.File
 import java.net.URLEncoder
 import kotlin.text.split
 
+@Inject
+@SingleIn(AppScope::class)
 class TorrentServerUtils(
     preferences: TorrentPreferences,
     private val api: TorrentServerApi,

@@ -1,5 +1,6 @@
 package eu.kanade.domain.source.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.animesource.model.FilterList
 import exh.util.nullIfBlank
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +16,7 @@ import tachiyomi.domain.source.anime.model.EXHSavedSearch
 import tachiyomi.domain.source.anime.model.SavedSearch
 import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 
+@Inject
 class GetExhSavedSearch(
     private val getSavedSearchById: GetSavedSearchById,
     private val getSavedSearchBySourceId: GetSavedSearchBySourceId,

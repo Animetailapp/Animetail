@@ -1,9 +1,11 @@
 package tachiyomi.domain.category.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.category.model.Category
 
+@Inject
 class GetVisibleMangaCategories(
     private val categoryRepository: MangaCategoryRepository,
 ) {

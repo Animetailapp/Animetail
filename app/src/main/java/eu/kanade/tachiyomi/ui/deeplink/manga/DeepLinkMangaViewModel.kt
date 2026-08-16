@@ -3,9 +3,13 @@ package eu.kanade.tachiyomi.ui.deeplink.manga
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.domain.entries.manga.model.toDomainManga
 import eu.kanade.domain.entries.manga.model.toSManga
 import eu.kanade.domain.items.chapter.interactor.SyncChaptersWithSource
@@ -24,31 +28,25 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.interactor.GetChapterByUrlAndMangaId
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@AssistedInject
 class DeepLinkMangaViewModel(
-    query: String,
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
-    private val getChapterByUrlAndMangaId: GetChapterByUrlAndMangaId = Injekt.get(),
-    private val getMangaByUrlAndSourceId: GetMangaByUrlAndSourceId = Injekt.get(),
-    private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get(),
+    @Assisted query: String,
+    private val sourceManager: MangaSourceManager,
+    private val networkToLocalManga: NetworkToLocalManga,
+    private val getChapterByUrlAndMangaId: GetChapterByUrlAndMangaId,
+    private val getMangaByUrlAndSourceId: GetMangaByUrlAndSourceId,
+    private val syncChaptersWithSource: SyncChaptersWithSource,
 ) : ViewModel() {
 
     val state: StateFlow<DeepLinkMangaViewModel.State>
         field = MutableStateFlow<DeepLinkMangaViewModel.State>(State.Loading)
 
-    companion object {
-        val QUERY_KEY = CreationExtras.Key<String>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                DeepLinkMangaViewModel(
-                    query = get(QUERY_KEY)!!,
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(query: String): DeepLinkMangaViewModel
     }
 
     init {

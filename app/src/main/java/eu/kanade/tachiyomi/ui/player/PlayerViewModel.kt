@@ -43,6 +43,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.entries.anime.interactor.SetAnimeViewerFlags
+import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.items.episode.model.toDbEpisode
 import eu.kanade.domain.source.anime.interactor.GetAnimeIncognitoState
 import eu.kanade.domain.track.anime.interactor.TrackEpisode
@@ -59,10 +60,13 @@ import eu.kanade.tachiyomi.animesource.model.TileInfo
 import eu.kanade.tachiyomi.animesource.model.TimeStamp
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
+import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
+import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
 import eu.kanade.tachiyomi.data.database.models.anime.Episode
 import eu.kanade.tachiyomi.data.database.models.anime.EpisodeImpl
 import eu.kanade.tachiyomi.data.database.models.anime.isRecognizedNumber
 import eu.kanade.tachiyomi.data.database.models.anime.toDomainEpisode
+import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.saver.Image
@@ -135,6 +139,9 @@ import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.source.local.entries.anime.isLocal
+import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
+import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
+import tachiyomi.source.local.image.anime.LocalEpisodeThumbnailManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.File
@@ -180,6 +187,10 @@ class PlayerViewModel @JvmOverloads constructor(
     private val getIncognitoState: GetAnimeIncognitoState = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     uiPreferences: UiPreferences = Injekt.get(),
+    private val downloadCache: AnimeDownloadCache = Injekt.get(),
+    private val updateAnime: UpdateAnime = Injekt.get(),
+    private val coverCache: AnimeCoverCache = Injekt.get(),
+    private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
 ) : ViewModel() {
 
     val cachePath: String = activity.cacheDir.path
@@ -1511,7 +1522,7 @@ class PlayerViewModel @JvmOverloads constructor(
             .sortedWith(getEpisodeSort(anime, sortDescending = false))
             .run {
                 if (basePreferences.downloadedOnly.get()) {
-                    filterDownloadedEpisodes(anime)
+                    filterDownloadedEpisodes(anime, downloadCache)
                 } else {
                     this
                 }
@@ -2119,9 +2130,25 @@ class PlayerViewModel @JvmOverloads constructor(
         viewModelScope.launchNonCancellable {
             val result = try {
                 when (artType) {
-                    ArtType.Cover -> anime.editCover(Injekt.get(), imageStream())
-                    ArtType.Background -> anime.editBackground(Injekt.get(), imageStream())
-                    ArtType.Thumbnail -> episode.editThumbnail(anime, Injekt.get(), imageStream())
+                    ArtType.Cover -> anime.editCover(
+                        Injekt.get<LocalAnimeCoverManager>(),
+                        imageStream(),
+                        updateAnime,
+                        coverCache,
+                    )
+
+                    ArtType.Background -> anime.editBackground(
+                        Injekt.get<LocalAnimeBackgroundManager>(),
+                        imageStream(),
+                        updateAnime,
+                        backgroundCache,
+                    )
+
+                    ArtType.Thumbnail -> episode.editThumbnail(
+                        anime,
+                        Injekt.get<LocalEpisodeThumbnailManager>(),
+                        imageStream(),
+                    )
                 }
 
                 if (anime.isLocal() || anime.favorite) {

@@ -1,10 +1,12 @@
 package tachiyomi.domain.updates.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import tachiyomi.domain.updates.manga.model.MangaUpdatesWithRelations
 import tachiyomi.domain.updates.manga.repository.MangaUpdatesRepository
 
+@Inject
 class GetMangaUpdates(
     private val repository: MangaUpdatesRepository,
 ) {

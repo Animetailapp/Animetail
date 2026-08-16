@@ -1,6 +1,9 @@
 package eu.kanade.tachiyomi.extension.anime.api
 
 import android.content.Context
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.extension.ExtensionUpdateNotifier
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
@@ -12,16 +15,18 @@ import mihon.domain.extension.anime.repository.AnimeExtensionStoreRepository
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.withIOContext
-import uy.kohesive.injekt.injectLazy
 import java.time.Instant
 import kotlin.time.Duration.Companion.days
 
-internal class AnimeExtensionApi {
-
-    private val repository: AnimeExtensionStoreRepository by injectLazy()
-    private val preferenceStore: PreferenceStore by injectLazy()
-    private val updateExtensionStores: UpdateAnimeExtensionStores by injectLazy()
-    private val extensionManager: AnimeExtensionManager by injectLazy()
+@Inject
+@SingleIn(AppScope::class)
+class AnimeExtensionApi(
+    private val repository: AnimeExtensionStoreRepository,
+    private val preferenceStore: PreferenceStore,
+    private val updateExtensionStores: UpdateAnimeExtensionStores,
+    private val extensionManager: Lazy<AnimeExtensionManager>,
+    private val extensionUpdateNotifier: ExtensionUpdateNotifier,
+) {
 
     private val lastExtCheck: Preference<Long> by lazy {
         preferenceStore.getLong("last_ext_check", 0)
@@ -46,7 +51,7 @@ internal class AnimeExtensionApi {
         updateExtensionStores()
 
         val extensions = if (fromAvailableExtensionList) {
-            extensionManager.availableExtensionsFlow.value
+            extensionManager.value.availableExtensionsFlow.value
         } else {
             findExtensions().also { lastExtCheck.set(Instant.now().toEpochMilli()) }
         }
@@ -68,7 +73,7 @@ internal class AnimeExtensionApi {
         }
 
         if (extensionsWithUpdate.isNotEmpty()) {
-            ExtensionUpdateNotifier(context).promptUpdates(
+            extensionUpdateNotifier.promptUpdates(
                 names = extensionsWithUpdate.map { it.name },
                 anime = true,
             )

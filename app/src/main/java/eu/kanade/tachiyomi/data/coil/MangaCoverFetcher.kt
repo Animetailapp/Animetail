@@ -31,7 +31,6 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaCover
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.injectLazy
 import java.io.File
 import java.io.IOException
 
@@ -314,10 +313,9 @@ class MangaCoverFetcher(
 
     class MangaFactory(
         private val callFactoryLazy: Lazy<Call.Factory>,
+        private val coverCache: MangaCoverCache,
+        private val sourceManager: MangaSourceManager,
     ) : Fetcher.Factory<Manga> {
-
-        private val coverCache: MangaCoverCache by injectLazy()
-        private val sourceManager: MangaSourceManager by injectLazy()
 
         override fun create(data: Manga, options: Options, imageLoader: ImageLoader): Fetcher {
             return MangaCoverFetcher(
@@ -336,10 +334,9 @@ class MangaCoverFetcher(
 
     class MangaCoverFactory(
         private val callFactoryLazy: Lazy<Call.Factory>,
+        private val coverCache: MangaCoverCache,
+        private val sourceManager: MangaSourceManager,
     ) : Fetcher.Factory<MangaCover> {
-
-        private val coverCache: MangaCoverCache by injectLazy()
-        private val sourceManager: MangaSourceManager by injectLazy()
 
         override fun create(data: MangaCover, options: Options, imageLoader: ImageLoader): Fetcher {
             return MangaCoverFetcher(

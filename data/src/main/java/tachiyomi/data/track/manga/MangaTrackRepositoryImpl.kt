@@ -1,11 +1,18 @@
 package tachiyomi.data.track.manga
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.handlers.manga.MangaDatabaseHandler
 import tachiyomi.data.track.manga.MangaTrackMapper.mapTrack
 import tachiyomi.domain.track.manga.model.MangaTrack
 import tachiyomi.domain.track.manga.repository.MangaTrackRepository
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class MangaTrackRepositoryImpl(
     private val handler: MangaDatabaseHandler,
 ) : MangaTrackRepository {

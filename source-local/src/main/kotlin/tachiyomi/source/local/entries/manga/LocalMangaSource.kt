@@ -2,6 +2,9 @@ package tachiyomi.source.local.entries.manga
 
 import android.content.Context
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.UnmeteredSource
@@ -43,7 +46,6 @@ import tachiyomi.source.local.io.ArchiveManga
 import tachiyomi.source.local.io.Format
 import tachiyomi.source.local.io.manga.LocalMangaSourceFileSystem
 import tachiyomi.source.local.metadata.fillMetadata
-import uy.kohesive.injekt.injectLazy
 import java.io.File
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
@@ -53,14 +55,15 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import eu.kanade.tachiyomi.animesource.model.Credit as SourceCredit
 
+@Inject
+@SingleIn(AppScope::class)
 class LocalMangaSource(
     private val context: Context,
     private val fileSystem: LocalMangaSourceFileSystem,
     private val coverManager: LocalMangaCoverManager,
+    private val xml: XML,
+    private val json: Json,
 ) : CatalogueSource, UnmeteredSource {
-
-    private val json: Json by injectLazy()
-    private val xml: XML by injectLazy()
 
     @Suppress("PrivatePropertyName")
     private val PopularFilters = FilterList(MangaOrderBy.Popular(context))

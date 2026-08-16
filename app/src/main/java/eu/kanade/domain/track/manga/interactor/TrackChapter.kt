@@ -1,6 +1,7 @@
 package eu.kanade.domain.track.manga.interactor
 
 import android.content.Context
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.track.manga.model.toDbTrack
 import eu.kanade.domain.track.manga.model.toDomainTrack
 import eu.kanade.domain.track.manga.service.DelayedMangaTrackingUpdateJob
@@ -14,6 +15,7 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
 
+@Inject
 class TrackChapter(
     private val getTracks: GetMangaTracks,
     private val trackerManager: TrackerManager,

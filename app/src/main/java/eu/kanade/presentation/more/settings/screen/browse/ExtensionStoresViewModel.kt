@@ -3,9 +3,13 @@ package eu.kanade.presentation.more.settings.screen.browse
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
@@ -29,35 +33,30 @@ import mihon.domain.extension.manga.interactor.RemoveMangaExtensionStore
 import mihon.domain.extension.manga.interactor.UpdateMangaExtensionStores
 import mihon.domain.extension.model.ExtensionStore
 import tachiyomi.core.common.util.lang.launchIO
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
+@AssistedInject
 class ExtensionStoresViewModel(
-    val isManga: Boolean,
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
+    @Assisted val isManga: Boolean,
+    private val sourcePreferences: SourcePreferences,
+    private val getMangaExtensionStores: GetMangaExtensionStores,
+    private val getAnimeExtensionStores: GetAnimeExtensionStores,
+    private val addMangaExtensionStore: AddMangaExtensionStore,
+    private val addAnimeExtensionStore: AddAnimeExtensionStore,
+    private val removeMangaExtensionStore: RemoveMangaExtensionStore,
+    private val removeAnimeExtensionStore: RemoveAnimeExtensionStore,
+    private val updateMangaExtensionStores: UpdateMangaExtensionStores,
+    private val updateAnimeExtensionStores: UpdateAnimeExtensionStores,
+    private val mangaExtensionManager: MangaExtensionManager,
+    private val animeExtensionManager: AnimeExtensionManager,
 ) : ViewModel() {
 
-    companion object {
-        val IS_MANGA_KEY = CreationExtras.Key<Boolean>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                ExtensionStoresViewModel(
-                    isManga = this[IS_MANGA_KEY]!!,
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(isManga: Boolean): ExtensionStoresViewModel
     }
-
-    private val getMangaExtensionStores: GetMangaExtensionStores by lazy { Injekt.get() }
-    private val getAnimeExtensionStores: GetAnimeExtensionStores by lazy { Injekt.get() }
-    private val addMangaExtensionStore: AddMangaExtensionStore by lazy { Injekt.get() }
-    private val addAnimeExtensionStore: AddAnimeExtensionStore by lazy { Injekt.get() }
-    private val removeMangaExtensionStore: RemoveMangaExtensionStore by lazy { Injekt.get() }
-    private val removeAnimeExtensionStore: RemoveAnimeExtensionStore by lazy { Injekt.get() }
-    private val updateMangaExtensionStores: UpdateMangaExtensionStores by lazy { Injekt.get() }
-    private val updateAnimeExtensionStores: UpdateAnimeExtensionStores by lazy { Injekt.get() }
 
     private val dialog = MutableStateFlow<ExtensionStoreDialog?>(null)
 
@@ -92,9 +91,9 @@ class ExtensionStoresViewModel(
             val result = if (isManga) addMangaExtensionStore(baseUrl) else addAnimeExtensionStore(baseUrl)
             result.onSuccess {
                 if (isManga) {
-                    Injekt.get<MangaExtensionManager>().findAvailableExtensions()
+                    mangaExtensionManager.findAvailableExtensions()
                 } else {
-                    Injekt.get<AnimeExtensionManager>().findAvailableExtensions()
+                    animeExtensionManager.findAvailableExtensions()
                 }
                 dismissDialog()
             }
@@ -139,10 +138,10 @@ class ExtensionStoresViewModel(
         viewModelScope.launchIO {
             if (isManga) {
                 removeMangaExtensionStore(baseUrl)
-                Injekt.get<MangaExtensionManager>().findAvailableExtensions()
+                mangaExtensionManager.findAvailableExtensions()
             } else {
                 removeAnimeExtensionStore(baseUrl)
-                Injekt.get<AnimeExtensionManager>().findAvailableExtensions()
+                animeExtensionManager.findAvailableExtensions()
             }
         }
     }

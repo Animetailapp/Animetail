@@ -1,5 +1,9 @@
 package tachiyomi.data.source.manga
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.model.FilterList
@@ -16,6 +20,9 @@ import tachiyomi.domain.source.manga.repository.SourcePagingSourceType
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.source.manga.model.Source as DomainSource
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class MangaSourceRepositoryImpl(
     private val sourceManager: MangaSourceManager,
     private val database: Database,

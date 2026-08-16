@@ -7,9 +7,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.ForegroundInfo
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
-import androidx.work.WorkQuery
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.entries.manga.model.copyFrom
 import eu.kanade.domain.entries.manga.model.toSManga
@@ -17,6 +17,7 @@ import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.prepUpdateCover
 import eu.kanade.tachiyomi.util.system.isRunning
+import eu.kanade.tachiyomi.util.system.setForegroundSafely
 import eu.kanade.tachiyomi.util.system.workManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
@@ -26,6 +27,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
+import mihon.app.di.AppGraph
+import mihon.core.metro.metroGraph
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.interactor.GetLibraryManga
@@ -33,29 +36,30 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.toMangaUpdate
 import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 
 class MangaMetadataUpdateJob(private val context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
 
-    private val sourceManager: MangaSourceManager = Injekt.get()
-    private val coverCache: MangaCoverCache = Injekt.get()
-    private val getLibraryManga: GetLibraryManga = Injekt.get()
-    private val updateManga: UpdateManga = Injekt.get()
+    private val graph: AppGraph = context.metroGraph()
 
-    private val notifier = MangaLibraryUpdateNotifier(context)
+    @Inject private lateinit var sourceManager: MangaSourceManager
+
+    @Inject private lateinit var coverCache: MangaCoverCache
+
+    @Inject private lateinit var getLibraryManga: GetLibraryManga
+
+    @Inject private lateinit var updateManga: UpdateManga
+
+    @Inject private lateinit var notifier: MangaLibraryUpdateNotifier
 
     private var mangaToUpdate: List<LibraryManga> = mutableListOf()
 
     override suspend fun doWork(): Result {
-        try {
-            setForeground(getForegroundInfo())
-        } catch (e: IllegalStateException) {
-            logcat(LogPriority.ERROR, e) { "Not allowed to set foreground job" }
-        }
+        graph.inject(this)
+
+        setForegroundSafely()
 
         addMangaToQueue()
 
@@ -78,7 +82,6 @@ class MangaMetadataUpdateJob(private val context: Context, workerParams: WorkerP
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo {
-        val notifier = MangaLibraryUpdateNotifier(context)
         return ForegroundInfo(
             Notifications.ID_LIBRARY_PROGRESS,
             notifier.progressNotificationBuilder.build(),
@@ -178,8 +181,11 @@ class MangaMetadataUpdateJob(private val context: Context, workerParams: WorkerP
         private const val MANGA_PER_SOURCE_QUEUE_WARNING_THRESHOLD = 60
 
         fun startNow(context: Context): Boolean {
-            val wm = context.workManager
-            if (wm.isRunning(TAG)) {
+            return startNow(context.workManager)
+        }
+
+        fun startNow(workManager: WorkManager): Boolean {
+            if (workManager.isRunning(TAG)) {
                 // Already running either as a scheduled or manual job
                 return false
             }
@@ -187,21 +193,9 @@ class MangaMetadataUpdateJob(private val context: Context, workerParams: WorkerP
                 .addTag(TAG)
                 .addTag(WORK_NAME_MANUAL)
                 .build()
-            wm.enqueueUniqueWork(WORK_NAME_MANUAL, ExistingWorkPolicy.KEEP, request)
+            workManager.enqueueUniqueWork(WORK_NAME_MANUAL, ExistingWorkPolicy.KEEP, request)
 
             return true
-        }
-
-        fun stop(context: Context) {
-            val wm = context.workManager
-            val workQuery = WorkQuery.Builder.fromTags(listOf(TAG))
-                .addStates(listOf(WorkInfo.State.RUNNING))
-                .build()
-            wm.getWorkInfos(workQuery).get()
-                // Should only return one work but just in case
-                .forEach {
-                    wm.cancelWorkById(it.id)
-                }
         }
     }
 }

@@ -2,6 +2,9 @@ package eu.kanade.tachiyomi.data.download.anime
 
 import android.content.Context
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.util.lang.Hash.md5
 import eu.kanade.tachiyomi.util.size
@@ -18,8 +21,6 @@ import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import tachiyomi.source.local.entries.anime.isLocal
 import tachiyomi.source.local.io.anime.LocalAnimeSourceFileSystem
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 /**
  * This class is used to provide the directories where the downloads should be saved.
@@ -27,14 +28,16 @@ import uy.kohesive.injekt.api.get
  *
  * @param context the application context.
  */
+@Inject
+@SingleIn(AppScope::class)
 class AnimeDownloadProvider(
     private val context: Context,
-    private val storageManager: StorageManager = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
+    private val storageManager: StorageManager,
+    private val libraryPreferences: LibraryPreferences,
     // AM (FILE_SIZE) -->
-    private val localFileSystem: LocalAnimeSourceFileSystem = Injekt.get(),
+    private val localFileSystem: LocalAnimeSourceFileSystem,
     // <-- AM (FILE_SIZE)
-    private val downloadPreferences: DownloadPreferences = Injekt.get(),
+    private val downloadPreferences: DownloadPreferences,
 ) {
 
     private val downloadsDir: UniFile?

@@ -1,10 +1,12 @@
 package tachiyomi.domain.history.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.history.manga.model.MangaHistory
 import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import tachiyomi.domain.history.manga.repository.MangaHistoryRepository
 
+@Inject
 class GetMangaHistory(
     private val repository: MangaHistoryRepository,
 ) {

@@ -1,5 +1,6 @@
 package eu.kanade.domain.entries.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.manga.model.hasCustomCover
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.source.model.SManga
@@ -16,6 +17,7 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.time.Clock
 
+@Inject
 class UpdateManga(
     private val mangaRepository: MangaRepository,
     private val mangaFetchInterval: MangaFetchInterval,

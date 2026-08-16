@@ -75,6 +75,7 @@ object ImageUtil {
             val type = findImageType(source.peek().inputStream()) ?: return false
             when (type) {
                 ImageType.GIF -> true
+
                 ImageType.WEBP, ImageType.HEIF -> {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
                     val decoder = ImageDecoder.new(source.peek().inputStream())

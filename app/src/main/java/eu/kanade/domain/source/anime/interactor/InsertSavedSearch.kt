@@ -1,11 +1,13 @@
 package eu.kanade.domain.source.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import logcat.LogPriority
 import logcat.asLog
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.anime.model.SavedSearch
 import tachiyomi.domain.source.anime.repository.SavedSearchRepository
 
+@Inject
 class InsertSavedSearch(
     private val savedSearchRepository: SavedSearchRepository,
 ) {

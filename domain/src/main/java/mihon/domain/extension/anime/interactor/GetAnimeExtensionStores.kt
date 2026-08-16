@@ -1,9 +1,11 @@
 package mihon.domain.extension.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import mihon.domain.extension.anime.repository.AnimeExtensionStoreRepository
 import mihon.domain.extension.model.ExtensionStore
 
+@Inject
 class GetAnimeExtensionStores(
     private val repository: AnimeExtensionStoreRepository,
 ) {

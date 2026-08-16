@@ -1,11 +1,13 @@
 package tachiyomi.domain.track.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.track.manga.model.MangaTrack
 import tachiyomi.domain.track.manga.repository.MangaTrackRepository
 
+@Inject
 class GetMangaTracks(
     private val trackRepository: MangaTrackRepository,
 ) {

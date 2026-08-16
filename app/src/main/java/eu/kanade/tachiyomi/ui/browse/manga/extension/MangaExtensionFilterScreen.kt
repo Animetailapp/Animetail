@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.manga.MangaExtensionFilterScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.util.system.toast
@@ -21,7 +22,7 @@ class MangaExtensionFilterScreen : Screen() {
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel = viewModel<MangaExtensionFilterViewModel>()
+        val viewModel = metroViewModel<MangaExtensionFilterViewModel>()
         val state by viewModel.state.collectAsStateWithLifecycle()
 
         if (state is MangaExtensionFilterState.Loading) {

@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
+import dev.zacsweers.metro.Inject
 import eu.kanade.presentation.webview.WebViewScreenContent
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
@@ -22,19 +23,21 @@ import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.util.view.setComposeContent
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.injectLazy
 
 class WebViewActivity : BaseActivity() {
 
-    private val sourceManager: MangaSourceManager by injectLazy()
-    private val animeSourceManager: AnimeSourceManager by injectLazy()
-    private val network: NetworkHelper by injectLazy()
+    @Inject lateinit var sourceManager: MangaSourceManager
+
+    @Inject lateinit var animeSourceManager: AnimeSourceManager
+
+    @Inject lateinit var network: NetworkHelper
 
     private var assistUrl: String? = null
 
@@ -54,6 +57,7 @@ class WebViewActivity : BaseActivity() {
             overridePendingTransition(R.anim.shared_axis_x_push_enter, R.anim.shared_axis_x_push_exit)
         }
         super.onCreate(savedInstanceState)
+        appGraph.inject(this)
 
         if (!WebViewUtil.supportsWebView(this)) {
             toast(MR.strings.information_webview_required, Toast.LENGTH_LONG)

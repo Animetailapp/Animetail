@@ -1,5 +1,6 @@
 package mihon.domain.items.episode.interactor
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.anime.model.Anime
@@ -13,6 +14,7 @@ import tachiyomi.domain.items.episode.model.Episode
  * @property downloadPreferences User preferences related to episode downloads.
  * @property getCategories Interactor for retrieving categories associated with an anime.
  */
+@Inject
 class FilterEpisodesForDownload(
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
     private val downloadPreferences: DownloadPreferences,

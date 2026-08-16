@@ -4,8 +4,8 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.SMangaUpdate
-import eu.kanade.tachiyomi.util.awaitSingle
 import rx.Observable
+import tachiyomi.core.common.util.lang.awaitSingle
 
 /**
  * A basic interface for creating a source. It could be an online source, a local source, etc.

@@ -31,10 +31,8 @@ import eu.kanade.presentation.util.LocalBackPress
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.core.common.Constants
-import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
 import eu.kanade.tachiyomi.data.updater.RELEASE_URL
 import eu.kanade.tachiyomi.ui.more.NewUpdateScreen
-import eu.kanade.tachiyomi.util.CrashLogUtil
 import eu.kanade.tachiyomi.util.lang.toDateTimestampString
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import eu.kanade.tachiyomi.util.system.isFossBuildType
@@ -45,6 +43,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
@@ -57,8 +56,6 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.icons.CustomIcons
 import tachiyomi.presentation.core.icons.Discord
 import tachiyomi.presentation.core.icons.Github
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Instant
 
 object AboutScreen : Screen() {
@@ -71,6 +68,8 @@ object AboutScreen : Screen() {
         val handleBack = LocalBackPress.current
         val navigator = LocalNavigator.currentOrThrow
         var isCheckingUpdates by remember { mutableStateOf(false) }
+        val crashLogUtil = remember { context.appGraph.crashLogUtil }
+        val uiPreferences = remember { context.appGraph.uiPreferences }
 
         Scaffold(
             topBar = { scrollBehavior ->
@@ -93,9 +92,9 @@ object AboutScreen : Screen() {
                 item {
                     TextPreferenceWidget(
                         title = stringResource(MR.strings.version),
-                        subtitle = getVersionName(withBuildDate = true),
+                        subtitle = getVersionName(withBuildDate = true, dateFormat = uiPreferences.dateFormat.get()),
                         onPreferenceClick = {
-                            val deviceInfo = CrashLogUtil(context).getDebugInfo()
+                            val deviceInfo = crashLogUtil.getDebugInfo()
                             context.copyToClipboard("Debug information", deviceInfo)
                         },
                     )
@@ -210,7 +209,7 @@ object AboutScreen : Screen() {
         onAvailableUpdate: (GetApplicationRelease.Result.NewUpdate) -> Unit,
         onFinish: () -> Unit,
     ) {
-        val updateChecker = AppUpdateChecker()
+        val updateChecker = context.appGraph.updateChecker
         withUIContext {
             try {
                 when (val result = withIOContext { updateChecker.checkForUpdate(forceCheck = true) }) {
@@ -235,12 +234,12 @@ object AboutScreen : Screen() {
         }
     }
 
-    fun getVersionName(withBuildDate: Boolean): String {
+    fun getVersionName(withBuildDate: Boolean, dateFormat: String? = null): String {
         return when {
             BuildConfig.DEBUG -> {
                 "Debug ${BuildConfig.COMMIT_SHA}".let {
                     if (withBuildDate) {
-                        "$it (${getFormattedBuildTime()})"
+                        "$it (${getFormattedBuildTime(dateFormat)})"
                     } else {
                         it
                     }
@@ -250,7 +249,7 @@ object AboutScreen : Screen() {
             isNightlyBuildType -> {
                 "Nightly r${BuildConfig.COMMIT_COUNT}".let {
                     if (withBuildDate) {
-                        "$it (${BuildConfig.COMMIT_SHA}, ${getFormattedBuildTime()})"
+                        "$it (${BuildConfig.COMMIT_SHA}, ${getFormattedBuildTime(dateFormat)})"
                     } else {
                         "$it (${BuildConfig.COMMIT_SHA})"
                     }
@@ -261,7 +260,7 @@ object AboutScreen : Screen() {
                 val channel = if (isFossBuildType) "FOSS" else "Stable"
                 "$channel v${BuildConfig.VERSION_NAME}".let {
                     if (withBuildDate) {
-                        "$it (${getFormattedBuildTime()})"
+                        "$it (${getFormattedBuildTime(dateFormat)})"
                     } else {
                         it
                     }
@@ -270,14 +269,12 @@ object AboutScreen : Screen() {
         }
     }
 
-    internal fun getFormattedBuildTime(): String {
+    internal fun getFormattedBuildTime(dateFormat: String? = null): String {
         return try {
             Instant.parse(BuildConfig.BUILD_TIME)
                 .toLocalDateTime(TimeZone.currentSystemDefault())
                 .toDateTimestampString(
-                    UiPreferences.dateFormat(
-                        Injekt.get<UiPreferences>().dateFormat.get(),
-                    ),
+                    UiPreferences.dateFormat(dateFormat ?: ""),
                 )
         } catch (_: Exception) {
             BuildConfig.BUILD_TIME

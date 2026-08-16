@@ -1,8 +1,13 @@
 package tachiyomi.source.local.io.anime
 
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import tachiyomi.domain.storage.service.StorageManager
 
+@Inject
+@SingleIn(AppScope::class)
 class LocalAnimeSourceFileSystem(
     private val storageManager: StorageManager,
 ) {

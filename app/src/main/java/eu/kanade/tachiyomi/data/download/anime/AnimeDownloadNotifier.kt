@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.core.app.NotificationCompat
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
@@ -17,7 +18,6 @@ import eu.kanade.tachiyomi.util.system.notify
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.injectLazy
 import java.util.regex.Pattern
 
 /**
@@ -25,9 +25,11 @@ import java.util.regex.Pattern
  *
  * @param context context of application
  */
-internal class AnimeDownloadNotifier(private val context: Context) {
-
-    private val preferences: SecurityPreferences by injectLazy()
+@Inject
+class AnimeDownloadNotifier(
+    private val context: Context,
+    private val preferences: SecurityPreferences,
+) {
 
     private val progressNotificationBuilder by lazy {
         context.notificationBuilder(Notifications.CHANNEL_DOWNLOADER_PROGRESS) {

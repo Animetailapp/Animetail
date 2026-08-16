@@ -1,11 +1,17 @@
 package eu.kanade.tachiyomi.network
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
+import mihon.core.metro.IsDebugBuild
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 
+@Inject
+@SingleIn(AppScope::class)
 class NetworkPreferences(
     preferenceStore: PreferenceStore,
-    verboseLoggingDefault: Boolean = false,
+    @IsDebugBuild verboseLoggingDefault: Boolean = false,
 ) {
 
     val verboseLogging: Preference<Boolean> = preferenceStore.getBoolean("verbose_logging", verboseLoggingDefault)

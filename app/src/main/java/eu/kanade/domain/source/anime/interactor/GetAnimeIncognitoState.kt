@@ -1,5 +1,6 @@
 package eu.kanade.domain.source.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 
+@Inject
 class GetAnimeIncognitoState(
     private val basePreferences: BasePreferences,
     private val sourcePreferences: SourcePreferences,

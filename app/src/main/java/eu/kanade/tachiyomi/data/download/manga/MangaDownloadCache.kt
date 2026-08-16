@@ -1,9 +1,11 @@
 package eu.kanade.tachiyomi.data.download.manga
 
-import android.app.Application
 import android.content.Context
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.util.size
@@ -62,14 +64,17 @@ import kotlin.time.Duration.Companion.seconds
  * defined in [renewInterval] as we don't have any control over the filesystem and the user can
  * delete the folders at any time without the app noticing.
  */
+@Inject
+@SingleIn(AppScope::class)
 class MangaDownloadCache(
     private val context: Context,
-    private val scope: CoroutineScope,
-    private val provider: MangaDownloadProvider = Injekt.get(),
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val extensionManager: MangaExtensionManager = Injekt.get(),
-    private val storageManager: StorageManager = Injekt.get(),
+    private val provider: MangaDownloadProvider,
+    private val sourceManager: MangaSourceManager,
+    private val extensionManager: MangaExtensionManager,
+    private val storageManager: StorageManager,
 ) {
+
+    private val scope = CoroutineScope(Dispatchers.IO)
     private val _changes: Channel<Unit> = Channel(Channel.UNLIMITED)
     val changes = _changes.receiveAsFlow()
         .onStart { emit(Unit) }
@@ -506,7 +511,7 @@ private object UniFileAsStringSerializer : KSerializer<UniFile?> {
 
     override fun deserialize(decoder: Decoder): UniFile? {
         return if (decoder.decodeNotNullMark()) {
-            UniFile.fromUri(Injekt.get<Application>(), decoder.decodeString().toUri())
+            UniFile.fromUri(Injekt.get<Context>(), decoder.decodeString().toUri())
         } else {
             decoder.decodeNull()
         }

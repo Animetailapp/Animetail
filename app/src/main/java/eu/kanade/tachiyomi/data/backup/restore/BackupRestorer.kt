@@ -2,6 +2,9 @@ package eu.kanade.tachiyomi.data.backup.restore
 
 import android.content.Context
 import android.net.Uri
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
 import eu.kanade.tachiyomi.data.backup.BackupDecoder
 import eu.kanade.tachiyomi.data.backup.BackupNotifier
 import eu.kanade.tachiyomi.data.backup.models.BackupAnime
@@ -34,29 +37,35 @@ import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.data.handlers.manga.MangaDatabaseHandler
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@AssistedInject
 class BackupRestorer(
+    @Assisted private val notifier: BackupNotifier,
+    @Assisted private val isSync: Boolean,
     private val context: Context,
-    private val notifier: BackupNotifier,
-    private val isSync: Boolean,
-
-    private val animeCategoriesRestorer: AnimeCategoriesRestorer = AnimeCategoriesRestorer(),
-    private val mangaCategoriesRestorer: MangaCategoriesRestorer = MangaCategoriesRestorer(),
-    private val preferenceRestorer: PreferenceRestorer = PreferenceRestorer(context),
-    private val extensionStoreRestorer: ExtensionStoreRestorer = ExtensionStoreRestorer(),
-    private val customButtonRestorer: CustomButtonRestorer = CustomButtonRestorer(),
-    private val animeRestorer: AnimeRestorer = AnimeRestorer(isSync),
-    private val mangaRestorer: MangaRestorer = MangaRestorer(isSync),
-    private val extensionsRestorer: ExtensionsRestorer = ExtensionsRestorer(context),
-    private val mangaHandler: MangaDatabaseHandler = Injekt.get(),
-    private val animeHandler: AnimeDatabaseHandler = Injekt.get(),
+    private val mangaHandler: MangaDatabaseHandler,
+    private val animeHandler: AnimeDatabaseHandler,
+    private val mangaDownloadCache: MangaDownloadCache,
+    private val animeDownloadCache: AnimeDownloadCache,
+    private val animeCategoriesRestorer: AnimeCategoriesRestorer,
+    private val mangaCategoriesRestorer: MangaCategoriesRestorer,
+    private val preferenceRestorer: PreferenceRestorer,
+    private val extensionStoreRestorer: ExtensionStoreRestorer,
+    private val customButtonRestorer: CustomButtonRestorer,
+    private val animeRestorer: AnimeRestorer,
+    private val mangaRestorer: MangaRestorer,
+    private val extensionsRestorer: ExtensionsRestorer,
+    private val backupDecoder: BackupDecoder,
 ) {
+
+    @AssistedFactory
+    fun interface Factory {
+        fun create(notifier: BackupNotifier, isSync: Boolean): BackupRestorer
+    }
 
     private var restoreAmount = 0
     private var restoreProgress = 0
@@ -76,8 +85,8 @@ class BackupRestorer(
         // Invalidate download cache to ensure UI reflects any restored downloads
         if (options.libraryEntries) {
             try {
-                Injekt.get<MangaDownloadCache>().invalidateCache()
-                Injekt.get<AnimeDownloadCache>().invalidateCache()
+                mangaDownloadCache.invalidateCache()
+                animeDownloadCache.invalidateCache()
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e) { "Failed to invalidate download cache after restore" }
             }
@@ -97,7 +106,7 @@ class BackupRestorer(
     }
 
     private suspend fun restoreFromFile(uri: Uri, options: RestoreOptions) {
-        val backup = BackupDecoder(context).decode(uri)
+        val backup = backupDecoder.decode(uri)
 
         // Store source mapping for error messages
         val backupAnimeMaps = backup.backupAnimeSources

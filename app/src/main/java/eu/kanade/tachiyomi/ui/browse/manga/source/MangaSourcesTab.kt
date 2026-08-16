@@ -11,6 +11,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.manga.MangaSourceOptionsDialog
 import eu.kanade.presentation.browse.manga.MangaSourcesScreen
 import eu.kanade.presentation.components.AppBar
@@ -26,7 +27,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Composable
 fun Screen.mangaSourcesTab(): TabContent {
     val navigator = LocalNavigator.currentOrThrow
-    val viewModel = viewModel<MangaSourcesViewModel>()
+    val viewModel = metroViewModel<MangaSourcesViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     return TabContent(

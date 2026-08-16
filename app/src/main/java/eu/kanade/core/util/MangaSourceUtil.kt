@@ -3,11 +3,11 @@ package eu.kanade.core.util
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
-import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import androidx.compose.ui.platform.LocalContext
+import mihon.app.di.appGraph
 
 @Composable
 fun ifMangaSourcesLoaded(): Boolean {
-    return remember { Injekt.get<MangaSourceManager>().isInitialized }.collectAsState().value
+    val context = LocalContext.current
+    return remember { context.appGraph.mangaSourceManager.isInitialized }.collectAsState().value
 }

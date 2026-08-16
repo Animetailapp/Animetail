@@ -19,7 +19,7 @@ import tachiyomi.mi.data.AnimeDatabase
 
 class AndroidAnimeDatabaseHandler(
     val db: AnimeDatabase,
-    private val driver: SqlDriver,
+    val driver: SqlDriver,
     val queryDispatcher: CoroutineDispatcher = Dispatchers.IO,
     val transactionDispatcher: CoroutineDispatcher = queryDispatcher,
 ) : AnimeDatabaseHandler {

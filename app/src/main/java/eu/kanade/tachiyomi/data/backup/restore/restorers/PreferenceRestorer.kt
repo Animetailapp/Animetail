@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.data.backup.restore.restorers
 
 import android.content.Context
 import android.util.Log
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.backup.create.BackupCreateJob
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
@@ -23,14 +24,13 @@ import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
 class PreferenceRestorer(
     private val context: Context,
-    private val getMangaCategories: GetMangaCategories = Injekt.get(),
-    private val getAnimeCategories: GetAnimeCategories = Injekt.get(),
-    private val preferenceStore: PreferenceStore = Injekt.get(),
+    private val getMangaCategories: GetMangaCategories,
+    private val getAnimeCategories: GetAnimeCategories,
+    private val preferenceStore: PreferenceStore,
 ) {
     suspend fun restoreApp(
         preferences: List<BackupPreference>,
@@ -49,7 +49,7 @@ class PreferenceRestorer(
 
     suspend fun restoreSource(preferences: List<BackupSourcePreferences>) {
         preferences.forEach {
-            val sourcePrefs = AndroidPreferenceStore(context, sourcePreferences(it.sourceKey))
+            val sourcePrefs = AndroidPreferenceStore(sourcePreferences(it.sourceKey))
             restorePreferences(it.prefs, sourcePrefs)
         }
     }

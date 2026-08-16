@@ -1,5 +1,6 @@
 package eu.kanade.domain.track.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.track.manga.model.toDbTrack
 import eu.kanade.tachiyomi.data.track.EnhancedMangaTracker
 import eu.kanade.tachiyomi.data.track.MangaTracker
@@ -12,6 +13,7 @@ import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
 import tachiyomi.domain.track.manga.model.MangaTrack
 import kotlin.math.max
 
+@Inject
 class SyncChapterProgressWithTrack(
     private val updateChapter: UpdateChapter,
     private val insertTrack: InsertMangaTrack,

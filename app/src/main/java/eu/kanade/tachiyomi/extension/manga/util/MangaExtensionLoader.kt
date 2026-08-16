@@ -24,11 +24,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import mihon.domain.extension.manga.interactor.GetMangaExtensionStores
 import mihon.domain.extension.model.ExtensionStore
 import mihon.domain.extension.model.ExtensionStore.Companion.KEIYOUSHI_SIGNATURE
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.injectLazy
 import java.io.File
 
 /**
@@ -47,17 +47,6 @@ import java.io.File
  */
 @SuppressLint("PackageManagerGetSignatures")
 internal object MangaExtensionLoader {
-
-    private val preferences: SourcePreferences by injectLazy()
-    private val trustExtension: TrustMangaExtension by injectLazy()
-
-    // KMK -->
-    private val getExtensionStores: GetMangaExtensionStores by injectLazy()
-
-    // KMK <--
-    private val loadNsfwSource by lazy {
-        preferences.showNsfwSource.get()
-    }
 
     private const val EXTENSION_FEATURE = "tachiyomi.extension"
     private const val METADATA_SOURCE_CLASS = "tachiyomi.extension.class"
@@ -190,7 +179,7 @@ internal object MangaExtensionLoader {
         // KMK -->
         // Pre-fetch repos outside runBlocking to avoid nested runBlocking deadlock
         // with the SQLDelight driver's connection pool
-        val repos = runBlocking { getExtensionStores.await() }
+        val repos = runBlocking { context.appGraph.getMangaExtensionStores.await() }
         // KMK <--
 
         // Load each extension concurrently and wait for completion
@@ -270,6 +259,9 @@ internal object MangaExtensionLoader {
         extRepos: List<ExtensionStore>? = null,
         // KMK <--
     ): MangaLoadResult {
+        val trustExtension: TrustMangaExtension = context.appGraph.trustMangaExtension
+        val loadNsfwSource: Boolean = context.appGraph.sourcePreferences.showNsfwSource.get()
+        val getExtensionStores: GetMangaExtensionStores = context.appGraph.getMangaExtensionStores
         // KMK -->
         val repos = extRepos ?: getExtensionStores.await()
         // KMK <--

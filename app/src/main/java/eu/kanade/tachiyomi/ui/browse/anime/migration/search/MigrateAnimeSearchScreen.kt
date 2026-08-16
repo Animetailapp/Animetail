@@ -3,12 +3,10 @@ package eu.kanade.tachiyomi.ui.browse.anime.migration.search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.browse.anime.MigrateAnimeSearchScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
@@ -20,13 +18,9 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
 
-        val viewModel = viewModel<MigrateAnimeSearchViewModel>(
-            factory = viewModelFactory {
-                initializer {
-                    MigrateAnimeSearchViewModel(animeId = animeId)
-                }
-            },
-        )
+        val viewModel = assistedMetroViewModel<MigrateAnimeSearchViewModel, MigrateAnimeSearchViewModel.Factory> {
+            create(animeId = animeId, initialExtensionFilter = null)
+        }
         val state by viewModel.state.collectAsState()
 
         val dialogScreenModel = rememberScreenModel {

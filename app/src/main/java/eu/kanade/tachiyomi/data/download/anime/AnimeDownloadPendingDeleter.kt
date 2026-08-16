@@ -2,22 +2,25 @@ package eu.kanade.tachiyomi.data.download.anime
 
 import android.content.Context
 import androidx.core.content.edit
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 /**
  * Class used to keep a list of episodes for future deletion.
  *
  * @param context the application context.
  */
+@Inject
+@SingleIn(AppScope::class)
 class AnimeDownloadPendingDeleter(
     context: Context,
-    private val json: Json = Injekt.get(),
+    private val json: Json,
 ) {
 
     /**

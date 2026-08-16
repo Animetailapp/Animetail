@@ -1,5 +1,6 @@
 package tachiyomi.domain.entries.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import tachiyomi.domain.entries.manga.model.Manga
@@ -7,6 +8,7 @@ import tachiyomi.domain.entries.manga.repository.MangaRepository
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.items.chapter.repository.ChapterRepository
 
+@Inject
 class GetMangaWithChapters(
     private val mangaRepository: MangaRepository,
     private val chapterRepository: ChapterRepository,

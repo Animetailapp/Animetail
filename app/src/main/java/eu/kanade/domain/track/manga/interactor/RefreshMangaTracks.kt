@@ -1,5 +1,6 @@
 package eu.kanade.domain.track.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.track.manga.model.toDbTrack
 import eu.kanade.domain.track.manga.model.toDomainTrack
 import eu.kanade.tachiyomi.data.track.Tracker
@@ -10,6 +11,7 @@ import kotlinx.coroutines.supervisorScope
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
 
+@Inject
 class RefreshMangaTracks(
     private val getTracks: GetMangaTracks,
     private val trackerManager: TrackerManager,

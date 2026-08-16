@@ -31,18 +31,16 @@ import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.concurrent.Executors
 
 abstract class AnimeSearchViewModel(
     initialState: State = State(),
-    sourcePreferences: SourcePreferences = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val extensionManager: AnimeExtensionManager = Injekt.get(),
-    private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val preferences: SourcePreferences = Injekt.get(),
+    sourcePreferences: SourcePreferences,
+    private val sourceManager: AnimeSourceManager,
+    private val extensionManager: AnimeExtensionManager,
+    private val networkToLocalAnime: NetworkToLocalAnime,
+    private val getAnime: GetAnime,
+    private val preferences: SourcePreferences,
 ) : ViewModel() {
 
     val state: StateFlow<State>

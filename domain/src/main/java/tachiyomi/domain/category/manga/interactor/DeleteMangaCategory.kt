@@ -1,5 +1,6 @@
 package tachiyomi.domain.category.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
@@ -7,6 +8,7 @@ import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
 
+@Inject
 class DeleteMangaCategory(
     private val categoryRepository: MangaCategoryRepository,
     private val libraryPreferences: LibraryPreferences,

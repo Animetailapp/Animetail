@@ -274,6 +274,7 @@ dependencies {
     implementation(libs.metro.runtime)
     implementation(libs.metrox.viewmodel)
     implementation(libs.metrox.viewmodel.compose)
+
     // Image loading
     implementation(libs.bundles.coil)
     implementation(libs.subsamplingScaleImageView) {

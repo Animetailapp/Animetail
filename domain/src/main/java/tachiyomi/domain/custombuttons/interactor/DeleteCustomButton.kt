@@ -1,11 +1,13 @@
 package tachiyomi.domain.custombuttons.interactor
 
+import dev.zacsweers.metro.Inject
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.custombuttons.model.CustomButtonUpdate
 import tachiyomi.domain.custombuttons.repository.CustomButtonRepository
 
+@Inject
 class DeleteCustomButton(
     private val customButtonRepository: CustomButtonRepository,
 ) {

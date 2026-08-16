@@ -22,7 +22,7 @@ class AnimeKeyer : Keyer<DomainAnime> {
 }
 
 class AnimeCoverKeyer(
-    private val coverCache: AnimeCoverCache = Injekt.get(),
+    private val coverCache: AnimeCoverCache,
 ) : Keyer<AnimeCover> {
     override fun key(data: AnimeCover, options: Options): String {
         return if (coverCache.getCustomCoverFile(data.animeId).exists()) {

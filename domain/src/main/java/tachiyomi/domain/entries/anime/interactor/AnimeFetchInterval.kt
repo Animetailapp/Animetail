@@ -1,5 +1,6 @@
 package tachiyomi.domain.entries.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.anime.model.AnimeUpdate
 import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
@@ -10,6 +11,7 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import kotlin.math.absoluteValue
 
+@Inject
 class AnimeFetchInterval(
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
 ) {

@@ -3,6 +3,11 @@ package eu.kanade.tachiyomi.ui.library.anime
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.tachiyomi.data.track.TrackerManager
@@ -18,16 +23,17 @@ import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.library.anime.model.AnimeLibrarySort
 import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.domain.library.service.LibraryPreferences
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class AnimeLibrarySettingsViewModel(
-    val preferences: BasePreferences = Injekt.get(),
-    val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val setAnimeDisplayMode: SetAnimeDisplayMode = Injekt.get(),
-    private val setSortModeForCategory: SetSortModeForAnimeCategory = Injekt.get(),
-    trackerManager: TrackerManager = Injekt.get(),
+    val preferences: BasePreferences,
+    val libraryPreferences: LibraryPreferences,
+    private val setAnimeDisplayMode: SetAnimeDisplayMode,
+    private val setSortModeForCategory: SetSortModeForAnimeCategory,
+    trackerManager: TrackerManager,
 ) : ViewModel() {
 
     val trackersFlow = trackerManager.loggedInTrackersFlow()

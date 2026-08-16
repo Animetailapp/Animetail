@@ -9,10 +9,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
@@ -35,12 +35,12 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.injectLazy
 
 val resumeLastEpisodeSeenEvent = Channel<Unit>()
 
@@ -52,12 +52,12 @@ fun Screen.animeHistoryTab(
     val snackbarHostState = SnackbarHostState()
 
     val navigator = LocalNavigator.currentOrThrow
-    val viewModel = viewModel<AnimeHistoryViewModel>()
+    val viewModel = metroViewModel<AnimeHistoryViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val searchQuery = state.searchQuery ?: ""
 
     suspend fun openEpisode(context: Context, episode: Episode?) {
-        val playerPreferences: PlayerPreferences by injectLazy()
+        val playerPreferences = context.appGraph.playerPreferences
         val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
         if (episode != null) {
             MainActivity.startPlayerActivity(

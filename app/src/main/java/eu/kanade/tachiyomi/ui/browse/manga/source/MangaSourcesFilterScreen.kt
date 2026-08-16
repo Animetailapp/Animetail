@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.manga.MangaSourcesFilterScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.util.system.toast
@@ -19,7 +20,7 @@ class MangaSourcesFilterScreen : Screen() {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel = viewModel<MangaSourcesFilterViewModel>()
+        val viewModel = metroViewModel<MangaSourcesFilterViewModel>()
         val state by viewModel.state.collectAsStateWithLifecycle()
 
         if (state is MangaSourcesFilterViewModel.State.Loading) {

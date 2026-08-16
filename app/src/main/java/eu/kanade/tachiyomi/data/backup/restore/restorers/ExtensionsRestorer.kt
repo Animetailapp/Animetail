@@ -2,11 +2,12 @@ package eu.kanade.tachiyomi.data.backup.restore.restorers
 
 import android.content.Context
 import android.content.Intent
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.backup.models.BackupExtension
 import eu.kanade.tachiyomi.util.storage.getUriCompat
-import uy.kohesive.injekt.api.get
 import java.io.File
 
+@Inject
 class ExtensionsRestorer(
     private val context: Context,
 ) {

@@ -3,9 +3,13 @@ package eu.kanade.tachiyomi.ui.browse.manga.migration.manga
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.tachiyomi.source.MangaSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -26,26 +30,20 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.interactor.GetMangaFavorites
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
+@AssistedInject
 class MigrateMangaViewModel(
-    private val sourceId: Long,
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val getFavorites: GetMangaFavorites = Injekt.get(),
+    @Assisted private val sourceId: Long,
+    private val sourceManager: MangaSourceManager,
+    private val getFavorites: GetMangaFavorites,
 ) : ViewModel() {
 
-    companion object {
-        val SOURCE_ID_KEY = CreationExtras.Key<Long>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                MigrateMangaViewModel(
-                    sourceId = get(SOURCE_ID_KEY)!!,
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(sourceId: Long): MigrateMangaViewModel
     }
 
     private val _events: Channel<MigrationMangaEvent> = Channel()

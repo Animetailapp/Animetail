@@ -4,6 +4,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.track.manga.interactor.AddMangaTracks
@@ -45,24 +50,26 @@ import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class MangaHistoryViewModel(
-    private val addTracks: AddMangaTracks = Injekt.get(),
-    private val getCategories: GetMangaCategories = Injekt.get(),
-    private val getDuplicateLibraryManga: GetDuplicateLibraryManga = Injekt.get(),
-    private val getHistory: GetMangaHistory = Injekt.get(),
-    private val getManga: GetManga = Injekt.get(),
-    private val getNextChapters: GetNextChapters = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val removeHistory: RemoveMangaHistory = Injekt.get(),
-    private val setMangaCategories: SetMangaCategories = Injekt.get(),
-    private val updateManga: UpdateManga = Injekt.get(),
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
+    private val addTracks: AddMangaTracks,
+    private val getCategories: GetMangaCategories,
+    private val getDuplicateLibraryManga: GetDuplicateLibraryManga,
+    private val getHistory: GetMangaHistory,
+    private val getManga: GetManga,
+    private val getNextChapters: GetNextChapters,
+    private val libraryPreferences: LibraryPreferences,
+    private val removeHistory: RemoveMangaHistory,
+    private val setMangaCategories: SetMangaCategories,
+    private val updateManga: UpdateManga,
+    private val sourceManager: MangaSourceManager,
 ) : ViewModel() {
+
+    val snackbarHostState: SnackbarHostState = SnackbarHostState()
 
     private val _events: Channel<Event> = Channel(Channel.UNLIMITED)
     val events: Flow<Event> = _events.receiveAsFlow()

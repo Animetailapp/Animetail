@@ -15,8 +15,8 @@ dependencies {
     implementation(projects.core.metro)
     implementation(projects.domain)
     implementation(projects.presentationCore)
-    api(projects.i18n)
-    api(projects.i18nAniyomi)
+    implementation(projects.i18n)
+    implementation(projects.i18nAniyomi)
 
     implementation(libs.androidx.glance.appWidget)
     implementation(libs.material)

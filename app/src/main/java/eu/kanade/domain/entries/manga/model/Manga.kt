@@ -1,10 +1,11 @@
 package eu.kanade.domain.entries.manga.model
 
-import eu.kanade.domain.base.BasePreferences
+import android.content.Context
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
+import mihon.app.di.appGraph
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.metadata.comicinfo.ComicInfo
 import tachiyomi.core.metadata.comicinfo.ComicInfoPublishingStatus
@@ -22,7 +23,7 @@ val Manga.readerOrientation: Long
 
 val Manga.downloadedFilter: TriState
     get() {
-        if (Injekt.get<BasePreferences>().downloadedOnly.get()) return TriState.ENABLED_IS
+        if (Injekt.get<Context>().appGraph.basePreferences.downloadedOnly.get()) return TriState.ENABLED_IS
         return when (downloadedFilterRaw) {
             Manga.CHAPTER_SHOW_DOWNLOADED -> TriState.ENABLED_IS
             Manga.CHAPTER_SHOW_NOT_DOWNLOADED -> TriState.ENABLED_NOT
@@ -44,6 +45,7 @@ fun Manga.toSManga(): SManga = SManga.create().also {
     it.genre = genre.orEmpty().joinToString()
     it.status = status.toInt()
     it.thumbnail_url = thumbnailUrl
+    it.update_strategy = updateStrategy
     it.initialized = initialized
     it.memo = memo
 }
@@ -80,14 +82,12 @@ fun Manga.copyFrom(other: SManga): Manga {
 fun SManga.toDomainManga(sourceId: Long): Manga {
     return Manga.create().copy(
         url = url,
-        // SY -->
         ogTitle = title,
         ogArtist = artist,
         ogAuthor = author,
         ogDescription = description,
         ogGenre = getGenres(),
         ogStatus = status.toLong(),
-        // SY <--
         thumbnailUrl = thumbnail_url,
         updateStrategy = update_strategy,
         initialized = initialized,
@@ -96,7 +96,7 @@ fun SManga.toDomainManga(sourceId: Long): Manga {
     )
 }
 
-fun Manga.hasCustomCover(coverCache: MangaCoverCache = Injekt.get()): Boolean {
+fun Manga.hasCustomCover(coverCache: MangaCoverCache = Injekt.get<Context>().appGraph.mangaCoverCache): Boolean {
     return coverCache.getCustomCoverFile(id).exists()
 }
 

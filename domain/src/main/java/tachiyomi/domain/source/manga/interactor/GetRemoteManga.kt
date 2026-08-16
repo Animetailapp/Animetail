@@ -1,9 +1,11 @@
 package tachiyomi.domain.source.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.source.model.FilterList
 import tachiyomi.domain.source.manga.repository.MangaSourceRepository
 import tachiyomi.domain.source.manga.repository.SourcePagingSourceType
 
+@Inject
 class GetRemoteManga(
     private val repository: MangaSourceRepository,
 ) {

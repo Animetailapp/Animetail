@@ -1,11 +1,17 @@
 package eu.kanade.tachiyomi.ui.updates.anime
 
 import android.app.Application
+import android.content.Context
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
@@ -49,24 +55,27 @@ import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.updates.anime.interactor.GetAnimeUpdates
 import tachiyomi.domain.updates.anime.model.AnimeUpdatesWithRelations
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class AnimeUpdatesViewModel(
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val downloadManager: AnimeDownloadManager = Injekt.get(),
-    private val downloadCache: AnimeDownloadCache = Injekt.get(),
-    private val updateEpisode: UpdateEpisode = Injekt.get(),
-    private val setSeenStatus: SetSeenStatus = Injekt.get(),
-    private val getUpdates: GetAnimeUpdates = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val getEpisode: GetEpisode = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
-    downloadPreferences: DownloadPreferences = Injekt.get(),
+    private val context: Context,
+    private val sourceManager: AnimeSourceManager,
+    private val downloadManager: AnimeDownloadManager,
+    private val downloadCache: AnimeDownloadCache,
+    private val updateEpisode: UpdateEpisode,
+    private val setSeenStatus: SetSeenStatus,
+    private val getUpdates: GetAnimeUpdates,
+    private val getAnime: GetAnime,
+    private val getEpisode: GetEpisode,
+    private val libraryPreferences: LibraryPreferences,
+    downloadPreferences: DownloadPreferences,
 ) : ViewModel() {
+
+    val snackbarHostState: SnackbarHostState = SnackbarHostState()
 
     private val _events: Channel<Event> = Channel(Int.MAX_VALUE)
     val events: Flow<Event> = _events.receiveAsFlow()
@@ -174,7 +183,7 @@ class AnimeUpdatesViewModel(
     }
 
     fun updateLibrary(): Boolean {
-        val started = AnimeLibraryUpdateJob.startNow(Injekt.get<Application>())
+        val started = AnimeLibraryUpdateJob.startNow(context)
         viewModelScope.launch {
             _events.send(Event.LibraryUpdateTriggered(started))
         }

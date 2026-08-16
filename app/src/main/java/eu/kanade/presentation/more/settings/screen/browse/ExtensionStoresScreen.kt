@@ -5,10 +5,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.more.settings.screen.browse.components.ExtensionStoreConfirmDialog
 import eu.kanade.presentation.more.settings.screen.browse.components.ExtensionStoreCreateDialog
 import eu.kanade.presentation.more.settings.screen.browse.components.ExtensionStoreDeleteDialog
@@ -30,12 +29,9 @@ class ExtensionStoresScreen(
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val viewModel = viewModel<ExtensionStoresViewModel>(
-            factory = ExtensionStoresViewModel.Factory,
-            extras = CreationExtras {
-                set(ExtensionStoresViewModel.IS_MANGA_KEY, isManga)
-            },
-        )
+        val viewModel = assistedMetroViewModel<ExtensionStoresViewModel, ExtensionStoresViewModel.Factory> {
+            create(isManga)
+        }
         val state by viewModel.state.collectAsStateWithLifecycle()
 
         LaunchedEffect(url) {

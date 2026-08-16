@@ -1,5 +1,6 @@
 package mihon.domain.source.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.anime.interactor.SyncSeasonsWithSource
 import eu.kanade.domain.entries.anime.model.hasCustomBackground
 import eu.kanade.domain.entries.anime.model.hasCustomCover
@@ -26,6 +27,7 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.source.local.entries.anime.isLocal
 import java.time.Instant
 
+@Inject
 class UpdateAnimeFromRemote(
     private val sourceManager: AnimeSourceManager,
     private val episodeRepository: EpisodeRepository,
