@@ -68,7 +68,6 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.decoder.ImageDecoder
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.ChapterUpdate
@@ -1026,8 +1025,8 @@ class ReaderViewModel @JvmOverloads constructor(
         ImageUtil.findImageType(stream1) ?: error("Not an image")
         val stream2 = page2.stream!!
         ImageUtil.findImageType(stream2) ?: error("Not an image")
-        val imageBitmap1 = ImageDecoder.newInstance(stream1())?.decode() ?: error("Unable to decode image")
-        val imageBitmap2 = ImageDecoder.newInstance(stream2())?.decode() ?: error("Unable to decode image")
+        val imageBitmap1 = ImageUtil.decodeBitmap(stream1()) ?: error("Unable to decode image")
+        val imageBitmap2 = ImageUtil.decodeBitmap(stream2()) ?: error("Unable to decode image")
         val chapter = page1.chapter.chapter
         val filenameSuffix = " - ${page1.number}-${page2.number}.jpg"
         val filename = DiskUtil.buildValidFilename(

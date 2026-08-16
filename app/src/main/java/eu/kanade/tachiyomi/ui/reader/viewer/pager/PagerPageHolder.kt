@@ -27,7 +27,6 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.decoder.ImageDecoder
 import kotlin.math.max
 
 /**
@@ -190,7 +189,7 @@ class PagerPageHolder(
                         // SY <--
                         val isAnimated = ImageUtil.isAnimatedAndSupported(itemSource)
                         val background = if (!isAnimated && viewer.config.automaticBackground) {
-                            ImageUtil.chooseBackground(context, itemSource.peek())
+                            ImageUtil.chooseBackground(context, itemSource.peek().inputStream())
                         } else {
                             null
                         }
@@ -348,12 +347,7 @@ class PagerPageHolder(
 
     @Suppress("TooGenericExceptionCaught")
     private fun decodeImage(imageSource: BufferedSource): Bitmap? {
-        return try {
-            ImageDecoder.newInstance(imageSource.inputStream())?.decode()
-        } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e) { "Cannot decode image" }
-            null
-        }
+        return ImageUtil.decodeBitmap(imageSource.peek().inputStream())
     }
 
     @Suppress("MagicNumber")
