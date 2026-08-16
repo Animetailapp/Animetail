@@ -10,6 +10,8 @@ import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
 import logcat.LogPriority
 import mihon.domain.source.models.RemoteAnimeEpisodeUpdate
 import mihon.domain.source.models.RemoteAnimeSeasonUpdate
@@ -80,7 +82,8 @@ class UpdateAnimeFromRemote(
             )
             val updatedAnime = animeRepository.getAnimeById(anime.id)
             Result.success(RemoteAnimeEpisodeUpdate(anime = updatedAnime, newEpisodes = newEpisodes))
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
             logcat(LogPriority.ERROR, e)
             Result.failure(e)
         }
@@ -133,7 +136,8 @@ class UpdateAnimeFromRemote(
             )
             val updatedAnime = animeRepository.getAnimeById(anime.id)
             Result.success(RemoteAnimeSeasonUpdate(anime = updatedAnime, newSeasons = newSeasons))
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
             logcat(LogPriority.ERROR, e)
             Result.failure(e)
         }

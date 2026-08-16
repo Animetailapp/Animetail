@@ -426,11 +426,19 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
         ReplaceWith("getAnimeSeasonUpdate"),
     )
     override suspend fun getSeasonList(anime: SAnime): List<SAnime> {
-        return client.newCall(seasonListRequest(anime))
-            .awaitSuccess()
-            .let { response ->
-                seasonListParse(response)
-            }
+        return try {
+            client.newCall(seasonListRequest(anime))
+                .awaitSuccess()
+                .let { response ->
+                    seasonListParse(response)
+                }
+        } catch (_: UnsupportedOperationException) {
+            emptyList()
+        } catch (_: LinkageError) {
+            emptyList()
+        } catch (_: AbstractMethodError) {
+            emptyList()
+        }
     }
 
     /**
@@ -472,11 +480,19 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      */
     @Suppress("DEPRECATION")
     override suspend fun getHosterList(episode: SEpisode): List<Hoster> {
-        return client.newCall(hosterListRequest(episode))
-            .awaitSuccess()
-            .let { response ->
-                hosterListParse(response)
-            }
+        return try {
+            client.newCall(hosterListRequest(episode))
+                .awaitSuccess()
+                .let { response ->
+                    hosterListParse(response)
+                }
+        } catch (_: UnsupportedOperationException) {
+            emptyList()
+        } catch (_: LinkageError) {
+            emptyList()
+        } catch (_: AbstractMethodError) {
+            emptyList()
+        }
     }
 
     /**
@@ -517,11 +533,19 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      */
     @Suppress("DEPRECATION")
     override suspend fun getVideoList(hoster: Hoster): List<Video> {
-        return client.newCall(videoListRequest(hoster))
-            .awaitSuccess()
-            .let { response ->
-                videoListParse(response, hoster)
-            }
+        return try {
+            client.newCall(videoListRequest(hoster))
+                .awaitSuccess()
+                .let { response ->
+                    videoListParse(response, hoster)
+                }
+        } catch (_: UnsupportedOperationException) {
+            emptyList()
+        } catch (_: LinkageError) {
+            emptyList()
+        } catch (_: AbstractMethodError) {
+            emptyList()
+        }
     }
 
     /**
