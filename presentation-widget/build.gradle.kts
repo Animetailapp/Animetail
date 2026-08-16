@@ -3,6 +3,7 @@ plugins {
     alias(mihonx.plugins.compose)
 
     alias(mihonx.plugins.spotless)
+    alias(libs.plugins.metro)
 }
 
 android {
@@ -11,6 +12,7 @@ android {
 
 dependencies {
     implementation(projects.core.common)
+    implementation(projects.core.metro)
     implementation(projects.domain)
     implementation(projects.presentationCore)
     api(projects.i18n)
@@ -23,5 +25,5 @@ dependencies {
 
     implementation(libs.coil.core)
 
-    api(libs.injekt)
+    implementation(libs.metro.runtime)
 }

@@ -56,6 +56,9 @@ logcat = "0.4"
 markdown = "0.41.0"
 material = "1.12.0"
 materialKolor = "5.0.0"
+metro = "1.4.2"
+metrox-viewmodel = "1.4.2"
+metrox-viewmodel-compose = "1.4.2"
 mockk = "1.14.11"
 moko-resources = "0.26.4"
 composeColorPicker = "1.0.7"
@@ -176,6 +179,9 @@ markdown-core = { module = "com.mikepenz:multiplatform-markdown-renderer", versi
 material = { module = "com.google.android.material:material", version.ref = "material" }
 materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 media-router = { module = "androidx.mediarouter:mediarouter", version = "1.7.0" }
+metro-runtime = { module = "dev.zacsweers.metro:runtime", version.ref = "metro" }
+metrox-viewmodel = { module = "dev.zacsweers.metro:metrox-viewmodel", version.ref = "metrox-viewmodel" }
+metrox-viewmodel-compose = { module = "dev.zacsweers.metro:metrox-viewmodel-compose", version.ref = "metrox-viewmodel-compose" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 moko-resources = { module = "dev.icerock.moko:resources", version.ref = "moko-resources" }
 nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd" }
@@ -229,6 +235,7 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-gradle" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin-gradle" }
 kotlin-samWithReceiver = { id = "org.jetbrains.kotlin.plugin.sam.with.receiver", version.ref = "kotlin-gradle" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-gradle" }
+metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
 moko-resources = { id = "dev.icerock.mobile.multiplatform-resources", version.ref = "moko-resources" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }

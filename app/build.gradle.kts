@@ -9,6 +9,7 @@ plugins {
     alias(mihonx.plugins.compose)
     alias(mihonx.plugins.spotless)
 
+    alias(libs.plugins.metro)
     alias(libs.plugins.aboutLibraries)
     alias(libs.plugins.kotlin.serialization)
 }
@@ -185,6 +186,7 @@ dependencies {
     // TAIL
     implementation(projects.core.archive)
     implementation(projects.core.common)
+    implementation(projects.core.metro)
     implementation(projects.coreMetadata)
     implementation(projects.sourceApi)
     implementation(projects.sourceLocal)
@@ -269,6 +271,9 @@ dependencies {
 
     // Dependency injection
     implementation(libs.injekt)
+    implementation(libs.metro.runtime)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
     // Image loading
     implementation(libs.bundles.coil)
     implementation(libs.subsamplingScaleImageView) {

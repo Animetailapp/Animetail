@@ -1,6 +1,8 @@
 plugins {
     alias(mihonx.plugins.android.library)
     alias(mihonx.plugins.spotless)
+
+    alias(libs.plugins.metro)
 }
 
 android {
@@ -27,6 +29,8 @@ dependencies {
     implementation(projects.core.common)
     implementation(projects.coreMetadata)
     implementation(projects.domain)
+
+    implementation(libs.metro.runtime)
 
     implementation(libs.unifile)
     implementation(aniyomilibs.ffmpeg.kit)
