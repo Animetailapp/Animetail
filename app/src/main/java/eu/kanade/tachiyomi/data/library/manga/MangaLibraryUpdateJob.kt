@@ -115,6 +115,8 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
 
     @Inject private lateinit var filterChaptersForDownload: FilterChaptersForDownload
 
+    @Inject private lateinit var getChaptersByMangaId: GetChaptersByMangaId
+
     @Inject private lateinit var notifier: MangaLibraryUpdateNotifier
 
     private var mangaToUpdate: List<LibraryManga> = mutableListOf()

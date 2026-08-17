@@ -886,7 +886,7 @@ class MainActivity : BaseActivity() {
             sourceId: Long,
             timeout: Duration = 5.seconds,
         ): Pair<Boolean, Int> {
-            val sourceManager: AnimeSourceManager = Injekt.get()
+            val sourceManager = context.appGraph.animeSourceManager
             val source = sourceManager.get(sourceId) as? AnimeHttpSource
             if (source?.createHttpServer() == null) {
                 return Pair(false, 0)
