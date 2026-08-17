@@ -302,6 +302,13 @@ class AnimeScreen(
                     }
                 }
             },
+            onRelatedAnimeClicked = { relatedAnime ->
+                navigator.push(AnimeScreen(relatedAnime.id, fromSource = !relatedAnime.favorite))
+            },
+            onRelatedAnimeLongClicked = { relatedAnime ->
+                navigator.push(GlobalAnimeSearchScreen(relatedAnime.title))
+            },
+            relatedAnimeDisplayMode = viewModel.relatedAnimeDisplayMode,
             // KMK -->
             getAnimeState = { viewModel.getManga(initialManga = it) },
             onRelatedAnimesScreenClick = {
@@ -321,6 +328,7 @@ class AnimeScreen(
                     val manga = viewModel.networkToLocalAnime.getLocal(it)
                 }
             },
+            // KMK <--
         )
 
         val onDismissRequest = {

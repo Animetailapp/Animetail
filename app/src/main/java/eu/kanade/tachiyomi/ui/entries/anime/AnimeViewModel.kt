@@ -32,6 +32,7 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.entries.anime.interactor.SetAnimeViewerFlags
+import eu.kanade.domain.entries.anime.interactor.SyncRelatedAnimeWithSource
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.downloadedFilter
 import eu.kanade.domain.entries.anime.model.seasonDownloadedFilter
@@ -113,11 +114,13 @@ import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.GetAnimeWithEpisodesAndSeasons
 import tachiyomi.domain.entries.anime.interactor.GetDuplicateLibraryAnime
+import tachiyomi.domain.entries.anime.interactor.GetRelatedAnime
 import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
 import tachiyomi.domain.entries.anime.interactor.SetAnimeEpisodeFlags
 import tachiyomi.domain.entries.anime.interactor.SetAnimeSeasonFlags
 import tachiyomi.domain.entries.anime.interactor.SetCustomAnimeInfo
 import tachiyomi.domain.entries.anime.model.Anime
+import tachiyomi.domain.entries.anime.model.AnimeRelationGroup
 import tachiyomi.domain.entries.anime.model.AnimeUpdate
 import tachiyomi.domain.entries.anime.model.CustomAnimeInfo
 import tachiyomi.domain.entries.anime.model.NoSeasonsException
@@ -181,6 +184,8 @@ class AnimeViewModel(
     private val setAnimeDefaultEpisodeFlags: SetAnimeDefaultEpisodeFlags,
     private val setAnimeSeasonFlags: SetAnimeSeasonFlags,
     private val setAnimeDefaultSeasonFlags: SetAnimeDefaultSeasonFlags,
+    private val getRelatedAnime: GetRelatedAnime,
+    private val syncRelatedAnimeWithSource: SyncRelatedAnimeWithSource,
     private val setSeenStatus: SetSeenStatus,
     private val updateEpisode: UpdateEpisode,
     private val updateAnime: UpdateAnime,
@@ -237,6 +242,8 @@ class AnimeViewModel(
     val showNextEpisodeAirTime = trackPreferences.showNextEpisodeAiringTime.get()
     val alwaysUseExternalPlayer = playerPreferences.alwaysUseExternalPlayer().get()
     val useExternalDownloader = downloadPreferences.useExternalDownloader.get()
+
+    val relatedAnimeDisplayMode = sourcePreferences.sourceDisplayMode.get()
 
     val isUpdateIntervalEnabled =
         LibraryPreferences.ENTRY_OUTSIDE_RELEASE_PERIOD in libraryPreferences.autoUpdateMangaRestrictions.get()
@@ -350,6 +357,9 @@ class AnimeViewModel(
             // Start observe tracking since it only needs animeId
             observeTrackers()
 
+            observeRelatedAnime()
+            syncRelatedAnime()
+
             // Fetch info-episodes when needed
             if (viewModelScope.isActive) {
                 val fetchFromSourceTasks = listOf(
@@ -405,6 +415,10 @@ class AnimeViewModel(
     ) {
         val state = successState ?: return
         startTorrentServer(state.source)
+
+        if (fetchDetails) {
+            syncRelatedAnime(forceRefresh = true)
+        }
 
         try {
             withUIContext {
@@ -1787,6 +1801,36 @@ class AnimeViewModel(
 
     // Episodes list - end
 
+    // Related anime - start
+
+    private fun observeRelatedAnime() {
+        viewModelScope.launchIO {
+            getRelatedAnime.subscribe(animeId)
+                .distinctUntilChanged()
+                .collectLatest { relations ->
+                    updateSuccessState { it.copy(relatedAnime = relations) }
+                }
+        }
+    }
+
+    fun syncRelatedAnime(forceRefresh: Boolean = false) {
+        val state = successState ?: return
+        if (!state.source.supportsRelatedAnime) return
+
+        viewModelScope.launchIO {
+            updateSuccessState { it.copy(isLoadingRelatedAnime = true) }
+            try {
+                syncRelatedAnimeWithSource.await(state.anime, forceRefresh)
+            } catch (e: Throwable) {
+                logcat(LogPriority.ERROR, e) { "Failed to fetch related anime" }
+            } finally {
+                updateSuccessState { it.copy(isLoadingRelatedAnime = false) }
+            }
+        }
+    }
+
+    // Related anime - end
+
     // Track sheet - start
 
     private fun observeTrackers() {
@@ -1933,6 +1977,8 @@ class AnimeViewModel(
             // AM -->
             val isSyncingTrackers: Boolean = false,
             // <-- AM
+            val relatedAnime: List<AnimeRelationGroup> = emptyList(),
+            val isLoadingRelatedAnime: Boolean = false,
             val isRefreshingData: Boolean = false,
             val dialog: Dialog? = null,
             val hasPromptedToAddBefore: Boolean = false,

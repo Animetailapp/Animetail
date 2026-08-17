@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.animesource
 
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
+import eu.kanade.tachiyomi.animesource.model.AnimeRelation
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.FilterList
 import eu.kanade.tachiyomi.animesource.model.SAnime
@@ -64,6 +65,13 @@ interface AnimeCatalogueSource : AnimeSource {
      * Returns the list of filters for the source.
      */
     override fun getFilterList(): AnimeFilterList
+
+    override val supportsRelatedAnime: Boolean
+        get() = false
+
+    override suspend fun getRelatedAnimeList(anime: SAnime): List<AnimeRelation> {
+        throw Exception("Stub!")
+    }
 
     // Should be replaced as soon as Anime Extension reach 1.5
     @Deprecated(

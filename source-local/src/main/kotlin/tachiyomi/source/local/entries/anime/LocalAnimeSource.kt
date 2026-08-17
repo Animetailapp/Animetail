@@ -8,6 +8,7 @@ import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.UnmeteredSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
+import eu.kanade.tachiyomi.animesource.model.AnimeRelation
 import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SAnimeEpisodeUpdate
@@ -171,6 +172,10 @@ class LocalAnimeSource(
         val asyncSeasons = if (fetchSeasons) async { getOldSeasonList(anime) } else null
         SAnimeSeasonUpdate(asyncAnime?.await() ?: anime, asyncSeasons?.await() ?: seasons)
     }
+
+    override val supportsRelatedAnime = false
+
+    override suspend fun getRelatedAnimeList(anime: SAnime): List<AnimeRelation> = emptyList()
 
     // SY -->
     fun updateAnimeInfo(anime: SAnime) {

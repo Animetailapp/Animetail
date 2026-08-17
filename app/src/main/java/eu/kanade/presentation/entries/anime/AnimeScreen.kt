@@ -103,6 +103,7 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.items.episode.service.missingEntriesCount
+import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.model.StubAnimeSource
 import tachiyomi.i18n.MR
@@ -188,13 +189,16 @@ fun AnimeScreen(
     // Season clicked
     onSeasonClicked: (SeasonAnime) -> Unit,
     onContinueWatchingClicked: ((SeasonAnime) -> Unit)?,
+    // Related anime clicked
+    onRelatedAnimeClicked: (Anime) -> Unit,
+    onRelatedAnimeLongClicked: (Anime) -> Unit,
+    relatedAnimeDisplayMode: LibraryDisplayMode,
     // KMK -->
     getAnimeState: @Composable (Anime) -> State<Anime>,
     onRelatedAnimesScreenClick: () -> Unit,
     onRelatedAnimeClick: (Anime) -> Unit,
     onRelatedAnimeLongClick: (Anime) -> Unit,
     // KMK <--
-
 ) {
     val context = LocalContext.current
     val onCopyTagToClipboard: (tag: String) -> Unit = {
@@ -257,6 +261,9 @@ fun AnimeScreen(
             onSettingsClicked = onSettingsClicked,
             onSeasonClicked = onSeasonClicked,
             onClickContinueWatching = onContinueWatchingClicked,
+            onRelatedAnimeClicked = onRelatedAnimeClicked,
+            onRelatedAnimeLongClicked = onRelatedAnimeLongClicked,
+            relatedAnimeDisplayMode = relatedAnimeDisplayMode,
             // KMK -->
             getAnimeState = getAnimeState,
             onRelatedAnimesScreenClick = onRelatedAnimesScreenClick,
@@ -313,6 +320,9 @@ fun AnimeScreen(
             onSettingsClicked = onSettingsClicked,
             onSeasonClicked = onSeasonClicked,
             onClickContinueWatching = onContinueWatchingClicked,
+            onRelatedAnimeClicked = onRelatedAnimeClicked,
+            onRelatedAnimeLongClicked = onRelatedAnimeLongClicked,
+            relatedAnimeDisplayMode = relatedAnimeDisplayMode,
             // KMK -->
             getAnimeState = getAnimeState,
             onRelatedAnimesScreenClick = onRelatedAnimesScreenClick,
@@ -389,6 +399,10 @@ private fun AnimeScreenSmallImpl(
     // Season clicked
     onSeasonClicked: (SeasonAnime) -> Unit,
     onClickContinueWatching: ((SeasonAnime) -> Unit)?,
+    // Related anime clicked
+    onRelatedAnimeClicked: (Anime) -> Unit,
+    onRelatedAnimeLongClicked: (Anime) -> Unit,
+    relatedAnimeDisplayMode: LibraryDisplayMode,
     // KMK -->
     getAnimeState: @Composable ((Anime) -> State<Anime>),
     onRelatedAnimesScreenClick: () -> Unit,
@@ -617,6 +631,10 @@ private fun AnimeScreenSmallImpl(
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
                             onEditNotes = onEditNotesClicked,
+                            relations = state.relatedAnime,
+                            onRelatedClick = onRelatedAnimeClicked,
+                            onRelatedLongClick = onRelatedAnimeLongClicked,
+                            relatedDisplayMode = relatedAnimeDisplayMode,
                             modifier = Modifier.ignorePadding(offsetGridPaddingPx),
                         )
                     }
@@ -863,11 +881,16 @@ fun AnimeScreenLargeImpl(
     // Season clicked
     onSeasonClicked: (SeasonAnime) -> Unit,
     onClickContinueWatching: ((SeasonAnime) -> Unit)?,
+    // Related anime clicked
+    onRelatedAnimeClicked: (Anime) -> Unit,
+    onRelatedAnimeLongClicked: (Anime) -> Unit,
+    relatedAnimeDisplayMode: LibraryDisplayMode,
     // KMK -->
     getAnimeState: @Composable ((Anime) -> State<Anime>),
     onRelatedAnimesScreenClick: () -> Unit,
     onRelatedAnimeClick: (Anime) -> Unit,
     onRelatedAnimeLongClick: (Anime) -> Unit,
+    // KMK <--
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
@@ -1057,6 +1080,10 @@ fun AnimeScreenLargeImpl(
                                 onTagSearch = onTagSearch,
                                 onCopyTagToClipboard = onCopyTagToClipboard,
                                 onEditNotes = onEditNotesClicked,
+                                relations = state.relatedAnime,
+                                onRelatedClick = onRelatedAnimeClicked,
+                                onRelatedLongClick = onRelatedAnimeLongClicked,
+                                relatedDisplayMode = relatedAnimeDisplayMode,
                             )
                             // Cast is shown below the genres/tags on large layout as well,
                             // but only when trackers are in use and there is cast data.
