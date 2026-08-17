@@ -92,6 +92,7 @@ import eu.kanade.presentation.util.DefaultNavigatorScreenTransition
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
@@ -150,6 +151,7 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.release.interactor.GetApplicationRelease
+import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -884,6 +886,12 @@ class MainActivity : BaseActivity() {
             sourceId: Long,
             timeout: Duration = 5.seconds,
         ): Pair<Boolean, Int> {
+            val sourceManager: AnimeSourceManager = Injekt.get()
+            val source = sourceManager.get(sourceId) as? AnimeHttpSource
+            if (source?.createHttpServer() == null) {
+                return Pair(false, 0)
+            }
+
             HttpServerService.resetIsRunning()
             context.startService(
                 Intent(context, HttpServerService::class.java)

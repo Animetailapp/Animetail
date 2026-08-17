@@ -185,19 +185,20 @@ class AnimeRestorer(
             .associateBy { it.url }
 
         val (existingEpisodes, newEpisodes) = backupEpisodes
-            .mapNotNull {
-                val episode = it.toEpisodeImpl().copy(animeId = anime.id)
+            .mapNotNull { backupEpisode ->
+                val episode = backupEpisode.toEpisodeImpl().copy(animeId = anime.id)
 
                 val dbEpisode = dbEpisodesByUrl[episode.url]
-                    ?: // New episode
-                    return@mapNotNull episode
 
-                if (episode.forComparison() == dbEpisode.forComparison()) {
+                when {
+                    dbEpisode == null -> episode
+
+                    // New episode
+                    episode.forComparison() == dbEpisode.forComparison() -> null
+
                     // Same state; skip
-                    return@mapNotNull null
+                    else -> updateEpisodeBasedOnSyncState(episode, dbEpisode, isSync)
                 }
-
-                updateEpisodeBasedOnSyncState(episode, dbEpisode, isSync)
             }
             .partition { it.id > 0 }
 
@@ -215,7 +216,11 @@ class AnimeRestorer(
                 lastSecondSeen = episode.lastSecondSeen,
             )
         } else {
-            episode.copyFrom(dbEpisode).let {
+            episode.copyFrom(dbEpisode).copy(
+                id = dbEpisode.id,
+                bookmark = episode.bookmark || dbEpisode.bookmark,
+                fillermark = episode.fillermark || dbEpisode.fillermark,
+            ).let {
                 when {
                     dbEpisode.seen && !it.seen -> it.copy(seen = true, lastSecondSeen = dbEpisode.lastSecondSeen)
 
@@ -295,7 +300,7 @@ class AnimeRestorer(
      */
     private suspend fun insertAnime(anime: Anime): Long {
         return handler.awaitOneExecutable(true) {
-            animesQueries.insert(
+            animesQueries.insertReturningId(
                 source = anime.source,
                 url = anime.url,
                 artist = anime.artist,

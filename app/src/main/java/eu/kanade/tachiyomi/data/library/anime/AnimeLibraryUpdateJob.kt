@@ -364,7 +364,7 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         val fetchWindow = animeFetchInterval.getWindow(ZonedDateTime.now())
 
         coroutineScope {
-            animeToUpdate.groupBy { it.anime.source + (0..4).random() }.values
+            animeToUpdate.groupBy { it.anime.source }.values
                 .map { animeInSource ->
                     async {
                         semaphore.withPermit {

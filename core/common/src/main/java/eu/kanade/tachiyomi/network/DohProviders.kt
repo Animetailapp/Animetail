@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.network
 
+import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.dnsoverhttps.DnsOverHttps
@@ -24,24 +25,58 @@ const val PREF_DOH_SHECAN = 12
 const val PREF_DOH_LIBREDNS = 13
 const val PREF_DOH_CUSTOM = 14
 
-fun OkHttpClient.Builder.dohCloudflare() = dns(
-    DnsOverHttps.Builder().client(build())
-        .url("https://cloudflare-dns.com/dns-query".toHttpUrl())
-        .bootstrapDnsHosts(
-            InetAddress.getByName("162.159.36.1"),
-            InetAddress.getByName("162.159.46.1"),
-            InetAddress.getByName("1.1.1.1"),
-            InetAddress.getByName("1.0.0.1"),
-            InetAddress.getByName("162.159.132.53"),
-            InetAddress.getByName("2606:4700:4700::1111"),
-            InetAddress.getByName("2606:4700:4700::1001"),
-            InetAddress.getByName("2606:4700:4700::0064"),
-            InetAddress.getByName("2606:4700:4700::6400"),
-        )
-        .build(),
-)
+private fun OkHttpClient.cloudflareDoh(): DnsOverHttps = DnsOverHttps.Builder()
+    .client(this)
+    .url("https://cloudflare-dns.com/dns-query".toHttpUrl())
+    .bootstrapDnsHosts(
+        InetAddress.getByName("162.159.36.1"),
+        InetAddress.getByName("162.159.46.1"),
+        InetAddress.getByName("1.1.1.1"),
+        InetAddress.getByName("1.0.0.1"),
+        InetAddress.getByName("162.159.132.53"),
+        InetAddress.getByName("2606:4700:4700::1111"),
+        InetAddress.getByName("2606:4700:4700::1001"),
+        InetAddress.getByName("2606:4700:4700::0064"),
+        InetAddress.getByName("2606:4700:4700::6400"),
+    )
+    .build()
 
-fun OkHttpClient.Builder.dohGoogle() = dns(
+private fun OkHttpClient.Builder.doh(dns: Dns) = dns(dns.withSystemFallbackForSinkhole())
+
+private fun InetAddress.isSinkholeAddress() = isLoopbackAddress || isAnyLocalAddress
+
+private fun String.isLocalHostname() =
+    equals("localhost", ignoreCase = true) ||
+        endsWith(".localhost", ignoreCase = true) ||
+        endsWith(".local", ignoreCase = true) ||
+        contains(':') ||
+        matches(Regex("""\d{1,3}(\.\d{1,3}){3}"""))
+
+private fun Dns.filterSinkholeOr(fallback: Dns): Dns = Dns { hostname ->
+    val addresses = lookup(hostname)
+    if (hostname.isLocalHostname()) {
+        addresses
+    } else {
+        addresses.filterNot(InetAddress::isSinkholeAddress)
+            .ifEmpty { fallback.lookup(hostname) }
+    }
+}
+
+private fun Dns.withSystemFallbackForSinkhole() = filterSinkholeOr(Dns.SYSTEM)
+
+/**
+ * Some networks and DNS-based blockers resolve blocked domains (e.g. video hosts)
+ * to sinkhole addresses like ::1 or 0.0.0.0. Keep using the system DNS, but retry
+ * with Cloudflare DoH when only sinkhole addresses are returned.
+ */
+fun OkHttpClient.Builder.systemDnsWithDohFallback(): OkHttpClient.Builder {
+    val fallback = build().cloudflareDoh()
+    return dns(Dns.SYSTEM.filterSinkholeOr(fallback))
+}
+
+fun OkHttpClient.Builder.dohCloudflare() = doh(build().cloudflareDoh())
+
+fun OkHttpClient.Builder.dohGoogle() = doh(
     DnsOverHttps.Builder().client(build())
         .url("https://dns.google/dns-query".toHttpUrl())
         .bootstrapDnsHosts(
@@ -55,7 +90,7 @@ fun OkHttpClient.Builder.dohGoogle() = dns(
 
 // AdGuard "Default" DNS works too but for the sake of making sure no site is blacklisted,
 // we use "Unfiltered"
-fun OkHttpClient.Builder.dohAdGuard() = dns(
+fun OkHttpClient.Builder.dohAdGuard() = doh(
     DnsOverHttps.Builder().client(build())
         .url("https://dns-unfiltered.adguard.com/dns-query".toHttpUrl())
         .bootstrapDnsHosts(
@@ -67,7 +102,7 @@ fun OkHttpClient.Builder.dohAdGuard() = dns(
         .build(),
 )
 
-fun OkHttpClient.Builder.dohQuad9() = dns(
+fun OkHttpClient.Builder.dohQuad9() = doh(
     DnsOverHttps.Builder().client(build())
         .url("https://dns.quad9.net/dns-query".toHttpUrl())
         .bootstrapDnsHosts(
@@ -79,7 +114,7 @@ fun OkHttpClient.Builder.dohQuad9() = dns(
         .build(),
 )
 
-fun OkHttpClient.Builder.dohAliDNS() = dns(
+fun OkHttpClient.Builder.dohAliDNS() = doh(
     DnsOverHttps.Builder().client(build())
         .url("https://dns.alidns.com/dns-query".toHttpUrl())
         .bootstrapDnsHosts(
@@ -91,7 +126,7 @@ fun OkHttpClient.Builder.dohAliDNS() = dns(
         .build(),
 )
 
-fun OkHttpClient.Builder.dohDNSPod() = dns(
+fun OkHttpClient.Builder.dohDNSPod() = doh(
     DnsOverHttps.Builder().client(build())
         .url("https://doh.pub/dns-query".toHttpUrl())
         .bootstrapDnsHosts(
@@ -101,7 +136,7 @@ fun OkHttpClient.Builder.dohDNSPod() = dns(
         .build(),
 )
 
-fun OkHttpClient.Builder.doh360() = dns(
+fun OkHttpClient.Builder.doh360() = doh(
     DnsOverHttps.Builder().client(build())
         .url("https://doh.360.cn/dns-query".toHttpUrl())
         .bootstrapDnsHosts(
@@ -116,7 +151,7 @@ fun OkHttpClient.Builder.doh360() = dns(
         .build(),
 )
 
-fun OkHttpClient.Builder.dohQuad101() = dns(
+fun OkHttpClient.Builder.dohQuad101() = doh(
     DnsOverHttps.Builder().client(build())
         .url("https://dns.twnic.tw/dns-query".toHttpUrl())
         .bootstrapDnsHosts(
@@ -132,7 +167,7 @@ fun OkHttpClient.Builder.dohQuad101() = dns(
  * without ad blocking option
  * Source: https://mullvad.net/en/help/dns-over-https-and-dns-over-tls
  */
-fun OkHttpClient.Builder.dohMullvad() = dns(
+fun OkHttpClient.Builder.dohMullvad() = doh(
     DnsOverHttps.Builder().client(build())
         .url(" https://dns.mullvad.net/dns-query".toHttpUrl())
         .bootstrapDnsHosts(
@@ -147,7 +182,7 @@ fun OkHttpClient.Builder.dohMullvad() = dns(
  * unfiltered option
  * Source: https://controld.com/free-dns/?
  */
-fun OkHttpClient.Builder.dohControlD() = dns(
+fun OkHttpClient.Builder.dohControlD() = doh(
     DnsOverHttps.Builder().client(build())
         .url("https://freedns.controld.com/p0".toHttpUrl())
         .bootstrapDnsHosts(
@@ -163,7 +198,7 @@ fun OkHttpClient.Builder.dohControlD() = dns(
  * Njalla
  * Non logging and uncensored
  */
-fun OkHttpClient.Builder.dohNajalla() = dns(
+fun OkHttpClient.Builder.dohNajalla() = doh(
     DnsOverHttps.Builder().client(build())
         .url("https://dns.njal.la/dns-query".toHttpUrl())
         .bootstrapDnsHosts(
@@ -176,7 +211,7 @@ fun OkHttpClient.Builder.dohNajalla() = dns(
 /**
  * Source: https://shecan.ir/
  */
-fun OkHttpClient.Builder.dohShecan() = dns(
+fun OkHttpClient.Builder.dohShecan() = doh(
     DnsOverHttps.Builder().client(build())
         .url("https://free.shecan.ir/dns-query".toHttpUrl())
         .bootstrapDnsHosts(
@@ -189,7 +224,7 @@ fun OkHttpClient.Builder.dohShecan() = dns(
 /**
  * Source: https://libredns.gr/
  */
-fun OkHttpClient.Builder.dohLibreDNS() = dns(
+fun OkHttpClient.Builder.dohLibreDNS() = doh(
     DnsOverHttps.Builder().client(build())
         .url("https://doh.libredns.gr/dns-query".toHttpUrl())
         .bootstrapDnsHosts(
@@ -203,7 +238,7 @@ fun OkHttpClient.Builder.dohLibreDNS() = dns(
  * Build a DoH implementation using a custom user-provided URL.
  * The URL must be a valid https URL (e.g. "https://example.com/dns-query").
  */
-fun OkHttpClient.Builder.dohCustom(dohUrl: String, bootstrapHosts: List<java.net.InetAddress> = emptyList()) = dns(
+fun OkHttpClient.Builder.dohCustom(dohUrl: String, bootstrapHosts: List<java.net.InetAddress> = emptyList()) = doh(
     DnsOverHttps.Builder().client(build())
         .url(dohUrl.toHttpUrl())
         .apply {

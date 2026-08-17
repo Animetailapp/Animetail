@@ -26,8 +26,12 @@ import java.time.format.DateTimeFormatter
 
 class FlareSolverrInterceptor(private val preferences: NetworkPreferences) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val flareSolverTag = "FlareSolverrInterceptor"
         val originalRequest = chain.request()
+
+        // FlareSolverr is disabled, so just proceed with the request.
+        if (!preferences.enableFlareSolverr.get()) {
+            return chain.proceed(originalRequest)
+        }
 
         val originalResponse = chain.proceed(originalRequest)
 
@@ -36,11 +40,7 @@ class FlareSolverrInterceptor(private val preferences: NetworkPreferences) : Int
             return originalResponse
         }
 
-        // FlareSolverr is disabled, so just proceed with the request.
-        if (!preferences.enableFlareSolverr.get()) {
-            return chain.proceed(originalRequest)
-        }
-
+        val flareSolverTag = "FlareSolverrInterceptor"
         logcat(LogPriority.INFO, flareSolverTag, { "Intercepting request: ${originalRequest.url}" })
 
         return try {
