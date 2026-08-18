@@ -21,7 +21,7 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.entries.anime.components.BaseAnimeListItem
 import eu.kanade.presentation.entries.components.ItemCover
-import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.MigrateAnimeScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.MigrateAnimeViewModel
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.MR
@@ -35,7 +35,7 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 fun MigrateAnimeScreen(
     navigateUp: () -> Unit,
     title: String?,
-    state: MigrateAnimeScreenModel.State,
+    state: MigrateAnimeViewModel.State,
     onClickItem: (Anime) -> Unit,
     onClickCover: (Anime) -> Unit,
     onLongClickItem: (Anime) -> Unit,
@@ -106,7 +106,7 @@ fun MigrateAnimeScreen(
 @Composable
 private fun MigrateAnimeContent(
     contentPadding: PaddingValues,
-    state: MigrateAnimeScreenModel.State,
+    state: MigrateAnimeViewModel.State,
     onClickItem: (Anime) -> Unit,
     onClickCover: (Anime) -> Unit,
     onLongClickItem: (Anime) -> Unit,

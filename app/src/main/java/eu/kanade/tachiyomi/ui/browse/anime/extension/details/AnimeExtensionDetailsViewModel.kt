@@ -2,8 +2,15 @@ package eu.kanade.tachiyomi.ui.browse.anime.extension.details
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.domain.extension.anime.interactor.AnimeExtensionSourceItem
 import eu.kanade.domain.extension.anime.interactor.GetAnimeExtensionSources
 import eu.kanade.domain.source.anime.interactor.ToggleAnimeIncognito
@@ -33,20 +40,26 @@ import kotlinx.coroutines.flow.stateIn
 import logcat.LogPriority
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
-class AnimeExtensionDetailsScreenModel(
-    pkgName: String,
+@AssistedInject
+class AnimeExtensionDetailsViewModel(
+    @Assisted private val pkgName: String,
     private val context: Context,
-    private val network: NetworkHelper = Injekt.get(),
-    private val extensionManager: AnimeExtensionManager = Injekt.get(),
-    private val getExtensionSources: GetAnimeExtensionSources = Injekt.get(),
-    private val toggleSource: ToggleAnimeSource = Injekt.get(),
-    private val toggleIncognito: ToggleAnimeIncognito = Injekt.get(),
-    private val preferences: SourcePreferences = Injekt.get(),
-) : ScreenModel {
+    private val network: NetworkHelper,
+    private val extensionManager: AnimeExtensionManager,
+    private val getExtensionSources: GetAnimeExtensionSources,
+    private val toggleSource: ToggleAnimeSource,
+    private val toggleIncognito: ToggleAnimeIncognito,
+    private val preferences: SourcePreferences,
+) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(pkgName: String): AnimeExtensionDetailsViewModel
+    }
 
     val state: StateFlow<State> = extensionManager.installedExtensionsFlow
         .map { it.firstOrNull { extension -> extension.pkgName == pkgName } }
@@ -61,54 +74,28 @@ class AnimeExtensionDetailsScreenModel(
             }
         }
         .flowOn(Dispatchers.IO)
-        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), State.Loading)
-
-    private val successState: State.Success?
-        get() = state.value as? State.Success
-
-    private fun subscribeToSources(extension: AnimeExtension.Installed): Flow<ImmutableList<AnimeExtensionSourceItem>> {
-        return getExtensionSources.subscribe(extension)
-            .map {
-                it.sortedWith(
-                    compareBy(
-                        { !it.enabled },
-                        { item ->
-                            item.source.name.takeIf { item.labelAsName }
-                                ?: LocaleHelper.getSourceDisplayName(item.source.lang, context).lowercase()
-                        },
-                    ),
-                )
-                    .toImmutableList()
-            }
-            .catch { throwable ->
-                logcat(LogPriority.ERROR, throwable)
-                emit(persistentListOf())
-            }
-    }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State.Loading)
 
     fun clearCookies() {
-        val extension = successState?.extension ?: return
+        val extension = (state.value as? State.Success)?.extension ?: return
 
         val urls = extension.sources
             .filterIsInstance<AnimeHttpSource>()
-            .flatMap { listOf(it.baseUrl, it.getHomeUrl()) }
-            .filter { it.isNotEmpty() }
+            .mapNotNull { it.baseUrl.takeUnless { url -> url.isEmpty() } }
             .distinct()
 
-        val cleared = urls.sumOf {
+        val cookieJar = network.cookieJar
+        urls.forEach {
             try {
-                network.cookieJar.remove(it.toHttpUrl())
+                cookieJar.remove(it.toHttpUrl())
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e) { "Failed to clear cookies for $it" }
-                0
             }
         }
-
-        logcat { "Cleared $cleared cookies for: ${urls.joinToString()}" }
     }
 
     fun uninstallExtension() {
-        val extension = successState?.extension ?: return
+        val extension = (state.value as? State.Success)?.extension ?: return
         extensionManager.uninstallExtension(extension)
     }
 
@@ -117,28 +104,48 @@ class AnimeExtensionDetailsScreenModel(
     }
 
     fun toggleSources(enable: Boolean) {
-        successState?.extension?.sources
+        (state.value as? State.Success)?.extension?.sources
             ?.map { it.id }
             ?.let { toggleSource.await(it, enable) }
     }
 
-    fun toggleIncognito(enable: Boolean) {
-        successState?.extension?.pkgName?.let { packageName ->
-            toggleIncognito.await(packageName, enable)
-        }
+    fun toggleIncognito(isIncognito: Boolean) {
+        toggleIncognito.await(pkgName, isIncognito)
+    }
+
+    private fun subscribeToSources(extension: AnimeExtension.Installed): Flow<ImmutableList<AnimeExtensionSourceItem>> {
+        return getExtensionSources.subscribe(extension)
+            .catch { throwable ->
+                logcat(LogPriority.ERROR, throwable)
+                emit(emptyList())
+            }
+            .map { sources ->
+                sources
+                    .sortedWith(
+                        compareBy(
+                            { !it.enabled },
+                            { item ->
+                                item.source.name.takeIf { item.labelAsName }
+                                    ?: LocaleHelper.getSourceDisplayName(item.source.lang, context)
+                            },
+                        ),
+                    )
+                    .toImmutableList()
+            }
     }
 
     sealed interface State {
-
+        @Immutable
         data object Loading : State
 
+        @Immutable
         data object Uninstalled : State
 
         @Immutable
         data class Success(
             val extension: AnimeExtension.Installed,
             val isIncognito: Boolean,
-            val sources: ImmutableList<AnimeExtensionSourceItem>,
+            val sources: ImmutableList<AnimeExtensionSourceItem> = persistentListOf(),
         ) : State
     }
 }

@@ -36,11 +36,17 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactoryKey
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.entries.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
@@ -142,8 +148,6 @@ import tachiyomi.source.local.entries.anime.isLocal
 import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
 import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
 import tachiyomi.source.local.image.anime.LocalEpisodeThumbnailManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 import java.io.InputStream
 import java.util.Date
@@ -153,55 +157,67 @@ import kotlin.time.Duration.Companion.seconds
 private const val NETWORK_STREAM_ANIME_ID = Long.MIN_VALUE + 101
 private const val NETWORK_STREAM_EPISODE_ID = Long.MIN_VALUE + 102
 
-class PlayerViewModelProviderFactory(
-    private val activity: PlayerActivity,
-) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-        return PlayerViewModel(activity, extras.createSavedStateHandle()) as T
-    }
-}
-
-class PlayerViewModel @JvmOverloads constructor(
-    private val activity: PlayerActivity,
-    private val savedState: SavedStateHandle,
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val downloadManager: AnimeDownloadManager = Injekt.get(),
-    private val imageSaver: ImageSaver = Injekt.get(),
-    private val downloadPreferences: DownloadPreferences = Injekt.get(),
-    private val trackPreferences: TrackPreferences = Injekt.get(),
-    private val trackEpisode: TrackEpisode = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val getNextEpisodes: GetNextEpisodes = Injekt.get(),
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
-    private val getAnimeCategories: GetAnimeCategories = Injekt.get(),
-    private val getTracks: GetAnimeTracks = Injekt.get(),
-    private val upsertHistory: UpsertAnimeHistory = Injekt.get(),
-    private val updateEpisode: UpdateEpisode = Injekt.get(),
-    private val setAnimeViewerFlags: SetAnimeViewerFlags = Injekt.get(),
-    internal val playerPreferences: PlayerPreferences = Injekt.get(),
-    internal val gesturePreferences: GesturePreferences = Injekt.get(),
-    private val basePreferences: BasePreferences = Injekt.get(),
-    private val getCustomButtons: GetCustomButtons = Injekt.get(),
-    private val trackSelect: TrackSelect = Injekt.get(),
-    private val getIncognitoState: GetAnimeIncognitoState = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    uiPreferences: UiPreferences = Injekt.get(),
-    private val downloadCache: AnimeDownloadCache = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
-    private val coverCache: AnimeCoverCache = Injekt.get(),
-    private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
+@AssistedInject
+class PlayerViewModel(
+    @Assisted private val savedState: SavedStateHandle,
+    private val context: Context,
+    private val sourceManager: AnimeSourceManager,
+    private val downloadManager: AnimeDownloadManager,
+    private val imageSaver: ImageSaver,
+    private val downloadPreferences: DownloadPreferences,
+    private val trackPreferences: TrackPreferences,
+    private val trackEpisode: TrackEpisode,
+    private val getAnime: GetAnime,
+    private val getNextEpisodes: GetNextEpisodes,
+    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val getAnimeCategories: GetAnimeCategories,
+    private val getTracks: GetAnimeTracks,
+    private val upsertHistory: UpsertAnimeHistory,
+    private val updateEpisode: UpdateEpisode,
+    private val setAnimeViewerFlags: SetAnimeViewerFlags,
+    internal val playerPreferences: PlayerPreferences,
+    internal val gesturePreferences: GesturePreferences,
+    private val basePreferences: BasePreferences,
+    private val getCustomButtons: GetCustomButtons,
+    private val trackSelect: TrackSelect,
+    private val getIncognitoState: GetAnimeIncognitoState,
+    private val libraryPreferences: LibraryPreferences,
+    uiPreferences: UiPreferences,
+    private val downloadCache: AnimeDownloadCache,
+    private val updateAnime: UpdateAnime,
+    private val coverCache: AnimeCoverCache,
+    private val backgroundCache: AnimeBackgroundCache,
+    private val localAnimeCoverManager: LocalAnimeCoverManager,
+    private val localAnimeBackgroundManager: LocalAnimeBackgroundManager,
+    private val localEpisodeThumbnailManager: LocalEpisodeThumbnailManager,
+    private val trackerManager: TrackerManager,
 ) : ViewModel() {
 
-    val cachePath: String = activity.cacheDir.path
+    @AssistedFactory
+    @ViewModelAssistedFactoryKey(PlayerViewModel::class)
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ViewModelAssistedFactory {
+        override fun create(extras: CreationExtras): PlayerViewModel {
+            return create(extras.createSavedStateHandle())
+        }
 
-    val mpv = MPV(activity.applicationContext) {
+        fun create(@Assisted savedState: SavedStateHandle): PlayerViewModel
+    }
+
+    val cachePath: String = context.cacheDir.path
+
+    val mpv = MPV(context.applicationContext) {
         it.setOptionString("config", "yes")
-        it.setOptionString("config-dir", activity.filesDir.resolve(PlayerActivity.MPV_DIR).toString())
+        it.setOptionString("config-dir", context.filesDir.resolve(PlayerActivity.MPV_DIR).toString())
         it.setOptionString("gpu-shader-cache-dir", cachePath)
         it.setOptionString("icc-cache-dir", cachePath)
         it.setOptionString("keep-open", "yes")
     }
+
+    private val eventChannel = Channel<Event>(Channel.UNLIMITED)
+    val eventFlow = eventChannel.receiveAsFlow()
+
+    private val audioManager by lazy { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
 
     private val _currentPlaylist = MutableStateFlow<List<Episode>>(emptyList())
     val currentPlaylist = _currentPlaylist.asStateFlow()
@@ -316,11 +332,13 @@ class PlayerViewModel @JvmOverloads constructor(
     val isVolumeSliderShown = MutableStateFlow(false)
     val currentBrightness = MutableStateFlow(
         runCatching {
-            Settings.System.getFloat(activity.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
+            Settings.System.getFloat(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
                 .normalize(0f, 255f, 0f, 1f)
         }.getOrElse { 0f },
     )
-    val currentVolume = MutableStateFlow(activity.audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
+    val currentVolume = MutableStateFlow(
+        (context.getSystemService(Context.AUDIO_SERVICE) as AudioManager).getStreamVolume(AudioManager.STREAM_MUSIC),
+    )
     val currentMPVVolume = MutableStateFlow(mpv.getPropertyInt("volume") ?: 100)
     var volumeBoostCap: Int = (mpv.getPropertyInt("volume-max") ?: 100) - 100
 
@@ -379,7 +397,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 delay(1000)
             }
             pause()
-            withUIContext { Injekt.get<Application>().toast(AYMR.strings.toast_sleep_timer_ended) }
+            withUIContext { context.toast(AYMR.strings.toast_sleep_timer_ended) }
         }
     }
 
@@ -414,14 +432,14 @@ class PlayerViewModel @JvmOverloads constructor(
         if (it != -1) {
             mpv.getPropertyString("track-list/$it/lang") ?: ""
         } else {
-            activity.stringResource(MR.strings.off)
+            context.stringResource(MR.strings.off)
         }
     }
     val getTrackTitle: (Int) -> String = {
         if (it != -1) {
             mpv.getPropertyString("track-list/$it/title") ?: ""
         } else {
-            activity.stringResource(MR.strings.off)
+            context.stringResource(MR.strings.off)
         }
     }
     val getTrackMPVId: (Int) -> Int = {
@@ -442,7 +460,7 @@ class PlayerViewModel @JvmOverloads constructor(
             val possibleTrackTypes = listOf("audio", "sub")
             val subTracks = mutableListOf<VideoTrack>()
             val audioTracks = mutableListOf(
-                VideoTrack(-1, activity.stringResource(MR.strings.off), null),
+                VideoTrack(-1, context.stringResource(MR.strings.off), null),
             )
             try {
                 val tracksCount = mpv.getPropertyInt("track-list/count") ?: 0
@@ -475,13 +493,13 @@ class PlayerViewModel @JvmOverloads constructor(
     fun onFinishLoadingTracks() {
         val preferredSubtitle = trackSelect.getPreferredTrackIndex(subtitleTracks.value)
         (preferredSubtitle ?: subtitleTracks.value.firstOrNull())?.let {
-            activity.player.mpv?.setPropertyInt("sid", it.id)
-            activity.player.mpv?.setPropertyBoolean("secondary-sid", false)
+            mpv.setPropertyInt("sid", it.id)
+            mpv.setPropertyBoolean("secondary-sid", false)
         }
 
         val preferredAudio = trackSelect.getPreferredTrackIndex(audioTracks.value, subtitle = false)
         (preferredAudio ?: audioTracks.value.getOrNull(1))?.let {
-            activity.player.mpv?.setPropertyInt("aid", it.id)
+            mpv.setPropertyInt("aid", it.id)
         }
 
         isLoadingTracks.update { _ -> true }
@@ -530,9 +548,9 @@ class PlayerViewModel @JvmOverloads constructor(
     fun addAudio(uri: Uri) {
         val url = uri.toString()
         val isContentUri = url.startsWith("content://")
-        val path = (if (isContentUri) uri.openContentFd(activity) else url)
+        val path = (if (isContentUri) uri.openContentFd(context) else url)
             ?: return
-        val name = if (isContentUri) uri.getFileName(activity) else null
+        val name = if (isContentUri) uri.getFileName(context) else null
         if (name == null) {
             mpv.command("audio-add", path, "cached")
         } else {
@@ -541,7 +559,7 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun selectAudio(id: Int) {
-        activity.player.mpv?.setPropertyInt("aid", id)
+        mpv.setPropertyInt("aid", id)
     }
 
     fun updateAudio(id: Int) {
@@ -551,9 +569,9 @@ class PlayerViewModel @JvmOverloads constructor(
     fun addSubtitle(uri: Uri) {
         val url = uri.toString()
         val isContentUri = url.startsWith("content://")
-        val path = (if (isContentUri) uri.openContentFd(activity) else url)
+        val path = (if (isContentUri) uri.openContentFd(context) else url)
             ?: return
-        val name = if (isContentUri) uri.getFileName(activity) else null
+        val name = if (isContentUri) uri.getFileName(context) else null
         if (name == null) {
             mpv.command("sub-add", path, "cached")
         } else {
@@ -580,14 +598,14 @@ class PlayerViewModel @JvmOverloads constructor(
         }
         val (primary, secondary) = _selectedSubtitles.value
         if (secondary == -1) {
-            activity.player.mpv?.setPropertyBoolean("secondary-sid", false)
+            mpv.setPropertyBoolean("secondary-sid", false)
         } else {
-            activity.player.mpv?.setPropertyInt("secondary-sid", secondary)
+            mpv.setPropertyInt("secondary-sid", secondary)
         }
         if (primary == -1) {
-            activity.player.mpv?.setPropertyBoolean("sid", false)
+            mpv.setPropertyBoolean("sid", false)
         } else {
-            activity.player.mpv?.setPropertyInt("sid", primary)
+            mpv.setPropertyInt("sid", primary)
         }
     }
 
@@ -683,9 +701,6 @@ class PlayerViewModel @JvmOverloads constructor(
     fun pause() {
         mpv.setPropertyBoolean("pause", true)
         _paused.update { true }
-        runCatching {
-            activity.setPictureInPictureParams(activity.createPipParams())
-        }
     }
 
     fun unpause() {
@@ -693,7 +708,6 @@ class PlayerViewModel @JvmOverloads constructor(
         _paused.update { false }
     }
 
-    private val showStatusBar = playerPreferences.showSystemStatusBar().get()
     fun showControls() {
         if (sheetShown.value != Sheets.None ||
             panelShown.value != Panels.None ||
@@ -701,14 +715,10 @@ class PlayerViewModel @JvmOverloads constructor(
         ) {
             return
         }
-        if (showStatusBar) {
-            activity.windowInsetsController.show(WindowInsetsCompat.Type.statusBars())
-        }
         _controlsShown.update { true }
     }
 
     fun hideControls() {
-        activity.windowInsetsController.hide(WindowInsetsCompat.Type.statusBars())
         _controlsShown.update { false }
     }
 
@@ -784,16 +794,13 @@ class PlayerViewModel @JvmOverloads constructor(
         brightness: Float,
     ) {
         currentBrightness.update { _ -> brightness.coerceIn(-0.75f, 1f) }
-        activity.window.attributes = activity.window.attributes.apply {
-            screenBrightness = brightness.coerceIn(0f, 1f)
-        }
     }
 
     fun displayBrightnessSlider() {
         isBrightnessSliderShown.update { true }
     }
 
-    val maxVolume = activity.audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+    val maxVolume: Int get() = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
     fun changeVolumeBy(change: Int) {
         val mpvVolume = mpv.getPropertyInt("volume") ?: 100
         if (volumeBoostCap > 0 && currentVolume.value == maxVolume) {
@@ -809,7 +816,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
     fun changeVolumeTo(volume: Int) {
         val newVolume = volume.coerceIn(0..maxVolume)
-        activity.audioManager.setStreamVolume(
+        audioManager.setStreamVolume(
             AudioManager.STREAM_MUSIC,
             newVolume,
             0,
@@ -855,8 +862,7 @@ class PlayerViewModel @JvmOverloads constructor(
             }
 
             VideoAspect.Stretch -> {
-                val dm = DisplayMetrics()
-                activity.windowManager.defaultDisplay.getRealMetrics(dm)
+                val dm = context.resources.displayMetrics
                 ratio = dm.widthPixels / dm.heightPixels.toDouble()
                 pan = 0.0
             }
@@ -868,20 +874,15 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     fun cycleScreenRotations() {
-        activity.requestedOrientation = when (activity.requestedOrientation) {
-            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
-            ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE,
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,
-            -> {
-                playerPreferences.defaultPlayerOrientationType().set(PlayerOrientation.SensorPortrait)
-                ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-            }
+        val next = when (playerPreferences.defaultPlayerOrientationType().get()) {
+            PlayerOrientation.Landscape,
+            PlayerOrientation.ReverseLandscape,
+            PlayerOrientation.SensorLandscape,
+            -> PlayerOrientation.SensorPortrait
 
-            else -> {
-                playerPreferences.defaultPlayerOrientationType().set(PlayerOrientation.SensorLandscape)
-                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            }
+            else -> PlayerOrientation.SensorLandscape
         }
+        playerPreferences.defaultPlayerOrientationType().set(next)
     }
 
     fun handleLuaInvocation(property: String, value: String) {
@@ -992,15 +993,9 @@ class PlayerViewModel @JvmOverloads constructor(
             }
 
             "software_keyboard" -> when (data) {
-                "show" -> forceShowSoftwareKeyboard()
-
-                "hide" -> forceHideSoftwareKeyboard()
-
-                "toggle" -> if (inputMethodManager.isActive) {
-                    forceHideSoftwareKeyboard()
-                } else {
-                    forceShowSoftwareKeyboard()
-                }
+                "show" -> eventChannel.trySend(Event.SetKeyboardVisibility(true))
+                "hide" -> eventChannel.trySend(Event.SetKeyboardVisibility(false))
+                "toggle" -> eventChannel.trySend(Event.SetKeyboardVisibility(null))
             }
         }
 
@@ -1008,19 +1003,6 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     private operator fun <T> List<T>.component6(): T = get(5)
-
-    private val inputMethodManager = activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-
-    @Suppress("DEPRECATION")
-    private fun forceShowSoftwareKeyboard() {
-        val view = activity.currentFocus ?: activity.window.decorView
-        inputMethodManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
-    }
-
-    private fun forceHideSoftwareKeyboard() {
-        val view = activity.currentFocus ?: activity.window.decorView
-        inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
-    }
 
     private val doubleTapToSeekDuration = gesturePreferences.skipLengthPreference().get()
     private val preciseSeek = gesturePreferences.playerSmoothSeek().get()
@@ -1092,18 +1074,20 @@ class PlayerViewModel @JvmOverloads constructor(
 
     fun changeEpisode(previous: Boolean, autoPlay: Boolean = false) {
         if (previous && !hasPreviousEpisode.value) {
-            activity.showToast(activity.stringResource(AYMR.strings.no_prev_episode))
+            eventChannel.trySend(Event.ShowToast(context.stringResource(AYMR.strings.no_prev_episode)))
             return
         }
 
         if (!previous && !hasNextEpisode.value) {
-            activity.showToast(activity.stringResource(AYMR.strings.no_next_episode))
+            eventChannel.trySend(Event.ShowToast(context.stringResource(AYMR.strings.no_next_episode)))
             return
         }
 
-        activity.changeEpisode(
-            episodeId = getAdjacentEpisodeId(previous = previous),
-            autoPlay = autoPlay,
+        eventChannel.trySend(
+            Event.ChangeEpisode(
+                episodeId = getAdjacentEpisodeId(previous = previous),
+                autoPlay = autoPlay,
+            ),
         )
     }
 
@@ -1197,9 +1181,6 @@ class PlayerViewModel @JvmOverloads constructor(
     }
 
     // ====== OLD ======
-
-    private val eventChannel = Channel<Event>()
-    val eventFlow = eventChannel.receiveAsFlow()
 
     val incognitoMode: Boolean by lazy { getIncognitoState.await(currentAnime.value?.source) }
     private val downloadAheadAmount = downloadPreferences.autoDownloadWhileWatching.get()
@@ -1504,9 +1485,7 @@ class PlayerViewModel @JvmOverloads constructor(
         _selectedHosterVideoIndex.update { Pair(0, 0) }
         _currentVideo.update { video }
 
-        withUIContext {
-            activity.setVideo(video)
-        }
+        eventChannel.trySend(Event.SetVideo(video))
     }
 
     private fun updateEpisode(episode: Episode) {
@@ -1729,7 +1708,7 @@ class PlayerViewModel @JvmOverloads constructor(
             loadThumbnails(resolvedVideo, source)
         }
 
-        activity.setVideo(resolvedVideo)
+        eventChannel.trySend(Event.SetVideo(resolvedVideo))
         return true
     }
 
@@ -2063,7 +2042,6 @@ class PlayerViewModel @JvmOverloads constructor(
     fun saveImage(imageStream: () -> InputStream, timePos: Int?) {
         val anime = currentAnime.value ?: return
 
-        val context = Injekt.get<Application>()
         val notifier = SaveImageNotifier(context)
         notifier.onClear()
 
@@ -2102,7 +2080,6 @@ class PlayerViewModel @JvmOverloads constructor(
     fun shareImage(imageStream: () -> InputStream, timePos: Int?) {
         val anime = currentAnime.value ?: return
 
-        val context = Injekt.get<Application>()
         val destDir = context.cacheImageDir
 
         val seconds = timePos?.let { Utils.prettyTime(it) } ?: return
@@ -2136,14 +2113,14 @@ class PlayerViewModel @JvmOverloads constructor(
             val result = try {
                 when (artType) {
                     ArtType.Cover -> anime.editCover(
-                        Injekt.get<LocalAnimeCoverManager>(),
+                        localAnimeCoverManager,
                         imageStream(),
                         updateAnime,
                         coverCache,
                     )
 
                     ArtType.Background -> anime.editBackground(
-                        Injekt.get<LocalAnimeBackgroundManager>(),
+                        localAnimeBackgroundManager,
                         imageStream(),
                         updateAnime,
                         backgroundCache,
@@ -2151,7 +2128,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
                     ArtType.Thumbnail -> episode.editThumbnail(
                         anime,
-                        Injekt.get<LocalEpisodeThumbnailManager>(),
+                        localEpisodeThumbnailManager,
                         imageStream(),
                     )
                 }
@@ -2181,7 +2158,6 @@ class PlayerViewModel @JvmOverloads constructor(
         if (!trackPreferences.autoUpdateTrack.get()) return
 
         val anime = currentAnime.value ?: return
-        val context = Injekt.get<Application>()
 
         viewModelScope.launchNonCancellable {
             trackEpisode.await(context, anime.id, episode.episode_number.toDouble())
@@ -2261,7 +2237,6 @@ class PlayerViewModel @JvmOverloads constructor(
      */
     suspend fun aniSkipResponse(playerDuration: Int?): List<TimeStamp>? {
         val animeId = currentAnime.value?.id ?: return null
-        val trackerManager = Injekt.get<TrackerManager>()
         var malId: Long?
         val episodeNumber = currentEpisode.value?.episode_number?.toInt() ?: return null
         if (getTracks.await(animeId).isEmpty()) {
@@ -2310,12 +2285,14 @@ class PlayerViewModel @JvmOverloads constructor(
                 if (netflixStyle) {
                     // show a toast with the seconds before the skip
                     if (waitingSkipIntro == defaultWaitingTime) {
-                        activity.showToast(
-                            "Skip Intro: ${activity.stringResource(
-                                AYMR.strings.player_aniskip_dontskip_toast,
-                                chapter.name,
-                                waitingSkipIntro,
-                            )}",
+                        eventChannel.trySend(
+                            Event.ShowToast(
+                                "Skip Intro: ${context.stringResource(
+                                    AYMR.strings.player_aniskip_dontskip_toast,
+                                    chapter.name,
+                                    waitingSkipIntro,
+                                )}",
+                            ),
                         )
                     }
                     showSkipIntroButton(chapter, nextChapterPos, waitingSkipIntro)
@@ -2323,7 +2300,7 @@ class PlayerViewModel @JvmOverloads constructor(
                 } else if (autoSkip) {
                     seekToWithText(
                         seekValue = nextChapterPos.toInt(),
-                        text = activity.stringResource(AYMR.strings.player_intro_skipped, chapter.name),
+                        text = context.stringResource(AYMR.strings.player_intro_skipped, chapter.name),
                     )
                 } else {
                     updateSkipIntroButton(chapter.chapterType)
@@ -2337,9 +2314,9 @@ class PlayerViewModel @JvmOverloads constructor(
 
         _skipIntroText.update { _ ->
             skipButtonString?.let {
-                activity.stringResource(
+                context.stringResource(
                     AYMR.strings.player_skip_action,
-                    activity.stringResource(skipButtonString),
+                    context.stringResource(skipButtonString),
                 )
             }
         }
@@ -2348,11 +2325,11 @@ class PlayerViewModel @JvmOverloads constructor(
     private fun showSkipIntroButton(chapter: IndexedSegment, nextChapterPos: Float, waitingTime: Int) {
         if (waitingTime > -1) {
             if (waitingTime > 0) {
-                _skipIntroText.update { _ -> activity.stringResource(AYMR.strings.player_aniskip_dontskip) }
+                _skipIntroText.update { _ -> context.stringResource(AYMR.strings.player_aniskip_dontskip) }
             } else {
                 seekToWithText(
                     seekValue = nextChapterPos.toInt(),
-                    text = activity.stringResource(AYMR.strings.player_aniskip_skip, chapter.name),
+                    text = context.stringResource(AYMR.strings.player_aniskip_skip, chapter.name),
                 )
             }
         } else {
@@ -2373,7 +2350,7 @@ class PlayerViewModel @JvmOverloads constructor(
 
             seekToWithText(
                 seekValue = nextChapterPos.toInt(),
-                text = activity.stringResource(AYMR.strings.player_aniskip_skip, chapter.name),
+                text = context.stringResource(AYMR.strings.player_aniskip_skip, chapter.name),
             )
         }
     }
@@ -2392,6 +2369,10 @@ class PlayerViewModel @JvmOverloads constructor(
         data class SetArtResult(val result: SetAsArt, val artType: ArtType) : Event()
         data class SavedImage(val result: SaveImageResult) : Event()
         data class ShareImage(val uri: Uri, val seconds: String) : Event()
+        data class ShowToast(val text: String) : Event()
+        data class ChangeEpisode(val episodeId: Long, val autoPlay: Boolean) : Event()
+        data class SetVideo(val video: Video) : Event()
+        data class SetKeyboardVisibility(val visible: Boolean?) : Event()
     }
 }
 

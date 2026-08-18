@@ -6,10 +6,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.anime.MigrateAnimeSourceScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
@@ -23,8 +23,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 fun Screen.migrateAnimeSourceTab(): TabContent {
     val uriHandler = LocalUriHandler.current
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { MigrateAnimeSourceScreenModel() }
-    val state by screenModel.state.collectAsStateWithLifecycle()
+    val viewModel = metroViewModel<MigrateAnimeSourceViewModel>()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     return TabContent(
         titleRes = AYMR.strings.label_migration_anime,
@@ -44,8 +44,8 @@ fun Screen.migrateAnimeSourceTab(): TabContent {
                 onClickItem = { source ->
                     navigator.push(MigrateAnimeScreen(source.id))
                 },
-                onToggleSortingDirection = screenModel::toggleSortingDirection,
-                onToggleSortingMode = screenModel::toggleSortingMode,
+                onToggleSortingDirection = viewModel::toggleSortingDirection,
+                onToggleSortingMode = viewModel::toggleSortingMode,
             )
         },
     )

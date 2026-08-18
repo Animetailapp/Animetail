@@ -3,11 +3,10 @@ package eu.kanade.tachiyomi.ui.browse.anime.extension.details
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.browse.anime.AnimeExtensionDetailsScreen
 import eu.kanade.presentation.util.Screen
 import tachiyomi.i18n.MR
@@ -20,36 +19,33 @@ data class AnimeExtensionDetailsScreen(
 
     @Composable
     override fun Content() {
-        val context = LocalContext.current
-        val screenModel = rememberScreenModel {
-            AnimeExtensionDetailsScreenModel(
-                pkgName = pkgName,
-                context = context,
-            )
-        }
-        val state by screenModel.state.collectAsStateWithLifecycle()
+        val viewModel =
+            assistedMetroViewModel<AnimeExtensionDetailsViewModel, AnimeExtensionDetailsViewModel.Factory> {
+                create(pkgName = pkgName)
+            }
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
         val navigator = LocalNavigator.currentOrThrow
 
         when (val state = state) {
-            AnimeExtensionDetailsScreenModel.State.Loading -> LoadingScreen()
+            AnimeExtensionDetailsViewModel.State.Loading -> LoadingScreen()
 
-            AnimeExtensionDetailsScreenModel.State.Uninstalled -> {
+            AnimeExtensionDetailsViewModel.State.Uninstalled -> {
                 LaunchedEffect(Unit) { navigator.pop() }
                 EmptyScreen(MR.strings.empty_screen)
             }
 
-            is AnimeExtensionDetailsScreenModel.State.Success -> {
+            is AnimeExtensionDetailsViewModel.State.Success -> {
                 AnimeExtensionDetailsScreen(
                     navigateUp = navigator::pop,
                     state = state,
                     onClickSourcePreferences = { navigator.push(AnimeSourcePreferencesScreen(it)) },
-                    onClickEnableAll = { screenModel.toggleSources(true) },
-                    onClickDisableAll = { screenModel.toggleSources(false) },
-                    onClickClearCookies = screenModel::clearCookies,
-                    onClickUninstall = screenModel::uninstallExtension,
-                    onClickSource = screenModel::toggleSource,
-                    onClickIncognito = screenModel::toggleIncognito,
+                    onClickEnableAll = { viewModel.toggleSources(true) },
+                    onClickDisableAll = { viewModel.toggleSources(false) },
+                    onClickClearCookies = viewModel::clearCookies,
+                    onClickUninstall = viewModel::uninstallExtension,
+                    onClickSource = viewModel::toggleSource,
+                    onClickIncognito = viewModel::toggleIncognito,
                 )
             }
         }

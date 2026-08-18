@@ -17,6 +17,13 @@ import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.toDomainAnime
@@ -81,55 +88,50 @@ import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 import java.time.Instant
 import eu.kanade.tachiyomi.animesource.model.AnimeFilter as AnimeSourceModelFilter
 
+@AssistedInject
 class BrowseAnimeSourceViewModel(
-    private val sourceId: Long,
-    listingQuery: String?,
+    @Assisted private val sourceId: Long,
+    @Assisted listingQuery: String?,
     // SY -->
-    private val filtersJson: String? = null,
-    private val savedSearch: Long? = null,
+    @Assisted private val filtersJson: String? = null,
+    @Assisted private val savedSearch: Long? = null,
     // SY <--
-    sourceManager: AnimeSourceManager = Injekt.get(),
-    sourcePreferences: SourcePreferences = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val coverCache: AnimeCoverCache = Injekt.get(),
-    private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
-    private val getRemoteAnime: GetRemoteAnime = Injekt.get(),
-    private val getDuplicateAnimelibAnime: GetDuplicateLibraryAnime = Injekt.get(),
-    private val getCategories: GetAnimeCategories = Injekt.get(),
-    private val setAnimeCategories: SetAnimeCategories = Injekt.get(),
-    private val setAnimeDefaultEpisodeFlags: SetAnimeDefaultEpisodeFlags = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
-    private val addTracks: AddAnimeTracks = Injekt.get(),
-    getIncognitoState: GetAnimeIncognitoState = Injekt.get(),
+    sourceManager: AnimeSourceManager,
+    sourcePreferences: SourcePreferences,
+    private val libraryPreferences: LibraryPreferences,
+    private val coverCache: AnimeCoverCache,
+    private val backgroundCache: AnimeBackgroundCache,
+    private val getRemoteAnime: GetRemoteAnime,
+    private val getDuplicateAnimelibAnime: GetDuplicateLibraryAnime,
+    private val getCategories: GetAnimeCategories,
+    private val setAnimeCategories: SetAnimeCategories,
+    private val setAnimeDefaultEpisodeFlags: SetAnimeDefaultEpisodeFlags,
+    private val getAnime: GetAnime,
+    private val networkToLocalAnime: NetworkToLocalAnime,
+    private val updateAnime: UpdateAnime,
+    private val addTracks: AddAnimeTracks,
+    getIncognitoState: GetAnimeIncognitoState,
     // SY -->
-    uiPreferences: UiPreferences = Injekt.get(),
-    private val deleteSavedSearchById: DeleteSavedSearchById = Injekt.get(),
-    private val insertSavedSearch: InsertSavedSearch = Injekt.get(),
-    private val getExhSavedSearch: GetExhSavedSearch = Injekt.get(),
+    uiPreferences: UiPreferences,
+    private val deleteSavedSearchById: DeleteSavedSearchById,
+    private val insertSavedSearch: InsertSavedSearch,
+    private val getExhSavedSearch: GetExhSavedSearch,
     // SY <--
 ) : ViewModel() {
 
     val state: StateFlow<BrowseAnimeSourceViewModel.State>
         field = MutableStateFlow<BrowseAnimeSourceViewModel.State>(State(Listing.valueOf(listingQuery)))
 
-    companion object {
-        val SOURCE_ID_KEY = CreationExtras.Key<Long>()
-        val LISTING_QUERY_KEY = CreationExtras.Key<String?>()
-        val FILTERS_KEY = CreationExtras.Key<String?>()
-        val SAVED_SEARCH_KEY = CreationExtras.Key<Long?>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                BrowseAnimeSourceViewModel(
-                    sourceId = this[SOURCE_ID_KEY]!!,
-                    listingQuery = this[LISTING_QUERY_KEY],
-                    filtersJson = this[FILTERS_KEY],
-                    savedSearch = this[SAVED_SEARCH_KEY],
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(
+            sourceId: Long,
+            listingQuery: String?,
+            filtersJson: String? = null,
+            savedSearch: Long? = null,
+        ): BrowseAnimeSourceViewModel
     }
 
     var displayMode by sourcePreferences.sourceDisplayMode.asState(viewModelScope)

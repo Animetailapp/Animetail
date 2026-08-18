@@ -6,6 +6,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.toSAnime
 import eu.kanade.domain.items.episode.interactor.SyncEpisodesWithSource
@@ -41,38 +48,29 @@ import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@AssistedInject
 class AnimeMigrationListViewModel(
-    animeIds: Collection<Long>,
-    extraSearchQuery: String?,
-    private val preferences: SourcePreferences = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
-    private val syncEpisodesWithSource: SyncEpisodesWithSource = Injekt.get(),
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
-    private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
-    private val migrateAnime: MigrateAnimeUseCase = Injekt.get(),
+    @Assisted animeIds: Collection<Long>,
+    @Assisted extraSearchQuery: String?,
+    private val preferences: SourcePreferences,
+    private val sourceManager: AnimeSourceManager,
+    private val getAnime: GetAnime,
+    private val updateAnime: UpdateAnime,
+    private val syncEpisodesWithSource: SyncEpisodesWithSource,
+    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val networkToLocalAnime: NetworkToLocalAnime,
+    private val migrateAnime: MigrateAnimeUseCase,
 ) : ViewModel() {
 
     val state: StateFlow<AnimeMigrationListViewModel.State>
         field = MutableStateFlow<AnimeMigrationListViewModel.State>(State())
 
-    companion object {
-        val ANIME_IDS_KEY = CreationExtras.Key<Collection<Long>>()
-
-        val EXTRA_SEARCH_QUERY_KEY = CreationExtras.Key<String?>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                AnimeMigrationListViewModel(
-                    animeIds = get(ANIME_IDS_KEY)!!,
-                    extraSearchQuery = get(EXTRA_SEARCH_QUERY_KEY),
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(animeIds: Collection<Long>, extraSearchQuery: String?): AnimeMigrationListViewModel
     }
 
     private val smartSearchEngine = SmartAnimeSourceSearchEngine(extraSearchQuery)

@@ -51,6 +51,7 @@ fun ComposeView.setComposeContent(
             CompositionLocalProvider(
                 LocalTextStyle provides MaterialTheme.typography.bodySmall,
                 LocalContentColor provides MaterialTheme.colorScheme.onBackground,
+                LocalMetroViewModelFactory provides context.appGraph.viewModelFactory,
             ) {
                 content()
             }

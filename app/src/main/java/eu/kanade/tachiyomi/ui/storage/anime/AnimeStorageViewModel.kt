@@ -1,6 +1,12 @@
 package eu.kanade.tachiyomi.ui.storage.anime
 
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.ui.storage.CommonStorageViewModel
@@ -9,17 +15,20 @@ import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.anime.interactor.GetVisibleAnimeCategories
 import tachiyomi.domain.entries.anime.interactor.GetLibraryAnime
 import tachiyomi.domain.library.anime.LibraryAnime
+import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class AnimeStorageViewModel(
-    downloadCache: AnimeDownloadCache = Injekt.get(),
-    private val getLibraries: GetLibraryAnime = Injekt.get(),
-    getCategories: GetAnimeCategories = Injekt.get(),
-    getVisibleCategories: GetVisibleAnimeCategories = Injekt.get(),
-    private val downloadManager: AnimeDownloadManager = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
+    downloadCache: AnimeDownloadCache,
+    private val getLibraries: GetLibraryAnime,
+    getCategories: GetAnimeCategories,
+    getVisibleCategories: GetVisibleAnimeCategories,
+    private val downloadManager: AnimeDownloadManager,
+    private val sourceManager: AnimeSourceManager,
+    libraryPreferences: LibraryPreferences,
 ) : CommonStorageViewModel<LibraryAnime>(
     downloadCacheChanges = downloadCache.changes,
     downloadCacheIsInitializing = downloadCache.isInitializing,
@@ -37,6 +46,7 @@ class AnimeStorageViewModel(
     getCategoryId = { category },
     getTitle = { anime.title },
     getThumbnail = { anime.thumbnailUrl },
+    libraryPreferences = libraryPreferences,
 ) {
     override fun deleteEntry(id: Long) {
         viewModelScope.launchNonCancellable {

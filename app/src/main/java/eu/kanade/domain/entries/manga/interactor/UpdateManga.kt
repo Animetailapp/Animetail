@@ -21,8 +21,9 @@ import kotlin.time.Clock
 class UpdateManga(
     private val mangaRepository: MangaRepository,
     private val mangaFetchInterval: MangaFetchInterval,
+    private val libraryPreferences: LibraryPreferences,
+    private val coverCache: MangaCoverCache,
 ) {
-    private val libraryPreferences: LibraryPreferences = Injekt.get()
 
     suspend fun await(mangaUpdate: MangaUpdate): Boolean {
         return mangaRepository.updateManga(mangaUpdate)
@@ -36,7 +37,7 @@ class UpdateManga(
         localManga: Manga,
         remoteManga: SManga,
         manualFetch: Boolean,
-        coverCache: MangaCoverCache = Injekt.get(),
+        coverCache: MangaCoverCache = this.coverCache,
     ): Boolean {
         val remoteTitle = try {
             remoteManga.title

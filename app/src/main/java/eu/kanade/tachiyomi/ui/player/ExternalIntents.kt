@@ -36,6 +36,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withIOContext
@@ -58,13 +59,13 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import java.io.File
 import java.util.Date
 
 class ExternalIntents {
 
-    private val scope: CoroutineScope by injectLazy()
+    private val appGraph by lazy { Injekt.get<Application>().appGraph }
+    private val scope by lazy { appGraph.coroutineScope }
 
     /**
      * The common variables
@@ -483,19 +484,19 @@ class ExternalIntents {
     }
 
     // List of all the required Injectable classes
-    private val upsertHistory: UpsertAnimeHistory = Injekt.get()
-    private val updateEpisode: UpdateEpisode = Injekt.get()
-    private val getAnime: GetAnime = Injekt.get()
-    private val sourceManager: AnimeSourceManager = Injekt.get()
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get()
-    private val getTracks: GetAnimeTracks = Injekt.get()
-    private val insertTrack: InsertAnimeTrack = Injekt.get()
-    private val downloadManager: AnimeDownloadManager by injectLazy()
-    private val delayedTrackingStore: DelayedAnimeTrackingStore = Injekt.get()
-    private val playerPreferences: PlayerPreferences = Injekt.get()
-    private val downloadPreferences: DownloadPreferences = Injekt.get()
-    private val trackPreferences: TrackPreferences = Injekt.get()
-    private val basePreferences: BasePreferences by injectLazy()
+    private val upsertHistory by lazy { appGraph.upsertAnimeHistory }
+    private val updateEpisode by lazy { appGraph.updateEpisode }
+    private val getAnime by lazy { appGraph.getAnime }
+    private val sourceManager by lazy { appGraph.animeSourceManager }
+    private val getEpisodesByAnimeId by lazy { appGraph.getEpisodesByAnimeId }
+    private val getTracks by lazy { appGraph.getAnimeTracks }
+    private val insertTrack by lazy { appGraph.insertAnimeTrack }
+    private val downloadManager by lazy { appGraph.animeDownloadManager }
+    private val delayedTrackingStore by lazy { appGraph.delayedAnimeTrackingStore }
+    private val playerPreferences by lazy { appGraph.playerPreferences }
+    private val downloadPreferences by lazy { appGraph.downloadPreferences }
+    private val trackPreferences by lazy { appGraph.trackPreferences }
+    private val basePreferences by lazy { appGraph.basePreferences }
 
     /**
      * Saves this episode's last seen history if incognito mode isn't on.
@@ -588,7 +589,7 @@ class ExternalIntents {
     private suspend fun updateTrackEpisodeSeen(episodeNumber: Double, anime: Anime) {
         if (!trackPreferences.autoUpdateTrack.get()) return
 
-        val trackerManager = Injekt.get<TrackerManager>()
+        val trackerManager = appGraph.trackerManager
         val context = Injekt.get<Application>()
 
         withIOContext {
@@ -643,8 +644,7 @@ class ExternalIntents {
     }
 
     companion object {
-
-        val externalIntents: ExternalIntents by injectLazy()
+        val externalIntents: ExternalIntents by lazy { ExternalIntents() }
 
         /**
          * Used to direct the [Intent] of a chosen episode to an external player.

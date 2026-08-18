@@ -444,7 +444,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
     }
 
     /**
-     * Updates the chapters for the given manga and adds them to the database.
+     * Updates the chapters    for the given manga and adds them to the database.
      *
      * @param manga the manga to update.
      * @return a pair of the inserted and removed chapters.

@@ -22,7 +22,7 @@ import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
-import eu.kanade.tachiyomi.ui.browse.anime.extension.AnimeExtensionsScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.extension.AnimeExtensionsViewModel
 import eu.kanade.tachiyomi.ui.browse.anime.extension.animeExtensionsTab
 import eu.kanade.tachiyomi.ui.browse.anime.migration.sources.migrateAnimeSourceTab
 import eu.kanade.tachiyomi.ui.browse.anime.source.animeSourcesTab
@@ -91,10 +91,10 @@ data object BrowseTab : Tab {
         val mangaExtensionsViewModel = metroViewModel<MangaExtensionsViewModel>()
         val mangaExtensionsSearchQuery by mangaExtensionsViewModel.searchQuery.collectAsStateWithLifecycle()
 
-        val animeExtensionsScreenModel = rememberScreenModel { AnimeExtensionsScreenModel() }
-        val animeExtensionsSearchQuery by animeExtensionsScreenModel.searchQuery.collectAsStateWithLifecycle()
+        val animeExtensionsViewModel = metroViewModel<AnimeExtensionsViewModel>()
+        val animeExtensionsSearchQuery by animeExtensionsViewModel.searchQuery.collectAsStateWithLifecycle()
 
-        val animeExtensionsTabContent = animeExtensionsTab(animeExtensionsScreenModel)
+        val animeExtensionsTabContent = animeExtensionsTab(animeExtensionsViewModel)
         val mangaExtensionsTabContent = mangaExtensionsTab(mangaExtensionsViewModel)
 
         // KMK -->
@@ -160,7 +160,7 @@ data object BrowseTab : Tab {
             mangaSearchQuery = mangaExtensionsSearchQuery,
             onChangeMangaSearchQuery = mangaExtensionsViewModel::search,
             animeSearchQuery = animeExtensionsSearchQuery,
-            onChangeAnimeSearchQuery = animeExtensionsScreenModel::search,
+            onChangeAnimeSearchQuery = animeExtensionsViewModel::search,
             animeExtensionsTabIndex = animeExtensionsTabIndex,
             mangaExtensionsTabIndex = mangaExtensionsTabIndex,
             // KMK -->

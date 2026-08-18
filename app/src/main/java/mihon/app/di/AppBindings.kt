@@ -136,5 +136,10 @@ object AppBindings {
 
     @Provides
     @SingleIn(AppScope::class)
+    fun providesFilterSerializer(): xyz.nulldev.ts.api.http.serializer.FilterSerializer =
+        xyz.nulldev.ts.api.http.serializer.FilterSerializer()
+
+    @Provides
+    @SingleIn(AppScope::class)
     fun providesCoroutineScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }

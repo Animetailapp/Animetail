@@ -1,8 +1,13 @@
 package eu.kanade.tachiyomi.ui.browse.anime.extension
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.domain.extension.anime.interactor.GetAnimeExtensionLanguages
 import eu.kanade.domain.source.interactor.ToggleLanguage
 import eu.kanade.domain.source.service.SourcePreferences
@@ -17,23 +22,21 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
-class AnimeExtensionFilterScreenModel(
-    private val preferences: SourcePreferences = Injekt.get(),
-    private val getExtensionLanguages: GetAnimeExtensionLanguages = Injekt.get(),
-    private val toggleLanguage: ToggleLanguage = Injekt.get(),
-) : ScreenModel {
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+class AnimeExtensionFilterViewModel(
+    private val preferences: SourcePreferences,
+    private val getExtensionLanguages: GetAnimeExtensionLanguages,
+    private val toggleLanguage: ToggleLanguage,
+) : ViewModel() {
 
     private val _events: Channel<AnimeExtensionFilterEvent> = Channel()
     val events: Flow<AnimeExtensionFilterEvent> = _events.receiveAsFlow()
@@ -51,7 +54,7 @@ class AnimeExtensionFilterScreenModel(
             logcat(LogPriority.ERROR, throwable)
             _events.send(AnimeExtensionFilterEvent.FailedFetchingLanguages)
         }
-        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), AnimeExtensionFilterState.Loading)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), AnimeExtensionFilterState.Loading)
 
     fun toggle(language: String) {
         toggleLanguage.await(language)
@@ -72,7 +75,6 @@ sealed interface AnimeExtensionFilterState {
         val languages: ImmutableList<String>,
         val enabledLanguages: ImmutableSet<String> = persistentSetOf(),
     ) : AnimeExtensionFilterState {
-
         val isEmpty: Boolean
             get() = languages.isEmpty()
     }

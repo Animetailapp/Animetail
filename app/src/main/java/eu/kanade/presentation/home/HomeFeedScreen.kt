@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import coil3.compose.AsyncImage
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.tachiyomi.ui.browse.BrowseTab
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
 import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearchScreen
@@ -64,6 +65,8 @@ import eu.kanade.tachiyomi.ui.updates.UpdatesTab
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import tachiyomi.domain.entries.anime.model.Anime
+import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.PullRefresh
 import tachiyomi.presentation.core.i18n.stringResource
@@ -75,13 +78,13 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeFeedScreen(
-    screenModel: HomeFeedScreenModel? = null,
+    screenModel: HomeFeedScreenModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val navigator = LocalNavigator.current
-    val model = screenModel ?: remember { HomeFeedScreenModel() }
+    val model = screenModel
     val state by model.state.collectAsState()
     var selectedMediaType by remember { mutableStateOf(MediaType.ALL) }
     var showSettingsDialog by remember { mutableStateOf(false) }

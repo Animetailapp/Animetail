@@ -5,6 +5,11 @@ import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapIndexedNotNull
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.util.insertSeparatorsReversed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -31,15 +36,16 @@ import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.upcoming.service.UpcomingPreferences
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class UpcomingAnimeViewModel(
-    private val getUpcomingAnime: GetUpcomingAnime = Injekt.get(),
-    val getCategories: GetAnimeCategories = Injekt.get(),
-    val upcomingPreferences: UpcomingPreferences = Injekt.get(),
+    private val getUpcomingAnime: GetUpcomingAnime,
+    val getCategories: GetAnimeCategories,
+    val upcomingPreferences: UpcomingPreferences,
 ) : ViewModel() {
 
     val excludedCategories = upcomingPreferences.animeFilterExcludedCategories

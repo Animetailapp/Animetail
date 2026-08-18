@@ -20,6 +20,8 @@ import java.time.ZonedDateTime
 class UpdateAnime(
     private val animeRepository: AnimeRepository,
     private val animeFetchInterval: AnimeFetchInterval,
+    private val coverCache: AnimeCoverCache,
+    private val backgroundCache: AnimeBackgroundCache,
 ) {
 
     suspend fun await(animeUpdate: AnimeUpdate): Boolean {
@@ -34,8 +36,8 @@ class UpdateAnime(
         localAnime: Anime,
         remoteAnime: SAnime,
         manualFetch: Boolean,
-        coverCache: AnimeCoverCache = Injekt.get(),
-        backgroundCache: AnimeBackgroundCache = Injekt.get(),
+        coverCache: AnimeCoverCache = this.coverCache,
+        backgroundCache: AnimeBackgroundCache = this.backgroundCache,
     ): Boolean {
         val remoteTitle = try {
             remoteAnime.title

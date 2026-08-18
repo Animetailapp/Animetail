@@ -199,11 +199,8 @@ class MainActivity : BaseActivity() {
     @Inject lateinit var mpvConfig: MpvConfig
     // <-- AM
 
-    init {
-        registerSecureActivity(this)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
+        registerSecureActivity(this)
         graph.inject(this)
         val isLaunch = savedInstanceState == null
 

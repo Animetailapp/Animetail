@@ -27,12 +27,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 fun animeExtensionsTab(
-    extensionsScreenModel: AnimeExtensionsScreenModel,
+    extensionsViewModel: AnimeExtensionsViewModel,
 ): TabContent {
     val navigator = LocalNavigator.currentOrThrow
     val context = LocalContext.current
 
-    val updatesCount by extensionsScreenModel.updatesCount.collectAsStateWithLifecycle()
+    val updatesCount by extensionsViewModel.updatesCount.collectAsStateWithLifecycle()
     var privateExtensionToUninstall by remember { mutableStateOf<AnimeExtension?>(null) }
 
     return TabContent(
@@ -54,7 +54,7 @@ fun animeExtensionsTab(
             ),
         ),
         content = { contentPadding, _ ->
-            val state by extensionsScreenModel.state.collectAsStateWithLifecycle()
+            val state by extensionsViewModel.state.collectAsStateWithLifecycle()
 
             AnimeExtensionScreen(
                 state = state,
@@ -62,21 +62,21 @@ fun animeExtensionsTab(
                 searchQuery = state.searchQuery,
                 onLongClickItem = { extension ->
                     when (extension) {
-                        is AnimeExtension.Available -> extensionsScreenModel.installExtension(
+                        is AnimeExtension.Available -> extensionsViewModel.installExtension(
                             extension,
                         )
 
                         else -> {
                             if (context.isPackageInstalled(extension.pkgName)) {
-                                extensionsScreenModel.uninstallExtension(extension)
+                                extensionsViewModel.uninstallExtension(extension)
                             } else {
                                 privateExtensionToUninstall = extension
                             }
                         }
                     }
                 },
-                onClickItemCancel = extensionsScreenModel::cancelInstallUpdateExtension,
-                onClickUpdateAll = extensionsScreenModel::updateAllExtensions,
+                onClickItemCancel = extensionsViewModel::cancelInstallUpdateExtension,
+                onClickUpdateAll = extensionsViewModel::updateAllExtensions,
                 onOpenWebView = { extension ->
                     extension.sources.getOrNull(0)?.let {
                         navigator.push(
@@ -88,19 +88,19 @@ fun animeExtensionsTab(
                         )
                     }
                 },
-                onInstallExtension = extensionsScreenModel::installExtension,
+                onInstallExtension = extensionsViewModel::installExtension,
                 onOpenExtension = { navigator.push(AnimeExtensionDetailsScreen(it.pkgName)) },
-                onTrustExtension = { extensionsScreenModel.trustExtension(it) },
-                onUninstallExtension = { extensionsScreenModel.uninstallExtension(it) },
-                onUpdateExtension = extensionsScreenModel::updateExtension,
-                onRefresh = extensionsScreenModel::findAvailableExtensions,
+                onTrustExtension = { extensionsViewModel.trustExtension(it) },
+                onUninstallExtension = { extensionsViewModel.uninstallExtension(it) },
+                onUpdateExtension = extensionsViewModel::updateExtension,
+                onRefresh = extensionsViewModel::findAvailableExtensions,
             )
 
             privateExtensionToUninstall?.let { extension ->
                 AnimeExtensionUninstallConfirmation(
                     extensionName = extension.name,
                     onClickConfirm = {
-                        extensionsScreenModel.uninstallExtension(extension)
+                        extensionsViewModel.uninstallExtension(extension)
                     },
                     onDismissRequest = {
                         privateExtensionToUninstall = null

@@ -42,6 +42,7 @@ import android.util.Rational
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.ui.Modifier
@@ -60,6 +61,7 @@ import aniyomi.core.common.torrent.TorrentPreferences
 import aniyomi.core.common.torrent.TorrentServerApi
 import aniyomi.core.common.torrent.TorrentServerUtils
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.tachiyomi.animesource.model.ChapterType
@@ -94,12 +96,15 @@ import `is`.xyz.mpv.MPVNode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
+import mihon.app.di.AppGraph
+import mihon.core.metro.metroGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.launchIO
@@ -121,7 +126,8 @@ import kotlin.math.floor
 import kotlin.time.Duration.Companion.seconds
 
 class PlayerActivity : BaseActivity() {
-    private val viewModel by viewModels<PlayerViewModel>(factoryProducer = { PlayerViewModelProviderFactory(this) })
+    private val graph: AppGraph by lazy { metroGraph() }
+    private val viewModel by viewModels<PlayerViewModel> { graph.viewModelFactory }
     private val binding by lazy { PlayerLayoutBinding.inflate(layoutInflater) }
     private val playerObserver by lazy { PlayerObserver(this) }
     val player by lazy { binding.player }
@@ -132,15 +138,25 @@ class PlayerActivity : BaseActivity() {
     private var mediaSession: MediaSession? = null
     private val gesturePreferences: GesturePreferences by lazy { viewModel.gesturePreferences }
     private val playerPreferences: PlayerPreferences by lazy { viewModel.playerPreferences }
-    private val audioPreferences: AudioPreferences = Injekt.get<AudioPreferences>()
-    private val advancedPlayerPreferences: AdvancedPlayerPreferences = Injekt.get<AdvancedPlayerPreferences>()
-    private val networkPreferences: NetworkPreferences = Injekt.get<NetworkPreferences>()
-    private val subtitlePreferences: SubtitlePreferences = Injekt.get<SubtitlePreferences>()
-    val castManager: CastManager by lazy { CastManager(this, Injekt.get<PreferenceStore>()) }
-    private val storageManager: StorageManager = Injekt.get<StorageManager>()
-    private val torrentServerApi: TorrentServerApi = Injekt.get<TorrentServerApi>()
-    private val torrentServerUtils: TorrentServerUtils = Injekt.get<TorrentServerUtils>()
-    private val torrentPreferences: TorrentPreferences = Injekt.get<TorrentPreferences>()
+
+    @Inject private lateinit var audioPreferences: AudioPreferences
+
+    @Inject private lateinit var advancedPlayerPreferences: AdvancedPlayerPreferences
+
+    @Inject private lateinit var networkPreferences: NetworkPreferences
+
+    @Inject private lateinit var subtitlePreferences: SubtitlePreferences
+
+    @Inject private lateinit var preferenceStore: PreferenceStore
+    val castManager: CastManager by lazy { CastManager(this, preferenceStore) }
+
+    @Inject private lateinit var storageManager: StorageManager
+
+    @Inject private lateinit var torrentServerApi: TorrentServerApi
+
+    @Inject private lateinit var torrentServerUtils: TorrentServerUtils
+
+    @Inject private lateinit var torrentPreferences: TorrentPreferences
 
     private var audioFocusRequest: AudioFocusRequestCompat? = null
     private var restoreAudioFocus: () -> Unit = {}
@@ -197,7 +213,7 @@ class PlayerActivity : BaseActivity() {
     }
 
     // AM (CONNECTIONS) -->
-    private val connectionsPreferences: ConnectionsPreferences = Injekt.get()
+    @Inject private lateinit var connectionsPreferences: ConnectionsPreferences
     // <-- AM (CONNECTIONS)
 
     @SuppressLint("MissingSuperCall")
@@ -271,6 +287,7 @@ class PlayerActivity : BaseActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
+        graph.inject(this)
         enableEdgeToEdge()
         registerSecureActivity(this)
         super.onCreate(savedInstanceState)
@@ -303,9 +320,63 @@ class PlayerActivity : BaseActivity() {
                     is PlayerViewModel.Event.SetArtResult -> {
                         onSetAsArtResult(event.result, event.artType)
                     }
+
+                    is PlayerViewModel.Event.ShowToast -> {
+                        showToast(event.text)
+                    }
+
+                    is PlayerViewModel.Event.ChangeEpisode -> {
+                        changeEpisode(event.episodeId, event.autoPlay)
+                    }
+
+                    is PlayerViewModel.Event.SetVideo -> {
+                        setVideo(event.video)
+                    }
+
+                    is PlayerViewModel.Event.SetKeyboardVisibility -> {
+                        when (event.visible) {
+                            true -> showSoftwareKeyboard()
+
+                            false -> hideSoftwareKeyboard()
+
+                            null -> {
+                                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+                                if (imm?.isActive == true) {
+                                    hideSoftwareKeyboard()
+                                } else {
+                                    showSoftwareKeyboard()
+                                }
+                            }
+                        }
+                    }
                 }
             }
             .launchIn(lifecycleScope)
+
+        val showStatusBar = playerPreferences.showSystemStatusBar().get()
+        viewModel.controlsShown
+            .onEach { shown ->
+                if (shown && showStatusBar) {
+                    windowInsetsController.show(WindowInsetsCompat.Type.statusBars())
+                } else {
+                    windowInsetsController.hide(WindowInsetsCompat.Type.statusBars())
+                }
+            }
+            .launchIn(lifecycleScope)
+
+        viewModel.currentBrightness
+            .onEach { brightness ->
+                window.attributes = window.attributes.apply {
+                    screenBrightness = brightness.coerceIn(0f, 1f)
+                }
+            }
+            .launchIn(lifecycleScope)
+
+        playerPreferences.defaultPlayerOrientationType().changes()
+            .drop(1)
+            .onEach { setupPlayerOrientation() }
+            .launchIn(lifecycleScope)
+
         viewModel.viewModelScope.launchIO {
             // AM (DISCORD) -->
             updateDiscordRPC(exitingPlayer = false)
@@ -623,6 +694,18 @@ class PlayerActivity : BaseActivity() {
 
     fun showToast(message: String) {
         runOnUiThread { toast(message) }
+    }
+
+    fun showSoftwareKeyboard() {
+        val view = currentFocus ?: window.decorView
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    fun hideSoftwareKeyboard() {
+        val view = currentFocus ?: window.decorView
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     // A bunch of observers

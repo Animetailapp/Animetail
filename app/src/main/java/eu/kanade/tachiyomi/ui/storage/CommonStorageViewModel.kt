@@ -15,8 +15,6 @@ import kotlinx.coroutines.flow.update
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.library.service.LibraryPreferences
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.random.Random
 
 abstract class CommonStorageViewModel<T>(
@@ -30,7 +28,7 @@ abstract class CommonStorageViewModel<T>(
     private val getCategoryId: T.() -> Long,
     private val getTitle: T.() -> String,
     private val getThumbnail: T.() -> String?,
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
+    private val libraryPreferences: LibraryPreferences,
 ) : ViewModel() {
 
     val state: StateFlow<StorageScreenState>

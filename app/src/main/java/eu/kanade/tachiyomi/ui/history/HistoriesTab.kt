@@ -10,11 +10,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.NavStyle
@@ -72,13 +72,13 @@ data object HistoriesTab : Tab {
         val context = LocalContext.current
         val fromMore = currentNavigationStyle() == NavStyle.MOVE_HISTORY_TO_MORE
         // Hoisted for history tab's search bar
-        val mangaHistoryViewModel = viewModel<MangaHistoryViewModel>()
+        val mangaHistoryViewModel = metroViewModel<MangaHistoryViewModel>()
         val mangaHistoryState by mangaHistoryViewModel.state.collectAsStateWithLifecycle()
         val mangaSearchQuery = mangaHistoryState.searchQuery
         // KMK -->
         val feedScreenModel = rememberScreenModel { FeedScreenModel() }
         // KMK <--
-        val animeHistoryViewModel = viewModel<AnimeHistoryViewModel>()
+        val animeHistoryViewModel = metroViewModel<AnimeHistoryViewModel>()
         val animeHistoryState by animeHistoryViewModel.state.collectAsStateWithLifecycle()
         val animeSearchQuery = animeHistoryState.searchQuery
 

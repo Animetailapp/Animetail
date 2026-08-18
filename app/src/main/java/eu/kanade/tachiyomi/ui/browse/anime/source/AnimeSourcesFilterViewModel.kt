@@ -1,8 +1,13 @@
 package eu.kanade.tachiyomi.ui.browse.anime.source
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.domain.source.anime.interactor.GetLanguagesWithAnimeSources
 import eu.kanade.domain.source.anime.interactor.ToggleAnimeSource
 import eu.kanade.domain.source.interactor.ToggleLanguage
@@ -11,23 +16,21 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import tachiyomi.domain.source.anime.model.AnimeSource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.SortedMap
 import kotlin.time.Duration.Companion.seconds
 
-class AnimeSourcesFilterScreenModel(
-    private val preferences: SourcePreferences = Injekt.get(),
-    private val getLanguagesWithSources: GetLanguagesWithAnimeSources = Injekt.get(),
-    private val toggleSource: ToggleAnimeSource = Injekt.get(),
-    private val toggleLanguage: ToggleLanguage = Injekt.get(),
-) : ScreenModel {
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+class AnimeSourcesFilterViewModel(
+    private val preferences: SourcePreferences,
+    private val getLanguagesWithSources: GetLanguagesWithAnimeSources,
+    private val toggleSource: ToggleAnimeSource,
+    private val toggleLanguage: ToggleLanguage,
+) : ViewModel() {
 
     val state: StateFlow<State> = combine(
         getLanguagesWithSources.subscribe(),
@@ -41,7 +44,7 @@ class AnimeSourcesFilterScreenModel(
         )
     }
         .catch<State> { throwable -> emit(State.Error(throwable = throwable)) }
-        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), State.Loading)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State.Loading)
 
     fun toggleSource(source: AnimeSource) {
         toggleSource.await(source)
@@ -52,7 +55,6 @@ class AnimeSourcesFilterScreenModel(
     }
 
     sealed interface State {
-
         @Immutable
         data object Loading : State
 
@@ -67,7 +69,6 @@ class AnimeSourcesFilterScreenModel(
             val enabledLanguages: Set<String>,
             val disabledSources: Set<String>,
         ) : State {
-
             val isEmpty: Boolean
                 get() = items.isEmpty()
         }

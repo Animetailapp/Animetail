@@ -1,10 +1,15 @@
 package eu.kanade.tachiyomi.ui.browse.anime.extension
 
-import android.app.Application
+import android.content.Context
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.extension.anime.interactor.GetAnimeExtensionsByType
 import eu.kanade.domain.source.service.SourcePreferences
@@ -33,20 +38,20 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
-class AnimeExtensionsScreenModel(
-    private val preferences: SourcePreferences = Injekt.get(),
-    basePreferences: BasePreferences = Injekt.get(),
-    private val extensionManager: AnimeExtensionManager = Injekt.get(),
-    private val getExtensions: GetAnimeExtensionsByType = Injekt.get(),
-) : ScreenModel {
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+class AnimeExtensionsViewModel(
+    private val context: Context,
+    private val preferences: SourcePreferences,
+    basePreferences: BasePreferences,
+    private val extensionManager: AnimeExtensionManager,
+    private val getExtensions: GetAnimeExtensionsByType,
+) : ViewModel() {
 
     private val currentDownloads = MutableStateFlow<Map<String, InstallStep>>(hashMapOf())
-
-    private val context = Injekt.get<Application>()
 
     // Public so BrowseTab's search bar can observe it without subscribing to the whole state.
     val searchQuery: StateFlow<String?>
@@ -54,7 +59,7 @@ class AnimeExtensionsScreenModel(
 
     // Public so the tab badge can observe it without subscribing to the whole state.
     val updatesCount = preferences.animeExtensionUpdatesCount.changes()
-        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), 0)
 
     private val isRefreshing = MutableStateFlow(false)
 
@@ -96,7 +101,7 @@ class AnimeExtensionsScreenModel(
         }
     }
         .flowOn(Dispatchers.IO)
-        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), null)
 
     val state: StateFlow<State> = combine(
         items,
@@ -114,10 +119,10 @@ class AnimeExtensionsScreenModel(
             searchQuery = searchQuery,
         )
     }
-        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
 
     init {
-        screenModelScope.launchIO { findAvailableExtensions() }
+        viewModelScope.launchIO { findAvailableExtensions() }
     }
 
     fun searchQueryPredicate(query: String): (AnimeExtension) -> Boolean {
@@ -155,7 +160,7 @@ class AnimeExtensionsScreenModel(
     }
 
     fun updateAllExtensions() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             state.value.items.values.flatten()
                 .map { it.extension }
                 .filterIsInstance<AnimeExtension.Installed>()
@@ -165,13 +170,13 @@ class AnimeExtensionsScreenModel(
     }
 
     fun installExtension(extension: AnimeExtension.Available) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             extensionManager.installExtension(extension).collectToInstallUpdate(extension)
         }
     }
 
     fun updateExtension(extension: AnimeExtension.Installed) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             extensionManager.updateExtension(extension).collectToInstallUpdate(extension)
         }
     }
@@ -199,7 +204,7 @@ class AnimeExtensionsScreenModel(
     }
 
     fun findAvailableExtensions() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             isRefreshing.update { true }
 
             extensionManager.findAvailableExtensions()
@@ -212,7 +217,7 @@ class AnimeExtensionsScreenModel(
     }
 
     fun trustExtension(extension: AnimeExtension.Untrusted) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             extensionManager.trust(extension)
         }
     }

@@ -6,18 +6,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.home.HomeFeedScreen
 import eu.kanade.presentation.util.Tab
 import kotlinx.coroutines.channels.Channel
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 data object HomeTab : Tab {
     private fun readResolve(): Any = HomeTab
@@ -40,7 +40,8 @@ data object HomeTab : Tab {
 
     @Composable
     override fun isEnabled(): Boolean {
-        val uiPreferences = remember { Injekt.get<UiPreferences>() }
+        val context = LocalContext.current
+        val uiPreferences = remember { context.appGraph.uiPreferences }
         val showHomeTab by uiPreferences.showHomeTab.collectAsState()
         return showHomeTab
     }
@@ -51,7 +52,7 @@ data object HomeTab : Tab {
 
     @Composable
     override fun Content() {
-        val screenModel = rememberScreenModel { HomeFeedScreenModel() }
+        val screenModel = metroViewModel<HomeFeedScreenModel>()
         HomeFeedScreen(screenModel = screenModel)
     }
 }

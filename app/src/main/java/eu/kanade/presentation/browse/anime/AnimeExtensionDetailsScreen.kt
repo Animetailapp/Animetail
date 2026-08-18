@@ -52,7 +52,7 @@ import eu.kanade.presentation.more.settings.widget.TrailingWidgetBuffer
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
-import eu.kanade.tachiyomi.ui.browse.anime.extension.details.AnimeExtensionDetailsScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.extension.details.AnimeExtensionDetailsViewModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.collections.immutable.ImmutableList
@@ -66,7 +66,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Composable
 fun AnimeExtensionDetailsScreen(
     navigateUp: () -> Unit,
-    state: AnimeExtensionDetailsScreenModel.State.Success,
+    state: AnimeExtensionDetailsViewModel.State.Success,
     onClickSourcePreferences: (sourceId: Long) -> Unit,
     onClickEnableAll: () -> Unit,
     onClickDisableAll: () -> Unit,

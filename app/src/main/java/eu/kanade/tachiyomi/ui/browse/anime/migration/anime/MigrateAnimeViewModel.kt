@@ -1,8 +1,15 @@
 package eu.kanade.tachiyomi.ui.browse.anime.migration.anime
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -15,28 +22,32 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.anime.interactor.GetAnimeFavorites
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
-class MigrateAnimeScreenModel(
-    private val sourceId: Long,
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val getFavorites: GetAnimeFavorites = Injekt.get(),
-) : ScreenModel {
+@AssistedInject
+class MigrateAnimeViewModel(
+    @Assisted private val sourceId: Long,
+    private val sourceManager: AnimeSourceManager,
+    private val getFavorites: GetAnimeFavorites,
+) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(sourceId: Long): MigrateAnimeViewModel
+    }
 
     private val _events: Channel<MigrationAnimeEvent> = Channel()
     val events: Flow<MigrationAnimeEvent> = _events.receiveAsFlow()
@@ -61,10 +72,14 @@ class MigrateAnimeScreenModel(
         favorites,
         selection,
     ) { titleList, selection ->
-        State(source = source, selectedAnimeIds = selection, titleList = titleList)
+        State(
+            source = source,
+            selectedAnimeIds = selection,
+            titleList = titleList,
+        )
     }
         .flowOn(Dispatchers.IO)
-        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
 
     fun toggleSelection(anime: Anime) {
         selection.update { selection ->
@@ -80,6 +95,13 @@ class MigrateAnimeScreenModel(
         selection.update { state.value.titles.map { it.id }.toSet() }
     }
 
+    fun invertSelection() {
+        selection.update {
+            val allAnimeIds = state.value.titles.map { it.id }.toSet()
+            allAnimeIds - it
+        }
+    }
+
     fun clearSelection() {
         selection.update { emptySet() }
     }
@@ -87,12 +109,11 @@ class MigrateAnimeScreenModel(
     @Immutable
     data class State(
         val source: AnimeSource? = null,
-        private val titleList: ImmutableList<Anime>? = null,
+        private val titleList: List<Anime>? = null,
         val selectedAnimeIds: Set<Long> = emptySet(),
     ) {
-
-        val titles: ImmutableList<Anime>
-            get() = titleList ?: persistentListOf()
+        val titles: List<Anime>
+            get() = titleList ?: listOf()
 
         val isLoading: Boolean
             get() = source == null || titleList == null
@@ -100,8 +121,8 @@ class MigrateAnimeScreenModel(
         val isEmpty: Boolean
             get() = titles.isEmpty()
     }
-}
 
-sealed interface MigrationAnimeEvent {
-    data object FailedFetchingFavorites : MigrationAnimeEvent
+    sealed interface MigrationAnimeEvent {
+        data object FailedFetchingFavorites : MigrationAnimeEvent
+    }
 }
