@@ -67,8 +67,10 @@ import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
+import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadProvider
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
+import eu.kanade.tachiyomi.data.download.manga.MangaDownloadProvider
 import eu.kanade.tachiyomi.data.saver.ImageSaver
 import eu.kanade.tachiyomi.data.sync.SyncManager
 import eu.kanade.tachiyomi.data.track.TrackerManager
@@ -399,6 +401,9 @@ class MetroInteropModule(
     private val mangaDownloadManager: MangaDownloadManager,
     private val animeDownloadManager: AnimeDownloadManager,
 
+    private val mangaDownloadProvider: MangaDownloadProvider,
+    private val animeDownloadProvider: AnimeDownloadProvider,
+
     private val mangaDownloadCache: MangaDownloadCache,
     private val animeDownloadCache: AnimeDownloadCache,
 ) : InjektModule {
@@ -601,6 +606,9 @@ class MetroInteropModule(
 
         addSingleton(mangaDownloadManager)
         addSingleton(animeDownloadManager)
+
+        addSingleton(mangaDownloadProvider)
+        addSingleton(animeDownloadProvider)
 
         addSingleton(mangaDownloadCache)
         addSingleton(animeDownloadCache)
