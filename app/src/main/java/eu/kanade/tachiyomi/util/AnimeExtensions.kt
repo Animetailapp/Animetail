@@ -12,8 +12,6 @@ import tachiyomi.source.local.entries.anime.isLocal
 import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
 import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
 import tachiyomi.source.local.image.anime.LocalEpisodeThumbnailManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.InputStream
 import java.time.Instant
 import eu.kanade.tachiyomi.data.database.models.anime.Episode as SEpisode
@@ -79,7 +77,7 @@ fun Anime.prepUpdateBackground(
         }
     }
 }
-fun Anime.removeCovers(coverCache: AnimeCoverCache = Injekt.get()): Anime {
+fun Anime.removeCovers(coverCache: AnimeCoverCache): Anime {
     if (isLocal()) return this
     return if (coverCache.deleteFromCache(this, true) > 0) {
         return copy(coverLastModified = Instant.now().toEpochMilli())
@@ -100,8 +98,8 @@ fun Anime.removeBackgrounds(backgroundCache: AnimeBackgroundCache): Anime {
 suspend fun Anime.editCover(
     coverManager: LocalAnimeCoverManager,
     stream: InputStream,
-    updateAnime: UpdateAnime = Injekt.get(),
-    coverCache: AnimeCoverCache = Injekt.get(),
+    updateAnime: UpdateAnime,
+    coverCache: AnimeCoverCache,
 ) {
     if (isLocal()) {
         coverManager.update(toSAnime(), stream)
@@ -115,8 +113,8 @@ suspend fun Anime.editCover(
 suspend fun Anime.editBackground(
     backgroundManager: LocalAnimeBackgroundManager,
     stream: InputStream,
-    updateAnime: UpdateAnime = Injekt.get(),
-    backgroundCache: AnimeBackgroundCache = Injekt.get(),
+    updateAnime: UpdateAnime,
+    backgroundCache: AnimeBackgroundCache,
 ) {
     if (isLocal()) {
         backgroundManager.update(toSAnime(), stream)

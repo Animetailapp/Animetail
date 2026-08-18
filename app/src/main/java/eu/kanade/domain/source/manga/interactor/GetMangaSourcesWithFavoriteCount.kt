@@ -1,5 +1,6 @@
 package eu.kanade.domain.source.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.source.interactor.SetMigrateSorting
 import eu.kanade.domain.source.service.SourcePreferences
 import kotlinx.coroutines.flow.Flow
@@ -10,6 +11,7 @@ import tachiyomi.domain.source.manga.repository.MangaSourceRepository
 import tachiyomi.source.local.entries.manga.LocalMangaSource
 import java.util.Collections
 
+@Inject
 class GetMangaSourcesWithFavoriteCount(
     private val repository: MangaSourceRepository,
     private val preferences: SourcePreferences,

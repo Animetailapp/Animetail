@@ -1,9 +1,11 @@
 package tachiyomi.domain.source.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.source.anime.model.FeedSavedSearch
 import tachiyomi.domain.source.anime.repository.FeedSavedSearchRepository
 
+@Inject
 class GetFeedSavedSearchBySourceId(
     private val feedSavedSearchRepository: FeedSavedSearchRepository,
 ) {

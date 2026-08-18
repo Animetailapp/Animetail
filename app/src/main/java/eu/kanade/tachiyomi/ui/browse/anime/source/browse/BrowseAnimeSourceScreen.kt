@@ -35,10 +35,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.core.util.ifAnimeSourcesLoaded
 import eu.kanade.presentation.browse.RemoveEntryDialog
 import eu.kanade.presentation.browse.SavedSearchCreateDialog
@@ -96,15 +95,15 @@ data class BrowseAnimeSourceScreen(
             return
         }
 
-        val viewModel = viewModel<BrowseAnimeSourceViewModel>(
-            factory = BrowseAnimeSourceViewModel.Factory,
-            extras = CreationExtras {
-                set(BrowseAnimeSourceViewModel.SOURCE_ID_KEY, sourceId)
-                set(BrowseAnimeSourceViewModel.LISTING_QUERY_KEY, listingQuery)
-                set(BrowseAnimeSourceViewModel.FILTERS_KEY, filtersJson)
-                set(BrowseAnimeSourceViewModel.SAVED_SEARCH_KEY, savedSearch)
-            },
-        )
+        val viewModel =
+            assistedMetroViewModel<BrowseAnimeSourceViewModel, BrowseAnimeSourceViewModel.Factory> {
+                create(
+                    sourceId = sourceId,
+                    listingQuery = listingQuery,
+                    filtersJson = filtersJson,
+                    savedSearch = savedSearch,
+                )
+            }
         val state by viewModel.state.collectAsState()
 
         val navigator = LocalNavigator.currentOrThrow

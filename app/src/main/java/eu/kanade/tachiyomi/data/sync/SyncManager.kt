@@ -5,6 +5,9 @@ import android.net.Uri
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import data.Chapters
 import dataanime.Episodes
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.tachiyomi.data.backup.create.BackupCreator
 import eu.kanade.tachiyomi.data.backup.create.BackupOptions
@@ -46,23 +49,23 @@ import kotlin.system.measureTimeMillis
  *
  * @property context The application context.
  */
+@Inject
+@SingleIn(AppScope::class)
 @Suppress("TooManyFunctions")
 class SyncManager(
     private val context: Context,
-    private val mangaHandler: MangaDatabaseHandler = Injekt.get(),
-    private val animeHandler: AnimeDatabaseHandler = Injekt.get(),
-    private val syncPreferences: SyncPreferences = Injekt.get(),
-    private var json: Json = Json {
-        encodeDefaults = true
-        ignoreUnknownKeys = true
-    },
-    private val getMangaCategories: GetMangaCategories = Injekt.get(),
-    private val getAnimeCategories: GetAnimeCategories = Injekt.get(),
+    private val mangaHandler: MangaDatabaseHandler,
+    private val animeHandler: AnimeDatabaseHandler,
+    private val syncPreferences: SyncPreferences,
+    private val getMangaCategories: GetMangaCategories,
+    private val getAnimeCategories: GetAnimeCategories,
+    private val backupCreatorFactory: BackupCreator.Factory,
+    private val notifier: SyncNotifier,
+    private val mangaRestorer: MangaRestorer,
+    private val animeRestorer: AnimeRestorer,
+    private val json: Json,
 ) {
-    private val backupCreator: BackupCreator = BackupCreator(context, false)
-    private val notifier: SyncNotifier = SyncNotifier(context)
-    private val mangaRestorer: MangaRestorer = MangaRestorer()
-    private val animeRestorer: AnimeRestorer = AnimeRestorer()
+    private val backupCreator: BackupCreator = backupCreatorFactory.create(isAutoBackup = false)
 
     enum class SyncService(val value: Int) {
         NONE(0),

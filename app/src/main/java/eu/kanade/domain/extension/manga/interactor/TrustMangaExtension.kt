@@ -2,10 +2,12 @@ package eu.kanade.domain.extension.manga.interactor
 
 import android.content.pm.PackageInfo
 import androidx.core.content.pm.PackageInfoCompat
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.source.service.SourcePreferences
 import mihon.domain.extension.manga.repository.MangaExtensionStoreRepository
 import tachiyomi.core.common.preference.getAndSet
 
+@Inject
 class TrustMangaExtension(
     private val mangaExtensionStoreRepository: MangaExtensionStoreRepository,
     private val preferences: SourcePreferences,

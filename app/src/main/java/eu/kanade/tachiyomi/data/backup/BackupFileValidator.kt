@@ -1,18 +1,17 @@
 package eu.kanade.tachiyomi.data.backup
 
-import android.content.Context
 import android.net.Uri
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
 class BackupFileValidator(
-    private val context: Context,
-    private val animeSourceManager: AnimeSourceManager = Injekt.get(),
-    private val mangaSourceManager: MangaSourceManager = Injekt.get(),
-    private val trackerManager: TrackerManager = Injekt.get(),
+    private val animeSourceManager: AnimeSourceManager,
+    private val mangaSourceManager: MangaSourceManager,
+    private val trackerManager: TrackerManager,
+    private val backupDecoder: BackupDecoder,
 ) {
 
     /**
@@ -22,7 +21,7 @@ class BackupFileValidator(
      */
     fun validate(uri: Uri): Results {
         val backup = try {
-            BackupDecoder(context).decode(uri)
+            backupDecoder.decode(uri)
         } catch (e: Exception) {
             throw IllegalStateException(e)
         }

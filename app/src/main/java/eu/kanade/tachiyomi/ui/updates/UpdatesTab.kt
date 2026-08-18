@@ -24,10 +24,9 @@ import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.updates.anime.animeUpdatesTab
 import eu.kanade.tachiyomi.ui.updates.manga.mangaUpdatesTab
 import kotlinx.collections.immutable.persistentListOf
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 data object UpdatesTab : Tab {
 
@@ -55,9 +54,10 @@ data object UpdatesTab : Tab {
     // SY -->
     @Composable
     override fun isEnabled(): Boolean {
+        val context = LocalContext.current
         val scope = rememberCoroutineScope()
         return remember {
-            Injekt.get<UiPreferences>().showNavUpdates.asState(scope)
+            context.appGraph.uiPreferences.showNavUpdates.asState(scope)
         }.value
     }
     // SY <--

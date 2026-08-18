@@ -52,7 +52,7 @@ import eu.kanade.presentation.more.settings.widget.TrailingWidgetBuffer
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
-import eu.kanade.tachiyomi.ui.browse.anime.extension.details.AnimeExtensionDetailsScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.extension.details.AnimeExtensionDetailsViewModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.collections.immutable.ImmutableList
@@ -62,12 +62,11 @@ import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import tachiyomi.presentation.core.screens.EmptyScreen
 
 @Composable
 fun AnimeExtensionDetailsScreen(
     navigateUp: () -> Unit,
-    state: AnimeExtensionDetailsScreenModel.State,
+    state: AnimeExtensionDetailsViewModel.State.Success,
     onClickSourcePreferences: (sourceId: Long) -> Unit,
     onClickEnableAll: () -> Unit,
     onClickDisableAll: () -> Unit,
@@ -131,13 +130,6 @@ fun AnimeExtensionDetailsScreen(
             )
         },
     ) { paddingValues ->
-        if (state.extension == null) {
-            EmptyScreen(
-                MR.strings.empty_screen,
-                modifier = Modifier.padding(paddingValues),
-            )
-            return@Scaffold
-        }
 
         AnimeExtensionDetails(
             contentPadding = paddingValues,

@@ -1,5 +1,6 @@
 package eu.kanade.domain.items.episode.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.download.anime.interactor.DeleteEpisodeDownload
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withNonCancellableContext
@@ -11,6 +12,7 @@ import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.items.episode.model.EpisodeUpdate
 import tachiyomi.domain.items.episode.repository.EpisodeRepository
 
+@Inject
 class SetSeenStatus(
     private val downloadPreferences: DownloadPreferences,
     private val deleteDownload: DeleteEpisodeDownload,

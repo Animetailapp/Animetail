@@ -129,7 +129,8 @@ class EpisodeLoader {
                 val episodePath = episode.url.replace('\\', '/')
                 val animeDirName = episodePath.substringBeforeLast('/', "")
                 val episodeName = episodePath.substringAfterLast('/')
-                val fileSystem: LocalAnimeSourceFileSystem = Injekt.get()
+                val storageManager: tachiyomi.domain.storage.service.StorageManager = Injekt.get()
+                val fileSystem = LocalAnimeSourceFileSystem(storageManager)
                 val videoFile = when {
                     animeDirName.isBlank() -> fileSystem.getBaseDirectory()?.findFile(episodeName)
                     else -> fileSystem.getAnimeDirectory(animeDirName)?.findFile(episodeName)

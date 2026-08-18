@@ -39,6 +39,8 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
         private val SCORE_LIST = IntRange(0, 10)
             .map(Int::toString)
             .toImmutableList()
+
+        private const val SEARCH_ID_PREFIX = "id:"
     }
 
     override val client: OkHttpClient
@@ -187,6 +189,42 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
     }
 
     override suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            val id = query.substringAfter(SEARCH_ID_PREFIX).trim().toLongOrNull()
+            if (id != null) {
+                val results = mutableListOf<AnimeTrackSearch>()
+                try {
+                    val tv = api.getTv(id)
+                    results.add(
+                        AnimeTrackSearch.create(this@Tmdb.id).apply {
+                            remote_id = tv.id
+                            title = tv.title
+                            tracking_url = "https://www.themoviedb.org/tv/${tv.id}"
+                            summary = tv.overview
+                            cover_url = tv.posterPath?.let { TmdbApi.IMAGE_BASE + it } ?: ""
+                            publishing_type = "TV"
+                        },
+                    )
+                } catch (_: Exception) {
+                }
+                try {
+                    val movie = api.getMovie(id)
+                    results.add(
+                        AnimeTrackSearch.create(this@Tmdb.id).apply {
+                            remote_id = movie.id
+                            title = movie.title
+                            tracking_url = "https://www.themoviedb.org/movie/${movie.id}"
+                            summary = movie.overview
+                            cover_url = movie.posterPath?.let { TmdbApi.IMAGE_BASE + it } ?: ""
+                            publishing_type = "Movie"
+                        },
+                    )
+                } catch (_: Exception) {
+                }
+                if (results.isNotEmpty()) return results
+            }
+        }
+
         val results = api.searchMulti(query)
         return results.filter { it.mediaType == "tv" || it.mediaType == "movie" }.map { r ->
             val isTv = r.mediaType == "tv"

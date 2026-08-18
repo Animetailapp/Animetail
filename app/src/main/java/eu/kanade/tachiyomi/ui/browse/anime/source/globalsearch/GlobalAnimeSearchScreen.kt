@@ -7,10 +7,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.core.util.ifAnimeSourcesLoaded
 import eu.kanade.presentation.browse.anime.GlobalAnimeSearchScreen
 import eu.kanade.presentation.util.Screen
@@ -32,13 +31,9 @@ class GlobalAnimeSearchScreen(
 
         val navigator = LocalNavigator.currentOrThrow
 
-        val viewModel = viewModel<GlobalAnimeSearchViewModel>(
-            factory = GlobalAnimeSearchViewModel.Factory,
-            extras = CreationExtras {
-                set(GlobalAnimeSearchViewModel.INITIAL_QUERY_KEY, searchQuery)
-                set(GlobalAnimeSearchViewModel.INITIAL_EXTENSION_FILTER_KEY, extensionFilter)
-            },
-        )
+        val viewModel = assistedMetroViewModel<GlobalAnimeSearchViewModel, GlobalAnimeSearchViewModel.Factory> {
+            create(searchQuery, extensionFilter)
+        }
         val state by viewModel.state.collectAsState()
         var showSingleLoadingScreen by remember {
             mutableStateOf(

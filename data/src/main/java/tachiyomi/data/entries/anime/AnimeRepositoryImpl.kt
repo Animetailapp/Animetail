@@ -1,6 +1,10 @@
 package tachiyomi.data.entries.anime
 
 import aniyomi.domain.anime.SeasonAnime
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
@@ -21,6 +25,9 @@ import tachiyomi.domain.library.anime.LibraryAnime
 import tachiyomi.domain.source.anime.model.DeletableAnime
 import kotlin.time.Clock
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class AnimeRepositoryImpl(
     private val handler: AnimeDatabaseHandler,
 ) : AnimeRepository {
@@ -29,7 +36,7 @@ class AnimeRepositoryImpl(
         return handler.awaitOne { animesQueries.getAnimeById(id, AnimeMapper::mapAnime) }
     }
 
-    override suspend fun getAnimeByIdAsFlow(id: Long): Flow<Anime> {
+    override fun getAnimeByIdAsFlow(id: Long): Flow<Anime> {
         return handler.subscribeToOne { animesQueries.getAnimeById(id, AnimeMapper::mapAnime) }
     }
 

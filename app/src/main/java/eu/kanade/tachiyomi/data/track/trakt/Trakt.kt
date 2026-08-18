@@ -49,6 +49,8 @@ class Trakt(
         private const val CLIENT_SECRET = "24b1314e8a6f0176eb6c4249c72381e7aa1ef91f64743293676476a461fb20d4"
         const val REDIRECT_URI = "animetail://trakt-auth"
         const val SCOPES = "public"
+
+        private const val SEARCH_ID_PREFIX = "id:"
     }
 
     private val json: Json by injectLazy()
@@ -150,6 +152,23 @@ class Trakt(
     }
 
     override suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            val id = query.substringAfter(SEARCH_ID_PREFIX).trim().toLongOrNull()
+            if (id != null) {
+                try {
+                    val results = api.searchById(id).mapNotNull { result ->
+                        when (result.type) {
+                            "show" -> result.show?.toTrackSearch()
+                            "movie" -> result.movie?.toTrackSearch()
+                            else -> null
+                        }
+                    }
+                    if (results.isNotEmpty()) return results
+                } catch (_: Exception) {
+                }
+            }
+        }
+
         return api.search(query).mapNotNull { result ->
             when (result.type) {
                 "show" -> result.show?.toTrackSearch()

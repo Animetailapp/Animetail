@@ -1,6 +1,12 @@
 package eu.kanade.tachiyomi.ui.storage.manga
 
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.ui.storage.CommonStorageViewModel
@@ -9,17 +15,20 @@ import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.manga.interactor.GetVisibleMangaCategories
 import tachiyomi.domain.entries.manga.interactor.GetLibraryManga
 import tachiyomi.domain.library.manga.LibraryManga
+import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class MangaStorageViewModel(
-    downloadCache: MangaDownloadCache = Injekt.get(),
-    private val getLibraries: GetLibraryManga = Injekt.get(),
-    getCategories: GetMangaCategories = Injekt.get(),
-    getVisibleCategories: GetVisibleMangaCategories = Injekt.get(),
-    private val downloadManager: MangaDownloadManager = Injekt.get(),
-    private val sourceManager: MangaSourceManager = Injekt.get(),
+    downloadCache: MangaDownloadCache,
+    private val getLibraries: GetLibraryManga,
+    getCategories: GetMangaCategories,
+    getVisibleCategories: GetVisibleMangaCategories,
+    private val downloadManager: MangaDownloadManager,
+    private val sourceManager: MangaSourceManager,
+    libraryPreferences: LibraryPreferences,
 ) : CommonStorageViewModel<LibraryManga>(
     downloadCacheChanges = downloadCache.changes,
     downloadCacheIsInitializing = downloadCache.isInitializing,
@@ -37,6 +46,7 @@ class MangaStorageViewModel(
     getCategoryId = { category },
     getTitle = { manga.title },
     getThumbnail = { manga.thumbnailUrl },
+    libraryPreferences = libraryPreferences,
 ) {
     override fun deleteEntry(id: Long) {
         viewModelScope.launchNonCancellable {

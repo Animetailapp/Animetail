@@ -34,10 +34,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.core.util.ifMangaSourcesLoaded
 import eu.kanade.presentation.browse.RemoveEntryDialog
 import eu.kanade.presentation.browse.manga.BrowseSourceContent
@@ -86,13 +85,10 @@ data class BrowseMangaSourceScreen(
             return
         }
 
-        val viewModel = viewModel<BrowseMangaSourceViewModel>(
-            factory = BrowseMangaSourceViewModel.Factory,
-            extras = CreationExtras {
-                set(BrowseMangaSourceViewModel.SOURCE_ID_KEY, sourceId)
-                set(BrowseMangaSourceViewModel.LISTING_QUERY_KEY, listingQuery)
-            },
-        )
+        val viewModel =
+            assistedMetroViewModel<BrowseMangaSourceViewModel, BrowseMangaSourceViewModel.Factory> {
+                create(sourceId = sourceId, listingQuery = listingQuery)
+            }
         val state by viewModel.state.collectAsState()
 
         val navigator = LocalNavigator.currentOrThrow

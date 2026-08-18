@@ -1,11 +1,13 @@
 package tachiyomi.domain.items.chapter.interactor
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.domain.entries.manga.interactor.GetMangaFavorites
 import tachiyomi.domain.entries.manga.interactor.SetMangaChapterFlags
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.library.service.LibraryPreferences
 
+@Inject
 class SetMangaDefaultChapterFlags(
     private val libraryPreferences: LibraryPreferences,
     private val setMangaChapterFlags: SetMangaChapterFlags,

@@ -1,5 +1,6 @@
 package eu.kanade.domain.source.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.source.interactor.SetMigrateSorting
 import eu.kanade.domain.source.service.SourcePreferences
 import kotlinx.coroutines.flow.Flow
@@ -10,6 +11,7 @@ import tachiyomi.domain.source.anime.repository.AnimeSourceRepository
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 import java.util.Collections
 
+@Inject
 class GetAnimeSourcesWithFavoriteCount(
     private val repository: AnimeSourceRepository,
     private val preferences: SourcePreferences,

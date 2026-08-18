@@ -69,11 +69,13 @@ import eu.kanade.tachiyomi.data.sync.service.GoogleDriveSyncService
 import eu.kanade.tachiyomi.ui.storage.StorageTab
 import eu.kanade.tachiyomi.util.system.DeviceUtil
 import eu.kanade.tachiyomi.util.system.toast
+import eu.kanade.tachiyomi.util.system.workManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.displayablePath
 import tachiyomi.core.common.util.lang.launchNonCancellable
@@ -89,8 +91,6 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Suppress("TooManyFunctions")
 object SettingsDataScreen : SearchableSettings {
@@ -115,10 +115,11 @@ object SettingsDataScreen : SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val backupPreferences = Injekt.get<BackupPreferences>()
-        val storagePreferences = Injekt.get<StoragePreferences>()
+        val context = LocalContext.current
+        val backupPreferences = remember { context.appGraph.backupPreferences }
+        val storagePreferences = remember { context.appGraph.storagePreferences }
 
-        val syncPreferences = remember { Injekt.get<SyncPreferences>() }
+        val syncPreferences = remember { context.appGraph.syncPreferences }
         val syncService by syncPreferences.syncService().collectAsState()
 
         return listOf(
@@ -250,7 +251,7 @@ object SettingsDataScreen : SearchableSettings {
                                     modifier = Modifier.fillMaxHeight(),
                                     checked = false,
                                     onCheckedChange = {
-                                        if (!BackupRestoreJob.isRunning(context)) {
+                                        if (!BackupRestoreJob.isRunning(context.workManager)) {
                                             if (DeviceUtil.isMiui && DeviceUtil.isMiuiOptimizationDisabled()) {
                                                 context.toast(MR.strings.restore_miui_warning)
                                             }
@@ -300,9 +301,9 @@ object SettingsDataScreen : SearchableSettings {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
-        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
+        val libraryPreferences = remember { context.appGraph.libraryPreferences }
 
-        val chapterCache = remember { Injekt.get<ChapterCache>() }
+        val chapterCache = remember { context.appGraph.chapterCache }
         var cacheReadableSizeSema by remember { mutableIntStateOf(0) }
         val cacheReadableSize = remember(cacheReadableSizeSema) { chapterCache.readableSize }
 
@@ -312,7 +313,7 @@ object SettingsDataScreen : SearchableSettings {
                 .drop(1)
                 .collectLatest { value ->
                     if (value) {
-                        Injekt.get<AnimeDownloadCache>().invalidateCache()
+                        context.appGraph.animeDownloadCache.invalidateCache()
                     }
                 }
         }
@@ -391,8 +392,8 @@ object SettingsDataScreen : SearchableSettings {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
 
-        val getAnimeFavorites = remember { Injekt.get<GetAnimeFavorites>() }
-        val getMangaFavorites = remember { Injekt.get<GetMangaFavorites>() }
+        val getAnimeFavorites = remember { context.appGraph.getAnimeFavorites }
+        val getMangaFavorites = remember { context.appGraph.getMangaFavorites }
 
         var favorites by remember { mutableStateOf<List<ExportEntry>>(emptyList()) }
         LaunchedEffect(Unit) {
@@ -582,7 +583,7 @@ object SettingsDataScreen : SearchableSettings {
     @Composable
     private fun getGoogleDrivePreferences(): List<Preference> {
         val context = LocalContext.current
-        val googleDriveSync = Injekt.get<GoogleDriveService>()
+        val googleDriveSync = remember { GoogleDriveService(context) }
         return listOf(
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(TLMR.strings.pref_google_drive_sign_in),
@@ -599,7 +600,8 @@ object SettingsDataScreen : SearchableSettings {
     private fun getGoogleDrivePurge(): Preference.PreferenceItem.TextPreference {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
-        val googleDriveSync = remember { GoogleDriveSyncService(context) }
+        val googleDriveSync =
+            remember { GoogleDriveSyncService(context, context.appGraph.json, context.appGraph.syncPreferences) }
         var showPurgeDialog by remember { mutableStateOf(false) }
 
         if (showPurgeDialog) {

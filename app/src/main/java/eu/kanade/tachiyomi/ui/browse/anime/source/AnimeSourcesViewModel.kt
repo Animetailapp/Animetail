@@ -4,9 +4,11 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.source.anime.interactor.GetEnabledAnimeSources
@@ -18,83 +20,96 @@ import eu.kanade.presentation.browse.anime.AnimeSourceUiModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import logcat.LogPriority
-import mihon.core.viewmodel.StateViewModel
-import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.anime.model.AnimeSource
 import tachiyomi.domain.source.anime.model.Pin
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.TreeMap
+import kotlin.time.Duration.Companion.seconds
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class AnimeSourcesViewModel(
-    val smartSearchConfig: SourcesScreen.SmartSearchConfig? = null,
-    private val preferences: BasePreferences = Injekt.get(),
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
-    private val uiPreferences: UiPreferences = Injekt.get(),
-    private val getEnabledAnimeSources: GetEnabledAnimeSources = Injekt.get(),
-    private val toggleSource: ToggleAnimeSource = Injekt.get(),
-    private val toggleSourcePin: ToggleAnimeSourcePin = Injekt.get(),
-) : StateViewModel<AnimeSourcesViewModel.State>(State()) {
+    private val preferences: BasePreferences,
+    private val sourcePreferences: SourcePreferences,
+    private val uiPreferences: UiPreferences,
+    private val getEnabledAnimeSources: GetEnabledAnimeSources,
+    private val toggleSource: ToggleAnimeSource,
+    private val toggleSourcePin: ToggleAnimeSourcePin,
+) : ViewModel() {
 
     private val _events = Channel<Event>(Int.MAX_VALUE)
     val events = _events.receiveAsFlow()
     val useNewSourceNavigation by uiPreferences.useNewSourceNavigation.asState(viewModelScope)
 
-    init {
-        viewModelScope.launchIO {
-            getEnabledAnimeSources.subscribe()
-                .catch {
-                    logcat(LogPriority.ERROR, it)
-                    _events.send(Event.FailedFetchingSources)
-                }
-                .collectLatest(::collectLatestAnimeSources)
+    private val dialog = MutableStateFlow<Dialog?>(null)
+
+    private val enabledSources = getEnabledAnimeSources.subscribe()
+        .catch {
+            logcat(LogPriority.ERROR, it)
+            _events.send(Event.FailedFetchingSources)
         }
+        .map(::toSourceUiModels)
+
+    val state: StateFlow<State> = combine(
+        enabledSources,
+        dialog,
+        sourcePreferences.dataSaver.changes(),
+    ) { items, dialog, dataSaver ->
+        State(
+            dialog = dialog,
+            isLoading = false,
+            items = items.toImmutableList(),
+            dataSaverEnabled = dataSaver != SourcePreferences.DataSaver.NONE,
+        )
     }
+        .flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
 
-    private fun collectLatestAnimeSources(sources: List<AnimeSource>) {
-        mutableState.update { state ->
-            val map = TreeMap<String, MutableList<AnimeSource>> { d1, d2 ->
-                // Sources without a lang defined will be placed at the end
-                when {
-                    d1 == LAST_USED_KEY && d2 != LAST_USED_KEY -> -1
-                    d2 == LAST_USED_KEY && d1 != LAST_USED_KEY -> 1
-                    d1 == PINNED_KEY && d2 != PINNED_KEY -> -1
-                    d2 == PINNED_KEY && d1 != PINNED_KEY -> 1
-                    d1 == "" && d2 != "" -> 1
-                    d2 == "" && d1 != "" -> -1
-                    else -> d1.compareTo(d2)
-                }
+    private fun toSourceUiModels(sources: List<AnimeSource>): List<AnimeSourceUiModel> {
+        val map = TreeMap<String, MutableList<AnimeSource>> { d1, d2 ->
+            // Sources without a lang defined will be placed at the end
+            when {
+                d1 == LAST_USED_KEY && d2 != LAST_USED_KEY -> -1
+                d2 == LAST_USED_KEY && d1 != LAST_USED_KEY -> 1
+                d1 == PINNED_KEY && d2 != PINNED_KEY -> -1
+                d2 == PINNED_KEY && d1 != PINNED_KEY -> 1
+                d1 == "" && d2 != "" -> 1
+                d2 == "" && d1 != "" -> -1
+                else -> d1.compareTo(d2)
             }
-            val byLang = sources.groupByTo(map) {
-                when {
-                    it.isUsedLast -> LAST_USED_KEY
-                    Pin.Actual in it.pin -> PINNED_KEY
-                    else -> it.lang
-                }
+        }
+        val byLang = sources.groupByTo(map) {
+            when {
+                it.isUsedLast -> LAST_USED_KEY
+                Pin.Actual in it.pin -> PINNED_KEY
+                else -> it.lang
             }
+        }
 
-            state.copy(
-                isLoading = false,
-                items = byLang
-                    .flatMap {
-                        listOf(
-                            AnimeSourceUiModel.Header(
-                                it.key.removePrefix(CATEGORY_KEY_PREFIX),
-                                it.value.firstOrNull()?.category != null,
-                            ),
-                            *it.value.map { source ->
-                                AnimeSourceUiModel.Item(source)
-                            }.toTypedArray(),
-                        )
-                    }
-                    .toImmutableList(),
+        return byLang.flatMap {
+            listOf(
+                AnimeSourceUiModel.Header(
+                    it.key.removePrefix(CATEGORY_KEY_PREFIX),
+                    it.value.firstOrNull()?.category != null,
+                ),
+                *it.value.map { source ->
+                    AnimeSourceUiModel.Item(source)
+                }.toTypedArray(),
             )
         }
     }
@@ -108,11 +123,11 @@ class AnimeSourcesViewModel(
     }
 
     fun showSourceDialog(source: AnimeSource) {
-        mutableState.update { it.copy(dialog = Dialog(source)) }
+        dialog.update { Dialog(source) }
     }
 
     fun closeDialog() {
-        mutableState.update { it.copy(dialog = null) }
+        dialog.update { null }
     }
 
     sealed interface Event {
@@ -141,16 +156,6 @@ class AnimeSourcesViewModel(
     }
 
     companion object {
-        val SMART_SEARCH_CONFIG_KEY = CreationExtras.Key<SourcesScreen.SmartSearchConfig?>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                AnimeSourcesViewModel(
-                    smartSearchConfig = this[SMART_SEARCH_CONFIG_KEY],
-                )
-            }
-        }
-
         const val PINNED_KEY = "pinned"
         const val LAST_USED_KEY = "last_used"
 

@@ -15,7 +15,7 @@ import java.io.Serializable
 class SourcesScreen(private val smartSearchConfig: SmartSearchConfig?) : Screen() {
     @Composable
     override fun Content() {
-        BrowseTabWrapper(animeSourcesTab(smartSearchConfig))
+        BrowseTabWrapper(animeSourcesTab())
     }
 
     /**

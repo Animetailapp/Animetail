@@ -87,8 +87,28 @@ interface AnimeSource {
         fetchDetails: Boolean,
         fetchEpisodes: Boolean,
     ): SAnimeEpisodeUpdate {
-        val updatedAnime = if (fetchDetails) getAnimeDetails(anime) else anime
-        val updatedEpisodes = if (fetchEpisodes) getEpisodeList(anime) else episodes
+        val updatedAnime = if (fetchDetails) {
+            try {
+                getAnimeDetails(anime)
+            } catch (_: LinkageError) {
+                anime
+            } catch (_: AbstractMethodError) {
+                anime
+            }
+        } else {
+            anime
+        }
+        val updatedEpisodes = if (fetchEpisodes) {
+            try {
+                getEpisodeList(anime)
+            } catch (_: LinkageError) {
+                episodes
+            } catch (_: AbstractMethodError) {
+                episodes
+            }
+        } else {
+            episodes
+        }
         return SAnimeEpisodeUpdate(updatedAnime, updatedEpisodes)
     }
 
@@ -114,8 +134,28 @@ interface AnimeSource {
         fetchDetails: Boolean,
         fetchSeasons: Boolean,
     ): SAnimeSeasonUpdate {
-        val updatedAnime = if (fetchDetails) getAnimeDetails(anime) else anime
-        val updatedSeasons = if (fetchSeasons) getSeasonList(anime) else seasons
+        val updatedAnime = if (fetchDetails) {
+            try {
+                getAnimeDetails(anime)
+            } catch (_: LinkageError) {
+                anime
+            } catch (_: AbstractMethodError) {
+                anime
+            }
+        } else {
+            anime
+        }
+        val updatedSeasons = if (fetchSeasons) {
+            try {
+                getSeasonList(anime)
+            } catch (_: LinkageError) {
+                seasons
+            } catch (_: AbstractMethodError) {
+                seasons
+            }
+        } else {
+            seasons
+        }
         return SAnimeSeasonUpdate(updatedAnime, updatedSeasons)
     }
 
@@ -127,7 +167,7 @@ interface AnimeSource {
      * @param episode the episode.
      * @return the hosters for the episode.
      */
-    suspend fun getHosterList(episode: SEpisode): List<Hoster> = throw IllegalStateException("Not used")
+    suspend fun getHosterList(episode: SEpisode): List<Hoster> = emptyList()
 
     /**
      * Get the list of videos for a hoster.
@@ -136,10 +176,10 @@ interface AnimeSource {
      * @param hoster the hoster.
      * @return the videos for the hoster.
      */
-    suspend fun getVideoList(hoster: Hoster): List<Video> = throw IllegalStateException("Not used")
+    suspend fun getVideoList(hoster: Hoster): List<Video> = emptyList()
 
     @Deprecated("Use the combined suspend API instead", ReplaceWith("getAnimeSeasonUpdate"))
-    suspend fun getSeasonList(anime: SAnime): List<SAnime> = throw UnsupportedOperationException()
+    suspend fun getSeasonList(anime: SAnime): List<SAnime> = emptyList()
 
     @Deprecated("Use the hoster version instead")
     suspend fun getVideoList(episode: SEpisode): List<Video> = throw UnsupportedOperationException()

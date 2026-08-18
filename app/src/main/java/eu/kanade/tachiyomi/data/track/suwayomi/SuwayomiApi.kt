@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.network.PUT
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.parseAs
 import kotlinx.serialization.json.Json
+import mihon.app.di.appGraph
 import okhttp3.Credentials
 import okhttp3.Dns
 import okhttp3.FormBody
@@ -22,15 +23,19 @@ import uy.kohesive.injekt.injectLazy
 import java.nio.charset.Charset
 import java.security.MessageDigest
 
-class SuwayomiApi(private val trackId: Long) {
+class SuwayomiApi(
+    private val trackId: Long,
+) {
 
-    private val network by injectLazy<NetworkHelper>()
-    private val json: Json by injectLazy()
+    private val appGraph get() = Injekt.get<Application>().appGraph
+    private val network get() = appGraph.networkHelper
+    private val json: Json get() = appGraph.json
 
-    private val client: OkHttpClient =
+    private val client: OkHttpClient by lazy {
         network.client.newBuilder()
             .dns(Dns.SYSTEM) // don't use DNS over HTTPS as it breaks IP addressing
             .build()
+    }
 
     private fun headersBuilder(): Headers.Builder = Headers.Builder().apply {
         add("User-Agent", network.defaultUserAgentProvider())

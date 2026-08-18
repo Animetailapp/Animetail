@@ -1,8 +1,10 @@
 package tachiyomi.domain.history.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import tachiyomi.domain.history.manga.repository.MangaHistoryRepository
 
+@Inject
 class RemoveMangaHistory(
     private val repository: MangaHistoryRepository,
 ) {

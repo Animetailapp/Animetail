@@ -1,10 +1,18 @@
 package mihon.feature.migration.list
 
 import androidx.annotation.FloatRange
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.toSAnime
 import eu.kanade.domain.items.episode.interactor.SyncEpisodesWithSource
@@ -21,13 +29,14 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
-import mihon.core.viewmodel.StateViewModel
 import mihon.domain.migration.usecases.MigrateAnimeUseCase
 import mihon.feature.migration.list.models.MigratingAnime
 import mihon.feature.migration.list.models.MigratingAnime.SearchResult
@@ -39,35 +48,29 @@ import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@AssistedInject
 class AnimeMigrationListViewModel(
-    animeIds: Collection<Long>,
-    extraSearchQuery: String?,
-    private val preferences: SourcePreferences = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
-    private val syncEpisodesWithSource: SyncEpisodesWithSource = Injekt.get(),
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
-    private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
-    private val migrateAnime: MigrateAnimeUseCase = Injekt.get(),
-) : StateViewModel<AnimeMigrationListViewModel.State>(State()) {
+    @Assisted animeIds: Collection<Long>,
+    @Assisted extraSearchQuery: String?,
+    private val preferences: SourcePreferences,
+    private val sourceManager: AnimeSourceManager,
+    private val getAnime: GetAnime,
+    private val updateAnime: UpdateAnime,
+    private val syncEpisodesWithSource: SyncEpisodesWithSource,
+    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val networkToLocalAnime: NetworkToLocalAnime,
+    private val migrateAnime: MigrateAnimeUseCase,
+) : ViewModel() {
 
-    companion object {
-        val ANIME_IDS_KEY = CreationExtras.Key<Collection<Long>>()
+    val state: StateFlow<AnimeMigrationListViewModel.State>
+        field = MutableStateFlow<AnimeMigrationListViewModel.State>(State())
 
-        val EXTRA_SEARCH_QUERY_KEY = CreationExtras.Key<String?>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                AnimeMigrationListViewModel(
-                    animeIds = get(ANIME_IDS_KEY)!!,
-                    extraSearchQuery = get(EXTRA_SEARCH_QUERY_KEY),
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(animeIds: Collection<Long>, extraSearchQuery: String?): AnimeMigrationListViewModel
     }
 
     private val smartSearchEngine = SmartAnimeSourceSearchEngine(extraSearchQuery)
@@ -101,7 +104,7 @@ class AnimeMigrationListViewModel(
                 }
                 .awaitAll()
                 .filterNotNull()
-            mutableState.update { it.copy(items = anime.toImmutableList()) }
+            state.update { it.copy(items = anime.toPersistentList()) }
             runMigrations(anime)
         }
     }
@@ -200,7 +203,7 @@ class AnimeMigrationListViewModel(
     }
 
     private fun updateMigrationProgress() {
-        mutableState.update { state ->
+        state.update { state ->
             state.copy(
                 finishedCount = items.count { it.searchResult.value != SearchResult.Searching },
                 migrationComplete = migrationComplete(),
@@ -239,7 +242,7 @@ class AnimeMigrationListViewModel(
 
     fun migrateAnimes(replace: Boolean) {
         migrateJob = viewModelScope.launchIO {
-            mutableState.update { it.copy(dialog = Dialog.Progress(0f)) }
+            state.update { it.copy(dialog = Dialog.Progress(0f)) }
             val items = items
             try {
                 items.forEachIndexed { index, anime ->
@@ -252,23 +255,23 @@ class AnimeMigrationListViewModel(
                         if (e is CancellationException) throw e
                         logcat(LogPriority.WARN, throwable = e)
                     }
-                    mutableState.update {
+                    state.update {
                         it.copy(dialog = Dialog.Progress((index.toFloat() / items.size).coerceAtMost(1f)))
                     }
                 }
                 navigateBack()
             } finally {
-                mutableState.update { it.copy(dialog = null) }
+                state.update { it.copy(dialog = null) }
                 migrateJob = null
             }
         }
     }
 
     fun removeAnime(animeId: Long) {
-        mutableState.update { state ->
+        state.update { state ->
             val item = state.items.find { it.anime.id == animeId } ?: return@update state
             item.migrationScope.cancel()
-            state.copy(items = state.items.toPersistentList().remove(item))
+            state.copy(items = (state.items - item).toPersistentList())
         }
         updateMigrationProgress()
     }
@@ -311,7 +314,7 @@ class AnimeMigrationListViewModel(
     }
 
     fun showMigrateDialog(copy: Boolean) {
-        mutableState.update { state ->
+        state.update { state ->
             state.copy(
                 dialog = Dialog.Migrate(
                     copy = copy,
@@ -326,13 +329,13 @@ class AnimeMigrationListViewModel(
     }
 
     fun showExitDialog() {
-        mutableState.update {
+        state.update {
             it.copy(dialog = Dialog.Exit)
         }
     }
 
     fun dismissDialog() {
-        mutableState.update { it.copy(dialog = null) }
+        state.update { it.copy(dialog = null) }
     }
 
     data class EpisodeInfo(

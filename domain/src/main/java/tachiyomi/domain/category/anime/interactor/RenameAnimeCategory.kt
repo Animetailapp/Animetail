@@ -1,11 +1,13 @@
 package tachiyomi.domain.category.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.anime.repository.AnimeCategoryRepository
 import tachiyomi.domain.category.model.Category
 
+@Inject
 class RenameAnimeCategory(
     private val categoryRepository: AnimeCategoryRepository,
 ) {

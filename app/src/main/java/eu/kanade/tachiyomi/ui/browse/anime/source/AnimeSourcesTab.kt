@@ -5,18 +5,16 @@ import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.anime.AnimeSourceOptionsDialog
 import eu.kanade.presentation.browse.anime.AnimeSourcesScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
-import eu.kanade.tachiyomi.ui.browse.anime.source.SourcesScreen.SmartSearchConfig
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceViewModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.feed.SourceFeedScreen
@@ -29,17 +27,10 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
-fun Screen.animeSourcesTab(
-    smartSearchConfig: SmartSearchConfig? = null,
-): TabContent {
+fun Screen.animeSourcesTab(): TabContent {
     val navigator = LocalNavigator.currentOrThrow
-    val viewModel = viewModel<AnimeSourcesViewModel>(
-        factory = AnimeSourcesViewModel.Factory,
-        extras = CreationExtras {
-            set(AnimeSourcesViewModel.SMART_SEARCH_CONFIG_KEY, smartSearchConfig)
-        },
-    )
-    val state by viewModel.state.collectAsState()
+    val viewModel = metroViewModel<AnimeSourcesViewModel>()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     return TabContent(
         titleRes = AYMR.strings.label_anime_sources,

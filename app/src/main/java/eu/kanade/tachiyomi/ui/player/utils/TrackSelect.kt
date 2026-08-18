@@ -1,16 +1,16 @@
 package eu.kanade.tachiyomi.ui.player.utils
 
 import androidx.core.os.LocaleListCompat
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel.VideoTrack
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.Locale
 
+@Inject
 class TrackSelect(
-    private val subtitlePreferences: SubtitlePreferences = Injekt.get(),
-    private val audioPreferences: AudioPreferences = Injekt.get(),
+    private val subtitlePreferences: SubtitlePreferences,
+    private val audioPreferences: AudioPreferences,
 ) {
 
     fun getPreferredTrackIndex(tracks: List<VideoTrack>, subtitle: Boolean = true): VideoTrack? {

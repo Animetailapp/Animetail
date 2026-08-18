@@ -2,6 +2,9 @@ package eu.kanade.tachiyomi.data.download.anime
 
 import android.content.Context
 import androidx.core.content.edit
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import kotlinx.coroutines.runBlocking
@@ -11,18 +14,18 @@ import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.interactor.GetEpisode
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 /**
  * This class is used to persist active downloads across application restarts.
  */
+@Inject
+@SingleIn(AppScope::class)
 class AnimeDownloadStore(
     context: Context,
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val json: Json = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val getEpisode: GetEpisode = Injekt.get(),
+    private val sourceManager: AnimeSourceManager,
+    private val json: Json,
+    private val getAnime: GetAnime,
+    private val getEpisode: GetEpisode,
 ) {
 
     /**

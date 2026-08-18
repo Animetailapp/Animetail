@@ -1,11 +1,13 @@
 package eu.kanade.domain.extension.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.source.MangaSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Inject
 class GetExtensionSources(
     private val preferences: SourcePreferences,
 ) {

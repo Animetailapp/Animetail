@@ -1,5 +1,6 @@
 package eu.kanade.domain.entries.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.manga.model.hasCustomCover
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.source.model.SManga
@@ -16,11 +17,13 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.time.Clock
 
+@Inject
 class UpdateManga(
     private val mangaRepository: MangaRepository,
     private val mangaFetchInterval: MangaFetchInterval,
+    private val libraryPreferences: LibraryPreferences,
+    private val coverCache: MangaCoverCache,
 ) {
-    private val libraryPreferences: LibraryPreferences = Injekt.get()
 
     suspend fun await(mangaUpdate: MangaUpdate): Boolean {
         return mangaRepository.updateManga(mangaUpdate)
@@ -34,7 +37,7 @@ class UpdateManga(
         localManga: Manga,
         remoteManga: SManga,
         manualFetch: Boolean,
-        coverCache: MangaCoverCache = Injekt.get(),
+        coverCache: MangaCoverCache = this.coverCache,
     ): Boolean {
         val remoteTitle = try {
             remoteManga.title

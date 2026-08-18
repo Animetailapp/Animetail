@@ -1,5 +1,6 @@
 package eu.kanade.domain.entries.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.anime.model.hasCustomBackground
 import eu.kanade.domain.entries.anime.model.hasCustomCover
 import eu.kanade.tachiyomi.animesource.model.SAnime
@@ -15,9 +16,12 @@ import uy.kohesive.injekt.api.get
 import java.time.Instant
 import java.time.ZonedDateTime
 
+@Inject
 class UpdateAnime(
     private val animeRepository: AnimeRepository,
     private val animeFetchInterval: AnimeFetchInterval,
+    private val coverCache: AnimeCoverCache,
+    private val backgroundCache: AnimeBackgroundCache,
 ) {
 
     suspend fun await(animeUpdate: AnimeUpdate): Boolean {
@@ -32,8 +36,8 @@ class UpdateAnime(
         localAnime: Anime,
         remoteAnime: SAnime,
         manualFetch: Boolean,
-        coverCache: AnimeCoverCache = Injekt.get(),
-        backgroundCache: AnimeBackgroundCache = Injekt.get(),
+        coverCache: AnimeCoverCache = this.coverCache,
+        backgroundCache: AnimeBackgroundCache = this.backgroundCache,
     ): Boolean {
         val remoteTitle = try {
             remoteAnime.title

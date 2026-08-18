@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.data.backup.create.creators
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.animesource.preferenceKey
 import eu.kanade.tachiyomi.animesource.sourcePreferences
@@ -18,13 +19,12 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
 class PreferenceBackupCreator(
-    private val animeSourceManager: AnimeSourceManager = Injekt.get(),
-    private val mangaSourceManager: MangaSourceManager = Injekt.get(),
-    private val preferenceStore: PreferenceStore = Injekt.get(),
+    private val animeSourceManager: AnimeSourceManager,
+    private val mangaSourceManager: MangaSourceManager,
+    private val preferenceStore: PreferenceStore,
 ) {
 
     fun createApp(includePrivatePreferences: Boolean): List<BackupPreference> {

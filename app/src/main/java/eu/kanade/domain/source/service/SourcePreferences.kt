@@ -1,5 +1,8 @@
 package eu.kanade.domain.source.service
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.source.interactor.SetMigrateSorting
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import tachiyomi.core.common.preference.Preference
@@ -9,6 +12,8 @@ import tachiyomi.core.common.preference.getLongArray
 import tachiyomi.core.common.preference.getObjectFromString
 import tachiyomi.domain.library.model.LibraryDisplayMode
 
+@Inject
+@SingleIn(AppScope::class)
 class SourcePreferences(
     private val preferenceStore: PreferenceStore,
 ) {

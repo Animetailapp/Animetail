@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.system.logcat
@@ -46,8 +47,8 @@ import java.util.LinkedList
 import kotlin.coroutines.resume
 
 class CastManager(
-    private val activity: ComponentActivity,
-    private val preferenceStore: PreferenceStore,
+    val activity: ComponentActivity,
+    val preferenceStore: PreferenceStore,
 ) {
     enum class CastState {
         CONNECTED,
@@ -72,8 +73,7 @@ class CastManager(
     private val viewModel by lazy {
         when (activity) {
             is PlayerActivity -> {
-                val factory = PlayerViewModelProviderFactory(activity)
-                activity.viewModels<PlayerViewModel> { factory }.value
+                activity.viewModels<PlayerViewModel> { activity.appGraph.viewModelFactory }.value
             }
 
             else -> null

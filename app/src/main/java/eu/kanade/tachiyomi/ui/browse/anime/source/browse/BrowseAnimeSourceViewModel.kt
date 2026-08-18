@@ -17,6 +17,13 @@ import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.toDomainAnime
@@ -38,7 +45,9 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -52,7 +61,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
@@ -80,52 +88,50 @@ import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 import java.time.Instant
 import eu.kanade.tachiyomi.animesource.model.AnimeFilter as AnimeSourceModelFilter
 
+@AssistedInject
 class BrowseAnimeSourceViewModel(
-    private val sourceId: Long,
-    listingQuery: String?,
+    @Assisted private val sourceId: Long,
+    @Assisted listingQuery: String?,
     // SY -->
-    private val filtersJson: String? = null,
-    private val savedSearch: Long? = null,
+    @Assisted private val filtersJson: String? = null,
+    @Assisted private val savedSearch: Long? = null,
     // SY <--
-    sourceManager: AnimeSourceManager = Injekt.get(),
-    sourcePreferences: SourcePreferences = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val coverCache: AnimeCoverCache = Injekt.get(),
-    private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
-    private val getRemoteAnime: GetRemoteAnime = Injekt.get(),
-    private val getDuplicateAnimelibAnime: GetDuplicateLibraryAnime = Injekt.get(),
-    private val getCategories: GetAnimeCategories = Injekt.get(),
-    private val setAnimeCategories: SetAnimeCategories = Injekt.get(),
-    private val setAnimeDefaultEpisodeFlags: SetAnimeDefaultEpisodeFlags = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
-    private val addTracks: AddAnimeTracks = Injekt.get(),
-    getIncognitoState: GetAnimeIncognitoState = Injekt.get(),
+    sourceManager: AnimeSourceManager,
+    sourcePreferences: SourcePreferences,
+    private val libraryPreferences: LibraryPreferences,
+    private val coverCache: AnimeCoverCache,
+    private val backgroundCache: AnimeBackgroundCache,
+    private val getRemoteAnime: GetRemoteAnime,
+    private val getDuplicateAnimelibAnime: GetDuplicateLibraryAnime,
+    private val getCategories: GetAnimeCategories,
+    private val setAnimeCategories: SetAnimeCategories,
+    private val setAnimeDefaultEpisodeFlags: SetAnimeDefaultEpisodeFlags,
+    private val getAnime: GetAnime,
+    private val networkToLocalAnime: NetworkToLocalAnime,
+    private val updateAnime: UpdateAnime,
+    private val addTracks: AddAnimeTracks,
+    getIncognitoState: GetAnimeIncognitoState,
     // SY -->
-    uiPreferences: UiPreferences = Injekt.get(),
-    private val deleteSavedSearchById: DeleteSavedSearchById = Injekt.get(),
-    private val insertSavedSearch: InsertSavedSearch = Injekt.get(),
-    private val getExhSavedSearch: GetExhSavedSearch = Injekt.get(),
+    uiPreferences: UiPreferences,
+    private val deleteSavedSearchById: DeleteSavedSearchById,
+    private val insertSavedSearch: InsertSavedSearch,
+    private val getExhSavedSearch: GetExhSavedSearch,
     // SY <--
-) : StateViewModel<BrowseAnimeSourceViewModel.State>(State(Listing.valueOf(listingQuery))) {
+) : ViewModel() {
 
-    companion object {
-        val SOURCE_ID_KEY = CreationExtras.Key<Long>()
-        val LISTING_QUERY_KEY = CreationExtras.Key<String?>()
-        val FILTERS_KEY = CreationExtras.Key<String?>()
-        val SAVED_SEARCH_KEY = CreationExtras.Key<Long?>()
+    val state: StateFlow<BrowseAnimeSourceViewModel.State>
+        field = MutableStateFlow<BrowseAnimeSourceViewModel.State>(State(Listing.valueOf(listingQuery)))
 
-        val Factory = viewModelFactory {
-            initializer {
-                BrowseAnimeSourceViewModel(
-                    sourceId = this[SOURCE_ID_KEY]!!,
-                    listingQuery = this[LISTING_QUERY_KEY],
-                    filtersJson = this[FILTERS_KEY],
-                    savedSearch = this[SAVED_SEARCH_KEY],
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(
+            sourceId: Long,
+            listingQuery: String?,
+            filtersJson: String? = null,
+            savedSearch: Long? = null,
+        ): BrowseAnimeSourceViewModel
     }
 
     var displayMode by sourcePreferences.sourceDisplayMode.asState(viewModelScope)
@@ -152,7 +158,7 @@ class BrowseAnimeSourceViewModel(
             // KMK <--
 
             viewModelScope.launchIO {
-                mutableState.update {
+                state.update {
                     var query: String? = null
                     var listing = it.listing
 
@@ -199,7 +205,7 @@ class BrowseAnimeSourceViewModel(
             getExhSavedSearch.subscribe(source.id, source::getFilterList)
                 .map { it.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, EXHSavedSearch::name)) }
                 .onEach { savedSearches ->
-                    mutableState.update { it.copy(savedSearches = savedSearches.toImmutableList()) }
+                    state.update { it.copy(savedSearches = savedSearches.toImmutableList()) }
                 }
                 .launchIn(viewModelScope)
             // SY <--
@@ -258,16 +264,16 @@ class BrowseAnimeSourceViewModel(
 
         reloadSavedSearches()
         // KMK <--
-        mutableState.update { it.copy(filters = source.getFilterList()) }
+        state.update { it.copy(filters = source.getFilterList()) }
     }
 
     fun setListing(listing: Listing) {
-        mutableState.update { it.copy(listing = listing, toolbarQuery = null) }
+        state.update { it.copy(listing = listing, toolbarQuery = null) }
     }
 
     fun setFilters(filters: FilterList) {
         if (source !is AnimeCatalogueSource) return
-        mutableState.update {
+        state.update {
             it.copy(
                 filters = filters,
             )
@@ -295,7 +301,7 @@ class BrowseAnimeSourceViewModel(
         val input = state.value.listing as? Listing.Search
             ?: Listing.Search(query = null, filters = source.getFilterList())
 
-        mutableState.update {
+        state.update {
             it.copy(
                 listing = input.copy(
                     query = query ?: input.query,
@@ -341,7 +347,7 @@ class BrowseAnimeSourceViewModel(
                 }
             }
         }
-        mutableState.update {
+        state.update {
             val listing = if (genreExists) {
                 Listing.Search(query = null, filters = defaultFilters)
             } else {
@@ -451,11 +457,11 @@ class BrowseAnimeSourceViewModel(
     }
 
     fun setDialog(dialog: Dialog?) {
-        mutableState.update { it.copy(dialog = dialog) }
+        state.update { it.copy(dialog = dialog) }
     }
 
     fun setToolbarQuery(query: String?) {
-        mutableState.update { it.copy(toolbarQuery = query) }
+        state.update { it.copy(toolbarQuery = query) }
     }
 
     sealed class Listing(open val query: String?, open val filters: FilterList) {
@@ -525,7 +531,7 @@ class BrowseAnimeSourceViewModel(
             getExhSavedSearch.await(source.id, (source as AnimeCatalogueSource)::getFilterList)
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, EXHSavedSearch::name))
                 .let { savedSearches ->
-                    mutableState.update { it.copy(savedSearches = savedSearches.toImmutableList()) }
+                    state.update { it.copy(savedSearches = savedSearches.toImmutableList()) }
                 }
         }
     }
@@ -537,7 +543,7 @@ class BrowseAnimeSourceViewModel(
     fun onSaveSearch() {
         viewModelScope.launchIO {
             val names = state.value.savedSearches.map { it.name }.toImmutableList()
-            mutableState.update { it.copy(dialog = Dialog.CreateSavedSearch(names)) }
+            state.update { it.copy(dialog = Dialog.CreateSavedSearch(names)) }
         }
     }
 
@@ -575,7 +581,7 @@ class BrowseAnimeSourceViewModel(
                 ?.takeUnless { allDefault }
                 ?: source.getFilterList()
 
-            mutableState.update {
+            state.update {
                 it.copy(
                     listing = Listing.Search(
                         query = search.query,
@@ -593,7 +599,7 @@ class BrowseAnimeSourceViewModel(
 
     /** Show dialog to delete saved search */
     fun onSavedSearchPress(search: EXHSavedSearch) {
-        mutableState.update { it.copy(dialog = Dialog.DeleteSavedSearch(search.id, search.name)) }
+        state.update { it.copy(dialog = Dialog.DeleteSavedSearch(search.id, search.name)) }
     }
 
     /** Save a search */

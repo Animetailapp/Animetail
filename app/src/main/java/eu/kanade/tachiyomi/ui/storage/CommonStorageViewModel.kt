@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.storage
 
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import eu.kanade.presentation.more.storage.StorageItem
 import eu.kanade.presentation.more.storage.StorageScreenState
@@ -11,12 +12,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
-import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.library.service.LibraryPreferences
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.random.Random
 
 abstract class CommonStorageViewModel<T>(
@@ -30,8 +28,11 @@ abstract class CommonStorageViewModel<T>(
     private val getCategoryId: T.() -> Long,
     private val getTitle: T.() -> String,
     private val getThumbnail: T.() -> String?,
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-) : StateViewModel<StorageScreenState>(StorageScreenState.Loading) {
+    private val libraryPreferences: LibraryPreferences,
+) : ViewModel() {
+
+    val state: StateFlow<StorageScreenState>
+        field = MutableStateFlow<StorageScreenState>(StorageScreenState.Loading)
 
     private val selectedCategory = MutableStateFlow(AllCategory)
 
@@ -47,7 +48,7 @@ abstract class CommonStorageViewModel<T>(
                 flow5 = selectedCategory,
                 transform = { _, _, libraries, categories, selectedCategory ->
                     // initialize the screen with an empty state
-                    mutableState.update {
+                    state.update {
                         StorageScreenState.Success(
                             selectedCategory = selectedCategory,
                             categories = listOf(AllCategory, *categories.toTypedArray()),
@@ -86,7 +87,7 @@ abstract class CommonStorageViewModel<T>(
                             ),
                         )
 
-                        mutableState.update { state ->
+                        state.update { state ->
                             when (state) {
                                 is StorageScreenState.Success -> state.copy(
                                     items = (state.items + item).sortedByDescending { it.size },

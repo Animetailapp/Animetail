@@ -230,8 +230,17 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
         "The helper functions are inherently limiting and hides the underlying implementation. Source developers should make their own implementation according to their needs.",
     )
     override fun seasonListParse(response: Response): List<SAnime> {
-        val document = response.asJsoup()
-        return document.select(seasonListSelector()).map { seasonFromElement(it) }
+        return try {
+            val selector = seasonListSelector()
+            val document = response.asJsoup()
+            document.select(selector).map { seasonFromElement(it) }
+        } catch (_: UnsupportedOperationException) {
+            emptyList()
+        } catch (_: LinkageError) {
+            emptyList()
+        } catch (_: AbstractMethodError) {
+            emptyList()
+        }
     }
 
     /**
@@ -239,7 +248,7 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      *
      * @since extensions-lib 16
      */
-    protected abstract fun seasonListSelector(): String
+    protected open fun seasonListSelector(): String = throw UnsupportedOperationException()
 
     /**
      * Returns a season from the given element.
@@ -247,7 +256,7 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      * @since extensions-lib 16
      * @param element an element obtained from [seasonListSelector].
      */
-    protected abstract fun seasonFromElement(element: Element): SAnime
+    protected open fun seasonFromElement(element: Element): SAnime = throw UnsupportedOperationException()
 
     /**
      * Parses the response from the site and returns the hoster list.
@@ -260,8 +269,17 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
         "The helper functions are inherently limiting and hides the underlying implementation. Source developers should make their own implementation according to their needs.",
     )
     override fun hosterListParse(response: Response): List<Hoster> {
-        val document = response.asJsoup()
-        return document.select(hosterListSelector()).map(::hosterFromElement)
+        return try {
+            val selector = hosterListSelector()
+            val document = response.asJsoup()
+            document.select(selector).map(::hosterFromElement)
+        } catch (_: UnsupportedOperationException) {
+            emptyList()
+        } catch (_: LinkageError) {
+            emptyList()
+        } catch (_: AbstractMethodError) {
+            emptyList()
+        }
     }
 
     /**
@@ -269,7 +287,7 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      *
      * @since extensions-lib 16
      */
-    protected abstract fun hosterListSelector(): String
+    protected open fun hosterListSelector(): String = throw UnsupportedOperationException()
 
     /**
      * Returns a hoster from the given element.
@@ -277,7 +295,7 @@ abstract class ParsedAnimeHttpSource : AnimeHttpSource() {
      * @since extensions-lib 16
      * @param element an element obtained from [hosterListSelector].
      */
-    protected abstract fun hosterFromElement(element: Element): Hoster
+    protected open fun hosterFromElement(element: Element): Hoster = throw UnsupportedOperationException()
 
     /**
      * Parses the response from the site and returns the page list.

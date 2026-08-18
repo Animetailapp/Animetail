@@ -4,6 +4,9 @@ import android.app.Application
 import android.content.Context
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.util.size
@@ -63,14 +66,17 @@ import kotlin.time.Duration.Companion.seconds
  * defined in [renewInterval] as we don't have any control over the filesystem and the user can
  * delete the folders at any time without the app noticing.
  */
+@Inject
+@SingleIn(AppScope::class)
 class AnimeDownloadCache(
     private val context: Context,
-    private val scope: CoroutineScope,
-    private val provider: AnimeDownloadProvider = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val extensionManager: AnimeExtensionManager = Injekt.get(),
-    private val storageManager: StorageManager = Injekt.get(),
+    private val provider: AnimeDownloadProvider,
+    private val sourceManager: AnimeSourceManager,
+    private val extensionManager: AnimeExtensionManager,
+    private val storageManager: StorageManager,
 ) {
+
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     private val _changes: Channel<Unit> = Channel(Channel.UNLIMITED)
     val changes = _changes.receiveAsFlow()

@@ -1,11 +1,13 @@
 package tachiyomi.domain.track.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.track.anime.model.AnimeTrack
 import tachiyomi.domain.track.anime.repository.AnimeTrackRepository
 
+@Inject
 class GetAnimeTracks(
     private val animetrackRepository: AnimeTrackRepository,
 ) {

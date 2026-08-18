@@ -78,7 +78,6 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.entries.components.DotSeparatorText
 import eu.kanade.presentation.entries.components.ItemCover
@@ -87,6 +86,7 @@ import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
+import mihon.app.di.appGraph
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
@@ -95,6 +95,7 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.clickableNoIndication
+import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.secondaryItemAlpha
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -382,8 +383,9 @@ private fun AnimeAndSourceTitlesLarge(
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
     // KMK -->
-    val uiPreferences = remember { Injekt.get<UiPreferences>() }
-    val usePanoramaCover = uiPreferences.usePanoramaCoverMangaInfo.get()
+    val context = LocalContext.current
+    val uiPreferences = remember { context.appGraph.uiPreferences }
+    val usePanoramaCover by uiPreferences.usePanoramaCoverMangaInfo.collectAsState()
     // KMK <--
 
     Column(
@@ -439,9 +441,10 @@ private fun AnimeAndSourceTitlesSmall(
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
     // KMK -->
-    val uiPreferences = remember { Injekt.get<UiPreferences>() }
-    val usePanoramaCover = uiPreferences.usePanoramaCoverMangaInfo.get()
-    val topAlignCover = uiPreferences.topAlignCover.get()
+    val context = LocalContext.current
+    val uiPreferences = remember { context.appGraph.uiPreferences }
+    val usePanoramaCover by uiPreferences.usePanoramaCoverMangaInfo.collectAsState()
+    val topAlignCover by uiPreferences.topAlignCover.collectAsState()
     // KMK <--
 
     Column(

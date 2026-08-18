@@ -18,31 +18,39 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.preference.toggle
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.concurrent.Executors
 
 abstract class AnimeSearchViewModel(
     initialState: State = State(),
-    sourcePreferences: SourcePreferences = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val extensionManager: AnimeExtensionManager = Injekt.get(),
-    private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val preferences: SourcePreferences = Injekt.get(),
-) : StateViewModel<AnimeSearchViewModel.State>(initialState) {
+    sourcePreferences: SourcePreferences,
+    private val sourceManager: AnimeSourceManager,
+    private val extensionManager: AnimeExtensionManager,
+    private val networkToLocalAnime: NetworkToLocalAnime,
+    private val getAnime: GetAnime,
+    private val preferences: SourcePreferences,
+) : ViewModel() {
+
+    val state: StateFlow<State>
+        field = MutableStateFlow<State>(initialState)
+
+    // Subclasses can't touch the backing field (Kotlin forbids a visibility modifier on one),
+    // so state writes from them go through here.
+    protected fun updateState(function: (State) -> State) {
+        state.update(function)
+    }
 
     private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
     private var searchJob: Job? = null
@@ -66,8 +74,8 @@ abstract class AnimeSearchViewModel(
 
     init {
         viewModelScope.launch {
-            preferences.globalSearchFilterState.changes().collectLatest { state ->
-                mutableState.update { it.copy(onlyShowHasResults = state) }
+            preferences.globalSearchFilterState.changes().collectLatest { onlyShowHasResults ->
+                state.update { it.copy(onlyShowHasResults = onlyShowHasResults) }
             }
         }
     }
@@ -109,11 +117,11 @@ abstract class AnimeSearchViewModel(
     }
 
     fun updateSearchQuery(query: String?) {
-        mutableState.update { it.copy(searchQuery = query) }
+        state.update { it.copy(searchQuery = query) }
     }
 
     fun setSourceFilter(filter: AnimeSourceFilter) {
-        mutableState.update { it.copy(sourceFilter = filter) }
+        state.update { it.copy(sourceFilter = filter) }
         search()
     }
 
@@ -180,7 +188,7 @@ abstract class AnimeSearchViewModel(
     }
 
     private fun updateItems(items: PersistentMap<AnimeSource, AnimeSearchItemResult>) {
-        mutableState.update {
+        state.update {
             it.copy(
                 items = items
                     .toSortedMap(sortComparator(items))

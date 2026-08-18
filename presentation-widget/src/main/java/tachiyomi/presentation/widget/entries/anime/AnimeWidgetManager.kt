@@ -3,6 +3,7 @@ package tachiyomi.presentation.widget.entries.anime
 import android.content.Context
 import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.LifecycleCoroutineScope
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
@@ -14,14 +15,19 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.updates.anime.interactor.GetAnimeUpdates
 
+@Inject
 class AnimeWidgetManager(
     private val getUpdates: GetAnimeUpdates,
     private val securityPreferences: SecurityPreferences,
 ) {
 
-    fun Context.init(scope: LifecycleCoroutineScope) {
+    context(context: Context)
+    fun init(scope: LifecycleCoroutineScope) {
         combine(
-            getUpdates.subscribe(seen = false, after = BaseAnimeUpdatesGridGlanceWidget.DateLimit.toEpochMilli()),
+            getUpdates.subscribe(
+                seen = false,
+                after = BaseAnimeUpdatesGridGlanceWidget.DateLimit.toEpochMilliseconds(),
+            ),
             securityPreferences.useAuthenticator.changes(),
             transform = { a, b -> a to b },
         )
@@ -31,10 +37,10 @@ class AnimeWidgetManager(
             }
             .onEach {
                 try {
-                    AnimeUpdatesGridGlanceWidget().updateAll(this)
-                    AnimeUpdatesGridCoverScreenGlanceWidget().updateAll(this)
+                    AnimeUpdatesGridGlanceWidget().updateAll(context)
+                    AnimeUpdatesGridCoverScreenGlanceWidget().updateAll(context)
                 } catch (e: Exception) {
-                    logcat(LogPriority.ERROR, e) { "Failed to update widget" }
+                    context.logcat(LogPriority.ERROR, e) { "Failed to update widget" }
                 }
             }
             .flowOn(Dispatchers.Main)

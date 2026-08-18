@@ -1,19 +1,28 @@
 package eu.kanade.presentation.more.settings.screen.browse
 
 import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import mihon.core.viewmodel.StateViewModel
 import mihon.domain.extension.anime.interactor.AddAnimeExtensionStore
 import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
 import mihon.domain.extension.anime.interactor.RemoveAnimeExtensionStore
@@ -24,74 +33,46 @@ import mihon.domain.extension.manga.interactor.RemoveMangaExtensionStore
 import mihon.domain.extension.manga.interactor.UpdateMangaExtensionStores
 import mihon.domain.extension.model.ExtensionStore
 import tachiyomi.core.common.util.lang.launchIO
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import kotlin.time.Duration.Companion.seconds
 
+@AssistedInject
 class ExtensionStoresViewModel(
-    val isManga: Boolean,
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
-) : StateViewModel<ExtensionStoreScreenState>(ExtensionStoreScreenState.Loading) {
+    @Assisted val isManga: Boolean,
+    private val sourcePreferences: SourcePreferences,
+    private val getMangaExtensionStores: GetMangaExtensionStores,
+    private val getAnimeExtensionStores: GetAnimeExtensionStores,
+    private val addMangaExtensionStore: AddMangaExtensionStore,
+    private val addAnimeExtensionStore: AddAnimeExtensionStore,
+    private val removeMangaExtensionStore: RemoveMangaExtensionStore,
+    private val removeAnimeExtensionStore: RemoveAnimeExtensionStore,
+    private val updateMangaExtensionStores: UpdateMangaExtensionStores,
+    private val updateAnimeExtensionStores: UpdateAnimeExtensionStores,
+    private val mangaExtensionManager: MangaExtensionManager,
+    private val animeExtensionManager: AnimeExtensionManager,
+) : ViewModel() {
 
-    companion object {
-        val IS_MANGA_KEY = CreationExtras.Key<Boolean>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                ExtensionStoresViewModel(
-                    isManga = get(IS_MANGA_KEY)!!,
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(isManga: Boolean): ExtensionStoresViewModel
     }
 
-    private val getMangaExtensionStores: GetMangaExtensionStores by lazy { Injekt.get() }
-    private val getAnimeExtensionStores: GetAnimeExtensionStores by lazy { Injekt.get() }
-    private val addMangaExtensionStore: AddMangaExtensionStore by lazy { Injekt.get() }
-    private val addAnimeExtensionStore: AddAnimeExtensionStore by lazy { Injekt.get() }
-    private val removeMangaExtensionStore: RemoveMangaExtensionStore by lazy { Injekt.get() }
-    private val removeAnimeExtensionStore: RemoveAnimeExtensionStore by lazy { Injekt.get() }
-    private val updateMangaExtensionStores: UpdateMangaExtensionStores by lazy { Injekt.get() }
-    private val updateAnimeExtensionStores: UpdateAnimeExtensionStores by lazy { Injekt.get() }
+    private val dialog = MutableStateFlow<ExtensionStoreDialog?>(null)
 
-    private inline fun updateSuccessState(
-        func: (ExtensionStoreScreenState.Success) -> ExtensionStoreScreenState.Success,
-    ) {
-        mutableState.update {
-            when (it) {
-                ExtensionStoreScreenState.Loading -> it
-                is ExtensionStoreScreenState.Success -> func(it)
-            }
-        }
+    val state: StateFlow<ExtensionStoreScreenState> = combine(
+        if (isManga) getMangaExtensionStores.subscribe() else getAnimeExtensionStores.subscribe(),
+        sourcePreferences.disabledRepos.changes(),
+        dialog,
+    ) { stores, disabledRepos, dialog ->
+        ExtensionStoreScreenState.Success(
+            stores = stores,
+            disabledRepos = disabledRepos,
+            dialog = dialog,
+        )
     }
-
-    init {
-        val storesFlow = if (isManga) getMangaExtensionStores.subscribe() else getAnimeExtensionStores.subscribe()
-        viewModelScope.launchIO {
-            storesFlow.collectLatest { stores ->
-                mutableState.update {
-                    when (it) {
-                        ExtensionStoreScreenState.Loading -> ExtensionStoreScreenState.Success(
-                            stores = stores,
-                            disabledRepos = sourcePreferences.disabledRepos.get(),
-                        )
-
-                        is ExtensionStoreScreenState.Success -> it.copy(stores = stores)
-                    }
-                }
-            }
-        }
-
-        sourcePreferences.disabledRepos.changes()
-            .onEach { disabledRepos ->
-                mutableState.update {
-                    when (it) {
-                        is ExtensionStoreScreenState.Success -> it.copy(disabledRepos = disabledRepos)
-                        else -> it
-                    }
-                }
-            }
-            .launchIn(viewModelScope)
-    }
+        .flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), ExtensionStoreScreenState.Loading)
 
     /**
      * Creates and adds a new repo to the database.
@@ -100,41 +81,37 @@ class ExtensionStoresViewModel(
      */
     fun createRepo(baseUrl: String) {
         viewModelScope.launch {
-            updateSuccessState {
-                it.copy(
-                    dialog = when (it.dialog) {
-                        is ExtensionStoreDialog.Create -> it.dialog.copy(processing = true)
-                        is ExtensionStoreDialog.Confirm -> it.dialog.copy(processing = true)
-                        else -> it.dialog
-                    },
-                )
+            dialog.update {
+                when (it) {
+                    is ExtensionStoreDialog.Create -> it.copy(processing = true)
+                    is ExtensionStoreDialog.Confirm -> it.copy(processing = true)
+                    else -> it
+                }
             }
             val result = if (isManga) addMangaExtensionStore(baseUrl) else addAnimeExtensionStore(baseUrl)
             result.onSuccess {
                 if (isManga) {
-                    Injekt.get<MangaExtensionManager>().findAvailableExtensions()
+                    mangaExtensionManager.findAvailableExtensions()
                 } else {
-                    Injekt.get<AnimeExtensionManager>().findAvailableExtensions()
+                    animeExtensionManager.findAvailableExtensions()
                 }
                 dismissDialog()
             }
                 .onFailure { throwable ->
-                    updateSuccessState {
-                        it.copy(
-                            dialog = when (it.dialog) {
-                                is ExtensionStoreDialog.Create -> it.dialog.copy(
-                                    processing = false,
-                                    errorMessage = throwable.message ?: "unknown error",
-                                )
+                    dialog.update {
+                        when (it) {
+                            is ExtensionStoreDialog.Create -> it.copy(
+                                processing = false,
+                                errorMessage = throwable.message ?: "unknown error",
+                            )
 
-                                is ExtensionStoreDialog.Confirm -> it.dialog.copy(
-                                    processing = false,
-                                    errorMessage = throwable.message ?: "unknown error",
-                                )
+                            is ExtensionStoreDialog.Confirm -> it.copy(
+                                processing = false,
+                                errorMessage = throwable.message ?: "unknown error",
+                            )
 
-                                else -> it.dialog
-                            },
-                        )
+                            else -> it
+                        }
                     }
                 }
         }
@@ -144,15 +121,11 @@ class ExtensionStoresViewModel(
      * Refreshes information for each repository.
      */
     fun refreshRepos() {
-        val status = state.value
-
-        if (status is ExtensionStoreScreenState.Success) {
-            viewModelScope.launchIO {
-                if (isManga) {
-                    updateMangaExtensionStores()
-                } else {
-                    updateAnimeExtensionStores()
-                }
+        viewModelScope.launchIO {
+            if (isManga) {
+                updateMangaExtensionStores()
+            } else {
+                updateAnimeExtensionStores()
             }
         }
     }
@@ -165,10 +138,10 @@ class ExtensionStoresViewModel(
         viewModelScope.launchIO {
             if (isManga) {
                 removeMangaExtensionStore(baseUrl)
-                Injekt.get<MangaExtensionManager>().findAvailableExtensions()
+                mangaExtensionManager.findAvailableExtensions()
             } else {
                 removeAnimeExtensionStore(baseUrl)
-                Injekt.get<AnimeExtensionManager>().findAvailableExtensions()
+                animeExtensionManager.findAvailableExtensions()
             }
         }
     }
@@ -192,26 +165,22 @@ class ExtensionStoresViewModel(
     }
 
     fun addFromDeeplink(storeIndexUrl: String) {
-        updateSuccessState { state ->
-            state.copy(
-                dialog = ExtensionStoreDialog.Confirm(
-                    url = storeIndexUrl,
-                    alreadyExists = state.stores.any { it.indexUrl == storeIndexUrl },
-                ),
-            )
+        viewModelScope.launchIO {
+            val stores = if (isManga) getMangaExtensionStores.await() else getAnimeExtensionStores.await()
+            val alreadyExists = stores.any {
+                it.indexUrl ==
+                    storeIndexUrl
+            }
+            dialog.update { ExtensionStoreDialog.Confirm(url = storeIndexUrl, alreadyExists = alreadyExists) }
         }
     }
 
     fun showDialog(dialog: ExtensionStoreDialog) {
-        updateSuccessState { state ->
-            state.copy(dialog = dialog)
-        }
+        this.dialog.update { dialog }
     }
 
     fun dismissDialog() {
-        updateSuccessState {
-            it.copy(dialog = null)
-        }
+        dialog.update { null }
     }
 }
 

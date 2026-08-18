@@ -1,5 +1,6 @@
 package mihon.domain.source.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.anime.interactor.SyncSeasonsWithSource
 import eu.kanade.domain.entries.anime.model.hasCustomBackground
 import eu.kanade.domain.entries.anime.model.hasCustomCover
@@ -10,6 +11,8 @@ import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
 import logcat.LogPriority
 import mihon.domain.source.models.RemoteAnimeEpisodeUpdate
 import mihon.domain.source.models.RemoteAnimeSeasonUpdate
@@ -24,6 +27,7 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.source.local.entries.anime.isLocal
 import java.time.Instant
 
+@Inject
 class UpdateAnimeFromRemote(
     private val sourceManager: AnimeSourceManager,
     private val episodeRepository: EpisodeRepository,
@@ -80,7 +84,8 @@ class UpdateAnimeFromRemote(
             )
             val updatedAnime = animeRepository.getAnimeById(anime.id)
             Result.success(RemoteAnimeEpisodeUpdate(anime = updatedAnime, newEpisodes = newEpisodes))
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
             logcat(LogPriority.ERROR, e)
             Result.failure(e)
         }
@@ -133,7 +138,8 @@ class UpdateAnimeFromRemote(
             )
             val updatedAnime = animeRepository.getAnimeById(anime.id)
             Result.success(RemoteAnimeSeasonUpdate(anime = updatedAnime, newSeasons = newSeasons))
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
             logcat(LogPriority.ERROR, e)
             Result.failure(e)
         }

@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.util.system.toast
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
@@ -17,11 +18,11 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 
-private val addTracks: AddAnimeTracks by injectLazy()
-private val insertTrack: InsertAnimeTrack by injectLazy()
+private val appGraph get() = Injekt.get<Application>().appGraph
+private val addTracks: AddAnimeTracks by lazy { appGraph.addAnimeTracks }
+private val insertTrack: InsertAnimeTrack by lazy { appGraph.insertAnimeTrack }
 
 interface AnimeTracker {
 

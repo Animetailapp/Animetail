@@ -1,16 +1,16 @@
 package eu.kanade.tachiyomi.data.backup.restore.restorers
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import tachiyomi.data.handlers.manga.MangaDatabaseHandler
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.library.service.LibraryPreferences
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
 class MangaCategoriesRestorer(
-    private val mangaHandler: MangaDatabaseHandler = Injekt.get(),
-    private val getMangaCategories: GetMangaCategories = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
+    private val mangaHandler: MangaDatabaseHandler,
+    private val getMangaCategories: GetMangaCategories,
+    private val libraryPreferences: LibraryPreferences,
 ) {
 
     suspend operator fun invoke(backupCategories: List<BackupCategory>) {

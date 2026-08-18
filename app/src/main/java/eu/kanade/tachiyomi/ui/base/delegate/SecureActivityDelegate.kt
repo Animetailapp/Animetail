@@ -1,12 +1,14 @@
 package eu.kanade.tachiyomi.ui.base.delegate
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.ui.security.UnlockActivity
@@ -16,9 +18,7 @@ import eu.kanade.tachiyomi.util.view.setSecureScreen
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
+import mihon.app.di.appGraph
 
 interface SecureActivityDelegate {
     fun registerSecureActivity(activity: AppCompatActivity)
@@ -31,16 +31,16 @@ interface SecureActivityDelegate {
          */
         var requireUnlock = true
 
-        fun onApplicationStopped() {
-            val preferences = Injekt.get<SecurityPreferences>()
-            if (!preferences.useAuthenticator().get()) return
+        fun onApplicationStopped(context: Context) {
+            val preferences = context.appGraph.securityPreferences
+            if (!preferences.useAuthenticator.get()) return
 
             if (!AuthenticatorUtil.isAuthenticating) {
                 // Return if app is closed in locked state
                 if (requireUnlock) return
                 // Save app close time if lock is delayed
-                if (preferences.lockAppAfter().get() > 0) {
-                    preferences.lastAppClosed().set(System.currentTimeMillis())
+                if (preferences.lockAppAfter.get() > 0) {
+                    preferences.lastAppClosed.set(System.currentTimeMillis())
                 }
             }
         }
@@ -48,15 +48,15 @@ interface SecureActivityDelegate {
         /**
          * Checks if unlock is needed when app comes foreground.
          */
-        fun onApplicationStart() {
-            val preferences = Injekt.get<SecurityPreferences>()
-            if (!preferences.useAuthenticator().get()) return
+        fun onApplicationStart(context: Context) {
+            val preferences = context.appGraph.securityPreferences
+            if (!preferences.useAuthenticator.get()) return
 
-            val lastClosedPref = preferences.lastAppClosed()
+            val lastClosedPref = preferences.lastAppClosed
 
             // `requireUnlock` can be true on process start or if app was closed in locked state
             if (!AuthenticatorUtil.isAuthenticating && !requireUnlock) {
-                requireUnlock = when (val lockDelay = preferences.lockAppAfter().get()) {
+                requireUnlock = when (val lockDelay = preferences.lockAppAfter.get()) {
                     -1 -> false
 
                     // Never
@@ -80,11 +80,13 @@ class SecureActivityDelegateImpl : SecureActivityDelegate, DefaultLifecycleObser
 
     private lateinit var activity: AppCompatActivity
 
-    private val preferences: BasePreferences by injectLazy()
-    private val securityPreferences: SecurityPreferences by injectLazy()
+    @Inject private lateinit var preferences: BasePreferences
+
+    @Inject private lateinit var securityPreferences: SecurityPreferences
 
     override fun registerSecureActivity(activity: AppCompatActivity) {
         this.activity = activity
+        activity.appGraph.inject(this)
         activity.lifecycle.addObserver(this)
     }
 

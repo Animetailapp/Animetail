@@ -1,6 +1,9 @@
 package tachiyomi.domain.library.service
 
 import aniyomi.domain.anime.SeasonDisplayMode
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.TriState
@@ -15,6 +18,8 @@ import tachiyomi.domain.library.manga.model.MangaLibraryGroup
 import tachiyomi.domain.library.manga.model.MangaLibrarySort
 import tachiyomi.domain.library.model.LibraryDisplayMode
 
+@Inject
+@SingleIn(AppScope::class)
 class LibraryPreferences(
     private val preferenceStore: PreferenceStore,
 ) {

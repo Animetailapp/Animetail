@@ -1,9 +1,11 @@
 package tachiyomi.domain.entries.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaUpdate
 import tachiyomi.domain.entries.manga.repository.MangaRepository
 
+@Inject
 class NetworkToLocalManga(
     private val mangaRepository: MangaRepository,
 ) {

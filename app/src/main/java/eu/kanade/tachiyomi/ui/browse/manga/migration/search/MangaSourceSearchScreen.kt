@@ -17,10 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.core.util.ifMangaSourcesLoaded
 import eu.kanade.presentation.browse.manga.BrowseSourceContent
 import eu.kanade.presentation.components.SearchToolbar
@@ -58,13 +57,10 @@ data class MangaSourceSearchScreen(
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
 
-        val viewModel = viewModel<BrowseMangaSourceViewModel>(
-            factory = BrowseMangaSourceViewModel.Factory,
-            extras = CreationExtras {
-                set(BrowseMangaSourceViewModel.SOURCE_ID_KEY, sourceId)
-                set(BrowseMangaSourceViewModel.LISTING_QUERY_KEY, query)
-            },
-        )
+        val viewModel =
+            assistedMetroViewModel<BrowseMangaSourceViewModel, BrowseMangaSourceViewModel.Factory> {
+                create(sourceId = sourceId, listingQuery = query)
+            }
         val state by viewModel.state.collectAsState()
 
         val snackbarHostState = remember { SnackbarHostState() }

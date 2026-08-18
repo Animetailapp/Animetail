@@ -28,13 +28,12 @@ import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toLocalDateTime
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Clock
 
 object SettingsAppearanceScreen : SearchableSettings {
@@ -45,7 +44,8 @@ object SettingsAppearanceScreen : SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val uiPreferences = remember { Injekt.get<UiPreferences>() }
+        val context = LocalContext.current
+        val uiPreferences = remember { context.appGraph.uiPreferences }
 
         return listOf(
             getThemeGroup(uiPreferences = uiPreferences),
@@ -279,7 +279,9 @@ object SettingsAppearanceScreen : SearchableSettings {
     fun getForkGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
 //        val previewsRowCount by uiPreferences.previewsRowCount().collectAsState()
         // KMK -->
-        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
+        val context = LocalContext.current
+        val sourcePreferences = remember { context.appGraph.sourcePreferences }
+        val relatedAnimes by sourcePreferences.relatedAnimes.collectAsState()
         val relatedMangasInOverflow by uiPreferences.expandRelatedAnimes.collectAsState()
         val showCast by uiPreferences.showCast.collectAsState()
         // KMK <--
@@ -303,7 +305,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                     preference = uiPreferences.expandRelatedAnimes,
                     title = stringResource(TLMR.strings.pref_expand_related_animes),
                     subtitle = stringResource(TLMR.strings.pref_expand_related_animes_summary),
-                    enabled = sourcePreferences.relatedAnimes.get(),
+                    enabled = relatedAnimes,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.relatedAnimesInOverflow,
@@ -315,7 +317,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                     preference = uiPreferences.showHomeOnRelatedAnimes,
                     title = stringResource(TLMR.strings.pref_show_home_on_related_animes),
                     subtitle = stringResource(TLMR.strings.pref_show_home_on_related_animes_summary),
-                    enabled = sourcePreferences.relatedAnimes.get(),
+                    enabled = relatedAnimes,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.showCast,

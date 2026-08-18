@@ -3,12 +3,12 @@ package eu.kanade.tachiyomi.ui.browse.anime.migration.anime
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.browse.anime.MigrateAnimeScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.anime.migration.search.MigrateAnimeSearchScreen
@@ -26,13 +26,15 @@ data class MigrateAnimeScreen(
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { MigrateAnimeScreenModel(sourceId) }
+        val viewModel = assistedMetroViewModel<MigrateAnimeViewModel, MigrateAnimeViewModel.Factory> {
+            create(sourceId = sourceId)
+        }
 
-        val state by screenModel.state.collectAsState()
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
         val isSelectionMode = state.selectedAnimeIds.isNotEmpty()
         BackHandler(enabled = isSelectionMode) {
-            screenModel.clearSelection()
+            viewModel.clearSelection()
         }
 
         if (state.isLoading) {
@@ -43,7 +45,7 @@ data class MigrateAnimeScreen(
         MigrateAnimeScreen(
             navigateUp = {
                 if (isSelectionMode) {
-                    screenModel.clearSelection()
+                    viewModel.clearSelection()
                 } else {
                     navigator.pop()
                 }
@@ -52,30 +54,30 @@ data class MigrateAnimeScreen(
             state = state,
             onClickItem = { anime ->
                 if (isSelectionMode) {
-                    screenModel.toggleSelection(anime)
+                    viewModel.toggleSelection(anime)
                 } else {
                     navigator.push(MigrateAnimeSearchScreen(anime.id))
                 }
             },
             onClickCover = { anime ->
                 if (isSelectionMode) {
-                    screenModel.toggleSelection(anime)
+                    viewModel.toggleSelection(anime)
                 } else {
                     navigator.push(AnimeScreen(anime.id))
                 }
             },
-            onLongClickItem = screenModel::toggleSelection,
-            onSelectAll = screenModel::selectAll,
-            onClearSelection = screenModel::clearSelection,
+            onLongClickItem = viewModel::toggleSelection,
+            onSelectAll = viewModel::selectAll,
+            onClearSelection = viewModel::clearSelection,
             onClickMigrate = {
                 navigator.push(mihon.feature.migration.config.AnimeMigrationConfigScreen(state.selectedAnimeIds))
             },
         )
 
         LaunchedEffect(Unit) {
-            screenModel.events.collectLatest { event ->
+            viewModel.events.collectLatest { event ->
                 when (event) {
-                    MigrationAnimeEvent.FailedFetchingFavorites -> {
+                    MigrateAnimeViewModel.MigrationAnimeEvent.FailedFetchingFavorites -> {
                         context.toast(MR.strings.internal_error)
                     }
                 }

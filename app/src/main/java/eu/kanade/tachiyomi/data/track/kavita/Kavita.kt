@@ -16,7 +16,6 @@ import eu.kanade.tachiyomi.source.sourcePreferences
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.injectLazy
 import java.security.MessageDigest
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
@@ -34,7 +33,7 @@ class Kavita(id: Long) : BaseTracker(id, "Kavita"), EnhancedMangaTracker, MangaT
     private val interceptor by lazy { KavitaInterceptor(this) }
     val api by lazy { KavitaApi(client, interceptor) }
 
-    private val sourceManager: MangaSourceManager by injectLazy()
+    private val sourceManager: MangaSourceManager by lazy { appGraph.mangaSourceManager }
 
     override fun getLogo(): Int = R.drawable.ic_tracker_kavita
 

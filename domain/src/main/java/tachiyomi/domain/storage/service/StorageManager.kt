@@ -5,6 +5,9 @@ import android.os.Build
 import android.os.Environment
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +23,8 @@ import kotlinx.coroutines.flow.shareIn
 import tachiyomi.core.common.storage.FolderProvider
 import java.io.File
 
+@Inject
+@SingleIn(AppScope::class)
 class StorageManager(
     private val context: Context,
     scope: CoroutineScope,

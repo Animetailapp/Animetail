@@ -75,6 +75,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.domain.source.anime.interactor.GetAnimeIncognitoState
@@ -138,6 +139,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import logcat.LogPriority
+import mihon.app.di.AppGraph
+import mihon.app.di.appGraph
+import mihon.core.metro.metroGraph
 import mihon.core.migration.Migrator
 import mihon.feature.support.SupportUsScreen
 import tachiyomi.core.common.i18n.stringResource
@@ -153,9 +157,6 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -165,15 +166,25 @@ import kotlin.time.times
 
 class MainActivity : BaseActivity() {
 
-    private val libraryPreferences: LibraryPreferences by injectLazy()
-    private val preferences: BasePreferences by injectLazy()
+    private val graph: AppGraph by lazy { metroGraph() }
 
-    private val animeDownloadCache: AnimeDownloadCache by injectLazy()
-    private val downloadCache: MangaDownloadCache by injectLazy()
-    private val chapterCache: ChapterCache by injectLazy()
+    @Inject lateinit var libraryPreferences: LibraryPreferences
 
-    private val getAnimeIncognitoState: GetAnimeIncognitoState by injectLazy()
-    private val getMangaIncognitoState: GetMangaIncognitoState by injectLazy()
+    @Inject lateinit var preferences: BasePreferences
+
+    @Inject lateinit var animeDownloadCache: AnimeDownloadCache
+
+    @Inject lateinit var downloadCache: MangaDownloadCache
+
+    @Inject lateinit var chapterCache: ChapterCache
+
+    @Inject lateinit var getAnimeIncognitoState: GetAnimeIncognitoState
+
+    @Inject lateinit var getMangaIncognitoState: GetMangaIncognitoState
+
+    @Inject lateinit var animeExtensionApi: AnimeExtensionApi
+
+    @Inject lateinit var mangaExtensionApi: MangaExtensionApi
 
     // To be checked by splash screen. If true then splash screen will be removed.
     var ready = false
@@ -181,18 +192,16 @@ class MainActivity : BaseActivity() {
     private var navigator: Navigator? = null
 
     // AM (CONNECTIONS) -->
-    private val connectionsPreferences: ConnectionsPreferences by injectLazy()
+    @Inject lateinit var connectionsPreferences: ConnectionsPreferences
     // <-- AM (CONNECTIONS)
 
     // AM -->
-    private val mpvConfig: MpvConfig by injectLazy()
+    @Inject lateinit var mpvConfig: MpvConfig
     // <-- AM
 
-    init {
-        registerSecureActivity(this)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
+        registerSecureActivity(this)
+        graph.inject(this)
         val isLaunch = savedInstanceState == null
 
         // Prevent splash screen showing up on configuration changes
@@ -354,7 +363,9 @@ class MainActivity : BaseActivity() {
 
                 HandleOnNewIntent(context = context, navigator = navigator)
 
-                CheckForUpdates()
+                if (isLaunch) {
+                    CheckForUpdates()
+                }
                 ShowOnboarding()
                 ShowDonationCampaign()
             }
@@ -444,7 +455,7 @@ class MainActivity : BaseActivity() {
         LaunchedEffect(Unit) {
             if (updaterEnabled) {
                 try {
-                    val result = AppUpdateChecker().checkForUpdate()
+                    val result = context.appGraph.updateChecker.checkForUpdate()
                     if (result is GetApplicationRelease.Result.NewUpdate) {
                         val updateScreen = NewUpdateScreen(
                             versionName = result.release.version,
@@ -463,8 +474,8 @@ class MainActivity : BaseActivity() {
         // Extensions updates
         LaunchedEffect(Unit) {
             try {
-                AnimeExtensionApi().checkForUpdates(context)
-                MangaExtensionApi().checkForUpdates(context)
+                animeExtensionApi.checkForUpdates(context)
+                mangaExtensionApi.checkForUpdates(context)
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e)
             }
@@ -837,10 +848,10 @@ class MainActivity : BaseActivity() {
             if (extPlayer) {
                 var extVideo = video
                 if (extVideo != null && extVideo.usesHttpServer()) {
-                    val sourceId = sourceId ?: (Injekt.get<GetAnime>().await(animeId)?.source ?: -1L)
+                    val sourceId = sourceId ?: (context.appGraph.getAnime.await(animeId)?.source ?: -1L)
                     val (success, port) = startHttpServerService(context, sourceId)
                     if (!success) {
-                        withUIContext { Injekt.get<Application>().toast(AYMR.strings.http_server_start_failure) }
+                        withUIContext { context.toast(AYMR.strings.http_server_start_failure) }
                         return
                     }
                     extVideo = extVideo.copyHttpServer(port)
@@ -849,7 +860,7 @@ class MainActivity : BaseActivity() {
                     ExternalIntents.newIntent(context, animeId, episodeId, extVideo)
                 } catch (e: Exception) {
                     logcat(LogPriority.ERROR, e)
-                    withUIContext { Injekt.get<Application>().toast(e.message) }
+                    withUIContext { context.toast(e.message) }
                     null
                 } ?: return
                 externalPlayerResult?.launch(intent) ?: return
@@ -872,7 +883,7 @@ class MainActivity : BaseActivity() {
             sourceId: Long,
             timeout: Duration = 5.seconds,
         ): Pair<Boolean, Int> {
-            val sourceManager: AnimeSourceManager = Injekt.get()
+            val sourceManager = context.appGraph.animeSourceManager
             val source = sourceManager.get(sourceId) as? AnimeHttpSource
             if (source?.createHttpServer() == null) {
                 return Pair(false, 0)

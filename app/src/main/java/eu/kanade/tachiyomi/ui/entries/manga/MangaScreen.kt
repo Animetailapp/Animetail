@@ -8,7 +8,6 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,11 +20,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.core.util.ifMangaSourcesLoaded
 import eu.kanade.domain.entries.manga.model.hasCustomCover
 import eu.kanade.domain.entries.manga.model.toSManga
@@ -93,13 +91,10 @@ class MangaScreen(
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
-        val viewModel = viewModel<MangaViewModel>(
-            factory = MangaViewModel.Factory,
-            extras = CreationExtras {
-                set(MangaViewModel.MANGA_ID_KEY, mangaId)
-                set(MangaViewModel.IS_FROM_SOURCE_KEY, fromSource)
-            },
-        )
+        val viewModel =
+            assistedMetroViewModel<MangaViewModel, MangaViewModel.Factory> {
+                create(mangaId = mangaId, isFromSource = fromSource)
+            }
 
         val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -267,13 +262,10 @@ class MangaScreen(
             }
 
             MangaViewModel.Dialog.FullCover -> {
-                val sm = viewModel<MangaCoverViewModel>(
-                    factory = MangaCoverViewModel.Factory,
-                    extras = CreationExtras {
-                        set(MangaCoverViewModel.MANGA_ID_KEY, successState.manga.id)
-                    },
-                )
-                val manga by sm.state.collectAsState()
+                val sm = assistedMetroViewModel<MangaCoverViewModel, MangaCoverViewModel.Factory> {
+                    create(mangaId = successState.manga.id)
+                }
+                val manga by sm.state.collectAsStateWithLifecycle()
                 if (manga != null) {
                     val getContent = rememberLauncherForActivityResult(
                         ActivityResultContracts.GetContent(),

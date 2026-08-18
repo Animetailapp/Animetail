@@ -6,10 +6,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.anime.migration.search.MigrateAnimeSearchScreen
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
@@ -31,13 +30,10 @@ class AnimeMigrationListScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel = viewModel<AnimeMigrationListViewModel>(
-            factory = AnimeMigrationListViewModel.Factory,
-            extras = CreationExtras {
-                set(AnimeMigrationListViewModel.ANIME_IDS_KEY, animeIds)
-                set(AnimeMigrationListViewModel.EXTRA_SEARCH_QUERY_KEY, extraSearchQuery)
-            },
-        )
+        val viewModel =
+            assistedMetroViewModel<AnimeMigrationListViewModel, AnimeMigrationListViewModel.Factory> {
+                create(animeIds = animeIds, extraSearchQuery = extraSearchQuery)
+            }
         val state by viewModel.state.collectAsState()
         val context = LocalContext.current
 

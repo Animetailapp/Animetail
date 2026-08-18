@@ -3,6 +3,7 @@ package tachiyomi.presentation.widget.entries.manga
 import android.content.Context
 import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.LifecycleCoroutineScope
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
@@ -14,12 +15,14 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.updates.manga.interactor.GetMangaUpdates
 
+@Inject
 class MangaWidgetManager(
     private val getUpdates: GetMangaUpdates,
     private val securityPreferences: SecurityPreferences,
 ) {
 
-    fun Context.init(scope: LifecycleCoroutineScope) {
+    context(context: Context)
+    fun init(scope: LifecycleCoroutineScope) {
         combine(
             getUpdates.subscribe(
                 read = false,
@@ -34,10 +37,10 @@ class MangaWidgetManager(
             }
             .onEach {
                 try {
-                    MangaUpdatesGridGlanceWidget().updateAll(this)
-                    MangaUpdatesGridCoverScreenGlanceWidget().updateAll(this)
+                    MangaUpdatesGridGlanceWidget().updateAll(context)
+                    MangaUpdatesGridCoverScreenGlanceWidget().updateAll(context)
                 } catch (e: Exception) {
-                    logcat(LogPriority.ERROR, e) { "Failed to update widget" }
+                    context.logcat(LogPriority.ERROR, e) { "Failed to update widget" }
                 }
             }
             .flowOn(Dispatchers.Main)

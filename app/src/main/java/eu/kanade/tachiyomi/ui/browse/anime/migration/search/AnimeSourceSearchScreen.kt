@@ -15,11 +15,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.core.util.ifAnimeSourcesLoaded
 import eu.kanade.presentation.browse.anime.BrowseAnimeSourceContent
 import eu.kanade.presentation.components.SearchToolbar
@@ -60,13 +59,10 @@ data class AnimeSourceSearchScreen(
         val uriHandler = LocalUriHandler.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val viewModel = viewModel<BrowseAnimeSourceViewModel>(
-            factory = BrowseAnimeSourceViewModel.Factory,
-            extras = CreationExtras {
-                set(BrowseAnimeSourceViewModel.SOURCE_ID_KEY, sourceId)
-                set(BrowseAnimeSourceViewModel.LISTING_QUERY_KEY, query)
-            },
-        )
+        val viewModel =
+            assistedMetroViewModel<BrowseAnimeSourceViewModel, BrowseAnimeSourceViewModel.Factory> {
+                create(sourceId = sourceId, listingQuery = query)
+            }
         val state by viewModel.state.collectAsState()
 
         val snackbarHostState = remember { SnackbarHostState() }

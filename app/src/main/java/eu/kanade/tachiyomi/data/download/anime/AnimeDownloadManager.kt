@@ -1,12 +1,16 @@
 package eu.kanade.tachiyomi.data.download.anime
 
 import android.content.Context
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.util.size
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.drop
@@ -22,7 +26,9 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.download.service.DownloadPreferences
+import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.model.Anime
+import tachiyomi.domain.items.episode.interactor.GetEpisode
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.storage.service.StorageManager
@@ -30,37 +36,32 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 import tachiyomi.source.local.io.ArchiveAnime
 import tachiyomi.source.local.io.anime.LocalAnimeSourceFileSystem
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 /**
  * This class is used to manage episode downloads in the application. It must be instantiated once
  * and retrieved through dependency injection. You can use this class to queue new episodes or query
  * downloaded episodes.
  */
+@Inject
+@SingleIn(AppScope::class)
 class AnimeDownloadManager(
     private val context: Context,
-    private val scope: CoroutineScope,
-    private val storageManager: StorageManager = Injekt.get(),
-    private val provider: AnimeDownloadProvider = Injekt.get(),
-    private val cache: AnimeDownloadCache = Injekt.get(),
-    private val getCategories: GetAnimeCategories = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val downloadPreferences: DownloadPreferences = Injekt.get(),
+    private val storageManager: StorageManager,
+    private val provider: AnimeDownloadProvider,
+    private val cache: AnimeDownloadCache,
+    private val getCategories: GetAnimeCategories,
+    private val getAnime: GetAnime,
+    private val getEpisode: GetEpisode,
+    private val sourceManager: AnimeSourceManager,
+    private val downloadPreferences: DownloadPreferences,
+    private val downloader: AnimeDownloader,
+    private val pendingDeleter: AnimeDownloadPendingDeleter,
 ) {
 
-    /**
-     * Downloader whose only task is to download episodes.
-     */
-    private val downloader = AnimeDownloader(context, provider, cache, sourceManager, scope)
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     val isRunning: Boolean
         get() = downloader.isRunning
-
-    /**
-     * Queue to delay the deletion of a list of episodes until triggered.
-     */
-    private val pendingDeleter = AnimeDownloadPendingDeleter(context)
 
     val queueState
         get() = downloader.queueState
@@ -113,13 +114,21 @@ class AnimeDownloadManager(
     suspend fun startDownloadNow(episodeId: Long) {
         val existingDownload = getQueuedDownloadOrNull(episodeId)
         // If not in queue try to start a new download
-        val toAdd = existingDownload ?: AnimeDownload.fromEpisodeId(episodeId) ?: return
+        val toAdd = existingDownload ?: downloadFromEpisodeId(episodeId) ?: return
         queueState.value.toMutableList().apply {
             existingDownload?.let { remove(it) }
             add(0, toAdd)
             reorderQueue(this)
         }
         startDownloads()
+    }
+
+    private suspend fun downloadFromEpisodeId(episodeId: Long): AnimeDownload? {
+        val episode = getEpisode.await(episodeId) ?: return null
+        val anime = getAnime.await(episode.animeId) ?: return null
+        val source = sourceManager.get(anime.source) as? AnimeHttpSource ?: return null
+
+        return AnimeDownload(source, anime, episode)
     }
 
     /**

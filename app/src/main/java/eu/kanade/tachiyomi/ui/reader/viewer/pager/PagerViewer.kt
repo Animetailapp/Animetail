@@ -11,7 +11,6 @@ import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.viewpager.widget.ViewPager
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import eu.kanade.tachiyomi.ui.reader.model.InsertPage
@@ -19,20 +18,19 @@ import eu.kanade.tachiyomi.ui.reader.model.ReaderItem
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
+import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
+import eu.kanade.tachiyomi.util.system.dpToPx
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.injectLazy
 import kotlin.math.min
 
-/**
- * Implementation of a [Viewer] to display pages with a [ViewPager].
- */
-@Suppress("LeakingThis")
 abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
-
-    val downloadManager: MangaDownloadManager by injectLazy()
+    val graph by lazy { activity.appGraph }
+    val downloadManager by lazy { graph.mangaDownloadManager }
+    val readerPreferences by lazy { graph.readerPreferences }
 
     val scope = MainScope()
 
@@ -45,7 +43,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     /**
      * Configuration used by the pager, like allow taps, scale mode on images, page transitions...
      */
-    val config = PagerConfig(this, scope)
+    val config = PagerConfig(this, scope, readerPreferences)
 
     /**
      * Adapter of the pager.

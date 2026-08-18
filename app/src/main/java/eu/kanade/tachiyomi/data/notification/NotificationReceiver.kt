@@ -6,8 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.net.toUri
-import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.lifecycle.lifecycleScope
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.data.backup.restore.BackupRestoreJob
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
@@ -23,12 +22,12 @@ import eu.kanade.tachiyomi.util.system.getParcelableExtraCompat
 import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
+import eu.kanade.tachiyomi.util.system.workManager
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.download.service.DownloadPreferences
@@ -46,11 +45,6 @@ import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.items.episode.model.toEpisodeUpdate
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 import eu.kanade.tachiyomi.BuildConfig.APPLICATION_ID as ID
 
 /**
@@ -58,20 +52,33 @@ import eu.kanade.tachiyomi.BuildConfig.APPLICATION_ID as ID
  * Pending Broadcasts should be made from here.
  * NOTE: Use local broadcasts if possible.
  */
-@OptIn(DelicateCoroutinesApi::class)
 class NotificationReceiver : BroadcastReceiver() {
 
-    private val getManga: GetManga by injectLazy()
-    private val getAnime: GetAnime by injectLazy()
-    private val getChapter: GetChapter by injectLazy()
-    private val getEpisode: GetEpisode by injectLazy()
-    private val updateChapter: UpdateChapter by injectLazy()
-    private val updateEpisode: UpdateEpisode by injectLazy()
-    private val mangaDownloadManager: MangaDownloadManager by injectLazy()
-    private val animeDownloadManager: AnimeDownloadManager by injectLazy()
-    private val scope: CoroutineScope by injectLazy()
+    @Inject private lateinit var getManga: GetManga
+
+    @Inject private lateinit var getAnime: GetAnime
+
+    @Inject private lateinit var getChapter: GetChapter
+
+    @Inject private lateinit var getEpisode: GetEpisode
+
+    @Inject private lateinit var updateChapter: UpdateChapter
+
+    @Inject private lateinit var updateEpisode: UpdateEpisode
+
+    @Inject private lateinit var mangaDownloadManager: MangaDownloadManager
+
+    @Inject private lateinit var animeDownloadManager: AnimeDownloadManager
+
+    @Inject private lateinit var downloadPreferences: DownloadPreferences
+
+    @Inject private lateinit var mangaSourceManager: MangaSourceManager
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onReceive(context: Context, intent: Intent) {
+        context.appGraph.inject(this)
+
         when (intent.action) {
             // Dismiss notification
             ACTION_DISMISS_NOTIFICATION -> dismissNotification(context, intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1))
@@ -261,7 +268,7 @@ class NotificationReceiver : BroadcastReceiver() {
      * @param context context of application
      */
     private fun cancelRestore(context: Context) {
-        BackupRestoreJob.stop(context)
+        BackupRestoreJob.stop(context.workManager)
     }
 
     /**
@@ -288,17 +295,14 @@ class NotificationReceiver : BroadcastReceiver() {
      * @param mangaId id of manga
      */
     private fun markAsRead(chapterUrls: Array<String>, mangaId: Long) {
-        val downloadPreferences: DownloadPreferences = Injekt.get()
-        val sourceManager: MangaSourceManager = Injekt.get()
-
-        async(scope, Dispatchers.IO) {
+        scope.launchIO {
             val toUpdate = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
                 .map {
                     val chapter = it.copy(read = true)
                     if (downloadPreferences.removeAfterMarkedAsRead.get()) {
                         val manga = getManga.await(mangaId)
                         if (manga != null) {
-                            val source = sourceManager.get(manga.source)
+                            val source = mangaSourceManager.get(manga.source)
                             if (source != null) {
                                 mangaDownloadManager.deleteChapters(listOf(it), manga, source)
                             }
@@ -317,15 +321,15 @@ class NotificationReceiver : BroadcastReceiver() {
      * @param mangaId id of manga
      */
     private fun downloadChapters(chapterUrls: Array<String>, mangaId: Long) {
-        async(scope, Dispatchers.IO) {
-            val manga = getManga.await(mangaId) ?: return@async
+        scope.launchIO {
+            val manga = getManga.await(mangaId) ?: return@launchIO
             val chapters = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
             mangaDownloadManager.downloadChapters(manga, chapters)
         }
     }
 
     private fun markAsViewed(episodeUrls: Array<String>, animeId: Long) {
-        async(scope, Dispatchers.IO) {
+        scope.launchIO {
             val toUpdate = episodeUrls.mapNotNull { getEpisode.await(it, animeId) }
                 .map { it.copy(seen = true).toEpisodeUpdate() }
             updateEpisode.awaitAll(toUpdate)
@@ -333,24 +337,10 @@ class NotificationReceiver : BroadcastReceiver() {
     }
 
     private fun downloadEpisodes(episodeUrls: Array<String>, animeId: Long) {
-        async(scope, Dispatchers.IO) {
-            val anime = getAnime.await(animeId) ?: return@async
+        scope.launchIO {
+            val anime = getAnime.await(animeId) ?: return@launchIO
             val episodes = episodeUrls.mapNotNull { getEpisode.await(it, animeId) }
             animeDownloadManager.downloadEpisodes(anime, episodes)
-        }
-    }
-
-    private fun BroadcastReceiver.async(
-        scope: CoroutineScope,
-        context: CoroutineContext = EmptyCoroutineContext,
-        start: CoroutineStart = CoroutineStart.DEFAULT,
-        block: suspend CoroutineScope.() -> Unit,
-    ) {
-        val result = goAsync()
-        try {
-            scope.launch(context, start, block)
-        } finally {
-            result.finish()
         }
     }
 

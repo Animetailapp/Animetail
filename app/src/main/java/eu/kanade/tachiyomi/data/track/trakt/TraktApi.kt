@@ -111,6 +111,17 @@ class TraktApi(private val client: OkHttpClient, private val interceptor: TraktI
         return json.decodeFromString(body)
     }
 
+    fun searchById(id: Long): List<TraktSearchResult> {
+        val request = Request.Builder()
+            .url("$baseUrl/search/trakt/$id?type=movie,show&extended=full,images")
+            .applyTraktHeaders(includeContentType = false)
+            .get()
+            .build()
+        val response = publicClient.newCall(request).execute()
+        val body = response.body.string()
+        return json.decodeFromString(body)
+    }
+
     /**
      * Sync a single episode as watched for a show.
      * Uses the /sync/history endpoint with a "shows" payload containing seasons/episodes.

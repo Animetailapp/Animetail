@@ -1,5 +1,9 @@
 package tachiyomi.data.history.anime
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
@@ -9,6 +13,9 @@ import tachiyomi.domain.history.anime.model.AnimeHistoryUpdate
 import tachiyomi.domain.history.anime.model.AnimeHistoryWithRelations
 import tachiyomi.domain.history.anime.repository.AnimeHistoryRepository
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class AnimeHistoryRepositoryImpl(
     private val handler: AnimeDatabaseHandler,
 ) : AnimeHistoryRepository {

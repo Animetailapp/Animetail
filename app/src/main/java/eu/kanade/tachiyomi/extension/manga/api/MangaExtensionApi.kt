@@ -1,6 +1,9 @@
 package eu.kanade.tachiyomi.extension.manga.api
 
 import android.content.Context
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.extension.ExtensionUpdateNotifier
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
@@ -8,12 +11,14 @@ import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionLoader
 import mihon.domain.extension.manga.interactor.UpdateMangaExtensionStores
 import mihon.domain.extension.manga.repository.MangaExtensionStoreRepository
 import tachiyomi.core.common.util.lang.withIOContext
-import uy.kohesive.injekt.injectLazy
 
-internal class MangaExtensionApi {
-
-    private val repository: MangaExtensionStoreRepository by injectLazy()
-    private val updateExtensionStores: UpdateMangaExtensionStores by injectLazy()
+@Inject
+@SingleIn(AppScope::class)
+class MangaExtensionApi(
+    private val repository: MangaExtensionStoreRepository,
+    private val updateExtensionStores: UpdateMangaExtensionStores,
+    private val extensionUpdateNotifier: ExtensionUpdateNotifier,
+) {
 
     @Suppress("UNCHECKED_CAST")
     suspend fun findExtensions(): List<MangaExtension.Available> {
@@ -42,7 +47,7 @@ internal class MangaExtensionApi {
         }
 
         if (extensionsWithUpdate.isNotEmpty()) {
-            ExtensionUpdateNotifier(context).promptUpdates(extensionsWithUpdate.map { it.name })
+            extensionUpdateNotifier.promptUpdates(extensionsWithUpdate.map { it.name })
         }
     }
 }

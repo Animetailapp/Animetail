@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.presentation.theme.colorscheme.BaseColorScheme
 import eu.kanade.presentation.theme.colorscheme.CloudflareColorScheme
@@ -34,8 +33,7 @@ import eu.kanade.presentation.theme.colorscheme.TidalWaveColorScheme
 import eu.kanade.presentation.theme.colorscheme.TokyoNightColorScheme
 import eu.kanade.presentation.theme.colorscheme.YinYangColorScheme
 import eu.kanade.presentation.theme.colorscheme.YotsubaColorScheme
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import mihon.app.di.appGraph
 
 @Composable
 fun TachiyomiTheme(
@@ -43,7 +41,8 @@ fun TachiyomiTheme(
     amoled: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
-    val uiPreferences = Injekt.get<UiPreferences>()
+    val context = LocalContext.current
+    val uiPreferences = remember { context.appGraph.uiPreferences }
     BaseTachiyomiTheme(
         appTheme = appTheme ?: uiPreferences.appTheme.get(),
         isAmoled = amoled ?: uiPreferences.themeDarkAmoled.get(),
@@ -85,7 +84,7 @@ private fun getThemeColorScheme(
     isDark: Boolean,
     isAmoled: Boolean,
 ): ColorScheme {
-    val uiPreferences = Injekt.get<UiPreferences>()
+    val uiPreferences = context.appGraph.uiPreferences
     val colorScheme = if (appTheme == AppTheme.MONET) {
         MonetColorScheme(context)
     } else if (appTheme == AppTheme.CUSTOM) {

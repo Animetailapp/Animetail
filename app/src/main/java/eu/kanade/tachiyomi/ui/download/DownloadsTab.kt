@@ -31,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,12 +48,13 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.DropdownMenu
@@ -94,10 +94,10 @@ data object DownloadsTab : Tab {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
-        val animeViewModel = viewModel<AnimeDownloadQueueViewModel>()
-        val mangaScreenModel = viewModel<MangaDownloadQueueViewModel>()
-        val animeDownloadList by animeViewModel.state.collectAsState()
-        val mangaDownloadList by mangaScreenModel.state.collectAsState()
+        val animeViewModel = metroViewModel<AnimeDownloadQueueViewModel>()
+        val mangaScreenModel = metroViewModel<MangaDownloadQueueViewModel>()
+        val animeDownloadList by animeViewModel.state.collectAsStateWithLifecycle()
+        val mangaDownloadList by mangaScreenModel.state.collectAsStateWithLifecycle()
         val animeDownloadCount by remember {
             derivedStateOf { animeDownloadList.sumOf { it.subItems.size } }
         }
@@ -175,8 +175,8 @@ data object DownloadsTab : Tab {
                     enter = fadeIn(),
                     exit = fadeOut(),
                 ) {
-                    val animeIsRunning by animeViewModel.isDownloaderRunning.collectAsState()
-                    val mangaIsRunning by mangaScreenModel.isDownloaderRunning.collectAsState()
+                    val animeIsRunning by animeViewModel.isDownloaderRunning.collectAsStateWithLifecycle()
+                    val mangaIsRunning by mangaScreenModel.isDownloaderRunning.collectAsStateWithLifecycle()
                     ExtendedFloatingActionButton(
                         text = {
                             val id = when (state.currentPage) {

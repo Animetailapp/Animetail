@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.data.backup.restore.restorers
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.tachiyomi.data.backup.models.BackupAnime
 import eu.kanade.tachiyomi.data.backup.models.BackupAnimeHistory
@@ -26,17 +27,16 @@ import java.time.ZonedDateTime
 import java.util.Date
 import kotlin.math.max
 
+@Inject
 class AnimeRestorer(
-    private var isSync: Boolean = false,
-
-    private val handler: AnimeDatabaseHandler = Injekt.get(),
-    private val getCategories: GetAnimeCategories = Injekt.get(),
-    private val getAnimeByUrlAndSourceId: GetAnimeByUrlAndSourceId = Injekt.get(),
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
-    private val getTracks: GetAnimeTracks = Injekt.get(),
-    private val insertTrack: InsertAnimeTrack = Injekt.get(),
-    fetchInterval: AnimeFetchInterval = Injekt.get(),
+    private val handler: AnimeDatabaseHandler,
+    private val getCategories: GetAnimeCategories,
+    private val getAnimeByUrlAndSourceId: GetAnimeByUrlAndSourceId,
+    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val updateAnime: UpdateAnime,
+    private val getTracks: GetAnimeTracks,
+    private val insertTrack: InsertAnimeTrack,
+    fetchInterval: AnimeFetchInterval,
 ) {
 
     private var now = ZonedDateTime.now()
@@ -62,6 +62,7 @@ class AnimeRestorer(
         backupAnime: BackupAnime,
         backupCategories: List<BackupCategory>,
         backupSeasons: List<BackupAnime>,
+        isSync: Boolean = false,
     ) {
         handler.await(inTransaction = true) {
             val dbAnime = findExistingAnime(backupAnime)
@@ -91,6 +92,7 @@ class AnimeRestorer(
                 backupCategories = backupCategories,
                 history = backupAnime.history,
                 tracks = backupAnime.tracking,
+                isSync = isSync,
             )
 
             if (isSync) {
@@ -178,7 +180,7 @@ class AnimeRestorer(
         )
     }
 
-    private suspend fun restoreEpisodes(anime: Anime, backupEpisodes: List<BackupEpisode>) {
+    private suspend fun restoreEpisodes(anime: Anime, backupEpisodes: List<BackupEpisode>, isSync: Boolean = false) {
         val dbEpisodesByUrl = getEpisodesByAnimeId.await(anime.id)
             .associateBy { it.url }
 
@@ -195,7 +197,7 @@ class AnimeRestorer(
                     episode.forComparison() == dbEpisode.forComparison() -> null
 
                     // Same state; skip
-                    else -> updateEpisodeBasedOnSyncState(episode, dbEpisode)
+                    else -> updateEpisodeBasedOnSyncState(episode, dbEpisode, isSync)
                 }
             }
             .partition { it.id > 0 }
@@ -204,7 +206,7 @@ class AnimeRestorer(
         updateExistingEpisodes(existingEpisodes)
     }
 
-    private fun updateEpisodeBasedOnSyncState(episode: Episode, dbEpisode: Episode): Episode {
+    private fun updateEpisodeBasedOnSyncState(episode: Episode, dbEpisode: Episode, isSync: Boolean): Episode {
         return if (isSync) {
             episode.copy(
                 id = dbEpisode.id,
@@ -340,9 +342,10 @@ class AnimeRestorer(
         backupCategories: List<BackupCategory>,
         history: List<BackupAnimeHistory>,
         tracks: List<BackupAnimeTracking>,
+        isSync: Boolean = false,
     ): Anime {
         restoreCategories(anime, categories, backupCategories)
-        restoreEpisodes(anime, episodes)
+        restoreEpisodes(anime, episodes, isSync)
         restoreTracking(anime, tracks)
         restoreHistory(anime, history)
         updateAnime.awaitUpdateFetchInterval(anime, now, currentFetchWindow)

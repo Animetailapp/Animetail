@@ -1,5 +1,6 @@
 package mihon.domain.items.chapter.interactor
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.manga.model.Manga
@@ -13,6 +14,7 @@ import tachiyomi.domain.items.chapter.model.Chapter
  * @property downloadPreferences User preferences related to chapter downloads.
  * @property getCategories Interactor for retrieving categories associated with a manga.
  */
+@Inject
 class FilterChaptersForDownload(
     private val getChaptersByMangaId: GetChaptersByMangaId,
     private val downloadPreferences: DownloadPreferences,

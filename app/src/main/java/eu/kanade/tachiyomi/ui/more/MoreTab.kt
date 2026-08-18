@@ -11,12 +11,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.ui.UiPreferences
@@ -43,8 +48,6 @@ import mihon.feature.support.SupportUsScreen
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 data object MoreTab : Tab {
 
@@ -68,7 +71,7 @@ data object MoreTab : Tab {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
-        val viewModel = viewModel<MoreViewModel>()
+        val viewModel = metroViewModel<MoreViewModel>()
         val downloadQueueState by viewModel.downloadQueueState.collectAsState()
         val navStyle = currentNavigationStyle()
         MoreScreen(
@@ -104,12 +107,15 @@ data object MoreTab : Tab {
     }
 }
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class MoreViewModel(
-    private val downloadManager: MangaDownloadManager = Injekt.get(),
-    private val animeDownloadManager: AnimeDownloadManager = Injekt.get(),
-    preferences: BasePreferences = Injekt.get(),
+    private val downloadManager: MangaDownloadManager,
+    private val animeDownloadManager: AnimeDownloadManager,
+    preferences: BasePreferences,
     // SY -->
-    uiPreferences: UiPreferences = Injekt.get(),
+    uiPreferences: UiPreferences,
     // SY <--
 ) : ViewModel() {
 

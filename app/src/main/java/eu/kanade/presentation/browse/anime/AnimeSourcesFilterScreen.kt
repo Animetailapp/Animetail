@@ -10,7 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import eu.kanade.presentation.browse.anime.components.BaseAnimeSourceItem
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
-import eu.kanade.tachiyomi.ui.browse.anime.source.AnimeSourcesFilterScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.source.AnimeSourcesFilterViewModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import tachiyomi.domain.source.anime.model.AnimeSource
 import tachiyomi.i18n.MR
@@ -22,7 +22,7 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 @Composable
 fun AnimeSourcesFilterScreen(
     navigateUp: () -> Unit,
-    state: AnimeSourcesFilterScreenModel.State.Success,
+    state: AnimeSourcesFilterViewModel.State.Success,
     onClickLanguage: (String) -> Unit,
     onClickSource: (AnimeSource) -> Unit,
 ) {
@@ -54,7 +54,7 @@ fun AnimeSourcesFilterScreen(
 @Composable
 private fun AnimeSourcesFilterContent(
     contentPadding: PaddingValues,
-    state: AnimeSourcesFilterScreenModel.State.Success,
+    state: AnimeSourcesFilterViewModel.State.Success,
     onClickLanguage: (String) -> Unit,
     onClickSource: (AnimeSource) -> Unit,
 ) {

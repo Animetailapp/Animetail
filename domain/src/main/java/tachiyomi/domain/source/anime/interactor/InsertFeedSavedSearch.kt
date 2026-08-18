@@ -1,11 +1,13 @@
 package tachiyomi.domain.source.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import logcat.LogPriority
 import logcat.asLog
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.anime.model.FeedSavedSearch
 import tachiyomi.domain.source.anime.repository.FeedSavedSearchRepository
 
+@Inject
 class InsertFeedSavedSearch(
     private val feedSavedSearchRepository: FeedSavedSearchRepository,
 ) {

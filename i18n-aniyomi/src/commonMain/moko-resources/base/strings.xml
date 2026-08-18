@@ -472,6 +472,7 @@
     <string name="unofficial_extension_message_aniyomi">This extension is not from the official list.</string>
     <string name="unofficial_anime_extension_message">This extension is not from the official list.</string>
     <string name="episode_download_progress">%1$d%%</string>
+    <string name="downloading">Downloading…</string>
     <string name="pref_remove_exclude_categories_manga">Excluded manga categories</string>
     <string name="pref_remove_exclude_categories_anime">Excluded anime categories</string>
     <string name="pref_category_external_downloader">External downloader</string>

@@ -8,6 +8,10 @@ import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.db.SqlDriver
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -17,9 +21,12 @@ import tachiyomi.data.subscribeToList
 import tachiyomi.data.subscribeToOne
 import tachiyomi.data.subscribeToOneOrNull
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class AndroidMangaDatabaseHandler(
     val db: Database,
-    private val driver: SqlDriver,
+    val driver: SqlDriver,
     val queryDispatcher: CoroutineDispatcher = Dispatchers.IO,
     val transactionDispatcher: CoroutineDispatcher = queryDispatcher,
 ) : MangaDatabaseHandler {

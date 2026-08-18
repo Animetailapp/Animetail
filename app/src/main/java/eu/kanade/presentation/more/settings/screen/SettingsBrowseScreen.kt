@@ -11,21 +11,16 @@ import androidx.fragment.app.FragmentActivity
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.core.preference.asState
-import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.authenticate
-import mihon.domain.extension.anime.interactor.GetAnimeExtensionStoreCountAsFlow
-import mihon.domain.extension.manga.interactor.GetMangaExtensionStoreCountAsFlow
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object SettingsBrowseScreen : SearchableSettings {
 
@@ -38,17 +33,17 @@ object SettingsBrowseScreen : SearchableSettings {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
-        val getMangaExtensionStoreCountAsFlow = remember { Injekt.get<GetMangaExtensionStoreCountAsFlow>() }
-        val getAnimeExtensionStoreCountAsFlow = remember { Injekt.get<GetAnimeExtensionStoreCountAsFlow>() }
+        val sourcePreferences = remember { context.appGraph.sourcePreferences }
+        val getMangaExtensionStoreCountAsFlow = remember { context.appGraph.getMangaExtensionStoreCountAsFlow }
+        val getAnimeExtensionStoreCountAsFlow = remember { context.appGraph.getAnimeExtensionStoreCountAsFlow }
 
         val mangaReposCount by getMangaExtensionStoreCountAsFlow.subscribe().collectAsState(0)
         val animeReposCount by getAnimeExtensionStoreCountAsFlow.subscribe().collectAsState(0)
 
         // SY -->
         val scope = rememberCoroutineScope()
-        val hideFeedTab by remember { Injekt.get<UiPreferences>().hideFeedTab.asState(scope) }
-        val uiPreferences = remember { Injekt.get<UiPreferences>() }
+        val uiPreferences = remember { context.appGraph.uiPreferences }
+        val hideFeedTab by remember { uiPreferences.hideFeedTab.asState(scope) }
         // SY <--
 
         return listOf(

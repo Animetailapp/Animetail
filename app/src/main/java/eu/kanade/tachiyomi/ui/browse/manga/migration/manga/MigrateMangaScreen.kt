@@ -3,13 +3,12 @@ package eu.kanade.tachiyomi.ui.browse.manga.migration.manga
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.browse.manga.MigrateMangaScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.manga.migration.search.MigrateMangaSearchScreen
@@ -27,14 +26,11 @@ data class MigrateMangaScreen(
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel = viewModel<MigrateMangaViewModel>(
-            factory = MigrateMangaViewModel.Factory,
-            extras = CreationExtras {
-                set(MigrateMangaViewModel.SOURCE_ID_KEY, sourceId)
-            },
-        )
+        val viewModel = assistedMetroViewModel<MigrateMangaViewModel, MigrateMangaViewModel.Factory> {
+            create(sourceId = sourceId)
+        }
 
-        val state by viewModel.state.collectAsState()
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
         val isSelectionMode = state.selectedMangaIds.isNotEmpty()
         BackHandler(enabled = isSelectionMode) {

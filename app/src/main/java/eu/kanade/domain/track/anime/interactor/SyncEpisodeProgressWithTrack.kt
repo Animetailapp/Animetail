@@ -1,5 +1,6 @@
 package eu.kanade.domain.track.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.track.anime.model.toDbTrack
 import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
@@ -12,6 +13,7 @@ import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
 import tachiyomi.domain.track.anime.model.AnimeTrack
 import kotlin.math.max
 
+@Inject
 class SyncEpisodeProgressWithTrack(
     private val updateEpisode: UpdateEpisode,
     private val insertTrack: InsertAnimeTrack,

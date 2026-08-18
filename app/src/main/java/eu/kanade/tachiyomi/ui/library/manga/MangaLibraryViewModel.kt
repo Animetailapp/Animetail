@@ -9,7 +9,13 @@ import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapNotNull
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.preference.PreferenceMutableState
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.fastFilterNot
@@ -35,6 +41,8 @@ import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -47,7 +55,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
-import mihon.core.viewmodel.StateViewModel
 import mihon.domain.library.model.search.QueryNode
 import mihon.feature.library.matches
 import tachiyomi.core.common.preference.CheckboxState
@@ -78,8 +85,6 @@ import tachiyomi.domain.track.manga.interactor.GetTracksPerManga
 import tachiyomi.domain.track.manga.model.MangaTrack
 import tachiyomi.source.local.entries.manga.LocalMangaSource
 import tachiyomi.source.local.entries.manga.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
@@ -88,27 +93,33 @@ import kotlin.time.Duration.Companion.seconds
  */
 typealias MangaLibraryMap = Map<Category, List<MangaLibraryItem>>
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @Suppress("LargeClass")
 class MangaLibraryViewModel(
-    private val getLibraryManga: GetLibraryManga = Injekt.get(),
-    private val getCategories: GetVisibleMangaCategories = Injekt.get(),
-    private val getTracksPerManga: GetTracksPerManga = Injekt.get(),
-    private val getNextChapters: GetNextChapters = Injekt.get(),
-    private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
-    private val setReadStatus: SetReadStatus = Injekt.get(),
-    private val updateManga: UpdateManga = Injekt.get(),
-    private val setMangaCategories: SetMangaCategories = Injekt.get(),
-    private val preferences: BasePreferences = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val coverCache: MangaCoverCache = Injekt.get(),
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val downloadManager: MangaDownloadManager = Injekt.get(),
-    private val downloadCache: MangaDownloadCache = Injekt.get(),
-    private val trackerManager: TrackerManager = Injekt.get(),
+    private val getLibraryManga: GetLibraryManga,
+    private val getCategories: GetVisibleMangaCategories,
+    private val getTracksPerManga: GetTracksPerManga,
+    private val getNextChapters: GetNextChapters,
+    private val getChaptersByMangaId: GetChaptersByMangaId,
+    private val setReadStatus: SetReadStatus,
+    private val updateManga: UpdateManga,
+    private val setMangaCategories: SetMangaCategories,
+    private val preferences: BasePreferences,
+    private val libraryPreferences: LibraryPreferences,
+    private val coverCache: MangaCoverCache,
+    private val sourceManager: MangaSourceManager,
+    private val downloadManager: MangaDownloadManager,
+    private val downloadCache: MangaDownloadCache,
+    private val trackerManager: TrackerManager,
     // SY -->
-    private val getTracks: GetMangaTracks = Injekt.get(),
+    private val getTracks: GetMangaTracks,
     // SY <--
-) : StateViewModel<MangaLibraryViewModel.State>(State()) {
+) : ViewModel() {
+
+    val state: StateFlow<MangaLibraryViewModel.State>
+        field = MutableStateFlow<MangaLibraryViewModel.State>(State())
 
     var activeCategoryIndex: Int by libraryPreferences.lastUsedCategory.asState(
         viewModelScope,
@@ -149,7 +160,7 @@ class MangaLibraryViewModel(
                     }
             }
                 .collectLatest {
-                    mutableState.update { state ->
+                    state.update { state ->
                         state.copy(
                             isLoading = false,
                             library = it,
@@ -164,7 +175,7 @@ class MangaLibraryViewModel(
             libraryPreferences.showContinueReadingButton.changes(),
         ) { a, b, c -> arrayOf(a, b, c) }
             .onEach { (showCategoryTabs, showMangaCount, showMangaContinueButton) ->
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(
                         showCategoryTabs = showCategoryTabs,
                         showMangaCount = showMangaCount,
@@ -191,7 +202,7 @@ class MangaLibraryViewModel(
         }
             .distinctUntilChanged()
             .onEach {
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(hasActiveFilters = it)
                 }
             }
@@ -200,7 +211,7 @@ class MangaLibraryViewModel(
         // SY -->
         libraryPreferences.groupMangaLibraryBy.changes()
             .onEach {
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(groupType = it)
                 }
             }
@@ -713,15 +724,15 @@ class MangaLibraryViewModel(
     }
 
     fun showSettingsDialog() {
-        mutableState.update { it.copy(dialog = Dialog.SettingsSheet) }
+        state.update { it.copy(dialog = Dialog.SettingsSheet) }
     }
 
     fun clearSelection() {
-        mutableState.update { it.copy(selection = persistentListOf()) }
+        state.update { it.copy(selection = persistentListOf()) }
     }
 
     fun toggleSelection(manga: LibraryManga) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 if (list.fastAny { it.id == manga.id }) {
                     list.removeAll { it.id == manga.id }
@@ -738,7 +749,7 @@ class MangaLibraryViewModel(
      * same category as the given manga
      */
     fun toggleRangeSelection(manga: LibraryManga) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val lastSelected = list.lastOrNull()
                 if (lastSelected?.category != manga.category) {
@@ -770,7 +781,7 @@ class MangaLibraryViewModel(
     }
 
     fun selectAll(index: Int) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val categoryId = state.categories.getOrNull(index)?.id ?: -1
                 val selectedIds = list.fastMap { it.id }
@@ -785,7 +796,7 @@ class MangaLibraryViewModel(
     }
 
     fun invertSelection(index: Int) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val categoryId = state.categories[index].id
                 val items = state.getLibraryItemsByCategoryId(categoryId)?.fastMap { it.libraryManga }.orEmpty()
@@ -800,7 +811,7 @@ class MangaLibraryViewModel(
     }
 
     fun search(query: String?) {
-        mutableState.update { it.copy(searchQuery = query) }
+        state.update { it.copy(searchQuery = query) }
     }
 
     fun openChangeCategoryDialog() {
@@ -824,17 +835,17 @@ class MangaLibraryViewModel(
                     }
                 }
                 .toImmutableList()
-            mutableState.update { it.copy(dialog = Dialog.ChangeCategory(mangaList, preselected)) }
+            state.update { it.copy(dialog = Dialog.ChangeCategory(mangaList, preselected)) }
         }
     }
 
     fun openDeleteMangaDialog() {
         val mangaList = state.value.selection.map { it.manga }
-        mutableState.update { it.copy(dialog = Dialog.DeleteManga(mangaList)) }
+        state.update { it.copy(dialog = Dialog.DeleteManga(mangaList)) }
     }
 
     fun closeDialog() {
-        mutableState.update { it.copy(dialog = null) }
+        state.update { it.copy(dialog = null) }
     }
 
     sealed interface Dialog {

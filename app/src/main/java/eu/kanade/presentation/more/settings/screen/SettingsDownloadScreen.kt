@@ -20,11 +20,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.util.fastMap
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.widget.TriStateListDialog
+import mihon.app.di.appGraph
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.model.Category
@@ -36,8 +38,6 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object SettingsDownloadScreen : SearchableSettings {
 
@@ -47,12 +47,13 @@ object SettingsDownloadScreen : SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val getMangaCategories = remember { Injekt.get<GetMangaCategories>() }
+        val context = LocalContext.current
+        val getMangaCategories = remember { context.appGraph.getMangaCategories }
         val allMangaCategories by getMangaCategories.subscribe().collectAsState(initial = emptyList())
-        val getAnimeCategories = remember { Injekt.get<GetAnimeCategories>() }
+        val getAnimeCategories = remember { context.appGraph.getAnimeCategories }
         val allAnimeCategories by getAnimeCategories.subscribe().collectAsState(initial = emptyList())
-        val downloadPreferences = remember { Injekt.get<DownloadPreferences>() }
-        val basePreferences = remember { Injekt.get<BasePreferences>() }
+        val downloadPreferences = remember { context.appGraph.downloadPreferences }
+        val basePreferences = remember { context.appGraph.basePreferences }
         val speedLimit by downloadPreferences.downloadSpeedLimit.collectAsState()
         var currentSpeedLimit by remember { mutableIntStateOf(speedLimit) }
         var showDownloadLimitDialog by rememberSaveable { mutableStateOf(false) }

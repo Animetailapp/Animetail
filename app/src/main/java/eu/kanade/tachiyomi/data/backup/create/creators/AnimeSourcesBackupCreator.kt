@@ -1,14 +1,14 @@
 package eu.kanade.tachiyomi.data.backup.create.creators
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.data.backup.models.BackupAnime
 import eu.kanade.tachiyomi.data.backup.models.BackupAnimeSource
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
 class AnimeSourcesBackupCreator(
-    private val animeSourceManager: AnimeSourceManager = Injekt.get(),
+    private val animeSourceManager: AnimeSourceManager,
 ) {
 
     operator fun invoke(animes: List<BackupAnime>): List<BackupAnimeSource> {

@@ -9,17 +9,18 @@ import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.util.system.toast
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
 
-private val addTracks: AddMangaTracks by injectLazy()
-private val insertTrack: InsertMangaTrack by injectLazy()
+private val appGraph get() = Injekt.get<Application>().appGraph
+private val addTracks: AddMangaTracks by lazy { appGraph.addMangaTracks }
+private val insertTrack: InsertMangaTrack by lazy { appGraph.insertMangaTrack }
 
 interface MangaTracker {
 

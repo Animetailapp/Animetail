@@ -9,7 +9,6 @@ import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
 import dalvik.system.PathClassLoader
 import eu.kanade.domain.extension.anime.interactor.TrustAnimeExtension
-import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.AnimeSourceFactory
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
@@ -17,15 +16,16 @@ import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
 import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
 import mihon.domain.extension.model.ExtensionStore
 import mihon.domain.extension.model.ExtensionStore.Companion.ANIMETAIL_SIGNATURE
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.injectLazy
 import java.io.File
 
 /**
@@ -33,17 +33,6 @@ import java.io.File
  */
 @SuppressLint("PackageManagerGetSignatures")
 internal object AnimeExtensionLoader {
-
-    private val preferences: SourcePreferences by injectLazy()
-    private val trustExtension: TrustAnimeExtension by injectLazy()
-
-    // KMK -->
-    private val getExtensionStores: GetAnimeExtensionStores by injectLazy()
-    // KMK <--
-
-    private val loadNsfwSource by lazy {
-        preferences.showNsfwSource.get()
-    }
 
     private const val EXTENSION_FEATURE = "tachiyomi.animeextension"
     private const val METADATA_SOURCE_CLASS = "tachiyomi.animeextension.class"
@@ -179,11 +168,11 @@ internal object AnimeExtensionLoader {
         // KMK -->
         // Pre-fetch repos outside runBlocking to avoid nested runBlocking deadlock
         // with the SQLDelight driver's connection pool
-        val repos = runBlocking { getExtensionStores.await() }
+        val repos = runBlocking { context.appGraph.getAnimeExtensionStores.await() }
         // KMK <--
 
         // Load each extension concurrently and wait for completion
-        return runBlocking {
+        return runBlocking(Dispatchers.IO) {
             val deferred = extPkgs.map {
                 async { loadExtension(context, it, extRepos = repos) }
             }
@@ -259,6 +248,9 @@ internal object AnimeExtensionLoader {
         extRepos: List<ExtensionStore>? = null,
         // KMK <--
     ): AnimeLoadResult {
+        val trustExtension: TrustAnimeExtension = context.appGraph.trustAnimeExtension
+        val loadNsfwSource: Boolean = context.appGraph.sourcePreferences.showNsfwSource.get()
+        val getExtensionStores: GetAnimeExtensionStores = context.appGraph.getAnimeExtensionStores
         // KMK -->
         val repos = extRepos ?: getExtensionStores.await()
         // KMK <--

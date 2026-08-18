@@ -2,6 +2,9 @@ package aniyomi.core.common.torrent
 
 import aniyomi.core.common.torrent.model.Torrent
 import aniyomi.core.common.torrent.model.TorrentRequest
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.POST
@@ -15,6 +18,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.system.logcat
 import java.io.InputStream
 
+@Inject
+@SingleIn(AppScope::class)
 class TorrentServerApi(
     private val network: NetworkHelper,
     private val json: Json,

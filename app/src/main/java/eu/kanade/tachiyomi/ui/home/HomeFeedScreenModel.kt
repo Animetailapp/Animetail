@@ -1,7 +1,12 @@
 package eu.kanade.tachiyomi.ui.home
 
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
@@ -11,6 +16,8 @@ import eu.kanade.tachiyomi.data.track.TrackerManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
@@ -39,8 +46,6 @@ import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.source.local.entries.anime.isLocal
 import tachiyomi.source.local.entries.manga.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.concurrent.TimeUnit
 
 enum class HomeMediaFilter {
@@ -55,22 +60,28 @@ enum class HeroSource {
     TRACKERS_ONLY,
 }
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class HomeFeedScreenModel(
-    private val getAnimeHistory: GetAnimeHistory = Injekt.get(),
-    private val getMangaHistory: GetMangaHistory = Injekt.get(),
-    private val getLibraryAnime: GetLibraryAnime = Injekt.get(),
-    private val getLibraryManga: GetLibraryManga = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val getEpisode: GetEpisode = Injekt.get(),
-    private val getChapter: GetChapter = Injekt.get(),
-    private val getAnimeTracks: GetAnimeTracks = Injekt.get(),
-    private val getMangaTracks: GetMangaTracks = Injekt.get(),
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
-    private val trackerManager: TrackerManager = Injekt.get(),
-    private val uiPreferences: UiPreferences = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val trackPreferences: TrackPreferences = Injekt.get(),
-) : StateScreenModel<HomeFeedScreenModel.State>(State()) {
+    private val getAnimeHistory: GetAnimeHistory,
+    private val getMangaHistory: GetMangaHistory,
+    private val getLibraryAnime: GetLibraryAnime,
+    private val getLibraryManga: GetLibraryManga,
+    private val getAnime: GetAnime,
+    private val getEpisode: GetEpisode,
+    private val getChapter: GetChapter,
+    private val getAnimeTracks: GetAnimeTracks,
+    private val getMangaTracks: GetMangaTracks,
+    private val sourcePreferences: SourcePreferences,
+    private val trackerManager: TrackerManager,
+    private val uiPreferences: UiPreferences,
+    private val sourceManager: AnimeSourceManager,
+    private val trackPreferences: TrackPreferences,
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(State())
+    val state: StateFlow<State> = _state.asStateFlow()
 
     data class State(
         val isLoading: Boolean = true,
@@ -121,8 +132,8 @@ class HomeFeedScreenModel(
     }
 
     fun refresh() {
-        screenModelScope.launch {
-            mutableState.update { current ->
+        viewModelScope.launch {
+            _state.update { current ->
                 val newShuffledRecs = current.recommendedList.shuffled()
                 current.copy(
                     isRefreshing = true,
@@ -131,7 +142,7 @@ class HomeFeedScreenModel(
             }
             fetchRemoteTrendsAsync()
             delay(600L)
-            mutableState.update { it.copy(isRefreshing = false) }
+            _state.update { it.copy(isRefreshing = false) }
         }
     }
 
@@ -198,7 +209,7 @@ class HomeFeedScreenModel(
 
     private fun fetchRemoteTrendsAsync() {
         // 1. Tendencias de AniList (Anime)
-        screenModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (!uiPreferences.homeEnableAnilist.get()) {
                     remoteAnimeState.value = emptyList()
@@ -233,7 +244,7 @@ class HomeFeedScreenModel(
         }
 
         // 2. Tendencias de AniList (Manga)
-        screenModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (!uiPreferences.homeEnableAnilist.get()) {
                     remoteMangaState.value = emptyList()
@@ -264,7 +275,7 @@ class HomeFeedScreenModel(
         }
 
         // 3. Tendencias de TMDB (Películas y Series)
-        screenModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (!uiPreferences.homeEnableTmdb.get()) {
                     remoteMovieSeriesState.value = emptyList()
@@ -340,10 +351,10 @@ class HomeFeedScreenModel(
     private fun observeHomeData() {
         android.util.Log.d("HomeFeedDebug", "observeHomeData: initializing observers...")
         // Set loading false immediately — UI is always interactive
-        mutableState.update { it.copy(isLoading = false) }
+        _state.update { it.copy(isLoading = false) }
 
         // Observe uiPreferences changes so UI state updates instantly in real time
-        screenModelScope.launch {
+        viewModelScope.launch {
             try {
                 merge(
                     uiPreferences.homeShowFeatured.changes(),
@@ -373,7 +384,7 @@ class HomeFeedScreenModel(
         }
 
         // Observe TMDB API key changes to auto-refetch trends when key is configured
-        screenModelScope.launch {
+        viewModelScope.launch {
             try {
                 trackPreferences.trackApiKey(trackerManager.tmdb as eu.kanade.tachiyomi.data.track.Tracker).changes()
                     .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing TMDB API key", e) }
@@ -387,7 +398,7 @@ class HomeFeedScreenModel(
         }
 
         // Observe library anime
-        screenModelScope.launch {
+        viewModelScope.launch {
             try {
                 getLibraryAnime.subscribe()
                     .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing library anime", e) }
@@ -401,7 +412,7 @@ class HomeFeedScreenModel(
         }
 
         // Observe library manga
-        screenModelScope.launch {
+        viewModelScope.launch {
             try {
                 getLibraryManga.subscribe()
                     .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing library manga", e) }
@@ -415,7 +426,7 @@ class HomeFeedScreenModel(
         }
 
         // Observe anime history
-        screenModelScope.launch {
+        viewModelScope.launch {
             try {
                 getAnimeHistory.subscribe("")
                     .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing anime history", e) }
@@ -429,7 +440,7 @@ class HomeFeedScreenModel(
         }
 
         // Observe manga history
-        screenModelScope.launch {
+        viewModelScope.launch {
             try {
                 getMangaHistory.subscribe("")
                     .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing manga history", e) }
@@ -443,7 +454,7 @@ class HomeFeedScreenModel(
         }
 
         // Observe remote anime
-        screenModelScope.launch {
+        viewModelScope.launch {
             try {
                 remoteAnimeState.collect { items ->
                     android.util.Log.d("HomeFeedDebug", "remoteAnimeState collected: size=${items.size}")
@@ -455,7 +466,7 @@ class HomeFeedScreenModel(
         }
 
         // Observe remote manga
-        screenModelScope.launch {
+        viewModelScope.launch {
             try {
                 remoteMangaState.collect { items ->
                     android.util.Log.d("HomeFeedDebug", "remoteMangaState collected: size=${items.size}")
@@ -467,7 +478,7 @@ class HomeFeedScreenModel(
         }
 
         // Observe remote movies and series
-        screenModelScope.launch {
+        viewModelScope.launch {
             try {
                 remoteMovieSeriesState.collect { items ->
                     android.util.Log.d("HomeFeedDebug", "remoteMovieSeriesState collected: size=${items.size}")
@@ -829,7 +840,7 @@ class HomeFeedScreenModel(
                     "heroSource=$heroSource",
             )
 
-            mutableState.value = State(
+            _state.value = State(
                 isLoading = false,
                 isRefreshing = false,
                 heroList = currentHeroList,

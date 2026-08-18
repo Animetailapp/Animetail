@@ -207,7 +207,7 @@ class MyAnimeList(id: Long) :
 
     override suspend fun searchManga(query: String): List<MangaTrackSearch> {
         if (query.startsWith(SEARCH_ID_PREFIX)) {
-            query.substringAfter(SEARCH_ID_PREFIX).toIntOrNull()?.let { id ->
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
                 return listOf(api.getMangaDetails(id))
             }
         }

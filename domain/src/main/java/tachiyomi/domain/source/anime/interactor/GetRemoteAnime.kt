@@ -1,9 +1,11 @@
 package tachiyomi.domain.source.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import tachiyomi.domain.source.anime.repository.AnimeSourcePagingSourceType
 import tachiyomi.domain.source.anime.repository.AnimeSourceRepository
 
+@Inject
 class GetRemoteAnime(
     private val repository: AnimeSourceRepository,
 ) {

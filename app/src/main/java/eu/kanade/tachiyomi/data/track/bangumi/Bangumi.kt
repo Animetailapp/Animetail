@@ -126,10 +126,22 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi"), MangaTracker, AnimeTracker
     }
 
     override suspend fun searchManga(query: String): List<MangaTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+                return api.getMangaDetails(id)?.let { listOf(it) } ?: emptyList()
+            }
+        }
+
         return api.search(query)
     }
 
     override suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+                return api.getAnimeDetails(id)?.let { listOf(it) } ?: emptyList()
+            }
+        }
+
         return api.searchAnime(query)
     }
 
@@ -237,5 +249,7 @@ class Bangumi(id: Long) : BaseTracker(id, "Bangumi"), MangaTracker, AnimeTracker
         private val SCORE_LIST = IntRange(0, 10)
             .map(Int::toString)
             .toList()
+
+        private const val SEARCH_ID_PREFIX = "id:"
     }
 }

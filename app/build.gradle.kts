@@ -9,6 +9,7 @@ plugins {
     alias(mihonx.plugins.compose)
     alias(mihonx.plugins.spotless)
 
+    alias(libs.plugins.metro)
     alias(libs.plugins.aboutLibraries)
     alias(libs.plugins.kotlin.serialization)
 }
@@ -48,7 +49,7 @@ android {
 
         val commonMatchingFallbacks = listOf(release.name)
 
-        create("preview") {
+        create("nightly") {
             initWith(release)
 
             applicationIdSuffix = ".debug"
@@ -75,7 +76,7 @@ android {
     }
 
     sourceSets {
-        getByName("preview").res.directories.add("src/debug/res")
+        getByName("nightly").res.directories.add("src/debug/res")
         getByName("benchmark").res.directories.add("src/debug/res")
     }
 
@@ -185,7 +186,7 @@ dependencies {
     // TAIL
     implementation(projects.core.archive)
     implementation(projects.core.common)
-    implementation(projects.core.viewmodel)
+    implementation(projects.core.metro)
     implementation(projects.coreMetadata)
     implementation(projects.sourceApi)
     implementation(projects.sourceLocal)
@@ -270,9 +271,9 @@ dependencies {
 
     // Dependency injection
     implementation(libs.injekt)
-    // SY -->
-    implementation(libs.zip4j)
-    // SY <--
+    implementation(libs.metro.runtime)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
 
     // Image loading
     implementation(libs.bundles.coil)
@@ -280,6 +281,9 @@ dependencies {
         exclude(module = "image-decoder")
     }
     implementation(libs.image.decoder)
+
+    implementation(libs.webgpuviewer)
+    implementation(libs.kim)
 
     // UI libraries
     implementation(libs.material)

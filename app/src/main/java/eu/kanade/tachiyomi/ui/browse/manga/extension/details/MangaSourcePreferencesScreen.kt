@@ -38,6 +38,7 @@ import eu.kanade.tachiyomi.data.preference.SharedPreferencesDataStore
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.sourcePreferences
 import eu.kanade.tachiyomi.widget.TachiyomiTextInputEditText.Companion.setIncognito
+import mihon.app.di.appGraph
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.screens.LoadingScreen
@@ -132,7 +133,9 @@ class MangaSourcePreferencesFragment : PreferenceFragmentCompat() {
 
     private fun populateScreen(): PreferenceScreen {
         val sourceId = requireArguments().getLong(SOURCE_ID)
-        val source = Injekt.get<MangaSourceManager>().getOrStub(sourceId)
+        val appGraph = requireContext().appGraph
+        val source = appGraph.mangaSourceManager.getOrStub(sourceId)
+        val basePreferences = appGraph.basePreferences
         val sourceScreen = preferenceManager.createPreferenceScreen(requireContext())
 
         if (source is ConfigurableSource) {
@@ -152,7 +155,7 @@ class MangaSourcePreferencesFragment : PreferenceFragmentCompat() {
                     val setListener = pref.getOnBindEditTextListener()
                     pref.setOnBindEditTextListener {
                         setListener?.onBindEditText(it)
-                        it.setIncognito(lifecycleScope)
+                        it.setIncognito(basePreferences, lifecycleScope)
                     }
                 }
             }

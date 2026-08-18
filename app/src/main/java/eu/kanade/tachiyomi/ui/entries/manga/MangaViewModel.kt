@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.ui.entries.manga
 
-import android.app.Application
 import android.content.Context
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -11,13 +10,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import aniyomi.util.nullIfEmpty
 import aniyomi.util.trimOrNull
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
@@ -42,6 +46,7 @@ import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.entries.DownloadAction
 import eu.kanade.presentation.entries.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.util.formattedMessage
+import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
@@ -56,8 +61,11 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.util.chapter.getNextUnread
 import eu.kanade.tachiyomi.util.removeCovers
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -67,7 +75,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import logcat.LogPriority
-import mihon.core.viewmodel.StateViewModel
 import mihon.domain.items.chapter.interactor.FilterChaptersForDownload
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
@@ -107,67 +114,63 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.source.local.entries.manga.LocalMangaSource
 import tachiyomi.source.local.entries.manga.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.math.floor
 import androidx.compose.runtime.State as RuntimeState
 
+@AssistedInject
 class MangaViewModel(
+    @Assisted private val mangaId: Long,
+    @Assisted private val isFromSource: Boolean,
     private val context: Context,
-    private val mangaId: Long,
-    private val isFromSource: Boolean,
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val trackPreferences: TrackPreferences = Injekt.get(),
-    readerPreferences: ReaderPreferences = Injekt.get(),
-    private val trackerManager: TrackerManager = Injekt.get(),
-    private val trackChapter: TrackChapter = Injekt.get(),
-    private val downloadManager: MangaDownloadManager = Injekt.get(),
-    private val downloadCache: MangaDownloadCache = Injekt.get(),
-    private val getMangaAndChapters: GetMangaWithChapters = Injekt.get(),
+    private val libraryPreferences: LibraryPreferences,
+    private val trackPreferences: TrackPreferences,
+    readerPreferences: ReaderPreferences,
+    private val trackerManager: TrackerManager,
+    private val trackChapter: TrackChapter,
+    private val downloadManager: MangaDownloadManager,
+    private val downloadCache: MangaDownloadCache,
+    private val getMangaAndChapters: GetMangaWithChapters,
     // SY -->
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val setCustomMangaInfo: SetCustomMangaInfo = Injekt.get(),
+    private val sourceManager: MangaSourceManager,
+    private val setCustomMangaInfo: SetCustomMangaInfo,
     // SY <--
-    private val getDuplicateLibraryManga: GetDuplicateLibraryManga = Injekt.get(),
-    private val getAvailableScanlators: GetAvailableScanlators = Injekt.get(),
-    private val getExcludedScanlators: GetExcludedScanlators = Injekt.get(),
-    private val setExcludedScanlators: SetExcludedScanlators = Injekt.get(),
-    private val setMangaChapterFlags: SetMangaChapterFlags = Injekt.get(),
-    private val setMangaDefaultChapterFlags: SetMangaDefaultChapterFlags = Injekt.get(),
-    private val setReadStatus: SetReadStatus = Injekt.get(),
-    private val updateChapter: UpdateChapter = Injekt.get(),
-    private val updateManga: UpdateManga = Injekt.get(),
-    private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get(),
-    private val getCategories: GetMangaCategories = Injekt.get(),
-    private val getTracks: GetMangaTracks = Injekt.get(),
-    private val addTracks: AddMangaTracks = Injekt.get(),
-    private val setMangaCategories: SetMangaCategories = Injekt.get(),
-    private val mangaRepository: MangaRepository = Injekt.get(),
-    private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get(),
+    private val getDuplicateLibraryManga: GetDuplicateLibraryManga,
+    private val getAvailableScanlators: GetAvailableScanlators,
+    private val getExcludedScanlators: GetExcludedScanlators,
+    private val setExcludedScanlators: SetExcludedScanlators,
+    private val setMangaChapterFlags: SetMangaChapterFlags,
+    private val setMangaDefaultChapterFlags: SetMangaDefaultChapterFlags,
+    private val setReadStatus: SetReadStatus,
+    private val updateChapter: UpdateChapter,
+    private val updateManga: UpdateManga,
+    private val syncChaptersWithSource: SyncChaptersWithSource,
+    private val getCategories: GetMangaCategories,
+    private val getTracks: GetMangaTracks,
+    private val addTracks: AddMangaTracks,
+    private val setMangaCategories: SetMangaCategories,
+    private val mangaRepository: MangaRepository,
+    private val filterChaptersForDownload: FilterChaptersForDownload,
     // KMK -->
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
-    private val uiPreferences: UiPreferences = Injekt.get(),
-    private val getMangaInteractor: GetManga = Injekt.get(),
-    val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
+    private val sourcePreferences: SourcePreferences,
+    private val uiPreferences: UiPreferences,
+    private val getMangaInteractor: GetManga,
+    val networkToLocalManga: NetworkToLocalManga,
     // KMK <--
-    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
-) : StateViewModel<MangaViewModel.State>(State.Loading) {
+    private val refreshTracks: RefreshMangaTracks,
+    private val coverCache: MangaCoverCache,
+) : ViewModel() {
 
-    companion object {
-        val MANGA_ID_KEY = CreationExtras.Key<Long>()
+    val state: StateFlow<State>
+        field = MutableStateFlow<State>(State.Loading)
 
-        val IS_FROM_SOURCE_KEY = CreationExtras.Key<Boolean>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                MangaViewModel(
-                    context = Injekt.get<Application>(),
-                    mangaId = get(MANGA_ID_KEY)!!,
-                    isFromSource = get(IS_FROM_SOURCE_KEY)!!,
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(mangaId: Long, isFromSource: Boolean): MangaViewModel
     }
+
+    val snackbarHostState: SnackbarHostState = SnackbarHostState()
 
     private val successState: State.Success?
         get() = state.value as? State.Success
@@ -208,7 +211,7 @@ class MangaViewModel(
      * Helper function to update the UI state only if it's currently in success state
      */
     private inline fun updateSuccessState(func: (State.Success) -> State.Success) {
-        mutableState.update {
+        state.update {
             when (it) {
                 State.Loading -> it
                 is State.Success -> func(it)
@@ -268,10 +271,10 @@ class MangaViewModel(
             val needRefreshChapter = chapters.isEmpty()
 
             // Show what we have earlier
-            mutableState.update {
+            state.update {
                 State.Success(
                     manga = manga,
-                    source = Injekt.get<MangaSourceManager>().getOrStub(manga.source),
+                    source = sourceManager.getOrStub(manga.source),
                     isFromSource = isFromSource,
                     chapters = chapters,
                     availableScanlators = getAvailableScanlators.await(mangaId),
@@ -568,7 +571,7 @@ class MangaViewModel(
                 // Remove from library
                 if (updateManga.awaitUpdateFavorite(manga.id, false)) {
                     // Remove covers and update last modified in db
-                    if (manga.removeCovers() != manga) {
+                    if (manga.removeCovers(coverCache) != manga) {
                         updateManga.awaitUpdateCoverLastModified(manga.id)
                     }
                     withUIContext { onRemoved() }
@@ -1061,9 +1064,7 @@ class MangaViewModel(
         }
     }
 
-    private suspend fun refreshTrackers(
-        refreshTracks: RefreshMangaTracks = Injekt.get(),
-    ) {
+    private suspend fun refreshTrackers() {
         refreshTracks.await(mangaId)
             .filter { it.first != null }
             .forEach { (track, e) ->
@@ -1422,14 +1423,8 @@ class MangaViewModel(
 
     // SY -->
     fun showEditMangaInfoDialog() {
-        mutableState.update { state ->
-            when (state) {
-                State.Loading -> state
-
-                is State.Success -> {
-                    state.copy(dialog = Dialog.EditMangaInfo(state.manga))
-                }
-            }
+        updateSuccessState { state ->
+            state.copy(dialog = Dialog.EditMangaInfo(state.manga))
         }
     }
     // SY <--

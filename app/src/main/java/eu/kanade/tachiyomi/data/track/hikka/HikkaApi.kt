@@ -16,6 +16,7 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.PUT
+import eu.kanade.tachiyomi.network.await
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.jsonMime
 import eu.kanade.tachiyomi.network.parseAs
@@ -102,6 +103,25 @@ class HikkaApi(
         }
     }
 
+    suspend fun getMangaDetails(slug: String): MangaTrackSearch? {
+        return withIOContext {
+            val url = "$BASE_API_URL/manga/$slug"
+
+            with(json) {
+                val response = authClient.newCall(GET(url))
+                    .await()
+
+                if (response.code == 404) {
+                    null
+                } else {
+                    response
+                        .parseAs<HKManga>()
+                        .toTrack(trackId)
+                }
+            }
+        }
+    }
+
     suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
         return withIOContext {
             val url = "$BASE_API_URL/anime".toUri().buildUpon()
@@ -138,6 +158,25 @@ class HikkaApi(
                     .parseAs<HKMangaPagination>()
                     .list
                     .map { it.toAnimeTrack(trackId) }
+            }
+        }
+    }
+
+    suspend fun getAnimeDetails(slug: String): AnimeTrackSearch? {
+        return withIOContext {
+            val url = "$BASE_API_URL/anime/$slug"
+
+            with(json) {
+                val response = authClient.newCall(GET(url))
+                    .await()
+
+                if (response.code == 404) {
+                    null
+                } else {
+                    response
+                        .parseAs<HKManga>()
+                        .toAnimeTrack(trackId)
+                }
             }
         }
     }

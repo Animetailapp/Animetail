@@ -14,6 +14,7 @@ import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
+import dev.zacsweers.metro.Inject
 import eu.kanade.presentation.util.formatEpisodeNumber
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.core.common.Constants
@@ -30,6 +31,7 @@ import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.entries.anime.model.Anime
@@ -38,17 +40,17 @@ import tachiyomi.domain.library.anime.LibraryAnime
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.math.RoundingMode
 import java.text.NumberFormat
 
+@Inject
 class AnimeLibraryUpdateNotifier(
     private val context: Context,
-    private val scope: CoroutineScope = Injekt.get(),
-    private val securityPreferences: SecurityPreferences = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
+    private val securityPreferences: SecurityPreferences,
+    private val sourceManager: AnimeSourceManager,
 ) {
+
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     private val percentFormatter = NumberFormat.getPercentInstance().apply {
         roundingMode = RoundingMode.DOWN

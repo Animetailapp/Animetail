@@ -1,8 +1,9 @@
 package eu.kanade.tachiyomi.data.backup.restore.restorers
 
-import data.Chapters
-import data.History
-import data.Mangas
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupChapter
@@ -25,23 +26,20 @@ import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
 import tachiyomi.domain.track.manga.model.MangaTrack
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.Date
 import kotlin.math.max
 import kotlin.time.Clock
 
+@Inject
 class MangaRestorer(
-    private var isSync: Boolean = false,
-
-    private val handler: MangaDatabaseHandler = Injekt.get(),
-    private val getCategories: GetMangaCategories = Injekt.get(),
-    private val getMangaByUrlAndSourceId: GetMangaByUrlAndSourceId = Injekt.get(),
-    private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
-    private val updateManga: UpdateManga = Injekt.get(),
-    private val getTracks: GetMangaTracks = Injekt.get(),
-    private val insertTrack: InsertMangaTrack = Injekt.get(),
-    fetchInterval: MangaFetchInterval = Injekt.get(),
+    private val handler: MangaDatabaseHandler,
+    private val getCategories: GetMangaCategories,
+    private val getMangaByUrlAndSourceId: GetMangaByUrlAndSourceId,
+    private val getChaptersByMangaId: GetChaptersByMangaId,
+    private val updateManga: UpdateManga,
+    private val getTracks: GetMangaTracks,
+    private val insertTrack: InsertMangaTrack,
+    fetchInterval: MangaFetchInterval,
 ) {
     private val timeZone = TimeZone.currentSystemDefault()
     private val now = Clock.System.now().toLocalDateTime(timeZone)
@@ -61,6 +59,7 @@ class MangaRestorer(
     suspend fun restore(
         backupManga: BackupManga,
         backupCategories: List<BackupCategory>,
+        isSync: Boolean = false,
     ) {
         handler.await(inTransaction = true) {
             val dbManga = findExistingManga(backupManga)
@@ -79,6 +78,7 @@ class MangaRestorer(
                 history = backupManga.history,
                 tracks = backupManga.tracking,
                 excludedScanlators = backupManga.excludedScanlators,
+                isSync = isSync,
             )
 
             if (isSync) {
@@ -156,7 +156,7 @@ class MangaRestorer(
         )
     }
 
-    private suspend fun restoreChapters(manga: Manga, backupChapters: List<BackupChapter>) {
+    private suspend fun restoreChapters(manga: Manga, backupChapters: List<BackupChapter>, isSync: Boolean = false) {
         val dbChaptersByUrl = getChaptersByMangaId.await(manga.id)
             .associateBy { it.url }
 
@@ -173,7 +173,7 @@ class MangaRestorer(
                     chapter.forComparison() == dbChapter.forComparison() -> null
 
                     // Same state; skip
-                    else -> updateChapterBasedOnSyncState(chapter, dbChapter)
+                    else -> updateChapterBasedOnSyncState(chapter, dbChapter, isSync)
                 }
             }
             .partition { it.id > 0 }
@@ -182,7 +182,7 @@ class MangaRestorer(
         updateExistingChapters(existingChapters)
     }
 
-    private fun updateChapterBasedOnSyncState(chapter: Chapter, dbChapter: Chapter): Chapter {
+    private fun updateChapterBasedOnSyncState(chapter: Chapter, dbChapter: Chapter, isSync: Boolean): Chapter {
         return if (isSync) {
             chapter.copy(
                 id = dbChapter.id,
@@ -301,9 +301,10 @@ class MangaRestorer(
         history: List<BackupHistory>,
         tracks: List<BackupTracking>,
         excludedScanlators: List<String>,
+        isSync: Boolean = false,
     ): Manga {
         restoreCategories(manga, categories, backupCategories)
-        restoreChapters(manga, chapters)
+        restoreChapters(manga, chapters, isSync)
         restoreTracking(manga, tracks)
         restoreHistory(manga, history)
         restoreExcludedScanlators(manga, excludedScanlators)

@@ -34,11 +34,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastMap
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.anime.components.AnimeSourceIcon
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
@@ -46,6 +51,9 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import tachiyomi.core.common.util.lang.launchIO
@@ -66,8 +74,6 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.selectedBackground
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class ClearAnimeDatabaseScreen : Screen() {
 
@@ -75,28 +81,28 @@ class ClearAnimeDatabaseScreen : Screen() {
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val model = rememberScreenModel { ClearAnimeDatabaseScreenModel() }
-        val state by model.state.collectAsState()
+        val viewModel = metroViewModel<ClearAnimeDatabaseViewModel>()
+        val state by viewModel.state.collectAsState()
         val scope = rememberCoroutineScope()
 
         when (val s = state) {
-            is ClearAnimeDatabaseScreenModel.State.Loading -> LoadingScreen()
+            is ClearAnimeDatabaseViewModel.State.Loading -> LoadingScreen()
 
-            is ClearAnimeDatabaseScreenModel.State.Ready -> {
+            is ClearAnimeDatabaseViewModel.State.Ready -> {
                 if (s.showConfirmation) {
                     var keepWatchedAnime by remember { mutableStateOf(true) }
                     AlertDialog(
                         title = {
                             Text(text = stringResource(MR.strings.are_you_sure))
                         },
-                        onDismissRequest = model::hideConfirmation,
+                        onDismissRequest = viewModel::hideConfirmation,
                         confirmButton = {
                             TextButton(
                                 onClick = {
                                     scope.launchUI {
-                                        model.removeAnimeBySourceId(keepWatchedAnime)
-                                        model.clearSelection()
-                                        model.hideConfirmation()
+                                        viewModel.removeAnimeBySourceId(keepWatchedAnime)
+                                        viewModel.clearSelection()
+                                        viewModel.hideConfirmation()
                                         context.toast(MR.strings.clear_database_completed)
                                     }
                                 },
@@ -105,7 +111,7 @@ class ClearAnimeDatabaseScreen : Screen() {
                             }
                         },
                         dismissButton = {
-                            TextButton(onClick = model::hideConfirmation) {
+                            TextButton(onClick = viewModel::hideConfirmation) {
                                 Text(text = stringResource(MR.strings.action_cancel))
                             }
                         },
@@ -152,12 +158,12 @@ class ClearAnimeDatabaseScreen : Screen() {
                                             AppBar.Action(
                                                 title = stringResource(MR.strings.action_select_all),
                                                 icon = Icons.Outlined.SelectAll,
-                                                onClick = model::selectAll,
+                                                onClick = viewModel::selectAll,
                                             ),
                                             AppBar.Action(
                                                 title = stringResource(MR.strings.action_select_all),
                                                 icon = Icons.Outlined.FlipToBack,
-                                                onClick = model::invertSelection,
+                                                onClick = viewModel::invertSelection,
                                             ),
                                         ),
                                     )
@@ -187,7 +193,7 @@ class ClearAnimeDatabaseScreen : Screen() {
                                         count = sourceWithCount.count,
                                         isSelected = s.selection.contains(sourceWithCount.id),
                                         onClickSelect = {
-                                            model.toggleSelection(
+                                            viewModel.toggleSelection(
                                                 sourceWithCount.source,
                                             )
                                         },
@@ -201,7 +207,7 @@ class ClearAnimeDatabaseScreen : Screen() {
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                                     .fillMaxWidth(),
-                                onClick = model::showConfirmation,
+                                onClick = viewModel::showConfirmation,
                                 enabled = s.selection.isNotEmpty(),
                             ) {
                                 Text(
@@ -251,15 +257,20 @@ class ClearAnimeDatabaseScreen : Screen() {
     }
 }
 
-private class ClearAnimeDatabaseScreenModel : StateScreenModel<ClearAnimeDatabaseScreenModel.State>(
-    State.Loading,
-) {
-    private val getSourcesWithNonLibraryAnime: GetAnimeSourcesWithNonLibraryAnime = Injekt.get()
-    private val database: AnimeDatabase = Injekt.get()
-    private val sourceManager: AnimeSourceManager = Injekt.get()
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+class ClearAnimeDatabaseViewModel(
+    private val database: AnimeDatabase,
+    private val getSourcesWithNonLibraryAnime: GetAnimeSourcesWithNonLibraryAnime,
+    private val sourceManager: AnimeSourceManager,
+) : ViewModel() {
+
+    val state: StateFlow<ClearAnimeDatabaseViewModel.State>
+        field = MutableStateFlow<ClearAnimeDatabaseViewModel.State>(State.Loading)
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             getSourcesWithNonLibraryAnime.subscribe()
                 .collectLatest { list ->
                     val items = list.groupBy { it.sourceId }
@@ -284,7 +295,7 @@ private class ClearAnimeDatabaseScreenModel : StateScreenModel<ClearAnimeDatabas
                             AnimeSourceWithIds(domainSource, ids, orphaned)
                         }
 
-                    mutableState.update { old ->
+                    state.update { old ->
                         val items = items.sortedBy { it.name }
                         when (old) {
                             State.Loading -> State.Ready(items)
@@ -332,7 +343,7 @@ private class ClearAnimeDatabaseScreenModel : StateScreenModel<ClearAnimeDatabas
         database.animehistoryQueries.removeResettedHistory()
     }
 
-    fun toggleSelection(source: AnimeSource) = mutableState.update { state ->
+    fun toggleSelection(source: AnimeSource) = state.update { state ->
         if (state !is State.Ready) return@update state
         val mutableList = state.selection.toMutableList()
         if (mutableList.contains(source.id)) {
@@ -343,17 +354,17 @@ private class ClearAnimeDatabaseScreenModel : StateScreenModel<ClearAnimeDatabas
         state.copy(selection = mutableList)
     }
 
-    fun clearSelection() = mutableState.update { state ->
+    fun clearSelection() = state.update { state ->
         if (state !is State.Ready) return@update state
         state.copy(selection = emptyList())
     }
 
-    fun selectAll() = mutableState.update { state ->
+    fun selectAll() = state.update { state ->
         if (state !is State.Ready) return@update state
         state.copy(selection = state.items.fastMap { it.id })
     }
 
-    fun invertSelection() = mutableState.update { state ->
+    fun invertSelection() = state.update { state ->
         if (state !is State.Ready) return@update state
         state.copy(
             selection = state.items
@@ -362,12 +373,12 @@ private class ClearAnimeDatabaseScreenModel : StateScreenModel<ClearAnimeDatabas
         )
     }
 
-    fun showConfirmation() = mutableState.update { state ->
+    fun showConfirmation() = state.update { state ->
         if (state !is State.Ready) return@update state
         state.copy(showConfirmation = true)
     }
 
-    fun hideConfirmation() = mutableState.update { state ->
+    fun hideConfirmation() = state.update { state ->
         if (state !is State.Ready) return@update state
         state.copy(showConfirmation = false)
     }

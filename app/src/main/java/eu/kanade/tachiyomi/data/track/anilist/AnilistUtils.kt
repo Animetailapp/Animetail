@@ -3,7 +3,6 @@ package eu.kanade.tachiyomi.data.track.anilist
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
-import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
@@ -27,9 +26,7 @@ fun AnimeTrack.toApiStatus() = when (status) {
     else -> throw NotImplementedError("Unknown status: $status")
 }
 
-private val preferences: TrackPreferences by injectLazy()
-
-private fun Double.toApiScore(): String = when (preferences.anilistScoreType.get()) {
+private fun Double.toApiScore(preferences: TrackPreferences): String = when (preferences.anilistScoreType.get()) {
     // 10 point
     "POINT_10" -> (this.toInt() / 10).toString()
 
@@ -49,16 +46,16 @@ private fun Double.toApiScore(): String = when (preferences.anilistScoreType.get
     // Smiley
     "POINT_3" -> when {
         this == 0.0 -> "0"
-        this <= 35 -> ":("
-        this <= 60 -> ":|"
-        else -> ":)"
+        this <= 35 -> "1"
+        this <= 60 -> "2"
+        else -> "3"
     }
 
     // 10 point decimal
     "POINT_10_DECIMAL" -> (this / 10).toString()
 
-    else -> throw NotImplementedError("Unknown score type")
+    else -> throw Exception("Unknown score type")
 }
 
-fun DomainMangaTrack.toApiScore(): String = this.score.toApiScore()
-fun DomainAnimeTrack.toApiScore(): String = this.score.toApiScore()
+fun DomainMangaTrack.toApiScore(preferences: TrackPreferences): String = this.score.toApiScore(preferences)
+fun DomainAnimeTrack.toApiScore(preferences: TrackPreferences): String = this.score.toApiScore(preferences)

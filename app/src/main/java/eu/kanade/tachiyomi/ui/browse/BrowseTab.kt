@@ -6,24 +6,23 @@ import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.core.preference.asState
-import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.TabbedScreen
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
-import eu.kanade.tachiyomi.ui.browse.anime.extension.AnimeExtensionsScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.extension.AnimeExtensionsViewModel
 import eu.kanade.tachiyomi.ui.browse.anime.extension.animeExtensionsTab
 import eu.kanade.tachiyomi.ui.browse.anime.migration.sources.migrateAnimeSourceTab
 import eu.kanade.tachiyomi.ui.browse.anime.source.animeSourcesTab
@@ -39,10 +38,9 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 data object BrowseTab : Tab {
     private fun readResolve(): Any = BrowseTab
@@ -84,18 +82,19 @@ data object BrowseTab : Tab {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         // SY -->
-        val hideFeedTab by remember { Injekt.get<UiPreferences>().hideFeedTab.asState(scope) }
-        val feedTabInFront by remember { Injekt.get<UiPreferences>().feedTabInFront.asState(scope) }
+        val uiPreferences = remember { context.appGraph.uiPreferences }
+        val hideFeedTab by remember { uiPreferences.hideFeedTab.asState(scope) }
+        val feedTabInFront by remember { uiPreferences.feedTabInFront.asState(scope) }
         // SY <--
 
         // Hoisted for extensions tab's search bar
-        val mangaExtensionsViewModel = viewModel<MangaExtensionsViewModel>()
-        val mangaExtensionsState by mangaExtensionsViewModel.state.collectAsState()
+        val mangaExtensionsViewModel = metroViewModel<MangaExtensionsViewModel>()
+        val mangaExtensionsSearchQuery by mangaExtensionsViewModel.searchQuery.collectAsStateWithLifecycle()
 
-        val animeExtensionsScreenModel = rememberScreenModel { AnimeExtensionsScreenModel() }
-        val animeExtensionsState by animeExtensionsScreenModel.state.collectAsState()
+        val animeExtensionsViewModel = metroViewModel<AnimeExtensionsViewModel>()
+        val animeExtensionsSearchQuery by animeExtensionsViewModel.searchQuery.collectAsStateWithLifecycle()
 
-        val animeExtensionsTabContent = animeExtensionsTab(animeExtensionsScreenModel)
+        val animeExtensionsTabContent = animeExtensionsTab(animeExtensionsViewModel)
         val mangaExtensionsTabContent = mangaExtensionsTab(mangaExtensionsViewModel)
 
         // KMK -->
@@ -158,10 +157,10 @@ data object BrowseTab : Tab {
             titleRes = MR.strings.browse,
             tabs = tabs,
             state = state,
-            mangaSearchQuery = mangaExtensionsState.searchQuery,
+            mangaSearchQuery = mangaExtensionsSearchQuery,
             onChangeMangaSearchQuery = mangaExtensionsViewModel::search,
-            animeSearchQuery = animeExtensionsState.searchQuery,
-            onChangeAnimeSearchQuery = animeExtensionsScreenModel::search,
+            animeSearchQuery = animeExtensionsSearchQuery,
+            onChangeAnimeSearchQuery = animeExtensionsViewModel::search,
             animeExtensionsTabIndex = animeExtensionsTabIndex,
             mangaExtensionsTabIndex = mangaExtensionsTabIndex,
             // KMK -->

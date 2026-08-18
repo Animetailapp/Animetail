@@ -2,12 +2,12 @@ package eu.kanade.tachiyomi.ui.browse.anime.extension
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.anime.AnimeExtensionFilterScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.util.system.toast
@@ -21,8 +21,8 @@ class AnimeExtensionFilterScreen : Screen() {
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { AnimeExtensionFilterScreenModel() }
-        val state by screenModel.state.collectAsState()
+        val viewModel = metroViewModel<AnimeExtensionFilterViewModel>()
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
         if (state is AnimeExtensionFilterState.Loading) {
             LoadingScreen()
@@ -34,11 +34,11 @@ class AnimeExtensionFilterScreen : Screen() {
         AnimeExtensionFilterScreen(
             navigateUp = navigator::pop,
             state = successState,
-            onClickToggle = screenModel::toggle,
+            onClickToggle = viewModel::toggle,
         )
 
         LaunchedEffect(Unit) {
-            screenModel.events.collectLatest {
+            viewModel.events.collectLatest {
                 when (it) {
                     AnimeExtensionFilterEvent.FailedFetchingLanguages -> {
                         context.toast(MR.strings.internal_error)

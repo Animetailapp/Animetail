@@ -4,9 +4,11 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.tachiyomi.extension.InstallStep
-import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.anime.installer.InstallerAnime
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.network.NetworkHelper
@@ -15,6 +17,7 @@ import eu.kanade.tachiyomi.util.system.isPackageInstalled
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,8 +27,6 @@ import logcat.LogPriority
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 
 /**
@@ -33,14 +34,18 @@ import java.io.File
  *
  * @param context The application context.
  */
-internal class AnimeExtensionInstaller(
+@Inject
+@SingleIn(AppScope::class)
+class AnimeExtensionInstaller(
     private val context: Context,
-    private val scope: CoroutineScope,
+    basePreferences: BasePreferences,
+    networkHelper: NetworkHelper,
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val activeJobs = mutableMapOf<String, Job>()
     private val activeSteps = mutableMapOf<Long, MutableStateFlow<InstallStep>>()
-    private val extensionInstaller = Injekt.get<BasePreferences>().extensionInstaller
-    private val httpClient: OkHttpClient = Injekt.get<NetworkHelper>().client
+    private val extensionInstaller = basePreferences.extensionInstaller
+    private val httpClient: OkHttpClient = networkHelper.client
 
     /**
      * Adds the given extension to the downloads queue and returns an observable containing its
@@ -142,17 +147,15 @@ internal class AnimeExtensionInstaller(
     }
 
     private fun installApkPrivately(downloadId: Long, tempFile: File) {
-        val extensionManager = Injekt.get<AnimeExtensionManager>()
-
         try {
             if (AnimeExtensionLoader.installPrivateExtensionFile(context, tempFile)) {
-                extensionManager.updateInstallStep(downloadId, InstallStep.Installed)
+                updateInstallStep(downloadId, InstallStep.Installed)
             } else {
-                extensionManager.updateInstallStep(downloadId, InstallStep.Error)
+                updateInstallStep(downloadId, InstallStep.Error)
             }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Failed to read downloaded extension file." }
-            extensionManager.updateInstallStep(downloadId, InstallStep.Error)
+            updateInstallStep(downloadId, InstallStep.Error)
         }
 
         tempFile.delete()

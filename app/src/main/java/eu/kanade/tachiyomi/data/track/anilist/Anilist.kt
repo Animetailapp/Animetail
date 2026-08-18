@@ -21,7 +21,6 @@ import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
@@ -51,9 +50,11 @@ class Anilist(id: Long) :
         const val POINT_10_DECIMAL = "POINT_10_DECIMAL"
         const val POINT_5 = "POINT_5"
         const val POINT_3 = "POINT_3"
+
+        private const val SEARCH_ID_PREFIX = "id:"
     }
 
-    private val json: Json by injectLazy()
+    private val json: Json by lazy { appGraph.json }
 
     private val interceptor by lazy { AnilistInterceptor(this, getPassword()) }
 
@@ -63,7 +64,7 @@ class Anilist(id: Long) :
 
     override val supportsPrivateTracking: Boolean = true
 
-    private val scorePreference = trackPreferences.anilistScoreType
+    private val scorePreference by lazy { trackPreferences.anilistScoreType }
 
     init {
         // If the preference is an int from APIv1, logout user to force using APIv2
@@ -191,7 +192,7 @@ class Anilist(id: Long) :
                 else -> "😊"
             }
 
-            else -> track.toApiScore()
+            else -> track.toApiScore(appGraph.trackPreferences)
         }
     }
 
@@ -211,7 +212,7 @@ class Anilist(id: Long) :
                 else -> "😊"
             }
 
-            else -> track.toApiScore()
+            else -> track.toApiScore(appGraph.trackPreferences)
         }
     }
 
@@ -332,10 +333,22 @@ class Anilist(id: Long) :
     }
 
     override suspend fun searchManga(query: String): List<MangaTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+                return api.getMangaDetails(id)?.let { listOf(it) } ?: emptyList()
+            }
+        }
+
         return api.search(query)
     }
 
     override suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+                return api.getAnimeDetails(id)?.let { listOf(it) } ?: emptyList()
+            }
+        }
+
         return api.searchAnime(query)
     }
 

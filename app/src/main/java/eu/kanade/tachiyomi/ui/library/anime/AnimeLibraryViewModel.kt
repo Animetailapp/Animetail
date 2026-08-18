@@ -9,7 +9,13 @@ import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMapNotNull
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.preference.PreferenceMutableState
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.fastFilterNot
@@ -37,6 +43,8 @@ import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -49,7 +57,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
-import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
@@ -80,8 +87,6 @@ import tachiyomi.domain.track.anime.model.AnimeTrack
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 import tachiyomi.source.local.entries.anime.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
@@ -90,28 +95,34 @@ import kotlin.time.Duration.Companion.seconds
  */
 typealias AnimeLibraryMap = Map<Category, List<AnimeLibraryItem>>
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @Suppress("LargeClass")
 class AnimeLibraryViewModel(
-    private val getLibraryAnime: GetLibraryAnime = Injekt.get(),
-    private val getCategories: GetVisibleAnimeCategories = Injekt.get(),
-    private val getTracksPerAnime: GetTracksPerAnime = Injekt.get(),
-    private val getNextEpisodes: GetNextEpisodes = Injekt.get(),
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
-    private val setSeenStatus: SetSeenStatus = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
-    private val setAnimeCategories: SetAnimeCategories = Injekt.get(),
-    private val preferences: BasePreferences = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val coverCache: AnimeCoverCache = Injekt.get(),
-    private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val downloadManager: AnimeDownloadManager = Injekt.get(),
-    private val downloadCache: AnimeDownloadCache = Injekt.get(),
-    private val trackerManager: TrackerManager = Injekt.get(),
+    private val getLibraryAnime: GetLibraryAnime,
+    private val getCategories: GetVisibleAnimeCategories,
+    private val getTracksPerAnime: GetTracksPerAnime,
+    private val getNextEpisodes: GetNextEpisodes,
+    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val setSeenStatus: SetSeenStatus,
+    private val updateAnime: UpdateAnime,
+    private val setAnimeCategories: SetAnimeCategories,
+    private val preferences: BasePreferences,
+    private val libraryPreferences: LibraryPreferences,
+    private val coverCache: AnimeCoverCache,
+    private val backgroundCache: AnimeBackgroundCache,
+    private val sourceManager: AnimeSourceManager,
+    private val downloadManager: AnimeDownloadManager,
+    private val downloadCache: AnimeDownloadCache,
+    private val trackerManager: TrackerManager,
     // SY -->
-    private val getTracks: GetAnimeTracks = Injekt.get(),
+    private val getTracks: GetAnimeTracks,
     // SY <--
-) : StateViewModel<AnimeLibraryViewModel.State>(State()) {
+) : ViewModel() {
+
+    val state: StateFlow<AnimeLibraryViewModel.State>
+        field = MutableStateFlow<AnimeLibraryViewModel.State>(State())
 
     var activeCategoryIndex: Int by libraryPreferences.lastUsedAnimeCategory.asState(
         viewModelScope,
@@ -158,7 +169,7 @@ class AnimeLibraryViewModel(
                     }
             }
                 .collectLatest {
-                    mutableState.update { state ->
+                    state.update { state ->
                         state.copy(
                             isLoading = false,
                             library = it,
@@ -173,7 +184,7 @@ class AnimeLibraryViewModel(
             libraryPreferences.showContinueReadingButton.changes(),
         ) { a, b, c -> arrayOf(a, b, c) }
             .onEach { (showCategoryTabs, showAnimeCount, showAnimeContinueButton) ->
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(
                         showCategoryTabs = showCategoryTabs,
                         showAnimeCount = showAnimeCount,
@@ -200,7 +211,7 @@ class AnimeLibraryViewModel(
         }
             .distinctUntilChanged()
             .onEach {
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(hasActiveFilters = it)
                 }
             }
@@ -209,7 +220,7 @@ class AnimeLibraryViewModel(
         // SY -->
         libraryPreferences.groupAnimeLibraryBy.changes()
             .onEach {
-                mutableState.update { state ->
+                state.update { state ->
                     state.copy(groupType = it)
                 }
             }
@@ -737,15 +748,15 @@ class AnimeLibraryViewModel(
     }
 
     fun showSettingsDialog() {
-        mutableState.update { it.copy(dialog = Dialog.SettingsSheet) }
+        state.update { it.copy(dialog = Dialog.SettingsSheet) }
     }
 
     fun clearSelection() {
-        mutableState.update { it.copy(selection = persistentListOf()) }
+        state.update { it.copy(selection = persistentListOf()) }
     }
 
     fun toggleSelection(anime: LibraryAnime) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 if (list.fastAny { it.id == anime.id }) {
                     list.removeAll { it.id == anime.id }
@@ -762,7 +773,7 @@ class AnimeLibraryViewModel(
      * same category as the given anime
      */
     fun toggleRangeSelection(anime: LibraryAnime) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val lastSelected = list.lastOrNull()
                 if (lastSelected?.category != anime.category) {
@@ -794,7 +805,7 @@ class AnimeLibraryViewModel(
     }
 
     fun selectAll(index: Int) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val categoryId = state.categories.getOrNull(index)?.id ?: -1
                 val selectedIds = list.fastMap { it.id }
@@ -809,7 +820,7 @@ class AnimeLibraryViewModel(
     }
 
     fun invertSelection(index: Int) {
-        mutableState.update { state ->
+        state.update { state ->
             val newSelection = state.selection.mutate { list ->
                 val categoryId = state.categories[index].id
                 val items = state.getAnimelibItemsByCategoryId(categoryId)?.fastMap { it.libraryAnime }.orEmpty()
@@ -824,7 +835,7 @@ class AnimeLibraryViewModel(
     }
 
     fun search(query: String?) {
-        mutableState.update { it.copy(searchQuery = query) }
+        state.update { it.copy(searchQuery = query) }
     }
 
     fun openChangeCategoryDialog() {
@@ -848,17 +859,17 @@ class AnimeLibraryViewModel(
                     }
                 }
                 .toImmutableList()
-            mutableState.update { it.copy(dialog = Dialog.ChangeCategory(animeList, preselected)) }
+            state.update { it.copy(dialog = Dialog.ChangeCategory(animeList, preselected)) }
         }
     }
 
     fun openDeleteAnimeDialog() {
         val nimeList = state.value.selection.map { it.anime }
-        mutableState.update { it.copy(dialog = Dialog.DeleteAnime(nimeList)) }
+        state.update { it.copy(dialog = Dialog.DeleteAnime(nimeList)) }
     }
 
     fun closeDialog() {
-        mutableState.update { it.copy(dialog = null) }
+        state.update { it.copy(dialog = null) }
     }
 
     sealed interface Dialog {

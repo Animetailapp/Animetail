@@ -9,11 +9,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.SubtitlesBorderStyle
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
 import tachiyomi.i18n.tail.TLMR
 
+@Inject
+@SingleIn(AppScope::class)
 class SubtitlePreferences(
     private val preferenceStore: PreferenceStore,
 ) {

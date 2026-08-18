@@ -1,10 +1,12 @@
 package tachiyomi.domain.items.episode.interactor
 
+import dev.zacsweers.metro.Inject
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.items.episode.model.EpisodeUpdate
 import tachiyomi.domain.items.episode.repository.EpisodeRepository
 
+@Inject
 class UpdateEpisode(
     private val episodeRepository: EpisodeRepository,
 ) {

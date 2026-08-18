@@ -3,13 +3,14 @@ package eu.kanade.tachiyomi.ui.browse.manga.migration.sources
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.manga.MigrateMangaSourceScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
@@ -21,8 +22,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 fun Screen.migrateMangaSourceTab(): TabContent {
     val uriHandler = LocalUriHandler.current
     val navigator = LocalNavigator.currentOrThrow
-    val viewModel = viewModel<MigrateMangaSourceViewModel>()
-    val state by viewModel.state.collectAsState()
+    val viewModel = metroViewModel<MigrateMangaSourceViewModel>()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     return TabContent(
         titleRes = MR.strings.label_migration,

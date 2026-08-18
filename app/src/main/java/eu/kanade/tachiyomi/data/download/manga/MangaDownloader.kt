@@ -4,6 +4,9 @@ import android.content.Context
 import aniyomi.util.DataSaver
 import aniyomi.util.DataSaver.Companion.getImage
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.entries.manga.model.getComicInfo
 import eu.kanade.domain.items.chapter.model.toSChapter
 import eu.kanade.domain.source.service.SourcePreferences
@@ -23,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,7 +52,6 @@ import okhttp3.Response
 import okio.Throttler
 import okio.buffer
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.ImageUtil
@@ -63,8 +66,6 @@ import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 import java.util.Locale
 import kotlin.time.Duration.Companion.seconds
@@ -78,44 +79,36 @@ import kotlin.time.Duration.Companion.seconds
  * The queue manipulation must be done in one thread (currently the main thread) to avoid unexpected
  * behavior, but it's safe to read it from multiple threads.
  */
-@OptIn(DelicateCoroutinesApi::class)
+@Inject
+@SingleIn(AppScope::class)
 class MangaDownloader(
     private val context: Context,
     private val provider: MangaDownloadProvider,
     private val cache: MangaDownloadCache,
-    private val scope: CoroutineScope,
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val chapterCache: ChapterCache = Injekt.get(),
-    private val downloadPreferences: DownloadPreferences = Injekt.get(),
-    private val xml: XML = Injekt.get(),
-    private val getCategories: GetMangaCategories = Injekt.get(),
-    private val getMangaTracks: GetMangaTracks = Injekt.get(),
+    private val sourceManager: MangaSourceManager,
+    private val chapterCache: ChapterCache,
+    private val downloadPreferences: DownloadPreferences,
+    private val xml: XML,
+    private val getCategories: GetMangaCategories,
+    private val getMangaTracks: GetMangaTracks,
+    private val store: MangaDownloadStore,
+    private val notifier: MangaDownloadNotifier,
     // SY -->
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
+    private val sourcePreferences: SourcePreferences,
     // SY <--
 ) {
-
-    /**
-     * Store for persisting downloads across restarts.
-     */
-    private val store = MangaDownloadStore(context)
-
     /**
      * Queue where active downloads are kept.
      */
     private val _queueState = MutableStateFlow<List<MangaDownload>>(emptyList())
     val queueState = _queueState.asStateFlow()
 
-    /**
-     * Notifier for the downloader state and progress.
-     */
-    private val notifier by lazy { MangaDownloadNotifier(context) }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
      * The throttler used to control the download speed.
      */
     private val throttler = Throttler()
-
     private var downloaderJob: Job? = null
 
     /**
@@ -385,7 +378,7 @@ class MangaDownloader(
 
             // Delete all temporary (unfinished) files
             tmpDir.listFiles()
-                ?.filter { it.extension == "tmp" }
+                ?.filter { it.name?.endsWith(".tmp") == true }
                 ?.forEach { it.delete() }
 
             download.status = MangaDownload.State.DOWNLOADING

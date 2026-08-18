@@ -1,5 +1,6 @@
 package tachiyomi.domain.category.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.library.manga.model.MangaLibraryGroup
@@ -8,6 +9,7 @@ import tachiyomi.domain.library.model.plus
 import tachiyomi.domain.library.service.LibraryPreferences
 import kotlin.random.Random
 
+@Inject
 class SetSortModeForMangaCategory(
     private val preferences: LibraryPreferences,
     private val categoryRepository: MangaCategoryRepository,

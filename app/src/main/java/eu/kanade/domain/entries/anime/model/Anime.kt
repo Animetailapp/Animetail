@@ -1,9 +1,10 @@
 package eu.kanade.domain.entries.anime.model
 
-import eu.kanade.domain.base.BasePreferences
+import android.content.Context
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
+import mihon.app.di.appGraph
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.entries.anime.model.Anime
 import uy.kohesive.injekt.Injekt
@@ -12,7 +13,7 @@ import uy.kohesive.injekt.api.get
 // TODO: move these into the domain model
 val Anime.downloadedFilter: TriState
     get() {
-        if (Injekt.get<BasePreferences>().downloadedOnly.get()) return TriState.ENABLED_IS
+        if (Injekt.get<Context>().appGraph.basePreferences.downloadedOnly.get()) return TriState.ENABLED_IS
         return when (downloadedFilterRaw) {
             Anime.EPISODE_SHOW_DOWNLOADED -> TriState.ENABLED_IS
             Anime.EPISODE_SHOW_NOT_DOWNLOADED -> TriState.ENABLED_NOT
@@ -22,7 +23,7 @@ val Anime.downloadedFilter: TriState
 
 val Anime.seasonDownloadedFilter: TriState
     get() {
-        if (Injekt.get<BasePreferences>().downloadedOnly.get()) return TriState.ENABLED_IS
+        if (Injekt.get<Context>().appGraph.basePreferences.downloadedOnly.get()) return TriState.ENABLED_IS
         return when (seasonDownloadedFilterRaw) {
             Anime.SEASON_SHOW_DOWNLOADED -> TriState.ENABLED_IS
             Anime.SEASON_SHOW_NOT_DOWNLOADED -> TriState.ENABLED_NOT
@@ -119,10 +120,14 @@ fun SAnime.toDomainAnime(sourceId: Long): Anime {
     )
 }
 
-fun Anime.hasCustomCover(coverCache: AnimeCoverCache = Injekt.get()): Boolean {
+fun Anime.hasCustomCover(
+    coverCache: AnimeCoverCache = Injekt.get<Context>().appGraph.animeCoverCache,
+): Boolean {
     return coverCache.getCustomCoverFile(id).exists()
 }
 
-fun Anime.hasCustomBackground(backgroundCache: AnimeBackgroundCache = Injekt.get()): Boolean {
+fun Anime.hasCustomBackground(
+    backgroundCache: AnimeBackgroundCache = Injekt.get<Context>().appGraph.animeBackgroundCache,
+): Boolean {
     return backgroundCache.getCustomBackgroundFile(id).exists()
 }

@@ -1,5 +1,6 @@
 package tachiyomi.domain.source.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import logcat.LogPriority
@@ -10,6 +11,7 @@ import tachiyomi.domain.source.anime.model.FeedSavedSearchUpdate
 import tachiyomi.domain.source.anime.repository.FeedSavedSearchRepository
 import java.util.Collections
 
+@Inject
 class ReorderFeed(
     private val feedSavedSearchRepository: FeedSavedSearchRepository,
 ) {

@@ -2,12 +2,13 @@ package eu.kanade.tachiyomi.ui.browse.manga.extension
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.manga.MangaExtensionFilterScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.util.system.toast
@@ -21,8 +22,8 @@ class MangaExtensionFilterScreen : Screen() {
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel = viewModel<MangaExtensionFilterViewModel>()
-        val state by viewModel.state.collectAsState()
+        val viewModel = metroViewModel<MangaExtensionFilterViewModel>()
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
         if (state is MangaExtensionFilterState.Loading) {
             LoadingScreen()

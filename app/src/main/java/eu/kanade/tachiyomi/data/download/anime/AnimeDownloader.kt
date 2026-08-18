@@ -16,6 +16,9 @@ import com.arthenica.ffmpegkit.LogCallback
 import com.arthenica.ffmpegkit.LogRedirectionStrategy
 import com.arthenica.ffmpegkit.StatisticsCallback
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.UnmeteredSource
 import eu.kanade.tachiyomi.animesource.model.HttpServer
 import eu.kanade.tachiyomi.animesource.model.Track
@@ -25,6 +28,7 @@ import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateNotifier
 import eu.kanade.tachiyomi.data.notification.NotificationHandler
 import eu.kanade.tachiyomi.data.torrent.service.TorrentServerService
+import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
@@ -65,9 +69,6 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -80,41 +81,32 @@ import kotlin.coroutines.resumeWithException
  * The queue manipulation must be done in one thread (currently the main thread) to avoid unexpected
  * behavior, but it's safe to read it from multiple threads.
  */
+@Inject
+@SingleIn(AppScope::class)
 class AnimeDownloader(
     private val context: Context,
     private val provider: AnimeDownloadProvider,
     private val cache: AnimeDownloadCache,
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val scope: CoroutineScope,
-    private val torrentServerApi: TorrentServerApi = Injekt.get(),
-    private val torrentServerUtils: TorrentServerUtils = Injekt.get(),
-    private val torrentPreferences: TorrentPreferences = Injekt.get(),
+    private val sourceManager: AnimeSourceManager,
+    private val torrentServerApi: TorrentServerApi,
+    private val torrentServerUtils: TorrentServerUtils,
+    private val torrentPreferences: TorrentPreferences,
+    private val store: AnimeDownloadStore,
+    private val notifier: AnimeDownloadNotifier,
+    private val preferences: DownloadPreferences,
 ) {
-    /**
-     * Store for persisting downloads across restarts.
-     */
-    private val store = AnimeDownloadStore(context)
-
     /**
      * Queue where active downloads are kept.
      */
     private val _queueState = MutableStateFlow<List<AnimeDownload>>(emptyList())
     val queueState = _queueState.asStateFlow()
 
-    /**
-     * Notifier for the downloader state and progress.
-     */
-    private val notifier by lazy { AnimeDownloadNotifier(context) }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
      * Job object for download queue management
      */
     private var downloaderJob: Job? = null
-
-    /**
-     * Preference for user's choice of external downloader
-     */
-    private val preferences: DownloadPreferences by injectLazy()
 
     /**
      * Whether the downloader is running.
@@ -508,8 +500,10 @@ class AnimeDownloader(
                 } else {
                     ffmpegDownload(download, tmpDir, videoFile, filename)
                 }
-            } catch (e: Exception) {
-                videoFile.delete()
+            } catch (e: HttpException) {
+                if (e.code == 416) {
+                    videoFile.delete()
+                }
                 throw e
             }
 

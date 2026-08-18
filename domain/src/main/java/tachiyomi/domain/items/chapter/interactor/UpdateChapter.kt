@@ -1,10 +1,12 @@
 package tachiyomi.domain.items.chapter.interactor
 
+import dev.zacsweers.metro.Inject
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.items.chapter.model.ChapterUpdate
 import tachiyomi.domain.items.chapter.repository.ChapterRepository
 
+@Inject
 class UpdateChapter(
     private val chapterRepository: ChapterRepository,
 ) {

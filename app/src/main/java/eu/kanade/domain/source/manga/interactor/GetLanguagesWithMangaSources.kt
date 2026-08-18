@@ -1,5 +1,6 @@
 package eu.kanade.domain.source.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import kotlinx.coroutines.flow.Flow
@@ -8,6 +9,7 @@ import tachiyomi.domain.source.manga.model.Source
 import tachiyomi.domain.source.manga.repository.MangaSourceRepository
 import java.util.SortedMap
 
+@Inject
 class GetLanguagesWithMangaSources(
     private val repository: MangaSourceRepository,
     private val preferences: SourcePreferences,

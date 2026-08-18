@@ -96,9 +96,9 @@ import eu.kanade.tachiyomi.ui.browse.anime.extension.details.AnimeSourcePreferen
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeSeasonItem
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeViewModel
 import eu.kanade.tachiyomi.ui.entries.anime.EpisodeList
-import eu.kanade.tachiyomi.ui.home.HomeScreen.uiPreferences
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.coroutines.delay
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
@@ -428,11 +428,15 @@ private fun AnimeScreenSmallImpl(
         }
     })
 
-    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes.collectAsState()
+    val context = LocalContext.current
+    val uiPreferences = remember { context.appGraph.uiPreferences }
+    val sourcePreferences = remember { context.appGraph.sourcePreferences }
+    val libraryPreferences = remember { context.appGraph.libraryPreferences }
+    val relatedAnimesEnabled by sourcePreferences.relatedAnimes.collectAsState()
     val expandRelatedAnimes by uiPreferences.expandRelatedAnimes.collectAsState()
     val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow.collectAsState()
     val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps.collectAsState()
-    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters.collectAsState()
+    val hideMissingChapters by libraryPreferences.hideMissingChapters.collectAsState()
     val showCast by uiPreferences.showCast.collectAsState()
 
     BoxWithConstraints {
@@ -882,8 +886,12 @@ fun AnimeScreenLargeImpl(
     var topBarHeight by remember { mutableIntStateOf(0) }
     val offsetGridPaddingPx = with(density) { GRID_PADDING.roundToPx() }
     val gridSize = remember(state.anime) { state.anime.seasonDisplayGridSize }
+    val context = LocalContext.current
+    val uiPreferences = remember { context.appGraph.uiPreferences }
+    val sourcePreferences = remember { context.appGraph.sourcePreferences }
+    val libraryPreferences = remember { context.appGraph.libraryPreferences }
     val showEpisodeTimestamps by uiPreferences.showEpisodeTimestamps.collectAsState()
-    val hideMissingChapters by remember { Injekt.get<LibraryPreferences>() }.hideMissingChapters.collectAsState()
+    val hideMissingChapters by libraryPreferences.hideMissingChapters.collectAsState()
 
     val itemListState = rememberLazyGridState()
     val hasFilters = remember(state) {
@@ -900,7 +908,7 @@ fun AnimeScreenLargeImpl(
             navigateUp()
         }
     })
-    val relatedAnimesEnabled by Injekt.get<SourcePreferences>().relatedAnimes.collectAsState()
+    val relatedAnimesEnabled by sourcePreferences.relatedAnimes.collectAsState()
     val expandRelatedAnimes by uiPreferences.expandRelatedAnimes.collectAsState()
     val showRelatedAnimesInOverflow by uiPreferences.relatedAnimesInOverflow.collectAsState()
     val showCast by uiPreferences.showCast.collectAsState()

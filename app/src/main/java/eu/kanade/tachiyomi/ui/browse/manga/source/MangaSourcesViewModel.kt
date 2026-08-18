@@ -1,7 +1,13 @@
 package eu.kanade.tachiyomi.ui.browse.manga.source
 
 import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.source.manga.interactor.GetEnabledMangaSources
 import eu.kanade.domain.source.manga.interactor.ToggleExcludeFromMangaDataSaver
@@ -12,93 +18,94 @@ import eu.kanade.domain.source.service.SourcePreferences.DataSaver
 import eu.kanade.presentation.browse.manga.MangaSourceUiModel
 import eu.kanade.tachiyomi.util.system.LAST_USED_KEY
 import eu.kanade.tachiyomi.util.system.PINNED_KEY
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import logcat.LogPriority
-import mihon.core.viewmodel.StateViewModel
-import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.manga.model.Pin
 import tachiyomi.domain.source.manga.model.Source
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.TreeMap
+import kotlin.time.Duration.Companion.seconds
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class MangaSourcesViewModel(
-    private val preferences: BasePreferences = Injekt.get(),
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
-    private val getEnabledSources: GetEnabledMangaSources = Injekt.get(),
-    private val toggleSource: ToggleMangaSource = Injekt.get(),
-    private val toggleSourcePin: ToggleMangaSourcePin = Injekt.get(),
+    private val preferences: BasePreferences,
+    private val sourcePreferences: SourcePreferences,
+    private val getEnabledSources: GetEnabledMangaSources,
+    private val toggleSource: ToggleMangaSource,
+    private val toggleSourcePin: ToggleMangaSourcePin,
     // SY -->
-    private val toggleExcludeFromMangaDataSaver: ToggleExcludeFromMangaDataSaver = Injekt.get(),
+    private val toggleExcludeFromMangaDataSaver: ToggleExcludeFromMangaDataSaver,
     // SY <--
-) : StateViewModel<MangaSourcesViewModel.State>(State()) {
+) : ViewModel() {
 
     private val _events = Channel<Event>(Int.MAX_VALUE)
     val events = _events.receiveAsFlow()
 
-    init {
-        viewModelScope.launchIO {
-            getEnabledSources.subscribe()
-                .catch {
-                    logcat(LogPriority.ERROR, it)
-                    _events.send(Event.FailedFetchingSources)
-                }
-                .collectLatest(::collectLatestSources)
+    private val dialog = MutableStateFlow<Dialog?>(null)
+
+    private val enabledSources = getEnabledSources.subscribe()
+        .catch {
+            logcat(LogPriority.ERROR, it)
+            _events.send(Event.FailedFetchingSources)
         }
-        // SY -->
-        sourcePreferences.dataSaver.changes()
-            .onEach {
-                mutableState.update {
-                    it.copy(
-                        dataSaverEnabled = sourcePreferences.dataSaver.get() != DataSaver.NONE,
-                    )
-                }
-            }
-            .launchIn(viewModelScope)
-        // SY <--
+        .map(::toSourceUiModels)
+
+    val state: StateFlow<State> = combine(
+        enabledSources,
+        dialog,
+        sourcePreferences.dataSaver.changes(),
+    ) { items, dialog, dataSaver ->
+        State(
+            dialog = dialog,
+            isLoading = false,
+            items = items,
+            dataSaverEnabled = dataSaver != DataSaver.NONE,
+        )
     }
+        .flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
 
-    private fun collectLatestSources(sources: List<Source>) {
-        mutableState.update { state ->
-            val map = TreeMap<String, MutableList<Source>> { d1, d2 ->
-                // Sources without a lang defined will be placed at the end
-                when {
-                    d1 == LAST_USED_KEY && d2 != LAST_USED_KEY -> -1
-                    d2 == LAST_USED_KEY && d1 != LAST_USED_KEY -> 1
-                    d1 == PINNED_KEY && d2 != PINNED_KEY -> -1
-                    d2 == PINNED_KEY && d1 != PINNED_KEY -> 1
-                    d1 == "" && d2 != "" -> 1
-                    d2 == "" && d1 != "" -> -1
-                    else -> d1.compareTo(d2)
-                }
+    private fun toSourceUiModels(sources: List<Source>): List<MangaSourceUiModel> {
+        val map = TreeMap<String, MutableList<Source>> { d1, d2 ->
+            // Sources without a lang defined will be placed at the end
+            when {
+                d1 == LAST_USED_KEY && d2 != LAST_USED_KEY -> -1
+                d2 == LAST_USED_KEY && d1 != LAST_USED_KEY -> 1
+                d1 == PINNED_KEY && d2 != PINNED_KEY -> -1
+                d2 == PINNED_KEY && d1 != PINNED_KEY -> 1
+                d1 == "" && d2 != "" -> 1
+                d2 == "" && d1 != "" -> -1
+                else -> d1.compareTo(d2)
             }
-            val byLang = sources.groupByTo(map) {
-                when {
-                    it.isUsedLast -> LAST_USED_KEY
-                    Pin.Actual in it.pin -> PINNED_KEY
-                    else -> it.lang
-                }
+        }
+        val byLang = sources.groupByTo(map) {
+            when {
+                it.isUsedLast -> LAST_USED_KEY
+                Pin.Actual in it.pin -> PINNED_KEY
+                else -> it.lang
             }
+        }
 
-            state.copy(
-                isLoading = false,
-                items = byLang
-                    .flatMap {
-                        listOf(
-                            MangaSourceUiModel.Header(it.key),
-                            *it.value.map { source ->
-                                MangaSourceUiModel.Item(source)
-                            }.toTypedArray(),
-                        )
-                    }
-                    .toList(),
+        return byLang.flatMap {
+            listOf(
+                MangaSourceUiModel.Header(it.key),
+                *it.value.map { source ->
+                    MangaSourceUiModel.Item(source)
+                }.toTypedArray(),
             )
         }
     }
@@ -118,11 +125,11 @@ class MangaSourcesViewModel(
     // SY <--
 
     fun showSourceDialog(source: Source) {
-        mutableState.update { it.copy(dialog = Dialog(source)) }
+        dialog.update { Dialog(source) }
     }
 
     fun closeDialog() {
-        mutableState.update { it.copy(dialog = null) }
+        dialog.update { null }
     }
 
     sealed interface Event {

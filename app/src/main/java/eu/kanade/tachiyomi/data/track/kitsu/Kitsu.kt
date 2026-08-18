@@ -41,6 +41,8 @@ class Kitsu(id: Long) :
         const val DROPPED = 4L
         const val PLAN_TO_READ = 5L
         const val PLAN_TO_WATCH = 15L
+
+        private const val SEARCH_ID_PREFIX = "id:"
     }
 
     override val supportsReadingDates: Boolean = true
@@ -201,10 +203,22 @@ class Kitsu(id: Long) :
     }
 
     override suspend fun searchManga(query: String): List<MangaTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+                return api.getMangaDetails(id)?.let { listOf(it) } ?: emptyList()
+            }
+        }
+
         return api.search(query)
     }
 
     override suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+                return api.getAnimeDetails(id)?.let { listOf(it) } ?: emptyList()
+            }
+        }
+
         return api.searchAnime(query)
     }
 

@@ -76,7 +76,7 @@ class AnimeDownloadHolder(private val view: View, val adapter: AnimeDownloadAdap
      */
     fun notifyDownloadedPages() {
         binding.downloadProgressText.text = if (download.progress == 0) {
-            view.context.stringResource(MR.strings.update_check_notification_download_in_progress)
+            view.context.stringResource(AYMR.strings.downloading)
         } else {
             view.context.stringResource(AYMR.strings.episode_download_progress, download.progress)
         }

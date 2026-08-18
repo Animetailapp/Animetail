@@ -1,5 +1,6 @@
 package tachiyomi.domain.custombuttons.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import logcat.LogPriority
@@ -9,6 +10,7 @@ import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.domain.custombuttons.model.CustomButtonUpdate
 import tachiyomi.domain.custombuttons.repository.CustomButtonRepository
 
+@Inject
 class ReorderCustomButton(
     private val customButtonRepository: CustomButtonRepository,
 ) {

@@ -1,9 +1,14 @@
 package eu.kanade.tachiyomi.ui.player.settings
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.ui.player.Debanding
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
 
+@Inject
+@SingleIn(AppScope::class)
 class DecoderPreferences(
     private val preferenceStore: PreferenceStore,
 ) {

@@ -2,9 +2,14 @@ package eu.kanade.domain.track.manga.store
 
 import android.content.Context
 import androidx.core.content.edit
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 
+@Inject
+@SingleIn(AppScope::class)
 class DelayedMangaTrackingStore(context: Context) {
 
     /**

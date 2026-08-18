@@ -11,7 +11,7 @@ interface AnimeRepository {
 
     suspend fun getAnimeById(id: Long): Anime
 
-    suspend fun getAnimeByIdAsFlow(id: Long): Flow<Anime>
+    fun getAnimeByIdAsFlow(id: Long): Flow<Anime>
 
     suspend fun getAnimeByUrlAndSourceId(url: String, sourceId: Long): Anime?
 

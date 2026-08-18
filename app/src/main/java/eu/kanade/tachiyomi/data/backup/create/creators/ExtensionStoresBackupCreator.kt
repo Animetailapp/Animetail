@@ -1,14 +1,14 @@
 package eu.kanade.tachiyomi.data.backup.create.creators
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.backup.models.BackupExtensionStore
 import eu.kanade.tachiyomi.data.backup.models.backupExtensionStoreMapper
 import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
 import mihon.domain.extension.manga.interactor.GetMangaExtensionStores
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
 class AnimeExtensionStoresBackupCreator(
-    private val getAnimeExtensionStores: GetAnimeExtensionStores = Injekt.get<GetAnimeExtensionStores>(),
+    private val getAnimeExtensionStores: GetAnimeExtensionStores,
 ) {
 
     suspend operator fun invoke(): List<BackupExtensionStore> {
@@ -17,8 +17,9 @@ class AnimeExtensionStoresBackupCreator(
     }
 }
 
+@Inject
 class MangaExtensionStoresBackupCreator(
-    private val getMangaExtensionStores: GetMangaExtensionStores = Injekt.get<GetMangaExtensionStores>(),
+    private val getMangaExtensionStores: GetMangaExtensionStores,
 ) {
 
     suspend operator fun invoke(): List<BackupExtensionStore> {

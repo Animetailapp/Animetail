@@ -1,10 +1,15 @@
 package mihon.feature.migration.list
 
 import androidx.annotation.FloatRange
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.entries.manga.model.toSManga
 import eu.kanade.domain.items.chapter.interactor.SyncChaptersWithSource
@@ -13,7 +18,6 @@ import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.manga.getNameForMangaInfo
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -21,13 +25,14 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import logcat.LogPriority
-import mihon.core.viewmodel.StateViewModel
 import mihon.domain.migration.usecases.MigrateMangaUseCase
 import mihon.feature.migration.list.models.MigratingManga
 import mihon.feature.migration.list.models.MigratingManga.SearchResult
@@ -39,35 +44,29 @@ import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@AssistedInject
 class MangaMigrationListViewModel(
-    mangaIds: Collection<Long>,
-    extraSearchQuery: String?,
-    private val preferences: SourcePreferences = Injekt.get(),
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val getManga: GetManga = Injekt.get(),
-    private val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
-    private val updateManga: UpdateManga = Injekt.get(),
-    private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get(),
-    private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
-    private val migrateManga: MigrateMangaUseCase = Injekt.get(),
-) : StateViewModel<MangaMigrationListViewModel.State>(State()) {
+    @Assisted mangaIds: Collection<Long>,
+    @Assisted extraSearchQuery: String?,
+    private val preferences: SourcePreferences,
+    private val sourceManager: MangaSourceManager,
+    private val getManga: GetManga,
+    private val networkToLocalManga: NetworkToLocalManga,
+    private val updateManga: UpdateManga,
+    private val syncChaptersWithSource: SyncChaptersWithSource,
+    private val getChaptersByMangaId: GetChaptersByMangaId,
+    private val migrateManga: MigrateMangaUseCase,
+) : ViewModel() {
 
-    companion object {
-        val MANGA_IDS_KEY = CreationExtras.Key<Collection<Long>>()
+    val state: StateFlow<MangaMigrationListViewModel.State>
+        field = MutableStateFlow<MangaMigrationListViewModel.State>(State())
 
-        val EXTRA_SEARCH_QUERY_KEY = CreationExtras.Key<String?>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                MangaMigrationListViewModel(
-                    mangaIds = get(MANGA_IDS_KEY)!!,
-                    extraSearchQuery = get(EXTRA_SEARCH_QUERY_KEY),
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(mangaIds: Collection<Long>, extraSearchQuery: String?): MangaMigrationListViewModel
     }
 
     private val smartSearchEngine = SmartSourceSearchEngine(extraSearchQuery)
@@ -101,7 +100,7 @@ class MangaMigrationListViewModel(
                 }
                 .awaitAll()
                 .filterNotNull()
-            mutableState.update { it.copy(items = manga.toImmutableList()) }
+            state.update { it.copy(items = manga.toPersistentList()) }
             runMigrations(manga)
         }
     }
@@ -200,7 +199,7 @@ class MangaMigrationListViewModel(
     }
 
     private fun updateMigrationProgress() {
-        mutableState.update { state ->
+        state.update { state ->
             state.copy(
                 finishedCount = items.count { it.searchResult.value != SearchResult.Searching },
                 migrationComplete = migrationComplete(),
@@ -239,7 +238,7 @@ class MangaMigrationListViewModel(
 
     fun migrateMangas(replace: Boolean) {
         migrateJob = viewModelScope.launchIO {
-            mutableState.update { it.copy(dialog = Dialog.Progress(0f)) }
+            state.update { it.copy(dialog = Dialog.Progress(0f)) }
             val items = items
             try {
                 items.forEachIndexed { index, manga ->
@@ -252,23 +251,23 @@ class MangaMigrationListViewModel(
                         if (e is CancellationException) throw e
                         logcat(LogPriority.WARN, throwable = e)
                     }
-                    mutableState.update {
+                    state.update {
                         it.copy(dialog = Dialog.Progress((index.toFloat() / items.size).coerceAtMost(1f)))
                     }
                 }
                 navigateBack()
             } finally {
-                mutableState.update { it.copy(dialog = null) }
+                state.update { it.copy(dialog = null) }
                 migrateJob = null
             }
         }
     }
 
     fun removeManga(mangaId: Long) {
-        mutableState.update { state ->
+        state.update { state ->
             val item = state.items.find { it.manga.id == mangaId } ?: return@update state
             item.migrationScope.cancel()
-            state.copy(items = state.items.toPersistentList().remove(item))
+            state.copy(items = (state.items - item).toPersistentList())
         }
         updateMigrationProgress()
     }
@@ -304,31 +303,35 @@ class MangaMigrationListViewModel(
     }
 
     override fun onCleared() {
+        super.onCleared()
         items.forEach {
             it.migrationScope.cancel()
         }
     }
 
     fun showMigrateDialog(copy: Boolean) {
-        mutableState.update { state ->
+        state.update { state ->
             state.copy(
                 dialog = Dialog.Migrate(
                     copy = copy,
                     totalCount = items.size,
-                    skippedCount = items.count { it.searchResult.value == SearchResult.NotFound },
+                    skippedCount = items.count {
+                        it.searchResult.value == SearchResult.Searching ||
+                            it.searchResult.value == SearchResult.NotFound
+                    },
                 ),
             )
         }
     }
 
     fun showExitDialog() {
-        mutableState.update {
+        state.update {
             it.copy(dialog = Dialog.Exit)
         }
     }
 
     fun dismissDialog() {
-        mutableState.update { it.copy(dialog = null) }
+        state.update { it.copy(dialog = null) }
     }
 
     data class ChapterInfo(

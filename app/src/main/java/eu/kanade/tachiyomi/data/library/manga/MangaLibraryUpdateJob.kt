@@ -15,10 +15,12 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import aniyomi.util.nullIfBlank
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.entries.manga.model.toSManga
 import eu.kanade.domain.items.chapter.interactor.SyncChaptersWithSource
@@ -48,6 +50,9 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import logcat.LogPriority
+import mihon.app.di.AppGraph
+import mihon.app.di.appGraph
+import mihon.core.metro.metroGraph
 import mihon.domain.items.chapter.interactor.FilterChaptersForDownload
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.getAndSet
@@ -76,8 +81,6 @@ import tachiyomi.domain.source.manga.model.SourceNotInstalledException
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
@@ -88,28 +91,42 @@ import kotlin.time.Clock
 class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
 
-    private val sourceManager: MangaSourceManager = Injekt.get()
-    private val libraryPreferences: LibraryPreferences = Injekt.get()
-    private val downloadManager: MangaDownloadManager = Injekt.get()
-    private val coverCache: MangaCoverCache = Injekt.get()
-    private val getLibraryManga: GetLibraryManga = Injekt.get()
-    private val getManga: GetManga = Injekt.get()
-    private val updateManga: UpdateManga = Injekt.get()
-    private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get()
-    private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get()
-    private val getTracks: GetMangaTracks = Injekt.get()
-    private val mangaFetchInterval: MangaFetchInterval = Injekt.get()
-    private val filterChaptersForDownload: FilterChaptersForDownload = Injekt.get()
+    private val graph: AppGraph = context.metroGraph()
 
-    private val notifier = MangaLibraryUpdateNotifier(context)
+    @Inject private lateinit var sourceManager: MangaSourceManager
+
+    @Inject private lateinit var libraryPreferences: LibraryPreferences
+
+    @Inject private lateinit var downloadManager: MangaDownloadManager
+
+    @Inject private lateinit var coverCache: MangaCoverCache
+
+    @Inject private lateinit var getLibraryManga: GetLibraryManga
+
+    @Inject private lateinit var getManga: GetManga
+
+    @Inject private lateinit var updateManga: UpdateManga
+
+    @Inject private lateinit var syncChaptersWithSource: SyncChaptersWithSource
+
+    @Inject private lateinit var getTracks: GetMangaTracks
+
+    @Inject private lateinit var mangaFetchInterval: MangaFetchInterval
+
+    @Inject private lateinit var filterChaptersForDownload: FilterChaptersForDownload
+
+    @Inject private lateinit var getChaptersByMangaId: GetChaptersByMangaId
+
+    @Inject private lateinit var notifier: MangaLibraryUpdateNotifier
 
     private var mangaToUpdate: List<LibraryManga> = mutableListOf()
 
     override suspend fun doWork(): Result {
+        graph.inject(this)
+
         if (tags.contains(WORK_NAME_AUTO)) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-                val preferences = Injekt.get<LibraryPreferences>()
-                val restrictions = preferences.autoUpdateDeviceRestrictions.get()
+                val restrictions = libraryPreferences.autoUpdateDeviceRestrictions.get()
                 if ((DEVICE_ONLY_ON_WIFI in restrictions) && !context.isConnectedToWifi()) {
                     return Result.retry()
                 }
@@ -155,7 +172,6 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo {
-        val notifier = MangaLibraryUpdateNotifier(context)
         return ForegroundInfo(
             Notifications.ID_LIBRARY_PROGRESS,
             notifier.progressNotificationBuilder.build(),
@@ -428,7 +444,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
     }
 
     /**
-     * Updates the chapters for the given manga and adds them to the database.
+     * Updates the chapters    for the given manga and adds them to the database.
      *
      * @param manga the manga to update.
      * @return a pair of the inserted and removed chapters.
@@ -541,7 +557,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
             context: Context,
             prefInterval: Int? = null,
         ) {
-            val preferences = Injekt.get<LibraryPreferences>()
+            val preferences = context.appGraph.libraryPreferences
             val interval = prefInterval ?: preferences.autoUpdateInterval.get()
             if (interval > 0) {
                 val restrictions = preferences.autoUpdateDeviceRestrictions.get()
@@ -599,7 +615,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
             // SY <--
         ): Boolean {
             val wm = context.workManager
-            // Check if the LibraryUpdateJob is already running
+            // Check if the MangaLibraryUpdateJob is already running
             if (wm.isRunning(TAG)) {
                 // Already running either as a scheduled or manual job
                 return false
@@ -613,7 +629,7 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                 // SY <--
             )
 
-            val syncPreferences: SyncPreferences = Injekt.get()
+            val syncPreferences: SyncPreferences = context.appGraph.syncPreferences
 
             // Always sync the data before library update if syncing is enabled.
             if (syncPreferences.isSyncEnabled()) {
@@ -652,14 +668,14 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         }
 
         fun stop(context: Context) {
-            val wm = context.workManager
+            val workManager = context.workManager
             val workQuery = WorkQuery.Builder.fromTags(listOf(TAG))
                 .addStates(listOf(WorkInfo.State.RUNNING))
                 .build()
-            wm.getWorkInfos(workQuery).get()
+            workManager.getWorkInfos(workQuery).get()
                 // Should only return one work but just in case
                 .forEach {
-                    wm.cancelWorkById(it.id)
+                    workManager.cancelWorkById(it.id)
 
                     // Re-enqueue cancelled scheduled work
                     if (it.tags.contains(WORK_NAME_AUTO)) {

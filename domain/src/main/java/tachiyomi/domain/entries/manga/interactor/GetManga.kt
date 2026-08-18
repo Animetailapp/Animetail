@@ -1,11 +1,13 @@
 package tachiyomi.domain.entries.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.repository.MangaRepository
 
+@Inject
 class GetManga(
     private val mangaRepository: MangaRepository,
 ) {
@@ -19,7 +21,7 @@ class GetManga(
         }
     }
 
-    suspend fun subscribe(id: Long): Flow<Manga> {
+    fun subscribe(id: Long): Flow<Manga> {
         return mangaRepository.getMangaByIdAsFlow(id)
     }
 

@@ -3,6 +3,7 @@ package animetail.feature.mpvfiles
 import android.content.Context
 import android.content.res.AssetManager
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +21,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 
+@Inject
 class MpvConfig(
     private val context: Context,
     private val storageManager: StorageManager,

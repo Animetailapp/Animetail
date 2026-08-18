@@ -3,7 +3,13 @@ package eu.kanade.tachiyomi.ui.stats.manga
 import androidx.compose.ui.util.fastDistinctBy
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastMapNotNull
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.util.fastCountNot
 import eu.kanade.core.util.fastFilterNot
 import eu.kanade.presentation.more.stats.StatsScreenState
@@ -12,8 +18,9 @@ import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.data.track.MangaTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.model.SManga
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
-import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.entries.manga.interactor.GetLibraryManga
 import tachiyomi.domain.history.manga.interactor.GetTotalReadDuration
@@ -25,17 +32,21 @@ import tachiyomi.domain.library.service.LibraryPreferences.Companion.ENTRY_NON_V
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.domain.track.manga.model.MangaTrack
 import tachiyomi.source.local.entries.manga.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class MangaStatsViewModel(
-    private val downloadManager: MangaDownloadManager = Injekt.get(),
-    private val getLibraryManga: GetLibraryManga = Injekt.get(),
-    private val getTotalReadDuration: GetTotalReadDuration = Injekt.get(),
-    private val getTracks: GetMangaTracks = Injekt.get(),
-    private val preferences: LibraryPreferences = Injekt.get(),
-    private val trackerManager: TrackerManager = Injekt.get(),
-) : StateViewModel<StatsScreenState>(StatsScreenState.Loading) {
+    private val downloadManager: MangaDownloadManager,
+    private val getLibraryManga: GetLibraryManga,
+    private val getTotalReadDuration: GetTotalReadDuration,
+    private val getTracks: GetMangaTracks,
+    private val preferences: LibraryPreferences,
+    private val trackerManager: TrackerManager,
+) : ViewModel() {
+
+    val state: StateFlow<StatsScreenState>
+        field = MutableStateFlow<StatsScreenState>(StatsScreenState.Loading)
 
     private val loggedInTrackers by lazy { trackerManager.loggedInTrackers().filter { it is MangaTracker } }
 
@@ -76,7 +87,7 @@ class MangaStatsViewModel(
                 trackerCount = loggedInTrackers.size,
             )
 
-            mutableState.update {
+            state.update {
                 StatsScreenState.SuccessManga(
                     overview = overviewStatData,
                     titles = titlesStatData,

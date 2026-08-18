@@ -22,6 +22,7 @@ import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateJob
 import eu.kanade.tachiyomi.ui.category.CategoriesTab
 import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.manga.interactor.ResetMangaCategoryFlags
@@ -46,8 +47,6 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object SettingsLibraryScreen : SearchableSettings {
 
@@ -57,11 +56,12 @@ object SettingsLibraryScreen : SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val getCategories = remember { Injekt.get<GetMangaCategories>() }
+        val context = LocalContext.current
+        val getCategories = remember { context.appGraph.getMangaCategories }
         val allCategories by getCategories.subscribe().collectAsState(initial = emptyList())
-        val getAnimeCategories = remember { Injekt.get<GetAnimeCategories>() }
+        val getAnimeCategories = remember { context.appGraph.getAnimeCategories }
         val allAnimeCategories by getAnimeCategories.subscribe().collectAsState(initial = emptyList())
-        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
+        val libraryPreferences = remember { context.appGraph.libraryPreferences }
 
         return listOf(
             getCategoriesGroup(
@@ -84,6 +84,7 @@ object SettingsLibraryScreen : SearchableSettings {
         allAnimeCategories: List<Category>,
         libraryPreferences: LibraryPreferences,
     ): Preference.PreferenceGroup {
+        val context = LocalContext.current
         val scope = rememberCoroutineScope()
         val userCategoriesCount = allCategories.filterNot(Category::isSystemCategory).size
         val userAnimeCategoriesCount = allAnimeCategories.filterNot(Category::isSystemCategory).size
@@ -139,7 +140,7 @@ object SettingsLibraryScreen : SearchableSettings {
                     onValueChanged = {
                         if (!it) {
                             scope.launch {
-                                Injekt.get<ResetMangaCategoryFlags>().await()
+                                context.appGraph.resetMangaCategoryFlags.await()
                             }
                         }
                         true

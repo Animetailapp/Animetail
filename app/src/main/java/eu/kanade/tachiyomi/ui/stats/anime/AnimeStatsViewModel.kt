@@ -3,7 +3,13 @@ package eu.kanade.tachiyomi.ui.stats.anime
 import androidx.compose.ui.util.fastDistinctBy
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastMapNotNull
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.util.fastCountNot
 import eu.kanade.core.util.fastFilterNot
 import eu.kanade.presentation.more.stats.StatsScreenState
@@ -12,8 +18,9 @@ import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
-import mihon.core.viewmodel.StateViewModel
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.entries.anime.interactor.GetLibraryAnime
 import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
@@ -25,17 +32,21 @@ import tachiyomi.domain.library.service.LibraryPreferences.Companion.ENTRY_NON_V
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.domain.track.anime.model.AnimeTrack
 import tachiyomi.source.local.entries.anime.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class AnimeStatsViewModel(
-    private val downloadManager: AnimeDownloadManager = Injekt.get(),
-    private val getAnimelibAnime: GetLibraryAnime = Injekt.get(),
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
-    private val getTracks: GetAnimeTracks = Injekt.get(),
-    private val preferences: LibraryPreferences = Injekt.get(),
-    private val trackerManager: TrackerManager = Injekt.get(),
-) : StateViewModel<StatsScreenState>(StatsScreenState.Loading) {
+    private val downloadManager: AnimeDownloadManager,
+    private val getAnimelibAnime: GetLibraryAnime,
+    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val getTracks: GetAnimeTracks,
+    private val preferences: LibraryPreferences,
+    private val trackerManager: TrackerManager,
+) : ViewModel() {
+
+    val state: StateFlow<StatsScreenState>
+        field = MutableStateFlow<StatsScreenState>(StatsScreenState.Loading)
 
     private val loggedInTrackers by lazy { trackerManager.loggedInTrackers().filter { it is AnimeTracker } }
 
@@ -76,7 +87,7 @@ class AnimeStatsViewModel(
                 trackerCount = loggedInTrackers.size,
             )
 
-            mutableState.update {
+            state.update {
                 StatsScreenState.SuccessAnime(
                     overview = overviewStatData,
                     titles = titlesStatData,
