@@ -13,11 +13,14 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import java.net.UnknownHostException
 
-context(context: Context) val Throwable.formattedMessage: String
+context(context: Context)
+val Throwable.formattedMessage: String
     get() {
         when (this) {
             is DisabledTorrServerException -> return context.stringResource(AYMR.strings.torrserver_disabled)
+
             is HttpException -> return context.stringResource(MR.strings.exception_http, code)
+
             is UnknownHostException -> {
                 return if (!context.isOnline()) {
                     context.stringResource(MR.strings.exception_offline)
@@ -25,9 +28,11 @@ context(context: Context) val Throwable.formattedMessage: String
                     context.stringResource(MR.strings.exception_unknown_host, message ?: "")
                 }
             }
+
             is NoChaptersException, is NoEpisodesException -> return context.stringResource(
                 MR.strings.no_results_found,
             )
+
             is SourceNotInstalledException, is AnimeSourceNotInstalledException -> return context.stringResource(
                 MR.strings.loader_not_implemented_error,
             )
