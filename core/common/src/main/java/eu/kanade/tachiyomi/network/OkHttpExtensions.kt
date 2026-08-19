@@ -146,13 +146,11 @@ fun OkHttpClient.newCachelessCallWithProgress(
     return progressClient.newCall(request)
 }
 
-context(_: Json)
-inline fun <reified T> Response.parseAs(): T {
+context(json: Json) inline fun <reified T> Response.parseAs(): T {
     return decodeFromJsonResponse(serializer(), this)
 }
 
-context(json: Json)
-fun <T> decodeFromJsonResponse(
+context(json: Json) fun <T> decodeFromJsonResponse(
     deserializer: DeserializationStrategy<T>,
     response: Response,
 ): T {

@@ -292,8 +292,9 @@ object SettingsTrackingScreen : SearchableSettings {
                                     login = { (service as EnhancedAnimeTracker).loginNoop() },
                                     logout = service::logout,
                                 )
-                            } + listOf(Preference.PreferenceItem.InfoPreference(enhancedTrackerInfo))
-                    ).toList(),
+                            } +
+                        listOf(Preference.PreferenceItem.InfoPreference(enhancedTrackerInfo))
+                    ).toImmutableList(),
             ),
         )
     }

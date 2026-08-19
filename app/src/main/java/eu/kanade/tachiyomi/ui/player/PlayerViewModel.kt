@@ -2228,7 +2228,8 @@ class PlayerViewModel(
             "${anime.title} - ${episode.name}".takeBytes(
                 DiskUtil.MAX_FILE_NAME_BYTES - filenameSuffix.byteSize(),
             ),
-        ) + filenameSuffix
+        ) +
+            filenameSuffix
     }
 
     /**

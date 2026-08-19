@@ -43,9 +43,7 @@ class NetworkHelper(
             .addInterceptor(BrotliInterceptor)
             .addInterceptor(UncaughtExceptionInterceptor())
             .addInterceptor(UserAgentInterceptor(::defaultUserAgentProvider))
-            // TLMR -->
             .addInterceptor(FlareSolverrInterceptor(preferences))
-        // <-- TLMR
 
         if (preferences.verboseLogging.get()) {
             val httpLoggingInterceptor = HttpLoggingInterceptor().apply {
