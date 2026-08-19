@@ -407,6 +407,7 @@ fun PlayerControls(
                     SeekbarWithTimers(
                         playerPosition = position,
                         seekPosition = seekPosition,
+                        isGestureSeeking = gestureSeekAmount != null,
                         isSeeking = isSeeking,
                         duration = duration,
                         readAheadValue = readAhead,
@@ -415,9 +416,9 @@ fun PlayerControls(
                             viewModel.updateIsSeeking(true)
                         },
                         onValueChangeFinished = {
-                            viewModel.updatePlayBackPos(seekPosition)
+                            viewModel.updatePlayBackPos(it)
                             viewModel.updateIsSeeking(false)
-                            viewModel.seekTo(seekPosition.toInt(), preciseSeeking)
+                            viewModel.seekTo(it.toInt(), preciseSeeking)
                         },
                         timersInverted = Pair(false, invertDuration),
                         durationTimerOnCLick = { playerPreferences.invertDuration().set(!invertDuration) },

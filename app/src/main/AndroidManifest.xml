@@ -76,7 +76,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
+                <data android:scheme="animetail" />
+                <data android:scheme="aniyomi" />
                 <data android:scheme="tachiyomi" />
+                <data android:scheme="mihon" />
                 <data android:host="add-repo" />
             </intent-filter>
 
@@ -88,6 +91,9 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="animetail" />
+                <data android:scheme="aniyomi" />
+                <data android:scheme="tachiyomi" />
+                <data android:scheme="mihon" />
                 <data android:host="extension-store" />
             </intent-filter>
 

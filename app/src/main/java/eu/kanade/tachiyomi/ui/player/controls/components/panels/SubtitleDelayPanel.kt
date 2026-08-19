@@ -109,7 +109,7 @@ fun SubtitleDelayPanel(
             }
         }
         LaunchedEffect(affectedSubtitle) {
-            secondaryDelay = (
+            (
                 (
                     mpv.getPropertyDouble(
                         if (affectedSubtitle == SubtitleDelayType.Both) "sub-delay" else "secondary-sub-delay",

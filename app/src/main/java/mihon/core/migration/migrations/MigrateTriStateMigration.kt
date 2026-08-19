@@ -33,7 +33,8 @@ class MigrateTriStateMigration(
             "pref_filter_library_started",
             "pref_filter_library_bookmarked",
             "pref_filter_library_completed",
-        ) + trackerManager.trackers.map { "pref_filter_library_tracked_${it.id}" }
+        ) +
+            trackerManager.trackers.map { "pref_filter_library_tracked_${it.id}" }
 
         prefKeys.forEach { key ->
             val pref = preferenceStore.getInt(key, 0)

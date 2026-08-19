@@ -834,7 +834,7 @@ class ReaderViewModel(
         val filenameSuffix = " - ${page.number}"
         return DiskUtil.buildValidFilename(
             "${manga.title} - ${chapter.name}",
-            MAX_FILE_NAME_BYTES - filenameSuffix.byteSize(),
+            DiskUtil.MAX_FILE_NAME_BYTES - filenameSuffix.byteSize(),
         ) + filenameSuffix
     }
 

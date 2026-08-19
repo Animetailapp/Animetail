@@ -29,13 +29,13 @@ val Throwable.formattedMessage: String
                 }
             }
 
-            is NoChaptersException, is NoEpisodesException -> {
-                return context.stringResource(MR.strings.no_results_found)
-            }
+            is NoChaptersException, is NoEpisodesException -> return context.stringResource(
+                MR.strings.no_results_found,
+            )
 
-            is SourceNotInstalledException, is AnimeSourceNotInstalledException -> {
-                return context.stringResource(MR.strings.loader_not_implemented_error)
-            }
+            is SourceNotInstalledException, is AnimeSourceNotInstalledException -> return context.stringResource(
+                MR.strings.loader_not_implemented_error,
+            )
         }
 
         return when (val className = this::class.simpleName) {
