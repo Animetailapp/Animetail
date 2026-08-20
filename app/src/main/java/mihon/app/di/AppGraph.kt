@@ -79,9 +79,11 @@ import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadJob
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
+import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadProvider
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadJob
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
+import eu.kanade.tachiyomi.data.download.manga.MangaDownloadProvider
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
 import eu.kanade.tachiyomi.data.library.anime.AnimeMetadataUpdateJob
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateJob
@@ -225,6 +227,10 @@ import tachiyomi.domain.track.manga.interactor.GetTracksPerManga
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
 import tachiyomi.domain.updates.anime.interactor.GetAnimeUpdates
 import tachiyomi.domain.updates.manga.interactor.GetMangaUpdates
+import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
+import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
+import tachiyomi.source.local.image.anime.LocalEpisodeThumbnailManager
+import tachiyomi.source.local.image.manga.LocalMangaCoverManager
 import eu.kanade.domain.extension.manga.interactor.GetExtensionSources as GetMangaExtensionSources
 
 @DependencyGraph(
@@ -290,6 +296,9 @@ interface AppGraph : ViewModelGraph {
     val mangaDownloadManager: MangaDownloadManager
     val animeDownloadManager: AnimeDownloadManager
 
+    val mangaDownloadProvider: MangaDownloadProvider
+    val animeDownloadProvider: AnimeDownloadProvider
+
     val updateChecker: AppUpdateChecker
     val syncManager: SyncManager
 
@@ -308,6 +317,11 @@ interface AppGraph : ViewModelGraph {
     val mangaCoverCache: MangaCoverCache
     val animeCoverCache: AnimeCoverCache
     val animeBackgroundCache: AnimeBackgroundCache
+
+    val localMangaCoverManager: LocalMangaCoverManager
+    val localAnimeCoverManager: LocalAnimeCoverManager
+    val localAnimeBackgroundManager: LocalAnimeBackgroundManager
+    val localEpisodeThumbnailManager: LocalEpisodeThumbnailManager
 
     val json: Json
     val networkHelper: NetworkHelper

@@ -38,6 +38,8 @@ import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
+import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
@@ -49,6 +51,8 @@ class AnimeImageScreenModel(
     private val coverCache: AnimeCoverCache = Injekt.get(),
     private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
     private val updateAnime: UpdateAnime = Injekt.get(),
+    private val coverManager: LocalAnimeCoverManager = Injekt.get(),
+    private val backgroundManager: LocalAnimeBackgroundManager = Injekt.get(),
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     val pagerState: PagerState = PagerState(pageCount = { 2 }),
 ) : ScreenModel {
@@ -150,9 +154,9 @@ class AnimeImageScreenModel(
             context.contentResolver.openInputStream(data)?.use {
                 try {
                     if (isCover) {
-                        anime.editCover(Injekt.get(), it, updateAnime, coverCache)
+                        anime.editCover(coverManager, it, updateAnime, coverCache)
                     } else {
-                        anime.editBackground(Injekt.get(), it, updateAnime, backgroundCache)
+                        anime.editBackground(backgroundManager, it, updateAnime, backgroundCache)
                     }
                     notifyImageUpdated(context)
                 } catch (e: Exception) {

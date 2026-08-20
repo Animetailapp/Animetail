@@ -51,6 +51,7 @@ import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
 import eu.kanade.domain.track.anime.interactor.RefreshAnimeTracks
 import eu.kanade.domain.track.anime.interactor.SyncEpisodeProgressWithTrack
 import eu.kanade.domain.track.anime.interactor.TrackEpisode
+import eu.kanade.domain.track.anime.store.DelayedAnimeTrackingStore
 import eu.kanade.domain.track.manga.interactor.AddMangaTracks
 import eu.kanade.domain.track.manga.interactor.RefreshMangaTracks
 import eu.kanade.domain.track.manga.interactor.SyncChapterProgressWithTrack
@@ -91,6 +92,10 @@ import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
+import mihon.domain.extension.anime.interactor.GetAnimeExtensionStoreCountAsFlow
+import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
+import mihon.domain.extension.manga.interactor.GetMangaExtensionStoreCountAsFlow
+import mihon.domain.extension.manga.interactor.GetMangaExtensionStores
 import mihon.domain.source.interactor.UpdateAnimeFromRemote
 import nl.adaptivity.xmlutil.serialization.XML
 import tachiyomi.core.common.preference.PreferenceStore
@@ -154,6 +159,7 @@ import tachiyomi.domain.entries.manga.interactor.UpdateMangaNotes
 import tachiyomi.domain.history.anime.interactor.GetAnimeHistory
 import tachiyomi.domain.history.anime.interactor.GetNextEpisodes
 import tachiyomi.domain.history.anime.interactor.RemoveAnimeHistory
+import tachiyomi.domain.history.anime.interactor.UpsertAnimeHistory
 import tachiyomi.domain.history.manga.interactor.GetMangaHistory
 import tachiyomi.domain.history.manga.interactor.GetNextChapters
 import tachiyomi.domain.history.manga.interactor.RemoveMangaHistory
@@ -196,6 +202,10 @@ import tachiyomi.domain.track.manga.interactor.GetTracksPerManga
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
 import tachiyomi.domain.updates.anime.interactor.GetAnimeUpdates
 import tachiyomi.domain.updates.manga.interactor.GetMangaUpdates
+import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
+import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
+import tachiyomi.source.local.image.anime.LocalEpisodeThumbnailManager
+import tachiyomi.source.local.image.manga.LocalMangaCoverManager
 import uy.kohesive.injekt.api.InjektModule
 import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.api.addSingleton
@@ -406,6 +416,32 @@ class MetroInteropModule(
 
     private val mangaDownloadCache: MangaDownloadCache,
     private val animeDownloadCache: AnimeDownloadCache,
+
+    private val trustMangaExtension: TrustMangaExtension,
+    private val trustAnimeExtension: TrustAnimeExtension,
+    private val getMangaFavorites: GetMangaFavorites,
+    private val getAnimeFavorites: GetAnimeFavorites,
+    private val resetMangaViewerFlags: ResetMangaViewerFlags,
+    private val resetAnimeViewerFlags: ResetAnimeViewerFlags,
+    private val resetMangaCategoryFlags: ResetMangaCategoryFlags,
+    private val resetAnimeCategoryFlags: ResetAnimeCategoryFlags,
+    private val addMangaTracks: AddMangaTracks,
+    private val addAnimeTracks: AddAnimeTracks,
+    private val insertMangaTrack: InsertMangaTrack,
+    private val insertAnimeTrack: InsertAnimeTrack,
+    private val upsertAnimeHistory: UpsertAnimeHistory,
+    private val updateEpisode: UpdateEpisode,
+    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val delayedAnimeTrackingStore: DelayedAnimeTrackingStore,
+    private val getMangaExtensionStoreCountAsFlow: GetMangaExtensionStoreCountAsFlow,
+    private val getAnimeExtensionStoreCountAsFlow: GetAnimeExtensionStoreCountAsFlow,
+    private val getMangaExtensionStores: GetMangaExtensionStores,
+    private val getAnimeExtensionStores: GetAnimeExtensionStores,
+
+    private val localMangaCoverManager: LocalMangaCoverManager,
+    private val localAnimeCoverManager: LocalAnimeCoverManager,
+    private val localAnimeBackgroundManager: LocalAnimeBackgroundManager,
+    private val localEpisodeThumbnailManager: LocalEpisodeThumbnailManager,
 ) : InjektModule {
 
     override fun InjektRegistrar.registerInjectables() {
@@ -612,5 +648,31 @@ class MetroInteropModule(
 
         addSingleton(mangaDownloadCache)
         addSingleton(animeDownloadCache)
+
+        addSingleton(trustMangaExtension)
+        addSingleton(trustAnimeExtension)
+        addSingleton(getMangaFavorites)
+        addSingleton(getAnimeFavorites)
+        addSingleton(resetMangaViewerFlags)
+        addSingleton(resetAnimeViewerFlags)
+        addSingleton(resetMangaCategoryFlags)
+        addSingleton(resetAnimeCategoryFlags)
+        addSingleton(addMangaTracks)
+        addSingleton(addAnimeTracks)
+        addSingleton(insertMangaTrack)
+        addSingleton(insertAnimeTrack)
+        addSingleton(upsertAnimeHistory)
+        addSingleton(updateEpisode)
+        addSingleton(getEpisodesByAnimeId)
+        addSingleton(delayedAnimeTrackingStore)
+        addSingleton(getMangaExtensionStoreCountAsFlow)
+        addSingleton(getAnimeExtensionStoreCountAsFlow)
+        addSingleton(getMangaExtensionStores)
+        addSingleton(getAnimeExtensionStores)
+
+        addSingleton(localMangaCoverManager)
+        addSingleton(localAnimeCoverManager)
+        addSingleton(localAnimeBackgroundManager)
+        addSingleton(localEpisodeThumbnailManager)
     }
 }

@@ -74,6 +74,7 @@ import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
 import eu.kanade.domain.track.anime.interactor.RefreshAnimeTracks
 import eu.kanade.domain.track.anime.interactor.SyncEpisodeProgressWithTrack
 import eu.kanade.domain.track.anime.interactor.TrackEpisode
+import eu.kanade.domain.track.anime.store.DelayedAnimeTrackingStore
 import eu.kanade.domain.track.manga.interactor.AddMangaTracks
 import eu.kanade.domain.track.manga.interactor.RefreshMangaTracks
 import eu.kanade.domain.track.manga.interactor.SyncChapterProgressWithTrack
@@ -102,12 +103,18 @@ import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
+import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadProvider
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
+import eu.kanade.tachiyomi.data.download.manga.MangaDownloadProvider
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.data.saver.ImageSaver
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
+import eu.kanade.tachiyomi.data.sync.SyncManager
 import eu.kanade.tachiyomi.data.track.TrackerManager
+import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
+import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
+import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.ui.base.delegate.SecureActivityDelegate
@@ -137,6 +144,10 @@ import mihon.app.di.injekt.MetroInteropModule
 import mihon.core.metro.GraphProvider
 import mihon.core.migration.Migration
 import mihon.core.migration.Migrator
+import mihon.domain.extension.anime.interactor.GetAnimeExtensionStoreCountAsFlow
+import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
+import mihon.domain.extension.manga.interactor.GetMangaExtensionStoreCountAsFlow
+import mihon.domain.extension.manga.interactor.GetMangaExtensionStores
 import mihon.domain.source.interactor.UpdateAnimeFromRemote
 import org.conscrypt.Conscrypt
 import tachiyomi.core.common.i18n.stringResource
@@ -249,6 +260,10 @@ import tachiyomi.domain.updates.manga.interactor.GetMangaUpdates
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.widget.entries.anime.AnimeWidgetManager
 import tachiyomi.presentation.widget.entries.manga.MangaWidgetManager
+import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
+import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
+import tachiyomi.source.local.image.anime.LocalEpisodeThumbnailManager
+import tachiyomi.source.local.image.manga.LocalMangaCoverManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.addSingleton
 import java.security.Security
@@ -413,6 +428,8 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         Injekt.addSingleton<TorrentServerUtils>(graph.torrentServerUtils)
         Injekt.addSingleton<AnimeDownloadManager>(graph.animeDownloadManager)
         Injekt.addSingleton<MangaDownloadManager>(graph.mangaDownloadManager)
+        Injekt.addSingleton<AnimeDownloadProvider>(graph.animeDownloadProvider)
+        Injekt.addSingleton<MangaDownloadProvider>(graph.mangaDownloadProvider)
         Injekt.addSingleton<AnimeDownloadCache>(graph.animeDownloadCache)
         Injekt.addSingleton<MangaDownloadCache>(graph.mangaDownloadCache)
         Injekt.addSingleton<AnimeCoverCache>(graph.animeCoverCache)
@@ -423,6 +440,11 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         Injekt.addSingleton<MangaSourceManager>(graph.mangaSourceManager)
         Injekt.addSingleton<TrackerManager>(graph.trackerManager)
         Injekt.addSingleton<ConnectionsManager>(graph.connectionsManager)
+        Injekt.addSingleton<SyncManager>(graph.syncManager)
+        Injekt.addSingleton<AppUpdateChecker>(graph.updateChecker)
+        Injekt.addSingleton<MangaExtensionManager>(graph.mangaExtensionManager)
+        Injekt.addSingleton<AnimeExtensionManager>(graph.animeExtensionManager)
+        Injekt.addSingleton<NetworkHelper>(graph.networkHelper)
         Injekt.addSingleton<GetEpisode>(graph.getEpisode)
         Injekt.addSingleton<GetChapter>(graph.getChapter)
         Injekt.addSingleton<GetAnime>(graph.getAnime)
@@ -489,6 +511,18 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         Injekt.addSingleton<SetMangaDisplayMode>(graph.setMangaDisplayMode)
         Injekt.addSingleton<SetSortModeForMangaCategory>(graph.setSortModeForMangaCategory)
 
+        Injekt.addSingleton<TrustMangaExtension>(graph.trustMangaExtension)
+        Injekt.addSingleton<TrustAnimeExtension>(graph.trustAnimeExtension)
+        Injekt.addSingleton<GetMangaFavorites>(graph.getMangaFavorites)
+        Injekt.addSingleton<GetAnimeFavorites>(graph.getAnimeFavorites)
+        Injekt.addSingleton<ResetMangaViewerFlags>(graph.resetMangaViewerFlags)
+        Injekt.addSingleton<ResetAnimeViewerFlags>(graph.resetAnimeViewerFlags)
+        Injekt.addSingleton<ResetMangaCategoryFlags>(graph.resetMangaCategoryFlags)
+        Injekt.addSingleton<ResetAnimeCategoryFlags>(graph.resetAnimeCategoryFlags)
+        Injekt.addSingleton<AddMangaTracks>(graph.addMangaTracks)
+        Injekt.addSingleton<AddAnimeTracks>(graph.addAnimeTracks)
+        Injekt.addSingleton<InsertMangaTrack>(graph.insertMangaTrack)
+        Injekt.addSingleton<InsertAnimeTrack>(graph.insertAnimeTrack)
         Injekt.addSingleton<DeleteAnimeTrack>(graph.deleteAnimeTrack)
         Injekt.addSingleton<DeleteMangaTrack>(graph.deleteMangaTrack)
         Injekt.addSingleton<TrackEpisode>(graph.trackEpisode)
@@ -496,6 +530,10 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         Injekt.addSingleton<SyncEpisodeProgressWithTrack>(graph.syncEpisodeProgressWithTrack)
         Injekt.addSingleton<SyncChapterProgressWithTrack>(graph.syncChapterProgressWithTrack)
         Injekt.addSingleton<DelayedMangaTrackingStore>(graph.delayedMangaTrackingStore)
+        Injekt.addSingleton<DelayedAnimeTrackingStore>(graph.delayedAnimeTrackingStore)
+        Injekt.addSingleton<UpsertAnimeHistory>(graph.upsertAnimeHistory)
+        Injekt.addSingleton<UpdateEpisode>(graph.updateEpisode)
+        Injekt.addSingleton<GetEpisodesByAnimeId>(graph.getEpisodesByAnimeId)
 
         Injekt.addSingleton<UpdateAnimeNotes>(graph.updateAnimeNotes)
         Injekt.addSingleton<UpdateMangaNotes>(graph.updateMangaNotes)
@@ -559,6 +597,14 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         Injekt.addSingleton<GetMangaUpdates>(graph.getMangaUpdates)
         Injekt.addSingleton<GetApplicationRelease>(graph.getApplicationRelease)
         Injekt.addSingleton<ToggleExcludeFromMangaDataSaver>(graph.toggleExcludeFromMangaDataSaver)
+        Injekt.addSingleton<GetMangaExtensionStoreCountAsFlow>(graph.getMangaExtensionStoreCountAsFlow)
+        Injekt.addSingleton<GetAnimeExtensionStoreCountAsFlow>(graph.getAnimeExtensionStoreCountAsFlow)
+        Injekt.addSingleton<GetMangaExtensionStores>(graph.getMangaExtensionStores)
+        Injekt.addSingleton<GetAnimeExtensionStores>(graph.getAnimeExtensionStores)
+        Injekt.addSingleton<LocalMangaCoverManager>(graph.localMangaCoverManager)
+        Injekt.addSingleton<LocalAnimeCoverManager>(graph.localAnimeCoverManager)
+        Injekt.addSingleton<LocalAnimeBackgroundManager>(graph.localAnimeBackgroundManager)
+        Injekt.addSingleton<LocalEpisodeThumbnailManager>(graph.localEpisodeThumbnailManager)
     }
 
     private fun initializeMigrator() {
