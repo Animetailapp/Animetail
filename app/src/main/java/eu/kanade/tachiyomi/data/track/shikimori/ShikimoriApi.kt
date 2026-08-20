@@ -8,9 +8,9 @@ import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
-import eu.kanade.tachiyomi.data.track.shikimori.dto.SMAddEntryResponse
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMAnimeSearchResult
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMAnimeUserListResult
+import eu.kanade.tachiyomi.data.track.shikimori.dto.SMLibraryIdResponse
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMMetadata
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMOAuth
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMSearchResult
@@ -19,6 +19,7 @@ import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUserListResult
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMUserResult
 import eu.kanade.tachiyomi.network.DELETE
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.PUT
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.jsonMime
 import eu.kanade.tachiyomi.network.parseAs
@@ -63,7 +64,7 @@ class ShikimoriApi(
                         body = payload.toString().toRequestBody(jsonMime),
                     ),
                 ).awaitSuccess()
-                    .parseAs<SMAddEntryResponse>()
+                    .parseAs<SMLibraryIdResponse>()
                     .let {
                         track.library_id = it.id
                     }
@@ -72,10 +73,32 @@ class ShikimoriApi(
         }
     }
 
-    suspend fun updateLibManga(track: MangaTrack, userId: String): MangaTrack = addLibManga(
-        track,
-        userId,
-    )
+    suspend fun updateLibManga(track: MangaTrack): MangaTrack {
+        return withIOContext {
+            val payload = buildJsonObject {
+                putJsonObject("user_rate") {
+                    put("chapters", track.last_chapter_read.toInt())
+                    put("score", track.score.toInt())
+                    put("status", track.toShikimoriStatus())
+                }
+            }
+
+            with(json) {
+                authClient.newCall(
+                    PUT(
+                        "$API_URL/v2/user_rates/${track.library_id}",
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<SMLibraryIdResponse>()
+                    .let {
+                        track.library_id = it.id
+                    }
+                track
+            }
+        }
+    }
 
     suspend fun deleteLibManga(track: DomainMangaTrack) {
         withIOContext {
@@ -104,7 +127,7 @@ class ShikimoriApi(
                         body = payload.toString().toRequestBody(jsonMime),
                     ),
                 ).awaitSuccess()
-                    .parseAs<SMAddEntryResponse>()
+                    .parseAs<SMLibraryIdResponse>()
                     .let {
                         track.library_id = it.id
                     }
@@ -113,10 +136,32 @@ class ShikimoriApi(
         }
     }
 
-    suspend fun updateLibAnime(track: AnimeTrack, userId: String): AnimeTrack = addLibAnime(
-        track,
-        userId,
-    )
+    suspend fun updateLibAnime(track: AnimeTrack): AnimeTrack {
+        return withIOContext {
+            val payload = buildJsonObject {
+                putJsonObject("user_rate") {
+                    put("episodes", track.last_episode_seen.toInt())
+                    put("score", track.score.toInt())
+                    put("status", track.toShikimoriStatus())
+                }
+            }
+
+            with(json) {
+                authClient.newCall(
+                    PUT(
+                        "$API_URL/v2/user_rates/${track.library_id}",
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<SMLibraryIdResponse>()
+                    .let {
+                        track.library_id = it.id
+                    }
+                track
+            }
+        }
+    }
 
     suspend fun deleteLibAnime(track: DomainAnimeTrack) {
         withIOContext {
@@ -326,7 +371,7 @@ class ShikimoriApi(
         }
     }
 
-    suspend fun findLibManga(track: MangaTrack, isRefresh: Boolean = false): MangaTrack? {
+    suspend fun findLibManga(track: MangaTrack): MangaTrack? {
         return withIOContext {
             val query = $$"""
                 |query($id: String) {
@@ -367,14 +412,16 @@ class ShikimoriApi(
                 // userRate data which will be null if the title is not in the user's list.
                 // If it was removed on Shikimori and is still linked in the app, notify user via returning null here
                 // which throws an exception at the Shikimori.refresh call
-                if (isRefresh && listResult?.userRate == null) return@with null
-
-                listResult?.toTrack(trackId)
+                if (listResult?.userRate == null) {
+                    null
+                } else {
+                    listResult.toTrack(trackId)
+                }
             }
         }
     }
 
-    suspend fun findLibAnime(track: AnimeTrack, isRefresh: Boolean = false): AnimeTrack? {
+    suspend fun findLibAnime(track: AnimeTrack): AnimeTrack? {
         return withIOContext {
             val query = $$"""
                 |query($id: String) {
@@ -411,9 +458,11 @@ class ShikimoriApi(
                     .data.animes
                     .firstOrNull()
 
-                if (isRefresh && listResult?.userRate == null) return@with null
-
-                listResult?.toTrack(trackId)
+                if (listResult?.userRate == null) {
+                    null
+                } else {
+                    listResult.toTrack(trackId)
+                }
             }
         }
     }
