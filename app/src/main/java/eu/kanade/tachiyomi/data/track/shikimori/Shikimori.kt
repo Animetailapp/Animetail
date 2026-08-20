@@ -85,7 +85,7 @@ class Shikimori(id: Long) :
             }
         }
 
-        return api.updateLibManga(track, getUsername())
+        return api.updateLibManga(track)
     }
 
     override suspend fun update(track: AnimeTrack, didWatchEpisode: Boolean): AnimeTrack {
@@ -99,7 +99,7 @@ class Shikimori(id: Long) :
             }
         }
 
-        return api.updateLibAnime(track, getUsername())
+        return api.updateLibAnime(track)
     }
 
     override suspend fun delete(track: DomainMangaTrack) {
@@ -171,20 +171,18 @@ class Shikimori(id: Long) :
     }
 
     override suspend fun refresh(track: MangaTrack): MangaTrack {
-        api.findLibManga(track, isRefresh = true)?.let { remoteTrack ->
-            track.library_id = remoteTrack.library_id
-            track.copyPersonalFrom(remoteTrack)
-            track.total_chapters = remoteTrack.total_chapters
-        } ?: throw Exception("Could not find manga")
+        val remoteTrack = api.findLibManga(track) ?: throw Exception("Could not find manga")
+        track.library_id = remoteTrack.library_id
+        track.copyPersonalFrom(remoteTrack)
+        track.total_chapters = remoteTrack.total_chapters
         return track
     }
 
     override suspend fun refresh(track: AnimeTrack): AnimeTrack {
-        api.findLibAnime(track, isRefresh = true)?.let { remoteTrack ->
-            track.library_id = remoteTrack.library_id
-            track.copyPersonalFrom(remoteTrack)
-            track.total_episodes = remoteTrack.total_episodes
-        } ?: throw Exception("Could not find anime")
+        val remoteTrack = api.findLibAnime(track) ?: throw Exception("Could not find anime")
+        track.library_id = remoteTrack.library_id
+        track.copyPersonalFrom(remoteTrack)
+        track.total_episodes = remoteTrack.total_episodes
         return track
     }
 

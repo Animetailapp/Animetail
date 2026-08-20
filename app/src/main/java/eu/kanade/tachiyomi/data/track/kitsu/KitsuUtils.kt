@@ -20,11 +20,3 @@ fun AnimeTrack.toApiStatus() = when (status) {
     Kitsu.PLAN_TO_WATCH -> "planned"
     else -> throw Exception("Unknown status")
 }
-
-fun MangaTrack.toApiScore(): String? {
-    return if (score > 0) (score * 2).toInt().toString() else null
-}
-
-fun AnimeTrack.toApiScore(): String? {
-    return if (score > 0) (score * 2).toInt().toString() else null
-}
