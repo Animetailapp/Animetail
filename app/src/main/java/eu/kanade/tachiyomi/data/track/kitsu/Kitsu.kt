@@ -88,7 +88,7 @@ class Kitsu(id: Long) :
 
     private val interceptor by lazy { KitsuInterceptor(this) }
 
-    private val api by lazy { KitsuApi(client, interceptor) }
+    private val api by lazy { KitsuApi(id, client, interceptor) }
 
     private val scorePreference by lazy { trackPreferences.kitsuScoreType }
 
@@ -168,11 +168,11 @@ class Kitsu(id: Long) :
     }
 
     private suspend fun add(track: MangaTrack): MangaTrack {
-        return api.addLibManga(track, getUserId())
+        return api.addLibManga(track)
     }
 
     private suspend fun add(track: AnimeTrack): AnimeTrack {
-        return api.addLibAnime(track, getUserId())
+        return api.addLibAnime(track)
     }
 
     override suspend fun update(track: MangaTrack, didReadChapter: Boolean): MangaTrack {
@@ -220,7 +220,7 @@ class Kitsu(id: Long) :
     }
 
     override suspend fun bind(track: MangaTrack, hasReadChapters: Boolean): MangaTrack {
-        val remoteTrack = api.findLibManga(track, getUserId())
+        val remoteTrack = api.findLibManga(track)
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack, copyRemotePrivate = false)
             track.remote_id = remoteTrack.remote_id
@@ -238,7 +238,7 @@ class Kitsu(id: Long) :
     }
 
     override suspend fun bind(track: AnimeTrack, hasSeenEpisodes: Boolean): AnimeTrack {
-        val remoteTrack = api.findLibAnime(track, getUserId())
+        val remoteTrack = api.findLibAnime(track)
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack, copyRemotePrivate = false)
             track.remote_id = remoteTrack.remote_id
@@ -257,7 +257,7 @@ class Kitsu(id: Long) :
 
     override suspend fun searchManga(query: String): List<MangaTrackSearch> {
         if (query.startsWith(SEARCH_ID_PREFIX)) {
-            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+            query.substringAfter(SEARCH_ID_PREFIX).trim().let { id ->
                 return api.getMangaDetails(id)?.let { listOf(it) } ?: emptyList()
             }
         }
@@ -267,7 +267,7 @@ class Kitsu(id: Long) :
 
     override suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
         if (query.startsWith(SEARCH_ID_PREFIX)) {
-            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+            query.substringAfter(SEARCH_ID_PREFIX).trim().let { id ->
                 return api.getAnimeDetails(id)?.let { listOf(it) } ?: emptyList()
             }
         }
@@ -283,14 +283,14 @@ class Kitsu(id: Long) :
     }
 
     override suspend fun refresh(track: MangaTrack): MangaTrack {
-        val remoteTrack = api.getLibManga(track)
+        val remoteTrack = api.findLibManga(track) ?: throw Exception("Could not find manga")
         track.copyPersonalFrom(remoteTrack)
         track.total_chapters = remoteTrack.total_chapters
         return track
     }
 
     override suspend fun refresh(track: AnimeTrack): AnimeTrack {
-        val remoteTrack = api.getLibAnime(track)
+        val remoteTrack = api.findLibAnime(track) ?: throw Exception("Could not find anime")
         track.copyPersonalFrom(remoteTrack)
         track.total_episodes = remoteTrack.total_episodes
         return track
@@ -301,24 +301,20 @@ class Kitsu(id: Long) :
         interceptor.newAuth(token)
         val currentUser = api.getCurrentUser()
 
-        val ratingSystem = currentUser.attributes.ratingSystem
-        if (ratingSystem in listOf(RATING_SIMPLE, RATING_REGULAR, RATING_ADVANCED)) {
+        val ratingSystem = currentUser.ratingSystem
+        if (ratingSystem.lowercase() in listOf(RATING_SIMPLE, RATING_REGULAR, RATING_ADVANCED)) {
             scorePreference.set(ratingSystem)
         } else {
             logcat(LogPriority.ERROR) { "Unsupported Kitsu score type: $ratingSystem" }
             scorePreference.set(RATING_ADVANCED)
         }
-        saveDisplayUsername(currentUser.attributes.name)
+        saveDisplayUsername(currentUser.profile.name)
         saveCredentials(username, currentUser.id)
     }
 
     override fun logout() {
         super.logout()
         interceptor.newAuth(null)
-    }
-
-    private fun getUserId(): String {
-        return getPassword()
     }
 
     fun saveToken(oauth: KitsuOAuth?) {
