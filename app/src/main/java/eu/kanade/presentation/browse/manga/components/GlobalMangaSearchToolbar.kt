@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -71,6 +72,7 @@ fun GlobalMangaSearchToolbar(
                 .horizontalScroll(rememberScrollState())
                 .padding(horizontal = MaterialTheme.padding.small),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // TODO: make this UX better; it only applies when triggering a new search
             FilterChip(
@@ -104,7 +106,7 @@ fun GlobalMangaSearchToolbar(
                 },
             )
 
-            VerticalDivider()
+            VerticalDivider(modifier = Modifier.height(FilterChipDefaults.Height))
 
             FilterChip(
                 selected = onlyShowHasResults,

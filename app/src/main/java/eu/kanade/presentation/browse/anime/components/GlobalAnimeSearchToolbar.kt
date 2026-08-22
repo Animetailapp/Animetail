@@ -104,7 +104,7 @@ fun GlobalAnimeSearchToolbar(
                 },
             )
 
-            VerticalDivider()
+            VerticalDivider(modifier = Modifier.height(FilterChipDefaults.Height))
 
             FilterChip(
                 selected = onlyShowHasResults,
