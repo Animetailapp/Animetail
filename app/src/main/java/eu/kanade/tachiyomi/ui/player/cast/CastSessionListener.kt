@@ -1,4 +1,5 @@
 package eu.kanade.tachiyomi.ui.player.cast
+
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import eu.kanade.tachiyomi.ui.player.CastManager
@@ -29,9 +30,17 @@ class CastSessionListener(
         castManager.onSessionEnded()
     }
 
-    override fun onSessionStarting(session: CastSession) {}
-    override fun onSessionStartFailed(session: CastSession, error: Int) {}
+    override fun onSessionStarting(session: CastSession) {
+        castManager.updateCastState(CastManager.CastState.CONNECTING)
+    }
+
+    override fun onSessionStartFailed(session: CastSession, error: Int) {
+        castManager.onSessionStartFailed()
+    }
+
     override fun onSessionEnding(session: CastSession) {}
     override fun onSessionSuspended(session: CastSession, reason: Int) {}
-    override fun onSessionResuming(p0: CastSession, p1: String) {}
+    override fun onSessionResuming(session: CastSession, sessionId: String) {
+        castManager.updateCastState(CastManager.CastState.CONNECTING)
+    }
 }

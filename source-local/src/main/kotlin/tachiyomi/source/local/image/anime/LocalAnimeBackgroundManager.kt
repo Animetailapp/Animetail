@@ -23,9 +23,14 @@ class LocalAnimeBackgroundManager(
 
     fun find(animeUrl: String): UniFile? {
         return fileSystem.getFilesInAnimeDirectory(animeUrl)
-            // Get all file whose names start with 'background'
-            .filter { it.isFile && it.nameWithoutExtension.equals("background", ignoreCase = true) }
-            // Get the first actual image
+            .filter { file ->
+                file.isFile && (
+                    file.nameWithoutExtension.equals("background", ignoreCase = true) ||
+                    file.nameWithoutExtension.equals("fanart", ignoreCase = true) ||
+                    file.nameWithoutExtension.equals("backdrop", ignoreCase = true) ||
+                    file.nameWithoutExtension.equals("banner", ignoreCase = true)
+                )
+            }
             .firstOrNull { ImageUtil.isImage(it.name) { it.openInputStream() } }
     }
 

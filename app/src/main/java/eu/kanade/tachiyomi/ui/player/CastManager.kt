@@ -105,12 +105,12 @@ class CastManager(
 
     private val isCastApiAvailable: Boolean
         get() = try {
-            context.packageManager
-                .getPackageInfo("com.google.android.gms", PackageManager.GET_META_DATA)
-                .applicationInfo
-                ?.enabled == true
-        } catch (e: PackageManager.NameNotFoundException) {
-            false
+            val availability = com.google.android.gms.common.GoogleApiAvailability.getInstance()
+            val resultCode = availability.isGooglePlayServicesAvailable(context)
+            resultCode == com.google.android.gms.common.ConnectionResult.SUCCESS ||
+                resultCode == com.google.android.gms.common.ConnectionResult.SERVICE_VERSION_UPDATE_REQUIRED
+        } catch (_: Throwable) {
+            true
         }
 
     private val mediaQueue = LinkedList<MediaQueueItem>()
@@ -139,12 +139,15 @@ class CastManager(
     }
 
     private fun initializeCast() {
-        if (!isCastApiAvailable) return
         try {
+            android.util.Log.d("CastDebug", "initializeCast() called")
             castContext = CastContext.getSharedInstance(context.applicationContext)
+            android.util.Log.d("CastDebug", "CastContext obtained: $castContext")
             sessionListener = CastSessionListener(this)
             registerSessionListener()
+            android.util.Log.d("CastDebug", "initializeCast() completed successfully")
         } catch (e: Exception) {
+            android.util.Log.e("CastDebug", "initializeCast() FAILED", e)
             logcat(LogPriority.ERROR, e)
         }
     }
@@ -162,10 +165,42 @@ class CastManager(
         }
     }
 
+    private var multicastLock: android.net.wifi.WifiManager.MulticastLock? = null
+
+    private fun acquireMulticastLock() {
+        try {
+            val wifiManager = context.getSystemService(android.content.Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+            if (multicastLock == null) {
+                multicastLock = wifiManager?.createMulticastLock("animetail_cast_multicast_lock")?.apply {
+                    setReferenceCounted(false)
+                }
+            }
+            if (multicastLock?.isHeld == false) {
+                multicastLock?.acquire()
+                android.util.Log.d("CastDebug", "MulticastLock acquired successfully")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("CastDebug", "Failed to acquire MulticastLock", e)
+        }
+    }
+
+    private fun releaseMulticastLock() {
+        try {
+            if (multicastLock?.isHeld == true) {
+                multicastLock?.release()
+                android.util.Log.d("CastDebug", "MulticastLock released")
+            }
+            multicastLock = null
+        } catch (e: Exception) {
+            android.util.Log.e("CastDebug", "Failed to release MulticastLock", e)
+        }
+    }
+
     fun cleanup() {
         discoveryRetryJob?.cancel()
         mediaRouterCallback?.let { mediaRouter.removeCallback(it) }
         mediaRouterCallback = null
+        releaseMulticastLock()
         unregisterSessionListener()
         castSession = null
     }
@@ -206,6 +241,16 @@ class CastManager(
         castSession = null
         updateCastState(CastState.DISCONNECTED)
         viewModel?.resumeFromCast()
+    }
+
+    fun onSessionStartFailed() {
+        castProgressJob?.cancel()
+        castSession = null
+        updateCastState(CastState.DISCONNECTED)
+        _availableDevices.value = _availableDevices.value.map { device ->
+            device.copy(isSelected = false, isConnected = false)
+        }
+        showConnectionErrorToast()
     }
 
     fun updateCastState(state: CastState) {
@@ -390,69 +435,98 @@ class CastManager(
     }
 
     fun startDeviceDiscovery() {
-        if (!isCastApiAvailable) return
+        android.util.Log.d("CastDebug", "startDeviceDiscovery() called")
+        acquireMulticastLock()
         discoveryRetryJob?.cancel()
 
         try {
-            castContext?.let { castContext ->
-                if (_castState.value != CastState.CONNECTED) {
-                    _castState.value = CastState.CONNECTING
+            if (castContext == null) {
+                android.util.Log.d("CastDebug", "castContext is null, calling initializeCast()")
+                initializeCast()
+            }
+            val currentCastContext = castContext ?: CastContext.getSharedInstance(context.applicationContext)
+            castContext = currentCastContext
+            android.util.Log.d("CastDebug", "castContext ready: $currentCastContext")
+
+            val currentSession = currentCastContext.sessionManager.currentCastSession
+            android.util.Log.d("CastDebug", "currentSession: $currentSession")
+            val selector = androidx.mediarouter.media.MediaRouteSelector.Builder()
+                .addControlCategory(com.google.android.gms.cast.CastMediaControlIntent.categoryForCast(com.google.android.gms.cast.CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID))
+                .build()
+            android.util.Log.d("CastDebug", "selector built: $selector")
+
+            mediaRouterCallback?.let {
+                mediaRouter.removeCallback(it)
+                mediaRouterCallback = null
+            }
+
+            mediaRouterCallback = object : androidx.mediarouter.media.MediaRouter.Callback() {
+                override fun onRouteAdded(
+                    router: androidx.mediarouter.media.MediaRouter,
+                    route: androidx.mediarouter.media.MediaRouter.RouteInfo,
+                ) {
+                    android.util.Log.d("CastDebug", "onRouteAdded: ${route.name} id=${route.id}")
+                    updateDevicesList(currentCastContext.sessionManager.currentCastSession)
                 }
 
-                val currentSession = castContext.sessionManager.currentCastSession
-                val selector = androidx.mediarouter.media.MediaRouteSelector.Builder()
-                    .addControlCategory(androidx.mediarouter.media.MediaControlIntent.CATEGORY_LIVE_VIDEO)
-                    .addControlCategory(androidx.mediarouter.media.MediaControlIntent.CATEGORY_REMOTE_PLAYBACK)
-                    .build()
-
-                mediaRouterCallback?.let {
-                    mediaRouter.removeCallback(it)
-                    mediaRouterCallback = null
+                override fun onRouteRemoved(
+                    router: androidx.mediarouter.media.MediaRouter,
+                    route: androidx.mediarouter.media.MediaRouter.RouteInfo,
+                ) {
+                    android.util.Log.d("CastDebug", "onRouteRemoved: ${route.name}")
+                    updateDevicesList(currentCastContext.sessionManager.currentCastSession)
                 }
 
-                mediaRouterCallback = object : androidx.mediarouter.media.MediaRouter.Callback() {
-                    private var lastUpdate = 0L
-
-                    override fun onRouteAdded(
-                        router: androidx.mediarouter.media.MediaRouter,
-                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
-                    ) {
-                        if (System.currentTimeMillis() - lastUpdate > 1000) {
-                            lastUpdate = System.currentTimeMillis()
-                            updateDevicesList(currentSession)
-                        }
-                    }
-
-                    override fun onRouteRemoved(
-                        router: androidx.mediarouter.media.MediaRouter,
-                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
-                    ) {
-                        if (System.currentTimeMillis() - lastUpdate > 1000) {
-                            lastUpdate = System.currentTimeMillis()
-                            updateDevicesList(currentSession)
-                        }
-                    }
-
-                    override fun onRouteChanged(
-                        router: androidx.mediarouter.media.MediaRouter,
-                        route: androidx.mediarouter.media.MediaRouter.RouteInfo,
-                    ) {
-                        if (System.currentTimeMillis() - lastUpdate > 1000) {
-                            lastUpdate = System.currentTimeMillis()
-                            updateDevicesList(currentSession)
-                        }
-                    }
-                }.also { callback ->
-                    mediaRouter.addCallback(
-                        selector,
-                        callback,
-                        androidx.mediarouter.media.MediaRouter.CALLBACK_FLAG_PERFORM_ACTIVE_SCAN,
-                    )
+                override fun onRouteChanged(
+                    router: androidx.mediarouter.media.MediaRouter,
+                    route: androidx.mediarouter.media.MediaRouter.RouteInfo,
+                ) {
+                    android.util.Log.d("CastDebug", "onRouteChanged: ${route.name}")
+                    updateDevicesList(currentCastContext.sessionManager.currentCastSession)
                 }
 
-                updateDevicesList(currentSession)
+                override fun onRouteSelected(
+                    router: androidx.mediarouter.media.MediaRouter,
+                    route: androidx.mediarouter.media.MediaRouter.RouteInfo,
+                    reason: Int,
+                ) {
+                    android.util.Log.d("CastDebug", "onRouteSelected: ${route.name}")
+                    updateDevicesList(currentCastContext.sessionManager.currentCastSession)
+                }
+
+                override fun onRouteUnselected(
+                    router: androidx.mediarouter.media.MediaRouter,
+                    route: androidx.mediarouter.media.MediaRouter.RouteInfo,
+                    reason: Int,
+                ) {
+                    android.util.Log.d("CastDebug", "onRouteUnselected: ${route.name}")
+                    updateDevicesList(currentCastContext.sessionManager.currentCastSession)
+                }
+            }.also { callback ->
+                mediaRouter.addCallback(
+                    selector,
+                    callback,
+                    androidx.mediarouter.media.MediaRouter.CALLBACK_FLAG_PERFORM_ACTIVE_SCAN or
+                        androidx.mediarouter.media.MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY,
+                )
+            }
+            android.util.Log.d("CastDebug", "MediaRouter callback registered, routes: ${mediaRouter.routes.size}")
+            mediaRouter.routes.forEach { route ->
+                android.util.Log.d("CastDebug", "  route: name=${route.name}, id=${route.id}, isDefault=${route.isDefault}")
+            }
+
+            updateDevicesList(currentSession)
+
+            // Periodically check for routes while discovery is active (e.g. 10 times every 1.5s)
+            discoveryRetryJob = activity.lifecycleScope.launch {
+                repeat(15) {
+                    delay(1500)
+                    android.util.Log.d("CastDebug", "Periodic discovery check (#$it), total routes=${mediaRouter.routes.size}")
+                    updateDevicesList(castContext?.sessionManager?.currentCastSession)
+                }
             }
         } catch (e: Exception) {
+            android.util.Log.e("CastDebug", "startDeviceDiscovery FAILED", e)
             logcat(LogPriority.ERROR) { "Error in startDeviceDiscovery: ${e.message}" }
             if (_castState.value != CastState.CONNECTED) {
                 _castState.value = CastState.DISCONNECTED
@@ -464,50 +538,62 @@ class CastManager(
         val connectedDeviceId = currentSession?.castDevice?.deviceId
 
         val newDevices = mediaRouter.routes
-            .filter { !it.isDefault }
+            .filter { route ->
+                !route.isDefault && !route.isDefaultOrBluetooth
+            }
             .map { route ->
+                val isConnected = (connectedDeviceId != null && route.id == connectedDeviceId) ||
+                    (currentSession?.isConnected == true && route.isSelected)
                 CastDevice(
                     id = route.id,
                     name = route.name,
-                    isConnected = route.id == connectedDeviceId,
-                    isSelected = route.id == connectedDeviceId,
+                    isConnected = isConnected,
+                    isSelected = isConnected || route.isSelected,
                 )
             }
             .distinctBy { it.id }
+
+        android.util.Log.d("CastDebug", "updateDevicesList: found ${newDevices.size} devices (${newDevices.map { it.name }})")
 
         if (_availableDevices.value != newDevices) {
             _availableDevices.value = newDevices
 
             when {
                 newDevices.any { it.isConnected } -> _castState.value = CastState.CONNECTED
-
+                _castState.value == CastState.CONNECTING -> { /* keep waiting */ }
                 newDevices.isEmpty() && _castState.value != CastState.DISCONNECTED ->
                     _castState.value = CastState.DISCONNECTED
             }
         }
     }
 
+    private var connectionJob: Job? = null
+
     fun connectToDevice(deviceId: String) {
         try {
             val route = mediaRouter.routes.find { it.id == deviceId } ?: return
-            if (route.id == castSession?.castDevice?.deviceId) return
+            if (route.id == castSession?.castDevice?.deviceId && castSession?.isConnected == true) return
 
             _availableDevices.value = _availableDevices.value.map { device ->
                 device.copy(isSelected = device.id == deviceId)
             }
 
-            activity.lifecycleScope.launch {
+            connectionJob?.cancel()
+            connectionJob = activity.lifecycleScope.launch {
                 try {
                     _castState.value = CastState.CONNECTING
                     mediaRouter.selectRoute(route)
 
                     var attempts = 0
-                    while (attempts < 5) {
+                    while (attempts < 20) {
+                        delay(500)
                         if (castSession?.isConnected == true) {
                             _castState.value = CastState.CONNECTED
                             return@launch
                         }
-                        delay(15000)
+                        if (_castState.value == CastState.DISCONNECTED) {
+                            return@launch
+                        }
                         attempts++
                     }
 
@@ -709,7 +795,7 @@ class CastManager(
                 val wasPlaying = client.isPlaying
                 val activeTrackIds = client.mediaStatus?.activeTrackIds ?: longArrayOf()
 
-                val styleApplied = suspendCancellableCoroutine { continuation ->
+                val styleApplied = suspendCancellableCoroutine<Boolean> { continuation ->
                     val task = client.setTextTrackStyle(textTrackStyle)
                     task.setResultCallback { result ->
                         if (continuation.isActive) {
@@ -728,7 +814,7 @@ class CastManager(
                 }
 
                 if (activeTrackIds.isNotEmpty()) {
-                    val tracksDisabled = suspendCancellableCoroutine { continuation ->
+                    val tracksDisabled = suspendCancellableCoroutine<Boolean> { continuation ->
                         val task = client.setActiveMediaTracks(longArrayOf())
                         task.setResultCallback { result ->
                             if (continuation.isActive) {
@@ -745,7 +831,7 @@ class CastManager(
                         logcat(LogPriority.ERROR) { "Failed to disable tracks" }
                     } else {
                         delay(500)
-                        val tracksEnabled = suspendCancellableCoroutine { continuation ->
+                        val tracksEnabled = suspendCancellableCoroutine<Boolean> { continuation ->
                             val task = client.setActiveMediaTracks(activeTrackIds)
                             task.setResultCallback { result ->
                                 if (continuation.isActive) {

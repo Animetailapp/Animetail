@@ -5,6 +5,7 @@ import com.hippo.unifile.UniFile
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.UnmeteredSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
@@ -58,7 +59,7 @@ class LocalAnimeSource(
     private val thumbnailManager: LocalEpisodeThumbnailManager,
     private val fetchTypeManager: LocalAnimeFetchTypeManager,
     private val json: Json,
-) : AnimeSource, UnmeteredSource {
+) : AnimeCatalogueSource, UnmeteredSource {
 
     @Suppress("PrivatePropertyName")
     private val PopularFilters = AnimeFilterList(AnimeOrderBy.Popular(context))
@@ -145,18 +146,19 @@ class LocalAnimeSource(
     }
 
     private fun getSAnime(animeDir: String?): SAnime {
+        val cleanDir = animeDir.orEmpty().replace('\\', '/')
         return SAnime.create().apply {
-            title = animeDir.orEmpty().substringAfterLast(File.separator)
-            url = animeDir.orEmpty()
-            fetch_type = fetchTypeManager.find(animeDir.orEmpty())
+            title = cleanDir.substringAfterLast('/')
+            url = cleanDir
+            fetch_type = fetchTypeManager.find(cleanDir)
 
             // Try to find the cover
-            coverManager.find(animeDir.orEmpty())?.let {
+            coverManager.find(cleanDir)?.let {
                 thumbnail_url = it.uri.toString()
             }
 
             // Try to find the background
-            backgroundManager.find(animeDir.orEmpty())?.let {
+            backgroundManager.find(cleanDir)?.let {
                 background_url = it.uri.toString()
             }
         }
@@ -231,23 +233,25 @@ class LocalAnimeSource(
         animeDirFiles
             .firstOrNull { it.extension == "json" && it.nameWithoutExtension == "details" }
             ?.let { file ->
-                json.decodeFromStream<AnimeDetails>(file.openInputStream()).run {
-                    title?.let { anime.title = it }
-                    author?.let { anime.author = it }
-                    artist?.let { anime.artist = it }
-                    description?.let { anime.description = it }
-                    genre?.let { anime.genre = it.joinToString() }
-                    status?.let { anime.status = it }
-                    cast?.let { coreCastList ->
-                        anime.cast =
-                            coreCastList.map { core ->
-                                SourceCredit(
-                                    name = core.name,
-                                    role = core.role,
-                                    character = core.character,
-                                    image_url = core.image_url,
-                                )
-                            }
+                runCatching {
+                    json.decodeFromStream<AnimeDetails>(file.openInputStream()).run {
+                        title?.let { anime.title = it }
+                        author?.let { anime.author = it }
+                        artist?.let { anime.artist = it }
+                        description?.let { anime.description = it }
+                        genre?.let { anime.genre = it.joinToString() }
+                        status?.let { anime.status = it }
+                        cast?.let { coreCastList ->
+                            anime.cast =
+                                coreCastList.map { core ->
+                                    SourceCredit(
+                                        name = core.name,
+                                        role = core.role,
+                                        character = core.character,
+                                        image_url = core.image_url,
+                                    )
+                                }
+                        }
                     }
                 }
             }
@@ -265,13 +269,8 @@ class LocalAnimeSource(
         animeDirs
             .map { animeDir ->
                 async {
-                    val url = animeDir.name?.let { season ->
-                        buildString {
-                            append(anime.url)
-                            append(File.separator)
-                            append(season)
-                        }
-                    }
+                    val seasonName = animeDir.name.orEmpty()
+                    val url = if (anime.url.isBlank()) seasonName else "${anime.url}/$seasonName"
                     getSAnime(url)
                 }
             }
@@ -279,22 +278,43 @@ class LocalAnimeSource(
             .toList()
     }
 
+    override suspend fun getAnimeDetails(anime: SAnime): SAnime = getOldAnimeDetails(anime)
+
+    override suspend fun getEpisodeList(anime: SAnime): List<SEpisode> = getOldEpisodeList(anime)
+
+    override suspend fun getSeasonList(anime: SAnime): List<SAnime> = getOldSeasonList(anime)
+
     // Episodes
     private suspend fun getOldEpisodeList(anime: SAnime): List<SEpisode> = withIOContext {
-        val episodesData = fileSystem.getFilesInAnimeDirectory(anime.url)
+        val allFilesInDir = fileSystem.getFilesInAnimeDirectory(anime.url)
+
+        val episodesData = allFilesInDir
             .firstOrNull {
                 it.extension == "json" && it.nameWithoutExtension == "episodes"
             }?.let { file ->
-                json.decodeFromStream<List<EpisodeDetails>>(file.openInputStream())
+                runCatching {
+                    json.decodeFromStream<List<EpisodeDetails>>(file.openInputStream())
+                }.getOrNull()
             }
 
-        val episodes = fileSystem.getFilesInAnimeDirectory(anime.url)
-            // Only keep supported formats
-            .filterNot { it.name.orEmpty().startsWith('.') }
-            .filter { ArchiveAnime.isSupported(it) }
-            .map { episodeFile ->
+        val episodeEntries = mutableListOf<Pair<String, UniFile>>()
+        for (file in allFilesInDir) {
+            if (file.name.orEmpty().startsWith('.')) continue
+            if (ArchiveAnime.isSupported(file)) {
+                episodeEntries.add(file.name.orEmpty() to file)
+            } else if (file.isDirectory) {
+                file.listFiles().orEmpty().forEach { subFile ->
+                    if (!subFile.name.orEmpty().startsWith('.') && ArchiveAnime.isSupported(subFile)) {
+                        episodeEntries.add("${file.name}/${subFile.name}" to subFile)
+                    }
+                }
+            }
+        }
+
+        val episodes = episodeEntries
+            .map { (relativePath, episodeFile) ->
                 SEpisode.create().apply {
-                    url = "${anime.url}/${episodeFile.name}"
+                    url = "${anime.url}/$relativePath"
                     name = episodeFile.nameWithoutExtension.orEmpty()
                     date_upload = episodeFile.lastModified()
 
@@ -315,15 +335,10 @@ class LocalAnimeSource(
                         }
                     }
 
-                    // Generate the preview from the episode if not available
-                    if (this.preview_url == null) {
-                        try {
-                            val tempFileSuffix = anime.title + this.name + DEFAULT_THUMBNAIL_NAME
-                            val updateThumbnail: (InputStream) -> Unit = { thumbnailManager.update(anime, this, it) }
-                            updateImageFromVideo(this, anime, tempFileSuffix, updateThumbnail)
-                        } catch (e: Exception) {
-                            logcat(LogPriority.ERROR) { "Couldn't extract thumbnail from video: $e" }
-                        }
+                    // Check if thumbnail already exists in directory
+                    val existingThumbnail = thumbnailManager.find(anime.url, "${this.name}-$DEFAULT_THUMBNAIL_NAME")
+                    if (existingThumbnail != null) {
+                        this.preview_url = existingThumbnail.uri.toString()
                     }
                 }
             }
@@ -336,7 +351,7 @@ class LocalAnimeSource(
         if (anime.thumbnail_url == null || coverManager.find(anime.url) == null) {
             try {
                 episodes.lastOrNull()?.let { episode ->
-                    val tempFileSuffix = anime.title + DEFAULT_COVER_NAME
+                    val tempFileSuffix = DEFAULT_COVER_NAME
                     val updateCover: (InputStream) -> Unit = { coverManager.update(anime, it) }
                     updateImageFromVideo(episode, anime, tempFileSuffix, updateCover)
                 }
@@ -349,7 +364,7 @@ class LocalAnimeSource(
         if (anime.background_url == null || backgroundManager.find(anime.url) == null) {
             try {
                 episodes.lastOrNull()?.let { episode ->
-                    val tempFileSuffix = anime.title + DEFAULT_BACKGROUND_NAME
+                    val tempFileSuffix = DEFAULT_BACKGROUND_NAME
                     val updateBackground: (InputStream) -> Unit = { backgroundManager.update(anime, it) }
                     updateImageFromVideo(episode, anime, tempFileSuffix, updateBackground)
                 }
@@ -381,29 +396,35 @@ class LocalAnimeSource(
         tempFileSuffix: String,
         updateImage: (InputStream) -> Unit,
     ) {
-        val tempFile = File.createTempFile(
-            "tmp_",
-            tempFileSuffix,
-        )
-        val outFile = tempFile.path
+        try {
+            val tempFile = File.createTempFile("tmp_", ".jpg", context.cacheDir)
+            val outFile = tempFile.path
 
-        val episodeName = episode.url.substringAfterLast('/')
-        val animeDir = fileSystem.getAnimeDirectory(anime.url)!!
-        val episodeFile = animeDir.findFile(episodeName)!!
-        val episodeFilename = { episodeFile.toFFmpegString(context) }
+            val relativePath = episode.url.removePrefix("${anime.url}/").replace('\\', '/')
+            val animeDir = fileSystem.getAnimeDirectory(anime.url) ?: return
+            val episodeFile = if (relativePath.contains('/')) {
+                val subDir = relativePath.substringBeforeLast('/')
+                val filename = relativePath.substringAfterLast('/')
+                fileSystem.getAnimeDirectory("${anime.url}/$subDir")?.findFile(filename) ?: animeDir.findFile(relativePath)
+            } else {
+                animeDir.findFile(relativePath)
+            } ?: return
+            val episodeFilename = if (episodeFile.uri.scheme == "content") {
+                com.arthenica.ffmpegkit.FFmpegKitConfig.getSafParameter(context, episodeFile.uri, "r")
+            } else {
+                episodeFile.filePath ?: episodeFile.uri.path ?: return
+            }
 
-        val ffProbe = com.arthenica.ffmpegkit.FFprobeKit.execute(
-            "-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"${episodeFilename()}\"",
-        )
-        val duration = ffProbe.allLogsAsString.trim().toFloat()
-        val second = duration.toInt() / 2
+            com.arthenica.ffmpegkit.FFmpegKit.execute(
+                "-ss 5 -i \"$episodeFilename\" -frames:v 1 -update true \"$outFile\" -y",
+            )
 
-        com.arthenica.ffmpegkit.FFmpegKit.execute(
-            "-ss $second -i \"${episodeFilename()}\" -frames:v 1 -update true \"$outFile\" -y",
-        )
-
-        if (tempFile.length() > 0L) {
-            updateImage(tempFile.inputStream())
+            if (tempFile.exists() && tempFile.length() > 0L) {
+                updateImage(tempFile.inputStream())
+            }
+            tempFile.delete()
+        } catch (e: Throwable) {
+            android.util.Log.e("LocalAnime", "Failed to extract image from video: $e")
         }
     }
 

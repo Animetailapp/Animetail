@@ -421,35 +421,37 @@ class AnimeViewModel(
         }
 
         try {
-            withUIContext {
-                when (state.anime.fetchType) {
-                    FetchType.Episodes -> {
-                        val update = updateAnimeFromRemote.awaitEpisodesUpdate(
-                            source = state.source,
-                            anime = state.anime,
-                            fetchDetails = fetchDetails,
-                            fetchEpisodes = fetchEpisodes,
-                            manualFetch = manualFetch,
-                        )
-                            .getOrThrow()
+            when (state.anime.fetchType) {
+                FetchType.Episodes -> {
+                    val update = updateAnimeFromRemote.awaitEpisodesUpdate(
+                        source = state.source,
+                        anime = state.anime,
+                        fetchDetails = fetchDetails,
+                        fetchEpisodes = fetchEpisodes,
+                        manualFetch = manualFetch,
+                    )
+                        .getOrThrow()
 
+                    withUIContext {
                         update.anime.cast?.let { castCache[state.anime.id] = it }
 
                         if (manualFetch) {
                             downloadNewEpisodes(update.newEpisodes)
                         }
                     }
+                }
 
-                    FetchType.Seasons -> {
-                        val update = updateAnimeFromRemote.awaitSeasonsUpdate(
-                            source = state.source,
-                            anime = state.anime,
-                            fetchDetails = fetchDetails,
-                            fetchSeasons = fetchSeasons,
-                            manualFetch = manualFetch,
-                        )
-                            .getOrThrow()
+                FetchType.Seasons -> {
+                    val update = updateAnimeFromRemote.awaitSeasonsUpdate(
+                        source = state.source,
+                        anime = state.anime,
+                        fetchDetails = fetchDetails,
+                        fetchSeasons = fetchSeasons,
+                        manualFetch = manualFetch,
+                    )
+                        .getOrThrow()
 
+                    withUIContext {
                         update.anime.cast?.let { castCache[state.anime.id] = it }
 
                         if (libraryPreferences.updateSeasonOnRefresh.get()) {
@@ -461,23 +463,24 @@ class AnimeViewModel(
         } catch (_: CancellationException) {
             // ignore
         } catch (e: Throwable) {
-            val message = when (e) {
-                is NoEpisodesException -> {
-                    context.stringResource(AYMR.strings.no_episodes_error)
-                }
+            withUIContext {
+                val message = when (e) {
+                    is NoEpisodesException -> {
+                        context.stringResource(AYMR.strings.no_episodes_error)
+                    }
 
-                is NoSeasonsException -> {
-                    context.stringResource(AYMR.strings.no_seasons_error)
-                }
+                    is NoSeasonsException -> {
+                        context.stringResource(AYMR.strings.no_seasons_error)
+                    }
 
-                else -> {
-                    logcat(LogPriority.ERROR, e)
-                    with(context) { e.formattedMessage }
+                    else -> {
+                        logcat(LogPriority.ERROR, e)
+                        e.message
+                    }
                 }
-            }
-
-            viewModelScope.launch {
-                snackbarHostState.showSnackbar(message = message)
+                if (!message.isNullOrBlank()) {
+                    snackbarHostState.showSnackbar(message = message)
+                }
             }
         }
     }

@@ -23,9 +23,14 @@ class LocalAnimeCoverManager(
 
     fun find(animeUrl: String): UniFile? {
         return fileSystem.getFilesInAnimeDirectory(animeUrl)
-            // Get all file whose names start with 'cover'
-            .filter { it.isFile && it.nameWithoutExtension.equals("cover", ignoreCase = true) }
-            // Get the first actual image
+            .filter { file ->
+                file.isFile && (
+                    file.nameWithoutExtension.equals("cover", ignoreCase = true) ||
+                    file.nameWithoutExtension.equals("poster", ignoreCase = true) ||
+                    file.nameWithoutExtension.equals("folder", ignoreCase = true) ||
+                    file.nameWithoutExtension.equals("thumb", ignoreCase = true)
+                )
+            }
             .firstOrNull { ImageUtil.isImage(it.name) { it.openInputStream() } }
     }
 

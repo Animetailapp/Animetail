@@ -75,14 +75,20 @@ class AnimeImageFetcher(
         return when (getResourceType(resolvedUrl)) {
             Type.URL -> httpLoader()
 
-            Type.File -> File(resolvedUrl.substringAfter("file://"))
+            Type.File -> File(resolvedUrl.removePrefix("file://"))
                 .takeIf(File::exists)
                 ?.let(::fileLoader)
-                ?: emptyImageLoader()
+                ?: runCatching { uniFileLoader(resolvedUrl) }.getOrElse { emptyImageLoader() }
 
             Type.URI -> runCatching { uniFileLoader(resolvedUrl) }.getOrElse { emptyImageLoader() }
 
-            null -> emptyImageLoader()
+            null -> runCatching { uniFileLoader(resolvedUrl) }
+                .getOrElse {
+                    File(resolvedUrl)
+                        .takeIf(File::exists)
+                        ?.let(::fileLoader)
+                        ?: emptyImageLoader()
+                }
         }
     }
 

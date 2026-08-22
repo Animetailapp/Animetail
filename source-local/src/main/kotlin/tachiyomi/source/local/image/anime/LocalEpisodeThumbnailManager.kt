@@ -23,9 +23,10 @@ class LocalEpisodeThumbnailManager(
 ) {
 
     fun find(animeUrl: String, fileName: String): UniFile? {
+        val baseName = fileName.substringBeforeLast('.')
         return fileSystem.getFilesInAnimeDirectory(animeUrl)
             // Get all file whose names contain the episode name and the word 'thumbnail'
-            .filter { it.isFile && it.nameWithoutExtension.equals(fileName, ignoreCase = true) }
+            .filter { it.isFile && it.nameWithoutExtension.equals(baseName, ignoreCase = true) }
             // Get the first actual image
             .firstOrNull { ImageUtil.isImage(it.name) { it.openInputStream() } }
     }

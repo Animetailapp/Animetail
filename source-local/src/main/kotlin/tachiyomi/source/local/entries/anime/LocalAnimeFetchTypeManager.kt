@@ -19,7 +19,7 @@ class LocalAnimeFetchTypeManager(
 
         return when {
             files.any { ArchiveAnime.isSupported(it) } -> FetchType.Episodes
-            files.any { it.isDirectory } -> FetchType.Seasons
+            files.any { it.isDirectory && !it.name.orEmpty().startsWith('.') } -> FetchType.Seasons
             else -> FetchType.Episodes
         }
     }

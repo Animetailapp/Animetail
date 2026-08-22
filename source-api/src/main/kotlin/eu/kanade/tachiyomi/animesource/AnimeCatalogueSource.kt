@@ -78,21 +78,24 @@ interface AnimeCatalogueSource : AnimeSource {
         "Use the non-RxJava API instead",
         ReplaceWith("getPopularAnime"),
     )
-    fun fetchPopularAnime(page: Int): Observable<AnimesPage>
+    fun fetchPopularAnime(page: Int): Observable<AnimesPage> =
+        throw IllegalStateException("Not used")
 
     // Should be replaced as soon as Anime Extension reach 1.5
     @Deprecated(
         "Use the non-RxJava API instead",
         ReplaceWith("getSearchAnime"),
     )
-    fun fetchSearchAnime(page: Int, query: String, filters: AnimeFilterList): Observable<AnimesPage>
+    fun fetchSearchAnime(page: Int, query: String, filters: AnimeFilterList): Observable<AnimesPage> =
+        throw IllegalStateException("Not used")
 
     // Should be replaced as soon as Anime Extension reach 1.5
     @Deprecated(
         "Use the non-RxJava API instead",
         ReplaceWith("getLatestUpdates"),
     )
-    fun fetchLatestUpdates(page: Int): Observable<AnimesPage>
+    fun fetchLatestUpdates(page: Int): Observable<AnimesPage> =
+        throw IllegalStateException("Not used")
     // KMK -->
 
     /**

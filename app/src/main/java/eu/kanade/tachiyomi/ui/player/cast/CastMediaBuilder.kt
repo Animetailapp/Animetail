@@ -48,6 +48,8 @@ class CastMediaBuilder(
             else -> videoUrl
         }
 
+        videoUrl = formatUrlForCast(videoUrl)
+
         val contentType = when {
             videoUrl.contains(".m3u8") -> "application/x-mpegURL"
             videoUrl.contains(".mpd") -> "application/dash+xml"
@@ -61,6 +63,15 @@ class CastMediaBuilder(
             .addTracks(video)
             .setStreamDuration((viewModel.mpv.getPropertyInt("duration") ?: 0).toLong() * 1000)
             .build()
+    }
+
+    private fun formatUrlForCast(url: String): String {
+        val ip = getLocalIpAddress()
+        return url
+            .replace("://localhost:", "://$ip:")
+            .replace("://127.0.0.1:", "://$ip:")
+            .replace("://localhost/", "://$ip/")
+            .replace("://127.0.0.1/", "://$ip/")
     }
 
     private suspend fun torrentLinkHandler(videoUrl: String, quality: String): String {
@@ -99,17 +110,19 @@ class CastMediaBuilder(
 
     private fun MediaInfo.Builder.addTracks(video: Video): MediaInfo.Builder {
         val subtitleTracks = video.subtitleTracks.mapIndexed { trackIndex, sub ->
-            logcat(LogPriority.DEBUG) { "Subtitle URL: ${sub.url}" }
+            val formattedUrl = formatUrlForCast(sub.url)
+            logcat(LogPriority.DEBUG) { "Subtitle URL: $formattedUrl" }
             MediaTrack.Builder(trackIndex.toLong(), MediaTrack.TYPE_TEXT)
-                .setContentId(sub.url)
+                .setContentId(formattedUrl)
                 .setSubtype(MediaTrack.SUBTYPE_SUBTITLES)
                 .setName(sub.lang)
                 .build()
         }
 
         val audioTracks = video.audioTracks.mapIndexed { trackIndex, audio ->
+            val formattedUrl = formatUrlForCast(audio.url)
             MediaTrack.Builder((subtitleTracks.size + trackIndex).toLong(), MediaTrack.TYPE_AUDIO)
-                .setContentId(audio.url)
+                .setContentId(formattedUrl)
                 .setName(audio.lang)
                 .setContentType("application/x-mpegURL")
                 .build()

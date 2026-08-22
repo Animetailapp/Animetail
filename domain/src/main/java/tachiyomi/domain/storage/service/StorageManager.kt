@@ -66,29 +66,8 @@ class StorageManager(
     }
 
     private fun getBaseDir(uri: String): UniFile? {
-        migrateLegacyFileUriIfNeeded(uri)?.let { return it }
         return UniFile.fromUri(context, uri.toUri())
             .takeIf { it?.exists() == true }
-    }
-
-    private fun migrateLegacyFileUriIfNeeded(uri: String): UniFile? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            return null
-        }
-
-        val parsedUri = uri.toUri()
-        if (parsedUri.scheme != "file") {
-            return null
-        }
-
-        val fallbackDir = folderProvider.directory().apply { mkdirs() }
-        val fallbackUri = folderProvider.path()
-        if (fallbackUri != uri) {
-            storageDirPreference.set(fallbackUri)
-        }
-
-        return UniFile.fromFile(fallbackDir)
-            ?.takeIf { it.exists() || fallbackDir.exists() }
     }
 
     fun getAutomaticBackupsDirectory(): UniFile? {
@@ -100,11 +79,11 @@ class StorageManager(
     }
 
     fun getLocalMangaSourceDirectory(): UniFile? {
-        return getLocalSourceDirectory(LOCAL_SOURCE_PATH)
+        return baseDir?.createDirectory(LOCAL_SOURCE_PATH)
     }
 
     fun getLocalAnimeSourceDirectory(): UniFile? {
-        return getLocalSourceDirectory(LOCAL_ANIMESOURCE_PATH)
+        return baseDir?.createDirectory(LOCAL_ANIMESOURCE_PATH)
     }
 
     fun getFontsDirectory(): UniFile? {
@@ -125,21 +104,6 @@ class StorageManager(
 
     fun getMPVConfigDirectory(): UniFile? {
         return baseDir?.createDirectory(MPV_CONFIG_PATH)
-    }
-
-    private fun getLocalSourceDirectory(path: String): UniFile? {
-        return baseDir?.createDirectory(path) ?: getLegacyLocalSourceDirectory(path)
-    }
-
-    private fun getLegacyLocalSourceDirectory(path: String): UniFile? {
-        val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
-        val legacyBaseDir = File(
-            Environment.getExternalStorageDirectory().absolutePath + File.separator +
-                appName,
-        )
-        val legacyDir = File(legacyBaseDir, path)
-        return UniFile.fromFile(legacyDir)
-            ?.takeIf { legacyDir.exists() && legacyDir.isDirectory }
     }
 }
 
