@@ -39,6 +39,10 @@ class CloudflareInterceptor(
         if (preferences.enableFlareSolverr.get()) {
             return false
         }
+        // Cloudflare WebView bypass only works for GET HTML pages, not POST/JSON APIs
+        if (response.request.method != "GET") {
+            return false
+        }
         // Check if Cloudflare anti-bot is on
         return response.code in ERROR_CODES && response.header("Server") in SERVER_CHECK
     }
