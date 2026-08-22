@@ -9,7 +9,7 @@
 ### Full-featured player and reader, based on ~~Tachiyomi~~ Mihon.
 Discover and watch anime, cartoons, series, and more – easier than ever on your Android device.
 
-📰 **News:** [Genews](https://akiled.org)
+📰 **News:** [Gnews](https://akiled.org)
 
 [![Discord server](https://img.shields.io/discord/1196139193664028762.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/fvskrQZb9j)
 [![Gnews](https://img.shields.io/badge/News-Gnews-blue?logo=rss&logoColor=white)](https://akiled.org)
