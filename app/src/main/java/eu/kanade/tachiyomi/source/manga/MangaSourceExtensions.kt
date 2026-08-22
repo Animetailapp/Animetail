@@ -37,8 +37,8 @@ fun MangaSource.isLocalOrStub(): Boolean = isLocal() || this is StubMangaSource
 // AM (DISCORD) -->
 fun MangaSource?.isNsfw(): Boolean {
     if (this == null || this.isLocalOrStub()) return false
-    val sourceUsed = Injekt.get<MangaExtensionManager>().installedExtensionsFlow.value
-        .find { ext -> ext.sources.any { it.id == this.id } }!!
-    return sourceUsed.isNsfw
+    val sourceUsed = Injekt.get<MangaExtensionManager>().installedExtensions
+        .find { ext -> ext.sources.any { it.id == this.id } }
+    return sourceUsed?.isNsfw ?: false
 }
 // <-- AM (DISCORD)

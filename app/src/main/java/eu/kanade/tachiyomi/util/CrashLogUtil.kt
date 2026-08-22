@@ -13,6 +13,7 @@ import eu.kanade.tachiyomi.util.system.WebViewUtil
 import eu.kanade.tachiyomi.util.system.createFileInCacheDir
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.offsetAt
 import kotlinx.datetime.toLocalDateTime
@@ -74,10 +75,10 @@ class CrashLogUtil(
         //    FFmpeg version: ${Utils.VERSIONS.ffmpeg}
     }
 
-    private fun getMangaExtensionsInfo(): String? {
+    private suspend fun getMangaExtensionsInfo(): String? {
         val availableExtensions = mangaExtensionManager.availableExtensionsFlow.value.associateBy { it.pkgName }
 
-        val extensionInfoList = mangaExtensionManager.installedExtensionsFlow.value
+        val extensionInfoList = mangaExtensionManager.installedExtensionsFlow.first()
             .sortedBy { it.name }
             .mapNotNull {
                 val availableExtension = availableExtensions[it.pkgName]
@@ -87,8 +88,8 @@ class CrashLogUtil(
 
                 """
                     - ${it.name}
-                      Installed: ${it.versionName} / Available: ${availableExtension?.versionName ?: "?"}
-                      Obsolete: ${it.isObsolete}
+                    Installed: ${it.versionName} / Available: ${availableExtension?.versionName ?: "?"}
+                    Obsolete: ${it.isObsolete}
                 """.trimIndent()
             }
 
@@ -100,10 +101,10 @@ class CrashLogUtil(
         }
     }
 
-    private fun getAnimeExtensionsInfo(): String? {
+    private suspend fun getAnimeExtensionsInfo(): String? {
         val availableExtensions = animeExtensionManager.availableExtensionsFlow.value.associateBy { it.pkgName }
 
-        val extensionInfoList = animeExtensionManager.installedExtensionsFlow.value
+        val extensionInfoList = animeExtensionManager.installedExtensionsFlow.first()
             .sortedBy { it.name }
             .mapNotNull {
                 val availableExtension = availableExtensions[it.pkgName]
@@ -113,8 +114,8 @@ class CrashLogUtil(
 
                 """
                     - ${it.name}
-                      Installed: ${it.versionName} / Available: ${availableExtension?.versionName ?: "?"}
-                      Orphaned: ${it.isObsolete}
+                    Installed: ${it.versionName} / Available: ${availableExtension?.versionName ?: "?"}
+                    Obsolete: ${it.isObsolete}
                 """.trimIndent()
             }
 

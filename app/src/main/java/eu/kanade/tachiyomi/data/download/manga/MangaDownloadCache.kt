@@ -6,7 +6,6 @@ import com.hippo.unifile.UniFile
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
-import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.util.size
 import kotlinx.coroutines.CancellationException
@@ -70,7 +69,6 @@ class MangaDownloadCache(
     private val context: Context,
     private val provider: MangaDownloadProvider,
     private val sourceManager: MangaSourceManager,
-    private val extensionManager: MangaExtensionManager,
     private val storageManager: StorageManager,
 ) {
 
@@ -367,7 +365,6 @@ class MangaDownloadCache(
                 // Try to wait until extensions and sources have loaded
                 var sources = emptyList<MangaSource>()
                 withTimeoutOrNull(30.seconds) {
-                    extensionManager.isInitialized.first { it }
                     sourceManager.isInitialized.first { it }
 
                     sources = getSources()
