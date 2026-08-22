@@ -405,7 +405,8 @@ class LocalAnimeSource(
             val episodeFile = if (relativePath.contains('/')) {
                 val subDir = relativePath.substringBeforeLast('/')
                 val filename = relativePath.substringAfterLast('/')
-                fileSystem.getAnimeDirectory("${anime.url}/$subDir")?.findFile(filename) ?: animeDir.findFile(relativePath)
+                fileSystem.getAnimeDirectory("${anime.url}/$subDir")?.findFile(filename)
+                    ?: animeDir.findFile(relativePath)
             } else {
                 animeDir.findFile(relativePath)
             } ?: return

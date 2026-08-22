@@ -6,11 +6,7 @@ import tachiyomi.core.common.storage.extension
 object ArchiveAnime {
 
     private val SUPPORTED_ARCHIVE_TYPES =
-        listOf(
-            "avi", "flv", "mkv", "mov", "mp4", "webm", "wmv",
-            "ts", "m4v", "mpg", "mpeg", "vob", "ogv", "3gp",
-            "torrent", "m3u", "m3u8",
-        )
+        listOf("avi", "flv", "mkv", "mov", "mp4", "webm", "wmv", "torrent", "m3u", "m3u8")
 
     fun isSupported(file: UniFile): Boolean {
         if (file.isDirectory) return false

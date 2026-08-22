@@ -26,10 +26,10 @@ class LocalAnimeBackgroundManager(
             .filter { file ->
                 file.isFile && (
                     file.nameWithoutExtension.equals("background", ignoreCase = true) ||
-                    file.nameWithoutExtension.equals("fanart", ignoreCase = true) ||
-                    file.nameWithoutExtension.equals("backdrop", ignoreCase = true) ||
-                    file.nameWithoutExtension.equals("banner", ignoreCase = true)
-                )
+                        file.nameWithoutExtension.equals("fanart", ignoreCase = true) ||
+                        file.nameWithoutExtension.equals("backdrop", ignoreCase = true) ||
+                        file.nameWithoutExtension.equals("banner", ignoreCase = true)
+                    )
             }
             .firstOrNull { ImageUtil.isImage(it.name) { it.openInputStream() } }
     }

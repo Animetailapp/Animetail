@@ -169,7 +169,9 @@ class CastManager(
 
     private fun acquireMulticastLock() {
         try {
-            val wifiManager = context.getSystemService(android.content.Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+            val wifiManager = context.getSystemService(
+                android.content.Context.WIFI_SERVICE,
+            ) as? android.net.wifi.WifiManager
             if (multicastLock == null) {
                 multicastLock = wifiManager?.createMulticastLock("animetail_cast_multicast_lock")?.apply {
                     setReferenceCounted(false)
@@ -451,7 +453,11 @@ class CastManager(
             val currentSession = currentCastContext.sessionManager.currentCastSession
             android.util.Log.d("CastDebug", "currentSession: $currentSession")
             val selector = androidx.mediarouter.media.MediaRouteSelector.Builder()
-                .addControlCategory(com.google.android.gms.cast.CastMediaControlIntent.categoryForCast(com.google.android.gms.cast.CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID))
+                .addControlCategory(
+                    com.google.android.gms.cast.CastMediaControlIntent.categoryForCast(
+                        com.google.android.gms.cast.CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID,
+                    ),
+                )
                 .build()
             android.util.Log.d("CastDebug", "selector built: $selector")
 
@@ -512,7 +518,10 @@ class CastManager(
             }
             android.util.Log.d("CastDebug", "MediaRouter callback registered, routes: ${mediaRouter.routes.size}")
             mediaRouter.routes.forEach { route ->
-                android.util.Log.d("CastDebug", "  route: name=${route.name}, id=${route.id}, isDefault=${route.isDefault}")
+                android.util.Log.d(
+                    "CastDebug",
+                    "  route: name=${route.name}, id=${route.id}, isDefault=${route.isDefault}",
+                )
             }
 
             updateDevicesList(currentSession)
@@ -521,7 +530,10 @@ class CastManager(
             discoveryRetryJob = activity.lifecycleScope.launch {
                 repeat(15) {
                     delay(1500)
-                    android.util.Log.d("CastDebug", "Periodic discovery check (#$it), total routes=${mediaRouter.routes.size}")
+                    android.util.Log.d(
+                        "CastDebug",
+                        "Periodic discovery check (#$it), total routes=${mediaRouter.routes.size}",
+                    )
                     updateDevicesList(castContext?.sessionManager?.currentCastSession)
                 }
             }
@@ -553,14 +565,21 @@ class CastManager(
             }
             .distinctBy { it.id }
 
-        android.util.Log.d("CastDebug", "updateDevicesList: found ${newDevices.size} devices (${newDevices.map { it.name }})")
+        android.util.Log.d(
+            "CastDebug",
+            "updateDevicesList: found ${newDevices.size} devices (${newDevices.map {
+                it.name
+            }})",
+        )
 
         if (_availableDevices.value != newDevices) {
             _availableDevices.value = newDevices
 
             when {
                 newDevices.any { it.isConnected } -> _castState.value = CastState.CONNECTED
+
                 _castState.value == CastState.CONNECTING -> { /* keep waiting */ }
+
                 newDevices.isEmpty() && _castState.value != CastState.DISCONNECTED ->
                     _castState.value = CastState.DISCONNECTED
             }

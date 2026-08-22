@@ -26,10 +26,10 @@ class LocalAnimeCoverManager(
             .filter { file ->
                 file.isFile && (
                     file.nameWithoutExtension.equals("cover", ignoreCase = true) ||
-                    file.nameWithoutExtension.equals("poster", ignoreCase = true) ||
-                    file.nameWithoutExtension.equals("folder", ignoreCase = true) ||
-                    file.nameWithoutExtension.equals("thumb", ignoreCase = true)
-                )
+                        file.nameWithoutExtension.equals("poster", ignoreCase = true) ||
+                        file.nameWithoutExtension.equals("folder", ignoreCase = true) ||
+                        file.nameWithoutExtension.equals("thumb", ignoreCase = true)
+                    )
             }
             .firstOrNull { ImageUtil.isImage(it.name) { it.openInputStream() } }
     }
