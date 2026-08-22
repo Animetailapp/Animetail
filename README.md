@@ -12,7 +12,7 @@ Discover and watch anime, cartoons, series, and more – easier than ever on you
 📰 **News:** [Genews](https://akiled.org)
 
 [![Discord server](https://img.shields.io/discord/1196139193664028762.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/fvskrQZb9j)
-[![Genews](https://img.shields.io/badge/News-Genews-blue?logo=rss&logoColor=white)](https://akiled.org)
+[![Gnews](https://img.shields.io/badge/News-Gnews-blue?logo=rss&logoColor=white)](https://akiled.org)
 [![GitHub downloads](https://img.shields.io/github/downloads/Animetailapp/animetail/total?label=downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/Animetailapp/Animetail/releases)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Animetailapp/animetail/build_push.yml?labelColor=27303D)](https://github.com/Animetailapp/Animetail/actions/workflows/build_push.yml)
