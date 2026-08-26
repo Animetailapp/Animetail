@@ -69,6 +69,7 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.aniyomi.AYMR
+import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -432,7 +433,7 @@ class AnimeDownloader(
                     if (preferences.useExternalDownloader.get() == download.changeDownloader) {
                         progressJob = scope.launch {
                             while (download.status == AnimeDownload.State.DOWNLOADING) {
-                                delay(50)
+                                delay(1000)
                                 notifier.onProgressChange(download)
                             }
                         }
@@ -492,8 +493,8 @@ class AnimeDownloader(
         filename: String,
     ): UniFile {
         return flow {
-            val videoFile = tmpDir.findFile("$filename.tmp")
-                ?: tmpDir.createFile("$filename.tmp")!!
+            tmpDir.findFile("$filename.tmp")?.delete()
+            val videoFile = tmpDir.createFile("$filename.tmp")!!
             try {
                 if (torrentPreferences.torrServerEnable().get() && isTorrent(download.video)) {
                     torrentDownload(download, tmpDir, videoFile, filename)
@@ -565,7 +566,16 @@ class AnimeDownloader(
     ) {
         val video = download.video!!
 
-        val ffmpegFilename = { videoFile.uri.toFFmpegString(context) }
+        val isSaf = videoFile.uri.scheme == "content"
+        val localTmpFile = if (isSaf) {
+            val cacheDir = File(context.externalCacheDir ?: context.cacheDir, "ffmpeg_tmp")
+            cacheDir.mkdirs()
+            File(cacheDir, "${filename}_${System.currentTimeMillis()}.tmp")
+        } else {
+            null
+        }
+
+        val ffmpegFilename = { localTmpFile?.absolutePath ?: videoFile.toFFmpegString(context, "rw") }
 
         val headers = video.headers ?: download.source.headers
         val headerOptions = headers.joinToString("", "-headers '", "'") {
@@ -606,11 +616,20 @@ class AnimeDownloader(
                 ffmpegOptions,
                 {
                     if (it.returnCode.isValueSuccess) {
+                        if (localTmpFile != null && isSaf) {
+                            localTmpFile.inputStream().buffered().use { input ->
+                                videoFile.openOutputStream().buffered().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            localTmpFile.delete()
+                        }
                         tmpDir.findFile("$filename.tmp")?.apply {
                             renameTo("$filename.mkv")
                         }
                         continuation.resume(it)
                     } else {
+                        localTmpFile?.delete()
                         continuation.resumeWithException(Exception("Error in ffmpeg!"))
                     }
                 },
@@ -619,6 +638,7 @@ class AnimeDownloader(
             )
             continuation.invokeOnCancellation {
                 session.cancel()
+                localTmpFile?.delete()
             }
         }
     }
