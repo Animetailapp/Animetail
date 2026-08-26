@@ -257,8 +257,8 @@ class AnimeRestorer(
                     episode.summary,
                     episode.previewUrl,
                     episode.fillermark,
-                    episode.dateUploadOverride,
                     episode.memo,
+                    episode.dateUploadOverride,
                 )
             }
         }

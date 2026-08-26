@@ -43,8 +43,8 @@ class EpisodeRepositoryImpl(
                         episode.summary,
                         episode.previewUrl,
                         episode.fillermark,
-                        episode.dateUploadOverride,
                         episode.memo,
+                        episode.dateUploadOverride,
                     ).awaitAsOne()
                     episode.copy(id = lastInsertId)
                 }
@@ -157,8 +157,8 @@ class EpisodeRepositoryImpl(
         summary: String?,
         previewUrl: String?,
         fillermark: Boolean,
-        dateUploadOverride: Long,
         memo: JsonObject,
+        dateUploadOverride: Long,
     ): Episode = Episode(
         id = id,
         animeId = animeId,

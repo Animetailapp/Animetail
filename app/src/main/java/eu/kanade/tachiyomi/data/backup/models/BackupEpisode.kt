@@ -81,8 +81,8 @@ val backupEpisodeMapper = {
         summary: String?,
         previewUrl: String?,
         fillermark: Boolean,
-        dateUploadOverride: Long,
         memo: JsonObject,
+        dateUploadOverride: Long,
     ->
     BackupEpisode(
         url = url,
