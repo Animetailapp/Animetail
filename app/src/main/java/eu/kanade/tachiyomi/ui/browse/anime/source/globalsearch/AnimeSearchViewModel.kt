@@ -9,11 +9,13 @@ import eu.kanade.domain.entries.anime.model.toDomainAnime
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.animesource.AnimeSource
+import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentMap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
@@ -165,8 +167,15 @@ abstract class AnimeSearchViewModel(
                         return@async
                     }
                     try {
+                        val filterList = try {
+                            source.getFilterList()
+                        } catch (_: LinkageError) {
+                            AnimeFilterList()
+                        } catch (_: AbstractMethodError) {
+                            AnimeFilterList()
+                        }
                         val page = withContext(coroutineDispatcher) {
-                            source.getSearchAnime(1, query, source.getFilterList())
+                            source.getSearchAnime(1, query, filterList)
                         }
 
                         val titles = page.animes.map {
@@ -176,7 +185,8 @@ abstract class AnimeSearchViewModel(
                         if (isActive) {
                             updateItem(source, AnimeSearchItemResult.Success(titles))
                         }
-                    } catch (e: Exception) {
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
                         if (isActive) {
                             updateItem(source, AnimeSearchItemResult.Error(e))
                         }

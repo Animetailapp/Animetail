@@ -64,7 +64,7 @@ interface AnimeCatalogueSource : AnimeSource {
     /**
      * Returns the list of filters for the source.
      */
-    override fun getFilterList(): AnimeFilterList
+    override fun getFilterList(): AnimeFilterList = AnimeFilterList()
 
     override val supportsRelatedAnime: Boolean
         get() = false

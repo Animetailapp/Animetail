@@ -9,6 +9,8 @@ import eu.kanade.domain.entries.manga.model.toDomainManga
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.model.FilterList
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
@@ -163,8 +165,15 @@ abstract class MangaSearchViewModel(
                         return@async
                     }
                     try {
+                        val filterList = try {
+                            source.getFilterList()
+                        } catch (_: LinkageError) {
+                            FilterList()
+                        } catch (_: AbstractMethodError) {
+                            FilterList()
+                        }
                         val page = withContext(coroutineDispatcher) {
-                            source.getSearchManga(1, query, source.getFilterList())
+                            source.getSearchManga(1, query, filterList)
                         }
 
                         val titles = page.mangas.map {
@@ -174,7 +183,8 @@ abstract class MangaSearchViewModel(
                         if (isActive) {
                             updateItem(source, MangaSearchItemResult.Success(titles))
                         }
-                    } catch (e: Exception) {
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
                         if (isActive) {
                             updateItem(source, MangaSearchItemResult.Error(e))
                         }

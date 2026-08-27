@@ -900,4 +900,9 @@ abstract class AnimeHttpSource : AnimeCatalogueSource {
      */
     @Deprecated("All modifications should be done when constructing the episode")
     open fun prepareNewEpisode(episode: SEpisode, anime: SAnime) {}
+
+    /**
+     * Returns the list of filters for the source.
+     */
+    override fun getFilterList() = AnimeFilterList()
 }
