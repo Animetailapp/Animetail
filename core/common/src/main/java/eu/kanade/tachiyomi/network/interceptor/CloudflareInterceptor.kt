@@ -182,12 +182,8 @@ class CloudflareInterceptor(
     }
 }
 
-<<<<<<< HEAD:core/common/src/main/java/eu/kanade/tachiyomi/network/interceptor/CloudflareInterceptor.kt
 val ERROR_CODES = listOf(403, 503)
 val SERVER_CHECK = arrayOf("cloudflare-nginx", "cloudflare")
-=======
-private val SERVER_CHECK = arrayOf("cloudflare-nginx", "cloudflare")
->>>>>>> ac249e3668 (Exit early in CloudflareInterceptor when cloudflare challenge is interactive (#3842)):core/common/src/main/kotlin/eu/kanade/tachiyomi/network/interceptor/CloudflareInterceptor.kt
 private val COOKIE_NAMES = listOf("cf_clearance")
 
 // TLMR -->

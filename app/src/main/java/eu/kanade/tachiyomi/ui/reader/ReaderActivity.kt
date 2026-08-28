@@ -50,7 +50,7 @@ import com.google.android.material.transition.platform.MaterialContainerTransfor
 import com.hippo.unifile.UniFile
 import dev.chrisbanes.insetter.applyInsetter
 import dev.zacsweers.metro.Inject
-import eu.kanade.core.util.ifMangaSourcesLoaded
+
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.reader.DisplayRefreshHost
@@ -411,11 +411,7 @@ class ReaderActivity : BaseActivity() {
                 )
             }
 
-            if (!ifMangaSourcesLoaded()) {
-                return@setComposeContent
-            }
-
-            val isHttpSource = viewModel.getSource() is HttpSource
+            val isHttpSource = state.source is HttpSource
             val isFullscreen by readerPreferences.fullscreen.collectAsState()
             val flashOnPageChange by readerPreferences.flashOnPageChange.collectAsState()
 

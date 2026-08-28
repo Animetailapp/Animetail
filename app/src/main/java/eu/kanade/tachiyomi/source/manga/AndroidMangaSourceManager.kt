@@ -14,11 +14,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.domain.source.manga.repository.MangaStubSourceRepository
@@ -36,18 +35,18 @@ class AndroidMangaSourceManager(
     private val downloadManager: Lazy<MangaDownloadManager>,
 ) : MangaSourceManager {
 
-    private val _isInitialized = MutableStateFlow(false)
-    override val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val sourcesMapFlow = MutableStateFlow(ConcurrentHashMap<Long, MangaSource>())
+    /**
+     * Null until the extensions have loaded, so that nothing observes the empty seed value.
+     */
+    private val sourcesMapFlow = MutableStateFlow<Map<Long, MangaSource>?>(null)
 
     private val stubSourcesMap = ConcurrentHashMap<Long, StubMangaSource>()
 
-    override val catalogueSources: Flow<List<CatalogueSource>> = sourcesMapFlow.map {
-        it.values.filterIsInstance<CatalogueSource>()
-    }
+    override val catalogueSources: Flow<List<CatalogueSource>> = sourcesMapFlow
+        .filterNotNull()
+        .map { it.values.filterIsInstance<CatalogueSource>() }
 
     init {
         scope.launchIO {
@@ -63,7 +62,6 @@ class AndroidMangaSourceManager(
                         }
                     }
                     sourcesMapFlow.value = mutableMap
-                    _isInitialized.value = true
                 }
         }
 
@@ -78,21 +76,30 @@ class AndroidMangaSourceManager(
         }
     }
 
-    override fun get(sourceKey: Long): MangaSource? {
-        return sourcesMapFlow.value[sourceKey]
+    /**
+     * Awaits the extensions to have loaded before returning the sources.
+     */
+    private suspend fun sourcesMap(): Map<Long, MangaSource> = sourcesMapFlow.filterNotNull().first()
+
+    override suspend fun get(sourceKey: Long): MangaSource? {
+        return sourcesMap()[sourceKey]
     }
 
-    override fun getOrStub(sourceKey: Long): MangaSource {
-        return sourcesMapFlow.value[sourceKey] ?: stubSourcesMap.getOrPut(sourceKey) {
-            runBlocking { createStubSource(sourceKey) }
+    override suspend fun getOrStub(sourceKey: Long): MangaSource {
+        return sourcesMap()[sourceKey] ?: stubSourcesMap.getOrPut(sourceKey) {
+            createStubSource(sourceKey)
         }
     }
 
-    override fun getOnlineSources() = sourcesMapFlow.value.values.filterIsInstance<HttpSource>()
+    override suspend fun getOnlineSources(): List<HttpSource> {
+        return sourcesMap().values.filterIsInstance<HttpSource>()
+    }
 
-    override fun getCatalogueSources() = sourcesMapFlow.value.values.filterIsInstance<CatalogueSource>()
+    override suspend fun getCatalogueSources(): List<CatalogueSource> {
+        return sourcesMap().values.filterIsInstance<CatalogueSource>()
+    }
 
-    override fun getStubSources(): List<StubMangaSource> {
+    override suspend fun getStubSources(): List<StubMangaSource> {
         val onlineSourceIds = getOnlineSources().map { it.id }
         return stubSourcesMap.values.filterNot { it.id in onlineSourceIds }
     }

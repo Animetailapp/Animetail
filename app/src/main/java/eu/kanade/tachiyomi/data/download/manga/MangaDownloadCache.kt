@@ -133,7 +133,6 @@ class MangaDownloadCache(
      * @param chapterScanlator scanlator of the chapter to query
      * @param mangaTitle the title of the manga to query.
      * @param sourceId the id of the source of the chapter.
-     * @param skipCache whether to skip the directory cache and check in the filesystem.
      */
     fun isChapterDownloaded(
         chapterName: String,
@@ -141,19 +140,7 @@ class MangaDownloadCache(
         chapterUrl: String,
         mangaTitle: String,
         sourceId: Long,
-        skipCache: Boolean,
     ): Boolean {
-        if (skipCache) {
-            val source = sourceManager.getOrStub(sourceId)
-            return provider.findChapterDir(
-                chapterName,
-                chapterScanlator,
-                chapterUrl,
-                mangaTitle,
-                source,
-            ) != null
-        }
-
         renewCache()
 
         val sourceDir = rootDownloadsDir.sourceDirs[sourceId]
@@ -365,8 +352,6 @@ class MangaDownloadCache(
                 // Try to wait until extensions and sources have loaded
                 var sources = emptyList<MangaSource>()
                 withTimeoutOrNull(30.seconds) {
-                    sourceManager.isInitialized.first { it }
-
                     sources = getSources()
                 }
 
@@ -432,7 +417,7 @@ class MangaDownloadCache(
         notifyChanges()
     }
 
-    private fun getSources(): List<MangaSource> {
+    private suspend fun getSources(): List<MangaSource> {
         return sourceManager.getOnlineSources() + sourceManager.getStubSources()
     }
 

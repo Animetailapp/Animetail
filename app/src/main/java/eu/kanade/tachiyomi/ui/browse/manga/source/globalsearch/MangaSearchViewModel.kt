@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -90,7 +89,7 @@ abstract class MangaSearchViewModel(
         }
     }
 
-    open fun getEnabledSources(): List<CatalogueSource> {
+    open suspend fun getEnabledSources(): List<CatalogueSource> {
         return sourceManager.getCatalogueSources()
             .filter { it.lang in enabledLanguages && "${it.id}" !in disabledSources }
             .sortedWith(
@@ -109,7 +108,7 @@ abstract class MangaSearchViewModel(
             return enabledSources
         }
 
-        return extensionManager.installedExtensionsFlow.first()
+        return extensionManager.getInstalledExtensions()
             .filter { it.pkgName == filter }
             .flatMap { it.sources }
             .filterIsInstance<CatalogueSource>()

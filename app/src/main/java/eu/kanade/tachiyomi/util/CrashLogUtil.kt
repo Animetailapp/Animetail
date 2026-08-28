@@ -78,7 +78,7 @@ class CrashLogUtil(
     private suspend fun getMangaExtensionsInfo(): String? {
         val availableExtensions = mangaExtensionManager.availableExtensionsFlow.value.associateBy { it.pkgName }
 
-        val extensionInfoList = mangaExtensionManager.installedExtensionsFlow.first()
+        val extensionInfoList = mangaExtensionManager.getInstalledExtensions()
             .sortedBy { it.name }
             .mapNotNull {
                 val availableExtension = availableExtensions[it.pkgName]

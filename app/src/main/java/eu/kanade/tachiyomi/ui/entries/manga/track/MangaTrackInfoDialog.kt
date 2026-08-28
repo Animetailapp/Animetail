@@ -275,7 +275,7 @@ data class MangaTrackInfoDialogHomeScreen(
             }
         }
 
-        private fun List<MangaTrack>.mapToTrackItem(): List<MangaTrackItem> {
+        private suspend fun List<MangaTrack>.mapToTrackItem(): List<MangaTrackItem> {
             val loggedInTrackers = trackerManager.loggedInTrackers().filter {
                 it is MangaTracker
             }

@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -123,11 +124,12 @@ object SettingsTrackingScreen : SearchableSettings {
             }
         }
 
+        val installedMangaSources by produceState(initialValue = emptyList()) { value = mangaSourceManager.getCatalogueSources() }
         val enhancedMangaTrackers = trackerManager.trackers
             .filter { it is EnhancedMangaTracker }
             .partition { service ->
                 val acceptedMangaSources = (service as EnhancedMangaTracker).getAcceptedSources()
-                mangaSourceManager.getCatalogueSources().any { it::class.qualifiedName in acceptedMangaSources }
+                installedMangaSources.any { it::class.qualifiedName in acceptedMangaSources }
             }
         val enhancedAnimeTrackers = trackerManager.trackers
             .filter { it is EnhancedAnimeTracker }

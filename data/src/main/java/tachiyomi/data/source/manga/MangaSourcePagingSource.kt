@@ -5,59 +5,64 @@ import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.SManga
+import kotlinx.coroutines.CancellationException
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.items.chapter.model.NoChaptersException
 import tachiyomi.domain.source.manga.repository.SourcePagingSourceType
 
 class SourceSearchPagingSource(
-    source: CatalogueSource,
+    source: suspend () -> CatalogueSource,
     val query: String,
     val filters: FilterList,
-) :
-    SourcePagingSource(
-        source,
-    ) {
-    override suspend fun requestNextPage(currentPage: Int): MangasPage {
+) : SourcePagingSource(source) {
+    override suspend fun requestNextPage(source: CatalogueSource, currentPage: Int): MangasPage {
         return source.getSearchManga(currentPage, query, filters)
     }
 }
 
-class SourcePopularPagingSource(source: CatalogueSource) : SourcePagingSource(source) {
-    override suspend fun requestNextPage(currentPage: Int): MangasPage {
+class SourcePopularPagingSource(
+    source: suspend () -> CatalogueSource,
+) : SourcePagingSource(source) {
+    override suspend fun requestNextPage(source: CatalogueSource, currentPage: Int): MangasPage {
         return source.getPopularManga(currentPage)
     }
 }
 
-class SourceLatestPagingSource(source: CatalogueSource) : SourcePagingSource(source) {
-    override suspend fun requestNextPage(currentPage: Int): MangasPage {
+class SourceLatestPagingSource(
+    source: suspend () -> CatalogueSource,
+) : SourcePagingSource(source) {
+    override suspend fun requestNextPage(source: CatalogueSource, currentPage: Int): MangasPage {
         return source.getLatestUpdates(currentPage)
     }
 }
 
 abstract class SourcePagingSource(
-    protected val source: CatalogueSource,
+    private val source: suspend () -> CatalogueSource,
 ) : SourcePagingSourceType() {
 
-    abstract suspend fun requestNextPage(currentPage: Int): MangasPage
+    abstract suspend fun requestNextPage(source: CatalogueSource, currentPage: Int): MangasPage
 
     override suspend fun load(params: LoadParams<Long>): LoadResult<Long, SManga> {
         val page = params.key ?: 1
 
-        val mangasPage = try {
-            withIOContext {
-                requestNextPage(page.toInt())
+        return try {
+            val source = source()
+            val mangasPage = withIOContext {
+                requestNextPage(source, page.toInt())
                     .takeIf { it.mangas.isNotEmpty() }
                     ?: throw NoChaptersException()
             }
-        } catch (e: Exception) {
-            return LoadResult.Error(e)
-        }
 
-        return LoadResult.Page(
-            data = mangasPage.mangas,
-            prevKey = null,
-            nextKey = if (mangasPage.hasNextPage) page + 1 else null,
-        )
+            LoadResult.Page(
+                data = mangasPage.mangas,
+                prevKey = null,
+                nextKey = if (mangasPage.hasNextPage) page + 1 else null,
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            LoadResult.Error(e)
+        }
     }
 
     override fun getRefreshKey(state: PagingState<Long, SManga>): Long? {

@@ -37,7 +37,6 @@ import androidx.compose.ui.platform.LocalUriHandler
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
-import eu.kanade.core.util.ifMangaSourcesLoaded
 import eu.kanade.presentation.browse.RemoveEntryDialog
 import eu.kanade.presentation.browse.manga.BrowseSourceContent
 import eu.kanade.presentation.browse.manga.MissingSourceScreen
@@ -80,10 +79,6 @@ data class BrowseMangaSourceScreen(
 
     @Composable
     override fun Content() {
-        if (!ifMangaSourcesLoaded()) {
-            LoadingScreen()
-            return
-        }
 
         val viewModel =
             assistedMetroViewModel<BrowseMangaSourceViewModel, BrowseMangaSourceViewModel.Factory> {
@@ -102,9 +97,15 @@ data class BrowseMangaSourceScreen(
             }
         }
 
-        if (viewModel.source is StubMangaSource) {
+        val source = state.source
+        if (source == null) {
+            LoadingScreen()
+            return
+        }
+
+        if (source is StubMangaSource) {
             MissingSourceScreen(
-                source = viewModel.source,
+                source = source,
                 navigateUp = navigateUp,
             )
             return
@@ -117,18 +118,18 @@ data class BrowseMangaSourceScreen(
 
         val onHelpClick = { uriHandler.openUri(LocalMangaSource.HELP_URL) }
         val onWebViewClick = f@{
-            val source = viewModel.source as? HttpSource ?: return@f
+            val httpSource = source as? HttpSource ?: return@f
             navigator.push(
                 WebViewScreen(
-                    url = source.baseUrl,
-                    initialTitle = source.name,
-                    sourceId = source.id,
+                    url = httpSource.getHomeUrl(),
+                    initialTitle = httpSource.name,
+                    sourceId = httpSource.id,
                 ),
             )
         }
 
-        LaunchedEffect(viewModel.source) {
-            assistUrl = (viewModel.source as? HttpSource)?.baseUrl
+        LaunchedEffect(source) {
+            assistUrl = (source as? HttpSource)?.getHomeUrl()
         }
 
         var topBarHeight by remember { mutableIntStateOf(0) }
@@ -142,7 +143,7 @@ data class BrowseMangaSourceScreen(
                     BrowseMangaSourceToolbar(
                         searchQuery = state.toolbarQuery,
                         onSearchQueryChange = viewModel::setToolbarQuery,
-                        source = viewModel.source,
+                        source = source,
                         displayMode = viewModel.displayMode,
                         onDisplayModeChange = { viewModel.displayMode = it },
                         navigateUp = navigateUp,
@@ -176,7 +177,7 @@ data class BrowseMangaSourceScreen(
                                 Text(text = stringResource(MR.strings.popular))
                             },
                         )
-                        if ((viewModel.source as CatalogueSource).supportsLatest) {
+                        if ((source as? CatalogueSource)?.supportsLatest == true) {
                             FilterChip(
                                 selected = state.listing == Listing.Latest,
                                 onClick = {
@@ -221,7 +222,7 @@ data class BrowseMangaSourceScreen(
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         ) { paddingValues ->
             BrowseSourceContent(
-                source = viewModel.source,
+                source = source,
                 mangaList = viewModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
                 columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
                 entries = viewModel.getColumnsPreferenceForCurrentOrientation(LocalConfiguration.current.orientation),

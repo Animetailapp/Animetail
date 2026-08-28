@@ -30,8 +30,8 @@ import androidx.preference.forEach
 import androidx.preference.getOnBindEditTextListener
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import eu.kanade.core.util.ifMangaSourcesLoaded
 import eu.kanade.presentation.components.AppBar
+
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.preference.SharedPreferencesDataStore
@@ -45,22 +45,31 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+import androidx.compose.runtime.produceState
+import androidx.lifecycle.lifecycleScope
+import eu.kanade.tachiyomi.source.MangaSource
+import kotlinx.coroutines.launch
+
 class MangaSourcePreferencesScreen(val sourceId: Long) : Screen() {
 
     @Composable
     override fun Content() {
-        if (!ifMangaSourcesLoaded()) {
+        val context = LocalContext.current
+        val navigator = LocalNavigator.currentOrThrow
+
+        val source by produceState<MangaSource?>(initialValue = null) {
+            value = context.appGraph.mangaSourceManager.getOrStub(sourceId)
+        }
+
+        if (source == null) {
             LoadingScreen()
             return
         }
 
-        val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
-
         Scaffold(
             topBar = {
                 AppBar(
-                    title = Injekt.get<MangaSourceManager>().getOrStub(sourceId).toString(),
+                    title = source.toString(),
                     navigateUp = navigator::pop,
                     scrollBehavior = it,
                 )
@@ -128,10 +137,13 @@ class MangaSourcePreferencesFragment : PreferenceFragmentCompat() {
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-        preferenceScreen = populateScreen()
+        preferenceScreen = preferenceManager.createPreferenceScreen(requireContext())
+        lifecycleScope.launch {
+            preferenceScreen = populateScreen()
+        }
     }
 
-    private fun populateScreen(): PreferenceScreen {
+    private suspend fun populateScreen(): PreferenceScreen {
         val sourceId = requireArguments().getLong(SOURCE_ID)
         val appGraph = requireContext().appGraph
         val source = appGraph.mangaSourceManager.getOrStub(sourceId)
