@@ -7,16 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material.icons.outlined.BookmarkAdd
-import androidx.compose.material.icons.outlined.BookmarkRemove
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Done
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.FileDownloadOff
-import androidx.compose.material.icons.outlined.RemoveDone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +29,16 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.entries.components.DotSeparatorText
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import me.saket.swipe.SwipeableActionsBox
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.BookmarkAdd
+import mihon.icons.materialsymbols.rounded.BookmarkRemove
+import mihon.icons.materialsymbols.rounded.Delete
+import mihon.icons.materialsymbols.rounded.Done
+import mihon.icons.materialsymbols.rounded.Download
+import mihon.icons.materialsymbols.rounded.FileDownloadOff
+import mihon.icons.materialsymbols.rounded.RemoveDone
+import mihon.icons.materialsymbols.roundedfilled.Bookmark
+import mihon.icons.materialsymbols.roundedfilled.Circle
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
@@ -111,7 +111,7 @@ fun MangaChapterListItem(
                     var textHeight by remember { mutableIntStateOf(0) }
                     if (!read) {
                         Icon(
-                            imageVector = Icons.Filled.Circle,
+                            imageVector = MaterialSymbols.RoundedFilled.Circle,
                             contentDescription = stringResource(MR.strings.unread),
                             modifier = Modifier
                                 .height(8.dp)
@@ -121,7 +121,7 @@ fun MangaChapterListItem(
                     }
                     if (bookmark) {
                         Icon(
-                            imageVector = Icons.Filled.Bookmark,
+                            imageVector = MaterialSymbols.RoundedFilled.Bookmark,
                             contentDescription = stringResource(MR.strings.action_filter_bookmarked),
                             modifier = Modifier
                                 .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp }),
@@ -194,14 +194,14 @@ private fun getSwipeAction(
 ): me.saket.swipe.SwipeAction? {
     return when (action) {
         LibraryPreferences.ChapterSwipeAction.ToggleRead -> swipeAction(
-            icon = if (!read) Icons.Outlined.Done else Icons.Outlined.RemoveDone,
+            icon = if (!read) MaterialSymbols.Rounded.Done else MaterialSymbols.Rounded.RemoveDone,
             background = background,
             isUndo = read,
             onSwipe = onSwipe,
         )
 
         LibraryPreferences.ChapterSwipeAction.ToggleBookmark -> swipeAction(
-            icon = if (!bookmark) Icons.Outlined.BookmarkAdd else Icons.Outlined.BookmarkRemove,
+            icon = if (!bookmark) MaterialSymbols.Rounded.BookmarkAdd else MaterialSymbols.Rounded.BookmarkRemove,
             background = background,
             isUndo = bookmark,
             onSwipe = onSwipe,
@@ -209,9 +209,9 @@ private fun getSwipeAction(
 
         LibraryPreferences.ChapterSwipeAction.Download -> swipeAction(
             icon = when (downloadState) {
-                MangaDownload.State.NOT_DOWNLOADED, MangaDownload.State.ERROR -> Icons.Outlined.Download
-                MangaDownload.State.QUEUE, MangaDownload.State.DOWNLOADING -> Icons.Outlined.FileDownloadOff
-                MangaDownload.State.DOWNLOADED -> Icons.Outlined.Delete
+                MangaDownload.State.NOT_DOWNLOADED, MangaDownload.State.ERROR -> MaterialSymbols.Rounded.Download
+                MangaDownload.State.QUEUE, MangaDownload.State.DOWNLOADING -> MaterialSymbols.Rounded.FileDownloadOff
+                MangaDownload.State.DOWNLOADED -> MaterialSymbols.Rounded.Delete
             },
             background = background,
             onSwipe = onSwipe,

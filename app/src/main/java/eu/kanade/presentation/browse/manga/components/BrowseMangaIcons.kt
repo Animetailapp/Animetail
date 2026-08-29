@@ -5,9 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dangerous
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -31,6 +28,9 @@ import eu.kanade.presentation.util.rememberResourceBitmapPainter
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionLoader
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.Dangerous
+import mihon.icons.materialsymbols.rounded.Warning
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.source.manga.model.Source
 import tachiyomi.source.local.entries.manga.LocalMangaSource
@@ -49,7 +49,7 @@ fun MangaSourceIcon(
     when {
         source.isStub && icon == null -> {
             Image(
-                imageVector = Icons.Filled.Warning,
+                imageVector = MaterialSymbols.Rounded.Warning,
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.error),
                 modifier = modifier.then(defaultModifier),
@@ -118,9 +118,8 @@ fun MangaExtensionIcon(
                 )
             }
         }
-
         is MangaExtension.Untrusted -> Image(
-            imageVector = Icons.Filled.Dangerous,
+            imageVector = MaterialSymbols.Rounded.Dangerous,
             contentDescription = null,
             colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.error),
             modifier = modifier.then(defaultModifier),

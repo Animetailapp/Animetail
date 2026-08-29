@@ -3,11 +3,6 @@ package eu.kanade.presentation.reader
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.Photo
-import androidx.compose.material.icons.outlined.Save
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,6 +15,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.components.AdaptiveSheet
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.ContentCopy
+import mihon.icons.materialsymbols.rounded.Photo
+import mihon.icons.materialsymbols.rounded.Save
+import mihon.icons.materialsymbols.rounded.Share
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.ActionButton
@@ -60,7 +60,7 @@ fun ReaderPageActionsDialog(
                     },
                     // SY <--
                 ),
-                icon = Icons.Outlined.Photo,
+                icon = MaterialSymbols.Rounded.Photo,
                 onClick = {
                     useExtraPage = false
                     showSetCoverDialog = true
@@ -69,9 +69,28 @@ fun ReaderPageActionsDialog(
             ActionButton(
                 modifier = Modifier.weight(1f),
                 title = stringResource(MR.strings.action_copy_to_clipboard),
-                icon = Icons.Outlined.ContentCopy,
+                icon = MaterialSymbols.Rounded.ContentCopy,
                 onClick = {
                     onShare(true, false)
+                    onDismissRequest()
+                },
+            )
+            ActionButton(
+                modifier = Modifier.weight(1f),
+                title = stringResource(
+                    // SY -->
+                    if (hasExtraPage) {
+                        TLMR.strings.action_share_first_page
+                    } else {
+                        MR.strings.action_share
+                    },
+                    // SY <--
+                ),
+                icon = MaterialSymbols.Rounded.Share,
+                onClick = {
+                    // SY -->
+                    onShare(false, false)
+                    // SY <--
                     onDismissRequest()
                 },
             )
@@ -86,7 +105,7 @@ fun ReaderPageActionsDialog(
                     },
                     // SY <--
                 ),
-                icon = Icons.Outlined.Save,
+                icon = MaterialSymbols.Rounded.Save,
                 onClick = {
                     // SY -->
                     onSave(false)
@@ -102,7 +121,7 @@ fun ReaderPageActionsDialog(
                 ActionButton(
                     modifier = Modifier.weight(1f),
                     title = stringResource(TLMR.strings.action_set_second_page_cover),
-                    icon = Icons.Outlined.Photo,
+                    icon = MaterialSymbols.Rounded.Photo,
                     onClick = {
                         useExtraPage = true
                         showSetCoverDialog = true
@@ -111,7 +130,7 @@ fun ReaderPageActionsDialog(
                 ActionButton(
                     modifier = Modifier.weight(1f),
                     title = stringResource(TLMR.strings.action_share_second_page),
-                    icon = Icons.Outlined.Share,
+                    icon = MaterialSymbols.Rounded.Share,
                     onClick = {
                         onShare(false, true)
                         onDismissRequest()
@@ -120,7 +139,7 @@ fun ReaderPageActionsDialog(
                 ActionButton(
                     modifier = Modifier.weight(1f),
                     title = stringResource(TLMR.strings.action_save_second_page),
-                    icon = Icons.Outlined.Save,
+                    icon = MaterialSymbols.Rounded.Save,
                     onClick = {
                         onSave(true)
                         onDismissRequest()
@@ -133,7 +152,7 @@ fun ReaderPageActionsDialog(
                 ActionButton(
                     modifier = Modifier.weight(1f),
                     title = stringResource(TLMR.strings.action_share_combined_page),
-                    icon = Icons.Outlined.Share,
+                    icon = MaterialSymbols.Rounded.Share,
                     onClick = {
                         onShareCombined(false)
                         onDismissRequest()
@@ -142,7 +161,7 @@ fun ReaderPageActionsDialog(
                 ActionButton(
                     modifier = Modifier.weight(1f),
                     title = stringResource(TLMR.strings.action_save_combined_page),
-                    icon = Icons.Outlined.Save,
+                    icon = MaterialSymbols.Rounded.Save,
                     onClick = {
                         onSaveCombined()
                         onDismissRequest()

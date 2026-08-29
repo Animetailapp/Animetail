@@ -11,10 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.DoneAll
-import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -29,6 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.MangaSourceFilter
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.DoneAll
+import mihon.icons.materialsymbols.rounded.FilterList
+import mihon.icons.materialsymbols.rounded.PushPin
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -80,7 +80,7 @@ fun GlobalMangaSearchToolbar(
                 onClick = { onChangeSearchFilter(MangaSourceFilter.PinnedOnly) },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Outlined.PushPin,
+                        imageVector = MaterialSymbols.Rounded.PushPin,
                         contentDescription = null,
                         modifier = Modifier
                             .size(FilterChipDefaults.IconSize),
@@ -95,7 +95,7 @@ fun GlobalMangaSearchToolbar(
                 onClick = { onChangeSearchFilter(MangaSourceFilter.All) },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Outlined.DoneAll,
+                        imageVector = MaterialSymbols.Rounded.DoneAll,
                         contentDescription = null,
                         modifier = Modifier
                             .size(FilterChipDefaults.IconSize),
@@ -113,7 +113,7 @@ fun GlobalMangaSearchToolbar(
                 onClick = { onToggleResults() },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Outlined.FilterList,
+                        imageVector = MaterialSymbols.Rounded.FilterList,
                         contentDescription = null,
                         modifier = Modifier
                             .size(FilterChipDefaults.IconSize),

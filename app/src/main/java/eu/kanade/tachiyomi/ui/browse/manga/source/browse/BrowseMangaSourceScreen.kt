@@ -8,10 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -58,6 +54,10 @@ import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.FilterList
+import mihon.icons.materialsymbols.rounded.NewReleases
+import mihon.icons.materialsymbols.roundedfilled.Favorite
 import mihon.presentation.core.util.collectAsLazyPagingItems
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.source.manga.model.StubMangaSource
@@ -167,7 +167,7 @@ data class BrowseMangaSourceScreen(
                             },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Outlined.Favorite,
+                                    imageVector = MaterialSymbols.RoundedFilled.Favorite,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .size(FilterChipDefaults.IconSize),
@@ -186,7 +186,7 @@ data class BrowseMangaSourceScreen(
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = Icons.Outlined.NewReleases,
+                                        imageVector = MaterialSymbols.Rounded.NewReleases,
                                         contentDescription = null,
                                         modifier = Modifier
                                             .size(FilterChipDefaults.IconSize),
@@ -203,7 +203,7 @@ data class BrowseMangaSourceScreen(
                                 onClick = viewModel::openFilterSheet,
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = Icons.Outlined.FilterList,
+                                        imageVector = MaterialSymbols.Rounded.FilterList,
                                         contentDescription = null,
                                         modifier = Modifier
                                             .size(FilterChipDefaults.IconSize),
