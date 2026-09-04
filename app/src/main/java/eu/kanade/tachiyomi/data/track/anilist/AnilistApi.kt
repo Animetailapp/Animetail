@@ -10,7 +10,6 @@ import eu.kanade.tachiyomi.data.track.anilist.dto.ALAddEntryResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALAnimeMetadata
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALCurrentUserResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALMangaMetadata
-import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserViewerData
@@ -804,9 +803,6 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         return findLibAnime(track, userId) ?: throw Exception("Could not find anime")
     }
 
-    fun createOAuth(token: String): ALOAuth {
-        return ALOAuth(token, "Bearer", System.currentTimeMillis() + 31536000000, 31536000000)
-    }
 
     suspend fun getCurrentUser(): ALUserViewerData {
         return withIOContext {
