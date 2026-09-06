@@ -58,7 +58,7 @@ class Anilist(id: Long) :
 
     private val interceptor by lazy { AnilistInterceptor(this, getPassword()) }
 
-    private val api by lazy { AnilistApi(client, interceptor) }
+    private val api by lazy { AnilistApi(id, client, interceptor) }
 
     override val supportsReadingDates: Boolean = true
 
@@ -70,7 +70,7 @@ class Anilist(id: Long) :
         // If the preference is an int from APIv1, logout user to force using APIv2
         try {
             scorePreference.get()
-        } catch (e: ClassCastException) {
+        } catch (_: ClassCastException) {
             logout()
             scorePreference.delete()
         }
@@ -386,7 +386,7 @@ class Anilist(id: Long) :
             scorePreference.set(currentUser.mediaListOptions.scoreFormat)
             saveDisplayUsername(currentUser.name)
             saveCredentials(currentUser.id.toString(), oauth.accessToken)
-        } catch (e: Throwable) {
+        } catch (_: Throwable) {
             logout()
         }
     }
@@ -411,7 +411,7 @@ class Anilist(id: Long) :
     fun loadOAuth(): ALOAuth? {
         return try {
             json.decodeFromString<ALOAuth>(trackPreferences.trackToken(this).get())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

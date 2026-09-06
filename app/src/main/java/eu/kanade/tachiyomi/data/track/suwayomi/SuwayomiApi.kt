@@ -24,7 +24,7 @@ import java.nio.charset.Charset
 import java.security.MessageDigest
 
 class SuwayomiApi(
-    private val trackId: Long,
+    private val trackerId: Long,
 ) {
 
     private val appGraph get() = Injekt.get<Application>().appGraph
@@ -66,7 +66,7 @@ class SuwayomiApi(
                 .parseAs<MangaDataClass>()
         }
 
-        MangaTrackSearch.create(trackId).apply {
+        MangaTrackSearch.create(trackerId).apply {
             title = manga.title
             cover_url = "$url/thumbnail"
             summary = manga.description.orEmpty()

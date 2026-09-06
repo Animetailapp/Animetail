@@ -32,7 +32,7 @@ class Kavita(id: Long) : BaseTracker(id, "Kavita"), EnhancedMangaTracker, MangaT
     var authentications: OAuth? = null
 
     private val interceptor by lazy { KavitaInterceptor(this) }
-    val api by lazy { KavitaApi(client, interceptor) }
+    val api by lazy { KavitaApi(id, client, interceptor) }
 
     private val sourceManager: MangaSourceManager by lazy { appGraph.mangaSourceManager }
 
@@ -108,7 +108,7 @@ class Kavita(id: Long) : BaseTracker(id, "Kavita"), EnhancedMangaTracker, MangaT
     override suspend fun match(manga: Manga): MangaTrackSearch? =
         try {
             api.getTrackSearch(manga.url)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
 

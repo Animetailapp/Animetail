@@ -77,7 +77,7 @@ internal fun ColumnScope.ReadingModePage(viewModel: ReaderSettingsViewModel) {
                 value = continuousMinWidth,
                 valueRange = ReaderPreferences.let { 1..100 },
                 label = stringResource(MR.strings.pref_continuous_minwidth),
-                valueString = numberFormat.format(continuousMinWidth / 100f),
+                valueText = numberFormat.format(continuousMinWidth / 100f),
                 onChange = {
                     viewModel.preferences.continuousMinWidth.set(it)
                 },

@@ -44,7 +44,7 @@ import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
 class KitsuApi(
-    private val trackId: Long,
+    private val trackerId: Long,
     private val client: OkHttpClient,
     interceptor: KitsuInterceptor,
 ) {
@@ -478,7 +478,7 @@ class KitsuApi(
                     .awaitSuccess()
                     .parseAs<KitsuSearchByTitleResult>()
                     .data.searchMangaByTitle.nodes
-                    .map { it.toTrackSearch(trackId) }
+                    .map { it.toTrackSearch(trackerId) }
             }
         }
     }
@@ -512,7 +512,7 @@ class KitsuApi(
                     .awaitSuccess()
                     .parseAs<KitsuSearchAnimeByTitleResult>()
                     .data.searchAnimeByTitle.nodes
-                    .map { it.toTrackSearch(trackId) }
+                    .map { it.toTrackSearch(trackerId) }
             }
         }
     }
@@ -554,7 +554,7 @@ class KitsuApi(
                     .awaitSuccess()
                     .parseAs<KitsuSearchByIdWithLibraryResult>()
                     .data.findMangaById
-                    ?.toTrackSearch(trackId)
+                    ?.toTrackSearch(trackerId)
             }
         }
     }
@@ -596,7 +596,7 @@ class KitsuApi(
                     .awaitSuccess()
                     .parseAs<KitsuSearchAnimeByIdWithLibraryResult>()
                     .data.findAnimeById
-                    ?.toTrackSearch(trackId)
+                    ?.toTrackSearch(trackerId)
             }
         }
     }
@@ -698,7 +698,7 @@ class KitsuApi(
                         .data.findMangaBySlug
                 }
 
-                kitsuManga?.toTrackSearch(trackId)
+                kitsuManga?.toTrackSearch(trackerId)
             }
         }
     }
@@ -751,7 +751,7 @@ class KitsuApi(
                         .data.findAnimeBySlug
                 }
 
-                kitsuAnime?.toTrackSearch(trackId)
+                kitsuAnime?.toTrackSearch(trackerId)
             }
         }
     }

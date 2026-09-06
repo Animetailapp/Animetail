@@ -21,7 +21,7 @@ data class ALManga(
     val averageScore: Int,
     val staff: ALStaff,
 ) {
-    fun toTrack() = MangaTrackSearch.create(TrackerManager.ANILIST).apply {
+    fun toTrack(trackerId: Long) = MangaTrackSearch.create(trackerId).apply {
         remote_id = remoteId
         title = this@ALManga.title
         total_chapters = totalChapters
@@ -57,7 +57,7 @@ data class ALUserManga(
     val manga: ALManga,
     val private: Boolean,
 ) {
-    fun toTrack() = MangaTrack.create(TrackerManager.ANILIST).apply {
+    fun toTrack(trackerId: Long) = MangaTrack.create(trackerId).apply {
         remote_id = manga.remoteId
         title = manga.title
         status = toTrackStatus()

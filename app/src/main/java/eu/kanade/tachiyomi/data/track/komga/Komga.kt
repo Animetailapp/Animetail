@@ -101,7 +101,7 @@ class Komga(id: Long) : BaseTracker(id, "Komga"), EnhancedMangaTracker, MangaTra
     override suspend fun match(manga: Manga): MangaTrackSearch? =
         try {
             api.getTrackSearch(manga.url)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     override suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? {
