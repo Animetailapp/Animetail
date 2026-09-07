@@ -124,7 +124,10 @@ object SettingsTrackingScreen : SearchableSettings {
             }
         }
 
-        val installedMangaSources by produceState(initialValue = emptyList()) { value = mangaSourceManager.getCatalogueSources() }
+        val installedMangaSources by produceState(initialValue = emptyList()) {
+            value =
+                mangaSourceManager.getCatalogueSources()
+        }
         val enhancedMangaTrackers = trackerManager.trackers
             .filter { it is EnhancedMangaTracker }
             .partition { service ->

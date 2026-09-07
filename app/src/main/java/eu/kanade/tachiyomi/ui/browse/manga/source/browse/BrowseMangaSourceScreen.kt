@@ -79,7 +79,6 @@ data class BrowseMangaSourceScreen(
 
     @Composable
     override fun Content() {
-
         val viewModel =
             assistedMetroViewModel<BrowseMangaSourceViewModel, BrowseMangaSourceViewModel.Factory> {
                 create(sourceId = sourceId, listingQuery = listingQuery)

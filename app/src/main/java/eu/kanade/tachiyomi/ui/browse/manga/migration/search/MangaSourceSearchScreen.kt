@@ -47,7 +47,6 @@ data class MangaSourceSearchScreen(
 
     @Composable
     override fun Content() {
-
         val uriHandler = LocalUriHandler.current
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()

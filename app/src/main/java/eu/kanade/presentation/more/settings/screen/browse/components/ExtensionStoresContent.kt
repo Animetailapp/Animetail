@@ -167,7 +167,11 @@ private fun ExtensionStoresListItem(
                     // KMK -->
                     IconButton(onClick = if (isDisabled) onEnable else onDisable) {
                         Icon(
-                            imageVector = if (isDisabled) MaterialSymbols.Rounded.VisibilityOff else MaterialSymbols.Rounded.Visibility,
+                            imageVector = if (isDisabled) {
+                                MaterialSymbols.Rounded.VisibilityOff
+                            } else {
+                                MaterialSymbols.Rounded.Visibility
+                            },
                             contentDescription = stringResource(MR.strings.action_disable),
                         )
                     }

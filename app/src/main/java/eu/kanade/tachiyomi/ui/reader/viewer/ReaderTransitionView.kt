@@ -28,7 +28,12 @@ class ReaderTransitionView @JvmOverloads constructor(context: Context, attrs: At
         layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
     }
 
-    fun bind(transition: ChapterTransition, downloadManager: MangaDownloadManager, manga: Manga?, source: MangaSource?) {
+    fun bind(
+        transition: ChapterTransition,
+        downloadManager: MangaDownloadManager,
+        manga: Manga?,
+        source: MangaSource?,
+    ) {
         data = if (manga != null && source != null) {
             Data(
                 transition = transition,

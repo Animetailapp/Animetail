@@ -807,7 +807,6 @@ class AnilistApi(
         return findLibAnime(track, userId) ?: throw Exception("Could not find anime")
     }
 
-
     suspend fun getCurrentUser(): ALUserViewerData {
         return withIOContext {
             val query = """

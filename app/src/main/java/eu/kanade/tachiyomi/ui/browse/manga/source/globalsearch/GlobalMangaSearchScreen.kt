@@ -23,7 +23,6 @@ class GlobalMangaSearchScreen(
 
     @Composable
     override fun Content() {
-
         val navigator = LocalNavigator.currentOrThrow
 
         val viewModel =

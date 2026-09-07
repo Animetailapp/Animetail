@@ -118,6 +118,7 @@ fun MangaExtensionIcon(
                 )
             }
         }
+
         is MangaExtension.Untrusted -> Image(
             imageVector = MaterialSymbols.Rounded.Dangerous,
             contentDescription = null,

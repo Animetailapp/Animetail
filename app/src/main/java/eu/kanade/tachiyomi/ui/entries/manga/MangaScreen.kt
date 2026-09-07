@@ -82,7 +82,6 @@ class MangaScreen(
 
     @Composable
     override fun Content() {
-
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
