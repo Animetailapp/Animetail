@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.data.track.kitsu
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 
-fun MangaTrack.toKitsuApiStatus() = when (status) {
+internal fun MangaTrack.toKitsuApiStatus() = when (status) {
     Kitsu.READING -> "CURRENT"
     Kitsu.COMPLETED -> "COMPLETED"
     Kitsu.ON_HOLD -> "ON_HOLD"
@@ -12,7 +12,7 @@ fun MangaTrack.toKitsuApiStatus() = when (status) {
     else -> throw Exception("Unknown status: $status")
 }
 
-fun AnimeTrack.toKitsuApiStatus() = when (status) {
+internal fun AnimeTrack.toKitsuApiStatus() = when (status) {
     Kitsu.WATCHING -> "CURRENT"
     Kitsu.COMPLETED -> "COMPLETED"
     Kitsu.ON_HOLD -> "ON_HOLD"
@@ -21,7 +21,7 @@ fun AnimeTrack.toKitsuApiStatus() = when (status) {
     else -> throw Exception("Unknown status: $status")
 }
 
-fun String.toKitsuLocalStatus() = when (this) {
+internal fun String.toKitsuLocalStatus() = when (this) {
     "CURRENT" -> Kitsu.READING
     "COMPLETED" -> Kitsu.COMPLETED
     "ON_HOLD" -> Kitsu.ON_HOLD
@@ -30,7 +30,7 @@ fun String.toKitsuLocalStatus() = when (this) {
     else -> throw Exception("Unknown status: $this")
 }
 
-fun String.toKitsuLocalStatusAnime() = when (this) {
+internal fun String.toKitsuLocalStatusAnime() = when (this) {
     "CURRENT" -> Kitsu.WATCHING
     "COMPLETED" -> Kitsu.COMPLETED
     "ON_HOLD" -> Kitsu.ON_HOLD
