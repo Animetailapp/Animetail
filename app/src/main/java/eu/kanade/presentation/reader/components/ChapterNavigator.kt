@@ -21,11 +21,13 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalSlider
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -79,16 +81,14 @@ fun ChapterNavigator(
 ) {
     val haptic = LocalHapticFeedback.current
 
-    val state = remember(totalPages) {
-        SliderState(
+    val state = key(totalPages) {
+        rememberSliderState(
             value = currentPage.toFloat(),
             steps = totalPages - 2,
-            valueRange = 1f..totalPages.toFloat(),
+            trackRange = 1f..totalPages.toFloat(),
         )
     }
     state.value = currentPage.toFloat()
-    state.onValueChange = { onPageIndexChange(it.roundToInt() - 1) }
-    state.onValueChangeFinished = onPageIndexChangeFinished
 
     val interactionSource = remember { MutableInteractionSource() }
     val sliderDragged by interactionSource.collectIsDraggedAsState()
@@ -110,6 +110,8 @@ fun ChapterNavigator(
         disabledContainerColor = backgroundColor,
     )
 
+    val onPageChange: (Int) -> Unit = { onPageIndexChange(it - 1) }
+
     if (type.isHorizontal()) {
         HorizontalChapterNavigator(
             isRtl = type == ChapterNavigatorType.HORIZONTAL_RTL,
@@ -121,6 +123,8 @@ fun ChapterNavigator(
             currentPage = currentPage,
             currentPageText = currentPageText,
             totalPages = totalPages,
+            onPageChange = onPageChange,
+            onPageChangeFinished = onPageIndexChangeFinished,
             interactionSource = interactionSource,
             mainAxisPadding = mainAxisPadding,
             backgroundColor = backgroundColor,
@@ -137,6 +141,8 @@ fun ChapterNavigator(
             currentPage = currentPage,
             currentPageText = currentPageText,
             totalPages = totalPages,
+            onPageChange = onPageChange,
+            onPageChangeFinished = onPageIndexChangeFinished,
             interactionSource = interactionSource,
             mainAxisPadding = mainAxisPadding,
             backgroundColor = backgroundColor,
@@ -157,6 +163,8 @@ fun HorizontalChapterNavigator(
     currentPage: Int,
     currentPageText: String,
     totalPages: Int,
+    onPageChange: (Int) -> Unit,
+    onPageChangeFinished: () -> Unit,
     interactionSource: MutableInteractionSource,
     mainAxisPadding: Dp,
     backgroundColor: Color,
@@ -209,6 +217,8 @@ fun HorizontalChapterNavigator(
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(horizontal = 8.dp),
+                            onValueChange = { onPageChange(it.roundToInt()) },
+                            onValueChangeFinished = onPageChangeFinished,
                             interactionSource = interactionSource,
                         )
 
@@ -245,6 +255,8 @@ fun VerticalChapterNavigator(
     currentPage: Int,
     currentPageText: String,
     totalPages: Int,
+    onPageChange: (Int) -> Unit,
+    onPageChangeFinished: () -> Unit,
     interactionSource: MutableInteractionSource,
     mainAxisPadding: Dp,
     backgroundColor: Color,
@@ -285,6 +297,8 @@ fun VerticalChapterNavigator(
                     modifier = Modifier
                         .weight(1f)
                         .padding(vertical = 8.dp),
+                    onValueChange = { onPageChange(it.roundToInt()) },
+                    onValueChangeFinished = onPageChangeFinished,
                     interactionSource = interactionSource,
                 )
 

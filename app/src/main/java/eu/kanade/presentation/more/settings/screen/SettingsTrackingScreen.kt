@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextObfuscationMode
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -14,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,13 +31,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.StringResource
@@ -313,8 +317,8 @@ object SettingsTrackingScreen : SearchableSettings {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
 
-        var username by remember { mutableStateOf(TextFieldValue(tracker.getUsername())) }
-        var password by remember { mutableStateOf(TextFieldValue(tracker.getPassword())) }
+        val username = rememberTextFieldState(tracker.getUsername())
+        val password = rememberTextFieldState(tracker.getPassword())
         var processing by remember { mutableStateOf(false) }
         var inputError by remember { mutableStateOf(false) }
 
@@ -337,20 +341,22 @@ object SettingsTrackingScreen : SearchableSettings {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        value = username,
-                        onValueChange = { username = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics { contentType = ContentType.Username + ContentType.EmailAddress },
+                        state = username,
                         label = { Text(text = stringResource(uNameStringRes)) },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        singleLine = true,
+                        lineLimits = TextFieldLineLimits.SingleLine,
                         isError = inputError && !processing,
                     )
 
                     var hidePassword by remember { mutableStateOf(true) }
-                    OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        value = password,
-                        onValueChange = { password = it },
+                    OutlinedSecureTextField(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics { contentType = ContentType.Password },
+                        state = password,
                         label = { Text(text = stringResource(MR.strings.password)) },
                         trailingIcon = {
                             IconButton(onClick = { hidePassword = !hidePassword }) {
@@ -360,20 +366,20 @@ object SettingsTrackingScreen : SearchableSettings {
                                     } else {
                                         MaterialSymbols.Rounded.VisibilityOff
                                     },
-                                    contentDescription = null,
+                                    contentDescription = stringResource(MR.strings.password),
                                 )
                             }
                         },
-                        visualTransformation = if (hidePassword) {
-                            PasswordVisualTransformation()
+                        textObfuscationMode = if (hidePassword) {
+                            TextObfuscationMode.Hidden
                         } else {
-                            VisualTransformation.None
+                            TextObfuscationMode.Visible
                         },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Done,
                         ),
-                        singleLine = true,
+                        lineLimits = TextFieldLineLimits.SingleLine,
                         isError = inputError && !processing,
                     )
                 }
@@ -388,8 +394,8 @@ object SettingsTrackingScreen : SearchableSettings {
                             val result = checkLogin(
                                 context = context,
                                 tracker = tracker,
-                                username = username.text,
-                                password = password.text,
+                                username = username.text.toString(),
+                                password = password.text.toString(),
                             )
                             inputError = !result
                             if (result) onDismissRequest()
