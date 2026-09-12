@@ -53,7 +53,7 @@ class AnilistApi(
 
     private val authClient = client.newBuilder()
         .addInterceptor(interceptor)
-        .rateLimit(permits = 85, period = 1.minutes)
+        .rateLimit(permits = 25, period = 1.minutes)
         .build()
 
     private val publicClient = client.newBuilder()
