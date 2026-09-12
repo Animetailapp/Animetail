@@ -81,14 +81,20 @@ fun ChapterNavigator(
 ) {
     val haptic = LocalHapticFeedback.current
 
-    val state = key(totalPages) {
-        rememberSliderState(
-            value = currentPage.toFloat(),
-            steps = totalPages - 2,
-            trackRange = 1f..totalPages.toFloat(),
-        )
+    val state = if (totalPages > 1) {
+        key(totalPages) {
+            rememberSliderState(
+                value = currentPage.toFloat(),
+                steps = totalPages - 2,
+                trackRange = 1f..totalPages.toFloat(),
+            )
+        }
+            .also {
+                it.value = currentPage.toFloat()
+            }
+    } else {
+        null
     }
-    state.value = currentPage.toFloat()
 
     val interactionSource = remember { MutableInteractionSource() }
     val sliderDragged by interactionSource.collectIsDraggedAsState()
@@ -155,7 +161,7 @@ fun ChapterNavigator(
 @Composable
 fun HorizontalChapterNavigator(
     isRtl: Boolean,
-    state: SliderState,
+    state: SliderState?,
     onNextChapter: () -> Unit,
     enabledNext: Boolean,
     onPreviousChapter: () -> Unit,
@@ -194,7 +200,7 @@ fun HorizontalChapterNavigator(
                 )
             }
 
-            if (totalPages > 1) {
+            if (state != null) {
                 CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
                     Row(
                         modifier = Modifier
@@ -247,7 +253,7 @@ fun HorizontalChapterNavigator(
 
 @Composable
 fun VerticalChapterNavigator(
-    state: SliderState,
+    state: SliderState?,
     onNextChapter: () -> Unit,
     enabledNext: Boolean,
     onPreviousChapter: () -> Unit,
@@ -281,7 +287,7 @@ fun VerticalChapterNavigator(
             )
         }
 
-        if (totalPages > 1) {
+        if (state != null) {
             Column(
                 modifier = Modifier
                     .weight(1f)
