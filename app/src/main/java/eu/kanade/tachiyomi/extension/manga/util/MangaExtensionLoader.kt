@@ -26,6 +26,7 @@ import logcat.LogPriority
 import mihon.app.di.appGraph
 import mihon.data.dalvik.DelegateLastClassLoaderCompat
 import mihon.domain.extension.manga.interactor.GetMangaExtensionStores
+import mihon.domain.extension.model.ContentWarning
 import mihon.domain.extension.model.ExtensionStore
 import mihon.domain.extension.model.ExtensionStore.Companion.KEIYOUSHI_SIGNATURE
 import tachiyomi.core.common.util.system.logcat
@@ -260,7 +261,7 @@ internal object MangaExtensionLoader {
         // KMK <--
     ): MangaLoadResult {
         val trustExtension: TrustMangaExtension = context.appGraph.trustMangaExtension
-        val loadNsfwSource: Boolean = context.appGraph.sourcePreferences.showNsfwSource.get()
+        val enabledContentWarnings = context.appGraph.sourcePreferences.enabledContentWarnings.get()
         val getExtensionStores: GetMangaExtensionStores = context.appGraph.getMangaExtensionStores
         // KMK -->
         val repos = extRepos ?: getExtensionStores.await()
@@ -322,10 +323,19 @@ internal object MangaExtensionLoader {
             return MangaLoadResult.Untrusted(extension)
         }
 
-        val isNsfw = appInfo.metaData.getInt(METADATA_CONTENT_WARNING) > 0 ||
-            appInfo.metaData.getInt(METADATA_NSFW) == 1
-        if (!loadNsfwSource && isNsfw) {
-            logcat(LogPriority.WARN) { "NSFW extension $pkgName not allowed" }
+        val contentWarning = when {
+            appInfo.metaData.containsKey(METADATA_CONTENT_WARNING) -> {
+                when (appInfo.metaData.getInt(METADATA_CONTENT_WARNING)) {
+                    1 -> ContentWarning.MIXED
+                    2 -> ContentWarning.NSFW
+                    else -> ContentWarning.SAFE
+                }
+            }
+            appInfo.metaData.getInt(METADATA_NSFW) == 1 -> ContentWarning.NSFW
+            else -> ContentWarning.SAFE
+        }
+        if (contentWarning !in enabledContentWarnings) {
+            logcat(LogPriority.WARN) { "Extension $pkgName with $contentWarning not allowed" }
             return MangaLoadResult.Error
         }
 
@@ -383,7 +393,7 @@ internal object MangaExtensionLoader {
             versionCode = versionCode,
             libVersion = libVersion,
             lang = lang,
-            isNsfw = isNsfw,
+            contentWarning = contentWarning,
             sources = sources,
             pkgFactory = appInfo.metaData.getString(METADATA_SOURCE_FACTORY),
             icon = appInfo.loadIcon(pkgManager),

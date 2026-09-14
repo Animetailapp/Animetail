@@ -5,9 +5,11 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.source.interactor.SetMigrateSorting
 import eu.kanade.tachiyomi.util.system.LocaleHelper
+import mihon.domain.extension.model.ContentWarning
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
+import tachiyomi.core.common.preference.getEnumSet
 import tachiyomi.core.common.preference.getLongArray
 import tachiyomi.core.common.preference.getObjectFromString
 import tachiyomi.domain.library.model.LibraryDisplayMode
@@ -32,7 +34,10 @@ class SourcePreferences(
         LocaleHelper.getDefaultEnabledLanguages(),
     )
 
-    val showNsfwSource: Preference<Boolean> = preferenceStore.getBoolean("show_nsfw_source", true)
+    val enabledContentWarnings: Preference<Set<ContentWarning>> = preferenceStore.getEnumSet(
+        "enabled_content_warnings",
+        setOf(ContentWarning.SAFE, ContentWarning.MIXED, ContentWarning.NSFW),
+    )
 
     val migrationSortingMode: Preference<SetMigrateSorting.Mode> = preferenceStore.getEnum(
         "pref_migration_sorting",

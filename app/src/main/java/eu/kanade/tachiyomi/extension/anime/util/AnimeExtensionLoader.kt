@@ -23,6 +23,7 @@ import logcat.LogPriority
 import mihon.app.di.appGraph
 import mihon.data.dalvik.DelegateLastClassLoaderCompat
 import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
+import mihon.domain.extension.model.ContentWarning
 import mihon.domain.extension.model.ExtensionStore
 import mihon.domain.extension.model.ExtensionStore.Companion.ANIMETAIL_SIGNATURE
 import tachiyomi.core.common.util.system.logcat
@@ -249,7 +250,7 @@ internal object AnimeExtensionLoader {
         // KMK <--
     ): AnimeLoadResult {
         val trustExtension: TrustAnimeExtension = context.appGraph.trustAnimeExtension
-        val loadNsfwSource: Boolean = context.appGraph.sourcePreferences.showNsfwSource.get()
+        val enabledContentWarnings = context.appGraph.sourcePreferences.enabledContentWarnings.get()
         val getExtensionStores: GetAnimeExtensionStores = context.appGraph.getAnimeExtensionStores
         // KMK -->
         val repos = extRepos ?: getExtensionStores.await()
@@ -310,10 +311,19 @@ internal object AnimeExtensionLoader {
             return AnimeLoadResult.Untrusted(extension)
         }
 
-        val isNsfw = appInfo.metaData.getInt(METADATA_CONTENT_WARNING) > 0 ||
-            appInfo.metaData.getInt(METADATA_NSFW) == 1
-        if (!loadNsfwSource && isNsfw) {
-            logcat(LogPriority.WARN) { "NSFW extension $pkgName not allowed" }
+        val contentWarning = when {
+            appInfo.metaData.containsKey(METADATA_CONTENT_WARNING) -> {
+                when (appInfo.metaData.getInt(METADATA_CONTENT_WARNING)) {
+                    1 -> ContentWarning.MIXED
+                    2 -> ContentWarning.NSFW
+                    else -> ContentWarning.SAFE
+                }
+            }
+            appInfo.metaData.getInt(METADATA_NSFW) == 1 -> ContentWarning.NSFW
+            else -> ContentWarning.SAFE
+        }
+        if (contentWarning !in enabledContentWarnings) {
+            logcat(LogPriority.WARN) { "Extension $pkgName with $contentWarning not allowed" }
             return AnimeLoadResult.Error
         }
 
@@ -385,7 +395,7 @@ internal object AnimeExtensionLoader {
             versionCode = versionCode,
             libVersion = libVersion,
             lang = lang,
-            isNsfw = isNsfw,
+            contentWarning = contentWarning,
             isTorrent = isTorrent,
             sources = sources,
             pkgFactory = appInfo.metaData.getString(METADATA_SOURCE_FACTORY),

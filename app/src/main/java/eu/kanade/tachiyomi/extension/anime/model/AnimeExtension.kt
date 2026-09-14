@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.anime.model
 
 import android.graphics.drawable.Drawable
 import eu.kanade.tachiyomi.animesource.AnimeSource
+import mihon.domain.extension.model.ContentWarning
 import mihon.domain.extension.model.ExtensionStore
 import tachiyomi.domain.source.anime.model.StubAnimeSource
 
@@ -13,7 +14,7 @@ sealed class AnimeExtension {
     abstract val versionCode: Long
     abstract val libVersion: Double
     abstract val lang: String?
-    abstract val isNsfw: Boolean
+    abstract val contentWarning: ContentWarning
     abstract val isTorrent: Boolean
 
     // KMK -->
@@ -28,7 +29,7 @@ sealed class AnimeExtension {
         override val versionCode: Long,
         override val libVersion: Double,
         override val lang: String,
-        override val isNsfw: Boolean,
+        override val contentWarning: ContentWarning,
         override val isTorrent: Boolean,
         // KMK -->
         override val signatureHash: String,
@@ -51,7 +52,7 @@ sealed class AnimeExtension {
         override val versionCode: Long,
         override val libVersion: Double,
         override val lang: String,
-        override val isNsfw: Boolean,
+        override val contentWarning: ContentWarning,
         override val isTorrent: Boolean,
         // KMK -->
         override val signatureHash: String,
@@ -91,7 +92,7 @@ sealed class AnimeExtension {
         override val repoName: String? = null,
         // KMK <--
         override val lang: String? = null,
-        override val isNsfw: Boolean = false,
+        override val contentWarning: ContentWarning = ContentWarning.SAFE,
         override val isTorrent: Boolean = false,
     ) : AnimeExtension()
 }

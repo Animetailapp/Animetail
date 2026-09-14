@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionLoader
 import kotlinx.serialization.Serializable
 import mihon.domain.extension.anime.interactor.UpdateAnimeExtensionStores
+import mihon.domain.extension.model.ContentWarning
 import mihon.domain.extension.anime.repository.AnimeExtensionStoreRepository
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
@@ -95,7 +96,7 @@ class AnimeExtensionApi(
                     versionCode = it.code,
                     libVersion = it.extractLibVersion(),
                     lang = it.lang,
-                    isNsfw = it.nsfw == 1,
+                    contentWarning = if (it.nsfw == 1) ContentWarning.NSFW else ContentWarning.SAFE,
                     isTorrent = it.torrent == 1,
                     sources = it.sources?.map(extensionAnimeSourceMapper).orEmpty(),
                     apkUrl = "$repoUrl/apk/${it.apk}",

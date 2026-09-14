@@ -37,6 +37,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.browse.BaseBrowseItem
+import eu.kanade.presentation.browse.components.label
 import eu.kanade.presentation.browse.manga.components.MangaExtensionIcon
 import eu.kanade.presentation.components.WarningBanner
 import eu.kanade.presentation.entries.components.DotSeparatorNoSpaceText
@@ -377,18 +378,28 @@ private fun ExtensionItemContent(
                 Text(text = extension.repoName?.let { "@$it" } ?: "(?)")
                 // KMK <--
 
-                val warning = when {
-                    extension is MangaExtension.Untrusted -> MR.strings.ext_untrusted
-                    extension is MangaExtension.Installed && extension.isObsolete -> MR.strings.ext_obsolete
-                    extension.isNsfw -> MR.strings.ext_nsfw_short
-                    else -> null
-                }
-                if (warning != null) {
+                val warnings = listOfNotNull(
+                    when {
+                        extension is MangaExtension.Untrusted ->
+                            MR.strings.ext_untrusted to MaterialTheme.colorScheme.error
+                        extension is MangaExtension.Installed && extension.isObsolete ->
+                            MR.strings.ext_obsolete to MaterialTheme.colorScheme.error
+                        else -> null
+                    },
+                    extension.contentWarning.label?.let { it.title to it.color },
+                )
+                warnings.forEach { (label, color) ->
                     Text(
-                        text = stringResource(warning).uppercase(),
-                        color = MaterialTheme.colorScheme.error,
+                        text = stringResource(label).uppercase(),
+                        color = color,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                if (extension is MangaExtension.Installed && !extension.isShared) {
+                    Text(
+                        text = stringResource(MR.strings.ext_installer_private),
                     )
                 }
 

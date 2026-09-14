@@ -15,7 +15,7 @@ class GetAnimeExtensionsByType(
 ) {
 
     fun subscribe(): Flow<AnimeExtensions> {
-        val showNsfwSources = preferences.showNsfwSource.get()
+        val enabledContentWarnings = preferences.enabledContentWarnings.get()
 
         return combine(
             preferences.enabledLanguages.changes(),
@@ -25,7 +25,6 @@ class GetAnimeExtensionsByType(
             extensionManager.availableExtensionsFlow,
         ) { enabledLanguages, disabledRepos, _installed, _untrusted, _available ->
             val (updates, installed) = _installed
-                .filter { (showNsfwSources || !it.isNsfw) }
                 .sortedWith(
                     compareBy<AnimeExtension.Installed> { !it.isObsolete }
                         .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name },
@@ -44,7 +43,7 @@ class GetAnimeExtensionsByType(
                         _untrusted.none {
                             it.pkgName == extension.pkgName
                         } &&
-                        (showNsfwSources || !extension.isNsfw)
+                        extension.contentWarning in enabledContentWarnings
                 }
                 .flatMap { ext ->
                     ext.sources.filter { it.lang in enabledLanguages }

@@ -42,6 +42,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.BaseBrowseItem
 import eu.kanade.presentation.browse.anime.components.AnimeExtensionIcon
+import eu.kanade.presentation.browse.components.label
 import eu.kanade.presentation.browse.manga.ExtensionHeader
 import eu.kanade.presentation.browse.manga.ExtensionTrustDialog
 import eu.kanade.presentation.components.WarningBanner
@@ -376,18 +377,28 @@ private fun AnimeExtensionItemContent(
                 Text(text = extension.repoName?.let { "@$it" } ?: "(?)")
                 // KMK <--
 
-                val warning = when {
-                    extension is AnimeExtension.Untrusted -> MR.strings.ext_untrusted
-                    extension is AnimeExtension.Installed && extension.isObsolete -> MR.strings.ext_obsolete
-                    extension.isNsfw -> MR.strings.ext_nsfw_short
-                    else -> null
-                }
-                if (warning != null) {
+                val warnings = listOfNotNull(
+                    when {
+                        extension is AnimeExtension.Untrusted ->
+                            MR.strings.ext_untrusted to MaterialTheme.colorScheme.error
+                        extension is AnimeExtension.Installed && extension.isObsolete ->
+                            MR.strings.ext_obsolete to MaterialTheme.colorScheme.error
+                        else -> null
+                    },
+                    extension.contentWarning.label?.let { it.title to it.color },
+                )
+                warnings.forEach { (label, color) ->
                     Text(
-                        text = stringResource(warning).uppercase(),
-                        color = MaterialTheme.colorScheme.error,
+                        text = stringResource(label).uppercase(),
+                        color = color,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                if (extension is AnimeExtension.Installed && !extension.isShared) {
+                    Text(
+                        text = stringResource(MR.strings.ext_installer_private),
                     )
                 }
 

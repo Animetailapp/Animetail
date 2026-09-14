@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.manga.model
 
 import android.graphics.drawable.Drawable
 import eu.kanade.tachiyomi.source.MangaSource
+import mihon.domain.extension.model.ContentWarning
 import mihon.domain.extension.model.ExtensionStore
 import tachiyomi.domain.source.manga.model.StubMangaSource
 
@@ -13,7 +14,7 @@ sealed class MangaExtension {
     abstract val versionCode: Long
     abstract val libVersion: Double
     abstract val lang: String?
-    abstract val isNsfw: Boolean
+    abstract val contentWarning: ContentWarning
 
     // KMK -->
     abstract val signatureHash: String
@@ -27,7 +28,7 @@ sealed class MangaExtension {
         override val versionCode: Long,
         override val libVersion: Double,
         override val lang: String,
-        override val isNsfw: Boolean,
+        override val contentWarning: ContentWarning,
         // KMK -->
         override val signatureHash: String,
         /** Guessing repo name from built-in signatures preset */
@@ -49,7 +50,7 @@ sealed class MangaExtension {
         override val versionCode: Long,
         override val libVersion: Double,
         override val lang: String,
-        override val isNsfw: Boolean,
+        override val contentWarning: ContentWarning,
         // KMK -->
         override val signatureHash: String,
         override val repoName: String,
@@ -82,13 +83,12 @@ sealed class MangaExtension {
         override val versionName: String,
         override val versionCode: Long,
         override val libVersion: Double,
-
         /* KMK --> */
         override val signatureHash: String,
         // KMK -->
         override val repoName: String? = null,
         // KMK <--
         override val lang: String? = null,
-        override val isNsfw: Boolean = false,
+        override val contentWarning: ContentWarning = ContentWarning.SAFE,
     ) : MangaExtension()
 }
