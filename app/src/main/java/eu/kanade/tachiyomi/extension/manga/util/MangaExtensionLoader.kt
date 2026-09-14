@@ -27,6 +27,7 @@ import mihon.domain.extension.manga.interactor.GetMangaExtensionStores
 import mihon.domain.extension.model.ContentWarning
 import mihon.domain.extension.model.ExtensionStore
 import mihon.domain.extension.model.ExtensionStore.Companion.KEIYOUSHI_SIGNATURE
+import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import java.io.File
 
@@ -131,8 +132,19 @@ internal object MangaExtensionLoader {
      * Return a list of all the available extensions initialized concurrently.
      *
      * @param context The application context.
+     * @param alreadyLoaded Extensions loaded by an earlier call. Any of these whose apk is unchanged
+     * and which still passes every check is returned as is, so its sources keep working and its
+     * update status survives. Pass nothing to load every extension from scratch.
      */
-    fun loadMangaExtensions(context: Context): List<MangaExtension.Installed> {
+    suspend fun loadMangaExtensions(
+        context: Context,
+        alreadyLoaded: Map<String, MangaExtension.Loaded> = emptyMap(),
+    ): List<MangaExtension.Installed> {
+        val trustExtension = context.appGraph.trustMangaExtension
+        val sourcePreferences = context.appGraph.sourcePreferences
+        val enabledContentWarnings = sourcePreferences.enabledContentWarnings.get()
+        val applyContentWarningsToInstalled = sourcePreferences.applyContentWarningsToInstalled.get()
+
         val pkgManager = context.packageManager
 
         val installedPkgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -180,17 +192,26 @@ internal object MangaExtensionLoader {
         if (extPkgs.isEmpty()) return emptyList()
 
         // KMK -->
-        // Pre-fetch repos outside runBlocking to avoid nested runBlocking deadlock
-        // with the SQLDelight driver's connection pool
-        val repos = runBlocking { context.appGraph.getMangaExtensionStores.await() }
+        val repos = context.appGraph.getMangaExtensionStores.await()
         // KMK <--
 
         // Load each extension concurrently and wait for completion
-        return runBlocking(Dispatchers.IO) {
-            val deferred = extPkgs.map {
-                async { loadMangaExtensionCatching(context, it, extRepos = repos) }
-            }
-            deferred.awaitAll()
+        return withIOContext {
+            extPkgs
+                .map {
+                    async {
+                        loadMangaExtensionCatching(
+                            context = context,
+                            extensionInfo = it,
+                            trustExtension = trustExtension,
+                            enabledContentWarnings = enabledContentWarnings,
+                            applyContentWarningsToInstalled = applyContentWarningsToInstalled,
+                            alreadyLoaded = alreadyLoaded[it.packageInfo.packageName],
+                            extRepos = repos,
+                        )
+                    }
+                }
+                .awaitAll()
         }
     }
 
@@ -204,7 +225,15 @@ internal object MangaExtensionLoader {
             logcat(LogPriority.ERROR) { "Extension package is not found ($pkgName)" }
             return null
         }
-        return loadMangaExtensionCatching(context, extensionPackage)
+
+        val sourcePreferences = context.appGraph.sourcePreferences
+        return loadMangaExtensionCatching(
+            context = context,
+            extensionInfo = extensionPackage,
+            trustExtension = context.appGraph.trustMangaExtension,
+            enabledContentWarnings = sourcePreferences.enabledContentWarnings.get(),
+            applyContentWarningsToInstalled = sourcePreferences.applyContentWarningsToInstalled.get(),
+        )
     }
 
     fun getMangaExtensionPackageInfoFromPkgName(context: Context, pkgName: String): PackageInfo? {
@@ -257,10 +286,22 @@ internal object MangaExtensionLoader {
     private suspend fun loadMangaExtensionCatching(
         context: Context,
         extensionInfo: MangaExtensionInfo,
+        trustExtension: TrustMangaExtension,
+        enabledContentWarnings: Set<ContentWarning>,
+        applyContentWarningsToInstalled: Boolean,
+        alreadyLoaded: MangaExtension.Loaded? = null,
         extRepos: List<ExtensionStore>? = null,
     ): MangaExtension.Installed {
         return try {
-            loadMangaExtension(context, extensionInfo, extRepos)
+            loadMangaExtension(
+                context = context,
+                extensionInfo = extensionInfo,
+                trustExtension = trustExtension,
+                enabledContentWarnings = enabledContentWarnings,
+                applyContentWarningsToInstalled = applyContentWarningsToInstalled,
+                alreadyLoaded = alreadyLoaded,
+                extRepos = extRepos,
+            )
         } catch (e: Throwable) {
             val pkgInfo = extensionInfo.packageInfo
             logcat(LogPriority.ERROR, e) { "Extension load error: ${pkgInfo.packageName}" }
@@ -285,18 +326,13 @@ internal object MangaExtensionLoader {
     private suspend fun loadMangaExtension(
         context: Context,
         extensionInfo: MangaExtensionInfo,
-        // KMK -->
+        trustExtension: TrustMangaExtension,
+        enabledContentWarnings: Set<ContentWarning>,
+        applyContentWarningsToInstalled: Boolean,
+        alreadyLoaded: MangaExtension.Loaded? = null,
         extRepos: List<ExtensionStore>? = null,
-        // KMK <--
     ): MangaExtension.Installed {
-        val trustExtension: TrustMangaExtension = context.appGraph.trustMangaExtension
-        val sourcePreferences = context.appGraph.sourcePreferences
-        val enabledContentWarnings = sourcePreferences.enabledContentWarnings.get()
-        val applyContentWarningsToInstalled = sourcePreferences.applyContentWarningsToInstalled.get()
-        val getExtensionStores: GetMangaExtensionStores = context.appGraph.getMangaExtensionStores
-        // KMK -->
-        val repos = extRepos ?: getExtensionStores.await()
-        // KMK <--
+        val repos = extRepos ?: context.appGraph.getMangaExtensionStores.await()
         val pkgManager = context.packageManager
         val pkgInfo = extensionInfo.packageInfo
         val appInfo = pkgInfo.applicationInfo
@@ -314,6 +350,7 @@ internal object MangaExtensionLoader {
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
         val contentWarning = when {
             metaData == null -> ContentWarning.SAFE
+
             metaData.containsKey(METADATA_CONTENT_WARNING) -> {
                 when (metaData.getInt(METADATA_CONTENT_WARNING)) {
                     1 -> ContentWarning.MIXED
@@ -321,7 +358,9 @@ internal object MangaExtensionLoader {
                     else -> ContentWarning.SAFE
                 }
             }
+
             metaData.getInt(METADATA_NSFW) == 1 -> ContentWarning.NSFW
+
             else -> ContentWarning.SAFE
         }
 
@@ -371,12 +410,25 @@ internal object MangaExtensionLoader {
             return notLoaded(MangaExtension.NotLoaded.Reason.Unsigned, libVersion)
         } else if (!trustExtension.isTrusted(pkgInfo, signatures)) {
             logcat(LogPriority.WARN) { "Extension $pkgName isn't trusted" }
-            return notLoaded(MangaExtension.NotLoaded.Reason.Untrusted(signatures.last()), libVersion, signatures.last())
+            return notLoaded(
+                MangaExtension.NotLoaded.Reason.Untrusted(signatures.last()),
+                libVersion,
+                signatures.last(),
+            )
         }
 
         if (applyContentWarningsToInstalled && contentWarning !in enabledContentWarnings) {
             logcat(LogPriority.WARN) { "Extension $pkgName with $contentWarning not allowed" }
             return notLoaded(MangaExtension.NotLoaded.Reason.Filtered, libVersion)
+        }
+
+        // Everything above is cheap to check again, everything below isn't. Nothing about this apk
+        // changed and it still passes, so keep the sources that are already registered for it.
+        if (alreadyLoaded != null &&
+            alreadyLoaded.versionCode == versionCode &&
+            alreadyLoaded.isShared == extensionInfo.isShared
+        ) {
+            return alreadyLoaded
         }
 
         val classLoader = try {

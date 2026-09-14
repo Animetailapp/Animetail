@@ -223,9 +223,7 @@ class AnimeExtensionsViewModel(
     }
 
     fun trustExtension(extension: AnimeExtension.NotLoaded) {
-        viewModelScope.launch {
-            extensionManager.trust(extension)
-        }
+        extensionManager.trust(extension)
     }
 
     @Immutable

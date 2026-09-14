@@ -14,10 +14,8 @@ import eu.kanade.tachiyomi.animesource.AnimeSourceFactory
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import mihon.app.di.appGraph
 import mihon.data.dalvik.DelegateLastClassLoaderCompat
@@ -25,6 +23,7 @@ import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
 import mihon.domain.extension.model.ContentWarning
 import mihon.domain.extension.model.ExtensionStore
 import mihon.domain.extension.model.ExtensionStore.Companion.ANIMETAIL_SIGNATURE
+import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import java.io.File
 
@@ -123,8 +122,18 @@ internal object AnimeExtensionLoader {
      * Return a list of all the available extensions initialized concurrently.
      *
      * @param context The application context.
+     * @param alreadyLoaded Extensions loaded by an earlier call. Any of these whose apk is unchanged
+     * and which still passes every check is returned as is, so its sources keep working and its
+     * update status survives. Pass nothing to load every extension from scratch.
      */
-    fun loadExtensions(context: Context): List<AnimeExtension.Installed> {
+    suspend fun loadExtensions(
+        context: Context,
+        alreadyLoaded: Map<String, AnimeExtension.Loaded> = emptyMap(),
+    ): List<AnimeExtension.Installed> {
+        val trustExtension = context.appGraph.trustAnimeExtension
+        val sourcePreferences = context.appGraph.sourcePreferences
+        val enabledContentWarnings = sourcePreferences.enabledContentWarnings.get()
+        val applyContentWarningsToInstalled = sourcePreferences.applyContentWarningsToInstalled.get()
         val pkgManager = context.packageManager
 
         val installedPkgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -172,17 +181,26 @@ internal object AnimeExtensionLoader {
         if (extPkgs.isEmpty()) return emptyList()
 
         // KMK -->
-        // Pre-fetch repos outside runBlocking to avoid nested runBlocking deadlock
-        // with the SQLDelight driver's connection pool
-        val repos = runBlocking { context.appGraph.getAnimeExtensionStores.await() }
+        val repos = context.appGraph.getAnimeExtensionStores.await()
         // KMK <--
 
         // Load each extension concurrently and wait for completion
-        return runBlocking(Dispatchers.IO) {
-            val deferred = extPkgs.map {
-                async { loadExtensionCatching(context, it, extRepos = repos) }
-            }
-            deferred.awaitAll()
+        return withIOContext {
+            extPkgs
+                .map {
+                    async {
+                        loadExtensionCatching(
+                            context = context,
+                            extensionInfo = it,
+                            trustExtension = trustExtension,
+                            enabledContentWarnings = enabledContentWarnings,
+                            applyContentWarningsToInstalled = applyContentWarningsToInstalled,
+                            alreadyLoaded = alreadyLoaded[it.packageInfo.packageName],
+                            extRepos = repos,
+                        )
+                    }
+                }
+                .awaitAll()
         }
     }
 
@@ -196,7 +214,15 @@ internal object AnimeExtensionLoader {
             logcat(LogPriority.ERROR) { "Extension package is not found ($pkgName)" }
             return null
         }
-        return loadExtensionCatching(context, extensionPackage)
+
+        val sourcePreferences = context.appGraph.sourcePreferences
+        return loadExtensionCatching(
+            context = context,
+            extensionInfo = extensionPackage,
+            trustExtension = context.appGraph.trustAnimeExtension,
+            enabledContentWarnings = sourcePreferences.enabledContentWarnings.get(),
+            applyContentWarningsToInstalled = sourcePreferences.applyContentWarningsToInstalled.get(),
+        )
     }
 
     fun getAnimeExtensionPackageInfoFromPkgName(context: Context, pkgName: String): PackageInfo? {
@@ -249,10 +275,22 @@ internal object AnimeExtensionLoader {
     private suspend fun loadExtensionCatching(
         context: Context,
         extensionInfo: AnimeExtensionInfo,
+        trustExtension: TrustAnimeExtension,
+        enabledContentWarnings: Set<ContentWarning>,
+        applyContentWarningsToInstalled: Boolean,
+        alreadyLoaded: AnimeExtension.Loaded? = null,
         extRepos: List<ExtensionStore>? = null,
     ): AnimeExtension.Installed {
         return try {
-            loadExtension(context, extensionInfo, extRepos)
+            loadExtension(
+                context = context,
+                extensionInfo = extensionInfo,
+                trustExtension = trustExtension,
+                enabledContentWarnings = enabledContentWarnings,
+                applyContentWarningsToInstalled = applyContentWarningsToInstalled,
+                alreadyLoaded = alreadyLoaded,
+                extRepos = extRepos,
+            )
         } catch (e: Throwable) {
             val pkgInfo = extensionInfo.packageInfo
             logcat(LogPriority.ERROR, e) { "Extension load error: ${pkgInfo.packageName}" }
@@ -277,18 +315,13 @@ internal object AnimeExtensionLoader {
     private suspend fun loadExtension(
         context: Context,
         extensionInfo: AnimeExtensionInfo,
-        // KMK -->
+        trustExtension: TrustAnimeExtension,
+        enabledContentWarnings: Set<ContentWarning>,
+        applyContentWarningsToInstalled: Boolean,
+        alreadyLoaded: AnimeExtension.Loaded? = null,
         extRepos: List<ExtensionStore>? = null,
-        // KMK <--
     ): AnimeExtension.Installed {
-        val trustExtension: TrustAnimeExtension = context.appGraph.trustAnimeExtension
-        val sourcePreferences = context.appGraph.sourcePreferences
-        val enabledContentWarnings = sourcePreferences.enabledContentWarnings.get()
-        val applyContentWarningsToInstalled = sourcePreferences.applyContentWarningsToInstalled.get()
-        val getExtensionStores: GetAnimeExtensionStores = context.appGraph.getAnimeExtensionStores
-        // KMK -->
-        val repos = extRepos ?: getExtensionStores.await()
-        // KMK <--
+        val repos = extRepos ?: context.appGraph.getAnimeExtensionStores.await()
         val pkgManager = context.packageManager
 
         val pkgInfo = extensionInfo.packageInfo
@@ -303,6 +336,7 @@ internal object AnimeExtensionLoader {
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
         val contentWarning = when {
             metaData == null -> ContentWarning.SAFE
+
             metaData.containsKey(METADATA_CONTENT_WARNING) -> {
                 when (metaData.getInt(METADATA_CONTENT_WARNING)) {
                     1 -> ContentWarning.MIXED
@@ -310,7 +344,9 @@ internal object AnimeExtensionLoader {
                     else -> ContentWarning.SAFE
                 }
             }
+
             metaData.getInt(METADATA_NSFW) == 1 -> ContentWarning.NSFW
+
             else -> ContentWarning.SAFE
         }
 
@@ -360,7 +396,11 @@ internal object AnimeExtensionLoader {
             return notLoaded(AnimeExtension.NotLoaded.Reason.Unsigned, libVersion)
         } else if (!trustExtension.isTrusted(pkgInfo, signatures)) {
             logcat(LogPriority.WARN) { "Extension $pkgName isn't trusted" }
-            return notLoaded(AnimeExtension.NotLoaded.Reason.Untrusted(signatures.last()), libVersion, signatures.last())
+            return notLoaded(
+                AnimeExtension.NotLoaded.Reason.Untrusted(signatures.last()),
+                libVersion,
+                signatures.last(),
+            )
         }
 
         if (applyContentWarningsToInstalled && contentWarning !in enabledContentWarnings) {
@@ -369,6 +409,15 @@ internal object AnimeExtensionLoader {
         }
 
         val isTorrent = metaData.getInt(METADATA_TORRENT) == 1
+
+        // Everything above is cheap to check again, everything below isn't. Nothing about this apk
+        // changed and it still passes, so keep the sources that are already registered for it.
+        if (alreadyLoaded != null &&
+            alreadyLoaded.versionCode == versionCode &&
+            alreadyLoaded.isShared == extensionInfo.isShared
+        ) {
+            return alreadyLoaded
+        }
 
         val classLoader = try {
             DelegateLastClassLoaderCompat(appInfo.sourceDir, null, context.classLoader)

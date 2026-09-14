@@ -25,8 +25,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -71,8 +75,16 @@ class MangaExtensionManager(
 
     init {
         scope.launch(Dispatchers.IO) {
-            initMangaExtensions()
+            loadMangaExtensions()
             MangaExtensionInstallReceiver(MangaInstallationListener()).register(context)
+
+            // Everything the load decision rests on can change while running, so decide again
+            merge(
+                trustExtension.changes(),
+                preferences.enabledContentWarnings.changes().distinctUntilChanged().drop(1).map {},
+                preferences.applyContentWarningsToInstalled.changes().distinctUntilChanged().drop(1).map {},
+            )
+                .collectLatest { loadMangaExtensions() }
         }
     }
 
@@ -128,9 +140,14 @@ class MangaExtensionManager(
 
     fun getSourceData(id: Long) = availableMangaExtensionsSourcesData[id]
 
-    private fun initMangaExtensions() {
+    /**
+     * Loads and registers the installed extensions. Safe to call again: every extension is judged
+     * again, so one can move between loaded and not loaded in either direction, while extensions
+     * that still pass keep the instances they already had.
+     */
+    private suspend fun loadMangaExtensions() {
         try {
-            val extensions = MangaExtensionLoader.loadMangaExtensions(context)
+            val extensions = MangaExtensionLoader.loadMangaExtensions(context, loadedExtensionsMapFlow.value)
 
             loadedExtensionsMapFlow.value = extensions
                 .filterIsInstance<MangaExtension.Loaded>()
@@ -140,10 +157,13 @@ class MangaExtensionManager(
                 .filterIsInstance<MangaExtension.NotLoaded>()
                 .associateBy { it.pkgName }
 
-            initialized.complete(Unit)
+            // Newly loaded extensions have no status derived from the store index yet
+            updatedInstalledMangaExtensionsStatuses(availableExtensionsMapFlow.value.values.toList())
         } catch (e: Throwable) {
+            logcat(LogPriority.ERROR, e) { "Failed to load extensions" }
+        } finally {
+            // Release anything waiting on the extensions whether or not the load worked
             initialized.complete(Unit)
-            throw e
         }
     }
 
@@ -253,19 +273,12 @@ class MangaExtensionManager(
         installer.uninstallApk(extension.pkgName)
     }
 
-    suspend fun trust(extension: MangaExtension.NotLoaded) {
+    fun trust(extension: MangaExtension.NotLoaded) {
         val reason = extension.reason as? MangaExtension.NotLoaded.Reason.Untrusted ?: return
         notLoadedExtensionsMapFlow.value[extension.pkgName] ?: return
 
+        // Loading it again is left to the reload triggered by the trust change
         trustExtension.trust(extension.pkgName, extension.versionCode, reason.signatureHash)
-
-        notLoadedExtensionsMapFlow.value -= extension.pkgName
-
-        when (val reloaded = MangaExtensionLoader.loadMangaExtensionFromPkgName(context, extension.pkgName)) {
-            is MangaExtension.Loaded -> registerExtension(reloaded)
-            is MangaExtension.NotLoaded -> notLoadedExtensionsMapFlow.value += reloaded
-            null -> {}
-        }
     }
 
     private fun registerExtension(extension: MangaExtension.Loaded) {

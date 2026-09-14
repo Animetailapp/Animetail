@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.anime.api
 
-import android.content.Context
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -10,8 +9,8 @@ import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionLoader
 import kotlinx.serialization.Serializable
 import mihon.domain.extension.anime.interactor.UpdateAnimeExtensionStores
-import mihon.domain.extension.model.ContentWarning
 import mihon.domain.extension.anime.repository.AnimeExtensionStoreRepository
+import mihon.domain.extension.model.ContentWarning
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.withIOContext
@@ -37,8 +36,12 @@ class AnimeExtensionApi(
         return withIOContext { repository.fetchExtensions() as List<AnimeExtension.Available> }
     }
 
+    /**
+     * @param loadedExtensions Extensions already loaded by [eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager].
+     * Only their versions are read, so there's nothing to gain from loading them a second time.
+     */
     suspend fun checkForUpdates(
-        context: Context,
+        loadedExtensions: List<AnimeExtension.Loaded>,
         fromAvailableExtensionList: Boolean = false,
     ): List<AnimeExtension.Loaded>? {
         // Limit checks to once a day at most
@@ -55,9 +58,6 @@ class AnimeExtensionApi(
         } else {
             findExtensions().also { lastExtCheck.set(Instant.now().toEpochMilli()) }
         }
-
-        val loadedExtensions = AnimeExtensionLoader.loadExtensions(context)
-            .filterIsInstance<AnimeExtension.Loaded>()
 
         val extensionsWithUpdate = mutableListOf<AnimeExtension.Loaded>()
         for (installedExt in loadedExtensions) {

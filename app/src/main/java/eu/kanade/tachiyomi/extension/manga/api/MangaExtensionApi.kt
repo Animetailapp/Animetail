@@ -1,12 +1,10 @@
 package eu.kanade.tachiyomi.extension.manga.api
 
-import android.content.Context
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.extension.ExtensionUpdateNotifier
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
-import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionLoader
 import mihon.domain.extension.manga.interactor.UpdateMangaExtensionStores
 import mihon.domain.extension.manga.repository.MangaExtensionStoreRepository
 import tachiyomi.core.common.util.lang.withIOContext
@@ -24,13 +22,14 @@ class MangaExtensionApi(
         return withIOContext { repository.fetchExtensions() as List<MangaExtension.Available> }
     }
 
-    suspend fun checkForUpdates(context: Context) {
+    /**
+     * @param loadedExtensions Extensions already loaded by [eu.kanade.tachiyomi.extension.manga.MangaExtensionManager].
+     * Only their versions are read, so there's nothing to gain from loading them a second time.
+     */
+    suspend fun checkForUpdates(loadedExtensions: List<MangaExtension.Loaded>) {
         updateExtensionStores()
 
         val extensions = findExtensions()
-
-        val loadedExtensions = MangaExtensionLoader.loadMangaExtensions(context)
-            .filterIsInstance<MangaExtension.Loaded>()
 
         val extensionsWithUpdate = mutableListOf<MangaExtension.Loaded>()
         for (installedExt in loadedExtensions) {

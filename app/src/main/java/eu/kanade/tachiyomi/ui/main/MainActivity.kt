@@ -101,7 +101,9 @@ import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.player.service.HttpServerService
 import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
 import eu.kanade.tachiyomi.data.updater.RELEASE_URL
+import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.anime.api.AnimeExtensionApi
+import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.extension.manga.api.MangaExtensionApi
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
@@ -185,6 +187,10 @@ class MainActivity : BaseActivity() {
     @Inject lateinit var animeExtensionApi: AnimeExtensionApi
 
     @Inject lateinit var mangaExtensionApi: MangaExtensionApi
+
+    @Inject lateinit var animeExtensionManager: AnimeExtensionManager
+
+    @Inject lateinit var mangaExtensionManager: MangaExtensionManager
 
     // To be checked by splash screen. If true then splash screen will be removed.
     var ready = false
@@ -474,8 +480,8 @@ class MainActivity : BaseActivity() {
         // Extensions updates
         LaunchedEffect(Unit) {
             try {
-                animeExtensionApi.checkForUpdates(context)
-                mangaExtensionApi.checkForUpdates(context)
+                animeExtensionApi.checkForUpdates(animeExtensionManager.getLoadedExtensions())
+                mangaExtensionApi.checkForUpdates(mangaExtensionManager.getLoadedExtensions())
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e)
             }

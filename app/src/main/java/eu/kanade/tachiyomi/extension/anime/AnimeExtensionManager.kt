@@ -25,8 +25,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -78,8 +82,16 @@ class AnimeExtensionManager(
 
     init {
         scope.launch(Dispatchers.IO) {
-            initAnimeExtensions()
+            loadAnimeExtensions()
             AnimeExtensionInstallReceiver(AnimeInstallationListener()).register(context)
+
+            // Everything the load decision rests on can change while running, so decide again
+            merge(
+                trustExtension.changes(),
+                preferences.enabledContentWarnings.changes().distinctUntilChanged().drop(1).map {},
+                preferences.applyContentWarningsToInstalled.changes().distinctUntilChanged().drop(1).map {},
+            )
+                .collectLatest { loadAnimeExtensions() }
         }
     }
 
@@ -136,11 +148,13 @@ class AnimeExtensionManager(
     fun getSourceData(id: Long) = availableAnimeExtensionsSourcesData[id]
 
     /**
-     * Loads and registers the installed animeextensions.
+     * Loads and registers the installed animeextensions. Safe to call again: every extension is judged
+     * again, so one can move between loaded and not loaded in either direction, while extensions
+     * that still pass keep the instances they already had.
      */
-    private fun initAnimeExtensions() {
+    private suspend fun loadAnimeExtensions() {
         try {
-            val extensions = AnimeExtensionLoader.loadExtensions(context)
+            val extensions = AnimeExtensionLoader.loadExtensions(context, loadedExtensionsMapFlow.value)
 
             loadedExtensionsMapFlow.value = extensions
                 .filterIsInstance<AnimeExtension.Loaded>()
@@ -150,10 +164,13 @@ class AnimeExtensionManager(
                 .filterIsInstance<AnimeExtension.NotLoaded>()
                 .associateBy { it.pkgName }
 
-            initialized.complete(Unit)
+            // Newly loaded extensions have no status derived from the store index yet
+            updatedInstalledAnimeExtensionsStatuses(availableExtensionsMapFlow.value.values.toList())
         } catch (e: Throwable) {
+            logcat(LogPriority.ERROR, e) { "Failed to load extensions" }
+        } finally {
+            // Release anything waiting on the extensions whether or not the load worked
             initialized.complete(Unit)
-            throw e
         }
     }
 
@@ -272,19 +289,12 @@ class AnimeExtensionManager(
         installer.uninstallApk(extension.pkgName)
     }
 
-    suspend fun trust(extension: AnimeExtension.NotLoaded) {
+    fun trust(extension: AnimeExtension.NotLoaded) {
         val reason = extension.reason as? AnimeExtension.NotLoaded.Reason.Untrusted ?: return
         notLoadedExtensionsMapFlow.value[extension.pkgName] ?: return
 
+        // Loading it again is left to the reload triggered by the trust change
         trustExtension.trust(extension.pkgName, extension.versionCode, reason.signatureHash)
-
-        notLoadedExtensionsMapFlow.value -= extension.pkgName
-
-        when (val reloaded = AnimeExtensionLoader.loadExtensionFromPkgName(context, extension.pkgName)) {
-            is AnimeExtension.Loaded -> registerExtension(reloaded)
-            is AnimeExtension.NotLoaded -> notLoadedExtensionsMapFlow.value += reloaded
-            null -> {}
-        }
     }
 
     private fun registerExtension(extension: AnimeExtension.Loaded) {

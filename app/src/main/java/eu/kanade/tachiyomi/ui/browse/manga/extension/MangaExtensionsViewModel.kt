@@ -223,9 +223,7 @@ class MangaExtensionsViewModel(
     }
 
     fun trustExtension(extension: MangaExtension.NotLoaded) {
-        viewModelScope.launch {
-            extensionManager.trust(extension)
-        }
+        extensionManager.trust(extension)
     }
 
     @Immutable

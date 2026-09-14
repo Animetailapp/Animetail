@@ -552,7 +552,6 @@ object SettingsAdvancedScreen : SearchableSettings {
                     onClick = {
                         trustMangaExtension.revokeAll()
                         trustAnimeExtension.revokeAll()
-                        context.toast(MR.strings.requires_app_restart)
                     },
                 ),
             ),
