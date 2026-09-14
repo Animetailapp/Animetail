@@ -261,7 +261,9 @@ internal object MangaExtensionLoader {
         // KMK <--
     ): MangaLoadResult {
         val trustExtension: TrustMangaExtension = context.appGraph.trustMangaExtension
-        val enabledContentWarnings = context.appGraph.sourcePreferences.enabledContentWarnings.get()
+        val sourcePreferences = context.appGraph.sourcePreferences
+        val enabledContentWarnings = sourcePreferences.enabledContentWarnings.get()
+        val applyContentWarningsToInstalled = sourcePreferences.applyContentWarningsToInstalled.get()
         val getExtensionStores: GetMangaExtensionStores = context.appGraph.getMangaExtensionStores
         // KMK -->
         val repos = extRepos ?: getExtensionStores.await()
@@ -334,7 +336,7 @@ internal object MangaExtensionLoader {
             appInfo.metaData.getInt(METADATA_NSFW) == 1 -> ContentWarning.NSFW
             else -> ContentWarning.SAFE
         }
-        if (contentWarning !in enabledContentWarnings) {
+        if (applyContentWarningsToInstalled && contentWarning !in enabledContentWarnings) {
             logcat(LogPriority.WARN) { "Extension $pkgName with $contentWarning not allowed" }
             return MangaLoadResult.Error
         }

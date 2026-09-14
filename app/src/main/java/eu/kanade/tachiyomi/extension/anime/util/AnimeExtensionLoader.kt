@@ -250,7 +250,9 @@ internal object AnimeExtensionLoader {
         // KMK <--
     ): AnimeLoadResult {
         val trustExtension: TrustAnimeExtension = context.appGraph.trustAnimeExtension
-        val enabledContentWarnings = context.appGraph.sourcePreferences.enabledContentWarnings.get()
+        val sourcePreferences = context.appGraph.sourcePreferences
+        val enabledContentWarnings = sourcePreferences.enabledContentWarnings.get()
+        val applyContentWarningsToInstalled = sourcePreferences.applyContentWarningsToInstalled.get()
         val getExtensionStores: GetAnimeExtensionStores = context.appGraph.getAnimeExtensionStores
         // KMK -->
         val repos = extRepos ?: getExtensionStores.await()
@@ -322,7 +324,7 @@ internal object AnimeExtensionLoader {
             appInfo.metaData.getInt(METADATA_NSFW) == 1 -> ContentWarning.NSFW
             else -> ContentWarning.SAFE
         }
-        if (contentWarning !in enabledContentWarnings) {
+        if (applyContentWarningsToInstalled && contentWarning !in enabledContentWarnings) {
             logcat(LogPriority.WARN) { "Extension $pkgName with $contentWarning not allowed" }
             return AnimeLoadResult.Error
         }
