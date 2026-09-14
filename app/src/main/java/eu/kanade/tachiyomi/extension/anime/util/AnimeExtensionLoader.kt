@@ -45,7 +45,7 @@ internal object AnimeExtensionLoader {
     private const val METADATA_EXTENSION_LIB = "tachiyomix.extensionLib"
     private const val METADATA_CONTENT_WARNING = "tachiyomix.contentWarning"
     const val LIB_VERSION_MIN = 12
-    const val LIB_VERSION_MAX = 16
+    const val LIB_VERSION_MAX = 17
     private val SUPPORTED_LIB_VERSIONS = (LIB_VERSION_MIN..LIB_VERSION_MAX).map { it.toDouble() }
 
     @Suppress("DEPRECATION")
