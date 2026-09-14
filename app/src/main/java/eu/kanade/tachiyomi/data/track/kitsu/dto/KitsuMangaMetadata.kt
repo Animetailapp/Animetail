@@ -23,7 +23,7 @@ data class KitsuMangaMetadataMedia(
     val titles: KitsuMangaTitle,
     val posterImage: KitsuMangaCover,
     val description: KitsuMangaDescription,
-    val staff: KitsuMangaStaff,
+    val staff: KitsuMangaStaffData,
 )
 
 @Serializable
@@ -44,20 +44,4 @@ data class KitsuMangaCoverUrl(
 @Serializable
 data class KitsuMangaDescription(
     val en: String?,
-)
-
-@Serializable
-data class KitsuMangaStaff(
-    val nodes: List<KitsuMangaStaffNode>,
-)
-
-@Serializable
-data class KitsuMangaStaffNode(
-    val role: String,
-    val person: KitsuMangaStaffPerson,
-)
-
-@Serializable
-data class KitsuMangaStaffPerson(
-    val name: String,
 )

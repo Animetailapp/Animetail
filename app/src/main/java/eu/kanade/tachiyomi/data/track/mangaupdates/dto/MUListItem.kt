@@ -12,11 +12,11 @@ data class MUListItem(
     val listId: Long? = null,
     val status: MUStatus? = null,
     val priority: Int? = null,
-)
-
-fun MUListItem.copyTo(track: MangaTrack): MangaTrack {
-    return track.apply {
-        this.status = listId ?: READING_LIST
-        this.last_chapter_read = this@copyTo.status?.chapter?.toDouble() ?: 0.0
+) {
+    fun copyTo(track: MangaTrack): MangaTrack {
+        return track.apply {
+            this.status = listId ?: READING_LIST
+            this.last_chapter_read = this@MUListItem.status?.chapter?.toDouble() ?: 0.0
+        }
     }
 }

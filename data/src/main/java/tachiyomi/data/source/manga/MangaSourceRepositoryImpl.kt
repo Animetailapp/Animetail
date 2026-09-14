@@ -84,18 +84,19 @@ class MangaSourceRepositoryImpl(
         query: String,
         filterList: FilterList,
     ): SourcePagingSourceType {
-        val source = sourceManager.get(sourceId) as CatalogueSource
-        return SourceSearchPagingSource(source, query, filterList)
+        return SourceSearchPagingSource(
+            { sourceManager.getOrStub(sourceId) as CatalogueSource },
+            query,
+            filterList,
+        )
     }
 
     override fun getPopularManga(sourceId: Long): SourcePagingSourceType {
-        val source = sourceManager.get(sourceId) as CatalogueSource
-        return SourcePopularPagingSource(source)
+        return SourcePopularPagingSource({ sourceManager.getOrStub(sourceId) as CatalogueSource })
     }
 
     override fun getLatestManga(sourceId: Long): SourcePagingSourceType {
-        val source = sourceManager.get(sourceId) as CatalogueSource
-        return SourceLatestPagingSource(source)
+        return SourceLatestPagingSource({ sourceManager.getOrStub(sourceId) as CatalogueSource })
     }
 
     private fun mapSourceToDomainSource(source: MangaSource): DomainSource = DomainSource(

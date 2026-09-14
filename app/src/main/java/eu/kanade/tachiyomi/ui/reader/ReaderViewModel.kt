@@ -66,7 +66,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -97,7 +96,6 @@ import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.source.local.entries.manga.isLocal
 import tachiyomi.source.local.image.manga.LocalMangaCoverManager
 import java.util.Date
-import kotlin.getValue
 import kotlin.time.Clock
 
 /**
@@ -164,7 +162,13 @@ class ReaderViewModel(
         get() = state.value.manga
 
     val currentSource: MangaSource?
-        get() = manga?.source?.let { sourceManager.getOrStub(it) }
+        get() = state.value.source
+
+    /**
+     * The source of the manga loaded in the reader. Null until it has been resolved.
+     */
+    val source: MangaSource?
+        get() = state.value.source
 
     /**
      * The chapter id of the currently loaded chapter. Used to restore from process kill.
@@ -279,7 +283,8 @@ class ReaderViewModel(
             .map { ReaderChapter(it) }
     }
 
-    val incognitoMode: Boolean by lazy { getMangaIncognitoState.await(manga?.source) }
+    var incognitoMode: Boolean = false
+        private set
     private val downloadAheadAmount = downloadPreferences.autoDownloadWhileReading.get()
 
     init {
@@ -337,11 +342,11 @@ class ReaderViewModel(
         withIOContext {
             try {
                 val manga = getManga.await(mangaId) ?: error("Requested manga of id $mangaId not found")
-                sourceManager.isInitialized.first { it }
-                mutableState.update { it.copy(manga = manga) }
+                val source = sourceManager.getOrStub(manga.source)
+                incognitoMode = getMangaIncognitoState.await(manga.source)
+                mutableState.update { it.copy(manga = manga, source = source) }
                 if (chapterId == -1L) chapterId = initialChapterId
 
-                val source = sourceManager.getOrStub(manga.source)
                 loader = ChapterLoader(
                     context = context,
                     scope = viewModelScope,
@@ -457,13 +462,13 @@ class ReaderViewModel(
         if (chapter.pageLoader?.isLocal == false) {
             val manga = manga ?: return
             val dbChapter = chapter.chapter
-            val isDownloaded = downloadManager.isChapterDownloaded(
+            val source = state.value.source ?: return
+            val isDownloaded = downloadManager.isChapterDownloadedOnDisk(
                 dbChapter.name,
                 dbChapter.scanlator,
                 dbChapter.url,
                 manga.title,
-                manga.source,
-                skipCache = true,
+                source,
             )
             if (isDownloaded) {
                 chapter.state = ReaderChapter.State.Wait
@@ -703,7 +708,7 @@ class ReaderViewModel(
         return state.value.currentChapter
     }
 
-    fun getSource() = manga?.source?.let { sourceManager.getOrStub(it) } as? HttpSource
+    fun getSource() = state.value.source as? HttpSource
 
     fun getChapterUrl(): String? {
         val sChapter = getCurrentChapter()?.chapter ?: return null
@@ -1162,6 +1167,7 @@ class ReaderViewModel(
     @Immutable
     data class State(
         val manga: Manga? = null,
+        val source: MangaSource? = null,
         val initError: Throwable? = null,
         val viewerChapters: ViewerChapters? = null,
         val bookmarked: Boolean = false,

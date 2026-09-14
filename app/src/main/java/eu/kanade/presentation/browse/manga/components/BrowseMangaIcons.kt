@@ -5,9 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dangerous
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -31,6 +28,9 @@ import eu.kanade.presentation.util.rememberResourceBitmapPainter
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionLoader
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.Dangerous
+import mihon.icons.materialsymbols.rounded.Warning
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.source.manga.model.Source
 import tachiyomi.source.local.entries.manga.LocalMangaSource
@@ -44,12 +44,12 @@ fun MangaSourceIcon(
     source: Source,
     modifier: Modifier = Modifier,
 ) {
-    val icon = source.icon
+    val icon = produceState<ImageBitmap?>(initialValue = null, source.id) { value = source.icon() }.value
 
     when {
         source.isStub && icon == null -> {
             Image(
-                imageVector = Icons.Filled.Warning,
+                imageVector = MaterialSymbols.Rounded.Warning,
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.error),
                 modifier = modifier.then(defaultModifier),
@@ -100,7 +100,7 @@ fun MangaExtensionIcon(
             )
         }
 
-        is MangaExtension.Installed -> {
+        is MangaExtension.Loaded -> {
             val icon by extension.getIcon(density)
             when (icon) {
                 Result.Loading -> Box(modifier = modifier)
@@ -119,8 +119,8 @@ fun MangaExtensionIcon(
             }
         }
 
-        is MangaExtension.Untrusted -> Image(
-            imageVector = Icons.Filled.Dangerous,
+        is MangaExtension.NotLoaded -> Image(
+            imageVector = MaterialSymbols.Rounded.Dangerous,
             contentDescription = null,
             colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.error),
             modifier = modifier.then(defaultModifier),

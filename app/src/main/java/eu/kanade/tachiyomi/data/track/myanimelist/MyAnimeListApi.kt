@@ -42,7 +42,7 @@ import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
 class MyAnimeListApi(
-    private val trackId: Long,
+    private val trackerId: Long,
     private val client: OkHttpClient,
     interceptor: MyAnimeListInterceptor,
 ) {
@@ -437,7 +437,7 @@ class MyAnimeListApi(
     }
 
     private fun parseAnimeSearchItem(searchItem: MALAnime): AnimeTrackSearch {
-        return AnimeTrackSearch.create(trackId).apply {
+        return AnimeTrackSearch.create(trackerId).apply {
             remote_id = searchItem.id
             title = searchItem.title
             summary = searchItem.synopsis
@@ -454,7 +454,7 @@ class MyAnimeListApi(
     }
 
     private fun parseSearchItem(searchItem: MALManga): MangaTrackSearch {
-        return MangaTrackSearch.create(trackId).apply {
+        return MangaTrackSearch.create(trackerId).apply {
             remote_id = searchItem.id
             title = searchItem.title
             summary = searchItem.synopsis

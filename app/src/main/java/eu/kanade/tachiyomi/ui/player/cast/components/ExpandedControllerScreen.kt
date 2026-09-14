@@ -51,6 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -300,8 +301,13 @@ fun ExpandedControllerScreen(
                                 .height(36.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Slider(
+                            val sliderState = rememberSliderState(
                                 value = currentPosition.toFloat(),
+                                trackRange = 0f..duration.toFloat().coerceAtLeast(0f),
+                            )
+                            sliderState.value = currentPosition.toFloat()
+                            Slider(
+                                state = sliderState,
                                 onValueChange = {
                                     client?.seek(
                                         MediaSeekOptions.Builder()
@@ -309,7 +315,6 @@ fun ExpandedControllerScreen(
                                             .build(),
                                     )
                                 },
-                                valueRange = 0f..duration.toFloat(),
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = SliderDefaults.colors(
                                     thumbColor = MaterialTheme.colorScheme.primary,
@@ -326,10 +331,10 @@ fun ExpandedControllerScreen(
                                             ),
                                     )
                                 },
-                                track = {
+                                track = { state ->
                                     SliderDefaults.Track(
                                         modifier = Modifier.height(4.dp),
-                                        sliderState = it,
+                                        sliderState = state,
                                         colors = SliderDefaults.colors(
                                             activeTrackColor = MaterialTheme.colorScheme.primary,
                                             inactiveTrackColor = MaterialTheme.colorScheme

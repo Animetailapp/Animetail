@@ -20,6 +20,7 @@ import okio.buffer
 import okio.gzip
 import tachiyomi.core.common.util.system.logcat
 import kotlin.coroutines.cancellation.CancellationException
+import mihon.domain.extension.model.ContentWarning as DomainContentWarning
 
 @Inject
 @SingleIn(AppScope::class)
@@ -148,7 +149,12 @@ class MangaExtensionStoreService(
                 versionCode = extension.versionCode,
                 versionName = extension.versionName,
                 lang = if (lang.size == 1) lang.first() else "all",
-                isNsfw = extension.contentWarning >= NetworkExtensionStore.ContentWarning.MIXED,
+                contentWarning = when (extension.contentWarning) {
+                    NetworkExtensionStore.ContentWarning.SAFE -> DomainContentWarning.SAFE
+                    NetworkExtensionStore.ContentWarning.MIXED -> DomainContentWarning.MIXED
+                    NetworkExtensionStore.ContentWarning.NSFW -> DomainContentWarning.NSFW
+                    else -> DomainContentWarning.SAFE
+                },
                 sources = extension.sources.map { source ->
                     MangaExtension.Available.MangaSource(
                         id = source.id,
@@ -178,7 +184,7 @@ class MangaExtensionStoreService(
             versionCode = netExt.code,
             versionName = netExt.version,
             lang = netExt.lang,
-            isNsfw = netExt.nsfw == 1,
+            contentWarning = if (netExt.nsfw == 1) DomainContentWarning.NSFW else DomainContentWarning.SAFE,
             sources = run {
                 val sources = netExt.sources
                 if (sources.isNullOrEmpty()) {

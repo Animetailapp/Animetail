@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.data.track.shikimori
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 
-fun MangaTrack.toShikimoriStatus() = when (status) {
+internal fun MangaTrack.toShikimoriStatus() = when (status) {
     Shikimori.READING -> "watching"
     Shikimori.COMPLETED -> "completed"
     Shikimori.ON_HOLD -> "on_hold"
@@ -13,7 +13,7 @@ fun MangaTrack.toShikimoriStatus() = when (status) {
     else -> throw NotImplementedError("Unknown status: $status")
 }
 
-fun AnimeTrack.toShikimoriStatus() = when (status) {
+internal fun AnimeTrack.toShikimoriStatus() = when (status) {
     Shikimori.READING -> "watching"
     Shikimori.COMPLETED -> "completed"
     Shikimori.ON_HOLD -> "on_hold"
@@ -23,7 +23,7 @@ fun AnimeTrack.toShikimoriStatus() = when (status) {
     else -> throw NotImplementedError("Unknown status: $status")
 }
 
-fun toTrackStatus(status: String) = when (status) {
+internal fun toTrackStatus(status: String) = when (status) {
     "watching" -> Shikimori.READING
     "completed" -> Shikimori.COMPLETED
     "on_hold" -> Shikimori.ON_HOLD

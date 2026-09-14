@@ -15,38 +15,40 @@ class GetAnimeExtensionsByType(
 ) {
 
     fun subscribe(): Flow<AnimeExtensions> {
-        val showNsfwSources = preferences.showNsfwSource.get()
+        val enabledContentWarnings = preferences.enabledContentWarnings.get()
 
         return combine(
             preferences.enabledLanguages.changes(),
             preferences.disabledRepos.changes(),
-            extensionManager.installedExtensionsFlow,
-            extensionManager.untrustedExtensionsFlow,
+            extensionManager.loadedExtensionsFlow,
+            extensionManager.notLoadedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
-        ) { enabledLanguages, disabledRepos, _installed, _untrusted, _available ->
-            val (updates, installed) = _installed
-                .filter { (showNsfwSources || !it.isNsfw) }
+        ) { enabledLanguages, disabledRepos, _loaded, _notLoaded, _available ->
+            val (updates, loaded) = _loaded
                 .sortedWith(
-                    compareBy<AnimeExtension.Installed> { !it.isObsolete }
+                    compareBy<AnimeExtension.Loaded> { !it.isObsolete }
                         .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name },
                 )
                 .partition { it.hasUpdate }
 
-            val untrusted = _untrusted
+            val notLoaded = _notLoaded
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
             val available = _available
                 .filter { extension ->
                     extension.store.indexUrl !in disabledRepos &&
-                        _installed.none {
+                        _loaded.none {
                             it.pkgName == extension.pkgName
                         } &&
-                        _untrusted.none {
+                        _notLoaded.none {
                             it.pkgName == extension.pkgName
                         } &&
-                        (showNsfwSources || !extension.isNsfw)
+                        extension.contentWarning in enabledContentWarnings
                 }
                 .flatMap { ext ->
+                    if (ext.sources.isEmpty()) {
+                        return@flatMap if (ext.lang in enabledLanguages) listOf(ext) else emptyList()
+                    }
                     ext.sources.filter { it.lang in enabledLanguages }
                         .map {
                             ext.copy(
@@ -59,7 +61,7 @@ class GetAnimeExtensionsByType(
                 }
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
-            AnimeExtensions(updates, installed, available, untrusted)
+            AnimeExtensions(updates, loaded, available, notLoaded)
         }
     }
 }
