@@ -6,7 +6,6 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.extension.ExtensionUpdateNotifier
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
-import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionLoader
 import mihon.domain.extension.manga.interactor.UpdateMangaExtensionStores
 import mihon.domain.extension.manga.repository.MangaExtensionStoreRepository
@@ -30,12 +29,11 @@ class MangaExtensionApi(
 
         val extensions = findExtensions()
 
-        val installedExtensions = MangaExtensionLoader.loadMangaExtensions(context)
-            .filterIsInstance<MangaLoadResult.Success>()
-            .map { it.extension }
+        val loadedExtensions = MangaExtensionLoader.loadMangaExtensions(context)
+            .filterIsInstance<MangaExtension.Loaded>()
 
-        val extensionsWithUpdate = mutableListOf<MangaExtension.Installed>()
-        for (installedExt in installedExtensions) {
+        val extensionsWithUpdate = mutableListOf<MangaExtension.Loaded>()
+        for (installedExt in loadedExtensions) {
             val pkgName = installedExt.pkgName
             val availableExt = extensions.find { it.pkgName == pkgName } ?: continue
             val hasUpdatedVer = availableExt.versionCode > installedExt.versionCode

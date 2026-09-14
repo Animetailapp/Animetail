@@ -230,7 +230,7 @@ class MainActivity : BaseActivity() {
             val context = LocalContext.current
 
             var incognito by remember { mutableStateOf(false) }
-            var incognitoAnime by remember { mutableStateOf(getAnimeIncognitoState.await(null)) }
+            var incognitoAnime by remember { mutableStateOf(false) }
             val downloadOnly by preferences.downloadedOnly.collectAsState()
             val indexing by downloadCache.isInitializing.collectAsState()
             val indexingAnime by animeDownloadCache.isInitializing.collectAsState()

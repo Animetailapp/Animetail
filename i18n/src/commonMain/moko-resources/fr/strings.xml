@@ -747,18 +747,12 @@
     <string name="exclude_scanlators">Exclure la team de scantrad</string>
     <string name="no_scanlators_found">Aucune team de scantrad trouvé</string>
     <string name="relative_time_span_never">Jamais</string>
-<<<<<<< HEAD
     <string name="onboarding_guides_new_user">Nouveau sur %s ? Nous vous recommandons de jeter un œil au guide de démarrage.</string>
     <string name="delete_repo_confirmation">Voulez-vous vraiment supprimer le répertoire « %s » ?</string>
-    <string name="manga_interval_custom_amount">Fréquence de mise à jour personnalisé :</string>
-    <string name="invalid_backup_file_error">Erreur complète :</string>
-    <string name="action_delete_repo">Supprimer le répertoire</string>
-    <string name="label_extension_repos">Répertoire d\'extension</string>
-=======
-    <string name="onboarding_guides_new_user">Nouveau sur %s ? Nous vous recommandons de jeter un œil au guide de démarrage.</string>
     <string name="manga_interval_custom_amount">Fréquence de mise à jour personnalisé :</string>
     <string name="invalid_backup_file_error">Erreur complète :</string>
->>>>>>> cbafe9bf3f (Translations update from Hosted Weblate (#3938))
+    <string name="action_delete_repo">Supprimer le répertoire</string>
+    <string name="label_extension_repos">Répertoire d\'extension</string>
     <string name="ext_revoke_trust">Révoquer les extensions provenant d\'un répertoire additionnel</string>
     <string name="label_add_repo_input">URL du répertoire</string>
     <string name="action_add_repo_message">Ajouter un répertoire additionnel à %s. L\'URL devrait se terminer par « index.min.json ».</string>

@@ -113,7 +113,7 @@ abstract class AnimeSearchViewModel(
             return enabledSources
         }
 
-        return extensionManager.installedExtensionsFlow.first()
+        return extensionManager.getLoadedExtensions()
             .filter { it.pkgName == filter }
             .flatMap { it.sources }
             .filter { it in enabledSources }

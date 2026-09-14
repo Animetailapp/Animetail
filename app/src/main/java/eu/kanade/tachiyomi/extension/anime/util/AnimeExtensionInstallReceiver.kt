@@ -8,7 +8,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
-import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
@@ -29,15 +28,20 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
         ContextCompat.registerReceiver(context, this, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
-    private val filter = IntentFilter().apply {
-        addAction(Intent.ACTION_PACKAGE_ADDED)
-        addAction(Intent.ACTION_PACKAGE_REPLACED)
-        addAction(Intent.ACTION_PACKAGE_REMOVED)
-        addAction(ACTION_EXTENSION_ADDED)
-        addAction(ACTION_EXTENSION_REPLACED)
-        addAction(ACTION_EXTENSION_REMOVED)
-        addDataScheme("package")
-    }
+    val filter
+        get() = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addDataScheme("package")
+        }
+
+    val animeExtensionFilter
+        get() = IntentFilter().apply {
+            addAction(ACTION_EXTENSION_ADDED)
+            addAction(ACTION_EXTENSION_REPLACED)
+            addAction(ACTION_EXTENSION_REMOVED)
+        }
 
     /**
      * Called when one of the events of the [filter] is received. When the package is an extension,
@@ -51,20 +55,20 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
                 if (isReplacing(intent)) return
 
                 scope.launch {
-                    when (val result = getExtensionFromIntent(context, intent)) {
-                        is AnimeLoadResult.Success -> listener.onExtensionInstalled(result.extension)
-                        is AnimeLoadResult.Untrusted -> listener.onExtensionUntrusted(result.extension)
-                        else -> {}
+                    when (val extension = getExtensionFromIntent(context, intent)) {
+                        is AnimeExtension.Loaded -> listener.onExtensionLoaded(extension)
+                        is AnimeExtension.NotLoaded -> listener.onExtensionNotLoaded(extension)
+                        null -> {}
                     }
                 }
             }
 
             Intent.ACTION_PACKAGE_REPLACED, ACTION_EXTENSION_REPLACED -> {
                 scope.launch {
-                    when (val result = getExtensionFromIntent(context, intent)) {
-                        is AnimeLoadResult.Success -> listener.onExtensionUpdated(result.extension)
-                        is AnimeLoadResult.Untrusted -> listener.onExtensionUntrusted(result.extension)
-                        else -> {}
+                    when (val extension = getExtensionFromIntent(context, intent)) {
+                        is AnimeExtension.Loaded -> listener.onExtensionLoaded(extension)
+                        is AnimeExtension.NotLoaded -> listener.onExtensionNotLoaded(extension)
+                        null -> {}
                     }
                 }
             }
@@ -95,11 +99,11 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
      * @param context The application context.
      * @param intent The intent containing the package name of the extension.
      */
-    private suspend fun getExtensionFromIntent(context: Context, intent: Intent?): AnimeLoadResult {
+    private suspend fun getExtensionFromIntent(context: Context, intent: Intent?): AnimeExtension.Installed? {
         val pkgName = getPackageNameFromIntent(intent)
         if (pkgName == null) {
             logcat(LogPriority.WARN) { "Package name not found" }
-            return AnimeLoadResult.Error
+            return null
         }
         return AnimeExtensionLoader.loadExtensionFromPkgName(context, pkgName)
     }
@@ -115,9 +119,8 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
      * Listener that receives extension installation events.
      */
     interface Listener {
-        fun onExtensionInstalled(extension: AnimeExtension.Installed)
-        fun onExtensionUpdated(extension: AnimeExtension.Installed)
-        fun onExtensionUntrusted(extension: AnimeExtension.Untrusted)
+        fun onExtensionLoaded(extension: AnimeExtension.Loaded)
+        fun onExtensionNotLoaded(extension: AnimeExtension.NotLoaded)
         fun onPackageUninstalled(pkgName: String)
     }
 

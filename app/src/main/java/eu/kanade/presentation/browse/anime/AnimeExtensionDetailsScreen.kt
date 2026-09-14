@@ -148,7 +148,7 @@ fun AnimeExtensionDetailsScreen(
 @Composable
 private fun AnimeExtensionDetails(
     contentPadding: PaddingValues,
-    extension: AnimeExtension.Installed,
+    extension: AnimeExtension.Loaded,
     sources: ImmutableList<AnimeExtensionSourceItem>,
     incognitoMode: Boolean,
     onClickSourcePreferences: (sourceId: Long) -> Unit,
@@ -242,7 +242,7 @@ private fun DetailsHeader(
                             """.trimIndent(),
                         )
 
-                        if (extension is AnimeExtension.Installed) {
+                        if (extension is AnimeExtension.Loaded) {
                             append("\n\n")
                             append(
                                 """

@@ -145,7 +145,7 @@ fun MangaExtensionDetailsScreen(
 @Composable
 private fun ExtensionDetails(
     contentPadding: PaddingValues,
-    extension: MangaExtension.Installed,
+    extension: MangaExtension.Loaded,
     sources: List<MangaExtensionSourceItem>,
     incognitoMode: Boolean,
     onClickSourcePreferences: (sourceId: Long) -> Unit,
@@ -239,7 +239,7 @@ private fun DetailsHeader(
                             """.trimIndent(),
                         )
 
-                        if (extension is MangaExtension.Installed) {
+                        if (extension is MangaExtension.Loaded) {
                             append("\n\n")
                             appendLine(
                                 """

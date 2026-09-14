@@ -90,7 +90,7 @@ internal fun ColumnScope.ReadingModePage(viewModel: ReaderSettingsViewModel) {
                     value = continuousGap,
                     valueRange = ReaderPreferences.let { 1..100 },
                     label = stringResource(MR.strings.pref_continuous_gap),
-                    valueString = numberFormat.format(continuousGap / 100f),
+                    valueText = numberFormat.format(continuousGap / 100f),
                     onChange = {
                         viewModel.preferences.continuousGap.set(it)
                     },

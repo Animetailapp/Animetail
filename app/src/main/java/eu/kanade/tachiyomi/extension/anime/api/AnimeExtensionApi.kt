@@ -7,7 +7,6 @@ import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.extension.ExtensionUpdateNotifier
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
-import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionLoader
 import kotlinx.serialization.Serializable
 import mihon.domain.extension.anime.interactor.UpdateAnimeExtensionStores
@@ -41,7 +40,7 @@ class AnimeExtensionApi(
     suspend fun checkForUpdates(
         context: Context,
         fromAvailableExtensionList: Boolean = false,
-    ): List<AnimeExtension.Installed>? {
+    ): List<AnimeExtension.Loaded>? {
         // Limit checks to once a day at most
         if (fromAvailableExtensionList &&
             Instant.now().toEpochMilli() < lastExtCheck.get() + 1.days.inWholeMilliseconds
@@ -57,12 +56,11 @@ class AnimeExtensionApi(
             findExtensions().also { lastExtCheck.set(Instant.now().toEpochMilli()) }
         }
 
-        val installedExtensions = AnimeExtensionLoader.loadExtensions(context)
-            .filterIsInstance<AnimeLoadResult.Success>()
-            .map { it.extension }
+        val loadedExtensions = AnimeExtensionLoader.loadExtensions(context)
+            .filterIsInstance<AnimeExtension.Loaded>()
 
-        val extensionsWithUpdate = mutableListOf<AnimeExtension.Installed>()
-        for (installedExt in installedExtensions) {
+        val extensionsWithUpdate = mutableListOf<AnimeExtension.Loaded>()
+        for (installedExt in loadedExtensions) {
             val pkgName = installedExt.pkgName
             val availableExt = extensions.find { it.pkgName == pkgName } ?: continue
             val hasUpdatedVer = availableExt.versionCode > installedExt.versionCode

@@ -100,7 +100,7 @@ fun MangaExtensionIcon(
             )
         }
 
-        is MangaExtension.Installed -> {
+        is MangaExtension.Loaded -> {
             val icon by extension.getIcon(density)
             when (icon) {
                 Result.Loading -> Box(modifier = modifier)
@@ -119,7 +119,7 @@ fun MangaExtensionIcon(
             }
         }
 
-        is MangaExtension.Untrusted -> Image(
+        is MangaExtension.NotLoaded -> Image(
             imageVector = MaterialSymbols.Rounded.Dangerous,
             contentDescription = null,
             colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.error),

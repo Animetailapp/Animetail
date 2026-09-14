@@ -4,12 +4,13 @@ import android.graphics.drawable.Drawable
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
+import mihon.domain.extension.model.ContentWarning
 import tachiyomi.domain.source.anime.model.StubAnimeSource
 import tachiyomi.source.local.entries.anime.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-fun AnimeSource.icon(): Drawable? = Injekt.get<AnimeExtensionManager>().getAppIconForSource(this.id)
+suspend fun AnimeSource.icon(): Drawable? = Injekt.get<AnimeExtensionManager>().getAppIconForSource(this.id)
 
 fun AnimeSource.getPreferenceKey(): String = "source_$id"
 
@@ -37,15 +38,15 @@ fun AnimeSource.isLocalOrStub(): Boolean = isLocal() || this is StubAnimeSource
 // AM (DISCORD) -->
 fun AnimeSource?.isNsfw(): Boolean {
     if (this == null || this.isLocalOrStub()) return false
-    val sourceUsed = Injekt.get<AnimeExtensionManager>().installedExtensions
+    val sourceUsed = Injekt.get<AnimeExtensionManager>().loadedExtensions
         .find { ext -> ext.sources.any { it.id == this.id } }
-    return sourceUsed?.isNsfw ?: false
+    return sourceUsed?.contentWarning == ContentWarning.NSFW
 }
 
 // <-- AM (DISCORD)
 fun AnimeSource?.isSourceForTorrents(): Boolean {
     if (this == null || this.isLocalOrStub()) return false
-    val sourceUsed = Injekt.get<AnimeExtensionManager>().installedExtensions
+    val sourceUsed = Injekt.get<AnimeExtensionManager>().loadedExtensions
         .find { ext -> ext.sources.any { it.id == this.id } }
     return sourceUsed?.isTorrent ?: false
 }

@@ -379,7 +379,6 @@ object SettingsTrackingScreen : SearchableSettings {
                             keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Done,
                         ),
-                        lineLimits = TextFieldLineLimits.SingleLine,
                         isError = inputError && !processing,
                     )
                 }
@@ -480,7 +479,7 @@ private fun TrackingApiKeyDialog(
     val networkHelper = remember { context.appGraph.networkHelper }
     val scope = rememberCoroutineScope()
 
-    var apiKey by remember { mutableStateOf(TextFieldValue(trackPreferences.trackApiKey(tracker).get())) }
+    val apiKey = rememberTextFieldState(trackPreferences.trackApiKey(tracker).get())
     var processing by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -502,11 +501,10 @@ private fun TrackingApiKeyDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
-                    value = apiKey,
-                    onValueChange = { apiKey = it },
+                    state = apiKey,
                     label = { Text(text = stringResource(TLMR.strings.pref_sync_api_key)) },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    singleLine = true,
+                    lineLimits = TextFieldLineLimits.SingleLine,
                 )
             }
         },
@@ -515,7 +513,7 @@ private fun TrackingApiKeyDialog(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !processing && apiKey.text.isNotBlank(),
                 onClick = {
-                    val keyText = apiKey.text
+                    val keyText = apiKey.text.toString()
                     scope.launchIO {
                         processing = true
                         try {

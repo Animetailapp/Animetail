@@ -74,17 +74,21 @@ class MangaExtensionsViewModel(
             .map { searchQueryPredicate(it ?: "") },
         currentDownloads,
         getExtensions.subscribe(),
-    ) { predicate, downloads, (_updates, _installed, _available, _untrusted) ->
+    ) { predicate, downloads, (_updates, _loaded, _available, _notLoaded) ->
         buildMap {
             val updates = _updates.filter(predicate).map(extensionMapper(downloads))
             if (updates.isNotEmpty()) {
                 put(MangaExtensionUiModel.Header.Resource(MR.strings.ext_updates_pending), updates)
             }
 
-            val installed = _installed.filter(predicate).map(extensionMapper(downloads))
-            val untrusted = _untrusted.filter(predicate).map(extensionMapper(downloads))
-            if (installed.isNotEmpty() || untrusted.isNotEmpty()) {
-                put(MangaExtensionUiModel.Header.Resource(MR.strings.ext_installed), installed + untrusted)
+            val notLoaded = _notLoaded.filter(predicate).map(extensionMapper(downloads))
+            if (notLoaded.isNotEmpty()) {
+                put(MangaExtensionUiModel.Header.Resource(MR.strings.ext_not_loaded), notLoaded)
+            }
+
+            val loaded = _loaded.filter(predicate).map(extensionMapper(downloads))
+            if (loaded.isNotEmpty()) {
+                put(MangaExtensionUiModel.Header.Resource(MR.strings.ext_installed), loaded)
             }
 
             val languagesWithExtensions = _available
@@ -122,7 +126,6 @@ class MangaExtensionsViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
 
     init {
-
         viewModelScope.launchIO { findAvailableExtensions() }
     }
 
@@ -138,7 +141,7 @@ class MangaExtensionsViewModel(
                 if (extension.name.contains(subquery, ignoreCase = true)) return@any true
 
                 when (extension) {
-                    is MangaExtension.Installed -> extension.sources.any { source ->
+                    is MangaExtension.Loaded -> extension.sources.any { source ->
                         source.name.contains(subquery, ignoreCase = true) ||
                             (source as? HttpSource)?.baseUrl?.contains(subquery, ignoreCase = true) == true ||
                             source.id == subquery.toLongOrNull()
@@ -150,7 +153,7 @@ class MangaExtensionsViewModel(
                             it.id == subquery.toLongOrNull()
                     }
 
-                    is MangaExtension.Untrusted -> extension.name.contains(subquery, ignoreCase = true)
+                    else -> false
                 }
             }
         }
@@ -164,7 +167,7 @@ class MangaExtensionsViewModel(
         viewModelScope.launchIO {
             state.value.items.values.flatten()
                 .map { it.extension }
-                .filterIsInstance<MangaExtension.Installed>()
+                .filterIsInstance<MangaExtension.Loaded>()
                 .filter { it.hasUpdate }
                 .forEach(::updateExtension)
         }
@@ -176,7 +179,7 @@ class MangaExtensionsViewModel(
         }
     }
 
-    fun updateExtension(extension: MangaExtension.Installed) {
+    fun updateExtension(extension: MangaExtension.Loaded) {
         viewModelScope.launchIO {
             extensionManager.updateExtension(extension).collectToInstallUpdate(extension)
         }
@@ -184,6 +187,7 @@ class MangaExtensionsViewModel(
 
     fun cancelInstallUpdateExtension(extension: MangaExtension) {
         extensionManager.cancelInstallUpdateExtension(extension)
+        removeDownloadState(extension)
     }
 
     private fun addDownloadState(extension: MangaExtension, installStep: InstallStep) {
@@ -201,7 +205,7 @@ class MangaExtensionsViewModel(
             .onCompletion { removeDownloadState(extension) }
             .collect()
 
-    fun uninstallExtension(extension: MangaExtension) {
+    fun uninstallExtension(extension: MangaExtension.Installed) {
         extensionManager.uninstallExtension(extension)
     }
 
@@ -218,7 +222,7 @@ class MangaExtensionsViewModel(
         }
     }
 
-    fun trustExtension(extension: MangaExtension.Untrusted) {
+    fun trustExtension(extension: MangaExtension.NotLoaded) {
         viewModelScope.launch {
             extensionManager.trust(extension)
         }

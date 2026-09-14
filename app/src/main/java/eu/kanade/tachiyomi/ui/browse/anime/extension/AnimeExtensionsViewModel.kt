@@ -74,17 +74,21 @@ class AnimeExtensionsViewModel(
             .map { searchQueryPredicate(it ?: "") },
         currentDownloads,
         getExtensions.subscribe(),
-    ) { predicate, downloads, (_updates, _installed, _available, _untrusted) ->
+    ) { predicate, downloads, (_updates, _loaded, _available, _notLoaded) ->
         buildMap {
             val updates = _updates.filter(predicate).map(extensionMapper(downloads))
             if (updates.isNotEmpty()) {
                 put(AnimeExtensionUiModel.Header.Resource(MR.strings.ext_updates_pending), updates)
             }
 
-            val installed = _installed.filter(predicate).map(extensionMapper(downloads))
-            val untrusted = _untrusted.filter(predicate).map(extensionMapper(downloads))
-            if (installed.isNotEmpty() || untrusted.isNotEmpty()) {
-                put(AnimeExtensionUiModel.Header.Resource(MR.strings.ext_installed), installed + untrusted)
+            val notLoaded = _notLoaded.filter(predicate).map(extensionMapper(downloads))
+            if (notLoaded.isNotEmpty()) {
+                put(AnimeExtensionUiModel.Header.Resource(MR.strings.ext_not_loaded), notLoaded)
+            }
+
+            val loaded = _loaded.filter(predicate).map(extensionMapper(downloads))
+            if (loaded.isNotEmpty()) {
+                put(AnimeExtensionUiModel.Header.Resource(MR.strings.ext_installed), loaded)
             }
 
             val languagesWithExtensions = _available
@@ -137,7 +141,7 @@ class AnimeExtensionsViewModel(
                 if (extension.name.contains(subquery, ignoreCase = true)) return@any true
 
                 when (extension) {
-                    is AnimeExtension.Installed -> extension.sources.any { source ->
+                    is AnimeExtension.Loaded -> extension.sources.any { source ->
                         source.name.contains(subquery, ignoreCase = true) ||
                             (source as? AnimeHttpSource)?.getHomeUrl()?.contains(subquery, ignoreCase = true) == true ||
                             source.id == subquery.toLongOrNull()
@@ -149,7 +153,7 @@ class AnimeExtensionsViewModel(
                             it.id == subquery.toLongOrNull()
                     }
 
-                    is AnimeExtension.Untrusted -> extension.name.contains(subquery, ignoreCase = true)
+                    else -> false
                 }
             }
         }
@@ -163,7 +167,7 @@ class AnimeExtensionsViewModel(
         viewModelScope.launchIO {
             state.value.items.values.flatten()
                 .map { it.extension }
-                .filterIsInstance<AnimeExtension.Installed>()
+                .filterIsInstance<AnimeExtension.Loaded>()
                 .filter { it.hasUpdate }
                 .forEach(::updateExtension)
         }
@@ -175,7 +179,7 @@ class AnimeExtensionsViewModel(
         }
     }
 
-    fun updateExtension(extension: AnimeExtension.Installed) {
+    fun updateExtension(extension: AnimeExtension.Loaded) {
         viewModelScope.launchIO {
             extensionManager.updateExtension(extension).collectToInstallUpdate(extension)
         }
@@ -183,6 +187,7 @@ class AnimeExtensionsViewModel(
 
     fun cancelInstallUpdateExtension(extension: AnimeExtension) {
         extensionManager.cancelInstallUpdateExtension(extension)
+        removeDownloadState(extension)
     }
 
     private fun addDownloadState(extension: AnimeExtension, installStep: InstallStep) {
@@ -196,10 +201,11 @@ class AnimeExtensionsViewModel(
     private suspend fun Flow<InstallStep>.collectToInstallUpdate(extension: AnimeExtension) =
         this
             .onEach { installStep -> addDownloadState(extension, installStep) }
+            .takeWhile { installStep -> installStep != InstallStep.Installed }
             .onCompletion { removeDownloadState(extension) }
             .collect()
 
-    fun uninstallExtension(extension: AnimeExtension) {
+    fun uninstallExtension(extension: AnimeExtension.Installed) {
         extensionManager.uninstallExtension(extension)
     }
 
@@ -216,7 +222,7 @@ class AnimeExtensionsViewModel(
         }
     }
 
-    fun trustExtension(extension: AnimeExtension.Untrusted) {
+    fun trustExtension(extension: AnimeExtension.NotLoaded) {
         viewModelScope.launch {
             extensionManager.trust(extension)
         }
@@ -242,6 +248,7 @@ object AnimeExtensionUiModel {
         data class Resource(val textRes: StringResource) : Header
         data class Text(val text: String) : Header
     }
+
     data class Item(
         val extension: AnimeExtension,
         val installStep: InstallStep,

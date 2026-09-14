@@ -11,7 +11,6 @@ import eu.kanade.tachiyomi.extension.ExtensionUpdateNotifier
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.manga.api.MangaExtensionApi
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
-import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionInstallReceiver
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionInstaller
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionLoader
@@ -44,8 +43,8 @@ class MangaExtensionManager(
     private val context: Context,
     private val preferences: SourcePreferences,
     private val trustExtension: TrustMangaExtension,
-    private val api: MangaExtensionApi,
     private val installer: MangaExtensionInstaller,
+    private val api: MangaExtensionApi,
     private val extensionUpdateNotifier: ExtensionUpdateNotifier,
 ) {
 
@@ -55,17 +54,17 @@ class MangaExtensionManager(
 
     private val iconMap = mutableMapOf<String, Drawable>()
 
-    private val installedExtensionsMapFlow = MutableStateFlow(emptyMap<String, MangaExtension.Installed>())
-    val installedExtensionsFlow = installedExtensionsMapFlow.mapExtensionsWhenInitialized()
+    private val loadedExtensionsMapFlow = MutableStateFlow(emptyMap<String, MangaExtension.Loaded>())
+    val loadedExtensionsFlow = loadedExtensionsMapFlow.mapExtensionsWhenInitialized()
 
-    val installedExtensions: List<MangaExtension.Installed>
-        get() = installedExtensionsMapFlow.value.values.toList()
+    val loadedExtensions: List<MangaExtension.Loaded>
+        get() = loadedExtensionsMapFlow.value.values.toList()
 
     private val availableExtensionsMapFlow = MutableStateFlow(emptyMap<String, MangaExtension.Available>())
     val availableExtensionsFlow = availableExtensionsMapFlow.mapExtensions(scope)
 
-    private val untrustedExtensionsMapFlow = MutableStateFlow(emptyMap<String, MangaExtension.Untrusted>())
-    val untrustedExtensionsFlow = untrustedExtensionsMapFlow.mapExtensionsWhenInitialized()
+    private val notLoadedExtensionsMapFlow = MutableStateFlow(emptyMap<String, MangaExtension.NotLoaded>())
+    val notLoadedExtensionsFlow = notLoadedExtensionsMapFlow.mapExtensionsWhenInitialized()
 
     private val _installerCancelEvents = MutableSharedFlow<Long>()
     val installerCancelEvents = _installerCancelEvents.asSharedFlow()
@@ -79,19 +78,27 @@ class MangaExtensionManager(
 
     private var subLanguagesEnabledOnFirstRun = preferences.enabledLanguages.isSet()
 
-    suspend fun getInstalledExtensions(): List<MangaExtension.Installed> {
+    val installedExtensions: List<MangaExtension.Installed>
+        get() = loadedExtensionsMapFlow.value.values.toList() + notLoadedExtensionsMapFlow.value.values.toList()
+
+    suspend fun getLoadedExtensions(): List<MangaExtension.Loaded> {
         initialized.await()
-        return installedExtensionsMapFlow.value.values.toList()
+        return loadedExtensionsMapFlow.value.values.toList()
+    }
+
+    suspend fun getNotLoadedExtensions(): List<MangaExtension.NotLoaded> {
+        initialized.await()
+        return notLoadedExtensionsMapFlow.value.values.toList()
     }
 
     suspend fun getExtensionPackage(sourceId: Long): String? {
-        return getInstalledExtensions().find { extension ->
+        return getLoadedExtensions().find { extension ->
             extension.sources.any { it.id == sourceId }
         }?.pkgName
     }
 
     fun getExtensionPackageAsFlow(sourceId: Long): Flow<String?> {
-        return installedExtensionsFlow.map { extensions ->
+        return loadedExtensionsFlow.map { extensions ->
             extensions.find { extension ->
                 extension.sources.any { it.id == sourceId }
             }?.pkgName
@@ -125,13 +132,13 @@ class MangaExtensionManager(
         try {
             val extensions = MangaExtensionLoader.loadMangaExtensions(context)
 
-            installedExtensionsMapFlow.value = extensions
-                .filterIsInstance<MangaLoadResult.Success>()
-                .associate { it.extension.pkgName to it.extension }
+            loadedExtensionsMapFlow.value = extensions
+                .filterIsInstance<MangaExtension.Loaded>()
+                .associateBy { it.pkgName }
 
-            untrustedExtensionsMapFlow.value = extensions
-                .filterIsInstance<MangaLoadResult.Untrusted>()
-                .associate { it.extension.pkgName to it.extension }
+            notLoadedExtensionsMapFlow.value = extensions
+                .filterIsInstance<MangaExtension.NotLoaded>()
+                .associateBy { it.pkgName }
 
             initialized.complete(Unit)
         } catch (e: Throwable) {
@@ -181,22 +188,22 @@ class MangaExtensionManager(
     ) {
         val noExtAvailable = availableExtensions.isEmpty()
 
-        val installedExtensionsMap = installedExtensionsMapFlow.value.toMutableMap()
+        val loadedExtensionsMap = loadedExtensionsMapFlow.value.toMutableMap()
         var changed = false
 
-        for ((pkgName, extension) in installedExtensionsMap) {
+        for ((pkgName, extension) in loadedExtensionsMap) {
             val availableExt = availableExtensions.find { it.pkgName == pkgName }
 
             if (availableExt == null) {
                 val isObsolete = !noExtAvailable && !extension.isObsolete
-                installedExtensionsMap[pkgName] = extension.copy(
+                loadedExtensionsMap[pkgName] = extension.copy(
                     isObsolete = isObsolete,
                     hasUpdate = false,
                 )
                 changed = changed || isObsolete || (noExtAvailable && (extension.isObsolete || extension.hasUpdate))
             } else {
                 val hasUpdate = extension.updateExists(availableExt)
-                installedExtensionsMap[pkgName] = if (extension.hasUpdate != hasUpdate) {
+                loadedExtensionsMap[pkgName] = if (extension.hasUpdate != hasUpdate) {
                     extension.copy(
                         hasUpdate = hasUpdate,
                         store = availableExt.store,
@@ -211,7 +218,7 @@ class MangaExtensionManager(
         }
 
         if (changed) {
-            installedExtensionsMapFlow.value = installedExtensionsMap
+            loadedExtensionsMapFlow.value = loadedExtensionsMap
         }
         updatePendingUpdatesCount()
     }
@@ -220,7 +227,7 @@ class MangaExtensionManager(
         return installer.downloadAndInstall(extension.apkUrl, extension)
     }
 
-    fun updateExtension(extension: MangaExtension.Installed): Flow<InstallStep> {
+    fun updateExtension(extension: MangaExtension.Loaded): Flow<InstallStep> {
         val availableExt = availableExtensionsMapFlow.value[extension.pkgName] ?: return emptyFlow()
         val isUpdateForPrivatelyInstalled = !extension.isShared
         return installer.downloadAndInstall(availableExt.apkUrl, availableExt, isUpdateForPrivatelyInstalled)
@@ -242,50 +249,45 @@ class MangaExtensionManager(
         installer.updateInstallStep(downloadId, step)
     }
 
-    fun uninstallExtension(extension: MangaExtension) {
+    fun uninstallExtension(extension: MangaExtension.Installed) {
         installer.uninstallApk(extension.pkgName)
     }
 
-    suspend fun trust(extension: MangaExtension.Untrusted) {
-        untrustedExtensionsMapFlow.value[extension.pkgName] ?: return
+    suspend fun trust(extension: MangaExtension.NotLoaded) {
+        val reason = extension.reason as? MangaExtension.NotLoaded.Reason.Untrusted ?: return
+        notLoadedExtensionsMapFlow.value[extension.pkgName] ?: return
 
-        trustExtension.trust(extension.pkgName, extension.versionCode, extension.signatureHash)
+        trustExtension.trust(extension.pkgName, extension.versionCode, reason.signatureHash)
 
-        untrustedExtensionsMapFlow.value -= extension.pkgName
+        notLoadedExtensionsMapFlow.value -= extension.pkgName
 
-        MangaExtensionLoader.loadMangaExtensionFromPkgName(context, extension.pkgName)
-            .let { it as? MangaLoadResult.Success }
-            ?.let { registerNewExtension(it.extension) }
+        when (val reloaded = MangaExtensionLoader.loadMangaExtensionFromPkgName(context, extension.pkgName)) {
+            is MangaExtension.Loaded -> registerExtension(reloaded)
+            is MangaExtension.NotLoaded -> notLoadedExtensionsMapFlow.value += reloaded
+            null -> {}
+        }
     }
 
-    private fun registerNewExtension(extension: MangaExtension.Installed) {
-        installedExtensionsMapFlow.value += extension
-    }
-
-    private fun registerUpdatedExtension(extension: MangaExtension.Installed) {
-        installedExtensionsMapFlow.value += extension
+    private fun registerExtension(extension: MangaExtension.Loaded) {
+        loadedExtensionsMapFlow.value += extension
     }
 
     private fun unregisterMangaExtension(pkgName: String) {
-        installedExtensionsMapFlow.value -= pkgName
-        untrustedExtensionsMapFlow.value -= pkgName
+        loadedExtensionsMapFlow.value -= pkgName
+        notLoadedExtensionsMapFlow.value -= pkgName
     }
 
     private inner class MangaInstallationListener : MangaExtensionInstallReceiver.Listener {
 
-        override fun onExtensionInstalled(extension: MangaExtension.Installed) {
-            registerNewExtension(extension.withUpdateCheck())
+        override fun onExtensionLoaded(extension: MangaExtension.Loaded) {
+            registerExtension(extension.withUpdateCheck())
+            notLoadedExtensionsMapFlow.value -= extension.pkgName
             updatePendingUpdatesCount()
         }
 
-        override fun onExtensionUpdated(extension: MangaExtension.Installed) {
-            registerUpdatedExtension(extension.withUpdateCheck())
-            updatePendingUpdatesCount()
-        }
-
-        override fun onExtensionUntrusted(extension: MangaExtension.Untrusted) {
-            installedExtensionsMapFlow.value -= extension.pkgName
-            untrustedExtensionsMapFlow.value += extension
+        override fun onExtensionNotLoaded(extension: MangaExtension.NotLoaded) {
+            loadedExtensionsMapFlow.value -= extension.pkgName
+            notLoadedExtensionsMapFlow.value += extension
             updatePendingUpdatesCount()
         }
 
@@ -296,7 +298,7 @@ class MangaExtensionManager(
         }
     }
 
-    private fun MangaExtension.Installed.withUpdateCheck(): MangaExtension.Installed {
+    private fun MangaExtension.Loaded.withUpdateCheck(): MangaExtension.Loaded {
         return if (updateExists()) {
             copy(hasUpdate = true)
         } else {
@@ -304,7 +306,7 @@ class MangaExtensionManager(
         }
     }
 
-    private fun MangaExtension.Installed.updateExists(
+    private fun MangaExtension.Loaded.updateExists(
         availableExtension: MangaExtension.Available? = null,
     ): Boolean {
         val availableExt = availableExtension
@@ -315,7 +317,7 @@ class MangaExtensionManager(
     }
 
     private fun updatePendingUpdatesCount() {
-        val pendingUpdateCount = installedExtensionsMapFlow.value.values.count { it.hasUpdate }
+        val pendingUpdateCount = loadedExtensionsMapFlow.value.values.count { it.hasUpdate }
         preferences.extensionUpdatesCount.set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
             extensionUpdateNotifier.dismiss()

@@ -50,7 +50,7 @@ class AndroidMangaSourceManager(
 
     init {
         scope.launchIO {
-            extensionManager.installedExtensionsFlow
+            extensionManager.loadedExtensionsFlow
                 .collectLatest { extensions ->
                     val mutableMap = ConcurrentHashMap<Long, MangaSource>(
                         mapOf(LocalMangaSource.ID to localSource),

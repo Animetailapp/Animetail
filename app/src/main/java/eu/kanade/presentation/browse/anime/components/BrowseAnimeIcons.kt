@@ -44,7 +44,7 @@ fun AnimeSourceIcon(
     source: AnimeSource,
     modifier: Modifier = Modifier,
 ) {
-    val icon = source.icon
+    val icon = produceState<ImageBitmap?>(initialValue = null, source.id) { value = source.icon() }.value
 
     when {
         source.isStub && icon == null -> {
@@ -100,7 +100,7 @@ fun AnimeExtensionIcon(
             )
         }
 
-        is AnimeExtension.Installed -> {
+        is AnimeExtension.Loaded -> {
             val icon by extension.getIcon(density)
             when (icon) {
                 is Result.Loading -> Box(modifier = modifier)
@@ -119,7 +119,7 @@ fun AnimeExtensionIcon(
             }
         }
 
-        is AnimeExtension.Untrusted -> Image(
+        is AnimeExtension.NotLoaded -> Image(
             imageVector = Icons.Filled.Dangerous,
             contentDescription = null,
             colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.error),

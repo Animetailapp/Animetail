@@ -108,7 +108,7 @@ abstract class MangaSearchViewModel(
             return enabledSources
         }
 
-        return extensionManager.getInstalledExtensions()
+        return extensionManager.getLoadedExtensions()
             .filter { it.pkgName == filter }
             .flatMap { it.sources }
             .filterIsInstance<CatalogueSource>()

@@ -4,6 +4,7 @@ import android.graphics.drawable.Drawable
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.source.MangaSource
+import mihon.domain.extension.model.ContentWarning
 import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.source.local.entries.manga.isLocal
 import uy.kohesive.injekt.Injekt
@@ -37,8 +38,8 @@ fun MangaSource.isLocalOrStub(): Boolean = isLocal() || this is StubMangaSource
 // AM (DISCORD) -->
 fun MangaSource?.isNsfw(): Boolean {
     if (this == null || this.isLocalOrStub()) return false
-    val sourceUsed = Injekt.get<MangaExtensionManager>().installedExtensions
+    val sourceUsed = Injekt.get<MangaExtensionManager>().loadedExtensions
         .find { ext -> ext.sources.any { it.id == this.id } }
-    return sourceUsed?.isNsfw ?: false
+    return sourceUsed?.contentWarning == ContentWarning.NSFW
 }
 // <-- AM (DISCORD)
