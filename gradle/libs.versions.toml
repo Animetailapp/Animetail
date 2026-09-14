@@ -79,7 +79,7 @@ tapmoc = "0.4.2"
 unifile = "08f224c8f9"
 valkyrie = "0.5.2"
 voyager = "1.1.0-beta03"
-webgpuviewer = "46"
+webgpuviewer = "47"
 xmlutil = "1.0.2"
 
 [libraries]
