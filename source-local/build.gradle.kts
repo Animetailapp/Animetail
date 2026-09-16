@@ -38,4 +38,6 @@ dependencies {
 
     implementation(libs.injekt)
     implementation(libs.jsoup)
+
+    implementation(libs.kotlinx.datetime)
 }
