@@ -153,4 +153,6 @@ class Kavita(id: Long) : BaseTracker(id, "Kavita"), EnhancedMangaTracker, MangaT
         }
         authentications = oauth
     }
+
+    override suspend fun updateUserConfig() = Unit
 }

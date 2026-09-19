@@ -120,4 +120,6 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedAnimeTracker, An
             null
         }
     }
+
+    override suspend fun updateUserConfig() = Unit
 }

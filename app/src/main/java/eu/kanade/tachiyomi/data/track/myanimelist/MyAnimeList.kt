@@ -259,6 +259,11 @@ class MyAnimeList(id: Long) :
         }
     }
 
+    override suspend fun updateUserConfig() {
+        val username = api.getCurrentUser()
+        saveDisplayUsername(username)
+    }
+
     override fun logout() {
         super.logout()
         trackPreferences.trackToken(this).delete()

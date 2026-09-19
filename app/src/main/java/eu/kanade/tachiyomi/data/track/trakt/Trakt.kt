@@ -318,6 +318,11 @@ class Trakt(
         super.logout()
     }
 
+    override suspend fun updateUserConfig() {
+        val username = api.getCurrentUser() ?: ""
+        saveDisplayUsername(username)
+    }
+
     override suspend fun getMangaMetadata(track: MangaTrack): TrackMangaMetadata? =
         throw NotImplementedError("Not implemented.")
 

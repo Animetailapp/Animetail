@@ -153,6 +153,11 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
         saveCredentials(authenticated.uid.toString(), authenticated.sessionToken)
     }
 
+    override suspend fun updateUserConfig() {
+        val currentUser = api.getCurrentUser()
+        saveDisplayUsername(currentUser.username)
+    }
+
     fun restoreSession(): String? {
         return trackPreferences.trackPassword(this).get().ifBlank { null }
     }

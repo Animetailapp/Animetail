@@ -4,7 +4,12 @@ import android.app.Application
 import androidx.annotation.CallSuper
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.tachiyomi.network.NetworkHelper
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import mihon.app.di.appGraph
 import okhttp3.OkHttpClient
@@ -47,6 +52,29 @@ abstract class BaseTracker(
         }
     }
 
+    final override val isRefreshingFlow: StateFlow<Boolean>
+        field: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
+    final override val refreshResultFlow: SharedFlow<RefreshResult>
+        field: MutableSharedFlow<RefreshResult> = MutableSharedFlow(extraBufferCapacity = 1)
+
+    final override suspend fun refreshUser() {
+        isRefreshingFlow.value = true
+        try {
+            updateUserConfig()
+            refreshResultFlow.emit(RefreshResult.Success)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            logcat(LogPriority.ERROR, e) { "Failed to update user config id=$id" }
+            refreshResultFlow.emit(RefreshResult.Error(e.message ?: "Failed with unknown error"))
+        } finally {
+            isRefreshingFlow.value = false
+        }
+    }
+
+    // does the actual remote calls shielded from outside access to guarantee proper refresh flow setting
+    protected abstract suspend fun updateUserConfig()
+
     override fun getUsername() = trackPreferences.trackUsername(this).get()
 
     override fun getDisplayUsername(): String = trackPreferences.trackDisplayUsername(this).get()
@@ -58,4 +86,9 @@ abstract class BaseTracker(
     override fun saveCredentials(username: String, password: String) {
         trackPreferences.setCredentials(this, username, password)
     }
+}
+
+sealed interface RefreshResult {
+    data object Success : RefreshResult
+    data class Error(val msg: String) : RefreshResult
 }

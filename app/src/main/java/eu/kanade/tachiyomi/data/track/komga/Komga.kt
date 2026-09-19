@@ -121,4 +121,6 @@ class Komga(id: Long) : BaseTracker(id, "Komga"), EnhancedMangaTracker, MangaTra
         } else {
             null
         }
+
+    override suspend fun updateUserConfig() = Unit
 }

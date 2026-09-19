@@ -9,7 +9,7 @@ import tachiyomi.domain.track.manga.model.MangaTrack
  * A tracker that will never prompt the user to manually bind an entry.
  * It is expected that such tracker can only work with specific sources and unique IDs.
  */
-interface EnhancedMangaTracker {
+interface EnhancedMangaTracker : EnhancedTracker {
     /**
      * This Tracker will only work with the sources that are accepted by this filter function.
      */

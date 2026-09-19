@@ -117,4 +117,5 @@ class Suwayomi(id: Long) : BaseTracker(id, "Suwayomi"), EnhancedMangaTracker, Ma
         } else {
             null
         }
+    override suspend fun updateUserConfig() = Unit
 }
