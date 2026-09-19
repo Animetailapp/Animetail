@@ -1,8 +1,16 @@
+import com.android.build.api.variant.ApplicationVariant
+import com.android.build.api.variant.BuildConfigField
 import mihon.gradle.Config
-import mihon.gradle.getBuildTime
+import mihon.gradle.getCurrentTime
 import mihon.gradle.getLatestCommitCount
 import mihon.gradle.getLatestCommitSha
+import mihon.gradle.getLatestCommitTime
 import mihon.gradle.tasks.ReplaceShortcutsPlaceholderTask
+<<<<<<< HEAD
+=======
+import java.io.FileInputStream
+import java.util.Properties
+>>>>>>> 12fbb13df5 (Enable Gradle configuration cache)
 
 plugins {
     alias(mihonx.plugins.android.application)
@@ -23,19 +31,47 @@ android {
         versionCode = 143
         versionName = "0.20.4.0"
 
+<<<<<<< HEAD
         buildConfigField("String", "COMMIT_COUNT", "\"${getLatestCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getLatestCommitSha()}\"")
         buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLatestCommitTime = false)}\"")
+=======
+        buildConfigField("boolean", "TELEMETRY_INCLUDED", "${Config.includeTelemetry}")
+>>>>>>> 12fbb13df5 (Enable Gradle configuration cache)
         buildConfigField("boolean", "UPDATER_ENABLED", "${Config.enableUpdater}")
         buildConfigField("Long", "DISCORD_APP_ID", "1173423931865170070L")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+<<<<<<< HEAD
+=======
+    if (System.getenv("MIHON_GITHUB_RELEASE").toBoolean()) {
+        signingConfigs {
+            named("debug") {
+                storeFile = file(System.getenv("storeFile"))
+                storePassword = System.getenv("storePassword")
+                keyAlias = System.getenv("keyAlias")
+                keyPassword = System.getenv("keyPassword")
+            }
+        }
+    } else if (keystorePropertiesFile.exists()) {
+        val keystoreProperties = FileInputStream(keystorePropertiesFile).use { Properties().apply { load(it) } }
+
+        signingConfigs {
+            named("debug") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
+>>>>>>> 12fbb13df5 (Enable Gradle configuration cache)
     buildTypes {
         val debug by getting {
             applicationIdSuffix = ".dev"
-            versionNameSuffix = "-${getLatestCommitCount()}"
             isPseudoLocalesEnabled = true
         }
         val release = getByName("release") {
@@ -43,8 +79,6 @@ android {
             isShrinkResources = true
 
             proguardFiles("proguard-android-optimize.txt", "proguard-rules.pro")
-
-            buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLatestCommitTime = true)}\"")
         }
 
         val commonMatchingFallbacks = listOf(release.name)
@@ -54,12 +88,9 @@ android {
 
             applicationIdSuffix = ".debug"
 
-            versionNameSuffix = debug.versionNameSuffix
             signingConfig = debug.signingConfig
 
             matchingFallbacks.addAll(commonMatchingFallbacks)
-
-            buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLatestCommitTime = false)}\"")
         }
         create("benchmark") {
             initWith(release)
@@ -347,6 +378,15 @@ dependencies {
     implementation(files("libs/discord_partner_sdk.aar"))
 }
 
+val latestCommitCount = getLatestCommitCount()
+val latestCommitSha = getLatestCommitSha()
+val latestCommitTime = getLatestCommitTime()
+val currentTime = getCurrentTime()
+
+fun ApplicationVariant.buildConfigField(type: String, name: String, value: Provider<String>) {
+    buildConfigFields?.put(name, value.map { BuildConfigField(type, it, null) })
+}
+
 androidComponents {
     beforeVariants { variantBuilder ->
         // Disables standardBenchmark
@@ -354,6 +394,22 @@ androidComponents {
             variantBuilder.enable = variantBuilder.productFlavors.containsAll(
                 listOf("default" to "dev"),
             )
+        }
+    }
+
+    onVariants { variant ->
+        val isUnstableBuild = variant.buildType == "debug" || variant.buildType == "nightly"
+        val buildTime = if (isUnstableBuild) currentTime else latestCommitTime
+
+        variant.buildConfigField("String", "COMMIT_COUNT", latestCommitCount.map { "\"$it\"" })
+        variant.buildConfigField("String", "COMMIT_SHA", latestCommitSha.map { "\"$it\"" })
+        variant.buildConfigField("String", "BUILD_TIME", buildTime.map { "\"$it\"" })
+
+        if (isUnstableBuild) {
+            variant.outputs.forEach { output ->
+                val versionName = output.versionName.get()
+                output.versionName.set(latestCommitCount.map { "$versionName-$it" })
+            }
         }
     }
 
