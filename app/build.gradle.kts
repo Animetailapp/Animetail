@@ -6,11 +6,8 @@ import mihon.gradle.getLatestCommitCount
 import mihon.gradle.getLatestCommitSha
 import mihon.gradle.getLatestCommitTime
 import mihon.gradle.tasks.ReplaceShortcutsPlaceholderTask
-<<<<<<< HEAD
-=======
 import java.io.FileInputStream
 import java.util.Properties
->>>>>>> 12fbb13df5 (Enable Gradle configuration cache)
 
 plugins {
     alias(mihonx.plugins.android.application)
@@ -22,6 +19,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+val keystorePropertiesFile = layout.settingsDirectory.file("keystore.properties").asFile
+
 android {
     namespace = "eu.kanade.tachiyomi"
 
@@ -31,21 +30,12 @@ android {
         versionCode = 143
         versionName = "0.20.4.0"
 
-<<<<<<< HEAD
-        buildConfigField("String", "COMMIT_COUNT", "\"${getLatestCommitCount()}\"")
-        buildConfigField("String", "COMMIT_SHA", "\"${getLatestCommitSha()}\"")
-        buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLatestCommitTime = false)}\"")
-=======
-        buildConfigField("boolean", "TELEMETRY_INCLUDED", "${Config.includeTelemetry}")
->>>>>>> 12fbb13df5 (Enable Gradle configuration cache)
         buildConfigField("boolean", "UPDATER_ENABLED", "${Config.enableUpdater}")
         buildConfigField("Long", "DISCORD_APP_ID", "1173423931865170070L")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-<<<<<<< HEAD
-=======
     if (System.getenv("MIHON_GITHUB_RELEASE").toBoolean()) {
         signingConfigs {
             named("debug") {
@@ -68,7 +58,6 @@ android {
         }
     }
 
->>>>>>> 12fbb13df5 (Enable Gradle configuration cache)
     buildTypes {
         val debug by getting {
             applicationIdSuffix = ".dev"
