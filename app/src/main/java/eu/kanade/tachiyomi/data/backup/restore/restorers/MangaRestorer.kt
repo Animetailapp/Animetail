@@ -13,9 +13,6 @@ import eu.kanade.tachiyomi.data.backup.models.BackupTracking
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import tachiyomi.data.Database
-import tachiyomi.data.MangaUpdateStrategyColumnAdapter
-import tachiyomi.data.MemoColumnAdapter
-import tachiyomi.data.MemoColumnAdapter.encode
 import tachiyomi.data.handlers.manga.MangaDatabaseHandler
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.entries.manga.interactor.GetMangaByUrlAndSourceId
@@ -122,7 +119,7 @@ class MangaRestorer(
                 artist = manga.artist,
                 author = manga.author,
                 description = manga.description,
-                genre = manga.genre?.joinToString(separator = ", "),
+                genre = manga.genre,
                 title = manga.title,
                 status = manga.status,
                 thumbnailUrl = manga.thumbnailUrl,
@@ -136,11 +133,11 @@ class MangaRestorer(
                 coverLastModified = manga.coverLastModified,
                 dateAdded = manga.dateAdded,
                 mangaId = manga.id,
-                updateStrategy = manga.updateStrategy.let(MangaUpdateStrategyColumnAdapter::encode),
+                updateStrategy = manga.updateStrategy,
                 version = manga.version,
                 isSyncing = 1,
                 notes = manga.notes,
-                memo = manga.memo.let(MemoColumnAdapter::encode),
+                memo = manga.memo,
             )
         }
         return manga
@@ -253,7 +250,7 @@ class MangaRestorer(
                     version = chapter.version,
                     isSyncing = 0,
                     dateUploadOverride = chapter.dateUploadOverride,
-                    memo = chapter.memo.let(MemoColumnAdapter::encode),
+                    memo = chapter.memo,
                 )
             }
         }

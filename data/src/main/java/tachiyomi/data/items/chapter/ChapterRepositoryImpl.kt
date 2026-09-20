@@ -13,7 +13,6 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.Database
-import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.subscribeToList
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.items.chapter.model.ChapterUpdate
@@ -83,7 +82,7 @@ class ChapterRepositoryImpl(
                     version = chapterUpdate.version,
                     isSyncing = 0,
                     dateUploadOverride = chapterUpdate.dateUploadOverride,
-                    memo = chapterUpdate.memo?.let(MemoColumnAdapter::encode),
+                    memo = chapterUpdate.memo,
                 )
             }
         }
