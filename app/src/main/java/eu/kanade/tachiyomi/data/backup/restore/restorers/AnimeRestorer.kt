@@ -393,41 +393,37 @@ class AnimeRestorer(
     }
 
     private suspend fun restoreHistory(anime: Anime, backupHistory: List<BackupAnimeHistory>) {
-        val toUpdate = backupHistory.mapNotNull { history ->
-            val dbHistory = handler.awaitOneOrNull {
-                animehistoryQueries.getHistoryByEpisodeUrlAndAnimeId(history.url, anime.id)
-            }
-            val item = history.getHistoryImpl()
-
-            if (dbHistory == null) {
-                val episode = handler.awaitOneOrNull {
-                    episodesQueries.getEpisodeByUrlAndAnimeId(history.url, anime.id)
+        val toUpdate = backupHistory
+            .groupBy { it.url }
+            .mapNotNull { (url, copies) ->
+                val seenAt = copies.maxOf { it.lastRead }
+                val dbHistory = handler.awaitOneOrNull {
+                    animehistoryQueries.getHistoryByEpisodeUrlAndAnimeId(url, anime.id)
                 }
-                return@mapNotNull if (episode == null) {
-                    // Episode doesn't exist; skip
-                    null
-                } else {
+
+                if (dbHistory == null) {
+                    val episode = handler.awaitOneOrNull {
+                        episodesQueries.getEpisodeByUrlAndAnimeId(url, anime.id)
+                    }
+                        // Episode doesn't exist; skip
+                        ?: return@mapNotNull null
                     // New history entry
-                    item.copy(episodeId = episode._id)
+                    return@mapNotNull Pair(episode._id, Date(seenAt))
                 }
-            }
 
-            // Update history entry
-            item.copy(
-                id = dbHistory._id,
-                episodeId = dbHistory.episode_id,
-                seenAt = max(item.seenAt?.time ?: 0L, dbHistory.last_seen?.time ?: 0L)
-                    .takeIf { it > 0L }
-                    ?.let { Date(it) },
-            )
-        }
+                // Update history entry
+                Pair(
+                    dbHistory.episode_id,
+                    Date(max(seenAt, dbHistory.last_seen?.time ?: 0L)),
+                )
+            }
 
         if (toUpdate.isNotEmpty()) {
             handler.await(true) {
-                toUpdate.forEach {
+                toUpdate.forEach { (episodeId, seenAt) ->
                     animehistoryQueries.upsert(
-                        it.episodeId,
-                        it.seenAt,
+                        episodeId,
+                        seenAt,
                     )
                 }
             }
