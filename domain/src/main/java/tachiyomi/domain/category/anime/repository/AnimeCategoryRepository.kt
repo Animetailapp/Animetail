@@ -2,6 +2,7 @@ package tachiyomi.domain.category.anime.repository
 
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.category.model.Category
+import tachiyomi.domain.category.model.NewCategory
 
 interface AnimeCategoryRepository {
 
@@ -23,7 +24,11 @@ interface AnimeCategoryRepository {
 
     fun getVisibleCategoriesByAnimeIdAsFlow(animeId: Long): Flow<List<Category>>
 
-    suspend fun insertAnimeCategory(category: Category)
+    suspend fun insertAnimeCategory(category: NewCategory)
+
+    suspend fun insertAllAnimeCategories(categories: List<NewCategory>)
+
+    suspend fun insertAll(categories: List<NewCategory>) = insertAllAnimeCategories(categories)
 
     suspend fun updateAnimeCategoryName(categoryId: Long, name: String)
 

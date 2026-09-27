@@ -2,6 +2,7 @@ package tachiyomi.domain.category.manga.repository
 
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.category.model.Category
+import tachiyomi.domain.category.model.NewCategory
 
 interface MangaCategoryRepository {
 
@@ -23,11 +24,11 @@ interface MangaCategoryRepository {
 
     fun getVisibleCategoriesByMangaIdAsFlow(mangaId: Long): Flow<List<Category>>
 
-    suspend fun insertMangaCategory(category: Category)
+    suspend fun insertMangaCategory(category: NewCategory)
 
-    suspend fun insertAllMangaCategories(categories: List<Category>)
+    suspend fun insertAllMangaCategories(categories: List<NewCategory>)
 
-    suspend fun insertAll(categories: List<Category>) = insertAllMangaCategories(categories)
+    suspend fun insertAll(categories: List<NewCategory>) = insertAllMangaCategories(categories)
 
     suspend fun updateMangaCategoryName(categoryId: Long, name: String)
 

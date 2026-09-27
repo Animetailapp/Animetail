@@ -11,6 +11,7 @@ import tachiyomi.data.Database
 import tachiyomi.data.subscribeToList
 import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.category.model.Category
+import tachiyomi.domain.category.model.NewCategory
 
 @Inject
 @SingleIn(AppScope::class)
@@ -73,15 +74,14 @@ class MangaCategoryRepositoryImpl(
             .subscribeToList()
     }
 
-    override suspend fun insertMangaCategory(category: Category) {
+    override suspend fun insertMangaCategory(category: NewCategory) {
         database.categoriesQueries.insert(
             name = category.name,
-            order = category.order,
             flags = category.flags,
         )
     }
 
-    override suspend fun insertAllMangaCategories(categories: List<Category>) {
+    override suspend fun insertAllMangaCategories(categories: List<NewCategory>) {
         database.transaction {
             categories.forEach { insertMangaCategory(it) }
         }
@@ -105,10 +105,12 @@ class MangaCategoryRepositoryImpl(
 
     override suspend fun updateMangaCategoryAllOrders(orderedIds: List<Long>) {
         database.transaction {
-            orderedIds.forEachIndexed { index, id ->
+            val current = database.categoriesQueries.getUserCategoryIds().awaitAsList()
+            val ids = orderedIds.filter { it in current } + current.filterNot { it in orderedIds }
+            ids.forEachIndexed { index, id ->
                 database.categoriesQueries.updateOrder(order = -index - 2L, categoryId = id)
             }
-            orderedIds.forEachIndexed { index, id ->
+            ids.forEachIndexed { index, id ->
                 database.categoriesQueries.updateOrder(order = index.toLong(), categoryId = id)
             }
         }

@@ -68,12 +68,10 @@ JOIN animes_categories AC
 ON C._id = AC.category_id
 WHERE AC.anime_id = :animeId AND C.hidden = 0;
 
-insert {
+insert:
 INSERT INTO categories(name, sort, flags)
-VALUES (:name, :order, :flags);
-
-SELECT last_insert_rowid();
-}
+SELECT :name, coalesce(max(sort), -1) + 1, :flags
+FROM categories;
 
 delete:
 DELETE FROM categories
@@ -83,6 +81,12 @@ updateName:
 UPDATE categories
 SET name = :name
 WHERE _id = :categoryId;
+
+getUserCategoryIds:
+SELECT _id
+FROM categories
+WHERE _id > 0
+ORDER BY sort;
 
 updateOrder:
 UPDATE categories
