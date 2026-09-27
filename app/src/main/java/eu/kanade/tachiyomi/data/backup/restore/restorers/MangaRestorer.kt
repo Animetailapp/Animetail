@@ -108,9 +108,7 @@ class MangaRestorer(
 
     suspend fun updateMangaInDb(manga: Manga): Manga {
         handler.await(true) {
-            mangasQueries.update(
-                source = manga.source,
-                url = manga.url,
+            mangasQueries.updateFromBackup(
                 artist = manga.artist,
                 author = manga.author,
                 description = manga.description,
@@ -120,8 +118,6 @@ class MangaRestorer(
                 thumbnailUrl = manga.thumbnailUrl,
                 favorite = manga.favorite,
                 lastUpdate = manga.lastUpdate,
-                nextUpdate = null,
-                calculateInterval = null,
                 initialized = manga.initialized,
                 viewer = manga.viewerFlags,
                 chapterFlags = manga.chapterFlags,
@@ -210,18 +206,10 @@ class MangaRestorer(
     private suspend fun updateExistingChapters(chapters: List<Chapter>) {
         handler.await(true) {
             chapters.forEach { chapter ->
-                chaptersQueries.update(
-                    mangaId = null,
-                    url = null,
-                    name = null,
-                    scanlator = null,
+                chaptersQueries.updateFromBackup(
                     read = chapter.read,
                     bookmark = chapter.bookmark,
                     lastPageRead = chapter.lastPageRead,
-                    chapterNumber = null,
-                    sourceOrder = null,
-                    dateFetch = null,
-                    dateUpload = null,
                     chapterId = chapter.id,
                     dateUploadOverride = chapter.dateUploadOverride,
                     memo = chapter.memo,

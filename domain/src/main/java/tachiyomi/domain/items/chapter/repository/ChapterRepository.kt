@@ -2,6 +2,7 @@ package tachiyomi.domain.items.chapter.repository
 
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.items.chapter.model.Chapter
+import tachiyomi.domain.items.chapter.model.ChapterRemoteUpdate
 import tachiyomi.domain.items.chapter.model.ChapterUpdate
 
 interface ChapterRepository {
@@ -11,6 +12,8 @@ interface ChapterRepository {
     suspend fun updateChapter(chapterUpdate: ChapterUpdate)
 
     suspend fun updateAllChapters(chapterUpdates: List<ChapterUpdate>)
+
+    suspend fun updateAllRemote(chapterUpdates: List<ChapterRemoteUpdate>)
 
     suspend fun removeChaptersWithIds(chapterIds: List<Long>)
 

@@ -18,6 +18,7 @@ import tachiyomi.data.subscribeToList
 import tachiyomi.data.subscribeToOne
 import tachiyomi.data.subscribeToOneOrNull
 import tachiyomi.domain.entries.manga.model.Manga
+import tachiyomi.domain.entries.manga.model.MangaRemoteUpdate
 import tachiyomi.domain.entries.manga.model.MangaUpdate
 import tachiyomi.domain.entries.manga.repository.MangaRepository
 import tachiyomi.domain.library.manga.LibraryManga
@@ -168,6 +169,29 @@ class MangaRepositoryImpl(
         }
     }
 
+    override suspend fun updateMangaRemote(update: MangaRemoteUpdate): Boolean {
+        return try {
+            database.mangasQueries.updateRemote(
+                artist = update.artist,
+                author = update.author,
+                description = update.description,
+                genre = update.genre,
+                title = update.title,
+                status = update.status,
+                thumbnailUrl = update.thumbnailUrl,
+                initialized = update.initialized,
+                coverLastModified = update.coverLastModified,
+                updateStrategy = update.updateStrategy,
+                memo = update.memo,
+                mangaId = update.id,
+            )
+            true
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e)
+            false
+        }
+    }
+
     override suspend fun updateAllManga(mangaUpdates: List<MangaUpdate>): Boolean {
         return try {
             partialUpdateManga(*mangaUpdates.toTypedArray())
@@ -182,28 +206,16 @@ class MangaRepositoryImpl(
         database.transaction {
             mangaUpdates.forEach { value ->
                 database.mangasQueries.update(
-                    source = value.source,
-                    url = value.url,
-                    artist = value.artist,
-                    author = value.author,
-                    description = value.description,
-                    genre = value.genre,
-                    title = value.title,
-                    status = value.status,
-                    thumbnailUrl = value.thumbnailUrl,
                     favorite = value.favorite,
                     lastUpdate = value.lastUpdate,
                     nextUpdate = value.nextUpdate,
                     calculateInterval = value.fetchInterval?.toLong(),
-                    initialized = value.initialized,
                     viewer = value.viewerFlags,
                     chapterFlags = value.chapterFlags,
                     coverLastModified = value.coverLastModified,
                     dateAdded = value.dateAdded,
                     mangaId = value.id,
-                    updateStrategy = value.updateStrategy,
                     notes = value.notes,
-                    memo = value.memo,
                 )
             }
         }
