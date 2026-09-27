@@ -249,7 +249,7 @@ class SyncManager(
     }
 
     private suspend fun getAllMangaThatNeedsSync(): List<Manga> {
-        return mangaHandler.awaitList { mangasQueries.getMangasWithFavoriteTimestamp(::mapManga) }
+        return mangaHandler.awaitList { mangasQueries.getFavorites(::mapManga) }
     }
 
     private suspend fun getAllAnimeFromDB(): List<Anime> {
@@ -467,7 +467,15 @@ class SyncManager(
             val key = Triple(nonFavorite.source, nonFavorite.url, nonFavorite.title)
             localMangaMap[key]?.let { localManga ->
                 if (localManga.favorite != nonFavorite.favorite) {
-                    val updatedManga = localManga.copy(favorite = nonFavorite.favorite)
+                    val updatedManga = localManga.copy(
+                        favoriteAt = if (nonFavorite.favorite) {
+                            nonFavorite.dateAdded.takeIf { it != 0L }
+                                ?: nonFavorite.favoriteModifiedAt?.times(1000)
+                                ?: System.currentTimeMillis()
+                        } else {
+                            null
+                        },
+                    )
                     mangaRestorer.updateMangaInDb(updatedManga)
                 }
             }

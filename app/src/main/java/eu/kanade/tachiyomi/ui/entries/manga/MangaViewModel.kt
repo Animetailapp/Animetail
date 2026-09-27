@@ -1110,7 +1110,7 @@ class MangaViewModel(
     fun setChapterDateOverride(chapters: List<Chapter>, dateOverride: Long) {
         viewModelScope.launchIO {
             chapters
-                .map { ChapterUpdate(id = it.id, dateUploadOverride = dateOverride) }
+                .map { ChapterUpdate(it.id) { dateUploadOverride = dateOverride } }
                 .let { updateChapter.awaitAll(it) }
         }
         toggleAllSelection(false)

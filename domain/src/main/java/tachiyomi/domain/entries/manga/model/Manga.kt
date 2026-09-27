@@ -21,11 +21,10 @@ import java.io.Serializable as JavaSerializable
 data class Manga(
     val id: Long,
     val source: Long,
-    val favorite: Boolean,
     val lastUpdate: Long,
     val nextUpdate: Long,
     val fetchInterval: Int,
-    val dateAdded: Long,
+    val favoriteAt: Long?,
     val viewerFlags: Long,
     val chapterFlags: Long,
     val coverLastModified: Long,
@@ -41,10 +40,15 @@ data class Manga(
     val thumbnailUrl: String?,
     val updateStrategy: UpdateStrategy,
     val initialized: Boolean,
-    val favoriteModifiedAt: Long?,
     val notes: String,
     val memo: JsonObject,
 ) : JavaSerializable {
+
+    val favorite: Boolean
+        get() = favoriteAt != null
+
+    val dateAdded: Long
+        get() = favoriteAt ?: 0L
 
     // SY -->
     @kotlinx.serialization.Transient
@@ -148,11 +152,10 @@ data class Manga(
             ogTitle = "",
             // SY <--
             source = -1L,
-            favorite = false,
             lastUpdate = 0L,
             nextUpdate = 0L,
             fetchInterval = 0,
-            dateAdded = 0L,
+            favoriteAt = null,
             viewerFlags = 0L,
             chapterFlags = 0L,
             coverLastModified = 0L,
@@ -166,7 +169,6 @@ data class Manga(
             thumbnailUrl = null,
             updateStrategy = UpdateStrategy.ALWAYS_UPDATE,
             initialized = false,
-            favoriteModifiedAt = null,
             notes = "",
             memo = JsonObject.EMPTY,
         )

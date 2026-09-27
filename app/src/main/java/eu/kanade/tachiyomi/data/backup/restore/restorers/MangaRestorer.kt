@@ -67,7 +67,7 @@ class MangaRestorer(
     }
 
     suspend fun updateMangaInDb(manga: Manga): Manga {
-        mangaRepository.updateManga(MangaUpdate(id = manga.id, favorite = manga.favorite))
+        mangaRepository.updateManga(MangaUpdate(manga.id) { favoriteAt = manga.favoriteAt })
         return manga
     }
 }

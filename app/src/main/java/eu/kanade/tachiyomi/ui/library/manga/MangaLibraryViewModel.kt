@@ -364,7 +364,7 @@ class MangaLibraryViewModel(
                 }
 
                 MangaLibrarySort.Type.DateAdded -> {
-                    i1.libraryManga.manga.dateAdded.compareTo(i2.libraryManga.manga.dateAdded)
+                    compareValues(i1.libraryManga.manga.favoriteAt, i2.libraryManga.manga.favoriteAt)
                 }
 
                 MangaLibrarySort.Type.TrackerMean -> {
@@ -660,7 +660,7 @@ class MangaLibraryViewModel(
                 val toDelete = mangaToDelete.map {
                     it.removeCovers(coverCache)
                     MangaUpdate(it.id) {
-                        favorite = false
+                        favoriteAt = null
                     }
                 }
                 updateManga.awaitAll(toDelete)
