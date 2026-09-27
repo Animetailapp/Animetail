@@ -27,6 +27,26 @@ sealed interface AnimeExtension {
      */
     sealed interface Installed : AnimeExtension {
         val isShared: Boolean
+
+        /** SHA-256 digests of the certificates its apk is signed with. */
+        val signatures: List<String>
+
+        /**
+         * The newest listing of this extension among the stores whose signing key it's signed with. An
+         * apk from any other store can't replace it, so only these are where its updates come from.
+         */
+        fun findListing(available: Collection<Available>): Available? {
+            return available
+                .filter { it.pkgName == pkgName && it.store.signingKey in signatures }
+                .maxWithOrNull(compareBy<Available> { it.versionCode }.thenBy { it.libVersion })
+        }
+
+        fun findUpdate(available: Collection<Available>): Available? {
+            val installedLibVersion = libVersion
+            return findListing(available)?.takeIf {
+                it.versionCode > versionCode || (installedLibVersion != null && it.libVersion > installedLibVersion)
+            }
+        }
     }
 
     /**
@@ -80,6 +100,7 @@ sealed interface AnimeExtension {
         override val contentWarning: ContentWarning,
         override val isTorrent: Boolean,
         override val isShared: Boolean,
+        override val signatures: List<String> = emptyList(),
         // KMK -->
         override val signatureHash: String,
         /** Guessing repo name from built-in signatures preset */
@@ -103,6 +124,7 @@ sealed interface AnimeExtension {
         override val versionName: String,
         override val versionCode: Long,
         override val isShared: Boolean,
+        override val signatures: List<String> = emptyList(),
         override val contentWarning: ContentWarning,
         override val isTorrent: Boolean = false,
         // KMK -->

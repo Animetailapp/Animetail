@@ -64,8 +64,11 @@ class MangaExtensionManager(
     val loadedExtensions: List<MangaExtension.Loaded>
         get() = loadedExtensionsMapFlow.value.values.toList()
 
-    private val availableExtensionsMapFlow = MutableStateFlow(emptyMap<String, MangaExtension.Available>())
-    val availableExtensionsFlow = availableExtensionsMapFlow.mapExtensions(scope)
+    // Every store's listing, since more than one store can list the same extension
+    private val availableExtensionListFlow = MutableStateFlow(emptyList<MangaExtension.Available>())
+    val availableExtensionsFlow = availableExtensionListFlow
+        .map { extensions -> extensions.associateBy { it.pkgName }.values.toList() }
+        .stateIn(scope, SharingStarted.Lazily, emptyList())
 
     private val notLoadedExtensionsMapFlow = MutableStateFlow(emptyMap<String, MangaExtension.NotLoaded>())
     val notLoadedExtensionsFlow = notLoadedExtensionsMapFlow.mapExtensionsWhenInitialized()
@@ -158,7 +161,7 @@ class MangaExtensionManager(
                 .associateBy { it.pkgName }
 
             // Newly loaded extensions have no status derived from the store index yet
-            updatedInstalledMangaExtensionsStatuses(availableExtensionsMapFlow.value.values.toList())
+            updatedInstalledMangaExtensionsStatuses(availableExtensionListFlow.value)
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e) { "Failed to load extensions" }
         } finally {
@@ -178,7 +181,7 @@ class MangaExtensionManager(
 
         enableAdditionalSubLanguages(extensions)
 
-        availableExtensionsMapFlow.value = extensions.associateBy { it.pkgName }
+        availableExtensionListFlow.value = extensions
         updatedInstalledMangaExtensionsStatuses(extensions)
         setupAvailableMangaExtensionsSourcesDataMap(extensions)
     }
@@ -206,51 +209,24 @@ class MangaExtensionManager(
     private fun updatedInstalledMangaExtensionsStatuses(
         availableExtensions: List<MangaExtension.Available>,
     ) {
-        val noExtAvailable = availableExtensions.isEmpty()
-
-        val loadedExtensionsMap = loadedExtensionsMapFlow.value.toMutableMap()
-        var changed = false
-
-        for ((pkgName, extension) in loadedExtensionsMap) {
-            val availableExt = availableExtensions.find { it.pkgName == pkgName }
-
-            if (availableExt == null) {
-                val isObsolete = !noExtAvailable && !extension.isObsolete
-                loadedExtensionsMap[pkgName] = extension.copy(
-                    isObsolete = isObsolete,
-                    hasUpdate = false,
-                )
-                changed = changed || isObsolete || (noExtAvailable && (extension.isObsolete || extension.hasUpdate))
-            } else {
-                val hasUpdate = extension.updateExists(availableExt)
-                loadedExtensionsMap[pkgName] = if (extension.hasUpdate != hasUpdate) {
-                    extension.copy(
-                        hasUpdate = hasUpdate,
-                        store = availableExt.store,
-                    )
-                } else {
-                    extension.copy(
-                        store = availableExt.store,
-                    )
-                }
-                changed = true
-            }
+        if (availableExtensions.isEmpty()) {
+            return
         }
 
-        if (changed) {
-            loadedExtensionsMapFlow.value = loadedExtensionsMap
+        loadedExtensionsMapFlow.value = loadedExtensionsMapFlow.value.mapValues { (_, extension) ->
+            extension.withStatus(availableExtensions)
         }
         updatePendingUpdatesCount()
     }
 
     fun installExtension(extension: MangaExtension.Available): Flow<InstallStep> {
-        return installer.downloadAndInstall(extension.apkUrl, extension)
+        return installer.downloadAndInstall(extension)
     }
 
     fun updateExtension(extension: MangaExtension.Loaded): Flow<InstallStep> {
-        val availableExt = availableExtensionsMapFlow.value[extension.pkgName] ?: return emptyFlow()
+        val update = extension.findUpdate(availableExtensionListFlow.value) ?: return emptyFlow()
         val isUpdateForPrivatelyInstalled = !extension.isShared
-        return installer.downloadAndInstall(availableExt.apkUrl, availableExt, isUpdateForPrivatelyInstalled)
+        return installer.downloadAndInstall(update, isUpdateForPrivatelyInstalled)
     }
 
     fun cancelInstallUpdateExtension(extension: MangaExtension) {
@@ -293,7 +269,7 @@ class MangaExtensionManager(
     private inner class MangaInstallationListener : MangaExtensionInstallReceiver.Listener {
 
         override fun onExtensionLoaded(extension: MangaExtension.Loaded) {
-            registerExtension(extension.withUpdateCheck())
+            registerExtension(extension.withStatus(availableExtensionListFlow.value))
             notLoadedExtensionsMapFlow.value -= extension.pkgName
             updatePendingUpdatesCount()
         }
@@ -311,22 +287,20 @@ class MangaExtensionManager(
         }
     }
 
-    private fun MangaExtension.Loaded.withUpdateCheck(): MangaExtension.Loaded {
-        return if (updateExists()) {
-            copy(hasUpdate = true)
-        } else {
-            this
-        }
-    }
-
-    private fun MangaExtension.Loaded.updateExists(
-        availableExtension: MangaExtension.Available? = null,
-    ): Boolean {
-        val availableExt = availableExtension
-            ?: availableExtensionsMapFlow.value[pkgName]
-            ?: return false
-
-        return availableExt.versionCode > versionCode || availableExt.libVersion > libVersion
+    /**
+     * Derives what the store listings say about an installed extension. Without any listing there's
+     * nothing to derive from, so it's left as is rather than being marked obsolete.
+     */
+    private fun MangaExtension.Loaded.withStatus(
+        availableExtensions: List<MangaExtension.Available>,
+    ): MangaExtension.Loaded {
+        if (availableExtensions.isEmpty()) return this
+        val listing = findListing(availableExtensions)
+        return copy(
+            hasUpdate = findUpdate(availableExtensions) != null,
+            isObsolete = listing == null,
+            store = listing?.store ?: store,
+        )
     }
 
     private fun updatePendingUpdatesCount() {
@@ -338,12 +312,6 @@ class MangaExtensionManager(
     }
 
     private operator fun <T : MangaExtension> Map<String, T>.plus(extension: T) = plus(extension.pkgName to extension)
-
-    private fun <T : MangaExtension> StateFlow<Map<String, T>>.mapExtensions(
-        scope: CoroutineScope,
-    ): StateFlow<List<T>> {
-        return map { it.values.toList() }.stateIn(scope, SharingStarted.Lazily, value.values.toList())
-    }
 
     /**
      * Extensions are loaded in the background, so this flow only starts emitting once that finished.

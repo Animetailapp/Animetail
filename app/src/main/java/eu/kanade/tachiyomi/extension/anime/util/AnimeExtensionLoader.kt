@@ -69,12 +69,8 @@ internal object AnimeExtensionLoader {
         PackageManager.GET_SIGNATURES or
         PackageManager.GET_SIGNING_CERTIFICATES
 
-    fun installPrivateExtensionFile(context: Context, file: File): Boolean {
-        val extension = context.packageManager.getPackageArchiveInfo(
-            file.absolutePath,
-            PACKAGE_FLAGS,
-        )
-            ?.takeIf { isPackageAnExtension(it) } ?: return false
+    fun installPrivateExtensionFile(context: Context, file: File, extension: PackageInfo): Boolean {
+        if (!isPackageAnExtension(extension)) return false
         val currentExtension = getAnimeExtensionPackageInfoFromPkgName(
             context,
             extension.packageName,
@@ -128,6 +124,10 @@ internal object AnimeExtensionLoader {
                 File(File(context.filesDir, dirName), "$pkgName.$ext").delete()
             }
         }
+    }
+
+    fun getArchivePackageInfo(context: Context, file: File): PackageInfo? {
+        return context.packageManager.getPackageArchiveInfo(file.absolutePath, PACKAGE_FLAGS)
     }
 
     /**
@@ -319,6 +319,7 @@ internal object AnimeExtensionLoader {
                 versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo),
                 isShared = extensionInfo.isShared,
                 contentWarning = ContentWarning.SAFE,
+                signatures = getSignatures(pkgInfo).orEmpty(),
                 reason = AnimeExtension.NotLoaded.Reason.Failed(e.rootMessage, e.stackTraceToString()),
             )
         }
@@ -353,6 +354,7 @@ internal object AnimeExtensionLoader {
             ?: pkgName
         val versionName = pkgInfo.versionName
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
+        val signatures = getSignatures(pkgInfo).orEmpty()
         val contentWarning = when {
             metaData == null -> ContentWarning.SAFE
 
@@ -388,6 +390,7 @@ internal object AnimeExtensionLoader {
             versionCode = versionCode,
             isShared = extensionInfo.isShared,
             contentWarning = contentWarning,
+            signatures = signatures,
             libVersion = libVersion,
             signatureHash = signatureHash,
             reason = reason,
@@ -420,8 +423,7 @@ internal object AnimeExtensionLoader {
             return notLoaded(AnimeExtension.NotLoaded.Reason.UnsupportedLibVersion, libVersion)
         }
 
-        val signatures = getSignatures(pkgInfo)
-        if (signatures.isNullOrEmpty()) {
+        if (signatures.isEmpty()) {
             logcat(LogPriority.WARN) { "Package $pkgName isn't signed" }
             return notLoaded(AnimeExtension.NotLoaded.Reason.Unsigned, libVersion)
         } else if (!trustExtension.isTrusted(pkgInfo, signatures)) {
@@ -534,6 +536,7 @@ internal object AnimeExtensionLoader {
             pkgFactory = metaData.getString(METADATA_SOURCE_FACTORY),
             icon = runCatching { appInfo.loadIcon(pkgManager) }.getOrNull(),
             isShared = extensionInfo.isShared,
+            signatures = signatures,
             // KMK -->
             signatureHash = signatures.last(),
             repoName = when {
@@ -588,7 +591,7 @@ internal object AnimeExtensionLoader {
      * @param pkgInfo The package info of the application.
      * @return List SHA256 digest of the signatures
      */
-    private fun getSignatures(pkgInfo: PackageInfo): List<String>? {
+    fun getSignatures(pkgInfo: PackageInfo): List<String>? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val signingInfo = pkgInfo.signingInfo
             when {

@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.extension.manga.util
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageInfo
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import dev.zacsweers.metro.AppScope
@@ -52,13 +53,11 @@ class MangaExtensionInstaller(
      * Adds the given extension to the downloads queue and returns an observable containing its
      * step in the installation process.
      *
-     * @param url The url of the apk.
-     * @param extension The extension to install.
+     * @param extension The listing to install, whose apk must be signed with its store's key.
      * @param isUpdateForPrivatelyInstalled If this is an update for a privately installed extension
      */
     fun downloadAndInstall(
-        url: String,
-        extension: MangaExtension,
+        extension: MangaExtension.Available,
         isUpdateForPrivatelyInstalled: Boolean = false,
     ): Flow<InstallStep> {
         val downloadId = extension.pkgName.hashCode().toLong()
@@ -71,7 +70,7 @@ class MangaExtensionInstaller(
             val tmpFile = File(context.cacheDir, "extension_${extension.pkgName}.apk")
             try {
                 step.value = InstallStep.Downloading
-                val request = Request.Builder().url(url).build()
+                val request = Request.Builder().url(extension.apkUrl).build()
                 val response = httpClient.newCall(request).execute()
 
                 if (!response.isSuccessful) {
@@ -83,8 +82,16 @@ class MangaExtensionInstaller(
                     }
                 }
 
+                // The store's index names the apk, but nothing ties what's served there to the store's key
+                val packageInfo = MangaExtensionLoader.getArchivePackageInfo(context, tmpFile)
+                    ?.takeIf { extension.store.signingKey in MangaExtensionLoader.getSignatures(it).orEmpty() }
+                if (packageInfo == null) {
+                    tmpFile.delete()
+                    throw Exception("Extension isn't signed with the key of ${extension.store.name}")
+                }
+
                 step.value = InstallStep.Installing
-                installApk(downloadId, tmpFile, isUpdateForPrivatelyInstalled, extension.pkgName)
+                installApk(downloadId, tmpFile, packageInfo, isUpdateForPrivatelyInstalled, extension.pkgName)
             } catch (e: Exception) {
                 if (e is InterruptedException) {
                     // Canceled
@@ -109,17 +116,19 @@ class MangaExtensionInstaller(
      * Starts an intent to install the extension at the given uri.
      *
      * @param tempFile The file of the extension to install. Delete after use.
+     * @param packageInfo The package info already read from [tempFile].
      * @param isUpdateForPrivatelyInstalled If this install is an update for a privately installed extension
      * @param pkgName Package name of the extension to install
      */
     private fun installApk(
         downloadId: Long,
         tempFile: File,
+        packageInfo: PackageInfo,
         isUpdateForPrivatelyInstalled: Boolean = false,
         pkgName: String? = null,
     ) {
         if (isUpdateForPrivatelyInstalled) {
-            installApkPrivately(downloadId, tempFile)
+            installApkPrivately(downloadId, tempFile, packageInfo)
             return
         }
 
@@ -136,7 +145,7 @@ class MangaExtensionInstaller(
             }
 
             BasePreferences.ExtensionInstaller.PRIVATE -> {
-                installApkPrivately(downloadId, tempFile)
+                installApkPrivately(downloadId, tempFile, packageInfo)
             }
 
             else -> {
@@ -157,9 +166,9 @@ class MangaExtensionInstaller(
         }
     }
 
-    private fun installApkPrivately(downloadId: Long, tempFile: File) {
+    private fun installApkPrivately(downloadId: Long, tempFile: File, packageInfo: PackageInfo) {
         try {
-            if (MangaExtensionLoader.installPrivateExtensionFile(context, tempFile)) {
+            if (MangaExtensionLoader.installPrivateExtensionFile(context, tempFile, packageInfo)) {
                 updateInstallStep(downloadId, InstallStep.Installed)
             } else {
                 updateInstallStep(downloadId, InstallStep.Error)

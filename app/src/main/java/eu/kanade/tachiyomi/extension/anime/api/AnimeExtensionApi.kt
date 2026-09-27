@@ -31,17 +31,7 @@ class AnimeExtensionApi(
 
         val extensions = findExtensions()
 
-        val extensionsWithUpdate = mutableListOf<AnimeExtension.Loaded>()
-        for (installedExt in loadedExtensions) {
-            val pkgName = installedExt.pkgName
-            val availableExt = extensions.find { it.pkgName == pkgName } ?: continue
-            val hasUpdatedVer = availableExt.versionCode > installedExt.versionCode
-            val hasUpdatedLib = availableExt.libVersion > installedExt.libVersion
-            val hasUpdate = hasUpdatedVer || hasUpdatedLib
-            if (hasUpdate) {
-                extensionsWithUpdate.add(installedExt)
-            }
-        }
+        val extensionsWithUpdate = loadedExtensions.filter { it.findUpdate(extensions) != null }
 
         if (extensionsWithUpdate.isNotEmpty()) {
             extensionUpdateNotifier.promptUpdates(
