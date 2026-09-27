@@ -15,14 +15,14 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.anime.model.Anime
-import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
+import tachiyomi.domain.track.anime.interactor.UpsertAnimeTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 
 private val appGraph get() = Injekt.get<Application>().appGraph
 private val addTracks: AddAnimeTracks by lazy { appGraph.addAnimeTracks }
-private val insertTrack: InsertAnimeTrack by lazy { appGraph.insertAnimeTrack }
+private val upsertTrack: UpsertAnimeTrack by lazy { appGraph.upsertAnimeTrack }
 
 interface AnimeTracker {
 
@@ -131,7 +131,7 @@ interface AnimeTracker {
         try {
             update(track)
             track.toDomainTrack(idRequired = false)?.let {
-                insertTrack.await(it)
+                upsertTrack.await(it)
             }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Failed to update remote track data id=${track.id}" }

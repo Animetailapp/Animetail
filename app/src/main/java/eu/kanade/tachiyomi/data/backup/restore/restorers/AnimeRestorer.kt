@@ -16,7 +16,7 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
-import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
+import tachiyomi.domain.track.anime.interactor.UpsertAnimeTrack
 import tachiyomi.domain.track.anime.model.AnimeTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -32,7 +32,7 @@ class AnimeRestorer(
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
     private val updateAnime: UpdateAnime,
     private val getTracks: GetAnimeTracks,
-    private val insertTrack: InsertAnimeTrack,
+    private val upsertTrack: UpsertAnimeTrack,
     fetchInterval: AnimeFetchInterval,
 ) {
 
@@ -458,7 +458,7 @@ class AnimeRestorer(
             .partition { it.id > 0 }
 
         if (newTracks.isNotEmpty()) {
-            insertTrack.awaitAll(newTracks)
+            upsertTrack.awaitAll(newTracks)
         }
         if (existingTracks.isNotEmpty()) {
             handler.await(true) {

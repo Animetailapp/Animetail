@@ -23,7 +23,7 @@ import tachiyomi.domain.items.chapter.interactor.UpdateChapter
 import tachiyomi.domain.items.chapter.model.ChapterUpdate
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
-import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
+import tachiyomi.domain.track.manga.interactor.UpsertMangaTrack
 import kotlin.time.Clock
 
 @Inject
@@ -39,7 +39,7 @@ class MigrateMangaUseCase(
     private val getCategories: GetMangaCategories,
     private val setMangaCategories: SetMangaCategories,
     private val getTracks: GetMangaTracks,
-    private val insertTrack: InsertMangaTrack,
+    private val upsertTrack: UpsertMangaTrack,
     private val coverCache: MangaCoverCache,
 ) {
     private val enhancedServices by lazy { trackerManager.trackers.filterIsInstance<EnhancedMangaTracker>() }
@@ -124,7 +124,7 @@ class MigrateMangaUseCase(
                 }
             }
                 .takeIf { it.isNotEmpty() }
-                ?.let { insertTrack.awaitAll(it) }
+                ?.let { upsertTrack.awaitAll(it) }
 
             // Delete downloaded
             if (MigrationFlag.REMOVE_DOWNLOAD in flags && currentSource != null) {

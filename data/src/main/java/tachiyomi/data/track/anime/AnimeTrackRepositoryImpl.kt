@@ -62,18 +62,26 @@ class AnimeTrackRepositoryImpl(
         }
     }
 
+    override suspend fun upsertAnime(track: AnimeTrack) {
+        upsertValues(track)
+    }
+
+    override suspend fun upsertAllAnime(tracks: List<AnimeTrack>) {
+        upsertValues(*tracks.toTypedArray())
+    }
+
     override suspend fun insertAnime(track: AnimeTrack) {
-        insertValues(track)
+        upsertValues(track)
     }
 
     override suspend fun insertAllAnime(tracks: List<AnimeTrack>) {
-        insertValues(*tracks.toTypedArray())
+        upsertValues(*tracks.toTypedArray())
     }
 
-    private suspend fun insertValues(vararg tracks: AnimeTrack) {
+    private suspend fun upsertValues(vararg tracks: AnimeTrack) {
         handler.await(inTransaction = true) {
             tracks.forEach { animeTrack ->
-                anime_syncQueries.insert(
+                anime_syncQueries.upsert(
                     animeId = animeTrack.animeId,
                     syncId = animeTrack.trackerId,
                     remoteId = animeTrack.remoteId,

@@ -201,10 +201,12 @@ import tachiyomi.domain.track.anime.interactor.DeleteAnimeTrack
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.domain.track.anime.interactor.GetTracksPerAnime
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
+import tachiyomi.domain.track.anime.interactor.UpsertAnimeTrack
 import tachiyomi.domain.track.manga.interactor.DeleteMangaTrack
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.domain.track.manga.interactor.GetTracksPerManga
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
+import tachiyomi.domain.track.manga.interactor.UpsertMangaTrack
 import tachiyomi.domain.updates.anime.interactor.GetAnimeUpdates
 import tachiyomi.domain.updates.manga.interactor.GetMangaUpdates
 import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
@@ -308,7 +310,9 @@ class MetroInjektRegistrar(
         ResetAnimeCategoryFlags::class.java to { graph.resetAnimeCategoryFlags },
         AddMangaTracks::class.java to { graph.addMangaTracks },
         AddAnimeTracks::class.java to { graph.addAnimeTracks },
+        UpsertMangaTrack::class.java to { graph.upsertMangaTrack },
         InsertMangaTrack::class.java to { graph.insertMangaTrack },
+        UpsertAnimeTrack::class.java to { graph.upsertAnimeTrack },
         InsertAnimeTrack::class.java to { graph.insertAnimeTrack },
         UpsertAnimeHistory::class.java to { graph.upsertAnimeHistory },
         UpdateEpisode::class.java to { graph.updateEpisode },

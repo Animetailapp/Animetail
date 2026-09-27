@@ -224,10 +224,12 @@ import tachiyomi.domain.track.anime.interactor.DeleteAnimeTrack
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.domain.track.anime.interactor.GetTracksPerAnime
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
+import tachiyomi.domain.track.anime.interactor.UpsertAnimeTrack
 import tachiyomi.domain.track.manga.interactor.DeleteMangaTrack
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.domain.track.manga.interactor.GetTracksPerManga
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
+import tachiyomi.domain.track.manga.interactor.UpsertMangaTrack
 import tachiyomi.domain.updates.anime.interactor.GetAnimeUpdates
 import tachiyomi.domain.updates.manga.interactor.GetMangaUpdates
 import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
@@ -345,8 +347,10 @@ interface AppGraph : ViewModelGraph {
     val resetAnimeCategoryFlags: ResetAnimeCategoryFlags
     val addMangaTracks: AddMangaTracks
     val addAnimeTracks: AddAnimeTracks
-    val insertMangaTrack: InsertMangaTrack
-    val insertAnimeTrack: InsertAnimeTrack
+    val upsertMangaTrack: UpsertMangaTrack
+    val insertMangaTrack: InsertMangaTrack get() = upsertMangaTrack
+    val upsertAnimeTrack: UpsertAnimeTrack
+    val insertAnimeTrack: InsertAnimeTrack get() = upsertAnimeTrack
     val upsertAnimeHistory: UpsertAnimeHistory
     val updateEpisode: UpdateEpisode
     val getEpisodesByAnimeId: GetEpisodesByAnimeId

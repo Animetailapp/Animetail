@@ -21,7 +21,11 @@ interface AnimeTrackRepository {
 
     suspend fun delete(animeId: Long, trackerId: Long)
 
-    suspend fun insertAnime(track: AnimeTrack)
+    suspend fun upsertAnime(track: AnimeTrack)
 
-    suspend fun insertAllAnime(tracks: List<AnimeTrack>)
+    suspend fun upsertAllAnime(tracks: List<AnimeTrack>)
+
+    suspend fun insertAnime(track: AnimeTrack) = upsertAnime(track)
+
+    suspend fun insertAllAnime(tracks: List<AnimeTrack>) = upsertAllAnime(tracks)
 }

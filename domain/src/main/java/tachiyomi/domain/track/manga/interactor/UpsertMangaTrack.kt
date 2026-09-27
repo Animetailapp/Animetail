@@ -7,13 +7,13 @@ import tachiyomi.domain.track.manga.model.MangaTrack
 import tachiyomi.domain.track.manga.repository.MangaTrackRepository
 
 @Inject
-class InsertMangaTrack(
+class UpsertMangaTrack(
     private val trackRepository: MangaTrackRepository,
 ) {
 
     suspend fun await(track: MangaTrack) {
         try {
-            trackRepository.insertManga(track)
+            trackRepository.upsertManga(track)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
         }
@@ -21,9 +21,11 @@ class InsertMangaTrack(
 
     suspend fun awaitAll(tracks: List<MangaTrack>) {
         try {
-            trackRepository.insertAllManga(tracks)
+            trackRepository.upsertAllManga(tracks)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
         }
     }
 }
+
+typealias InsertMangaTrack = UpsertMangaTrack

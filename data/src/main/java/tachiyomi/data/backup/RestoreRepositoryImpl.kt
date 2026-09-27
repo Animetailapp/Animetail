@@ -275,7 +275,7 @@ class RestoreRepositoryImpl(
             .partition { it.id > 0 }
 
         if (newTracks.isNotEmpty()) {
-            trackRepository.insertAllManga(newTracks)
+            trackRepository.upsertAllManga(newTracks)
         }
 
         existingTracks.forEach { track ->

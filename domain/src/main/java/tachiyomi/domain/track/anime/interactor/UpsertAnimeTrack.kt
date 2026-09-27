@@ -7,13 +7,13 @@ import tachiyomi.domain.track.anime.model.AnimeTrack
 import tachiyomi.domain.track.anime.repository.AnimeTrackRepository
 
 @Inject
-class InsertAnimeTrack(
-    private val animetrackRepository: AnimeTrackRepository,
+class UpsertAnimeTrack(
+    private val trackRepository: AnimeTrackRepository,
 ) {
 
     suspend fun await(track: AnimeTrack) {
         try {
-            animetrackRepository.insertAnime(track)
+            trackRepository.upsertAnime(track)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
         }
@@ -21,9 +21,11 @@ class InsertAnimeTrack(
 
     suspend fun awaitAll(tracks: List<AnimeTrack>) {
         try {
-            animetrackRepository.insertAllAnime(tracks)
+            trackRepository.upsertAllAnime(tracks)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
         }
     }
 }
+
+typealias InsertAnimeTrack = UpsertAnimeTrack

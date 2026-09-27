@@ -62,18 +62,26 @@ class MangaTrackRepositoryImpl(
         }
     }
 
+    override suspend fun upsertManga(track: MangaTrack) {
+        upsertValues(track)
+    }
+
+    override suspend fun upsertAllManga(tracks: List<MangaTrack>) {
+        upsertValues(*tracks.toTypedArray())
+    }
+
     override suspend fun insertManga(track: MangaTrack) {
-        insertValues(track)
+        upsertValues(track)
     }
 
     override suspend fun insertAllManga(tracks: List<MangaTrack>) {
-        insertValues(*tracks.toTypedArray())
+        upsertValues(*tracks.toTypedArray())
     }
 
-    private suspend fun insertValues(vararg tracks: MangaTrack) {
+    private suspend fun upsertValues(vararg tracks: MangaTrack) {
         handler.await(inTransaction = true) {
             tracks.forEach { mangaTrack ->
-                manga_syncQueries.insert(
+                manga_syncQueries.upsert(
                     mangaId = mangaTrack.mangaId,
                     syncId = mangaTrack.trackerId,
                     remoteId = mangaTrack.remoteId,
