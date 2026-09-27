@@ -63,11 +63,9 @@ class DeepLinkAnimeScreenModel(
     private suspend fun getEpisodeFromSEpisode(sEpisode: SEpisode, anime: Anime, source: AnimeSource): Episode? {
         val localEpisode = getEpisodeByUrlAndAnimeId.await(sEpisode.url, anime.id)
 
-        return localEpisode
-            ?: updateAnimeFromRemote.awaitEpisodesUpdate(anime, fetchEpisodes = true)
-                .getOrElse { return null }
-                .newEpisodes
-                .find { it.url == sEpisode.url }
+        if (localEpisode != null) return localEpisode
+        updateAnimeFromRemote.awaitEpisodesUpdate(anime, fetchEpisodes = true).getOrNull()
+        return getEpisodeByUrlAndAnimeId.await(sEpisode.url, anime.id)
     }
 
     private suspend fun getAnimeFromSAnime(sAnime: SAnime, sourceId: Long): Anime {

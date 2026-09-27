@@ -182,9 +182,18 @@ class AnimeRestorer(
             .associateBy { it.url }
 
         val (existingEpisodes, newEpisodes) = backupEpisodes
-            .mapNotNull { backupEpisode ->
-                val episode = backupEpisode.toEpisodeImpl().copy(animeId = anime.id)
-
+            .map { it.toEpisodeImpl().copy(animeId = anime.id) }
+            .groupBy { it.url }
+            .map { (_, copies) ->
+                copies.reduce { kept, other ->
+                    kept.copy(
+                        seen = kept.seen || other.seen,
+                        bookmark = kept.bookmark || other.bookmark,
+                        lastSecondSeen = kotlin.math.max(kept.lastSecondSeen, other.lastSecondSeen),
+                    )
+                }
+            }
+            .mapNotNull { episode ->
                 val dbEpisode = dbEpisodesByUrl[episode.url]
 
                 when {
