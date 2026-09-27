@@ -659,10 +659,9 @@ class MangaLibraryViewModel(
             if (deleteFromLibrary) {
                 val toDelete = mangaToDelete.map {
                     it.removeCovers(coverCache)
-                    MangaUpdate(
-                        favorite = false,
-                        id = it.id,
-                    )
+                    MangaUpdate(it.id) {
+                        favorite = false
+                    }
                 }
                 updateManga.awaitAll(toDelete)
             }

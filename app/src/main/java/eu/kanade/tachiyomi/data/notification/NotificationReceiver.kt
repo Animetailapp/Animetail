@@ -38,7 +38,7 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.interactor.GetChapter
 import tachiyomi.domain.items.chapter.interactor.UpdateChapter
 import tachiyomi.domain.items.chapter.model.Chapter
-import tachiyomi.domain.items.chapter.model.toChapterUpdate
+import tachiyomi.domain.items.chapter.model.ChapterUpdate
 import tachiyomi.domain.items.episode.interactor.GetEpisode
 import tachiyomi.domain.items.episode.interactor.UpdateEpisode
 import tachiyomi.domain.items.episode.model.Episode
@@ -298,7 +298,6 @@ class NotificationReceiver : BroadcastReceiver() {
         scope.launchIO {
             val toUpdate = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
                 .map {
-                    val chapter = it.copy(read = true)
                     if (downloadPreferences.removeAfterMarkedAsRead.get()) {
                         val manga = getManga.await(mangaId)
                         if (manga != null) {
@@ -308,7 +307,7 @@ class NotificationReceiver : BroadcastReceiver() {
                             }
                         }
                     }
-                    chapter.toChapterUpdate()
+                    ChapterUpdate(it.id) { read = true }
                 }
             updateChapter.awaitAll(toUpdate)
         }

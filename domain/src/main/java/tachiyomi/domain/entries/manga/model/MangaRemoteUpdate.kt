@@ -17,3 +17,18 @@ data class MangaRemoteUpdate(
     val initialized: Boolean,
     val coverLastModified: Long?,
 )
+
+fun Manga.toMangaRemoteUpdate(): MangaRemoteUpdate = MangaRemoteUpdate(
+    id = id,
+    title = title,
+    author = author,
+    artist = artist,
+    description = description,
+    genre = genre,
+    status = status,
+    thumbnailUrl = thumbnailUrl,
+    updateStrategy = updateStrategy,
+    memo = memo,
+    initialized = initialized,
+    coverLastModified = coverLastModified,
+)

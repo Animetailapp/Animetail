@@ -20,7 +20,7 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaUpdate
 import tachiyomi.domain.items.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.items.chapter.interactor.UpdateChapter
-import tachiyomi.domain.items.chapter.model.toChapterUpdate
+import tachiyomi.domain.items.chapter.model.ChapterUpdate
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
@@ -75,31 +75,27 @@ class MigrateMangaUseCase(
                     .filter { it.read }
                     .maxOfOrNull { it.chapterNumber }
 
-                val updatedMangaChapters = mangaChapters.map { mangaChapter ->
-                    var updatedChapter = mangaChapter
-                    if (updatedChapter.isRecognizedNumber) {
+                val chapterUpdates = mangaChapters
+                    .filter { it.isRecognizedNumber }
+                    .map { mangaChapter ->
                         val prevChapter = prevMangaChapters
-                            .find { it.isRecognizedNumber && it.chapterNumber == updatedChapter.chapterNumber }
+                            .find { it.isRecognizedNumber && it.chapterNumber == mangaChapter.chapterNumber }
 
-                        if (prevChapter != null) {
-                            updatedChapter = updatedChapter.copy(
-                                dateFetch = prevChapter.dateFetch,
-                                bookmark = prevChapter.bookmark,
-                                lastPageRead = prevChapter.lastPageRead,
-                            )
+                        ChapterUpdate(mangaChapter.id) {
+                            if (prevChapter != null) {
+                                dateFetch = prevChapter.dateFetch
+                                bookmark = prevChapter.bookmark
+                                lastPageRead = prevChapter.lastPageRead
+                            }
+
+                            if (prevChapter?.read == true ||
+                                (maxChapterRead != null && mangaChapter.chapterNumber <= maxChapterRead)
+                            ) {
+                                read = true
+                            }
                         }
-
-                        if (prevChapter?.read == true ||
-                            (maxChapterRead != null && updatedChapter.chapterNumber <= maxChapterRead)
-                        ) {
-                            updatedChapter = updatedChapter.copy(read = true)
                         }
                     }
-
-                    updatedChapter
-                }
-
-                val chapterUpdates = updatedMangaChapters.map { it.toChapterUpdate() }
                 updateChapter.awaitAll(chapterUpdates)
             }
 
@@ -151,20 +147,18 @@ class MigrateMangaUseCase(
                 }
             }
 
-            val currentMangaUpdate = MangaUpdate(
-                id = current.id,
-                favorite = false,
-                dateAdded = 0,
-            )
+            val currentMangaUpdate = MangaUpdate(current.id) {
+                favorite = false
+                dateAdded = 0
+            }
                 .takeIf { replace }
-            val targetMangaUpdate = MangaUpdate(
-                id = target.id,
-                favorite = true,
-                chapterFlags = current.chapterFlags,
-                viewerFlags = current.viewerFlags,
-                dateAdded = if (replace) current.dateAdded else Clock.System.now().toEpochMilliseconds(),
-                notes = if (MigrationFlag.NOTES in flags) current.notes else null,
-            )
+            val targetMangaUpdate = MangaUpdate(target.id) {
+                favorite = true
+                chapterFlags = current.chapterFlags
+                viewerFlags = current.viewerFlags
+                dateAdded = if (replace) current.dateAdded else Clock.System.now().toEpochMilliseconds()
+                if (MigrationFlag.NOTES in flags) notes = current.notes
+            }
 
             updateManga.awaitAll(listOfNotNull(currentMangaUpdate, targetMangaUpdate))
         } catch (e: Throwable) {

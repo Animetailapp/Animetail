@@ -33,7 +33,7 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.interactor.GetLibraryManga
 import tachiyomi.domain.entries.manga.model.Manga
-import tachiyomi.domain.entries.manga.model.toMangaUpdate
+import tachiyomi.domain.entries.manga.model.toMangaRemoteUpdate
 import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import java.util.concurrent.CopyOnWriteArrayList
@@ -127,7 +127,7 @@ class MangaMetadataUpdateJob(private val context: Context, workerParams: WorkerP
                                         val updatedManga = manga.prepUpdateCover(coverCache, networkManga, true)
                                             .copyFrom(networkManga)
                                         try {
-                                            updateManga.await(updatedManga.toMangaUpdate())
+                                            updateManga.await(updatedManga.toMangaRemoteUpdate())
                                         } catch (e: Exception) {
                                             logcat(LogPriority.ERROR) { "Manga doesn't exist anymore" }
                                         }

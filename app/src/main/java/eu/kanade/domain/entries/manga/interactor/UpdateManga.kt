@@ -105,19 +105,21 @@ class UpdateManga(
         window: Pair<Long, Long> = mangaFetchInterval.getWindow(dateTime.date, timeZone),
     ): Boolean {
         return mangaRepository.updateManga(
-            mangaFetchInterval.toMangaUpdate(manga, dateTime, timeZone, window),
+            mangaFetchInterval.withFetchInterval(manga, dateTime, timeZone, window),
         )
     }
 
     suspend fun awaitUpdateLastUpdate(mangaId: Long): Boolean {
         return mangaRepository.updateManga(
-            MangaUpdate(id = mangaId, lastUpdate = Clock.System.now().toEpochMilliseconds()),
+            MangaUpdate(mangaId) { lastUpdate = Clock.System.now().toEpochMilliseconds() },
         )
     }
 
     suspend fun awaitUpdateCoverLastModified(mangaId: Long): Boolean {
         return mangaRepository.updateManga(
-            MangaUpdate(id = mangaId, coverLastModified = Clock.System.now().toEpochMilliseconds()),
+            MangaUpdate(mangaId) {
+                coverLastModified = Clock.System.now().toEpochMilliseconds()
+            },
         )
     }
 
@@ -127,7 +129,10 @@ class UpdateManga(
             false -> 0L
         }
         return mangaRepository.updateManga(
-            MangaUpdate(id = mangaId, favorite = favorite, dateAdded = dateAdded),
+            MangaUpdate(mangaId) {
+                this.favorite = favorite
+                this.dateAdded = dateAdded
+            },
         )
     }
 }
