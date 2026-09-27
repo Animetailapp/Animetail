@@ -51,9 +51,9 @@ import mihon.icons.materialsymbols.rounded.FlipToBack
 import mihon.icons.materialsymbols.rounded.SelectAll
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
-import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.core.common.util.lang.withNonCancellableContext
-import tachiyomi.data.Database
+import tachiyomi.domain.entries.manga.repository.MangaRepository
+import tachiyomi.domain.history.manga.repository.MangaHistoryRepository
 import tachiyomi.domain.source.manga.interactor.GetMangaSourcesWithNonLibraryManga
 import tachiyomi.domain.source.manga.model.MangaSourceWithCount
 import tachiyomi.domain.source.manga.model.Source
@@ -230,7 +230,8 @@ class ClearDatabaseScreen : Screen() {
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class ClearDatabaseViewModel(
-    private val database: Database,
+    private val mangaRepository: MangaRepository,
+    private val historyRepository: MangaHistoryRepository,
     private val getSourcesWithNonLibraryManga: GetMangaSourcesWithNonLibraryManga,
 ) : ViewModel() {
 
@@ -253,8 +254,8 @@ class ClearDatabaseViewModel(
 
     suspend fun removeMangaBySourceId(keepReadManga: Boolean) = withNonCancellableContext {
         val state = state.value as? State.Ready ?: return@withNonCancellableContext
-        database.mangasQueries.deleteNonLibraryManga(state.selection, keepReadManga.toLong())
-        database.historyQueries.removeResettedHistory()
+        mangaRepository.deleteNonLibraryManga(state.selection, keepReadManga)
+        historyRepository.deleteResetHistory()
     }
 
     fun toggleSelection(source: Source) = state.update { state ->

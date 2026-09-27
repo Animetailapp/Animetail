@@ -1,10 +1,10 @@
 package eu.kanade.tachiyomi.data.backup.models
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.protobuf.ProtoNumber
 import mihon.core.common.extensions.JsonObjectEmptyBytes
-import tachiyomi.data.MemoColumnAdapter
+import mihon.core.common.extensions.toByteArray
+import mihon.core.common.extensions.toJsonObject
 import tachiyomi.domain.items.chapter.model.Chapter
 
 @Serializable
@@ -20,7 +20,7 @@ class BackupChapter(
     @ProtoNumber(6) var lastPageRead: Long = 0,
     @ProtoNumber(7) var dateFetch: Long = 0,
     @ProtoNumber(8) var dateUpload: Long = 0,
-    // chapterNumber is called number is 1.x
+    // chapterNumber is called number in 1.x
     @ProtoNumber(9) var chapterNumber: Float = 0F,
     @ProtoNumber(10) var sourceOrder: Long = 0,
     @ProtoNumber(11) var lastModifiedAt: Long = 0,
@@ -41,39 +41,22 @@ class BackupChapter(
             dateUpload = this@BackupChapter.dateUpload,
             sourceOrder = this@BackupChapter.sourceOrder,
             dateUploadOverride = this@BackupChapter.dateUploadOverride,
-            memo = MemoColumnAdapter.decode(this@BackupChapter.memo),
+            memo = this@BackupChapter.memo.toJsonObject(),
         )
     }
 }
 
-val backupChapterMapper = {
-        _: Long,
-        _: Long,
-        url: String,
-        name: String,
-        scanlator: String?,
-        read: Boolean,
-        bookmark: Boolean,
-        lastPageRead: Long,
-        chapterNumber: Double,
-        sourceOrder: Long,
-        dateFetch: Long,
-        dateUpload: Long,
-        dateUploadOverride: Long,
-        memo: JsonObject,
-    ->
-    BackupChapter(
-        url = url,
-        name = name,
-        chapterNumber = chapterNumber.toFloat(),
-        scanlator = scanlator,
-        read = read,
-        bookmark = bookmark,
-        lastPageRead = lastPageRead,
-        dateFetch = dateFetch,
-        dateUpload = dateUpload,
-        sourceOrder = sourceOrder,
-        dateUploadOverride = dateUploadOverride,
-        memo = MemoColumnAdapter.encode(memo),
-    )
-}
+fun Chapter.toBackupChapter() = BackupChapter(
+    url = url,
+    name = name,
+    chapterNumber = chapterNumber.toFloat(),
+    scanlator = scanlator,
+    read = read,
+    bookmark = bookmark,
+    lastPageRead = lastPageRead,
+    dateFetch = dateFetch,
+    dateUpload = dateUpload,
+    sourceOrder = sourceOrder,
+    dateUploadOverride = dateUploadOverride,
+    memo = memo.toByteArray(),
+)

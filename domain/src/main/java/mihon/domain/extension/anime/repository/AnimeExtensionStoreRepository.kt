@@ -8,6 +8,8 @@ interface AnimeExtensionStoreRepository {
 
     suspend fun insertFromPreference(indexUrl: String, name: String)
 
+    suspend fun upsert(store: ExtensionStore)
+
     suspend fun refreshAll()
 
     suspend fun fetchExtensions(): List<Any>

@@ -69,6 +69,7 @@ import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.entries.applyFilter
 import tachiyomi.domain.entries.manga.interactor.GetLibraryManga
 import tachiyomi.domain.entries.manga.model.Manga
+import tachiyomi.domain.entries.manga.model.MangaRemoteUpdate
 import tachiyomi.domain.entries.manga.model.MangaUpdate
 import tachiyomi.domain.history.manga.interactor.GetNextChapters
 import tachiyomi.domain.items.chapter.interactor.GetChaptersByMangaId
@@ -621,7 +622,7 @@ class MangaLibraryViewModel(
 // SY -->
     fun resetInfo() {
         state.value.selection.fastForEach { (manga) ->
-            val mangaInfo = MangaUpdate(
+            val mangaInfo = MangaRemoteUpdate(
                 id = manga.id,
                 title = null,
                 author = null,
@@ -629,7 +630,11 @@ class MangaLibraryViewModel(
                 thumbnailUrl = null,
                 description = null,
                 genre = null,
-                status = null,
+                status = manga.ogStatus,
+                updateStrategy = manga.updateStrategy,
+                memo = manga.memo,
+                initialized = manga.initialized,
+                coverLastModified = null,
             )
 
             viewModelScope.launchNonCancellable {

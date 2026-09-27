@@ -36,9 +36,19 @@ interface MangaRepository {
 
     suspend fun resetMangaViewerFlags(): Boolean
 
+    suspend fun deleteNonLibraryManga(sourceIds: List<Long>, keepReadManga: Boolean)
+
     suspend fun setMangaCategories(mangaId: Long, categoryIds: List<Long>)
 
     suspend fun insertManga(manga: Manga): Long?
+
+    suspend fun getExcludedScanlators(mangaId: Long): Set<String>
+
+    fun getExcludedScanlatorsAsFlow(mangaId: Long): Flow<Set<String>>
+
+    suspend fun setExcludedScanlators(mangaId: Long, excludedScanlators: Set<String>)
+
+    suspend fun update(update: MangaUpdate): Boolean = updateManga(update)
 
     suspend fun updateManga(update: MangaUpdate): Boolean
 

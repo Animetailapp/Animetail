@@ -2,13 +2,13 @@ package eu.kanade.tachiyomi.data.backup.restore.restorers
 
 import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
-import tachiyomi.data.handlers.manga.MangaDatabaseHandler
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
+import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.library.service.LibraryPreferences
 
 @Inject
 class MangaCategoriesRestorer(
-    private val mangaHandler: MangaDatabaseHandler,
+    private val categoryRepository: MangaCategoryRepository,
     private val getMangaCategories: GetMangaCategories,
     private val libraryPreferences: LibraryPreferences,
 ) {
@@ -21,15 +21,9 @@ class MangaCategoriesRestorer(
 
             val categories = backupCategories
                 .sortedBy { it.order }
-                .map {
-                    val dbCategory = dbCategoriesByName[it.name]
-                    if (dbCategory != null) return@map dbCategory
-                    val order = nextOrder++
-                    mangaHandler.await {
-                        categoriesQueries.insert(it.name, order, it.flags)
-                    }
-                        .let { id -> it.toCategory(id).copy(order = order) }
-                }
+                .filter { it.name !in dbCategoriesByName }
+                .map { it.toCategory(id = 0).copy(order = nextOrder++) }
+            categoryRepository.insertAllMangaCategories(categories)
 
             libraryPreferences.categorizedDisplaySettings.set(
                 (dbCategories + categories)

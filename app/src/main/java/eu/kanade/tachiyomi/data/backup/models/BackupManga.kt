@@ -3,7 +3,8 @@ package eu.kanade.tachiyomi.data.backup.models
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import tachiyomi.data.MemoColumnAdapter
+import mihon.core.common.extensions.JsonObjectEmptyBytes
+import mihon.core.common.extensions.toJsonObject
 import tachiyomi.domain.entries.manga.model.CustomMangaInfo
 import tachiyomi.domain.entries.manga.model.Manga
 
@@ -82,7 +83,7 @@ data class BackupManga(
             favoriteModifiedAt = this@BackupManga.favoriteModifiedAt,
             notes = this@BackupManga.notes,
             initialized = this@BackupManga.initialized,
-            memo = MemoColumnAdapter.decode(this@BackupManga.memo),
+            memo = this@BackupManga.memo.toJsonObject(),
         )
     }
 

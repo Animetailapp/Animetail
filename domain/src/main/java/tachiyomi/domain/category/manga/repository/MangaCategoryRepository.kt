@@ -25,6 +25,10 @@ interface MangaCategoryRepository {
 
     suspend fun insertMangaCategory(category: Category)
 
+    suspend fun insertAllMangaCategories(categories: List<Category>)
+
+    suspend fun insertAll(categories: List<Category>) = insertAllMangaCategories(categories)
+
     suspend fun updateMangaCategoryName(categoryId: Long, name: String)
 
     suspend fun updateMangaCategoryFlags(categoryId: Long, flags: Long)

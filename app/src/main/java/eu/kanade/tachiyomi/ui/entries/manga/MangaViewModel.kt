@@ -97,6 +97,7 @@ import tachiyomi.domain.entries.manga.interactor.SetCustomMangaInfo
 import tachiyomi.domain.entries.manga.interactor.SetMangaChapterFlags
 import tachiyomi.domain.entries.manga.model.CustomMangaInfo
 import tachiyomi.domain.entries.manga.model.Manga
+import tachiyomi.domain.entries.manga.model.MangaRemoteUpdate
 import tachiyomi.domain.entries.manga.model.MangaUpdate
 import tachiyomi.domain.entries.manga.repository.MangaRepository
 import tachiyomi.domain.items.chapter.interactor.SetMangaDefaultChapterFlags
@@ -501,14 +502,19 @@ class MangaViewModel(
                     manga.toSManga(),
                 )
                 updateManga.await(
-                    MangaUpdate(
-                        manga.id,
+                    MangaRemoteUpdate(
+                        id = manga.id,
                         title = newTitle,
                         author = newAuthor,
                         artist = newArtist,
                         description = newDesc,
                         genre = tags,
-                        status = status,
+                        status = status ?: 0,
+                        thumbnailUrl = manga.thumbnailUrl,
+                        updateStrategy = manga.updateStrategy,
+                        memo = manga.memo,
+                        initialized = manga.initialized,
+                        coverLastModified = manga.coverLastModified,
                     ),
                 )
             }

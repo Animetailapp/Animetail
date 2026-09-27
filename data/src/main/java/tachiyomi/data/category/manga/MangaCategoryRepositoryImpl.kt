@@ -81,6 +81,12 @@ class MangaCategoryRepositoryImpl(
         )
     }
 
+    override suspend fun insertAllMangaCategories(categories: List<Category>) {
+        database.transaction {
+            categories.forEach { insertMangaCategory(it) }
+        }
+    }
+
     override suspend fun updateMangaCategoryName(categoryId: Long, name: String) {
         database.categoriesQueries.updateName(name = name, categoryId = categoryId)
     }

@@ -74,6 +74,10 @@ class MangaHistoryRepositoryImpl(
         }
     }
 
+    override suspend fun deleteResetHistory() {
+        database.historyQueries.removeResettedHistory()
+    }
+
     override suspend fun upsertMangaHistory(historyUpdate: MangaHistoryUpdate) {
         try {
             database.historyQueries.upsert(

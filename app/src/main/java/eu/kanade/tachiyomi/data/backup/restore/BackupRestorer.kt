@@ -35,7 +35,6 @@ import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
-import tachiyomi.data.handlers.manga.MangaDatabaseHandler
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import java.io.File
@@ -48,7 +47,6 @@ class BackupRestorer(
     @Assisted private val notifier: BackupNotifier,
     @Assisted private val isSync: Boolean,
     private val context: Context,
-    private val mangaHandler: MangaDatabaseHandler,
     private val animeHandler: AnimeDatabaseHandler,
     private val mangaDownloadCache: MangaDownloadCache,
     private val animeDownloadCache: AnimeDownloadCache,
@@ -256,12 +254,8 @@ class BackupRestorer(
             .chunked(100)
             .forEach { chunk ->
                 val restoredAsBatch = try {
-                    mangaHandler.await(inTransaction = true) {
-                        chunk.forEach {
-                            ensureActive()
-                            mangaRestorer.restore(it, backupMangaCategories)
-                        }
-                    }
+                    ensureActive()
+                    mangaRestorer.restore(chunk, backupMangaCategories)
                     true
                 } catch (e: Exception) {
                     ensureActive()
@@ -276,7 +270,7 @@ class BackupRestorer(
                         ensureActive()
 
                         try {
-                            mangaRestorer.restore(it, backupMangaCategories)
+                            mangaRestorer.restore(listOf(it), backupMangaCategories)
                         } catch (e: Exception) {
                             ensureActive()
                             val sourceName = mangaSourceMapping[it.source] ?: it.source.toString()
