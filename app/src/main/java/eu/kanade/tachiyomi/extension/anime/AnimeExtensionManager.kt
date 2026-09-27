@@ -9,7 +9,6 @@ import eu.kanade.domain.extension.anime.interactor.TrustAnimeExtension
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.ExtensionUpdateNotifier
 import eu.kanade.tachiyomi.extension.InstallStep
-import eu.kanade.tachiyomi.extension.anime.api.AnimeExtensionApi
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionInstallReceiver
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionInstaller
@@ -35,6 +34,9 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.domain.extension.anime.interactor.UpdateAnimeExtensionStores
+import mihon.domain.extension.anime.repository.AnimeExtensionStoreRepository
+import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.anime.model.StubAnimeSource
@@ -55,7 +57,8 @@ class AnimeExtensionManager(
     private val preferences: SourcePreferences,
     private val trustExtension: TrustAnimeExtension,
     private val installer: AnimeExtensionInstaller,
-    private val api: AnimeExtensionApi,
+    private val extensionStoreRepository: AnimeExtensionStoreRepository,
+    private val updateExtensionStores: UpdateAnimeExtensionStores,
     private val extensionUpdateNotifier: ExtensionUpdateNotifier,
 ) {
 
@@ -168,7 +171,7 @@ class AnimeExtensionManager(
                 .associateBy { it.pkgName }
 
             // Newly loaded extensions have no status derived from the store index yet
-            updatedInstalledAnimeExtensionsStatuses(availableExtensionListFlow.value)
+            refreshStatuses()
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e) { "Failed to load extensions" }
         } finally {
@@ -178,27 +181,60 @@ class AnimeExtensionManager(
     }
 
     /**
-     * Finds the available anime extensions in the [api] and updates [availableExtensionListFlow].
+     * Finds the available extensions in the stores and updates [availableExtensionListFlow].
      */
     suspend fun findAvailableExtensions() {
         val extensions: List<AnimeExtension.Available> = try {
-            api.findExtensions()
+            fetchExtensions()
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             withUIContext { context.toast(MR.strings.extension_api_error) }
-            emptyList()
+            return
         }
 
-        enableAdditionalSubLanguages(extensions)
-
-        availableExtensionListFlow.value = extensions
-        updatedInstalledAnimeExtensionsStatuses(extensions)
-        setupAvailableAnimeExtensionsSourcesDataMap(extensions)
+        setAvailableExtensions(extensions)
     }
 
     /**
-     * Enables the additional sub-languages in the app first run.
+     * Refreshes the stores and their listings like [findAvailableExtensions], then notifies about the
+     * installed extensions that have an update. Stays silent when the stores can't be reached.
      */
+    suspend fun checkForUpdates() {
+        val extensions = try {
+            updateExtensionStores()
+            fetchExtensions()
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e)
+            return
+        }
+
+        initialized.await()
+        setAvailableExtensions(extensions)
+
+        val names = (loadedExtensionsMapFlow.value.values + notLoadedExtensionsMapFlow.value.values)
+            .filter { it.hasUpdate }
+            .map { it.name }
+        if (names.isNotEmpty()) {
+            extensionUpdateNotifier.promptUpdates(
+                names = names,
+                anime = true,
+            )
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private suspend fun fetchExtensions(): List<AnimeExtension.Available> {
+        return withIOContext { extensionStoreRepository.fetchExtensions() as List<AnimeExtension.Available> }
+    }
+
+    private fun setAvailableExtensions(extensions: List<AnimeExtension.Available>) {
+        enableAdditionalSubLanguages(extensions)
+
+        availableExtensionListFlow.value = extensions
+        refreshStatuses()
+        setupAvailableAnimeExtensionsSourcesDataMap(extensions)
+    }
+
     private fun enableAdditionalSubLanguages(extensions: List<AnimeExtension.Available>) {
         if (subLanguagesEnabledOnFirstRun || extensions.isEmpty()) {
             return
@@ -217,25 +253,6 @@ class AnimeExtensionManager(
 
         preferences.enabledLanguages.set(defaultLanguages + languagesToEnable)
         subLanguagesEnabledOnFirstRun = true
-    }
-
-    /**
-     * Sets the update field of the installed animeextensions with the given [availableExtensions].
-     */
-    private fun updatedInstalledAnimeExtensionsStatuses(
-        availableExtensions: List<AnimeExtension.Available>,
-    ) {
-        if (availableExtensions.isEmpty()) {
-            return
-        }
-
-        loadedExtensionsMapFlow.value = loadedExtensionsMapFlow.value.mapValues { (_, extension) ->
-            extension.withStatus(availableExtensions)
-        }
-        notLoadedExtensionsMapFlow.value = notLoadedExtensionsMapFlow.value.mapValues { (_, extension) ->
-            extension.withStatus(availableExtensions)
-        }
-        updatePendingUpdatesCount()
     }
 
     fun installExtension(extension: AnimeExtension.Available): Flow<InstallStep> {
@@ -288,15 +305,15 @@ class AnimeExtensionManager(
     private inner class AnimeInstallationListener : AnimeExtensionInstallReceiver.Listener {
 
         override fun onExtensionLoaded(extension: AnimeExtension.Loaded) {
-            registerExtension(extension.withStatus(availableExtensionListFlow.value))
+            registerExtension(extension)
             notLoadedExtensionsMapFlow.value -= extension.pkgName
-            updatePendingUpdatesCount()
+            refreshStatuses()
         }
 
         override fun onExtensionNotLoaded(extension: AnimeExtension.NotLoaded) {
             loadedExtensionsMapFlow.value -= extension.pkgName
-            notLoadedExtensionsMapFlow.value += extension.withStatus(availableExtensionListFlow.value)
-            updatePendingUpdatesCount()
+            notLoadedExtensionsMapFlow.value += extension
+            refreshStatuses()
         }
 
         override fun onPackageUninstalled(pkgName: String) {
@@ -307,33 +324,29 @@ class AnimeExtensionManager(
     }
 
     /**
-     * Derives what the store listings say about an installed extension. Without any listing there's
-     * nothing to derive from, so it's left as is rather than being marked obsolete.
+     * Derives what the store listings say about every installed extension, loaded or not. Without any
+     * listing there's nothing to derive from, so they're left as they are rather than marked obsolete.
      */
-    private fun AnimeExtension.Loaded.withStatus(
-        availableExtensions: List<AnimeExtension.Available>,
-    ): AnimeExtension.Loaded {
-        if (availableExtensions.isEmpty()) return this
-        val listing = findListing(availableExtensions)
-        return copy(
-            hasUpdate = findUpdate(availableExtensions) != null,
-            isObsolete = listing == null,
-        )
-    }
-
-    /**
-     * An extension that isn't loaded can still be updated, which is often what gets it loaded again.
-     */
-    private fun AnimeExtension.NotLoaded.withStatus(
-        availableExtensions: List<AnimeExtension.Available>,
-    ): AnimeExtension.NotLoaded {
-        if (availableExtensions.isEmpty()) return this
-        return copy(hasUpdate = findUpdate(availableExtensions) != null)
+    private fun refreshStatuses() {
+        val available = availableExtensionListFlow.value
+        if (available.isNotEmpty()) {
+            loadedExtensionsMapFlow.value = loadedExtensionsMapFlow.value.mapValues { (_, extension) ->
+                val listing = extension.findListing(available)
+                extension.copy(
+                    hasUpdate = extension.findUpdate(available) != null,
+                    isObsolete = listing == null,
+                )
+            }
+            notLoadedExtensionsMapFlow.value = notLoadedExtensionsMapFlow.value.mapValues { (_, extension) ->
+                extension.copy(hasUpdate = extension.findUpdate(available) != null)
+            }
+        }
+        updatePendingUpdatesCount()
     }
 
     private fun updatePendingUpdatesCount() {
-        val pendingUpdateCount = loadedExtensionsMapFlow.value.values.count { it.hasUpdate } +
-            notLoadedExtensionsMapFlow.value.values.count { it.hasUpdate }
+        val pendingUpdateCount = (loadedExtensionsMapFlow.value.values + notLoadedExtensionsMapFlow.value.values)
+            .count { it.hasUpdate }
         preferences.animeExtensionUpdatesCount.set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
             extensionUpdateNotifier.dismiss()

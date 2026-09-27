@@ -9,7 +9,6 @@ import eu.kanade.domain.extension.manga.interactor.TrustMangaExtension
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.ExtensionUpdateNotifier
 import eu.kanade.tachiyomi.extension.InstallStep
-import eu.kanade.tachiyomi.extension.manga.api.MangaExtensionApi
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionInstallReceiver
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionInstaller
@@ -35,6 +34,9 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.domain.extension.manga.interactor.UpdateMangaExtensionStores
+import mihon.domain.extension.manga.repository.MangaExtensionStoreRepository
+import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.manga.model.StubMangaSource
@@ -48,7 +50,8 @@ class MangaExtensionManager(
     private val preferences: SourcePreferences,
     private val trustExtension: TrustMangaExtension,
     private val installer: MangaExtensionInstaller,
-    private val api: MangaExtensionApi,
+    private val extensionStoreRepository: MangaExtensionStoreRepository,
+    private val updateExtensionStores: UpdateMangaExtensionStores,
     private val extensionUpdateNotifier: ExtensionUpdateNotifier,
 ) {
 
@@ -161,7 +164,7 @@ class MangaExtensionManager(
                 .associateBy { it.pkgName }
 
             // Newly loaded extensions have no status derived from the store index yet
-            updatedInstalledMangaExtensionsStatuses(availableExtensionListFlow.value)
+            refreshStatuses()
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e) { "Failed to load extensions" }
         } finally {
@@ -170,19 +173,55 @@ class MangaExtensionManager(
         }
     }
 
+    /**
+     * Finds the available extensions in the stores and updates [availableExtensionListFlow].
+     */
     suspend fun findAvailableExtensions() {
         val extensions: List<MangaExtension.Available> = try {
-            api.findExtensions()
+            fetchExtensions()
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             withUIContext { context.toast(MR.strings.extension_api_error) }
-            emptyList()
+            return
         }
 
+        setAvailableExtensions(extensions)
+    }
+
+    /**
+     * Refreshes the stores and their listings like [findAvailableExtensions], then notifies about the
+     * installed extensions that have an update. Stays silent when the stores can't be reached.
+     */
+    suspend fun checkForUpdates() {
+        val extensions = try {
+            updateExtensionStores()
+            fetchExtensions()
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e)
+            return
+        }
+
+        initialized.await()
+        setAvailableExtensions(extensions)
+
+        val names = (loadedExtensionsMapFlow.value.values + notLoadedExtensionsMapFlow.value.values)
+            .filter { it.hasUpdate }
+            .map { it.name }
+        if (names.isNotEmpty()) {
+            extensionUpdateNotifier.promptUpdates(names)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private suspend fun fetchExtensions(): List<MangaExtension.Available> {
+        return withIOContext { extensionStoreRepository.fetchExtensions() as List<MangaExtension.Available> }
+    }
+
+    private fun setAvailableExtensions(extensions: List<MangaExtension.Available>) {
         enableAdditionalSubLanguages(extensions)
 
         availableExtensionListFlow.value = extensions
-        updatedInstalledMangaExtensionsStatuses(extensions)
+        refreshStatuses()
         setupAvailableMangaExtensionsSourcesDataMap(extensions)
     }
 
@@ -204,22 +243,6 @@ class MangaExtensionManager(
 
         preferences.enabledLanguages.set(defaultLanguages + languagesToEnable)
         subLanguagesEnabledOnFirstRun = true
-    }
-
-    private fun updatedInstalledMangaExtensionsStatuses(
-        availableExtensions: List<MangaExtension.Available>,
-    ) {
-        if (availableExtensions.isEmpty()) {
-            return
-        }
-
-        loadedExtensionsMapFlow.value = loadedExtensionsMapFlow.value.mapValues { (_, extension) ->
-            extension.withStatus(availableExtensions)
-        }
-        notLoadedExtensionsMapFlow.value = notLoadedExtensionsMapFlow.value.mapValues { (_, extension) ->
-            extension.withStatus(availableExtensions)
-        }
-        updatePendingUpdatesCount()
     }
 
     fun installExtension(extension: MangaExtension.Available): Flow<InstallStep> {
@@ -272,15 +295,15 @@ class MangaExtensionManager(
     private inner class MangaInstallationListener : MangaExtensionInstallReceiver.Listener {
 
         override fun onExtensionLoaded(extension: MangaExtension.Loaded) {
-            registerExtension(extension.withStatus(availableExtensionListFlow.value))
+            registerExtension(extension)
             notLoadedExtensionsMapFlow.value -= extension.pkgName
-            updatePendingUpdatesCount()
+            refreshStatuses()
         }
 
         override fun onExtensionNotLoaded(extension: MangaExtension.NotLoaded) {
             loadedExtensionsMapFlow.value -= extension.pkgName
-            notLoadedExtensionsMapFlow.value += extension.withStatus(availableExtensionListFlow.value)
-            updatePendingUpdatesCount()
+            notLoadedExtensionsMapFlow.value += extension
+            refreshStatuses()
         }
 
         override fun onPackageUninstalled(pkgName: String) {
@@ -291,33 +314,29 @@ class MangaExtensionManager(
     }
 
     /**
-     * Derives what the store listings say about an installed extension. Without any listing there's
-     * nothing to derive from, so it's left as is rather than being marked obsolete.
+     * Derives what the store listings say about every installed extension, loaded or not. Without any
+     * listing there's nothing to derive from, so they're left as they are rather than marked obsolete.
      */
-    private fun MangaExtension.Loaded.withStatus(
-        availableExtensions: List<MangaExtension.Available>,
-    ): MangaExtension.Loaded {
-        if (availableExtensions.isEmpty()) return this
-        val listing = findListing(availableExtensions)
-        return copy(
-            hasUpdate = findUpdate(availableExtensions) != null,
-            isObsolete = listing == null,
-        )
-    }
-
-    /**
-     * An extension that isn't loaded can still be updated, which is often what gets it loaded again.
-     */
-    private fun MangaExtension.NotLoaded.withStatus(
-        availableExtensions: List<MangaExtension.Available>,
-    ): MangaExtension.NotLoaded {
-        if (availableExtensions.isEmpty()) return this
-        return copy(hasUpdate = findUpdate(availableExtensions) != null)
+    private fun refreshStatuses() {
+        val available = availableExtensionListFlow.value
+        if (available.isNotEmpty()) {
+            loadedExtensionsMapFlow.value = loadedExtensionsMapFlow.value.mapValues { (_, extension) ->
+                val listing = extension.findListing(available)
+                extension.copy(
+                    hasUpdate = extension.findUpdate(available) != null,
+                    isObsolete = listing == null,
+                )
+            }
+            notLoadedExtensionsMapFlow.value = notLoadedExtensionsMapFlow.value.mapValues { (_, extension) ->
+                extension.copy(hasUpdate = extension.findUpdate(available) != null)
+            }
+        }
+        updatePendingUpdatesCount()
     }
 
     private fun updatePendingUpdatesCount() {
-        val pendingUpdateCount = loadedExtensionsMapFlow.value.values.count { it.hasUpdate } +
-            notLoadedExtensionsMapFlow.value.values.count { it.hasUpdate }
+        val pendingUpdateCount = (loadedExtensionsMapFlow.value.values + notLoadedExtensionsMapFlow.value.values)
+            .count { it.hasUpdate }
         preferences.extensionUpdatesCount.set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
             extensionUpdateNotifier.dismiss()

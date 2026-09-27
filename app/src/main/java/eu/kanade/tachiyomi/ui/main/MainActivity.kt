@@ -102,9 +102,7 @@ import eu.kanade.tachiyomi.data.player.service.HttpServerService
 import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
 import eu.kanade.tachiyomi.data.updater.RELEASE_URL
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
-import eu.kanade.tachiyomi.extension.anime.api.AnimeExtensionApi
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
-import eu.kanade.tachiyomi.extension.manga.api.MangaExtensionApi
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
@@ -184,9 +182,6 @@ class MainActivity : BaseActivity() {
 
     @Inject lateinit var getMangaIncognitoState: GetMangaIncognitoState
 
-    @Inject lateinit var animeExtensionApi: AnimeExtensionApi
-
-    @Inject lateinit var mangaExtensionApi: MangaExtensionApi
 
     @Inject lateinit var animeExtensionManager: AnimeExtensionManager
 
@@ -479,16 +474,8 @@ class MainActivity : BaseActivity() {
 
         // Extensions updates
         LaunchedEffect(Unit) {
-            try {
-                animeExtensionApi.checkForUpdates(
-                    animeExtensionManager.getLoadedExtensions() + animeExtensionManager.getNotLoadedExtensions(),
-                )
-                mangaExtensionApi.checkForUpdates(
-                    mangaExtensionManager.getLoadedExtensions() + mangaExtensionManager.getNotLoadedExtensions(),
-                )
-            } catch (e: Exception) {
-                logcat(LogPriority.ERROR, e)
-            }
+            animeExtensionManager.checkForUpdates()
+            mangaExtensionManager.checkForUpdates()
         }
     }
 
