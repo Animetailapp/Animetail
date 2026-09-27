@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.models.BackupTracking
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.json.JsonObject
 import tachiyomi.data.Database
 import tachiyomi.data.handlers.manga.MangaDatabaseHandler
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
@@ -47,10 +48,7 @@ class MangaRestorer(
             .groupBy({ it.source }, { it.url })
 
         return backupMangas
-            .sortedWith(
-                compareBy<BackupManga> { it.url in urlsBySource[it.source].orEmpty() }
-                    .then(compareByDescending { it.lastModifiedAt }),
-            )
+            .sortedBy { it.url in urlsBySource[it.source].orEmpty() }
     }
 
     suspend fun restore(
@@ -77,11 +75,6 @@ class MangaRestorer(
                 excludedScanlators = backupManga.excludedScanlators,
                 isSync = isSync,
             )
-
-            if (isSync) {
-                mangasQueries.resetIsSyncing()
-                chaptersQueries.resetIsSyncing()
-            }
         }
     }
 
@@ -90,24 +83,26 @@ class MangaRestorer(
     }
 
     private suspend fun restoreExistingManga(manga: Manga, dbManga: Manga): Manga {
-        return if (manga.version > dbManga.version) {
-            updateMangaInDb(dbManga.copyFrom(manga).copy(id = dbManga.id))
-        } else {
-            updateMangaInDb(manga.copyFrom(dbManga).copy(id = dbManga.id))
-        }
-    }
-
-    private fun Manga.copyFrom(newer: Manga): Manga {
-        return this.copy(
-            favorite = this.favorite || newer.favorite,
-            ogAuthor = newer.author,
-            ogArtist = newer.artist,
-            ogDescription = newer.description,
-            ogGenre = newer.genre,
-            thumbnailUrl = newer.thumbnailUrl,
-            ogStatus = newer.status,
-            initialized = this.initialized || newer.initialized,
-            version = newer.version,
+        val details = if (dbManga.initialized || !manga.initialized) dbManga else manga
+        return updateMangaInDb(
+            dbManga.copy(
+                favorite = dbManga.favorite || manga.favorite,
+                dateAdded = listOfNotNull(
+                    dbManga.dateAdded.takeIf { it > 0 },
+                    manga.dateAdded.takeIf { it > 0 },
+                ).minOrNull() ?: 0L,
+                title = details.title,
+                ogArtist = details.artist,
+                ogAuthor = details.author,
+                ogDescription = details.description,
+                ogGenre = details.genre,
+                ogStatus = details.status,
+                thumbnailUrl = details.thumbnailUrl,
+                updateStrategy = details.updateStrategy,
+                initialized = dbManga.initialized || manga.initialized,
+                // Merge both backup and local data with local winning
+                memo = JsonObject(manga.memo + dbManga.memo),
+            ),
         )
     }
 
@@ -134,8 +129,6 @@ class MangaRestorer(
                 dateAdded = manga.dateAdded,
                 mangaId = manga.id,
                 updateStrategy = manga.updateStrategy,
-                version = manga.version,
-                isSyncing = 1,
                 notes = manga.notes,
                 memo = manga.memo,
             )
@@ -149,7 +142,6 @@ class MangaRestorer(
         return manga.copy(
             initialized = manga.description != null,
             id = insertManga(manga),
-            version = manga.version,
         )
     }
 
@@ -162,16 +154,27 @@ class MangaRestorer(
                 val chapter = backupChapter.toChapterImpl().copy(mangaId = manga.id)
 
                 val dbChapter = dbChaptersByUrl[chapter.url]
+                    ?: // New chapter
+                    return@mapNotNull chapter
 
-                when {
-                    dbChapter == null -> chapter
-
-                    // New chapter
-                    chapter.forComparison() == dbChapter.forComparison() -> null
-
+                if (chapter.forComparison() == dbChapter.forComparison()) {
                     // Same state; skip
-                    else -> updateChapterBasedOnSyncState(chapter, dbChapter, isSync)
+                    return@mapNotNull null
                 }
+
+                chapter
+                    .copyFrom(dbChapter)
+                    .copy(
+                        id = dbChapter.id,
+                        read = chapter.read || dbChapter.read,
+                        bookmark = chapter.bookmark || dbChapter.bookmark,
+                        lastPageRead = max(chapter.lastPageRead, dbChapter.lastPageRead),
+                        dateFetch = dbChapter.dateFetch,
+                        sourceOrder = dbChapter.sourceOrder,
+                        dateUploadOverride = chapter.dateUploadOverride,
+                        // Merge both backup and local data with local winning
+                        memo = JsonObject(chapter.memo + dbChapter.memo),
+                    )
             }
             .partition { it.id > 0 }
 
@@ -179,34 +182,8 @@ class MangaRestorer(
         updateExistingChapters(existingChapters)
     }
 
-    private fun updateChapterBasedOnSyncState(chapter: Chapter, dbChapter: Chapter, isSync: Boolean): Chapter {
-        return if (isSync) {
-            chapter.copy(
-                id = dbChapter.id,
-                bookmark = chapter.bookmark || dbChapter.bookmark,
-                read = chapter.read,
-                lastPageRead = chapter.lastPageRead,
-            )
-        } else {
-            chapter.copyFrom(dbChapter).copy(
-                id = dbChapter.id,
-                bookmark = chapter.bookmark || dbChapter.bookmark,
-            ).let {
-                when {
-                    dbChapter.read && !it.read -> it.copy(read = true, lastPageRead = dbChapter.lastPageRead)
-
-                    it.lastPageRead == 0L && dbChapter.lastPageRead != 0L -> it.copy(
-                        lastPageRead = dbChapter.lastPageRead,
-                    )
-
-                    else -> it
-                }
-            }
-        }
-    }
-
     private fun Chapter.forComparison() =
-        this.copy(id = 0L, mangaId = 0L, dateFetch = 0L, dateUpload = 0L, lastModifiedAt = 0L, version = 0L)
+        this.copy(id = 0L, mangaId = 0L, dateFetch = 0L, dateUpload = 0L)
 
     private suspend fun insertNewChapters(chapters: List<Chapter>) {
         handler.await(true) {
@@ -223,7 +200,6 @@ class MangaRestorer(
                     chapter.sourceOrder,
                     chapter.dateFetch,
                     chapter.dateUpload,
-                    chapter.version,
                     chapter.dateUploadOverride,
                     chapter.memo,
                 )
@@ -247,8 +223,6 @@ class MangaRestorer(
                     dateFetch = null,
                     dateUpload = null,
                     chapterId = chapter.id,
-                    version = chapter.version,
-                    isSyncing = 0,
                     dateUploadOverride = chapter.dateUploadOverride,
                     memo = chapter.memo,
                 )
@@ -283,7 +257,6 @@ class MangaRestorer(
                 coverLastModified = manga.coverLastModified,
                 dateAdded = manga.dateAdded,
                 updateStrategy = manga.updateStrategy,
-                version = manga.version,
                 notes = manga.notes,
                 memo = manga.memo,
             )

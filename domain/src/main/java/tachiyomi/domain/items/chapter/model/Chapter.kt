@@ -16,8 +16,6 @@ data class Chapter(
     val dateUpload: Long,
     val chapterNumber: Double,
     val scanlator: String?,
-    val lastModifiedAt: Long,
-    val version: Long,
     val dateUploadOverride: Long,
     val memo: JsonObject,
 ) {
@@ -48,8 +46,6 @@ data class Chapter(
             dateUpload = -1,
             chapterNumber = -1.0,
             scanlator = null,
-            lastModifiedAt = 0,
-            version = 1,
             dateUploadOverride = 0,
             memo = JsonObject.EMPTY,
         )

@@ -41,9 +41,7 @@ data class Manga(
     val thumbnailUrl: String?,
     val updateStrategy: UpdateStrategy,
     val initialized: Boolean,
-    val lastModifiedAt: Long,
     val favoriteModifiedAt: Long?,
-    val version: Long,
     val notes: String,
     val memo: JsonObject,
 ) : JavaSerializable {
@@ -168,9 +166,7 @@ data class Manga(
             thumbnailUrl = null,
             updateStrategy = UpdateStrategy.ALWAYS_UPDATE,
             initialized = false,
-            lastModifiedAt = 0L,
             favoriteModifiedAt = null,
-            version = 0L,
             notes = "",
             memo = JsonObject.EMPTY,
         )
