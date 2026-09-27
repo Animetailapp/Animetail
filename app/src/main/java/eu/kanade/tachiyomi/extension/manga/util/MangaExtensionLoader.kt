@@ -305,6 +305,8 @@ internal object MangaExtensionLoader {
         } catch (e: Throwable) {
             val pkgInfo = extensionInfo.packageInfo
             logcat(LogPriority.ERROR, e) { "Extension load error: ${pkgInfo.packageName}" }
+            val signatures = getSignatures(pkgInfo).orEmpty()
+            val repos = extRepos ?: context.appGraph.getMangaExtensionStores.await()
             MangaExtension.NotLoaded(
                 name = pkgInfo.packageName,
                 pkgName = pkgInfo.packageName,
@@ -312,7 +314,8 @@ internal object MangaExtensionLoader {
                 versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo),
                 isShared = extensionInfo.isShared,
                 contentWarning = ContentWarning.SAFE,
-                signatures = getSignatures(pkgInfo).orEmpty(),
+                signatures = signatures,
+                store = repos.firstOrNull { it.signingKey in signatures },
                 reason = MangaExtension.NotLoaded.Reason.Failed(e.rootMessage, e.stackTraceToString()),
             )
         }
@@ -350,6 +353,7 @@ internal object MangaExtensionLoader {
         val versionName = pkgInfo.versionName
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
         val signatures = getSignatures(pkgInfo).orEmpty()
+        val store = repos.firstOrNull { it.signingKey in signatures }
         val contentWarning = when {
             metaData == null -> ContentWarning.SAFE
 
@@ -378,6 +382,7 @@ internal object MangaExtensionLoader {
             isShared = extensionInfo.isShared,
             contentWarning = contentWarning,
             signatures = signatures,
+            store = store,
             libVersion = libVersion,
             signatureHash = signatureHash,
             reason = reason,
@@ -430,7 +435,7 @@ internal object MangaExtensionLoader {
             alreadyLoaded.versionCode == versionCode &&
             alreadyLoaded.isShared == extensionInfo.isShared
         ) {
-            return alreadyLoaded
+            return alreadyLoaded.copy(store = store)
         }
 
         val classLoader = try {
@@ -502,6 +507,7 @@ internal object MangaExtensionLoader {
             icon = runCatching { appInfo.loadIcon(pkgManager) }.getOrNull(),
             isShared = extensionInfo.isShared,
             signatures = signatures,
+            store = store,
             // KMK -->
             signatureHash = signatures.last(),
             repoName = when {

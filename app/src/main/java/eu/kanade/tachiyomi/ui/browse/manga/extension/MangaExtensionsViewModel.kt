@@ -167,7 +167,7 @@ class MangaExtensionsViewModel(
         viewModelScope.launchIO {
             state.value.items.values.flatten()
                 .map { it.extension }
-                .filterIsInstance<MangaExtension.Loaded>()
+                .filterIsInstance<MangaExtension.Installed>()
                 .filter { it.hasUpdate }
                 .forEach(::updateExtension)
         }
@@ -179,7 +179,7 @@ class MangaExtensionsViewModel(
         }
     }
 
-    fun updateExtension(extension: MangaExtension.Loaded) {
+    fun updateExtension(extension: MangaExtension.Installed) {
         viewModelScope.launchIO {
             extensionManager.updateExtension(extension).collectToInstallUpdate(extension)
         }

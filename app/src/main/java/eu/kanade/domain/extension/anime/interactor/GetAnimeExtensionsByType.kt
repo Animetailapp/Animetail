@@ -24,14 +24,18 @@ class GetAnimeExtensionsByType(
             extensionManager.notLoadedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
         ) { enabledLanguages, disabledRepos, _loaded, _notLoaded, _available ->
-            val (updates, loaded) = _loaded
+            val (loadedUpdates, loaded) = _loaded
                 .sortedWith(
                     compareBy<AnimeExtension.Loaded> { !it.isObsolete }
                         .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name },
                 )
                 .partition { it.hasUpdate }
 
-            val notLoaded = _notLoaded
+            val (notLoadedUpdates, notLoaded) = _notLoaded
+                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+                .partition { it.hasUpdate }
+
+            val updates = (loadedUpdates + notLoadedUpdates)
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
             val available = _available

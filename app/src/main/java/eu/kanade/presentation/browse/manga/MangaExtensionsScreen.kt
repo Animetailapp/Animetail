@@ -83,7 +83,7 @@ fun MangaExtensionScreen(
     onOpenWebView: (MangaExtension.Available) -> Unit,
     onInstallExtension: (MangaExtension.Available) -> Unit,
     onUninstallExtension: (MangaExtension.Installed) -> Unit,
-    onUpdateExtension: (MangaExtension.Loaded) -> Unit,
+    onUpdateExtension: (MangaExtension.Installed) -> Unit,
     onTrustExtension: (MangaExtension.NotLoaded) -> Unit,
     onOpenExtension: (MangaExtension.Loaded) -> Unit,
     onClickUpdateAll: () -> Unit,
@@ -146,7 +146,7 @@ private fun ExtensionContent(
     onClickItemCancel: (MangaExtension) -> Unit,
     onInstallExtension: (MangaExtension.Available) -> Unit,
     onUninstallExtension: (MangaExtension.Installed) -> Unit,
-    onUpdateExtension: (MangaExtension.Loaded) -> Unit,
+    onUpdateExtension: (MangaExtension.Installed) -> Unit,
     onTrustExtension: (MangaExtension.NotLoaded) -> Unit,
     onOpenExtension: (MangaExtension.Loaded) -> Unit,
     onClickUpdateAll: () -> Unit,
@@ -237,7 +237,9 @@ private fun ExtensionContent(
                         when (it) {
                             is MangaExtension.Available -> onOpenWebView(it)
                             is MangaExtension.Loaded -> onOpenExtension(it)
-                            else -> {}
+                            is MangaExtension.NotLoaded -> {
+                                notLoadedState = it
+                            }
                         }
                     },
                     onClickItemCancel = onClickItemCancel,
@@ -254,7 +256,11 @@ private fun ExtensionContent(
                             }
 
                             is MangaExtension.NotLoaded -> {
-                                notLoadedState = it
+                                if (it.hasUpdate) {
+                                    onUpdateExtension(it)
+                                } else {
+                                    notLoadedState = it
+                                }
                             }
                         }
                     },
@@ -505,7 +511,7 @@ private fun ExtensionItemActions(
 
                     is MangaExtension.NotLoaded -> {
                         val isUntrusted = extension.reason is MangaExtension.NotLoaded.Reason.Untrusted
-                        IconButton(onClick = { onClickItemAction(extension) }) {
+                        IconButton(onClick = { onClickItemSecondaryAction(extension) }) {
                             Icon(
                                 imageVector = if (isUntrusted) {
                                     MaterialSymbols.Rounded.VerifiedUser
@@ -518,6 +524,15 @@ private fun ExtensionItemActions(
                                     stringResource(MR.strings.ext_not_loaded)
                                 },
                             )
+                        }
+
+                        if (extension.hasUpdate) {
+                            IconButton(onClick = { onClickItemAction(extension) }) {
+                                Icon(
+                                    imageVector = MaterialSymbols.Rounded.Download,
+                                    contentDescription = stringResource(MR.strings.ext_update),
+                                )
+                            }
                         }
                     }
 

@@ -85,7 +85,7 @@ fun AnimeExtensionScreen(
     onOpenWebView: (AnimeExtension.Available) -> Unit,
     onInstallExtension: (AnimeExtension.Available) -> Unit,
     onUninstallExtension: (AnimeExtension.Installed) -> Unit,
-    onUpdateExtension: (AnimeExtension.Loaded) -> Unit,
+    onUpdateExtension: (AnimeExtension.Installed) -> Unit,
     onTrustExtension: (AnimeExtension.NotLoaded) -> Unit,
     onOpenExtension: (AnimeExtension.Loaded) -> Unit,
     onClickUpdateAll: () -> Unit,
@@ -148,7 +148,7 @@ private fun AnimeExtensionContent(
     onClickItemCancel: (AnimeExtension) -> Unit,
     onInstallExtension: (AnimeExtension.Available) -> Unit,
     onUninstallExtension: (AnimeExtension.Installed) -> Unit,
-    onUpdateExtension: (AnimeExtension.Loaded) -> Unit,
+    onUpdateExtension: (AnimeExtension.Installed) -> Unit,
     onTrustExtension: (AnimeExtension.NotLoaded) -> Unit,
     onOpenExtension: (AnimeExtension.Loaded) -> Unit,
     onClickUpdateAll: () -> Unit,
@@ -239,7 +239,9 @@ private fun AnimeExtensionContent(
                         when (it) {
                             is AnimeExtension.Available -> onOpenWebView(it)
                             is AnimeExtension.Loaded -> onOpenExtension(it)
-                            else -> {}
+                            is AnimeExtension.NotLoaded -> {
+                                notLoadedState = it
+                            }
                         }
                     },
                     onClickItemCancel = onClickItemCancel,
@@ -256,7 +258,11 @@ private fun AnimeExtensionContent(
                             }
 
                             is AnimeExtension.NotLoaded -> {
-                                notLoadedState = it
+                                if (it.hasUpdate) {
+                                    onUpdateExtension(it)
+                                } else {
+                                    notLoadedState = it
+                                }
                             }
                         }
                     },
@@ -507,7 +513,7 @@ private fun AnimeExtensionItemActions(
 
                     is AnimeExtension.NotLoaded -> {
                         val isUntrusted = extension.reason is AnimeExtension.NotLoaded.Reason.Untrusted
-                        IconButton(onClick = { onClickItemAction(extension) }) {
+                        IconButton(onClick = { onClickItemSecondaryAction(extension) }) {
                             Icon(
                                 imageVector = if (isUntrusted) {
                                     MaterialSymbols.Rounded.VerifiedUser
@@ -520,6 +526,15 @@ private fun AnimeExtensionItemActions(
                                     stringResource(MR.strings.ext_not_loaded)
                                 },
                             )
+                        }
+
+                        if (extension.hasUpdate) {
+                            IconButton(onClick = { onClickItemAction(extension) }) {
+                                Icon(
+                                    imageVector = MaterialSymbols.Rounded.Download,
+                                    contentDescription = stringResource(MR.strings.ext_update),
+                                )
+                            }
                         }
                     }
 

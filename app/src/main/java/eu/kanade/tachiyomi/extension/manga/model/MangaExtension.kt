@@ -30,6 +30,10 @@ sealed interface MangaExtension {
         /** SHA-256 digests of the certificates its apk is signed with. */
         val signatures: List<String>
 
+        val hasUpdate: Boolean
+
+        val store: ExtensionStore?
+
         /**
          * The newest listing of this extension among the stores whose signing key it's signed with. An
          * apk from any other store can't replace it, so only these are where its updates come from.
@@ -106,9 +110,9 @@ sealed interface MangaExtension {
         val pkgFactory: String?,
         val sources: List<MangaSource>,
         val icon: Drawable?,
-        val hasUpdate: Boolean = false,
+        override val hasUpdate: Boolean = false,
         val isObsolete: Boolean = false,
-        val store: ExtensionStore? = null,
+        override val store: ExtensionStore? = null,
     ) : Installed
 
     /**
@@ -129,6 +133,8 @@ sealed interface MangaExtension {
         // KMK <--
         override val libVersion: Double? = null,
         override val lang: String? = null,
+        override val hasUpdate: Boolean = false,
+        override val store: ExtensionStore? = null,
         val reason: Reason,
     ) : Installed {
 

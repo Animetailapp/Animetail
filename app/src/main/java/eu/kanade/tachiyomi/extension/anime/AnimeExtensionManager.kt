@@ -232,6 +232,9 @@ class AnimeExtensionManager(
         loadedExtensionsMapFlow.value = loadedExtensionsMapFlow.value.mapValues { (_, extension) ->
             extension.withStatus(availableExtensions)
         }
+        notLoadedExtensionsMapFlow.value = notLoadedExtensionsMapFlow.value.mapValues { (_, extension) ->
+            extension.withStatus(availableExtensions)
+        }
         updatePendingUpdatesCount()
     }
 
@@ -239,7 +242,7 @@ class AnimeExtensionManager(
         return installer.downloadAndInstall(extension)
     }
 
-    fun updateExtension(extension: AnimeExtension.Loaded): Flow<InstallStep> {
+    fun updateExtension(extension: AnimeExtension.Installed): Flow<InstallStep> {
         val update = extension.findUpdate(availableExtensionListFlow.value) ?: return emptyFlow()
         val isUpdateForPrivatelyInstalled = !extension.isShared
         return installer.downloadAndInstall(update, isUpdateForPrivatelyInstalled)
@@ -292,7 +295,7 @@ class AnimeExtensionManager(
 
         override fun onExtensionNotLoaded(extension: AnimeExtension.NotLoaded) {
             loadedExtensionsMapFlow.value -= extension.pkgName
-            notLoadedExtensionsMapFlow.value += extension
+            notLoadedExtensionsMapFlow.value += extension.withStatus(availableExtensionListFlow.value)
             updatePendingUpdatesCount()
         }
 
@@ -315,12 +318,22 @@ class AnimeExtensionManager(
         return copy(
             hasUpdate = findUpdate(availableExtensions) != null,
             isObsolete = listing == null,
-            store = listing?.store ?: store,
         )
     }
 
+    /**
+     * An extension that isn't loaded can still be updated, which is often what gets it loaded again.
+     */
+    private fun AnimeExtension.NotLoaded.withStatus(
+        availableExtensions: List<AnimeExtension.Available>,
+    ): AnimeExtension.NotLoaded {
+        if (availableExtensions.isEmpty()) return this
+        return copy(hasUpdate = findUpdate(availableExtensions) != null)
+    }
+
     private fun updatePendingUpdatesCount() {
-        val pendingUpdateCount = loadedExtensionsMapFlow.value.values.count { it.hasUpdate }
+        val pendingUpdateCount = loadedExtensionsMapFlow.value.values.count { it.hasUpdate } +
+            notLoadedExtensionsMapFlow.value.values.count { it.hasUpdate }
         preferences.animeExtensionUpdatesCount.set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
             extensionUpdateNotifier.dismiss()

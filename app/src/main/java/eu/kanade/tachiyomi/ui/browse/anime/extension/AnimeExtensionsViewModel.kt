@@ -167,7 +167,7 @@ class AnimeExtensionsViewModel(
         viewModelScope.launchIO {
             state.value.items.values.flatten()
                 .map { it.extension }
-                .filterIsInstance<AnimeExtension.Loaded>()
+                .filterIsInstance<AnimeExtension.Installed>()
                 .filter { it.hasUpdate }
                 .forEach(::updateExtension)
         }
@@ -179,7 +179,7 @@ class AnimeExtensionsViewModel(
         }
     }
 
-    fun updateExtension(extension: AnimeExtension.Loaded) {
+    fun updateExtension(extension: AnimeExtension.Installed) {
         viewModelScope.launchIO {
             extensionManager.updateExtension(extension).collectToInstallUpdate(extension)
         }

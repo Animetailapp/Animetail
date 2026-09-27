@@ -312,6 +312,8 @@ internal object AnimeExtensionLoader {
         } catch (e: Throwable) {
             val pkgInfo = extensionInfo.packageInfo
             logcat(LogPriority.ERROR, e) { "Extension load error: ${pkgInfo.packageName}" }
+            val signatures = getSignatures(pkgInfo).orEmpty()
+            val repos = extRepos ?: context.appGraph.getAnimeExtensionStores.await()
             AnimeExtension.NotLoaded(
                 name = pkgInfo.packageName,
                 pkgName = pkgInfo.packageName,
@@ -319,7 +321,8 @@ internal object AnimeExtensionLoader {
                 versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo),
                 isShared = extensionInfo.isShared,
                 contentWarning = ContentWarning.SAFE,
-                signatures = getSignatures(pkgInfo).orEmpty(),
+                signatures = signatures,
+                store = repos.firstOrNull { it.signingKey in signatures },
                 reason = AnimeExtension.NotLoaded.Reason.Failed(e.rootMessage, e.stackTraceToString()),
             )
         }
@@ -355,6 +358,7 @@ internal object AnimeExtensionLoader {
         val versionName = pkgInfo.versionName
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
         val signatures = getSignatures(pkgInfo).orEmpty()
+        val store = repos.firstOrNull { it.signingKey in signatures }
         val contentWarning = when {
             metaData == null -> ContentWarning.SAFE
 
@@ -391,6 +395,7 @@ internal object AnimeExtensionLoader {
             isShared = extensionInfo.isShared,
             contentWarning = contentWarning,
             signatures = signatures,
+            store = store,
             libVersion = libVersion,
             signatureHash = signatureHash,
             reason = reason,
@@ -448,7 +453,7 @@ internal object AnimeExtensionLoader {
             alreadyLoaded.versionCode == versionCode &&
             alreadyLoaded.isShared == extensionInfo.isShared
         ) {
-            return alreadyLoaded
+            return alreadyLoaded.copy(store = store)
         }
 
         val classLoader = try {
@@ -537,6 +542,7 @@ internal object AnimeExtensionLoader {
             icon = runCatching { appInfo.loadIcon(pkgManager) }.getOrNull(),
             isShared = extensionInfo.isShared,
             signatures = signatures,
+            store = store,
             // KMK -->
             signatureHash = signatures.last(),
             repoName = when {

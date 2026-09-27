@@ -480,8 +480,12 @@ class MainActivity : BaseActivity() {
         // Extensions updates
         LaunchedEffect(Unit) {
             try {
-                animeExtensionApi.checkForUpdates(animeExtensionManager.getLoadedExtensions())
-                mangaExtensionApi.checkForUpdates(mangaExtensionManager.getLoadedExtensions())
+                animeExtensionApi.checkForUpdates(
+                    animeExtensionManager.getLoadedExtensions() + animeExtensionManager.getNotLoadedExtensions(),
+                )
+                mangaExtensionApi.checkForUpdates(
+                    mangaExtensionManager.getLoadedExtensions() + mangaExtensionManager.getNotLoadedExtensions(),
+                )
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e)
             }

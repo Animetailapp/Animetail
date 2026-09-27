@@ -23,15 +23,15 @@ class MangaExtensionApi(
     }
 
     /**
-     * @param loadedExtensions Extensions already loaded by [eu.kanade.tachiyomi.extension.manga.MangaExtensionManager].
+     * @param installedExtensions Extensions already discovered by [eu.kanade.tachiyomi.extension.manga.MangaExtensionManager].
      * Only their versions are read, so there's nothing to gain from loading them a second time.
      */
-    suspend fun checkForUpdates(loadedExtensions: List<MangaExtension.Loaded>) {
+    suspend fun checkForUpdates(installedExtensions: List<MangaExtension.Installed>) {
         updateExtensionStores()
 
         val extensions = findExtensions()
 
-        val extensionsWithUpdate = loadedExtensions.filter { it.findUpdate(extensions) != null }
+        val extensionsWithUpdate = installedExtensions.filter { it.findUpdate(extensions) != null }
 
         if (extensionsWithUpdate.isNotEmpty()) {
             extensionUpdateNotifier.promptUpdates(extensionsWithUpdate.map { it.name })
