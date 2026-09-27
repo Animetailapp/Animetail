@@ -106,6 +106,9 @@ class MangaCategoryRepositoryImpl(
     override suspend fun updateMangaCategoryAllOrders(orderedIds: List<Long>) {
         database.transaction {
             orderedIds.forEachIndexed { index, id ->
+                database.categoriesQueries.updateOrder(order = -index - 2L, categoryId = id)
+            }
+            orderedIds.forEachIndexed { index, id ->
                 database.categoriesQueries.updateOrder(order = index.toLong(), categoryId = id)
             }
         }

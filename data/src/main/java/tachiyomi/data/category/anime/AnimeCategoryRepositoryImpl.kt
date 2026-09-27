@@ -98,6 +98,9 @@ class AnimeCategoryRepositoryImpl(
     override suspend fun updateAnimeCategoryAllOrders(orderedIds: List<Long>) {
         handler.await(inTransaction = true) {
             orderedIds.forEachIndexed { index, id ->
+                categoriesQueries.updateOrder(order = -index - 2L, categoryId = id)
+            }
+            orderedIds.forEachIndexed { index, id ->
                 categoriesQueries.updateOrder(order = index.toLong(), categoryId = id)
             }
         }
