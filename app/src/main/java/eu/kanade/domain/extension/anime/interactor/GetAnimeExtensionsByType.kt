@@ -24,19 +24,12 @@ class GetAnimeExtensionsByType(
             extensionManager.notLoadedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
         ) { enabledLanguages, disabledRepos, _loaded, _notLoaded, _available ->
-            val (loadedUpdates, loaded) = _loaded
-                .sortedWith(
-                    compareBy<AnimeExtension.Loaded> { !it.isObsolete }
-                        .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name },
-                )
-                .partition { it.hasUpdate }
+            val byName = compareBy<AnimeExtension, String>(String.CASE_INSENSITIVE_ORDER) { it.name }
 
-            val (notLoadedUpdates, notLoaded) = _notLoaded
-                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
-                .partition { it.hasUpdate }
+            val (loadedUpdates, loaded) = _loaded.partition { it.hasUpdate }
+            val (notLoadedUpdates, notLoaded) = _notLoaded.partition { it.hasUpdate }
 
-            val updates = (loadedUpdates + notLoadedUpdates)
-                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+            val updates = (loadedUpdates + notLoadedUpdates).sortedWith(byName)
 
             val available = _available
                 .filter { extension ->
@@ -63,9 +56,14 @@ class GetAnimeExtensionsByType(
                             )
                         }
                 }
-                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+                .sortedWith(byName)
 
-            AnimeExtensions(updates, loaded, available, notLoaded)
+            AnimeExtensions(
+                updates = updates,
+                loaded = loaded.sortedWith(compareBy<AnimeExtension.Loaded> { !it.isObsolete }.then(byName)),
+                available = available,
+                notLoaded = notLoaded.sortedWith(byName),
+            )
         }
     }
 }
