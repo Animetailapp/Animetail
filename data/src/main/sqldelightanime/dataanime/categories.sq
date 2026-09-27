@@ -54,7 +54,8 @@ C.hidden
 FROM categories C
 JOIN animes_categories AC
 ON C._id = AC.category_id
-WHERE AC.anime_id = :animeId;
+WHERE AC.anime_id = :animeId
+ORDER BY C.sort;
 
 getVisibleCategoriesByAnimeId:
 SELECT
@@ -66,7 +67,8 @@ C.hidden
 FROM categories C
 JOIN animes_categories AC
 ON C._id = AC.category_id
-WHERE AC.anime_id = :animeId AND C.hidden = 0;
+WHERE AC.anime_id = :animeId AND C.hidden = 0
+ORDER BY C.sort;
 
 insert:
 INSERT INTO categories(name, sort, flags)
