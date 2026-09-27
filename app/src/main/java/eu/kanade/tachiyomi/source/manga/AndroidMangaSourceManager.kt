@@ -68,9 +68,8 @@ class AndroidMangaSourceManager(
         scope.launchIO {
             sourceRepository.subscribeAllManga()
                 .collectLatest { sources ->
-                    val mutableMap = stubSourcesMap.toMutableMap()
                     sources.forEach {
-                        mutableMap[it.id] = it
+                        stubSourcesMap[it.id] = it
                     }
                 }
         }

@@ -6,7 +6,7 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 
 @Suppress("OverridingDeprecatedMember")
-class StubMangaSource(
+data class StubMangaSource(
     override val id: Long,
     override val lang: String,
     override val name: String,
