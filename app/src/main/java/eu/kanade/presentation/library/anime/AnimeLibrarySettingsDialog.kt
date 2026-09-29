@@ -360,6 +360,17 @@ data class GroupMode(
     val drawableRes: Int,
 )
 
+private fun groupTypeStringRes(type: Int, hasCategories: Boolean = true): Int {
+    return when (type) {
+        AnimeLibraryGroup.BY_STATUS -> tachiyomi.i18n.R.string.status
+        AnimeLibraryGroup.BY_SOURCE -> tachiyomi.i18n.R.string.label_sources
+        AnimeLibraryGroup.BY_TRACK_STATUS -> tachiyomi.i18n.R.string.tracking_status
+        AnimeLibraryGroup.BY_TAG -> tachiyomi.i18n.R.string.tag
+        AnimeLibraryGroup.UNGROUPED -> tachiyomi.i18n.R.string.ungrouped
+        else -> if (hasCategories) tachiyomi.i18n.R.string.categories else tachiyomi.i18n.R.string.ungrouped
+    }
+}
+
 private fun groupTypeDrawableRes(type: Int): Int {
     return when (type) {
         AnimeLibraryGroup.BY_STATUS -> R.drawable.ic_progress_clock_24dp
@@ -393,7 +404,7 @@ private fun ColumnScope.GroupPage(
         }.map {
             GroupMode(
                 it,
-                AnimeLibraryGroup.groupTypeStringRes(it, hasCategories),
+                groupTypeStringRes(it, hasCategories),
                 groupTypeDrawableRes(it),
             )
         }
