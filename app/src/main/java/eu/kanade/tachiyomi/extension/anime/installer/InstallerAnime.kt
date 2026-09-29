@@ -13,9 +13,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicReference
 
@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 abstract class InstallerAnime(private val service: Service) {
 
-    protected val extensionManager: AnimeExtensionManager by injectLazy()
+    protected val extensionManager: AnimeExtensionManager = Injekt.get<Context>().appGraph.animeExtensionManager
 
     private var waitingInstall = AtomicReference<Entry>(null)
     private val queue = Collections.synchronizedList(mutableListOf<Entry>())
