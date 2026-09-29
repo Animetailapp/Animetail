@@ -12,7 +12,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dev.zacsweers.metro.Inject
-import eu.kanade.tachiyomi.R
+import tachiyomi.i18n.R
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.system.NetworkState
 import eu.kanade.tachiyomi.util.system.activeNetworkState
