@@ -197,4 +197,3 @@ class PackageInstallerInstallerAnime(private val service: Service) : InstallerAn
 }
 
 private const val INSTALL_ACTION = "${BuildConfig.APPLICATION_ID}.PACKAGE_INSTALLER_ANIME.INSTALL_ACTION"
-

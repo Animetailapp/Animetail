@@ -197,4 +197,3 @@ class PackageInstallerInstallerManga(private val service: Service) : InstallerMa
 }
 
 private const val INSTALL_ACTION = "${BuildConfig.APPLICATION_ID}.PACKAGE_INSTALLER_MANGA.INSTALL_ACTION"
-
