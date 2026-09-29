@@ -29,8 +29,8 @@ data class SMManga(
     val kind: String?,
     val personRoles: List<SMPersonRole>?,
 ) {
-    fun toTrack(trackId: Long): MangaTrackSearch {
-        return MangaTrackSearch.create(trackId).apply {
+    fun toTrack(trackerId: Long): MangaTrackSearch {
+        return MangaTrackSearch.create(trackerId).apply {
             remote_id = this@SMManga.id
             title = name
             total_chapters = chapters
@@ -75,8 +75,8 @@ data class SMAnime(
     val kind: String?,
     val personRoles: List<SMPersonRole>?,
 ) {
-    fun toTrack(trackId: Long): AnimeTrackSearch {
-        return AnimeTrackSearch.create(trackId).apply {
+    fun toTrack(trackerId: Long): AnimeTrackSearch {
+        return AnimeTrackSearch.create(trackerId).apply {
             remote_id = this@SMAnime.id
             title = name
             total_episodes = episodes

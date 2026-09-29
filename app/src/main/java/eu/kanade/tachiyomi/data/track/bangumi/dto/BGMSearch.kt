@@ -31,7 +31,7 @@ data class BGMSubject(
     val infobox: List<Infobox> = emptyList(),
     // SY <--
 ) {
-    fun toMangaTrackSearch(trackId: Long): MangaTrackSearch = MangaTrackSearch.create(trackId).apply {
+    fun toMangaTrackSearch(trackerId: Long): MangaTrackSearch = MangaTrackSearch.create(trackerId).apply {
         remote_id = this@BGMSubject.id
         title = nameCn.ifBlank { name }
         cover_url = images?.common.orEmpty()
@@ -46,7 +46,7 @@ data class BGMSubject(
         start_date = date ?: ""
     }
 
-    fun toAnimeTrackSearch(trackId: Long): AnimeTrackSearch = AnimeTrackSearch.create(trackId).apply {
+    fun toAnimeTrackSearch(trackerId: Long): AnimeTrackSearch = AnimeTrackSearch.create(trackerId).apply {
         remote_id = this@BGMSubject.id
         title = nameCn.ifBlank { name }
         cover_url = images?.common.orEmpty()

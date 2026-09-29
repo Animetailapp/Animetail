@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -30,14 +31,15 @@ import androidx.preference.forEach
 import androidx.preference.getOnBindEditTextListener
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import eu.kanade.core.util.ifMangaSourcesLoaded
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.preference.SharedPreferencesDataStore
 import eu.kanade.tachiyomi.source.ConfigurableSource
+import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.sourcePreferences
 import eu.kanade.tachiyomi.widget.TachiyomiTextInputEditText.Companion.setIncognito
+import kotlinx.coroutines.launch
 import mihon.app.di.appGraph
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -49,18 +51,22 @@ class MangaSourcePreferencesScreen(val sourceId: Long) : Screen() {
 
     @Composable
     override fun Content() {
-        if (!ifMangaSourcesLoaded()) {
+        val context = LocalContext.current
+        val navigator = LocalNavigator.currentOrThrow
+
+        val source by produceState<MangaSource?>(initialValue = null) {
+            value = context.appGraph.mangaSourceManager.getOrStub(sourceId)
+        }
+
+        if (source == null) {
             LoadingScreen()
             return
         }
 
-        val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
-
         Scaffold(
             topBar = {
                 AppBar(
-                    title = Injekt.get<MangaSourceManager>().getOrStub(sourceId).toString(),
+                    title = source.toString(),
                     navigateUp = navigator::pop,
                     scrollBehavior = it,
                 )
@@ -128,10 +134,13 @@ class MangaSourcePreferencesFragment : PreferenceFragmentCompat() {
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-        preferenceScreen = populateScreen()
+        preferenceScreen = preferenceManager.createPreferenceScreen(requireContext())
+        lifecycleScope.launch {
+            preferenceScreen = populateScreen()
+        }
     }
 
-    private fun populateScreen(): PreferenceScreen {
+    private suspend fun populateScreen(): PreferenceScreen {
         val sourceId = requireArguments().getLong(SOURCE_ID)
         val appGraph = requireContext().appGraph
         val source = appGraph.mangaSourceManager.getOrStub(sourceId)

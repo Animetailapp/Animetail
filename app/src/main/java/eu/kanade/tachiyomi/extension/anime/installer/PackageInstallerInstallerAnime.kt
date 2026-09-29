@@ -1,5 +1,7 @@
 package eu.kanade.tachiyomi.extension.anime.installer
 
+import android.annotation.SuppressLint
+import android.app.ActivityOptions
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -9,8 +11,8 @@ import android.content.IntentFilter
 import android.content.pm.PackageInstaller
 import android.os.Build
 import androidx.core.content.ContextCompat
+import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.extension.InstallStep
-import eu.kanade.tachiyomi.util.lang.use
 import eu.kanade.tachiyomi.util.system.getParcelableExtraCompat
 import eu.kanade.tachiyomi.util.system.getUriSize
 import logcat.LogPriority
@@ -30,8 +32,21 @@ class PackageInstallerInstallerAnime(private val service: Service) : InstallerAn
                         continueQueue(InstallStep.Error)
                         return
                     }
-                    userAction.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    service.startActivity(userAction)
+                    try {
+                        userAction.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                            ActivityOptions.makeBasic().apply {
+                                pendingIntentBackgroundActivityStartMode =
+                                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+                            }.toBundle()
+                        } else {
+                            null
+                        }
+                        service.startActivity(userAction, options)
+                    } catch (e: Exception) {
+                        logcat(LogPriority.ERROR, e) { "Failed to start user action activity" }
+                        continueQueue(InstallStep.Error)
+                    }
                 }
 
                 PackageInstaller.STATUS_FAILURE_ABORTED -> {
@@ -40,11 +55,20 @@ class PackageInstallerInstallerAnime(private val service: Service) : InstallerAn
 
                 PackageInstaller.STATUS_SUCCESS -> continueQueue(InstallStep.Installed)
 
-                else -> continueQueue(InstallStep.Error)
+                else -> {
+                    val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)
+                    val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
+                    val otherPackage = intent.getStringExtra(PackageInstaller.EXTRA_OTHER_PACKAGE_NAME)
+                    logcat(LogPriority.ERROR) {
+                        "PackageInstaller failed: status=$status, message=$message, otherPackage=$otherPackage"
+                    }
+                    continueQueue(InstallStep.Error)
+                }
             }
         }
     }
 
+    @Volatile
     private var activeSession: Pair<Entry, Int>? = null
 
     // Always ready
@@ -53,50 +77,105 @@ class PackageInstallerInstallerAnime(private val service: Service) : InstallerAn
     override fun processEntry(entry: Entry) {
         super.processEntry(entry)
         activeSession = null
+        var session: PackageInstaller.Session? = null
         try {
+            // Clean up any orphaned sessions from previous failed installs
+            cleanUpOrphanedSessions()
+
             val installParams = PackageInstaller.SessionParams(
                 PackageInstaller.SessionParams.MODE_FULL_INSTALL,
             )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val pkgName = entry.pkgName
+            if (!pkgName.isNullOrEmpty()) {
+                installParams.setAppPackageName(pkgName)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !pkgName.isNullOrEmpty()) {
                 installParams.setRequireUserAction(
                     PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED,
                 )
             }
-            activeSession = entry to packageInstaller.createSession(installParams)
-            val fileSize = service.getUriSize(entry.uri) ?: throw IllegalStateException()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                installParams.setPackageSource(PackageInstaller.PACKAGE_SOURCE_STORE)
+            }
+            val fileSize = service.getUriSize(entry.uri) ?: throw IllegalStateException("Could not get URI size")
             installParams.setSize(fileSize)
 
-            val inputStream = service.contentResolver.openInputStream(entry.uri) ?: throw IllegalStateException()
-            val session = packageInstaller.openSession(activeSession!!.second)
-            val outputStream = session.openWrite(entry.downloadId.toString(), 0, fileSize)
-            session.use {
-                arrayOf(inputStream, outputStream).use {
+            val sessionId = packageInstaller.createSession(installParams)
+            activeSession = entry to sessionId
+
+            session = packageInstaller.openSession(sessionId)
+
+            // Write APK data into the session
+            service.contentResolver.openInputStream(entry.uri)?.use { inputStream ->
+                session.openWrite(entry.downloadId.toString(), 0, fileSize).use { outputStream ->
                     inputStream.copyTo(outputStream)
                     session.fsync(outputStream)
                 }
+            } ?: throw IllegalStateException("Could not open input stream for ${entry.uri}")
 
-                val intentSender = PendingIntent.getBroadcast(
-                    service,
-                    activeSession!!.second,
-                    Intent(INSTALL_ACTION).setPackage(service.packageName),
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0,
-                ).intentSender
-                session.commit(intentSender)
+            val intentSender = PendingIntent.getBroadcast(
+                service,
+                sessionId,
+                Intent(INSTALL_ACTION).setPackage(service.packageName),
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                } else {
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                },
+            ).intentSender
+
+            @SuppressLint("RequestInstallPackagesPolicy")
+            session.commit(intentSender)
+
+            // Delete the cached APK only after commit succeeds
+            try {
+                service.contentResolver.delete(entry.uri, null, null)
+            } catch (e: Exception) {
+                logcat(LogPriority.WARN, e) { "Failed to delete cached APK ${entry.uri}" }
             }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Failed to install extension ${entry.downloadId} ${entry.uri}" }
+            session?.close()
             activeSession?.let { (_, sessionId) ->
-                packageInstaller.abandonSession(sessionId)
+                try {
+                    packageInstaller.abandonSession(sessionId)
+                } catch (_: Exception) {
+                    // Session may already be finalized
+                }
             }
             continueQueue(InstallStep.Error)
+        }
+    }
+
+    /**
+     * Clean up any orphaned sessions from previous installs that may have been
+     * left behind due to crashes or unexpected service restarts.
+     */
+    private fun cleanUpOrphanedSessions() {
+        try {
+            packageInstaller.mySessions.forEach { sessionInfo ->
+                try {
+                    packageInstaller.abandonSession(sessionInfo.sessionId)
+                    logcat(LogPriority.DEBUG) { "Cleaned up orphaned session ${sessionInfo.sessionId}" }
+                } catch (_: Exception) {
+                    // Ignore — session may already be finalized
+                }
+            }
+        } catch (e: Exception) {
+            logcat(LogPriority.WARN, e) { "Failed to clean up orphaned sessions" }
         }
     }
 
     override fun cancelEntry(entry: Entry): Boolean {
         activeSession?.let { (activeEntry, sessionId) ->
             if (activeEntry == entry) {
-                packageInstaller.abandonSession(sessionId)
-                return false
+                return try {
+                    packageInstaller.abandonSession(sessionId)
+                    false
+                } catch (_: SecurityException) {
+                    // Highly likely the session has succeeded
+                    true
+                }
             }
         }
         return true
@@ -117,4 +196,4 @@ class PackageInstallerInstallerAnime(private val service: Service) : InstallerAn
     }
 }
 
-private const val INSTALL_ACTION = "PackageInstallerInstaller.INSTALL_ACTION"
+private const val INSTALL_ACTION = "${BuildConfig.APPLICATION_ID}.PACKAGE_INSTALLER_ANIME.INSTALL_ACTION"

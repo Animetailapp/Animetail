@@ -34,8 +34,8 @@ data class SMUserListManga(
     val totalChapters: Long,
     val userRate: SMUserRate?,
 ) {
-    fun toTrack(trackId: Long): MangaTrack {
-        return MangaTrack.create(trackId).apply {
+    fun toTrack(trackerId: Long): MangaTrack {
+        return MangaTrack.create(trackerId).apply {
             title = name
             total_chapters = totalChapters
             tracking_url = url
@@ -69,8 +69,8 @@ data class SMAnimeUserListAnime(
     val totalEpisodes: Long,
     val userRate: SMAnimeUserRate?,
 ) {
-    fun toTrack(trackId: Long): AnimeTrack {
-        return AnimeTrack.create(trackId).apply {
+    fun toTrack(trackerId: Long): AnimeTrack {
+        return AnimeTrack.create(trackerId).apply {
             title = name
             total_episodes = totalEpisodes
             tracking_url = url

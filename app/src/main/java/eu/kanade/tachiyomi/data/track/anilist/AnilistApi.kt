@@ -10,7 +10,6 @@ import eu.kanade.tachiyomi.data.track.anilist.dto.ALAddEntryResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALAnimeMetadata
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALCurrentUserResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALMangaMetadata
-import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserViewerData
@@ -44,13 +43,17 @@ import kotlin.time.Instant
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
-class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
+class AnilistApi(
+    val trackerId: Long,
+    val client: OkHttpClient,
+    interceptor: AnilistInterceptor,
+) {
 
     private val json: Json by injectLazy()
 
     private val authClient = client.newBuilder()
         .addInterceptor(interceptor)
-        .rateLimit(permits = 85, period = 1.minutes)
+        .rateLimit(permits = 25, period = 1.minutes)
         .build()
 
     private val publicClient = client.newBuilder()
@@ -304,7 +307,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .awaitSuccess()
                     .parseAs<ALSearchResult>()
                     .data.page.media
-                    .map { it.toALManga().toTrack() }
+                    .map { it.toALManga().toTrack(trackerId) }
             }
         }
     }
@@ -364,7 +367,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .awaitSuccess()
                     .parseAs<ALSearchResult>()
                     .data.page.media
-                    .map { it.toALAnime().toTrack() }
+                    .map { it.toALAnime().toTrack(trackerId) }
             }
         }
     }
@@ -431,7 +434,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .data.page.media
                     .firstOrNull()
                     ?.toALManga()
-                    ?.toTrack()
+                    ?.toTrack(trackerId)
             }
         }
     }
@@ -508,7 +511,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .data.page.media
                     .firstOrNull()
                     ?.toALAnime()
-                    ?.toTrack()
+                    ?.toTrack(trackerId)
             }
         }
     }
@@ -712,7 +715,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .data.page.mediaList
                     .map { it.toALUserManga() }
                     .firstOrNull()
-                    ?.toTrack()
+                    ?.toTrack(trackerId)
             }
         }
     }
@@ -791,7 +794,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .data.page.mediaList
                     .map { it.toALUserAnime() }
                     .firstOrNull()
-                    ?.toTrack()
+                    ?.toTrack(trackerId)
             }
         }
     }
@@ -802,10 +805,6 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     suspend fun getLibAnime(track: AnimeTrack, userId: Int): AnimeTrack {
         return findLibAnime(track, userId) ?: throw Exception("Could not find anime")
-    }
-
-    fun createOAuth(token: String): ALOAuth {
-        return ALOAuth(token, "Bearer", System.currentTimeMillis() + 31536000000, 31536000000)
     }
 
     suspend fun getCurrentUser(): ALUserViewerData {

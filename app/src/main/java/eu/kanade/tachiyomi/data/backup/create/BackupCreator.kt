@@ -188,7 +188,7 @@ class BackupCreator(
     fun backupAnimeSources(animes: List<BackupAnime>): List<BackupAnimeSource> {
         return animeSourcesBackupCreator(animes)
     }
-    fun backupMangaSources(mangas: List<BackupManga>): List<BackupSource> {
+    suspend fun backupMangaSources(mangas: List<BackupManga>): List<BackupSource> {
         return mangaSourcesBackupCreator(mangas)
     }
 
@@ -216,7 +216,7 @@ class BackupCreator(
         return customButtonBackupCreator()
     }
 
-    fun backupSourcePreferences(options: BackupOptions): List<BackupSourcePreferences> {
+    suspend fun backupSourcePreferences(options: BackupOptions): List<BackupSourcePreferences> {
         if (!options.sourceSettings) return emptyList()
 
         return preferenceBackupCreator.createSource(includePrivatePreferences = options.privateSettings)

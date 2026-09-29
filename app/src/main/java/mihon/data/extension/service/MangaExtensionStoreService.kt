@@ -20,6 +20,7 @@ import okio.buffer
 import okio.gzip
 import tachiyomi.core.common.util.system.logcat
 import kotlin.coroutines.cancellation.CancellationException
+import mihon.domain.extension.model.ContentWarning as DomainContentWarning
 
 @Inject
 @SingleIn(AppScope::class)
@@ -122,6 +123,7 @@ class MangaExtensionStoreService(
                 response.body.source().use { source ->
                     source.stripBom()
                     json.decodeFromBufferedSource<List<NetworkLegacyExtension>>(source)
+                        .filter { isMangaPackage(it.pkg) }
                         .map { toAvailableExtension(it, store, storeBaseUrl) }
                 }
             }
@@ -137,31 +139,38 @@ class MangaExtensionStoreService(
         extensionList: NetworkExtensionStore.ExtensionList,
         store: ExtensionStore,
     ): List<MangaExtension.Available> {
-        return extensionList.extensions.map { extension ->
-            val lang = extension.sources.map { it.language }.toSet()
-            MangaExtension.Available(
-                name = extension.name,
-                pkgName = extension.packageName,
-                apkUrl = extension.resources.apkUrl,
-                iconUrl = extension.resources.iconUrl,
-                libVersion = extension.extensionLib.toDouble(),
-                versionCode = extension.versionCode,
-                versionName = extension.versionName,
-                lang = if (lang.size == 1) lang.first() else "all",
-                isNsfw = extension.contentWarning >= NetworkExtensionStore.ContentWarning.MIXED,
-                sources = extension.sources.map { source ->
-                    MangaExtension.Available.MangaSource(
-                        id = source.id,
-                        name = source.name,
-                        lang = source.language,
-                        baseUrl = source.homeUrl,
-                    )
-                },
-                store = store,
-                signatureHash = "NO_SIGNING_KEY", // Will be filled/verified on load/trust
-                repoName = store.name,
-            )
-        }
+        return extensionList.extensions
+            .filter { isMangaPackage(it.packageName) }
+            .map { extension ->
+                val lang = extension.sources.map { it.language }.toSet()
+                MangaExtension.Available(
+                    name = extension.name,
+                    pkgName = extension.packageName,
+                    apkUrl = extension.resources.apkUrl,
+                    iconUrl = extension.resources.iconUrl,
+                    libVersion = extension.extensionLib.toDouble(),
+                    versionCode = extension.versionCode,
+                    versionName = extension.versionName,
+                    lang = if (lang.size == 1) lang.first() else "all",
+                    contentWarning = when (extension.contentWarning) {
+                        NetworkExtensionStore.ContentWarning.SAFE -> DomainContentWarning.SAFE
+                        NetworkExtensionStore.ContentWarning.MIXED -> DomainContentWarning.MIXED
+                        NetworkExtensionStore.ContentWarning.NSFW -> DomainContentWarning.NSFW
+                        else -> DomainContentWarning.SAFE
+                    },
+                    sources = extension.sources.map { source ->
+                        MangaExtension.Available.MangaSource(
+                            id = source.id,
+                            name = source.name,
+                            lang = source.language,
+                            baseUrl = source.homeUrl,
+                        )
+                    },
+                    store = store,
+                    signatureHash = "NO_SIGNING_KEY", // Will be filled/verified on load/trust
+                    repoName = store.name,
+                )
+            }
     }
 
     private fun toAvailableExtension(
@@ -178,7 +187,7 @@ class MangaExtensionStoreService(
             versionCode = netExt.code,
             versionName = netExt.version,
             lang = netExt.lang,
-            isNsfw = netExt.nsfw == 1,
+            contentWarning = if (netExt.nsfw == 1) DomainContentWarning.NSFW else DomainContentWarning.SAFE,
             sources = run {
                 val sources = netExt.sources
                 if (sources.isNullOrEmpty()) {
@@ -205,6 +214,10 @@ class MangaExtensionStoreService(
             signatureHash = "NO_SIGNING_KEY",
             repoName = store.name,
         )
+    }
+
+    private fun isMangaPackage(pkgName: String): Boolean {
+        return !pkgName.contains("animeextension") && !pkgName.contains(".anime.")
     }
 }
 

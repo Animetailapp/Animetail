@@ -89,7 +89,7 @@ abstract class MangaSearchViewModel(
         }
     }
 
-    open fun getEnabledSources(): List<CatalogueSource> {
+    open suspend fun getEnabledSources(): List<CatalogueSource> {
         return sourceManager.getCatalogueSources()
             .filter { it.lang in enabledLanguages && "${it.id}" !in disabledSources }
             .sortedWith(
@@ -100,7 +100,7 @@ abstract class MangaSearchViewModel(
             )
     }
 
-    private fun getSelectedSources(): List<CatalogueSource> {
+    private suspend fun getSelectedSources(): List<CatalogueSource> {
         val enabledSources = getEnabledSources()
 
         val filter = extensionFilter
@@ -108,7 +108,7 @@ abstract class MangaSearchViewModel(
             return enabledSources
         }
 
-        return extensionManager.installedExtensionsFlow.value
+        return extensionManager.getLoadedExtensions()
             .filter { it.pkgName == filter }
             .flatMap { it.sources }
             .filterIsInstance<CatalogueSource>()
@@ -140,25 +140,24 @@ abstract class MangaSearchViewModel(
         this.lastSourceFilter = sourceFilter
 
         searchJob?.cancel()
-        val sources = getSelectedSources()
-
-        // Reuse previous results if possible
-        if (sameQuery) {
-            val existingResults = state.value.items
-            updateItems(
-                sources
-                    .associateWith { existingResults[it] ?: MangaSearchItemResult.Loading }
-                    .toMap(),
-            )
-        } else {
-            updateItems(
-                sources
-                    .associateWith { MangaSearchItemResult.Loading }
-                    .toMap(),
-            )
-        }
 
         searchJob = viewModelScope.launchIO {
+            val sources = getSelectedSources()
+
+            // Reuse previous results if possible
+            if (sameQuery) {
+                val existingResults = state.value.items
+                updateItems(
+                    sources
+                        .associateWith { existingResults[it] ?: MangaSearchItemResult.Loading },
+                )
+            } else {
+                updateItems(
+                    sources
+                        .associateWith { MangaSearchItemResult.Loading },
+                )
+            }
+
             sources.map { source ->
                 async {
                     if (state.value.items[source] !is MangaSearchItemResult.Loading) {

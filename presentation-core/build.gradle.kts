@@ -29,12 +29,14 @@ dependencies {
     // TAIL -->
     api(projects.i18nTail)
     // TAIL <--
+    implementation(projects.icons.materialSymbols)
+    implementation(libs.androidx.compose.materialIcons)
 
     // Compose
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.materialIcons)
+    api(libs.androidx.compose.material3NavSuite)
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.animationGraphics)
     debugImplementation(libs.androidx.compose.uiTooling)

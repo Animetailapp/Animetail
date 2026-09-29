@@ -4,7 +4,7 @@ import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import java.util.UUID
 
-fun MangaTrack.toApiStatus() = when (status) {
+internal fun MangaTrack.toApiStatus() = when (status) {
     Hikka.READING -> "reading"
     Hikka.COMPLETED -> "completed"
     Hikka.ON_HOLD -> "on_hold"
@@ -14,7 +14,7 @@ fun MangaTrack.toApiStatus() = when (status) {
     else -> throw NotImplementedError("Hikka: Unknown status: $status")
 }
 
-fun AnimeTrack.toApiStatus() = when (status) {
+internal fun AnimeTrack.toApiStatus() = when (status) {
     Hikka.WATCHING -> "reading"
     Hikka.COMPLETED -> "completed"
     Hikka.ON_HOLD -> "on_hold"
@@ -24,7 +24,7 @@ fun AnimeTrack.toApiStatus() = when (status) {
     else -> throw NotImplementedError("Hikka: Unknown status: $status")
 }
 
-fun toTrackStatus(status: String) = when (status) {
+internal fun toTrackStatus(status: String) = when (status) {
     "reading" -> Hikka.READING
     "completed" -> Hikka.COMPLETED
     "on_hold" -> Hikka.ON_HOLD
@@ -33,7 +33,7 @@ fun toTrackStatus(status: String) = when (status) {
     else -> throw NotImplementedError("Hikka: Unknown status: $status")
 }
 
-fun stringToNumber(input: String): Long {
+internal fun stringToNumber(input: String): Long {
     val uuid = UUID.nameUUIDFromBytes(input.toByteArray())
     return uuid.mostSignificantBits and Long.MAX_VALUE
 }

@@ -6,7 +6,6 @@ import com.hippo.unifile.UniFile
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
-import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.util.size
 import kotlinx.coroutines.CancellationException
@@ -21,7 +20,6 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -70,7 +68,6 @@ class MangaDownloadCache(
     private val context: Context,
     private val provider: MangaDownloadProvider,
     private val sourceManager: MangaSourceManager,
-    private val extensionManager: MangaExtensionManager,
     private val storageManager: StorageManager,
 ) {
 
@@ -135,7 +132,6 @@ class MangaDownloadCache(
      * @param chapterScanlator scanlator of the chapter to query
      * @param mangaTitle the title of the manga to query.
      * @param sourceId the id of the source of the chapter.
-     * @param skipCache whether to skip the directory cache and check in the filesystem.
      */
     fun isChapterDownloaded(
         chapterName: String,
@@ -143,19 +139,7 @@ class MangaDownloadCache(
         chapterUrl: String,
         mangaTitle: String,
         sourceId: Long,
-        skipCache: Boolean,
     ): Boolean {
-        if (skipCache) {
-            val source = sourceManager.getOrStub(sourceId)
-            return provider.findChapterDir(
-                chapterName,
-                chapterScanlator,
-                chapterUrl,
-                mangaTitle,
-                source,
-            ) != null
-        }
-
         renewCache()
 
         val sourceDir = rootDownloadsDir.sourceDirs[sourceId]
@@ -367,9 +351,6 @@ class MangaDownloadCache(
                 // Try to wait until extensions and sources have loaded
                 var sources = emptyList<MangaSource>()
                 withTimeoutOrNull(30.seconds) {
-                    extensionManager.isInitialized.first { it }
-                    sourceManager.isInitialized.first { it }
-
                     sources = getSources()
                 }
 
@@ -435,7 +416,7 @@ class MangaDownloadCache(
         notifyChanges()
     }
 
-    private fun getSources(): List<MangaSource> {
+    private suspend fun getSources(): List<MangaSource> {
         return sourceManager.getOnlineSources() + sourceManager.getStubSources()
     }
 

@@ -25,7 +25,6 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.allowRgb565
 import coil3.request.crossfade
 import coil3.util.DebugLogger
-import dev.mihon.injekt.patchInjekt
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.createGraphFactory
 import eu.kanade.domain.base.BasePreferences
@@ -395,7 +394,6 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
     }
 
     private fun setupInjekt(graph: AppGraph) {
-        patchInjekt()
         Injekt.addSingleton<Application>(this)
         Injekt.addSingleton<Context>(this)
         Injekt.addSingleton<Json>(graph.json)

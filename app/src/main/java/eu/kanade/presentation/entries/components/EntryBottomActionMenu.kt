@@ -23,18 +23,10 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Input
-import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.automirrored.outlined.LabelOff
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
-import androidx.compose.material.icons.outlined.BookmarkAdd
-import androidx.compose.material.icons.outlined.BookmarkRemove
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.DoneAll
-import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.EditCalendar
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.NewLabel
-import androidx.compose.material.icons.outlined.RemoveDone
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -65,6 +57,16 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.automirroredrounded.Label
+import mihon.icons.materialsymbols.rounded.BookmarkAdd
+import mihon.icons.materialsymbols.rounded.BookmarkRemove
+import mihon.icons.materialsymbols.rounded.Delete
+import mihon.icons.materialsymbols.rounded.DoneAll
+import mihon.icons.materialsymbols.rounded.Download
+import mihon.icons.materialsymbols.rounded.MoreVert
+import mihon.icons.materialsymbols.rounded.RemoveDone
+import mihon.icons.materialsymbols.rounded.SwapCalls
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
@@ -133,7 +135,7 @@ fun EntryBottomActionMenu(
                     val bookmark = if (isManga) MR.strings.action_bookmark else AYMR.strings.action_bookmark_episode
                     Button(
                         title = stringResource(bookmark),
-                        icon = Icons.Outlined.BookmarkAdd,
+                        icon = MaterialSymbols.Rounded.BookmarkAdd,
                         toConfirm = confirm[0],
                         onLongClick = { onLongClickItem(0) },
                         onClick = onBookmarkClicked,
@@ -147,7 +149,7 @@ fun EntryBottomActionMenu(
                     }
                     Button(
                         title = stringResource(removeBookmark),
-                        icon = Icons.Outlined.BookmarkRemove,
+                        icon = MaterialSymbols.Rounded.BookmarkRemove,
                         toConfirm = confirm[1],
                         onLongClick = { onLongClickItem(1) },
                         onClick = onRemoveBookmarkClicked,
@@ -175,7 +177,7 @@ fun EntryBottomActionMenu(
                     val viewed = if (isManga) MR.strings.action_mark_as_read else AYMR.strings.action_mark_as_seen
                     Button(
                         title = stringResource(viewed),
-                        icon = Icons.Outlined.DoneAll,
+                        icon = MaterialSymbols.Rounded.DoneAll,
                         toConfirm = confirm[4],
                         onLongClick = { onLongClickItem(4) },
                         onClick = onMarkAsViewedClicked,
@@ -185,7 +187,7 @@ fun EntryBottomActionMenu(
                     val unviewed = if (isManga) MR.strings.action_mark_as_unread else AYMR.strings.action_mark_as_unseen
                     Button(
                         title = stringResource(unviewed),
-                        icon = Icons.Outlined.RemoveDone,
+                        icon = MaterialSymbols.Rounded.RemoveDone,
                         toConfirm = confirm[5],
                         onLongClick = { onLongClickItem(5) },
                         onClick = onMarkAsUnviewedClicked,
@@ -208,7 +210,7 @@ fun EntryBottomActionMenu(
                 if (onDownloadClicked != null) {
                     Button(
                         title = stringResource(MR.strings.action_download),
-                        icon = Icons.Outlined.Download,
+                        icon = MaterialSymbols.Rounded.Download,
                         toConfirm = confirm[7],
                         onLongClick = { onLongClickItem(7) },
                         onClick = onDownloadClicked,
@@ -217,7 +219,7 @@ fun EntryBottomActionMenu(
                 if (onDeleteClicked != null) {
                     Button(
                         title = stringResource(MR.strings.action_delete),
-                        icon = Icons.Outlined.Delete,
+                        icon = MaterialSymbols.Rounded.Delete,
                         toConfirm = confirm[8],
                         onLongClick = { onLongClickItem(8) },
                         onClick = onDeleteClicked,
@@ -354,7 +356,7 @@ fun LibraryBottomActionMenu(
             ) {
                 Button(
                     title = stringResource(MR.strings.action_move_category),
-                    icon = Icons.AutoMirrored.Outlined.Label,
+                    icon = MaterialSymbols.AutoMirroredRounded.Label,
                     toConfirm = confirm[0],
                     onLongClick = { onLongClickItem(0) },
                     onClick = onChangeCategoryClicked,
@@ -362,7 +364,7 @@ fun LibraryBottomActionMenu(
                 val viewed = if (isManga) MR.strings.action_mark_as_read else AYMR.strings.action_mark_as_seen
                 Button(
                     title = stringResource(viewed),
-                    icon = Icons.Outlined.DoneAll,
+                    icon = MaterialSymbols.Rounded.DoneAll,
                     toConfirm = confirm[1],
                     onLongClick = { onLongClickItem(1) },
                     onClick = onMarkAsViewedClicked,
@@ -370,7 +372,7 @@ fun LibraryBottomActionMenu(
                 val unviewed = if (isManga) MR.strings.action_mark_as_unread else AYMR.strings.action_mark_as_unseen
                 Button(
                     title = stringResource(unviewed),
-                    icon = Icons.Outlined.RemoveDone,
+                    icon = MaterialSymbols.Rounded.RemoveDone,
                     toConfirm = confirm[2],
                     onLongClick = { onLongClickItem(2) },
                     onClick = onMarkAsUnviewedClicked,
@@ -379,7 +381,7 @@ fun LibraryBottomActionMenu(
                     var downloadExpanded by remember { mutableStateOf(false) }
                     Button(
                         title = stringResource(MR.strings.action_download),
-                        icon = Icons.Outlined.Download,
+                        icon = MaterialSymbols.Rounded.Download,
                         toConfirm = confirm[3],
                         onLongClick = { onLongClickItem(3) },
                         onClick = { downloadExpanded = !downloadExpanded },
@@ -396,7 +398,7 @@ fun LibraryBottomActionMenu(
                 if (showOverflow) {
                     Button(
                         title = stringResource(MR.strings.label_more),
-                        icon = Icons.Outlined.MoreVert,
+                        icon = MaterialSymbols.Rounded.MoreVert,
                         toConfirm = false,
                         onLongClick = {},
                         onClick = { overflowExpanded = !overflowExpanded },

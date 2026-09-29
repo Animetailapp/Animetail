@@ -12,7 +12,7 @@ class GetAnimeExtensionSources(
     private val preferences: SourcePreferences,
 ) {
 
-    fun subscribe(extension: AnimeExtension.Installed): Flow<List<AnimeExtensionSourceItem>> {
+    fun subscribe(extension: AnimeExtension.Loaded): Flow<List<AnimeExtensionSourceItem>> {
         val isMultiSource = extension.sources.size > 1
         val isMultiLangSingleSource =
             isMultiSource && extension.sources.map { it.name }.distinct().size == 1

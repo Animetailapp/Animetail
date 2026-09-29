@@ -59,7 +59,7 @@ class MigrateMangaSearchViewModel(
         }
     }
 
-    override fun getEnabledSources(): List<CatalogueSource> {
+    override suspend fun getEnabledSources(): List<CatalogueSource> {
         val migrationSources = preferences.migrationMangaSources.get()
         return super.getEnabledSources()
             .filter { migrationSources.isEmpty() || it.id in migrationSources }

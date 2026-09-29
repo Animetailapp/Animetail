@@ -48,8 +48,8 @@ object ImageUtil {
 
     fun findImageType(stream: InputStream): ImageType? {
         return try {
-            val decoder = ImageDecoder.new(stream)
-            when (decoder.format) {
+            val format = ImageDecoder.new(stream).use { dec -> dec.format }
+            when (format) {
                 "jpeg" -> ImageType.JPEG
                 "png" -> ImageType.PNG
                 "webp" -> ImageType.WEBP
@@ -78,8 +78,7 @@ object ImageUtil {
 
                 ImageType.WEBP, ImageType.HEIF -> {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
-                    val decoder = ImageDecoder.new(source.peek().inputStream())
-                    decoder.pages > 1
+                    ImageDecoder.new(source.peek().inputStream()).use { dec -> dec.pages > 1 }
                 }
 
                 else -> false
@@ -378,18 +377,16 @@ object ImageUtil {
      */
     @Suppress("ReturnCount", "NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
     fun chooseBackground(context: Context, imageStream: InputStream): Drawable {
-        val decoder = try {
-            ImageDecoder.new(imageStream)
+        val image = try {
+            ImageDecoder.new(imageStream).use { it.decode() }.let { res ->
+                createBitmap(res.width, res.height).also { bitmap ->
+                    res.image.rewind()
+                    bitmap.copyPixelsFromBuffer(res.image)
+                }
+            }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR) { "chooseBackground: ${e.message}" }
             null
-        }
-        val result = decoder?.decode()
-        val image = result?.let {
-            createBitmap(it.width, it.height).also { bitmap ->
-                it.image.rewind()
-                bitmap.copyPixelsFromBuffer(it.image)
-            }
         }
 
         val whiteColor = Color.WHITE

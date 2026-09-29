@@ -35,7 +35,7 @@ import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
 class BangumiApi(
-    private val trackId: Long,
+    private val trackerId: Long,
     private val client: OkHttpClient,
     interceptor: BangumiInterceptor,
 ) {
@@ -154,7 +154,7 @@ class BangumiApi(
                     .parseAs<BGMSearchResult>()
                     .data
                     .filter { it.platform == null || it.platform == "漫画" }
-                    .map { it.toMangaTrackSearch(trackId) }
+                    .map { it.toMangaTrackSearch(trackerId) }
             }
         }
     }
@@ -168,7 +168,7 @@ class BangumiApi(
                     .awaitSuccess()
                     .parseAs<BGMSubject>()
                     .takeIf { it.platform == null || it.platform == "漫画" }
-                    ?.toMangaTrackSearch(trackId)
+                    ?.toMangaTrackSearch(trackerId)
             }
         }
     }
@@ -196,7 +196,7 @@ class BangumiApi(
                     .awaitSuccess()
                     .parseAs<BGMSearchResult>()
                     .data
-                    .map { it.toAnimeTrackSearch(trackId) }
+                    .map { it.toAnimeTrackSearch(trackerId) }
             }
         }
     }
@@ -210,7 +210,7 @@ class BangumiApi(
                     .awaitSuccess()
                     .parseAs<BGMSubject>()
                     .takeIf { it.platform != "漫画" }
-                    ?.toAnimeTrackSearch(trackId)
+                    ?.toAnimeTrackSearch(trackerId)
             }
         }
     }

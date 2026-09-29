@@ -28,6 +28,7 @@ import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.manga.interactor.AddMangaTracks
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.util.removeCovers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -63,7 +65,7 @@ import eu.kanade.tachiyomi.source.model.Filter as SourceModelFilter
 class BrowseMangaSourceViewModel(
     @Assisted private val sourceId: Long,
     @Assisted listingQuery: String?,
-    sourceManager: MangaSourceManager,
+    private val sourceManager: MangaSourceManager,
     sourcePreferences: SourcePreferences,
     private val libraryPreferences: LibraryPreferences,
     private val coverCache: MangaCoverCache,
@@ -91,29 +93,36 @@ class BrowseMangaSourceViewModel(
 
     var displayMode by sourcePreferences.sourceDisplayMode.asState(viewModelScope)
 
-    val source = sourceManager.getOrStub(sourceId)
+    private val source: MangaSource? get() = state.value.source
 
     init {
-        if (source is CatalogueSource) {
-            state.update {
-                var query: String? = null
-                var listing = it.listing
+        viewModelScope.launchIO {
+            val source = sourceManager.getOrStub(sourceId)
 
-                if (listing is Listing.Search) {
-                    query = listing.query
-                    listing = Listing.Search(query, source.getFilterList())
+            if (source is CatalogueSource) {
+                state.update {
+                    var query: String? = null
+                    var listing = it.listing
+
+                    if (listing is Listing.Search) {
+                        query = listing.query
+                        listing = Listing.Search(query, source.getFilterList())
+                    }
+
+                    it.copy(
+                        source = source,
+                        listing = listing,
+                        filters = source.getFilterList(),
+                        toolbarQuery = query,
+                    )
                 }
-
-                it.copy(
-                    listing = listing,
-                    filters = source.getFilterList(),
-                    toolbarQuery = query,
-                )
+            } else {
+                state.update { it.copy(source = source) }
             }
-        }
 
-        if (!getIncognitoState.await(source.id)) {
-            sourcePreferences.lastUsedSource.set(source.id)
+            if (!getIncognitoState.await(source.id)) {
+                sourcePreferences.lastUsedSource.set(source.id)
+            }
         }
     }
 
@@ -121,7 +130,9 @@ class BrowseMangaSourceViewModel(
      * Flow of Pager flow tied to [State.listing]
      */
     private val hideInLibraryItems = sourcePreferences.hideInLibraryItems.get()
-    val mangaPagerFlowFlow = state.map { it.listing }
+    val mangaPagerFlowFlow = state.map { it.source to it.listing }
+        .filter { (source, _) -> source != null }
+        .map { (_, listing) -> listing }
         .distinctUntilChanged()
         .map { listing ->
             Pager(PagingConfig(pageSize = 25)) {
@@ -160,8 +171,7 @@ class BrowseMangaSourceViewModel(
     }
 
     fun resetFilters() {
-        if (source !is CatalogueSource) return
-
+        val source = (source as? CatalogueSource) ?: return
         state.update { it.copy(filters = source.getFilterList()) }
     }
 
@@ -183,7 +193,7 @@ class BrowseMangaSourceViewModel(
         if (source !is CatalogueSource) return
 
         val input = state.value.listing as? Listing.Search
-            ?: Listing.Search(query = null, filters = source.getFilterList())
+            ?: Listing.Search(query = null, filters = source?.getFilterList() ?: FilterList())
 
         state.update {
             it.copy(
@@ -197,9 +207,7 @@ class BrowseMangaSourceViewModel(
     }
 
     fun searchGenre(genreName: String) {
-        if (source !is CatalogueSource) return
-
-        val defaultFilters = source.getFilterList()
+        val defaultFilters = (source as? CatalogueSource)?.getFilterList() ?: return
         var genreExists = false
 
         filter@ for (sourceFilter in defaultFilters) {
@@ -260,7 +268,7 @@ class BrowseMangaSourceViewModel(
                 new = new.removeCovers(coverCache)
             } else {
                 setMangaDefaultChapterFlags.await(manga)
-                addTracks.bindEnhancedTrackers(manga, source)
+                addTracks.bindEnhancedTrackers(manga, sourceManager.getOrStub(manga.source))
             }
 
             updateManga.await(new.toMangaUpdate())
@@ -376,6 +384,7 @@ class BrowseMangaSourceViewModel(
     @Immutable
     data class State(
         val listing: Listing,
+        val source: MangaSource? = null,
         val filters: FilterList = FilterList(),
         val toolbarQuery: String? = null,
         val dialog: Dialog? = null,

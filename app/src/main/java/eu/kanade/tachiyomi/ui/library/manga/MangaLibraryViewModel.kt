@@ -897,14 +897,17 @@ class MangaLibraryViewModel(
             }
 
             MangaLibraryGroup.BY_SOURCE -> {
+                val sourceMap = runBlocking {
+                    libraryManga.map { it.libraryManga.manga.source }.distinct().associateWith {
+                        sourceManager.getOrStub(it)
+                    }
+                }
                 val sources: List<Long>
                 libraryManga.groupBy { item ->
                     item.libraryManga.manga.source
                 }.also {
                     sources = it.keys
-                        .map {
-                            sourceManager.getOrStub(it)
-                        }
+                        .mapNotNull { sourceMap[it] }
                         .sortedWith(
                             compareBy(String.CASE_INSENSITIVE_ORDER) { it.name.ifBlank { it.id.toString() } },
                         )
@@ -915,8 +918,8 @@ class MangaLibraryViewModel(
                         name = if (it.key == LocalMangaSource.ID) {
                             context.getString(R.string.local_source)
                         } else {
-                            val source = sourceManager.getOrStub(it.key)
-                            source.name.ifBlank { source.id.toString() }
+                            val source = sourceMap[it.key]
+                            source?.name?.ifBlank { source.id.toString() } ?: it.key.toString()
                         },
                         order = sources.indexOf(it.key).takeUnless { it == -1 }?.toLong() ?: Long.MAX_VALUE,
                         flags = 0,

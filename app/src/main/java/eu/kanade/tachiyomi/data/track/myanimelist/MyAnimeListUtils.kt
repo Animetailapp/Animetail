@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.data.track.myanimelist
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 
-fun MangaTrack.toMyAnimeListStatus() = when (status) {
+internal fun MangaTrack.toMyAnimeListStatus() = when (status) {
     MyAnimeList.READING -> "reading"
     MyAnimeList.COMPLETED -> "completed"
     MyAnimeList.ON_HOLD -> "on_hold"
@@ -13,7 +13,7 @@ fun MangaTrack.toMyAnimeListStatus() = when (status) {
     else -> null
 }
 
-fun AnimeTrack.toMyAnimeListStatus() = when (status) {
+internal fun AnimeTrack.toMyAnimeListStatus() = when (status) {
     MyAnimeList.WATCHING -> "watching"
     MyAnimeList.READING -> "watching"
     MyAnimeList.COMPLETED -> "completed"
@@ -26,7 +26,7 @@ fun AnimeTrack.toMyAnimeListStatus() = when (status) {
     else -> null
 }
 
-fun getStatus(status: String?) = when (status) {
+internal fun getStatus(status: String?) = when (status) {
     "reading" -> MyAnimeList.READING
     "watching" -> MyAnimeList.WATCHING
     "completed" -> MyAnimeList.COMPLETED

@@ -8,7 +8,6 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.AnimeSource
-import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.util.size
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -72,7 +71,6 @@ class AnimeDownloadCache(
     private val context: Context,
     private val provider: AnimeDownloadProvider,
     private val sourceManager: AnimeSourceManager,
-    private val extensionManager: AnimeExtensionManager,
     private val storageManager: StorageManager,
 ) {
 
@@ -366,7 +364,6 @@ class AnimeDownloadCache(
                 // Try to wait until extensions and sources have loaded
                 var sources = emptyList<AnimeSource>()
                 withTimeoutOrNull(30.seconds) {
-                    extensionManager.isInitialized.first { it }
                     sourceManager.isInitialized.first { it }
 
                     sources = getSources()

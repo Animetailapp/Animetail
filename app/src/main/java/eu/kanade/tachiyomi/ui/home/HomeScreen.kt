@@ -12,9 +12,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
@@ -22,7 +24,9 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -67,8 +71,6 @@ import mihon.app.di.appGraph
 import soup.compose.material.motion.animation.materialFadeThroughIn
 import soup.compose.material.motion.animation.materialFadeThroughOut
 import tachiyomi.i18n.MR
-import tachiyomi.presentation.core.components.material.NavigationBar
-import tachiyomi.presentation.core.components.material.NavigationRail
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -121,76 +123,76 @@ object HomeScreen : Screen() {
         ) { tabNavigator ->
             // Provide usable navigator to content screen
             CompositionLocalProvider(LocalNavigator provides navigator) {
-                Scaffold(
-                    startBar = {
-                        if (isTabletUi()) {
-                            NavigationRail {
-                                navStyle.tabs
-                                    .fastFilter { it.isEnabled() }
-                                    .fastForEach {
-                                        NavigationRailItem(it, alwaysShowLabel)
-                                    }
-                            }
+                Row(modifier = Modifier.fillMaxSize()) {
+                    if (isTabletUi()) {
+                        NavigationRail {
+                            navStyle.tabs
+                                .fastFilter { it.isEnabled() }
+                                .fastForEach {
+                                    NavigationRailItem(it, alwaysShowLabel)
+                                }
                         }
-                    },
-                    bottomBar = {
-                        if (!isTabletUi()) {
-                            Column {
-                                val isConnected =
-                                    castManager.castState.collectAsState().value == CastManager.CastState.CONNECTED
-                                AnimatedVisibility(
-                                    visible = isConnected,
-                                    enter = expandVertically(),
-                                    exit = shrinkVertically(),
-                                ) {
-                                    CastMiniController(
-                                        castManager = castManager,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                                    )
-                                }
+                    }
+                    Scaffold(
+                        bottomBar = {
+                            if (!isTabletUi()) {
+                                Column {
+                                    val isConnected =
+                                        castManager.castState.collectAsState().value == CastManager.CastState.CONNECTED
+                                    AnimatedVisibility(
+                                        visible = isConnected,
+                                        enter = expandVertically(),
+                                        exit = shrinkVertically(),
+                                    ) {
+                                        CastMiniController(
+                                            castManager = castManager,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                                        )
+                                    }
 
-                                val bottomNavVisible by produceState(initialValue = true) {
-                                    showBottomNavEvent.receiveAsFlow().collectLatest { value = it }
-                                }
+                                    val bottomNavVisible by produceState(initialValue = true) {
+                                        showBottomNavEvent.receiveAsFlow().collectLatest { value = it }
+                                    }
 
-                                AnimatedVisibility(
-                                    visible = bottomNavVisible && tabNavigator.current != navStyle.moreTab,
-                                    enter = expandVertically(),
-                                    exit = shrinkVertically(),
-                                ) {
-                                    NavigationBar {
-                                        navStyle.tabs
-                                            .fastFilter { it.isEnabled() }
-                                            .fastForEach {
-                                                NavigationBarItem(it, alwaysShowLabel)
-                                            }
+                                    AnimatedVisibility(
+                                        visible = bottomNavVisible && tabNavigator.current != navStyle.moreTab,
+                                        enter = expandVertically(),
+                                        exit = shrinkVertically(),
+                                    ) {
+                                        NavigationBar {
+                                            navStyle.tabs
+                                                .fastFilter { it.isEnabled() }
+                                                .fastForEach {
+                                                    NavigationBarItem(it, alwaysShowLabel)
+                                                }
+                                        }
                                     }
                                 }
                             }
-                        }
-                    },
-                    contentWindowInsets = WindowInsets(0),
-                ) { contentPadding ->
-                    Box(
-                        modifier = Modifier
-                            .padding(contentPadding)
-                            .consumeWindowInsets(contentPadding),
-                    ) {
-                        AnimatedContent(
-                            targetState = tabNavigator.current,
-                            transitionSpec = {
-                                materialFadeThroughIn(
-                                    initialScale = 1f,
-                                    durationMillis = TAB_FADE_DURATION,
-                                ) togetherWith
-                                    materialFadeThroughOut(durationMillis = TAB_FADE_DURATION)
-                            },
-                            label = "tabContent",
+                        },
+                        contentWindowInsets = WindowInsets(0),
+                    ) { contentPadding ->
+                        Box(
+                            modifier = Modifier
+                                .padding(contentPadding)
+                                .consumeWindowInsets(contentPadding),
                         ) {
-                            tabNavigator.saveableState(key = "currentTab", it) {
-                                it.Content()
+                            AnimatedContent(
+                                targetState = tabNavigator.current,
+                                transitionSpec = {
+                                    materialFadeThroughIn(
+                                        initialScale = 1f,
+                                        durationMillis = TAB_FADE_DURATION,
+                                    ) togetherWith
+                                        materialFadeThroughOut(durationMillis = TAB_FADE_DURATION)
+                                },
+                                label = "tabContent",
+                            ) {
+                                tabNavigator.saveableState(key = "currentTab", it) {
+                                    it.Content()
+                                }
                             }
                         }
                     }

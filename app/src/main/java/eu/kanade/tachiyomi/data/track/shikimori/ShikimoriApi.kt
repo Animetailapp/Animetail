@@ -36,7 +36,7 @@ import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
 class ShikimoriApi(
-    private val trackId: Long,
+    private val trackerId: Long,
     private val client: OkHttpClient,
     interceptor: ShikimoriInterceptor,
 ) {
@@ -215,7 +215,7 @@ class ShikimoriApi(
                     .awaitSuccess()
                     .parseAs<SMSearchResult>()
                     .data.mangas
-                    .map { it.toTrack(trackId) }
+                    .map { it.toTrack(trackerId) }
             }
         }
     }
@@ -266,7 +266,7 @@ class ShikimoriApi(
                     .parseAs<SMSearchResult>()
                     .data.mangas
                     .firstOrNull()
-                    ?.toTrack(trackId)
+                    ?.toTrack(trackerId)
             }
         }
     }
@@ -315,7 +315,7 @@ class ShikimoriApi(
                     .awaitSuccess()
                     .parseAs<SMAnimeSearchResult>()
                     .data.animes
-                    .map { it.toTrack(trackId) }
+                    .map { it.toTrack(trackerId) }
             }
         }
     }
@@ -366,7 +366,7 @@ class ShikimoriApi(
                     .parseAs<SMAnimeSearchResult>()
                     .data.animes
                     .firstOrNull()
-                    ?.toTrack(trackId)
+                    ?.toTrack(trackerId)
             }
         }
     }
@@ -415,7 +415,7 @@ class ShikimoriApi(
                 if (listResult?.userRate == null) {
                     null
                 } else {
-                    listResult.toTrack(trackId)
+                    listResult.toTrack(trackerId)
                 }
             }
         }
@@ -461,7 +461,7 @@ class ShikimoriApi(
                 if (listResult?.userRate == null) {
                     null
                 } else {
-                    listResult.toTrack(trackId)
+                    listResult.toTrack(trackerId)
                 }
             }
         }
