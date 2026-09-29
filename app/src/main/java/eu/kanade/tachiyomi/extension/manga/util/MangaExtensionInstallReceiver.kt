@@ -25,7 +25,7 @@ internal class MangaExtensionInstallReceiver(private val listener: Listener) : B
     val scope = CoroutineScope(SupervisorJob())
 
     fun register(context: Context) {
-        ContextCompat.registerReceiver(context, this, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(context, this, filter, ContextCompat.RECEIVER_EXPORTED)
     }
 
     val filter
@@ -33,14 +33,10 @@ internal class MangaExtensionInstallReceiver(private val listener: Listener) : B
             addAction(Intent.ACTION_PACKAGE_ADDED)
             addAction(Intent.ACTION_PACKAGE_REPLACED)
             addAction(Intent.ACTION_PACKAGE_REMOVED)
-            addDataScheme("package")
-        }
-
-    val extensionFilter
-        get() = IntentFilter().apply {
             addAction(ACTION_EXTENSION_ADDED)
             addAction(ACTION_EXTENSION_REPLACED)
             addAction(ACTION_EXTENSION_REMOVED)
+            addDataScheme("package")
         }
 
     /**

@@ -158,6 +158,17 @@ private fun ExtensionContent(
     FastScrollLazyColumn(
         contentPadding = contentPadding + topSmallPaddingValues,
     ) {
+        if (!installGranted && state.installer?.requiresSystemPermission == true) {
+            item(key = "extension-permissions-warning") {
+                WarningBanner(
+                    textRes = MR.strings.ext_permission_install_apps_warning,
+                    modifier = Modifier.clickable {
+                        context.launchRequestPackageInstallsPermission()
+                    },
+                )
+            }
+        }
+
         state.items.forEach { (header, items) ->
             item(
                 contentType = "header",
@@ -336,6 +347,23 @@ private fun ExtensionItem(
             )
         },
     ) {
+        ExtensionItemContent(
+            extension = extension,
+            installStep = installStep,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun ExtensionItemContent(
+    extension: MangaExtension,
+    installStep: InstallStep,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.padding(start = MaterialTheme.padding.medium),
+    ) {
         Text(
             text = extension.name,
             maxLines = 1,
@@ -360,13 +388,19 @@ private fun ExtensionItem(
                 }
 
                 if (extension.versionName.isNotEmpty()) {
+                    if (hasAlreadyShownAnElement) DotSeparatorNoSpaceText()
+                    hasAlreadyShownAnElement = true
                     Text(
                         text = extension.versionName,
                     )
                 }
 
                 // KMK -->
-                Text(text = extension.repoName?.let { "@$it" } ?: "(?)")
+                extension.repoName?.let {
+                    if (hasAlreadyShownAnElement) DotSeparatorNoSpaceText()
+                    hasAlreadyShownAnElement = true
+                    Text(text = "@$it")
+                }
                 // KMK <--
 
                 val warnings = listOfNotNull(
@@ -382,6 +416,8 @@ private fun ExtensionItem(
                     extension.contentWarning.label?.let { it.title to it.color },
                 )
                 warnings.forEach { (label, color) ->
+                    if (hasAlreadyShownAnElement) DotSeparatorNoSpaceText()
+                    hasAlreadyShownAnElement = true
                     Text(
                         text = stringResource(label).uppercase(),
                         color = color,

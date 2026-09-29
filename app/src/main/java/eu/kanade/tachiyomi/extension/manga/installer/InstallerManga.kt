@@ -12,6 +12,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
@@ -23,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 abstract class InstallerManga(private val service: Service) {
 
-    private val extensionManager: MangaExtensionManager by injectLazy()
+    protected val extensionManager: MangaExtensionManager by injectLazy()
 
     private var waitingInstall = AtomicReference<Entry>(null)
     private val queue = Collections.synchronizedList(mutableListOf<Entry>())
@@ -43,8 +44,8 @@ abstract class InstallerManga(private val service: Service) {
      * @param downloadId Download ID as known by [MangaExtensionManager]
      * @param uri Uri of APK to install
      */
-    fun addToQueue(downloadId: Long, uri: Uri) {
-        queue.add(Entry(downloadId, uri))
+    fun addToQueue(downloadId: Long, uri: Uri, pkgName: String? = null) {
+        queue.add(Entry(downloadId, uri, pkgName))
         checkQueue()
     }
 
@@ -96,13 +97,17 @@ abstract class InstallerManga(private val service: Service) {
             return
         }
         if (queue.isEmpty()) {
-            service.stopSelf()
+            if (waitingInstall.get() == null) {
+                service.stopSelf()
+            }
             return
         }
         val nextEntry = queue.first()
         if (waitingInstall.compareAndSet(null, nextEntry)) {
             queue.removeAt(0)
-            processEntry(nextEntry)
+            installerScope.launch(Dispatchers.IO) {
+                processEntry(nextEntry)
+            }
         }
     }
 
@@ -114,7 +119,9 @@ abstract class InstallerManga(private val service: Service) {
         installerScope.cancel()
         queue.forEach { extensionManager.updateInstallStep(it.downloadId, InstallStep.Error) }
         queue.clear()
-        waitingInstall.set(null)
+        waitingInstall.getAndSet(null)?.let {
+            extensionManager.updateInstallStep(it.downloadId, InstallStep.Error)
+        }
     }
 
     protected fun getActiveEntry(): Entry? = waitingInstall.get()
@@ -144,7 +151,7 @@ abstract class InstallerManga(private val service: Service) {
      * @param downloadId Download ID as known by [MangaExtensionManager]
      * @param uri Uri of APK to install
      */
-    data class Entry(val downloadId: Long, val uri: Uri)
+    data class Entry(val downloadId: Long, val uri: Uri, val pkgName: String? = null)
 
     init {
         extensionManager.installerCancelEvents

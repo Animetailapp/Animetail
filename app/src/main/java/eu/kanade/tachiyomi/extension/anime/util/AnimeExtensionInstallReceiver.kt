@@ -25,7 +25,7 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
     val scope = CoroutineScope(SupervisorJob())
 
     fun register(context: Context) {
-        ContextCompat.registerReceiver(context, this, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(context, this, filter, ContextCompat.RECEIVER_EXPORTED)
     }
 
     val filter
@@ -33,14 +33,10 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
             addAction(Intent.ACTION_PACKAGE_ADDED)
             addAction(Intent.ACTION_PACKAGE_REPLACED)
             addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(ACTION_ANIME_EXTENSION_ADDED)
+            addAction(ACTION_ANIME_EXTENSION_REPLACED)
+            addAction(ACTION_ANIME_EXTENSION_REMOVED)
             addDataScheme("package")
-        }
-
-    val animeExtensionFilter
-        get() = IntentFilter().apply {
-            addAction(ACTION_EXTENSION_ADDED)
-            addAction(ACTION_EXTENSION_REPLACED)
-            addAction(ACTION_EXTENSION_REMOVED)
         }
 
     /**
@@ -51,7 +47,7 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
         if (intent == null) return
 
         when (intent.action) {
-            Intent.ACTION_PACKAGE_ADDED, ACTION_EXTENSION_ADDED -> {
+            Intent.ACTION_PACKAGE_ADDED, ACTION_ANIME_EXTENSION_ADDED -> {
                 if (isReplacing(intent)) return
 
                 scope.launch {
@@ -63,7 +59,7 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
                 }
             }
 
-            Intent.ACTION_PACKAGE_REPLACED, ACTION_EXTENSION_REPLACED -> {
+            Intent.ACTION_PACKAGE_REPLACED, ACTION_ANIME_EXTENSION_REPLACED -> {
                 scope.launch {
                     when (val extension = getExtensionFromIntent(context, intent)) {
                         is AnimeExtension.Loaded -> listener.onExtensionLoaded(extension)
@@ -73,7 +69,7 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
                 }
             }
 
-            Intent.ACTION_PACKAGE_REMOVED, ACTION_EXTENSION_REMOVED -> {
+            Intent.ACTION_PACKAGE_REMOVED, ACTION_ANIME_EXTENSION_REMOVED -> {
                 if (isReplacing(intent)) return
 
                 val pkgName = getPackageNameFromIntent(intent)
@@ -125,20 +121,23 @@ internal class AnimeExtensionInstallReceiver(private val listener: Listener) : B
     }
 
     companion object {
-        private const val ACTION_EXTENSION_ADDED = "${BuildConfig.APPLICATION_ID}.ACTION_EXTENSION_ADDED"
-        private const val ACTION_EXTENSION_REPLACED = "${BuildConfig.APPLICATION_ID}.ACTION_EXTENSION_REPLACED"
-        private const val ACTION_EXTENSION_REMOVED = "${BuildConfig.APPLICATION_ID}.ACTION_EXTENSION_REMOVED"
+        private const val ACTION_ANIME_EXTENSION_ADDED =
+            "${BuildConfig.APPLICATION_ID}.ACTION_ANIME_EXTENSION_ADDED"
+        private const val ACTION_ANIME_EXTENSION_REPLACED =
+            "${BuildConfig.APPLICATION_ID}.ACTION_ANIME_EXTENSION_REPLACED"
+        private const val ACTION_ANIME_EXTENSION_REMOVED =
+            "${BuildConfig.APPLICATION_ID}.ACTION_ANIME_EXTENSION_REMOVED"
 
         fun notifyAdded(context: Context, pkgName: String) {
-            notify(context, pkgName, ACTION_EXTENSION_ADDED)
+            notify(context, pkgName, ACTION_ANIME_EXTENSION_ADDED)
         }
 
         fun notifyReplaced(context: Context, pkgName: String) {
-            notify(context, pkgName, ACTION_EXTENSION_REPLACED)
+            notify(context, pkgName, ACTION_ANIME_EXTENSION_REPLACED)
         }
 
         fun notifyRemoved(context: Context, pkgName: String) {
-            notify(context, pkgName, ACTION_EXTENSION_REMOVED)
+            notify(context, pkgName, ACTION_ANIME_EXTENSION_REMOVED)
         }
 
         private fun notify(context: Context, pkgName: String, action: String) {

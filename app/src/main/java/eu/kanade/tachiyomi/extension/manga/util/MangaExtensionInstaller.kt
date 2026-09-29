@@ -84,7 +84,7 @@ class MangaExtensionInstaller(
                 }
 
                 step.value = InstallStep.Installing
-                installApk(downloadId, tmpFile, isUpdateForPrivatelyInstalled)
+                installApk(downloadId, tmpFile, isUpdateForPrivatelyInstalled, extension.pkgName)
             } catch (e: Exception) {
                 if (e is InterruptedException) {
                     // Canceled
@@ -110,8 +110,14 @@ class MangaExtensionInstaller(
      *
      * @param tempFile The file of the extension to install. Delete after use.
      * @param isUpdateForPrivatelyInstalled If this install is an update for a privately installed extension
+     * @param pkgName Package name of the extension to install
      */
-    private fun installApk(downloadId: Long, tempFile: File, isUpdateForPrivatelyInstalled: Boolean = false) {
+    private fun installApk(
+        downloadId: Long,
+        tempFile: File,
+        isUpdateForPrivatelyInstalled: Boolean = false,
+        pkgName: String? = null,
+    ) {
         if (isUpdateForPrivatelyInstalled) {
             installApkPrivately(downloadId, tempFile)
             return
@@ -134,13 +140,19 @@ class MangaExtensionInstaller(
             }
 
             else -> {
-                val intent = MangaExtensionInstallService.getIntent(
-                    context,
-                    downloadId,
-                    tempFile.getUriCompat(context),
-                    installer,
-                )
-                ContextCompat.startForegroundService(context, intent)
+                try {
+                    val intent = MangaExtensionInstallService.getIntent(
+                        context,
+                        downloadId,
+                        tempFile.getUriCompat(context),
+                        installer,
+                        pkgName,
+                    )
+                    ContextCompat.startForegroundService(context, intent)
+                } catch (e: Exception) {
+                    logcat(LogPriority.ERROR, e) { "Failed to start install service" }
+                    updateInstallStep(downloadId, InstallStep.Error)
+                }
             }
         }
     }

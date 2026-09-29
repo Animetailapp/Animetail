@@ -544,7 +544,11 @@ internal object MangaExtensionLoader {
      * @param pkgInfo The package info of the application.
      */
     private fun isPackageAnExtension(pkgInfo: PackageInfo): Boolean {
-        return pkgInfo.reqFeatures.orEmpty().any { it.name == EXTENSION_FEATURE }
+        val hasMangaFeature = pkgInfo.reqFeatures.orEmpty().any { it.name == EXTENSION_FEATURE }
+        val hasAnimeFeature = pkgInfo.reqFeatures.orEmpty().any {
+            it.name == "tachiyomi.animeextension" || it.name == "tachiyomix.animeextension"
+        }
+        return hasMangaFeature && !hasAnimeFeature
     }
 
     /**

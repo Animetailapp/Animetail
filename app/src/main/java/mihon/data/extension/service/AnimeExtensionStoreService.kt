@@ -123,6 +123,7 @@ class AnimeExtensionStoreService(
                 response.body.source().use { source ->
                     source.stripBom()
                     json.decodeFromBufferedSource<List<NetworkLegacyExtension>>(source)
+                        .filter { isAnimePackage(it.pkg) }
                         .map { toAvailableExtension(it, store, storeBaseUrl) }
                 }
             }
@@ -138,37 +139,41 @@ class AnimeExtensionStoreService(
         extensionList: NetworkExtensionStore.ExtensionList,
         store: ExtensionStore,
     ): List<AnimeExtension.Available> {
-        return extensionList.extensions.map { extension ->
-            val lang = extension.sources.map { it.language }.toSet()
-            AnimeExtension.Available(
-                name = extension.name,
-                pkgName = extension.packageName,
-                apkUrl = extension.resources.apkUrl,
-                iconUrl = extension.resources.iconUrl,
-                libVersion = extension.extensionLib.toDouble(),
-                versionCode = extension.versionCode,
-                versionName = extension.versionName,
-                lang = if (lang.size == 1) lang.first() else "all",
-                contentWarning = when (extension.contentWarning) {
-                    NetworkExtensionStore.ContentWarning.SAFE -> DomainContentWarning.SAFE
-                    NetworkExtensionStore.ContentWarning.MIXED -> DomainContentWarning.MIXED
-                    NetworkExtensionStore.ContentWarning.NSFW -> DomainContentWarning.NSFW
-                    else -> DomainContentWarning.SAFE
-                },
-                isTorrent = false,
-                sources = extension.sources.map { source ->
-                    AnimeExtension.Available.AnimeSource(
-                        id = source.id,
-                        name = source.name,
-                        lang = source.language,
-                        baseUrl = source.homeUrl,
-                    )
-                },
-                store = store,
-                signatureHash = "NO_SIGNING_KEY",
-                repoName = store.name,
-            )
-        }
+        return extensionList.extensions
+            .filter { isAnimePackage(it.packageName) }
+            .map { extension ->
+                val lang = extension.sources.map { it.language }.toSet()
+                AnimeExtension.Available(
+                    name = extension.name.substringAfter(
+                        "Aniyomi: ",
+                    ).substringAfter("Animetail: ").substringAfter("Tachiyomi: "),
+                    pkgName = extension.packageName,
+                    apkUrl = extension.resources.apkUrl,
+                    iconUrl = extension.resources.iconUrl,
+                    libVersion = extension.extensionLib.toDoubleOrNull() ?: 0.0,
+                    versionCode = extension.versionCode,
+                    versionName = extension.versionName,
+                    lang = if (lang.size == 1) lang.first() else "all",
+                    contentWarning = when (extension.contentWarning) {
+                        NetworkExtensionStore.ContentWarning.SAFE -> DomainContentWarning.SAFE
+                        NetworkExtensionStore.ContentWarning.MIXED -> DomainContentWarning.MIXED
+                        NetworkExtensionStore.ContentWarning.NSFW -> DomainContentWarning.NSFW
+                        else -> DomainContentWarning.SAFE
+                    },
+                    isTorrent = false,
+                    sources = extension.sources.map { source ->
+                        AnimeExtension.Available.AnimeSource(
+                            id = source.id,
+                            name = source.name,
+                            lang = source.language,
+                            baseUrl = source.homeUrl,
+                        )
+                    },
+                    store = store,
+                    signatureHash = "NO_SIGNING_KEY",
+                    repoName = store.name,
+                )
+            }
     }
 
     private fun toAvailableExtension(
@@ -177,11 +182,13 @@ class AnimeExtensionStoreService(
         storeBaseUrl: String,
     ): AnimeExtension.Available {
         return AnimeExtension.Available(
-            name = netExt.name.substringAfter("Tachiyomi: "),
+            name = netExt.name.substringAfter("Aniyomi: ").substringAfter("Animetail: ").substringAfter("Tachiyomi: "),
             pkgName = netExt.pkg,
             apkUrl = "$storeBaseUrl/apk/${netExt.apk}",
             iconUrl = "$storeBaseUrl/icon/${netExt.pkg}.png",
-            libVersion = netExt.version.substringBeforeLast('.').toDouble(),
+            libVersion = runCatching { netExt.version.substringBeforeLast('.').toDouble() }.getOrElse {
+                runCatching { netExt.version.substringBefore('.').toDouble() }.getOrDefault(0.0)
+            },
             versionCode = netExt.code,
             versionName = netExt.version,
             lang = netExt.lang,
@@ -213,6 +220,10 @@ class AnimeExtensionStoreService(
             signatureHash = "NO_SIGNING_KEY",
             repoName = store.name,
         )
+    }
+
+    private fun isAnimePackage(pkgName: String): Boolean {
+        return pkgName.contains("animeextension") || pkgName.contains(".anime.")
     }
 }
 

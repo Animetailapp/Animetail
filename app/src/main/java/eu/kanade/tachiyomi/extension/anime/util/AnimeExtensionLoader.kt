@@ -34,28 +34,34 @@ import java.io.File
 internal object AnimeExtensionLoader {
 
     private const val EXTENSION_FEATURE = "tachiyomi.animeextension"
+    private val EXTENSION_FEATURES = listOf(
+        EXTENSION_FEATURE,
+        "tachiyomix.animeextension",
+    )
     private const val METADATA_SOURCE_CLASS = "tachiyomi.animeextension.class"
     private const val METADATA_SOURCE_FACTORY = "tachiyomi.animeextension.factory"
-    private const val METADATA_NAME = "tachiyomi.animeextension.name"
-    private const val METADATA_EXTENSION_LIB = "tachiyomi.animeextension.lib"
+    private const val METADATA_NAME = "tachiyomix.name"
+    private const val METADATA_NAME_ALT = "tachiyomi.animeextension.name"
+    private const val METADATA_EXTENSION_LIB = "tachiyomix.extensionLib"
+    private const val METADATA_EXTENSION_LIB_ALT = "tachiyomi.animeextension.lib"
     private const val METADATA_NSFW = "tachiyomi.animeextension.nsfw"
-    private const val METADATA_CONTENT_WARNING = "tachiyomi.animeextension.contentWarning"
-    private const val METADATA_TORRENT = "tachiyomi.animeextension.hasTorrent"
+    private const val METADATA_CONTENT_WARNING = "tachiyomix.contentWarning"
+    private const val METADATA_CONTENT_WARNING_ALT = "tachiyomi.animeextension.contentWarning"
+    private const val METADATA_TORRENT = "tachiyomi.animeextension.torrent"
+    private const val METADATA_TORRENT_ALT = "tachiyomi.animeextension.hasTorrent"
 
-    const val LIB_VERSION_MIN = 1.3
-    const val LIB_VERSION_MAX = 1.5
+    const val LIB_VERSION_MIN = 12
+    const val LIB_VERSION_MAX = 17
 
-    private val SUPPORTED_LIB_VERSIONS = listOf(
-        LIB_VERSION_MIN,
-        1.4,
-        LIB_VERSION_MAX,
-    )
+    val SUPPORTED_LIB_VERSIONS = listOf(1.3, 1.4, 1.5) + (10..LIB_VERSION_MAX).map { it.toDouble() }
 
-    private const val PRIVATE_EXTENSION_DIR = "animeextensions"
-    private const val PRIVATE_EXTENSION_EXTENSION = "apk"
+    private val PRIVATE_EXTENSION_DIRS = listOf("animeextensions", "exts")
+    private val PRIVATE_EXTENSION_EXTENSIONS = listOf("apk", "ext")
+    private const val PRIMARY_PRIVATE_EXTENSION_DIR = "animeextensions"
+    private const val PRIMARY_PRIVATE_EXTENSION_EXT = "apk"
 
     private fun getPrivateExtensionDir(context: Context): File {
-        return File(context.filesDir, PRIVATE_EXTENSION_DIR).also { it.mkdirs() }
+        return File(context.filesDir, PRIMARY_PRIVATE_EXTENSION_DIR).also { it.mkdirs() }
     }
 
     private val PACKAGE_FLAGS = PackageManager.GET_CONFIGURATIONS or
@@ -94,12 +100,14 @@ internal object AnimeExtensionLoader {
             }
         }
 
+        val legacyTarget = File(File(context.filesDir, "exts"), "${extension.packageName}.ext")
         val target = File(
             getPrivateExtensionDir(context),
-            "${extension.packageName}.$PRIVATE_EXTENSION_EXTENSION",
+            "${extension.packageName}.$PRIMARY_PRIVATE_EXTENSION_EXT",
         )
         return try {
             target.delete()
+            legacyTarget.delete()
             file.copyAndSetReadOnlyTo(target, overwrite = true)
             if (currentExtension != null) {
                 AnimeExtensionInstallReceiver.notifyReplaced(context, extension.packageName)
@@ -115,7 +123,11 @@ internal object AnimeExtensionLoader {
     }
 
     fun uninstallPrivateExtension(context: Context, pkgName: String) {
-        File(getPrivateExtensionDir(context), "$pkgName.$PRIVATE_EXTENSION_EXTENSION").delete()
+        PRIVATE_EXTENSION_DIRS.forEach { dirName ->
+            PRIVATE_EXTENSION_EXTENSIONS.forEach { ext ->
+                File(File(context.filesDir, dirName), "$pkgName.$ext").delete()
+            }
+        }
     }
 
     /**
@@ -149,11 +161,16 @@ internal object AnimeExtensionLoader {
             .filter { isPackageAnExtension(it) }
             .map { AnimeExtensionInfo(packageInfo = it, isShared = true) }
 
-        val privateExtPkgs = getPrivateExtensionDir(context)
-            .listFiles()
-            ?.asSequence()
-            ?.filter { it.isFile && it.extension == PRIVATE_EXTENSION_EXTENSION }
-            ?.mapNotNull {
+        val privateExtPkgs = PRIVATE_EXTENSION_DIRS
+            .map { File(context.filesDir, it) }
+            .filter { it.exists() && it.isDirectory }
+            .flatMap { dir ->
+                dir.listFiles()
+                    ?.asSequence()
+                    ?.filter { it.isFile && it.extension in PRIVATE_EXTENSION_EXTENSIONS }
+                    ?: emptySequence()
+            }
+            .mapNotNull {
                 // Just in case, since Android 14+ requires them to be read-only
                 if (it.canWrite()) {
                     it.setReadOnly()
@@ -163,9 +180,8 @@ internal object AnimeExtensionLoader {
                 pkgManager.getPackageArchiveInfo(path, PACKAGE_FLAGS)
                     ?.also { pkg -> pkg.applicationInfo?.fixBasePaths(path) }
             }
-            ?.filter { isPackageAnExtension(it) }
-            ?.map { AnimeExtensionInfo(packageInfo = it, isShared = false) }
-            ?: emptySequence()
+            .filter { isPackageAnExtension(it) }
+            .map { AnimeExtensionInfo(packageInfo = it, isShared = false) }
 
         val extPkgs = (sharedExtPkgs + privateExtPkgs)
             // Remove duplicates. Shared takes priority than private by default
@@ -230,11 +246,13 @@ internal object AnimeExtensionLoader {
     }
 
     private fun getAnimeExtensionInfoFromPkgName(context: Context, pkgName: String): AnimeExtensionInfo? {
-        val privateExtensionFile = File(
-            getPrivateExtensionDir(context),
-            "$pkgName.$PRIVATE_EXTENSION_EXTENSION",
-        )
-        val privatePkg = if (privateExtensionFile.isFile) {
+        val privateExtensionFiles = PRIVATE_EXTENSION_DIRS.flatMap { dirName ->
+            PRIVATE_EXTENSION_EXTENSIONS.map { ext ->
+                File(File(context.filesDir, dirName), "$pkgName.$ext")
+            }
+        }
+        val privateExtensionFile = privateExtensionFiles.firstOrNull { it.isFile }
+        val privatePkg = if (privateExtensionFile != null) {
             context.packageManager.getPackageArchiveInfo(
                 privateExtensionFile.absolutePath,
                 PACKAGE_FLAGS,
@@ -330,6 +348,7 @@ internal object AnimeExtensionLoader {
         val pkgName = pkgInfo.packageName
 
         val extName = metaData?.getString(METADATA_NAME)
+            ?: metaData?.getString(METADATA_NAME_ALT)
             ?: appInfo?.let { pkgManager.getApplicationLabel(it).toString().substringAfter("Animetail: ") }
             ?: pkgName
         val versionName = pkgInfo.versionName
@@ -339,6 +358,14 @@ internal object AnimeExtensionLoader {
 
             metaData.containsKey(METADATA_CONTENT_WARNING) -> {
                 when (metaData.getInt(METADATA_CONTENT_WARNING)) {
+                    1 -> ContentWarning.MIXED
+                    2 -> ContentWarning.NSFW
+                    else -> ContentWarning.SAFE
+                }
+            }
+
+            metaData.containsKey(METADATA_CONTENT_WARNING_ALT) -> {
+                when (metaData.getInt(METADATA_CONTENT_WARNING_ALT)) {
                     1 -> ContentWarning.MIXED
                     2 -> ContentWarning.NSFW
                     else -> ContentWarning.SAFE
@@ -377,11 +404,14 @@ internal object AnimeExtensionLoader {
         }
 
         // Validate lib version
-        val libVersion = metaData.getFloat(METADATA_EXTENSION_LIB)
-            .takeUnless { it == 0.0f }
-            ?.toString()
-            ?.toDouble()
-            ?: versionName.substringBeforeLast('.').toDoubleOrNull()
+        val libVersion = (
+            metaData.getInt(METADATA_EXTENSION_LIB).takeUnless { it == 0 }?.toDouble()
+                ?: metaData.getInt(METADATA_EXTENSION_LIB_ALT).takeUnless { it == 0 }?.toDouble()
+                ?: metaData.getFloat(METADATA_EXTENSION_LIB_ALT).takeUnless { it == 0.0f }?.toString()?.toDoubleOrNull()
+                ?: metaData.getFloat(METADATA_EXTENSION_LIB).takeUnless { it == 0.0f }?.toString()?.toDoubleOrNull()
+                ?: versionName.substringBeforeLast('.').toDoubleOrNull()
+                ?: versionName.substringBefore('.').toDoubleOrNull()
+            )
         if (libVersion == null || libVersion !in SUPPORTED_LIB_VERSIONS) {
             logcat(LogPriority.WARN) {
                 "Lib version is $libVersion, while only version(s) " +
@@ -408,7 +438,7 @@ internal object AnimeExtensionLoader {
             return notLoaded(AnimeExtension.NotLoaded.Reason.Filtered, libVersion)
         }
 
-        val isTorrent = metaData.getInt(METADATA_TORRENT) == 1
+        val isTorrent = metaData.getInt(METADATA_TORRENT) == 1 || metaData.getInt(METADATA_TORRENT_ALT) == 1
 
         // Everything above is cheap to check again, everything below isn't. Nothing about this apk
         // changed and it still passes, so keep the sources that are already registered for it.
@@ -426,7 +456,8 @@ internal object AnimeExtensionLoader {
             return notLoaded(AnimeExtension.NotLoaded.Reason.Failed(e.rootMessage, e.stackTraceToString()), libVersion)
         }
 
-        val sourceClasses = metaData.getString(METADATA_SOURCE_CLASS)
+        val sourceClasses = metaData.getString(METADATA_SOURCE_FACTORY)
+            ?: metaData.getString(METADATA_SOURCE_CLASS)
         if (sourceClasses.isNullOrBlank()) {
             logcat(LogPriority.WARN) { "Missing source class for extension $extName" }
             return notLoaded(AnimeExtension.NotLoaded.Reason.Malformed, libVersion)
@@ -548,7 +579,7 @@ internal object AnimeExtensionLoader {
      * @param pkgInfo The package info of the application.
      */
     private fun isPackageAnExtension(pkgInfo: PackageInfo): Boolean {
-        return pkgInfo.reqFeatures.orEmpty().any { it.name == EXTENSION_FEATURE }
+        return pkgInfo.reqFeatures.orEmpty().any { it.name in EXTENSION_FEATURES }
     }
 
     /**

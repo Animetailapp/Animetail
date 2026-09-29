@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import mihon.domain.extension.anime.repository.AnimeExtensionStoreRepository
+import mihon.domain.extension.model.ExtensionStore.Companion.ANIMETAIL_SIGNATURE
 import tachiyomi.core.common.preference.getAndSet
 
 @Inject
@@ -19,6 +20,7 @@ class TrustAnimeExtension(
 ) {
 
     suspend fun isTrusted(pkgInfo: PackageInfo, fingerprints: List<String>): Boolean {
+        if (fingerprints.contains(ANIMETAIL_SIGNATURE)) return true
         val trustedFingerprints = repository.getAll().map { it.signingKey }.toHashSet()
         val key = "${pkgInfo.packageName}:${PackageInfoCompat.getLongVersionCode(pkgInfo)}:${fingerprints.last()}"
         return trustedFingerprints.any { fingerprints.contains(it) } || key in preferences.trustedExtensions.get()
