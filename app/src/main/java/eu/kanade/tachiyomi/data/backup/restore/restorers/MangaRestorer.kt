@@ -91,7 +91,7 @@ class MangaRestorer(
                     dbManga.dateAdded.takeIf { it > 0 },
                     manga.dateAdded.takeIf { it > 0 },
                 ).minOrNull() ?: 0L,
-                title = details.title,
+                ogTitle = details.ogTitle,
                 ogArtist = details.artist,
                 ogAuthor = details.author,
                 ogDescription = details.description,

@@ -12,6 +12,7 @@ import kotlinx.datetime.toLocalDateTime
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 
+import tachiyomi.data.CastColumnAdapter
 import tachiyomi.data.entries.anime.AnimeMapper
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.entries.anime.model.Anime
@@ -231,7 +232,7 @@ class AnimeRepositoryImpl(
                     coverLastModified = value.coverLastModified,
                     backgroundLastModified = value.backgroundLastModified,
                     dateAdded = value.dateAdded,
-                    cast = value.cast,
+                    cast = value.cast?.let(CastColumnAdapter::encode),
                     animeId = value.id,
                     updateStrategy = value.updateStrategy,
                     version = value.version,

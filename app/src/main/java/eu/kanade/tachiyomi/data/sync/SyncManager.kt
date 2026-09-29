@@ -87,11 +87,6 @@ class SyncManager(
     @Suppress("ReturnCount", "LongMethod")
     suspend fun syncData() {
         // Reset isSyncing in case it was left over or failed syncing during restore.
-        mangaHandler.await(inTransaction = true) {
-            mangasQueries.resetIsSyncing()
-            chaptersQueries.resetIsSyncing()
-        }
-
         animeHandler.await(inTransaction = true) {
             animesQueries.resetIsSyncing()
             episodesQueries.resetIsSyncing()
@@ -279,7 +274,7 @@ class SyncManager(
             return true
         }
 
-        if (localManga.version != remoteManga.version) {
+        if (localManga.favorite != remoteManga.favorite) {
             return true
         }
 
@@ -322,8 +317,12 @@ class SyncManager(
         for ((url, localChapter) in localChapterMap) {
             val remoteChapter = remoteChapterMap[url]
 
-            // If a matching remote chapter doesn't exist, or the version numbers are different, consider them different
-            if (remoteChapter == null || localChapter.version != remoteChapter.version) {
+            // If a matching remote chapter doesn't exist, or the state is different, consider them different
+            if (remoteChapter == null ||
+                localChapter.read != remoteChapter.read ||
+                localChapter.bookmark != remoteChapter.bookmark ||
+                localChapter.last_page_read != remoteChapter.lastPageRead
+            ) {
                 return true
             }
         }

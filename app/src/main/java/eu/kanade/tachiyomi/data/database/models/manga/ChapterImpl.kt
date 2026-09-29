@@ -31,7 +31,7 @@ class ChapterImpl : Chapter {
     override var source_order: Int = 0
 
     override var date_upload_override: Long = 0
-    override var memo: JsonObject = JsonObject.EMPTY
+    override var memo: JsonObject = JsonObject(emptyMap())
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
