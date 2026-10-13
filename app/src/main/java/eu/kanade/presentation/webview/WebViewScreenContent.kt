@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import cafe.adriel.voyager.core.stack.mutableStateStackOf
 import com.kevinnzou.web.AccompanistWebChromeClient
 import com.kevinnzou.web.AccompanistWebViewClient
@@ -68,6 +69,9 @@ class WebViewWindow(webContent: WebContent) {
         this.popupMessage = popupMessage
     }
 }
+
+internal fun shouldForwardSourceHeaders(sourceHost: String?, destinationHost: String?): Boolean =
+    sourceHost != null && sourceHost.equals(destinationHost, ignoreCase = true)
 
 @Composable
 fun WebViewScreenContent(
@@ -134,6 +138,8 @@ fun WebViewScreenContent(
         onDispose { isActive = false }
     }
 
+    val headersHost = remember(url) { url.toUri().host }
+
     val webClient = remember {
         object : AccompanistWebViewClient() {
             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
@@ -178,6 +184,10 @@ fun WebViewScreenContent(
                     // Ignore intents urls
                     if (url.startsWith("intent://")) {
                         return true
+                    }
+
+                    if (!shouldForwardSourceHeaders(headersHost, it.url.host)) {
+                        return false
                     }
 
                     // Continue with request, but with custom headers
