@@ -16,6 +16,7 @@ import androidx.webkit.WebViewFeature
 import eu.kanade.tachiyomi.network.AndroidCookieJar
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.util.system.isOutdated
+import eu.kanade.tachiyomi.util.system.toWebViewHeaders
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.CoroutineScope
 import logcat.LogPriority
@@ -148,7 +149,7 @@ class CloudflareInterceptor(
         } else {
             originalRequest.url.newBuilder().encodedPath("/").query(null).fragment(null).build().toString()
         }
-        val headers = parseHeaders(originalRequest.headers)
+        val headers = originalRequest.headers.toWebViewHeaders()
 
         executor.execute {
             webview = createWebView(originalRequest)

@@ -16,7 +16,9 @@ import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.toShareIntent
+import eu.kanade.tachiyomi.util.system.toWebViewHeaders
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -46,12 +48,12 @@ class WebViewViewModel(
         field = MutableStateFlow<Map<String, String>?>(null)
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val mangaSource = sourceId?.let { mangaSourceManager.get(it) as? HttpSource }
             val animeSource = sourceId?.let { animeSourceManager.get(it) as? AnimeHttpSource }
             headers.value = try {
-                mangaSource?.headers?.toMultimap()?.mapValues { it.value.getOrNull(0) ?: "" }
-                    ?: animeSource?.headers?.toMultimap()?.mapValues { it.value.getOrNull(0) ?: "" }.orEmpty()
+                mangaSource?.headers?.toWebViewHeaders()
+                    ?: animeSource?.headers?.toWebViewHeaders().orEmpty()
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e) { "Failed to build headers" }
                 emptyMap()
