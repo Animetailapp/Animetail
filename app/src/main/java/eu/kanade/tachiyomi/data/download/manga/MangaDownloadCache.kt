@@ -1,7 +1,9 @@
 package eu.kanade.tachiyomi.data.download.manga
 
 import android.content.Context
+import android.util.AtomicFile
 import androidx.core.net.toUri
+import androidx.core.util.writeBytes
 import com.hippo.unifile.UniFile
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
@@ -41,6 +43,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
+import mihon.core.metro.AppCoroutineScope
 import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.storage.nameWithoutExtension
 import tachiyomi.core.common.util.lang.launchIO
@@ -65,13 +68,13 @@ import kotlin.time.Duration.Companion.seconds
 @Inject
 @SingleIn(AppScope::class)
 class MangaDownloadCache(
+    @AppCoroutineScope private val scope: CoroutineScope,
     private val context: Context,
     private val provider: MangaDownloadProvider,
     private val sourceManager: MangaSourceManager,
     private val storageManager: StorageManager,
 ) {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
     private val _changes: Channel<Unit> = Channel(Channel.UNLIMITED)
     val changes = _changes.receiveAsFlow()
         .onStart { emit(Unit) }
@@ -89,25 +92,26 @@ class MangaDownloadCache(
      */
     private var lastRenew = 0L
     private var renewalJob: Job? = null
+    private val initJob: Job
 
     private val _isInitializing = MutableStateFlow(false)
     val isInitializing = _isInitializing
         .debounce(1.seconds) // Don't notify if it finishes quickly enough
         .stateIn(scope, SharingStarted.WhileSubscribed(), false)
 
-    private val diskCacheFile: File
-        get() = File(context.cacheDir, "dl_index_cache_v3")
+    private val diskCacheFile: AtomicFile
+        get() = AtomicFile(File(context.cacheDir, "dl_index_cache_v3"))
 
     private val rootDownloadsDirMutex = Mutex()
     private var rootDownloadsDir = RootDirectory(storageManager.getDownloadsDirectory())
 
     init {
         // Attempt to read cache file
-        scope.launchIO {
+        initJob = scope.launchIO {
             rootDownloadsDirMutex.withLock {
                 try {
-                    if (diskCacheFile.exists()) {
-                        val diskCache = diskCacheFile.inputStream().use {
+                    if (diskCacheFile.baseFile.exists()) {
+                        val diskCache = diskCacheFile.openRead().use {
                             ProtoBuf.decodeFromByteArray<RootDirectory>(it.readBytes())
                         }
                         rootDownloadsDir = diskCache
@@ -343,6 +347,9 @@ class MangaDownloadCache(
         }
 
         renewalJob = scope.launchIO {
+            // The disk index is older than this scan and would replace it if read afterwards
+            initJob.join()
+
             if (lastRenew == 0L) {
                 _isInitializing.emit(true)
             }
@@ -432,8 +439,9 @@ class MangaDownloadCache(
         updateDiskCacheJob?.cancel()
         updateDiskCacheJob = scope.launchIO {
             delay(1.seconds)
-            ensureActive()
-            val bytes = ProtoBuf.encodeToByteArray(rootDownloadsDir)
+            val bytes = rootDownloadsDirMutex.withLock {
+                ProtoBuf.encodeToByteArray(rootDownloadsDir)
+            }
             ensureActive()
             try {
                 diskCacheFile.writeBytes(bytes)

@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
+import mihon.core.metro.AppCoroutineScope
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.util.lang.launchIO
@@ -42,6 +43,7 @@ import tachiyomi.i18n.MR
 @Inject
 @SingleIn(AppScope::class)
 class MangaDownloadManager(
+    @AppCoroutineScope private val scope: CoroutineScope,
     private val context: Context,
     private val provider: MangaDownloadProvider,
     private val cache: MangaDownloadCache,
@@ -54,8 +56,6 @@ class MangaDownloadManager(
     private val pendingDeleter: MangaDownloadPendingDeleter,
 ) {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     val isRunning: Boolean
         get() = downloader.isRunning
     val queueState
@@ -67,14 +67,13 @@ class MangaDownloadManager(
     val isDownloaderRunning
         get() = MangaDownloadJob.isRunningFlow(context)
 
+    /**
+     * Starts the download worker, which runs the downloader.
+     */
     fun startDownloads() {
         if (downloader.isRunning) return
 
-        if (MangaDownloadJob.isRunning(context)) {
-            downloader.start()
-        } else {
-            MangaDownloadJob.start(context)
-        }
+        MangaDownloadJob.start(context)
     }
 
     fun pauseDownloads() {
@@ -128,7 +127,9 @@ class MangaDownloadManager(
      * @param autoStart whether to start the downloader after enqueing the chapters.
      */
     suspend fun downloadChapters(manga: Manga, chapters: List<Chapter>, autoStart: Boolean = true) {
-        downloader.queueChapters(manga, chapters, autoStart)
+        if (downloader.queueChapters(manga, chapters, autoStart)) {
+            startDownloads()
+        }
     }
 
     fun addDownloadsToStartOfQueue(downloads: List<MangaDownload>) {
@@ -137,7 +138,7 @@ class MangaDownloadManager(
             addAll(0, downloads)
             reorderQueue(this)
         }
-        if (!MangaDownloadJob.isRunning(context)) startDownloads()
+        startDownloads()
     }
 
     fun buildPageList(source: MangaSource, manga: Manga, chapter: Chapter): List<Page> {

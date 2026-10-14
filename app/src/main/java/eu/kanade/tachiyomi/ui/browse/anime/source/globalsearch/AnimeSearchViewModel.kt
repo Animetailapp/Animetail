@@ -16,8 +16,8 @@ import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +34,6 @@ import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import java.util.concurrent.Executors
 
 abstract class AnimeSearchViewModel(
     initialState: State = State(),
@@ -55,7 +54,7 @@ abstract class AnimeSearchViewModel(
         state.update(function)
     }
 
-    private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
+    private val coroutineDispatcher = Dispatchers.IO.limitedParallelism(5)
     private var searchJob: Job? = null
 
     private val enabledLanguages = sourcePreferences.enabledLanguages.get()
@@ -210,10 +209,14 @@ abstract class AnimeSearchViewModel(
     }
 
     private fun updateItem(source: AnimeSource, result: AnimeSearchItemResult) {
-        val newItems = state.value.items.mutate {
-            it[source] = result
+        state.update { currentState ->
+            val newItems = currentState.items.mutate {
+                it[source] = result
+            }
+            currentState.copy(
+                items = newItems.toSortedMap(sortComparator(newItems)).toPersistentMap(),
+            )
         }
-        updateItems(newItems)
     }
 
     @Immutable

@@ -52,6 +52,11 @@ object TelemetryConfig {
         crashlytics?.isCrashlyticsCollectionEnabled = enabled
     }
 
+    fun recordException(throwable: Throwable) {
+        crashlytics?.recordException(throwable)
+    }
+
+
     private fun Context.isMihonProductionApp(): Boolean {
         if (packageName !in MIHON_PACKAGES) return false
 

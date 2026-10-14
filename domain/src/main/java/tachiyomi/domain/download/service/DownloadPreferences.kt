@@ -80,6 +80,9 @@ class DownloadPreferences(
     val numberOfDownloads: Preference<Int> = preferenceStore.getInt("download_slots", 1)
     val downloadSpeedLimit: Preference<Int> = preferenceStore.getInt("download_speed_limit", 0)
 
+    val parallelSourceLimit: Preference<Int> = preferenceStore.getInt("download_parallel_source_limit", 5)
+    val parallelPageLimit: Preference<Int> = preferenceStore.getInt("download_parallel_page_limit", 5)
+
     val downloadNewUnreadChaptersOnly: Preference<Boolean> = preferenceStore.getBoolean(
         "download_new_unread_chapters_only",
         false,
@@ -88,6 +91,7 @@ class DownloadPreferences(
         "download_new_unread_episodes_only",
         false,
     )
+
     companion object {
         private const val REMOVE_EXCLUDE_MANGA_CATEGORIES_PREF_KEY = "remove_exclude_categories"
         private const val REMOVE_EXCLUDE_ANIME_CATEGORIES_PREF_KEY = "remove_exclude_anime_categories"

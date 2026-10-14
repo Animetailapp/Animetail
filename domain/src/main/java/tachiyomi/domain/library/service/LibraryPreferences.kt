@@ -198,6 +198,12 @@ class LibraryPreferences(
         "disallow_non_ascii_filenames",
         false,
     )
+
+    val enableChapterNameHash: Preference<Boolean> = preferenceStore.getBoolean(
+        "pref_enable_chapter_name_hash",
+        false,
+    )
+
     // Mixture Item
 
     val filterEpisodeBySeen = preferenceStore.getLong("default_episode_filter_by_seen", Anime.SHOW_ALL)
