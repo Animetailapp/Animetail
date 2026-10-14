@@ -35,6 +35,7 @@ import ca.mpreg.webgpuviewer.transition.TransitionStackDown
 import ca.mpreg.webgpuviewer.transition.TransitionStackLeft
 import ca.mpreg.webgpuviewer.transition.TransitionStackRight
 import ca.mpreg.webgpuviewer.transition.TransitionStackUp
+import ca.mpreg.webgpuviewer.viewer.AnimationFrame
 import ca.mpreg.webgpuviewer.viewer.ImagePage
 import ca.mpreg.webgpuviewer.viewer.ImageViewerContinuousState
 import com.google.android.material.color.MaterialColors
@@ -62,6 +63,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import mihon.app.di.appGraph
 import tachiyomi.core.common.util.system.logcat
@@ -89,6 +91,8 @@ open class WebGpuViewer(
 ) : Viewer {
 
     open val isContinuous: Boolean = false
+
+    private val animationDispatcher = Dispatchers.Default.limitedParallelism(2)
 
     val readerPreferences by lazy { activity.appGraph.readerPreferences }
 
@@ -1213,10 +1217,20 @@ open class WebGpuViewer(
                 }
             }
 
-            logcat(LogPriority.INFO) { "Decoding ${pageName(page)}" }
-            ImageDecoder.open(input).use { dec -> buildPage(page, dec, streaming = false) { false } }
-        }
-    }
+              logcat(LogPriority.INFO) { "Decoding ${pageName(page)}" }
+              val started = SystemClock.uptimeMillis()
+              var done = false
+              try {
+                  buildPage(page, ImageDecoder.open(input), streaming = false) { false }
+                  done = true
+              } finally {
+                  val ms = SystemClock.uptimeMillis() - started
+                  logcat(LogPriority.INFO) {
+                      "${if (done) "Decoded" else "Failed decoding"} ${pageName(page)} in $ms ms"
+                  }
+              }
+          }
+      }
 
     private fun pageName(page: ViewerReaderPage): String {
         val p = page.page
@@ -1245,7 +1259,7 @@ open class WebGpuViewer(
                         override fun available() = 0
                     }
                     logcat(LogPriority.INFO) { "Decoding while downloading ${pageName(page)}" }
-                    ImageDecoder.open(headerOnly, complete = false).use { dec ->
+                    ImageDecoder.open(headerOnly, complete = false).let { dec ->
                         val chunk = ByteArray(STREAM_CHUNK)
                         var fed = false
                         var fedAt = 0L
@@ -1295,12 +1309,30 @@ open class WebGpuViewer(
         }
     }
 
-    /** Decodes [dec] into [page]. [feed] pushes more bytes, false once all are in. */
+    /**
+     * Decodes [dec] into [page], then closes it - unless an animation keeps it, to decode frames
+     * past the first as they come due. [feed] pushes more bytes, false once all are in.
+     */
     private suspend fun buildPage(
         page: ViewerReaderPage,
         dec: ImageDecoder,
         streaming: Boolean,
         feed: () -> Boolean,
+    ) {
+        var kept = false
+        try {
+            decodeInto(page, dec, streaming, feed) { kept = true }
+        } finally {
+            if (!kept) dec.close()
+        }
+    }
+
+    private suspend fun decodeInto(
+        page: ViewerReaderPage,
+        dec: ImageDecoder,
+        streaming: Boolean,
+        feed: () -> Boolean,
+        keep: () -> Unit,
     ) {
         // The decoder hands the map over unapplied - see ImageDecoder.Gainmap - because how
         // much of it to use depends on the display, so the viewer applies it.
@@ -1401,6 +1433,8 @@ open class WebGpuViewer(
         if (streaming && !previewing) return
         val firstFrame = nextWhole(onPartial = { showPartial(it) }) ?: return
         var secondFrame: ImageDecoder.Frame? = null
+        // A new image until a page takes it.
+        var orphan: Image? = null
         // Whole frames hold native pixels until closed, on every exit.
         try {
             // Streamed, a still's end and gain map are only known once all is in.
@@ -1457,103 +1491,87 @@ open class WebGpuViewer(
                 hdr = dec.isHdr,
                 hdrHeadroom = hdrHeadroom,
                 gainmap = gainmap?.toInput(),
-            )
+            ).also { orphan = it }
+            val firstDuration = firstFrame.duration
             firstFrame.close()
 
-            // A still is one frame of duration 0.
-            val frames = ArrayList<Pair<Image, Int>>(if (animated) dec.pages else 1)
-            frames.add(firstImage to if (animated) firstFrame.duration else 0)
-
-            // The preview's image belongs to its page.
-            fun discardFrames() {
-                val owned = if (shown != null) frames.drop(1) else frames
-                if (owned.isNotEmpty()) ImagePage.ImageSingle(owned).cleanup()
-            }
-
-            if (animated) {
-                var pending = secondFrame
-                try {
-                    while (pending != null || dec.hasNext) {
-                        // Under lock: a decode this long gives an eviction's cleanup() time to land.
-                        val stillWanted = synchronized(lock) {
-                            pageInCache(page).also { inCache ->
-                                if (inCache) {
-                                    (page.imagePage as? ProgressPage)?.progress =
-                                        (dec.page + 1).toFloat() / dec.pages
-                                }
-                            }
-                        }
-
-                        // Scrolled past: the frames left are work nothing will draw.
-                        if (!stillWanted) {
-                            discardFrames()
-                            return
-                        }
-
-                        val frame = pending ?: dec.decodeNext()
-                        pending = null
-                        val image = frame.use {
-                            Image(
-                                it.image,
-                                it.width,
-                                it.height,
-                                createMipMaps = false,
-                                backgroundColor = firstImage.backgroundColor,
-                                hdr = dec.isHdr,
-                                hdrHeadroom = hdrHeadroom,
-                            )
-                        }
-                        frames.add(Pair(image, frame.duration))
-                    }
-                } catch (e: Throwable) {
-                    discardFrames()
-                    throw e
-                }
-            }
-
             synchronized(lock) {
-                if (shown != null) {
-                    if (pageInCache(page) && page.imagePage === shown && !shown.destroyed) {
-                        // Keeps pan and zoom.
+                val target = when {
+                    // Evicted.
+                    !pageInCache(page) -> null
+
+                    // The preview becomes the image in place, keeping pan and zoom - unless
+                    // something replaced it meanwhile.
+                    shown != null -> shown.takeIf { page.imagePage === it && !it.destroyed }?.also {
                         page.preview = null
-                        shown.highQuality = true
-                        if (animated) shown.startAnimationLoop(frames)
-                        if (wasHome && firstImage.trim != null && !isDualPageMode()) rehome(shown)
-                        noteIfLone(page)
+                        // Tiles for a still; an animation swaps images every frame.
+                        it.highQuality = !animated
+                        if (wasHome && firstImage.trim != null && !isDualPageMode()) rehome(it)
                         // Bumps frameVersion, so a transition's cached render of the preview is stale.
-                        shown.invalidate()
-                        pager.state.invalidate()
-                    } else {
-                        discardFrames()
+                        it.invalidate()
                     }
-                    if (pageInCache(page)) page.state = PageState.IDLE
-                } else if (pageInCache(page) && !page.isDecoded && !page.imagePage.destroyed) {
-                    val imagePage = if (animated) ImagePage.ImageSingle(frames) else ImagePage.ImageSingle(firstImage)
-                    val oldImagePage = page.imagePage
-                    // A failed stream's preview is already showing.
-                    val fromPreview = oldImagePage === page.preview
-                    page.imagePage = imagePage
-                    page.preview = null
-                    noteIfLone(page)
-                    page.state = PageState.IDLE
-                    cleanupImage(oldImagePage)
-                    // Fade up from the placeholder's colour, if that placeholder was on screen -
-                    // one that decoded out of view has nothing left to fade from.
-                    if (oldImagePage.isOnScreen && !fromPreview) imagePage.fadeIn()
-                    if (!isDualPageMode()) {
-                        if (!applyWideZoomIfNeeded(imagePage)) {
+
+                    // A new page in the placeholder's place.
+                    !page.isDecoded && !page.imagePage.destroyed -> {
+                        val imagePage = ImagePage.ImageSingle(firstImage)
+                        orphan = null
+                        val old = page.imagePage
+                        // A failed stream's preview is already showing.
+                        val fromPreview = old === page.preview
+                        page.imagePage = imagePage
+                        page.preview = null
+                        cleanupImage(old)
+                        // Fade up from the placeholder's colour, if that placeholder was on screen -
+                        // one that decoded out of view has nothing left to fade from.
+                        if (old.isOnScreen && !fromPreview) imagePage.fadeIn()
+                        if (!isDualPageMode() && !applyWideZoomIfNeeded(imagePage)) {
                             applyFitModeAnchor(imagePage)
                         }
+                        imagePage
                     }
+
+                    else -> null
+                }
+                if (pageInCache(page)) page.state = PageState.IDLE
+                target?.also { installedPage ->
+                    if (animated) {
+                        // The page takes the decoder, which loops, and the second frame decoded
+                        // to tell it's animated, which goes first: the rest decode as they're due.
+                        keep()
+                        var ahead = secondFrame
+                        secondFrame = null
+                        val name = pageName(page)
+                        val release = {
+                            ahead?.close()
+                            ahead = null
+                            dec.close()
+                        }
+                        installedPage.animate(firstDuration, release) {
+                            withContext(animationDispatcher) {
+                                val f = ahead?.also { ahead = null } ?: if (dec.hasNext) {
+                                    val started = SystemClock.uptimeMillis()
+                                    dec.decodeNext().also {
+                                        logcat(LogPriority.DEBUG) {
+                                            "Decoded frame ${it.index} of $name in " +
+                                                "${SystemClock.uptimeMillis() - started} ms"
+                                        }
+                                    }
+                                } else {
+                                    null
+                                }
+                                f?.let { AnimationFrame(it.image, it.duration) { it.close() } }
+                            }
+                        }
+                    }
+                    noteIfLone(page)
                     pager.state.invalidate()
-                } else {
-                    if (pageInCache(page)) page.state = PageState.IDLE
-                    discardFrames()
                 }
             }
         } finally {
             firstFrame.close()
             secondFrame?.close()
+            // Nothing took it, normally or not. A preview's image belongs to its page either way.
+            orphan?.let { ImagePage.ImageSingle(it).cleanup() }
         }
     }
 
