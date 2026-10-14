@@ -14,10 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.kanade.domain.extension.anime.interactor.AnimeExtensionSourceItem
 import eu.kanade.presentation.browse.anime.components.AnimeExtensionIcon
+import eu.kanade.presentation.browse.components.ExtensionPill
 import eu.kanade.presentation.browse.components.label
 import eu.kanade.presentation.browse.manga.ContentWarningDialog
 import eu.kanade.presentation.components.AppBar
@@ -56,7 +58,6 @@ import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import mihon.icons.materialsymbols.MaterialSymbols
-import mihon.icons.materialsymbols.automirroredrounded.OpenInNew
 import mihon.icons.materialsymbols.rounded.Settings
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
@@ -94,37 +95,20 @@ fun AnimeExtensionDetailsScreen(
                 navigateUp = navigateUp,
                 actions = {
                     AppBarActions(
-                        actions = persistentListOf<AppBar.AppBarAction>().builder()
-                            .apply {
-                                if (url != null) {
-                                    add(
-                                        AppBar.Action(
-                                            title = stringResource(MR.strings.action_open_repo),
-                                            icon = MaterialSymbols.AutoMirroredRounded.OpenInNew,
-                                            onClick = {
-                                                uriHandler.openUri(url)
-                                            },
-                                        ),
-                                    )
-                                }
-                                addAll(
-                                    listOf(
-                                        AppBar.OverflowAction(
-                                            title = stringResource(MR.strings.action_enable_all),
-                                            onClick = onClickEnableAll,
-                                        ),
-                                        AppBar.OverflowAction(
-                                            title = stringResource(MR.strings.action_disable_all),
-                                            onClick = onClickDisableAll,
-                                        ),
-                                        AppBar.OverflowAction(
-                                            title = stringResource(MR.strings.pref_clear_cookies),
-                                            onClick = onClickClearCookies,
-                                        ),
-                                    ),
-                                )
-                            }
-                            .build(),
+                        actions = listOf(
+                            AppBar.OverflowAction(
+                                title = stringResource(MR.strings.action_enable_all),
+                                onClick = onClickEnableAll,
+                            ),
+                            AppBar.OverflowAction(
+                                title = stringResource(MR.strings.action_disable_all),
+                                onClick = onClickDisableAll,
+                            ),
+                            AppBar.OverflowAction(
+                                title = stringResource(MR.strings.pref_clear_cookies),
+                                onClick = onClickClearCookies,
+                            ),
+                        ),
                     )
                 },
                 scrollBehavior = scrollBehavior,
@@ -135,6 +119,11 @@ fun AnimeExtensionDetailsScreen(
         AnimeExtensionDetails(
             contentPadding = paddingValues,
             extension = state.extension,
+            onClickStore = state.extension.store
+                ?.contact
+                ?.website
+                ?.takeIf { it.isNotBlank() }
+                ?.let { website -> { uriHandler.openUri(website) } },
             sources = state.sources,
             incognitoMode = state.isIncognito,
             onClickSourcePreferences = onClickSourcePreferences,
@@ -149,6 +138,7 @@ fun AnimeExtensionDetailsScreen(
 private fun AnimeExtensionDetails(
     contentPadding: PaddingValues,
     extension: AnimeExtension.Loaded,
+    onClickStore: (() -> Unit)?,
     sources: ImmutableList<AnimeExtensionSourceItem>,
     incognitoMode: Boolean,
     onClickSourcePreferences: (sourceId: Long) -> Unit,
@@ -173,6 +163,7 @@ private fun AnimeExtensionDetails(
             DetailsHeader(
                 extension = extension,
                 extIncognitoMode = incognitoMode,
+                onClickStore = onClickStore,
                 onClickUninstall = onClickUninstall,
                 onClickAppInfo = {
                     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -213,8 +204,9 @@ private fun AnimeExtensionDetails(
 
 @Composable
 private fun DetailsHeader(
-    extension: AnimeExtension,
+    extension: AnimeExtension.Installed,
     extIncognitoMode: Boolean,
+    onClickStore: (() -> Unit)?,
     onClickContentWarning: () -> Unit,
     onClickUninstall: () -> Unit,
     onClickAppInfo: (() -> Unit)?,
@@ -271,14 +263,35 @@ private fun DetailsHeader(
                 textAlign = TextAlign.Center,
             )
 
-            val strippedPkgName = extension.pkgName.substringAfter(
-                "eu.kanade.tachiyomi.animeextension.",
+            Text(
+                text = extension.pkgName,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Text(
-                text = strippedPkgName,
-                style = MaterialTheme.typography.bodySmall,
-            )
+            extension.store?.let { store ->
+                Text(
+                    text = store.name,
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable(enabled = onClickStore != null) { onClickStore?.invoke() }
+                        .padding(
+                            horizontal = MaterialTheme.padding.extraSmall,
+                            vertical = MaterialTheme.padding.extraSmall / 2,
+                        ),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            if ((extension as? AnimeExtension.Loaded)?.isShared == false) {
+                ExtensionPill(
+                    text = stringResource(MR.strings.ext_installer_private),
+                    modifier = Modifier.padding(top = MaterialTheme.padding.small),
+                )
+            }
         }
 
         Row(
@@ -332,14 +345,11 @@ private fun DetailsHeader(
             }
 
             if (onClickAppInfo != null) {
-                Button(
+                FilledTonalButton(
                     modifier = Modifier.weight(1f),
                     onClick = onClickAppInfo,
                 ) {
-                    Text(
-                        text = stringResource(MR.strings.ext_app_info),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
+                    Text(stringResource(MR.strings.ext_app_info))
                 }
             }
         }
@@ -433,11 +443,10 @@ private fun SourceSwitchPreference(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (source.source is ConfigurableAnimeSource) {
-                    IconButton(onClick = { onClickSourcePreferences(source.source.id) }) {
+                    FilledTonalIconButton(onClick = { onClickSourcePreferences(source.source.id) }) {
                         Icon(
                             imageVector = MaterialSymbols.Rounded.Settings,
                             contentDescription = stringResource(MR.strings.label_settings),
-                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }

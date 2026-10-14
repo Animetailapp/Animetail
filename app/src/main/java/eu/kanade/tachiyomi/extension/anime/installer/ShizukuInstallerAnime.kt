@@ -77,7 +77,7 @@ class ShizukuInstallerAnime(private val service: Service) : InstallerAnime(servi
                 continueQueue(InstallStep.Installed)
             } else {
                 logcat(LogPriority.ERROR) { "Failed to install extension $packageName: $message" }
-                continueQueue(InstallStep.Error)
+                continueQueue(InstallStep.Error(message ?: "Shizuku failed to install it ($status)"))
             }
         }
     }
@@ -85,7 +85,7 @@ class ShizukuInstallerAnime(private val service: Service) : InstallerAnime(servi
     private val shizukuDeadListener = Shizuku.OnBinderDeadListener {
         logcat(LogPriority.ERROR) { "Shizuku was killed prematurely" }
         getActiveEntry()?.let {
-            extensionManager.updateInstallStep(it.downloadId, InstallStep.Error)
+            extensionManager.updateInstallStep(it.downloadId, InstallStep.Error("Shizuku was killed prematurely"))
         }
         service.stopSelf()
     }
@@ -98,7 +98,7 @@ class ShizukuInstallerAnime(private val service: Service) : InstallerAnime(servi
                     Shizuku.bindUserService(shizukuArgs, connection)
                 } else {
                     getActiveEntry()?.let {
-                        extensionManager.updateInstallStep(it.downloadId, InstallStep.Error)
+                        extensionManager.updateInstallStep(it.downloadId, InstallStep.Error("Shizuku permission was not granted"))
                     }
                     service.stopSelf()
                 }
@@ -121,7 +121,7 @@ class ShizukuInstallerAnime(private val service: Service) : InstallerAnime(servi
             service.contentResolver.delete(entry.uri, null, null)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Failed to install extension ${entry.downloadId} ${entry.uri}" }
-            continueQueue(InstallStep.Error)
+            continueQueue(InstallStep.Error.from(e))
         }
     }
 
@@ -157,7 +157,7 @@ class ShizukuInstallerAnime(private val service: Service) : InstallerAnime(servi
             logcat(LogPriority.ERROR) { "Shizuku is not ready to use" }
             service.toast(MR.strings.ext_installer_shizuku_stopped)
             getActiveEntry()?.let {
-                extensionManager.updateInstallStep(it.downloadId, InstallStep.Error)
+                extensionManager.updateInstallStep(it.downloadId, InstallStep.Error("Shizuku is not running"))
             }
             service.stopSelf()
         } else if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {

@@ -62,7 +62,7 @@ class AnimeExtensionInstaller(
         val downloadId = extension.pkgName.hashCode().toLong()
         cancelInstall(extension.pkgName)
 
-        val step = MutableStateFlow(InstallStep.Pending)
+        val step = MutableStateFlow<InstallStep>(InstallStep.Pending)
         activeSteps[downloadId] = step
 
         val job = scope.launch(Dispatchers.IO) {
@@ -97,7 +97,7 @@ class AnimeExtensionInstaller(
                     // Canceled
                 } else {
                     logcat(LogPriority.ERROR, e)
-                    step.value = InstallStep.Error
+                    step.value = InstallStep.Error.from(e)
                 }
             }
         }
@@ -161,7 +161,7 @@ class AnimeExtensionInstaller(
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
                     logcat(LogPriority.ERROR, e) { "Failed to start install service" }
-                    updateInstallStep(downloadId, InstallStep.Error)
+                    updateInstallStep(downloadId, InstallStep.Error.from(e))
                 }
             }
         }
@@ -169,14 +169,11 @@ class AnimeExtensionInstaller(
 
     private fun installApkPrivately(downloadId: Long, tempFile: File, packageInfo: PackageInfo) {
         try {
-            if (AnimeExtensionLoader.installPrivateExtensionFile(context, tempFile, packageInfo)) {
-                updateInstallStep(downloadId, InstallStep.Installed)
-            } else {
-                updateInstallStep(downloadId, InstallStep.Error)
-            }
+            AnimeExtensionLoader.installPrivateExtensionFile(context, tempFile, packageInfo)
+            updateInstallStep(downloadId, InstallStep.Installed)
         } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e) { "Failed to read downloaded extension file." }
-            updateInstallStep(downloadId, InstallStep.Error)
+            logcat(LogPriority.ERROR, e) { "Failed to install extension privately" }
+            updateInstallStep(downloadId, InstallStep.Error.from(e))
         }
 
         tempFile.delete()

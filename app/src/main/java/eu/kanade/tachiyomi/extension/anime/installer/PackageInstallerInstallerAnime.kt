@@ -29,7 +29,7 @@ class PackageInstallerInstallerAnime(private val service: Service) : InstallerAn
                     val userAction = intent.getParcelableExtraCompat<Intent>(Intent.EXTRA_INTENT)
                     if (userAction == null) {
                         logcat(LogPriority.ERROR) { "Fatal error for $intent" }
-                        continueQueue(InstallStep.Error)
+                        continueQueue(InstallStep.Error("The system installer returned an invalid intent"))
                         return
                     }
                     try {
@@ -45,7 +45,7 @@ class PackageInstallerInstallerAnime(private val service: Service) : InstallerAn
                         service.startActivity(userAction, options)
                     } catch (e: Exception) {
                         logcat(LogPriority.ERROR, e) { "Failed to start user action activity" }
-                        continueQueue(InstallStep.Error)
+                        continueQueue(InstallStep.Error.from(e))
                     }
                 }
 
@@ -62,7 +62,12 @@ class PackageInstallerInstallerAnime(private val service: Service) : InstallerAn
                     logcat(LogPriority.ERROR) {
                         "PackageInstaller failed: status=$status, message=$message, otherPackage=$otherPackage"
                     }
-                    continueQueue(InstallStep.Error)
+                    continueQueue(
+                        InstallStep.Error(
+                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
+                                ?: "The system installer failed ($status)",
+                        ),
+                    )
                 }
             }
         }
@@ -143,7 +148,7 @@ class PackageInstallerInstallerAnime(private val service: Service) : InstallerAn
                     // Session may already be finalized
                 }
             }
-            continueQueue(InstallStep.Error)
+            continueQueue(InstallStep.Error.from(e))
         }
     }
 

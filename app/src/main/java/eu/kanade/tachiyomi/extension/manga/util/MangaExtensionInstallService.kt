@@ -59,7 +59,7 @@ class MangaExtensionInstallService : Service() {
         } ?: intent?.getSerializableExtraCompat<BasePreferences.ExtensionInstaller>(EXTRA_INSTALLER)
         if (uri == null || id == null || installerUsed == null) {
             id?.let {
-                runCatching { Injekt.get<MangaExtensionManager>().updateInstallStep(it, InstallStep.Error) }
+                runCatching { Injekt.get<MangaExtensionManager>().updateInstallStep(it, InstallStep.Error("Invalid install intent parameters")) }
             }
             stopSelf()
             return START_NOT_STICKY
@@ -75,7 +75,7 @@ class MangaExtensionInstallService : Service() {
 
                 else -> {
                     logcat(LogPriority.ERROR) { "Not implemented for installer $installerUsed" }
-                    Injekt.get<MangaExtensionManager>().updateInstallStep(id, InstallStep.Error)
+                    Injekt.get<MangaExtensionManager>().updateInstallStep(id, InstallStep.Error("Not implemented for installer $installerUsed"))
                     stopSelf()
                     return START_NOT_STICKY
                 }

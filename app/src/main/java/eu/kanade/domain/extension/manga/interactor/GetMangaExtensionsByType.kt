@@ -34,11 +34,8 @@ class GetMangaExtensionsByType(
             val available = _available
                 .filter { extension ->
                     extension.store.indexUrl !in disabledRepos &&
-                        _loaded.none {
-                            it.pkgName == extension.pkgName
-                        } &&
-                        _notLoaded.none {
-                            it.pkgName == extension.pkgName
+                        (_loaded + _notLoaded).none {
+                            it.pkgName == extension.pkgName && extension.store.signingKey in it.signatures
                         } &&
                         extension.contentWarning in enabledContentWarnings
                 }
@@ -56,7 +53,10 @@ class GetMangaExtensionsByType(
                             )
                         }
                 }
-                .sortedWith(byName)
+                .sortedWith(
+                    compareBy<MangaExtension.Available, String>(String.CASE_INSENSITIVE_ORDER) { it.name }
+                        .thenBy { it.store.signingKey },
+                )
 
             MangaExtensions(
                 updates = updates,
