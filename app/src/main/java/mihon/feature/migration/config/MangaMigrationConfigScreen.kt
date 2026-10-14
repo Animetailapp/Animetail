@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.rememberScreenModel
+import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.source.service.SourcePreferences
@@ -50,6 +51,7 @@ import mihon.feature.migration.list.MangaMigrationListScreen
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.source.manga.model.Source
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.i18n.MR
@@ -186,10 +188,12 @@ class MangaMigrationConfigScreen(private val mangaIds: Collection<Long>) : Scree
     ) : StateScreenModel<ScreenModel.State>(State()) {
 
         init {
-            initSources()
+            screenModelScope.launchIO {
+                initSources()
+            }
         }
 
-        private fun initSources() {
+        private suspend fun initSources() {
             val languages = sourcePreferences.enabledLanguages.get()
             val pinnedSources = sourcePreferences.pinnedMangaSources.get().mapNotNull { it.toLongOrNull() }
             val includedSources = sourcePreferences.migrationMangaSources.get()
@@ -225,18 +229,20 @@ class MangaMigrationConfigScreen(private val mangaIds: Collection<Long>) : Scree
         }
 
         fun selectAllEnabled() {
-            val languages = sourcePreferences.enabledLanguages.get()
-            val disabledSources = sourcePreferences.disabledMangaSources.get()
-                .mapNotNull { it.toLongOrNull() }
-            val enabledSourceIds = sourceManager.getCatalogueSources()
-                .filterIsInstance<HttpSource>()
-                .filter { it.lang in languages && it.id !in disabledSources }
-                .map { it.id }
+            screenModelScope.launchIO {
+                val languages = sourcePreferences.enabledLanguages.get()
+                val disabledSources = sourcePreferences.disabledMangaSources.get()
+                    .mapNotNull { it.toLongOrNull() }
+                val enabledSourceIds = sourceManager.getCatalogueSources()
+                    .filterIsInstance<HttpSource>()
+                    .filter { it.lang in languages && it.id !in disabledSources }
+                    .map { it.id }
 
-            mutableState.update { state ->
-                val includedSourceIds = (state.includedSourceIds + enabledSourceIds).distinct()
-                sourcePreferences.migrationMangaSources.set(includedSourceIds)
-                state.copy(includedSourceIds = includedSourceIds)
+                mutableState.update { state ->
+                    val includedSourceIds = (state.includedSourceIds + enabledSourceIds).distinct()
+                    sourcePreferences.migrationMangaSources.set(includedSourceIds)
+                    state.copy(includedSourceIds = includedSourceIds)
+                }
             }
         }
 

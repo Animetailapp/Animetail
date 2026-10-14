@@ -1,115 +1,46 @@
 package mihon.app.di
 
-import android.content.Context
-import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import app.cash.sqldelight.db.SqlDriver
-import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConfiguration
-import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDatabaseType
-import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDriver
-import com.eygraber.sqldelight.androidx.driver.FileProvider
-import data.Chapters
-import data.History
-import data.Mangas
-import dataanime.Animehistory
-import dataanime.Animes
-import dataanime.Episodes
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
+import logcat.LogPriority
+import mihon.core.metro.AppCoroutineScope
+import mihon.core.metro.IsDebugBuild
 import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.core.XmlVersion
 import nl.adaptivity.xmlutil.serialization.XML
-import tachiyomi.data.AnimeUpdateStrategyColumnAdapter
-import tachiyomi.data.CastColumnAdapter
-import tachiyomi.data.Database
-import tachiyomi.data.DateColumnAdapter
-import tachiyomi.data.FetchTypeColumnAdapter
-import tachiyomi.data.MangaUpdateStrategyColumnAdapter
-import tachiyomi.data.MemoColumnAdapter
-import tachiyomi.data.StringListColumnAdapter
-import tachiyomi.data.handlers.anime.AndroidAnimeDatabaseHandler
-import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
-import tachiyomi.mi.data.AnimeDatabase
+import tachiyomi.core.common.util.system.logcat
 
 @BindingContainer
 object AppBindings {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun providesSqlDriver(context: Context): SqlDriver {
-        return AndroidxSqliteDriver(
-            driver = BundledSQLiteDriver(),
-            databaseType = AndroidxSqliteDatabaseType.FileProvider(context, "tachiyomi.db"),
-            schema = Database.Schema,
-            configuration = AndroidxSqliteConfiguration(
-                isForeignKeyConstraintsEnabled = true,
-            ),
-        )
+    @AppCoroutineScope
+    fun providesAppCoroutineScope(@IsDebugBuild isDebugBuild: Boolean): CoroutineScope {
+        // Work here outlives the screen that started it, so a failure would crash the app on whatever screen is open
+        // by then. Debug builds still crash so the bug gets noticed.
+        val handler = CoroutineExceptionHandler { _, throwable ->
+            if (isDebugBuild) {
+                val thread = Thread.currentThread()
+                thread.uncaughtExceptionHandler?.uncaughtException(thread, throwable)
+            } else {
+                logcat(LogPriority.ERROR, throwable) { "Uncaught exception in the app scope" }
+            }
+        }
+        return CoroutineScope(SupervisorJob() + Dispatchers.IO + handler)
     }
 
     @Provides
     @SingleIn(AppScope::class)
-    fun providesDatabase(driver: SqlDriver): Database {
-        return Database(
-            driver = driver,
-            historyAdapter = History.Adapter(
-                last_readAdapter = DateColumnAdapter,
-            ),
-            mangasAdapter = Mangas.Adapter(
-                genreAdapter = StringListColumnAdapter,
-                update_strategyAdapter = MangaUpdateStrategyColumnAdapter,
-                memoAdapter = MemoColumnAdapter,
-            ),
-            chaptersAdapter = Chapters.Adapter(
-                memoAdapter = MemoColumnAdapter,
-            ),
-        )
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun providesAnimeDatabaseHandler(context: Context): AnimeDatabaseHandler {
-        val driver = AndroidxSqliteDriver(
-            driver = BundledSQLiteDriver(),
-            databaseType = AndroidxSqliteDatabaseType.FileProvider(context, "tachiyomi.animedb"),
-            schema = AnimeDatabase.Schema,
-            configuration = AndroidxSqliteConfiguration(
-                isForeignKeyConstraintsEnabled = true,
-            ),
-        )
-        val database = AnimeDatabase(
-            driver = driver,
-            animehistoryAdapter = Animehistory.Adapter(
-                last_seenAdapter = DateColumnAdapter,
-            ),
-            animesAdapter = Animes.Adapter(
-                genreAdapter = StringListColumnAdapter,
-                update_strategyAdapter = AnimeUpdateStrategyColumnAdapter,
-                fetch_typeAdapter = FetchTypeColumnAdapter,
-                castAdapter = CastColumnAdapter,
-                memoAdapter = MemoColumnAdapter,
-            ),
-            episodesAdapter = Episodes.Adapter(
-                memoAdapter = MemoColumnAdapter,
-            ),
-        )
-        return AndroidAnimeDatabaseHandler(
-            db = database,
-            driver = driver,
-        )
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun providesAnimeDatabase(handler: AnimeDatabaseHandler): AnimeDatabase {
-        return (handler as AndroidAnimeDatabaseHandler).db
-    }
+    fun providesCoroutineScope(@AppCoroutineScope appScope: CoroutineScope): CoroutineScope = appScope
 
     @Provides
     @SingleIn(AppScope::class)
@@ -138,8 +69,4 @@ object AppBindings {
     @SingleIn(AppScope::class)
     fun providesFilterSerializer(): xyz.nulldev.ts.api.http.serializer.FilterSerializer =
         xyz.nulldev.ts.api.http.serializer.FilterSerializer()
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun providesCoroutineScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }

@@ -25,7 +25,6 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.allowRgb565
 import coil3.request.crossfade
 import coil3.util.DebugLogger
-import dev.mihon.injekt.patchInjekt
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.createGraphFactory
 import eu.kanade.domain.base.BasePreferences
@@ -95,7 +94,11 @@ import eu.kanade.tachiyomi.data.coil.AnimeCoverKeyer
 import eu.kanade.tachiyomi.data.coil.AnimeImageFetcher
 import eu.kanade.tachiyomi.data.coil.AnimeKeyer
 import eu.kanade.tachiyomi.data.coil.BufferedSourceFetcher
+import eu.kanade.tachiyomi.data.coil.CoverRequestInterceptor
+import eu.kanade.tachiyomi.data.coil.ExtensionIconFetcher
 import eu.kanade.tachiyomi.data.coil.ImageDecoder
+import eu.kanade.tachiyomi.data.coil.InstalledExtensionIconKeyer
+import eu.kanade.tachiyomi.data.coil.InstalledSourceIconKeyer
 import eu.kanade.tachiyomi.data.coil.MangaCoverFetcher
 import eu.kanade.tachiyomi.data.coil.MangaCoverKeyer
 import eu.kanade.tachiyomi.data.coil.MangaKeyer
@@ -140,7 +143,7 @@ import logcat.AndroidLogcatLogger
 import logcat.LogPriority
 import logcat.LogcatLogger
 import mihon.app.di.AppGraph
-import mihon.app.di.injekt.MetroInteropModule
+import mihon.app.di.injekt.MetroInjektRegistrar
 import mihon.core.metro.GraphProvider
 import mihon.core.migration.Migration
 import mihon.core.migration.Migrator
@@ -265,7 +268,7 @@ import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
 import tachiyomi.source.local.image.anime.LocalEpisodeThumbnailManager
 import tachiyomi.source.local.image.manga.LocalMangaCoverManager
 import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.addSingleton
+import uy.kohesive.injekt.api.InjektScope
 import java.security.Security
 import eu.kanade.domain.extension.manga.interactor.GetExtensionSources as GetMangaExtensionSources
 
@@ -299,11 +302,13 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
 
     @Inject lateinit var animeSourceManager: AnimeSourceManager
 
+    @Inject lateinit var mangaExtensionManager: MangaExtensionManager
+
+    @Inject lateinit var animeExtensionManager: AnimeExtensionManager
+
     @Inject lateinit var mangaWidgetManager: MangaWidgetManager
 
     @Inject lateinit var animeWidgetManager: AnimeWidgetManager
-
-    @Inject lateinit var injektMetroInteropModule: MetroInteropModule
 
     @Inject lateinit var migrations: Set<Migration>
 
@@ -321,9 +326,8 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             if (packageName != process) WebView.setDataDirectorySuffix(process)
         }
 
-        setupInjekt(graph)
+        Injekt = InjektScope(MetroInjektRegistrar(application = this, graphProvider = this))
         graph.inject(this)
-        Injekt.importModule(injektMetroInteropModule)
 
         GlobalExceptionHandler.initialize(applicationContext, CrashActivity::class.java)
 
@@ -394,219 +398,6 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         }
     }
 
-    private fun setupInjekt(graph: AppGraph) {
-        patchInjekt()
-        Injekt.addSingleton<Application>(this)
-        Injekt.addSingleton<Context>(this)
-        Injekt.addSingleton<Json>(graph.json)
-
-        Injekt.addSingleton<PreferenceStore>(graph.preferenceStore)
-        Injekt.addSingleton<BasePreferences>(graph.basePreferences)
-        Injekt.addSingleton<UiPreferences>(graph.uiPreferences)
-        Injekt.addSingleton<LibraryPreferences>(graph.libraryPreferences)
-        Injekt.addSingleton<SyncPreferences>(graph.syncPreferences)
-        Injekt.addSingleton<TrackPreferences>(graph.trackPreferences)
-        Injekt.addSingleton<SourcePreferences>(graph.sourcePreferences)
-        Injekt.addSingleton<BackupPreferences>(graph.backupPreferences)
-        Injekt.addSingleton<StoragePreferences>(graph.storagePreferences)
-        Injekt.addSingleton<SecurityPreferences>(graph.securityPreferences)
-        Injekt.addSingleton<PrivacyPreferences>(graph.privacyPreferences)
-        Injekt.addSingleton<DownloadPreferences>(graph.downloadPreferences)
-        Injekt.addSingleton<ConnectionsPreferences>(graph.connectionsPreferences)
-        Injekt.addSingleton<PlayerPreferences>(graph.playerPreferences)
-        Injekt.addSingleton<GesturePreferences>(graph.gesturePreferences)
-        Injekt.addSingleton<AdvancedPlayerPreferences>(graph.advancedPlayerPreferences)
-        Injekt.addSingleton<DecoderPreferences>(graph.decoderPreferences)
-        Injekt.addSingleton<AudioPreferences>(graph.audioPreferences)
-        Injekt.addSingleton<SubtitlePreferences>(graph.subtitlePreferences)
-        Injekt.addSingleton<TorrentPreferences>(graph.torrentPreferences)
-        Injekt.addSingleton<ReaderPreferences>(graph.readerPreferences)
-        Injekt.addSingleton<NetworkPreferences>(graph.networkPreferences)
-        Injekt.addSingleton<StorageManager>(graph.storageManager)
-        Injekt.addSingleton<LocalHttpServerHolder>(graph.localHttpServerHolder)
-        Injekt.addSingleton<TorrentServerApi>(graph.torrentServerApi)
-        Injekt.addSingleton<TorrentServerUtils>(graph.torrentServerUtils)
-        Injekt.addSingleton<AnimeDownloadManager>(graph.animeDownloadManager)
-        Injekt.addSingleton<MangaDownloadManager>(graph.mangaDownloadManager)
-        Injekt.addSingleton<AnimeDownloadProvider>(graph.animeDownloadProvider)
-        Injekt.addSingleton<MangaDownloadProvider>(graph.mangaDownloadProvider)
-        Injekt.addSingleton<AnimeDownloadCache>(graph.animeDownloadCache)
-        Injekt.addSingleton<MangaDownloadCache>(graph.mangaDownloadCache)
-        Injekt.addSingleton<AnimeCoverCache>(graph.animeCoverCache)
-        Injekt.addSingleton<MangaCoverCache>(graph.mangaCoverCache)
-        Injekt.addSingleton<AnimeBackgroundCache>(graph.animeBackgroundCache)
-        Injekt.addSingleton<ChapterCache>(graph.chapterCache)
-        Injekt.addSingleton<AnimeSourceManager>(graph.animeSourceManager)
-        Injekt.addSingleton<MangaSourceManager>(graph.mangaSourceManager)
-        Injekt.addSingleton<TrackerManager>(graph.trackerManager)
-        Injekt.addSingleton<ConnectionsManager>(graph.connectionsManager)
-        Injekt.addSingleton<SyncManager>(graph.syncManager)
-        Injekt.addSingleton<AppUpdateChecker>(graph.updateChecker)
-        Injekt.addSingleton<MangaExtensionManager>(graph.mangaExtensionManager)
-        Injekt.addSingleton<AnimeExtensionManager>(graph.animeExtensionManager)
-        Injekt.addSingleton<NetworkHelper>(graph.networkHelper)
-        Injekt.addSingleton<GetEpisode>(graph.getEpisode)
-        Injekt.addSingleton<GetChapter>(graph.getChapter)
-        Injekt.addSingleton<GetAnime>(graph.getAnime)
-        Injekt.addSingleton<GetManga>(graph.getManga)
-        Injekt.addSingleton<GetCustomButtons>(graph.getCustomButtons)
-        Injekt.addSingleton<CreateCustomButton>(graph.createCustomButton)
-        Injekt.addSingleton<DeleteCustomButton>(graph.deleteCustomButton)
-        Injekt.addSingleton<UpdateCustomButton>(graph.updateCustomButton)
-        Injekt.addSingleton<ReorderCustomButton>(graph.reorderCustomButton)
-        Injekt.addSingleton<ToggleFavoriteCustomButton>(graph.toggleFavoriteCustomButton)
-        Injekt.addSingleton<MpvConfig>(graph.mpvConfig)
-        Injekt.addSingleton<GetAnimeHistory>(graph.getAnimeHistory)
-        Injekt.addSingleton<GetMangaHistory>(graph.getMangaHistory)
-        Injekt.addSingleton<GetLibraryAnime>(graph.getLibraryAnime)
-        Injekt.addSingleton<GetLibraryManga>(graph.getLibraryManga)
-        Injekt.addSingleton<NetworkToLocalAnime>(graph.networkToLocalAnime)
-        Injekt.addSingleton<NetworkToLocalManga>(graph.networkToLocalManga)
-        Injekt.addSingleton<GetFeedSavedSearchGlobal>(graph.getFeedSavedSearchGlobal)
-        Injekt.addSingleton<GetFeedSavedSearchBySourceId>(graph.getFeedSavedSearchBySourceId)
-        Injekt.addSingleton<GetSavedSearchGlobalFeed>(graph.getSavedSearchGlobalFeed)
-        Injekt.addSingleton<GetSavedSearchBySourceIdFeed>(graph.getSavedSearchBySourceIdFeed)
-        Injekt.addSingleton<CountFeedSavedSearchGlobal>(graph.countFeedSavedSearchGlobal)
-        Injekt.addSingleton<CountFeedSavedSearchBySourceId>(graph.countFeedSavedSearchBySourceId)
-        Injekt.addSingleton<GetSavedSearchBySourceId>(graph.getSavedSearchBySourceId)
-        Injekt.addSingleton<InsertFeedSavedSearch>(graph.insertFeedSavedSearch)
-        Injekt.addSingleton<DeleteFeedSavedSearchById>(graph.deleteFeedSavedSearchById)
-        Injekt.addSingleton<ReorderFeed>(graph.reorderFeed)
-        Injekt.addSingleton<GetExhSavedSearch>(graph.getExhSavedSearch)
-        Injekt.addSingleton<GetVisibleAnimeCategories>(graph.getVisibleAnimeCategories)
-        Injekt.addSingleton<GetVisibleMangaCategories>(graph.getVisibleMangaCategories)
-        Injekt.addSingleton<GetTracksPerAnime>(graph.getTracksPerAnime)
-        Injekt.addSingleton<GetTracksPerManga>(graph.getTracksPerManga)
-        Injekt.addSingleton<GetNextEpisodes>(graph.getNextEpisodes)
-        Injekt.addSingleton<GetNextChapters>(graph.getNextChapters)
-        Injekt.addSingleton<GetChaptersByMangaId>(graph.getChaptersByMangaId)
-        Injekt.addSingleton<SetSeenStatus>(graph.setSeenStatus)
-        Injekt.addSingleton<SetReadStatus>(graph.setReadStatus)
-        Injekt.addSingleton<UpdateAnime>(graph.updateAnime)
-        Injekt.addSingleton<UpdateManga>(graph.updateManga)
-        Injekt.addSingleton<SetAnimeCategories>(graph.setAnimeCategories)
-        Injekt.addSingleton<SetMangaCategories>(graph.setMangaCategories)
-        Injekt.addSingleton<RemoveAnimeHistory>(graph.removeAnimeHistory)
-        Injekt.addSingleton<RemoveMangaHistory>(graph.removeMangaHistory)
-        Injekt.addSingleton<GetDuplicateLibraryAnime>(graph.getDuplicateLibraryAnime)
-        Injekt.addSingleton<GetDuplicateLibraryManga>(graph.getDuplicateLibraryManga)
-        Injekt.addSingleton<GetMangaTracks>(graph.getMangaTracks)
-        Injekt.addSingleton<GetAnimeTracks>(graph.getAnimeTracks)
-        Injekt.addSingleton<RefreshAnimeTracks>(graph.refreshAnimeTracks)
-        Injekt.addSingleton<RefreshMangaTracks>(graph.refreshMangaTracks)
-
-        Injekt.addSingleton<CreateAnimeCategoryWithName>(graph.createAnimeCategoryWithName)
-        Injekt.addSingleton<DeleteAnimeCategory>(graph.deleteAnimeCategory)
-        Injekt.addSingleton<HideAnimeCategory>(graph.hideAnimeCategory)
-        Injekt.addSingleton<RenameAnimeCategory>(graph.renameAnimeCategory)
-        Injekt.addSingleton<ReorderAnimeCategory>(graph.reorderAnimeCategory)
-        Injekt.addSingleton<SetAnimeDisplayMode>(graph.setAnimeDisplayMode)
-        Injekt.addSingleton<SetSortModeForAnimeCategory>(graph.setSortModeForAnimeCategory)
-
-        Injekt.addSingleton<CreateMangaCategoryWithName>(graph.createMangaCategoryWithName)
-        Injekt.addSingleton<DeleteMangaCategory>(graph.deleteMangaCategory)
-        Injekt.addSingleton<HideMangaCategory>(graph.hideMangaCategory)
-        Injekt.addSingleton<RenameMangaCategory>(graph.renameMangaCategory)
-        Injekt.addSingleton<ReorderMangaCategory>(graph.reorderMangaCategory)
-        Injekt.addSingleton<SetMangaDisplayMode>(graph.setMangaDisplayMode)
-        Injekt.addSingleton<SetSortModeForMangaCategory>(graph.setSortModeForMangaCategory)
-
-        Injekt.addSingleton<TrustMangaExtension>(graph.trustMangaExtension)
-        Injekt.addSingleton<TrustAnimeExtension>(graph.trustAnimeExtension)
-        Injekt.addSingleton<GetMangaFavorites>(graph.getMangaFavorites)
-        Injekt.addSingleton<GetAnimeFavorites>(graph.getAnimeFavorites)
-        Injekt.addSingleton<ResetMangaViewerFlags>(graph.resetMangaViewerFlags)
-        Injekt.addSingleton<ResetAnimeViewerFlags>(graph.resetAnimeViewerFlags)
-        Injekt.addSingleton<ResetMangaCategoryFlags>(graph.resetMangaCategoryFlags)
-        Injekt.addSingleton<ResetAnimeCategoryFlags>(graph.resetAnimeCategoryFlags)
-        Injekt.addSingleton<AddMangaTracks>(graph.addMangaTracks)
-        Injekt.addSingleton<AddAnimeTracks>(graph.addAnimeTracks)
-        Injekt.addSingleton<InsertMangaTrack>(graph.insertMangaTrack)
-        Injekt.addSingleton<InsertAnimeTrack>(graph.insertAnimeTrack)
-        Injekt.addSingleton<DeleteAnimeTrack>(graph.deleteAnimeTrack)
-        Injekt.addSingleton<DeleteMangaTrack>(graph.deleteMangaTrack)
-        Injekt.addSingleton<TrackEpisode>(graph.trackEpisode)
-        Injekt.addSingleton<TrackChapter>(graph.trackChapter)
-        Injekt.addSingleton<SyncEpisodeProgressWithTrack>(graph.syncEpisodeProgressWithTrack)
-        Injekt.addSingleton<SyncChapterProgressWithTrack>(graph.syncChapterProgressWithTrack)
-        Injekt.addSingleton<DelayedMangaTrackingStore>(graph.delayedMangaTrackingStore)
-        Injekt.addSingleton<DelayedAnimeTrackingStore>(graph.delayedAnimeTrackingStore)
-        Injekt.addSingleton<UpsertAnimeHistory>(graph.upsertAnimeHistory)
-        Injekt.addSingleton<UpdateEpisode>(graph.updateEpisode)
-        Injekt.addSingleton<GetEpisodesByAnimeId>(graph.getEpisodesByAnimeId)
-
-        Injekt.addSingleton<UpdateAnimeNotes>(graph.updateAnimeNotes)
-        Injekt.addSingleton<UpdateMangaNotes>(graph.updateMangaNotes)
-        Injekt.addSingleton<GetAnimeByUrlAndSourceId>(graph.getAnimeByUrlAndSourceId)
-        Injekt.addSingleton<GetMangaByUrlAndSourceId>(graph.getMangaByUrlAndSourceId)
-        Injekt.addSingleton<GetEpisodeByUrlAndAnimeId>(graph.getEpisodeByUrlAndAnimeId)
-        Injekt.addSingleton<GetChapterByUrlAndMangaId>(graph.getChapterByUrlAndMangaId)
-        Injekt.addSingleton<UpdateAnimeFromRemote>(graph.updateAnimeFromRemote)
-        Injekt.addSingleton<ImageSaver>(graph.imageSaver)
-        Injekt.addSingleton<SetAnimeViewerFlags>(graph.setAnimeViewerFlags)
-        Injekt.addSingleton<SetMangaViewerFlags>(graph.setMangaViewerFlags)
-        Injekt.addSingleton<SetAnimeEpisodeFlags>(graph.setAnimeEpisodeFlags)
-        Injekt.addSingleton<SetMangaChapterFlags>(graph.setMangaChapterFlags)
-        Injekt.addSingleton<SetAnimeSeasonFlags>(graph.setAnimeSeasonFlags)
-        Injekt.addSingleton<SetCustomAnimeInfo>(graph.setCustomAnimeInfo)
-        Injekt.addSingleton<SetCustomMangaInfo>(graph.setCustomMangaInfo)
-        Injekt.addSingleton<GetCustomAnimeInfo>(graph.getCustomAnimeInfo)
-        Injekt.addSingleton<GetCustomMangaInfo>(graph.getCustomMangaInfo)
-        Injekt.addSingleton<GetAnimeWithEpisodesAndSeasons>(graph.getAnimeWithEpisodesAndSeasons)
-        Injekt.addSingleton<GetMangaWithChapters>(graph.getMangaWithChapters)
-        Injekt.addSingleton<AnimeFetchInterval>(graph.animeFetchInterval)
-        Injekt.addSingleton<MangaFetchInterval>(graph.mangaFetchInterval)
-
-        Injekt.addSingleton<GetExcludedScanlators>(graph.getExcludedScanlators)
-        Injekt.addSingleton<SetExcludedScanlators>(graph.setExcludedScanlators)
-        Injekt.addSingleton<GetAvailableScanlators>(graph.getAvailableScanlators)
-        Injekt.addSingleton<SyncChaptersWithSource>(graph.syncChaptersWithSource)
-        Injekt.addSingleton<SyncEpisodesWithSource>(graph.syncEpisodesWithSource)
-        Injekt.addSingleton<SyncSeasonsWithSource>(graph.syncSeasonsWithSource)
-        Injekt.addSingleton<UpdateChapter>(graph.updateChapter)
-        Injekt.addSingleton<SetAnimeDefaultEpisodeFlags>(graph.setAnimeDefaultEpisodeFlags)
-        Injekt.addSingleton<SetMangaDefaultChapterFlags>(graph.setMangaDefaultChapterFlags)
-        Injekt.addSingleton<SetAnimeDefaultSeasonFlags>(graph.setAnimeDefaultSeasonFlags)
-        Injekt.addSingleton<GetAnimeSeasonsByParentId>(graph.getAnimeSeasonsByParentId)
-        Injekt.addSingleton<GetBookmarkedChaptersByMangaId>(graph.getBookmarkedChaptersByMangaId)
-
-        Injekt.addSingleton<ToggleAnimeSourcePin>(graph.toggleAnimeSourcePin)
-        Injekt.addSingleton<ToggleMangaSourcePin>(graph.toggleMangaSourcePin)
-        Injekt.addSingleton<ToggleAnimeSource>(graph.toggleAnimeSource)
-        Injekt.addSingleton<ToggleMangaSource>(graph.toggleMangaSource)
-        Injekt.addSingleton<ToggleAnimeIncognito>(graph.toggleAnimeIncognito)
-        Injekt.addSingleton<ToggleMangaIncognito>(graph.toggleMangaIncognito)
-        Injekt.addSingleton<GetAnimeSourcesWithFavoriteCount>(graph.getAnimeSourcesWithFavoriteCount)
-        Injekt.addSingleton<GetMangaSourcesWithFavoriteCount>(graph.getMangaSourcesWithFavoriteCount)
-        Injekt.addSingleton<GetAnimeIncognitoState>(graph.getAnimeIncognitoState)
-        Injekt.addSingleton<GetMangaIncognitoState>(graph.getMangaIncognitoState)
-        Injekt.addSingleton<GetLanguagesWithAnimeSources>(graph.getLanguagesWithAnimeSources)
-        Injekt.addSingleton<GetLanguagesWithMangaSources>(graph.getLanguagesWithMangaSources)
-        Injekt.addSingleton<GetEnabledAnimeSources>(graph.getEnabledAnimeSources)
-        Injekt.addSingleton<GetEnabledMangaSources>(graph.getEnabledMangaSources)
-        Injekt.addSingleton<ToggleLanguage>(graph.toggleLanguage)
-        Injekt.addSingleton<SetMigrateSorting>(graph.setMigrateSorting)
-        Injekt.addSingleton<InsertSavedSearch>(graph.insertSavedSearch)
-        Injekt.addSingleton<GetAnimeExtensionSources>(graph.getAnimeExtensionSources)
-        Injekt.addSingleton<GetMangaExtensionSources>(graph.getMangaExtensionSources)
-        Injekt.addSingleton<GetAnimeExtensionsByType>(graph.getAnimeExtensionsByType)
-        Injekt.addSingleton<GetMangaExtensionsByType>(graph.getMangaExtensionsByType)
-        Injekt.addSingleton<GetAnimeExtensionLanguages>(graph.getAnimeExtensionLanguages)
-        Injekt.addSingleton<GetMangaExtensionLanguages>(graph.getMangaExtensionLanguages)
-        Injekt.addSingleton<GetAnimeUpdates>(graph.getAnimeUpdates)
-        Injekt.addSingleton<GetMangaUpdates>(graph.getMangaUpdates)
-        Injekt.addSingleton<GetApplicationRelease>(graph.getApplicationRelease)
-        Injekt.addSingleton<ToggleExcludeFromMangaDataSaver>(graph.toggleExcludeFromMangaDataSaver)
-        Injekt.addSingleton<GetMangaExtensionStoreCountAsFlow>(graph.getMangaExtensionStoreCountAsFlow)
-        Injekt.addSingleton<GetAnimeExtensionStoreCountAsFlow>(graph.getAnimeExtensionStoreCountAsFlow)
-        Injekt.addSingleton<GetMangaExtensionStores>(graph.getMangaExtensionStores)
-        Injekt.addSingleton<GetAnimeExtensionStores>(graph.getAnimeExtensionStores)
-        Injekt.addSingleton<LocalMangaCoverManager>(graph.localMangaCoverManager)
-        Injekt.addSingleton<LocalAnimeCoverManager>(graph.localAnimeCoverManager)
-        Injekt.addSingleton<LocalAnimeBackgroundManager>(graph.localAnimeBackgroundManager)
-        Injekt.addSingleton<LocalEpisodeThumbnailManager>(graph.localEpisodeThumbnailManager)
-    }
-
     private fun initializeMigrator() {
         val preference = preferenceStore.getInt(Preference.appStateKey("last_version_code"), 0)
         logcat {
@@ -644,11 +435,25 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                         animeSourceManager,
                     ),
                 )
+                add(ExtensionIconFetcher.ExtensionFactory(context))
+                add(
+                    ExtensionIconFetcher.SourceFactory(
+                        context,
+                        lazy {
+                            mangaExtensionManager
+                        },
+                        lazy { animeExtensionManager },
+                    ),
+                )
                 // Keyer
                 add(AnimeKeyer())
                 add(MangaKeyer())
                 add(AnimeCoverKeyer(animeCoverCache))
                 add(MangaCoverKeyer(coverCache))
+                add(InstalledExtensionIconKeyer())
+                add(InstalledSourceIconKeyer())
+                // Interceptor
+                add(CoverRequestInterceptor())
             }
 
             crossfade((300 * this@App.animatorDurationScale).toInt())

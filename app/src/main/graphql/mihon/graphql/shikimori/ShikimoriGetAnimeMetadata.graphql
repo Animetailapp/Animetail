@@ -1,0 +1,21 @@
+query ShikimoriGetAnimeMetadata(
+  $ids: String!,
+) {
+  animes(
+    ids: $ids,
+    limit: 1,
+  ) {
+    id
+    name
+    description
+    poster {
+      originalUrl
+    }
+    personRoles {
+      person {
+        name
+      }
+      rolesEn
+    }
+  }
+}

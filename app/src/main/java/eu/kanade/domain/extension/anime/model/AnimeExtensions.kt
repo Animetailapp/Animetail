@@ -4,7 +4,7 @@ import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 
 data class AnimeExtensions(
     val updates: List<AnimeExtension.Installed>,
-    val installed: List<AnimeExtension.Installed>,
+    val loaded: List<AnimeExtension.Loaded>,
     val available: List<AnimeExtension.Available>,
-    val untrusted: List<AnimeExtension.Untrusted>,
+    val notLoaded: List<AnimeExtension.NotLoaded>,
 )

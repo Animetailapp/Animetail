@@ -26,8 +26,10 @@ import eu.kanade.tachiyomi.util.system.workManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mihon.app.di.appGraph
+import mihon.core.metro.AppCoroutineScope
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.download.service.DownloadPreferences
@@ -38,7 +40,7 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.interactor.GetChapter
 import tachiyomi.domain.items.chapter.interactor.UpdateChapter
 import tachiyomi.domain.items.chapter.model.Chapter
-import tachiyomi.domain.items.chapter.model.toChapterUpdate
+import tachiyomi.domain.items.chapter.model.ChapterUpdate
 import tachiyomi.domain.items.episode.interactor.GetEpisode
 import tachiyomi.domain.items.episode.interactor.UpdateEpisode
 import tachiyomi.domain.items.episode.model.Episode
@@ -74,7 +76,8 @@ class NotificationReceiver : BroadcastReceiver() {
 
     @Inject private lateinit var mangaSourceManager: MangaSourceManager
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Inject @AppCoroutineScope
+    private lateinit var scope: CoroutineScope
 
     override fun onReceive(context: Context, intent: Intent) {
         context.appGraph.inject(this)
@@ -132,17 +135,12 @@ class NotificationReceiver : BroadcastReceiver() {
             }
 
             ACTION_OPEN_EPISODE -> {
-                val pendingResult = goAsync()
-                scope.launchIO {
-                    try {
-                        openEpisode(
-                            context,
-                            intent.getLongExtra(EXTRA_ANIME_ID, -1),
-                            intent.getLongExtra(EXTRA_EPISODE_ID, -1),
-                        )
-                    } finally {
-                        pendingResult.finish()
-                    }
+                launchAsync {
+                    openEpisode(
+                        context,
+                        intent.getLongExtra(EXTRA_ANIME_ID, -1),
+                        intent.getLongExtra(EXTRA_EPISODE_ID, -1),
+                    )
                 }
             }
 
@@ -295,10 +293,9 @@ class NotificationReceiver : BroadcastReceiver() {
      * @param mangaId id of manga
      */
     private fun markAsRead(chapterUrls: Array<String>, mangaId: Long) {
-        scope.launchIO {
+        launchAsync {
             val toUpdate = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
                 .map {
-                    val chapter = it.copy(read = true)
                     if (downloadPreferences.removeAfterMarkedAsRead.get()) {
                         val manga = getManga.await(mangaId)
                         if (manga != null) {
@@ -308,7 +305,7 @@ class NotificationReceiver : BroadcastReceiver() {
                             }
                         }
                     }
-                    chapter.toChapterUpdate()
+                    ChapterUpdate(it.id) { read = true }
                 }
             updateChapter.awaitAll(toUpdate)
         }
@@ -321,15 +318,15 @@ class NotificationReceiver : BroadcastReceiver() {
      * @param mangaId id of manga
      */
     private fun downloadChapters(chapterUrls: Array<String>, mangaId: Long) {
-        scope.launchIO {
-            val manga = getManga.await(mangaId) ?: return@launchIO
+        launchAsync {
+            val manga = getManga.await(mangaId) ?: return@launchAsync
             val chapters = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
             mangaDownloadManager.downloadChapters(manga, chapters)
         }
     }
 
     private fun markAsViewed(episodeUrls: Array<String>, animeId: Long) {
-        scope.launchIO {
+        launchAsync {
             val toUpdate = episodeUrls.mapNotNull { getEpisode.await(it, animeId) }
                 .map { it.copy(seen = true).toEpisodeUpdate() }
             updateEpisode.awaitAll(toUpdate)
@@ -337,10 +334,25 @@ class NotificationReceiver : BroadcastReceiver() {
     }
 
     private fun downloadEpisodes(episodeUrls: Array<String>, animeId: Long) {
-        scope.launchIO {
-            val anime = getAnime.await(animeId) ?: return@launchIO
+        launchAsync {
+            val anime = getAnime.await(animeId) ?: return@launchAsync
             val episodes = episodeUrls.mapNotNull { getEpisode.await(it, animeId) }
             animeDownloadManager.downloadEpisodes(anime, episodes)
+        }
+    }
+
+    /**
+     * Runs [block] on the application scope while keeping the broadcast alive, so the process isn't torn down before
+     * the work finishes.
+     */
+    private fun launchAsync(block: suspend CoroutineScope.() -> Unit) {
+        val pendingResult = goAsync()
+        scope.launch {
+            try {
+                block()
+            } finally {
+                pendingResult.finish()
+            }
         }
     }
 

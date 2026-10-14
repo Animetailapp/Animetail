@@ -48,10 +48,11 @@ class DiscordRPCService : Service() {
 
         // Get stored OAuth token for the native SDK
         val effectiveToken = DiscordTokenStore.retrieve()
+        val effectiveRefreshToken = DiscordTokenStore.retrieveRefreshToken()
 
-        if (!effectiveToken.isNullOrBlank()) {
+        if (!effectiveToken.isNullOrBlank() || !effectiveRefreshToken.isNullOrBlank()) {
             if (!DiscordRpcManager.isAuthorized()) {
-                DiscordRpcManager.reconnectWithToken(effectiveToken)
+                DiscordRpcManager.reconnectWithToken(effectiveToken ?: "")
             }
 
             // Listen for connection ready state and update RPC automatically when established
@@ -77,6 +78,8 @@ class DiscordRPCService : Service() {
                         } catch (e: Exception) {
                             Log.e(TAG, "Error updating presence on connection ready: ${e.message}", e)
                         }
+                    } else if (status == DiscordRpcManager.Status.Disconnected) {
+                        ensureTokenValid()
                     }
                 }
             }
@@ -84,6 +87,17 @@ class DiscordRPCService : Service() {
         } else {
             connectionsPreferences.enableDiscordRPC().set(false)
         }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val effectiveToken = DiscordTokenStore.retrieve()
+        val effectiveRefreshToken = DiscordTokenStore.retrieveRefreshToken()
+        if (!effectiveToken.isNullOrBlank() || !effectiveRefreshToken.isNullOrBlank()) {
+            if (!DiscordRpcManager.isAuthorized() || DiscordTokenStore.isExpired()) {
+                DiscordRpcManager.reconnectWithToken(effectiveToken ?: "")
+            }
+        }
+        return START_STICKY
     }
 
     override fun onDestroy() {
@@ -154,12 +168,32 @@ class DiscordRPCService : Service() {
 
         private const val MP_PREFIX = "mp:"
         private const val TAG = "DiscordRPCService"
+        private var lastRefreshAttempt = 0L
+
+        internal suspend fun ensureTokenValid() {
+            if (DiscordTokenStore.isExpired() && !DiscordTokenStore.retrieveRefreshToken().isNullOrBlank()) {
+                val now = System.currentTimeMillis()
+                if (now - lastRefreshAttempt > 60_000L) {
+                    lastRefreshAttempt = now
+                    Log.i(TAG, "Token is expired or close to expiry, attempting refresh in background...")
+                    withIOContext {
+                        if (DiscordRpcManager.refreshAccessTokenSync()) {
+                            val newToken = DiscordRpcManager.getAccessToken()
+                            if (newToken != null) {
+                                DiscordRpcManager.reconnectWithToken(newToken)
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         /**
          * Sets the appropriate screen (anime or manga) based on the last used screen context
          */
         internal suspend fun setScreen(context: Context, discordScreen: DiscordScreen) {
             if (!connectionsPreferences.enableDiscordRPC().get()) return
+            ensureTokenValid()
             currentScreen = discordScreen
             if (discordScreen != DiscordScreen.VIDEO && discordScreen != DiscordScreen.MANGA &&
                 discordScreen != DiscordScreen.WEBVIEW
@@ -190,6 +224,7 @@ class DiscordRPCService : Service() {
             playerData: PlayerData = PlayerData(),
         ) {
             if (!connectionsPreferences.enableDiscordRPC().get()) return
+            ensureTokenValid()
             currentScreen = discordScreen
             if (discordScreen == DiscordScreen.VIDEO) {
                 activePlayerData = playerData
@@ -284,6 +319,7 @@ class DiscordRPCService : Service() {
             readerData: ReaderData = ReaderData(),
         ) {
             if (!connectionsPreferences.enableDiscordRPC().get()) return
+            ensureTokenValid()
             currentScreen = discordScreen
             if (discordScreen == DiscordScreen.MANGA) {
                 activeReaderData = readerData

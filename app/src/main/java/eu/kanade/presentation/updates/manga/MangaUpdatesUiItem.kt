@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +37,9 @@ import eu.kanade.presentation.entries.manga.components.ChapterDownloadIndicator
 import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.ui.updates.manga.MangaUpdatesItem
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.roundedfilled.Bookmark
+import mihon.icons.materialsymbols.roundedfilled.Circle
 import tachiyomi.domain.updates.manga.model.MangaUpdatesWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.ListGroupHeader
@@ -185,7 +185,7 @@ private fun MangaUpdatesUiItem(
                 var textHeight by remember { mutableIntStateOf(0) }
                 if (!update.read) {
                     Icon(
-                        imageVector = Icons.Filled.Circle,
+                        imageVector = MaterialSymbols.RoundedFilled.Circle,
                         contentDescription = stringResource(MR.strings.unread),
                         modifier = Modifier
                             .height(8.dp)
@@ -195,7 +195,7 @@ private fun MangaUpdatesUiItem(
                 }
                 if (update.bookmark) {
                     Icon(
-                        imageVector = Icons.Filled.Bookmark,
+                        imageVector = MaterialSymbols.RoundedFilled.Bookmark,
                         contentDescription = stringResource(MR.strings.action_filter_bookmarked),
                         modifier = Modifier
                             .sizeIn(

@@ -73,7 +73,8 @@ class AnimeImageFetcher(
         // diskCacheKey is thumbnail_url
         val resolvedUrl = url ?: return emptyImageLoader()
         return when (getResourceType(resolvedUrl)) {
-            Type.URL -> httpLoader()
+            // Requests for the same cover at different sizes or through Anime and AnimeCover would each download it
+            Type.URL -> concurrentRequests.apply(diskCacheKey) { httpLoader() }
 
             Type.File -> File(resolvedUrl.removePrefix("file://"))
                 .takeIf(File::exists)
@@ -383,6 +384,8 @@ class AnimeImageFetcher(
         private val CACHE_CONTROL_NO_NETWORK_NO_CACHE = CacheControl.Builder().noCache().onlyIfCached().build()
 
         private const val HTTP_NOT_MODIFIED = 304
+
+        private val concurrentRequests = DeDupeConcurrentRequests<FetchResult>()
 
         // 1x1 transparent PNG to avoid hard failures when a local item has no usable cover.
         private val EMPTY_PNG_BYTES = byteArrayOf(

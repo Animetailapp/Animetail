@@ -2,6 +2,7 @@ package tachiyomi.domain.entries.manga.repository
 
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.entries.manga.model.Manga
+import tachiyomi.domain.entries.manga.model.MangaRemoteUpdate
 import tachiyomi.domain.entries.manga.model.MangaUpdate
 import tachiyomi.domain.library.manga.LibraryManga
 
@@ -35,11 +36,29 @@ interface MangaRepository {
 
     suspend fun resetMangaViewerFlags(): Boolean
 
+    suspend fun deleteNonLibraryManga(sourceIds: List<Long>, keepReadManga: Boolean)
+
     suspend fun setMangaCategories(mangaId: Long, categoryIds: List<Long>)
 
     suspend fun insertManga(manga: Manga): Long?
 
+    suspend fun getExcludedScanlators(mangaId: Long): Set<String>
+
+    suspend fun getExcludedScanlatorsByMangaIds(mangaIds: List<Long>): Map<Long, List<String>>
+
+    fun getExcludedScanlatorsAsFlow(mangaId: Long): Flow<Set<String>>
+
+    suspend fun setExcludedScanlators(mangaId: Long, excludedScanlators: Set<String>)
+
+    suspend fun update(update: MangaUpdate): Boolean = updateManga(update)
+
     suspend fun updateManga(update: MangaUpdate): Boolean
 
+    suspend fun updateMangaRemote(update: MangaRemoteUpdate): Boolean
+
+    suspend fun updateRemote(update: MangaRemoteUpdate): Boolean = updateMangaRemote(update)
+
     suspend fun updateAllManga(mangaUpdates: List<MangaUpdate>): Boolean
+
+    suspend fun updateAll(mangaUpdates: List<MangaUpdate>): Boolean = updateAllManga(mangaUpdates)
 }

@@ -34,10 +34,12 @@ internal fun Modifier.commonClickable(
 )
 
 internal val IndicatorSize = 26.dp
-internal val IndicatorPadding = 2.dp
+internal val IndicatorPadding = 1.dp
+internal val IndicatorWavelength = 7.dp
+internal const val INDICATOR_AMPLITUDE = 0.6f
+internal const val TRACK_ALPHA = 0.25f
 
-// To match composable parameter name when used later
-internal val IndicatorStrokeWidth = IndicatorPadding
+internal val IndicatorStrokeWidth = 2.dp
 
 internal val IndicatorModifier = Modifier
     .size(IndicatorSize)

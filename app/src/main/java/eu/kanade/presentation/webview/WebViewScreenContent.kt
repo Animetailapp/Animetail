@@ -5,18 +5,16 @@ import android.graphics.Bitmap
 import android.os.Message
 import android.webkit.JsPromptResult
 import android.webkit.JsResult
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.ArrowForward
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -48,7 +46,14 @@ import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.util.system.getHtml
 import eu.kanade.tachiyomi.util.system.setDefaultSettings
 import eu.kanade.tachiyomi.util.system.setUserAgent
+import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.launch
+import logcat.LogPriority
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.automirroredrounded.ArrowBack
+import mihon.icons.materialsymbols.automirroredrounded.ArrowForward
+import mihon.icons.materialsymbols.rounded.Close
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
@@ -191,6 +196,17 @@ fun WebViewScreenContent(
                 }
                 return super.shouldOverrideUrlLoading(view, request)
             }
+
+            override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+                // Not handling it kills the app along with the page
+                logcat(LogPriority.ERROR) {
+                    "WebView renderer gone: crashed=${detail.didCrash()}, " +
+                        "priority=${detail.rendererPriorityAtExit()}, url=$currentUrl"
+                }
+                view.context.toast(MR.strings.information_webview_crashed, Toast.LENGTH_LONG)
+                onNavigateUp()
+                return true
+            }
         }
     }
 
@@ -257,13 +273,13 @@ fun WebViewScreenContent(
                         title = currentWindow.state.pageTitle ?: initialTitle,
                         subtitle = currentUrl,
                         navigateUp = popState,
-                        navigationIcon = Icons.Outlined.Close,
+                        navigationIcon = MaterialSymbols.Rounded.Close,
                         actions = {
                             AppBarActions(
                                 listOf(
                                     AppBar.Action(
                                         title = stringResource(MR.strings.action_webview_back),
-                                        icon = Icons.AutoMirrored.Outlined.ArrowBack,
+                                        icon = MaterialSymbols.AutoMirroredRounded.ArrowBack,
                                         onClick = {
                                             if (navigator.canGoBack) {
                                                 navigator.navigateBack()
@@ -273,7 +289,7 @@ fun WebViewScreenContent(
                                     ),
                                     AppBar.Action(
                                         title = stringResource(MR.strings.action_webview_forward),
-                                        icon = Icons.AutoMirrored.Outlined.ArrowForward,
+                                        icon = MaterialSymbols.AutoMirroredRounded.ArrowForward,
                                         onClick = {
                                             if (navigator.canGoForward) {
                                                 navigator.navigateForward()

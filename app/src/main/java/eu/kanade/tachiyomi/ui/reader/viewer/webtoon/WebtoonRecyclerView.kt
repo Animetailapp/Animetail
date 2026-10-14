@@ -3,10 +3,12 @@ package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 import android.animation.AnimatorSet
 import android.animation.ValueAnimator
 import android.content.Context
+import android.content.res.Resources
 import android.util.AttributeSet
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.ViewConfiguration
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.animation.DecelerateInterpolator
 import androidx.core.animation.doOnEnd
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -30,10 +32,10 @@ class WebtoonRecyclerView @JvmOverloads constructor(
     private var halfHeight = 0
     var originalHeight = 0
         private set
-    private var heightSet = false
     private var firstVisibleItemPosition = 0
     private var lastVisibleItemPosition = 0
     private var currentScale = DEFAULT_RATE
+
     var zoomOutDisabled = false
         set(value) {
             field = value
@@ -47,22 +49,39 @@ class WebtoonRecyclerView @JvmOverloads constructor(
     private val listener = GestureListener()
     private val detector = Detector()
 
+    var sidePaddingPercent = 0
+        set(value) {
+            field = value
+            x = getPositionX(x)
+        }
+
+    val sidePaddingPixels: Int
+        get() = (Resources.getSystem().displayMetrics.widthPixels * (sidePaddingPercent / 100f)).toInt()
+
     var doubleTapZoom = true
 
     var tapListener: ((MotionEvent) -> Unit)? = null
     var longTapListener: ((MotionEvent) -> Boolean)? = null
 
+    private var isManuallyScrolling = false
+    private var tapDuringManualScroll = false
+
     override fun onMeasure(widthSpec: Int, heightSpec: Int) {
         halfWidth = MeasureSpec.getSize(widthSpec) / 2
         halfHeight = MeasureSpec.getSize(heightSpec) / 2
-        if (!heightSet) {
+        // While zoomed out the height is set by zooming, not by the window
+        if (layoutParams?.height == MATCH_PARENT) {
             originalHeight = MeasureSpec.getSize(heightSpec)
-            heightSet = true
         }
         super.onMeasure(widthSpec, heightSpec)
+        x = getPositionX(x)
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
+        if (e.actionMasked == MotionEvent.ACTION_DOWN) {
+            tapDuringManualScroll = isManuallyScrolling
+        }
+
         detector.onTouchEvent(e)
         return super.onTouchEvent(e)
     }
@@ -82,13 +101,17 @@ class WebtoonRecyclerView @JvmOverloads constructor(
         val totalItemCount = layoutManager?.itemCount ?: 0
         atLastPosition = visibleItemCount > 0 && lastVisibleItemPosition == totalItemCount - 1
         atFirstPosition = firstVisibleItemPosition == 0
+
+        if (state == SCROLL_STATE_IDLE) {
+            isManuallyScrolling = false
+        }
     }
 
     private fun getPositionX(positionX: Float): Float {
         if (currentScale < 1) {
             return 0f
         }
-        val maxPositionX = halfWidth * (currentScale - 1)
+        val maxPositionX = ((halfWidth - sidePaddingPixels) * currentScale - halfWidth).coerceAtLeast(0f)
         return positionX.coerceIn(-maxPositionX, maxPositionX)
     }
 
@@ -111,7 +134,7 @@ class WebtoonRecyclerView @JvmOverloads constructor(
         isZooming = true
         val animatorSet = AnimatorSet()
         val translationXAnimator = ValueAnimator.ofFloat(fromX, toX)
-        translationXAnimator.addUpdateListener { animation -> x = animation.animatedValue as Float }
+        translationXAnimator.addUpdateListener { animation -> x = getPositionX(animation.animatedValue as Float) }
 
         val translationYAnimator = ValueAnimator.ofFloat(fromY, toY)
         translationYAnimator.addUpdateListener { animation -> y = animation.animatedValue as Float }
@@ -179,6 +202,7 @@ class WebtoonRecyclerView @JvmOverloads constructor(
     private fun setScaleRate(rate: Float) {
         scaleX = rate
         scaleY = rate
+        x = getPositionX(x)
     }
 
     fun onScale(scaleFactor: Float) {
@@ -190,12 +214,13 @@ class WebtoonRecyclerView @JvmOverloads constructor(
 
         setScaleRate(currentScale)
 
-        layoutParams.height = if (currentScale < 1) {
-            (originalHeight / currentScale).toInt()
+        if (currentScale < 1) {
+            layoutParams.height = (originalHeight / currentScale).toInt()
+            halfHeight = layoutParams.height / 2
         } else {
-            originalHeight
+            layoutParams.height = MATCH_PARENT
+            halfHeight = originalHeight / 2
         }
-        halfHeight = layoutParams.height / 2
 
         if (currentScale != DEFAULT_RATE) {
             x = getPositionX(x)
@@ -220,10 +245,16 @@ class WebtoonRecyclerView @JvmOverloads constructor(
         }
     }
 
+    fun onManualScroll() {
+        isManuallyScrolling = true
+    }
+
     inner class GestureListener : GestureDetectorWithLongTap.Listener() {
 
         override fun onSingleTapConfirmed(ev: MotionEvent): Boolean {
-            tapListener?.invoke(ev)
+            if (!tapDuringManualScroll && isAttachedToWindow) {
+                tapListener?.invoke(ev)
+            }
             return false
         }
 
@@ -236,8 +267,8 @@ class WebtoonRecyclerView @JvmOverloads constructor(
             if (!isZooming && doubleTapZoom) {
                 if (scaleX != DEFAULT_RATE) {
                     zoom(currentScale, DEFAULT_RATE, x, 0f, y, 0f)
-                    layoutParams.height = originalHeight
-                    halfHeight = layoutParams.height / 2
+                    layoutParams.height = MATCH_PARENT
+                    halfHeight = originalHeight / 2
                     requestLayout()
                 } else {
                     val toScale = 2f

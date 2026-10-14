@@ -69,6 +69,7 @@ import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.entries.applyFilter
 import tachiyomi.domain.entries.manga.interactor.GetLibraryManga
 import tachiyomi.domain.entries.manga.model.Manga
+import tachiyomi.domain.entries.manga.model.MangaRemoteUpdate
 import tachiyomi.domain.entries.manga.model.MangaUpdate
 import tachiyomi.domain.history.manga.interactor.GetNextChapters
 import tachiyomi.domain.items.chapter.interactor.GetChaptersByMangaId
@@ -363,7 +364,7 @@ class MangaLibraryViewModel(
                 }
 
                 MangaLibrarySort.Type.DateAdded -> {
-                    i1.libraryManga.manga.dateAdded.compareTo(i2.libraryManga.manga.dateAdded)
+                    compareValues(i1.libraryManga.manga.favoriteAt, i2.libraryManga.manga.favoriteAt)
                 }
 
                 MangaLibrarySort.Type.TrackerMean -> {
@@ -621,7 +622,7 @@ class MangaLibraryViewModel(
 // SY -->
     fun resetInfo() {
         state.value.selection.fastForEach { (manga) ->
-            val mangaInfo = MangaUpdate(
+            val mangaInfo = MangaRemoteUpdate(
                 id = manga.id,
                 title = null,
                 author = null,
@@ -629,7 +630,11 @@ class MangaLibraryViewModel(
                 thumbnailUrl = null,
                 description = null,
                 genre = null,
-                status = null,
+                status = manga.ogStatus,
+                updateStrategy = manga.updateStrategy,
+                memo = manga.memo,
+                initialized = manga.initialized,
+                coverLastModified = null,
             )
 
             viewModelScope.launchNonCancellable {
@@ -654,10 +659,9 @@ class MangaLibraryViewModel(
             if (deleteFromLibrary) {
                 val toDelete = mangaToDelete.map {
                     it.removeCovers(coverCache)
-                    MangaUpdate(
-                        favorite = false,
-                        id = it.id,
-                    )
+                    MangaUpdate(it.id) {
+                        favoriteAt = null
+                    }
                 }
                 updateManga.awaitAll(toDelete)
             }
@@ -897,14 +901,17 @@ class MangaLibraryViewModel(
             }
 
             MangaLibraryGroup.BY_SOURCE -> {
+                val sourceMap = runBlocking {
+                    libraryManga.map { it.libraryManga.manga.source }.distinct().associateWith {
+                        sourceManager.getOrStub(it)
+                    }
+                }
                 val sources: List<Long>
                 libraryManga.groupBy { item ->
                     item.libraryManga.manga.source
                 }.also {
                     sources = it.keys
-                        .map {
-                            sourceManager.getOrStub(it)
-                        }
+                        .mapNotNull { sourceMap[it] }
                         .sortedWith(
                             compareBy(String.CASE_INSENSITIVE_ORDER) { it.name.ifBlank { it.id.toString() } },
                         )
@@ -915,8 +922,8 @@ class MangaLibraryViewModel(
                         name = if (it.key == LocalMangaSource.ID) {
                             context.getString(R.string.local_source)
                         } else {
-                            val source = sourceManager.getOrStub(it.key)
-                            source.name.ifBlank { source.id.toString() }
+                            val source = sourceMap[it.key]
+                            source?.name?.ifBlank { source.id.toString() } ?: it.key.toString()
                         },
                         order = sources.indexOf(it.key).takeUnless { it == -1 }?.toLong() ?: Long.MAX_VALUE,
                         flags = 0,

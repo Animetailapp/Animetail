@@ -9,8 +9,6 @@ import eu.kanade.tachiyomi.data.track.MangaTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.MangaSource
-import eu.kanade.tachiyomi.util.lang.convertEpochMillisZone
-import kotlinx.datetime.TimeZone
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withNonCancellableContext
@@ -58,15 +56,11 @@ class AddMangaTracks(
 
                 if (track.startDate <= 0) {
                     val firstReadChapterDate = getHistory.await(mangaId)
-                        .sortedBy { it.readAt }
-                        .firstOrNull()
-                        ?.readAt
+                        .mapNotNull { it.readAt?.takeIf { readAt -> readAt.time > 0 } }
+                        .minOrNull()
 
                     firstReadChapterDate?.let {
-                        val startDate = firstReadChapterDate.time.convertEpochMillisZone(
-                            TimeZone.currentSystemDefault(),
-                            TimeZone.UTC,
-                        )
+                        val startDate = firstReadChapterDate.time
                         track = track.copy(
                             startDate = startDate,
                         )

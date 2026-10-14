@@ -11,8 +11,6 @@ import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
-import eu.kanade.tachiyomi.util.lang.convertEpochMillisZone
-import kotlinx.datetime.TimeZone
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withNonCancellableContext
@@ -100,15 +98,11 @@ class AddAnimeTracks(
 
                         if (track.startDate <= 0) {
                             val firstReadChapterDate = getAnimeHistory.await(anime.id)
-                                .sortedBy { it.seenAt }
-                                .firstOrNull()
-                                ?.seenAt
+                                .mapNotNull { it.seenAt?.takeIf { seenAt -> seenAt.time > 0 } }
+                                .minOrNull()
 
                             firstReadChapterDate?.let {
-                                val startDate = firstReadChapterDate.time.convertEpochMillisZone(
-                                    TimeZone.currentSystemDefault(),
-                                    TimeZone.UTC,
-                                )
+                                val startDate = firstReadChapterDate.time
                                 track = track.copy(
                                     startDate = startDate,
                                 )

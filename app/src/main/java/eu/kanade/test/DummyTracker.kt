@@ -2,10 +2,16 @@ package eu.kanade.test
 
 import android.graphics.Color
 import eu.kanade.tachiyomi.R
+import eu.kanade.tachiyomi.data.track.RefreshResult
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.flowOf
 import okhttp3.OkHttpClient
 
@@ -16,6 +22,8 @@ data class DummyTracker(
     override val supportsPrivateTracking: Boolean = false,
     override val isLoggedIn: Boolean = false,
     override val isLoggedInFlow: Flow<Boolean> = flowOf(false),
+    override val isRefreshingFlow: StateFlow<Boolean> = MutableStateFlow(false),
+    override val refreshResultFlow: SharedFlow<RefreshResult> = MutableSharedFlow<RefreshResult>().asSharedFlow(),
     val valLogoColor: Int = Color.rgb(18, 25, 35),
     val valLogo: Int = R.drawable.ic_tracker_anilist,
     val valStatuses: List<Long> = (1L..6L).toList(),
@@ -36,6 +44,8 @@ data class DummyTracker(
     override fun getCompletionStatus(): Long = valCompletionStatus
 
     override fun getScoreList(): List<String> = valScoreList
+
+    override suspend fun refreshUser() = Unit
 
     override suspend fun login(username: String, password: String) = Unit
 

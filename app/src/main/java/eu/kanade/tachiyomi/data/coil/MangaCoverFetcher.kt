@@ -51,7 +51,7 @@ class MangaCoverFetcher(
     private val coverFileLazy: Lazy<File?>,
     private val customCoverFileLazy: Lazy<File>,
     private val diskCacheKeyLazy: Lazy<String>,
-    private val sourceLazy: Lazy<HttpSource?>,
+    private val getSource: suspend () -> HttpSource?,
     private val callFactoryLazy: Lazy<Call.Factory>,
     private val imageLoader: ImageLoader,
 ) : Fetcher {
@@ -72,7 +72,8 @@ class MangaCoverFetcher(
         // diskCacheKey is thumbnail_url
         val resolvedUrl = url ?: return emptyImageLoader()
         return when (getResourceType(resolvedUrl)) {
-            Type.URL -> httpLoader()
+            // Requests for the same cover at different sizes or through Manga and MangaCover would each download it
+            Type.URL -> concurrentRequests.apply(diskCacheKey) { httpLoader() }
 
             Type.File -> File(resolvedUrl.substringAfter("file://"))
                 .takeIf(File::exists)
@@ -183,8 +184,9 @@ class MangaCoverFetcher(
     }
 
     private suspend fun executeNetworkRequest(): Response {
-        val client = sourceLazy.value?.client ?: callFactoryLazy.value
-        val response = client.newCall(newRequest()).await()
+        val source = getSource()
+        val client = source?.client ?: callFactoryLazy.value
+        val response = client.newCall(newRequest(source)).await()
         if (!response.isSuccessful && response.code != HTTP_NOT_MODIFIED) {
             response.close()
             throw IOException(response.message)
@@ -192,11 +194,11 @@ class MangaCoverFetcher(
         return response
     }
 
-    private fun newRequest(): Request {
+    private fun newRequest(source: HttpSource?): Request {
         val request = Request.Builder().apply {
             url(url!!)
 
-            val sourceHeaders = sourceLazy.value?.headers
+            val sourceHeaders = source?.headers
             if (sourceHeaders != null) {
                 headers(sourceHeaders)
             }
@@ -325,7 +327,7 @@ class MangaCoverFetcher(
                 coverFileLazy = lazy { coverCache.getCoverFile(data.thumbnailUrl) },
                 customCoverFileLazy = lazy { coverCache.getCustomCoverFile(data.id) },
                 diskCacheKeyLazy = lazy { imageLoader.components.key(data, options)!! },
-                sourceLazy = lazy { sourceManager.get(data.source) as? HttpSource },
+                getSource = { sourceManager.get(data.source) as? HttpSource },
                 callFactoryLazy = callFactoryLazy,
                 imageLoader = imageLoader,
             )
@@ -346,7 +348,7 @@ class MangaCoverFetcher(
                 coverFileLazy = lazy { coverCache.getCoverFile(data.url) },
                 customCoverFileLazy = lazy { coverCache.getCustomCoverFile(data.mangaId) },
                 diskCacheKeyLazy = lazy { imageLoader.components.key(data, options)!! },
-                sourceLazy = lazy { sourceManager.get(data.sourceId) as? HttpSource },
+                getSource = { sourceManager.get(data.sourceId) as? HttpSource },
                 callFactoryLazy = callFactoryLazy,
                 imageLoader = imageLoader,
             )
@@ -360,6 +362,8 @@ class MangaCoverFetcher(
         private val CACHE_CONTROL_NO_NETWORK_NO_CACHE = CacheControl.Builder().noCache().onlyIfCached().build()
 
         private const val HTTP_NOT_MODIFIED = 304
+
+        private val concurrentRequests = DeDupeConcurrentRequests<FetchResult>()
 
         // 1x1 transparent PNG to avoid hard failures when a local item has no usable cover.
         private val EMPTY_PNG_BYTES = byteArrayOf(

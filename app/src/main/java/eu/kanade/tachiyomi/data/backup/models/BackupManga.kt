@@ -3,7 +3,8 @@ package eu.kanade.tachiyomi.data.backup.models
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import tachiyomi.data.MemoColumnAdapter
+import mihon.core.common.extensions.JsonObjectEmptyBytes
+import mihon.core.common.extensions.toJsonObject
 import tachiyomi.domain.entries.manga.model.CustomMangaInfo
 import tachiyomi.domain.entries.manga.model.Manga
 
@@ -73,18 +74,22 @@ data class BackupManga(
             ogStatus = this@BackupManga.status.toLong(),
             // SY <--
             thumbnailUrl = this@BackupManga.thumbnailUrl,
-            favorite = this@BackupManga.favorite,
             source = this@BackupManga.source,
-            dateAdded = this@BackupManga.dateAdded,
+            // For libraries older than dateAdded, the favorite timestamp is the only record of when
+            // an entry was added. It was written by a trigger in seconds, unlike dateAdded.
+            favoriteAt = if (this@BackupManga.favorite) {
+                this@BackupManga.dateAdded.takeIf { it != 0L }
+                    ?: this@BackupManga.favoriteModifiedAt?.times(1000)
+                    ?: 0L
+            } else {
+                null
+            },
             viewerFlags = (this@BackupManga.viewer_flags ?: this@BackupManga.viewer).toLong(),
             chapterFlags = this@BackupManga.chapterFlags.toLong(),
             updateStrategy = this@BackupManga.updateStrategy,
-            lastModifiedAt = this@BackupManga.lastModifiedAt,
-            favoriteModifiedAt = this@BackupManga.favoriteModifiedAt,
-            version = this@BackupManga.version,
             notes = this@BackupManga.notes,
             initialized = this@BackupManga.initialized,
-            memo = MemoColumnAdapter.decode(this@BackupManga.memo),
+            memo = this@BackupManga.memo.toJsonObject(),
         )
     }
 

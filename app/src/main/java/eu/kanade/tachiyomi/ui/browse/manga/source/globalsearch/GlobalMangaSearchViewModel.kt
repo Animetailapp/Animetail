@@ -52,7 +52,7 @@ class GlobalMangaSearchViewModel(
         }
     }
 
-    override fun getEnabledSources(): List<CatalogueSource> {
+    override suspend fun getEnabledSources(): List<CatalogueSource> {
         return super.getEnabledSources()
             .filter { state.value.sourceFilter != MangaSourceFilter.PinnedOnly || "${it.id}" in pinnedSources }
     }

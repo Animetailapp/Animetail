@@ -24,9 +24,9 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
-import eu.kanade.core.util.ifMangaSourcesLoaded
 import eu.kanade.domain.entries.manga.model.hasCustomCover
 import eu.kanade.domain.entries.manga.model.toSManga
+import eu.kanade.presentation.browse.RemoveEntryDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
 import eu.kanade.presentation.entries.EditCoverAction
@@ -83,11 +83,6 @@ class MangaScreen(
 
     @Composable
     override fun Content() {
-        if (!ifMangaSourcesLoaded()) {
-            LoadingScreen()
-            return
-        }
-
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
@@ -182,6 +177,16 @@ class MangaScreen(
                     onConfirm = { include, _ ->
                         viewModel.moveMangaToCategoriesAndAddToLibrary(dialog.manga, include)
                     },
+                )
+            }
+
+            MangaViewModel.Dialog.RemoveFromLibrary -> {
+                RemoveEntryDialog(
+                    onDismissRequest = onDismissRequest,
+                    onConfirm = {
+                        if (successState.manga.favorite) viewModel.toggleFavorite()
+                    },
+                    entryToRemove = successState.manga.title,
                 )
             }
 
@@ -347,8 +352,13 @@ class MangaScreen(
             navigateUp = navigator::pop,
             onChapterClicked = { openChapter(context, it) },
             onDownloadChapter = viewModel::runChapterDownloadActions.takeIf { !successState.source.isLocalOrStub() },
+            downloadProgressProvider = viewModel::getDownloadProgress,
             onAddToLibraryClicked = {
-                viewModel.toggleFavorite()
+                if (successState.manga.favorite) {
+                    viewModel.showRemoveFromLibraryDialog()
+                } else {
+                    viewModel.toggleFavorite()
+                }
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             },
             onWebViewClicked = {

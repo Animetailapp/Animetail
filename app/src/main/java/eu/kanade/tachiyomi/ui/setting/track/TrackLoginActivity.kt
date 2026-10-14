@@ -1,14 +1,22 @@
 package eu.kanade.tachiyomi.ui.setting.track
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import eu.kanade.tachiyomi.data.track.comick.ComickMissingScopesException
+import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import logcat.LogPriority
 import tachiyomi.core.common.util.lang.launchIO
+import tachiyomi.core.common.util.system.logcat
 
 class TrackLoginActivity : BaseOAuthLoginActivity() {
 
     override fun handleResult(data: Uri?) {
         when (data?.host) {
             "anilist-auth" -> handleAnilist(data)
+            "comick-auth" -> handleComick(data)
             "bangumi-auth" -> handleBangumi(data)
             "mangabaka-auth" -> handleMangaBaka(data)
             "myanimelist-auth" -> handleMyAnimeList(data)
@@ -30,6 +38,36 @@ class TrackLoginActivity : BaseOAuthLoginActivity() {
             }
         } else {
             trackerManager.aniList.logout()
+            returnToSettings()
+        }
+    }
+
+    private fun handleComick(data: Uri) {
+        val code = data.getQueryParameter("code")
+        val state = data.getQueryParameter("state")
+        if (state == null) {
+            logcat(LogPriority.WARN) { "Did not receive state parameter from Comick OAuth" }
+            returnToSettings()
+            return
+        }
+        if (code != null) {
+            if (!trackerManager.comick.verifyOAuthState(state)) {
+                logcat(LogPriority.WARN) { "Received wrong OAuth state back from Comick" }
+                returnToSettings()
+                return
+            }
+            lifecycleScope.launchIO {
+                try {
+                    trackerManager.comick.login(code)
+                } catch (e: ComickMissingScopesException) {
+                    withContext(Dispatchers.Main) {
+                        this@TrackLoginActivity.toast(e.message, Toast.LENGTH_LONG)
+                    }
+                }
+                returnToSettings()
+            }
+        } else {
+            trackerManager.comick.logout()
             returnToSettings()
         }
     }

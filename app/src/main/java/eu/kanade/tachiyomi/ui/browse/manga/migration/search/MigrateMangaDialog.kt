@@ -328,14 +328,12 @@ internal class MigrateMangaDialogScreenModel(
         }
 
         updateManga.await(
-            MangaUpdate(
-                id = newManga.id,
-                favorite = true,
-                chapterFlags = oldManga.chapterFlags,
-                viewerFlags = oldManga.viewerFlags,
-                dateAdded = if (replace) oldManga.dateAdded else Instant.now().toEpochMilli(),
-                notes = if (migrateNotes) oldManga.notes else null,
-            ),
+            MangaUpdate(newManga.id) {
+                favoriteAt = oldManga.favoriteAt?.takeIf { replace } ?: java.time.Instant.now().toEpochMilli()
+                chapterFlags = oldManga.chapterFlags
+                viewerFlags = oldManga.viewerFlags
+                if (migrateNotes) notes = oldManga.notes
+            },
         )
     }
 

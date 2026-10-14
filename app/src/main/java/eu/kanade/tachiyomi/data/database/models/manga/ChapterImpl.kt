@@ -30,10 +30,6 @@ class ChapterImpl : Chapter {
 
     override var source_order: Int = 0
 
-    override var last_modified: Long = 0
-
-    override var version: Long = 0
-
     override var date_upload_override: Long = 0
     override var memo: JsonObject = JsonObject(emptyMap())
 

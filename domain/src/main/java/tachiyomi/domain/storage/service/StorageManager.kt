@@ -27,7 +27,7 @@ import java.io.File
 @SingleIn(AppScope::class)
 class StorageManager(
     private val context: Context,
-    scope: CoroutineScope,
+    @mihon.core.metro.AppCoroutineScope private val scope: CoroutineScope,
     storagePreferences: StoragePreferences,
     private val folderProvider: FolderProvider,
 ) {

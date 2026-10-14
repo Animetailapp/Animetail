@@ -1,0 +1,32 @@
+query AniListGetAnimeMetadata(
+  $anime_id: Int!,
+) {
+  Media (id: $anime_id, type: ANIME) {
+    id
+    title {
+      userPreferred
+    }
+    coverImage {
+      large
+    }
+    description
+    studios {
+      edges {
+        isMain
+        node {
+          name
+        }
+      }
+    }
+    staff {
+      edges {
+        role
+        node {
+          name {
+            userPreferred
+          }
+        }
+      }
+    }
+  }
+}

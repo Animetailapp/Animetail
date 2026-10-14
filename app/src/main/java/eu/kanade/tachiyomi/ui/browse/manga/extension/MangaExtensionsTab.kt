@@ -33,7 +33,7 @@ fun mangaExtensionsTab(
     val context = LocalContext.current
 
     val updatesCount by extensionsViewModel.updatesCount.collectAsStateWithLifecycle()
-    var privateExtensionToUninstall by remember { mutableStateOf<MangaExtension?>(null) }
+    var privateExtensionToUninstall by remember { mutableStateOf<MangaExtension.Installed?>(null) }
 
     return TabContent(
         titleRes = AYMR.strings.label_manga_extensions,
@@ -62,11 +62,9 @@ fun mangaExtensionsTab(
                 searchQuery = state.searchQuery,
                 onLongClickItem = { extension ->
                     when (extension) {
-                        is MangaExtension.Available -> extensionsViewModel.installExtension(
-                            extension,
-                        )
+                        is MangaExtension.Available -> extensionsViewModel.installExtension(extension)
 
-                        else -> {
+                        is MangaExtension.Installed -> {
                             if (context.isPackageInstalled(extension.pkgName)) {
                                 extensionsViewModel.uninstallExtension(extension)
                             } else {

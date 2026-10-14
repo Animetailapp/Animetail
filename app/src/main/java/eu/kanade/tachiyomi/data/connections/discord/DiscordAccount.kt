@@ -9,4 +9,6 @@ data class DiscordAccount(
     val avatarUrl: String?,
     val token: String,
     val isActive: Boolean = false,
+    val refreshToken: String? = null,
+    val expiresAt: Long = 0L,
 )

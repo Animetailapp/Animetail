@@ -16,6 +16,8 @@ interface EpisodeRepository {
 
     suspend fun getEpisodeByAnimeId(animeId: Long): List<Episode>
 
+    suspend fun getEpisodesByAnimeIds(animeIds: List<Long>): Map<Long, List<Episode>>
+
     suspend fun getBookmarkedEpisodesByAnimeId(animeId: Long): List<Episode>
 
     suspend fun getEpisodeById(id: Long): Episode?

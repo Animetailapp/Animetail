@@ -35,7 +35,10 @@ object Migrator {
         result = null
     }
 
-    fun awaitAndRelease(): Boolean = runBlocking {
-        await().also { release() }
+    val isRunning: Boolean
+        get() = result?.isCompleted == false
+
+    suspend fun awaitAndRelease(): Boolean {
+        return await().also { release() }
     }
 }

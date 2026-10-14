@@ -37,9 +37,6 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
@@ -85,6 +82,7 @@ import eu.kanade.presentation.components.AppStateBanners
 import eu.kanade.presentation.components.DownloadedOnlyBannerBackgroundColor
 import eu.kanade.presentation.components.IncognitoModeBannerBackgroundColor
 import eu.kanade.presentation.components.IndexingBannerBackgroundColor
+import eu.kanade.presentation.more.AppMigratingScreen
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.presentation.more.settings.screen.data.RestoreBackupScreen
 import eu.kanade.presentation.util.AssistContentScreen
@@ -104,8 +102,8 @@ import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.player.service.HttpServerService
 import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
 import eu.kanade.tachiyomi.data.updater.RELEASE_URL
-import eu.kanade.tachiyomi.extension.anime.api.AnimeExtensionApi
-import eu.kanade.tachiyomi.extension.manga.api.MangaExtensionApi
+import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
+import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
@@ -128,6 +126,8 @@ import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.util.system.updaterEnabled
 import eu.kanade.tachiyomi.util.view.setComposeContent
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
@@ -143,7 +143,11 @@ import mihon.app.di.AppGraph
 import mihon.app.di.appGraph
 import mihon.core.metro.metroGraph
 import mihon.core.migration.Migrator
+import mihon.domain.database.repository.DatabaseRepository
 import mihon.feature.support.SupportUsScreen
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.automirroredrounded.OpenInNew
+import mihon.icons.materialsymbols.rounded.VolunteerActivism
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
@@ -162,6 +166,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
+import kotlin.time.TimeSource
 import kotlin.time.times
 
 class MainActivity : BaseActivity() {
@@ -178,13 +183,18 @@ class MainActivity : BaseActivity() {
 
     @Inject lateinit var chapterCache: ChapterCache
 
+    @Inject lateinit var databaseRepository: DatabaseRepository
+
+    private val isAppMigrating = MutableStateFlow(Migrator.isRunning)
+    private val didMigration = MutableStateFlow(false)
+
     @Inject lateinit var getAnimeIncognitoState: GetAnimeIncognitoState
 
     @Inject lateinit var getMangaIncognitoState: GetMangaIncognitoState
 
-    @Inject lateinit var animeExtensionApi: AnimeExtensionApi
+    @Inject lateinit var animeExtensionManager: AnimeExtensionManager
 
-    @Inject lateinit var mangaExtensionApi: MangaExtensionApi
+    @Inject lateinit var mangaExtensionManager: MangaExtensionManager
 
     // To be checked by splash screen. If true then splash screen will be removed.
     var ready = false
@@ -213,7 +223,13 @@ class MainActivity : BaseActivity() {
             com.discord.socialsdk.DiscordSocialSdkInit.setEngineActivity(this)
         } catch (_: Exception) {}
 
-        val didMigration = Migrator.awaitAndRelease()
+        lifecycleScope.launch {
+            didMigration.value = Migrator.awaitAndRelease()
+            isAppMigrating.value = false
+        }
+        // Uncaught on purpose: a failed database migration otherwise leaves the migrating screen up for good,
+        // while the crash screen tells what went wrong and lets the logs be shared
+        lifecycleScope.launch { databaseRepository.awaitOpen() }
 
         // Do not let the launcher create a new activity http://stackoverflow.com/questions/16283079
         if (!isTaskRoot) {
@@ -227,10 +243,31 @@ class MainActivity : BaseActivity() {
         // <-- AM (DISCORD)
 
         setComposeContent {
+            val appMigrating by isAppMigrating.collectAsState()
+            val databaseMigrating by databaseRepository.isMigrating.collectAsState()
+            val migrating = appMigrating || databaseMigrating
+            var migratingSince by remember { mutableStateOf(if (migrating) TimeSource.Monotonic.markNow() else null) }
+            LaunchedEffect(migrating) {
+                val since = migratingSince
+                if (migrating) {
+                    if (since == null) migratingSince = TimeSource.Monotonic.markNow()
+                } else if (since != null) {
+                    // A migration that finishes right away would otherwise only flash the screen
+                    delay(MIGRATING_SCREEN_MIN_DURATION - since.elapsedNow())
+                    migratingSince = null
+                }
+            }
+            if (migrating || migratingSince != null) {
+                AppMigratingScreen()
+                // Release the splash screen so the reason for the wait shows
+                LaunchedEffect(Unit) { ready = true }
+                return@setComposeContent
+            }
+
             val context = LocalContext.current
 
-            var incognito by remember { mutableStateOf(getMangaIncognitoState.await(null)) }
-            var incognitoAnime by remember { mutableStateOf(getAnimeIncognitoState.await(null)) }
+            var incognito by remember { mutableStateOf(false) }
+            var incognitoAnime by remember { mutableStateOf(false) }
             val downloadOnly by preferences.downloadedOnly.collectAsState()
             val indexing by downloadCache.isInitializing.collectAsState()
             val indexingAnime by animeDownloadCache.isInitializing.collectAsState()
@@ -370,7 +407,8 @@ class MainActivity : BaseActivity() {
                 ShowDonationCampaign()
             }
 
-            var showChangelog by remember { mutableStateOf(didMigration && !BuildConfig.DEBUG) }
+            val didMigrate by didMigration.collectAsState()
+            var showChangelog by remember(didMigrate) { mutableStateOf(didMigrate && !BuildConfig.DEBUG) }
             if (showChangelog) {
                 AlertDialog(
                     onDismissRequest = { showChangelog = false },
@@ -424,6 +462,16 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    override fun reportFullyDrawn() {
+        try {
+            super.reportFullyDrawn()
+        } catch (e: SecurityException) {
+            // Some Samsung Android 9 to 11 builds deny the platform's fully drawn broadcast
+            // and the report only feeds startup metrics, so it shouldn't crash the app
+            logcat(LogPriority.WARN, e)
+        }
+    }
+
     override fun onProvideAssistContent(outContent: AssistContent) {
         super.onProvideAssistContent(outContent)
         when (val screen = navigator?.lastItem) {
@@ -473,12 +521,8 @@ class MainActivity : BaseActivity() {
 
         // Extensions updates
         LaunchedEffect(Unit) {
-            try {
-                animeExtensionApi.checkForUpdates(context)
-                mangaExtensionApi.checkForUpdates(context)
-            } catch (e: Exception) {
-                logcat(LogPriority.ERROR, e)
-            }
+            animeExtensionManager.checkForUpdates()
+            mangaExtensionManager.checkForUpdates()
         }
     }
 
@@ -554,7 +598,7 @@ class MainActivity : BaseActivity() {
                             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
                         ) {
                             Icon(
-                                imageVector = Icons.Default.VolunteerActivism,
+                                imageVector = MaterialSymbols.Rounded.VolunteerActivism,
                                 contentDescription = null,
                             )
                             Text(
@@ -583,7 +627,7 @@ class MainActivity : BaseActivity() {
                                     text = stringResource(MR.strings.donationCampaign_contactPlatform),
                                 )
                                 Icon(
-                                    imageVector = Icons.AutoMirrored.Default.OpenInNew,
+                                    imageVector = MaterialSymbols.AutoMirroredRounded.OpenInNew,
                                     contentDescription = null,
                                 )
                             }
@@ -908,3 +952,5 @@ class MainActivity : BaseActivity() {
 private const val SPLASH_MIN_DURATION = 500 // ms
 private const val SPLASH_MAX_DURATION = 5000 // ms
 private const val SPLASH_EXIT_ANIM_DURATION = 400L // ms
+
+private val MIGRATING_SCREEN_MIN_DURATION = 1.seconds

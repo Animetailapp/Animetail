@@ -1,7 +1,5 @@
 package eu.kanade.tachiyomi.ui.browse.manga.migration.search
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SmallExtendedFloatingActionButton
 import androidx.compose.material3.SnackbarHost
@@ -20,7 +18,6 @@ import androidx.compose.ui.platform.LocalUriHandler
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
-import eu.kanade.core.util.ifMangaSourcesLoaded
 import eu.kanade.presentation.browse.manga.BrowseSourceContent
 import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.presentation.util.Screen
@@ -32,6 +29,8 @@ import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import kotlinx.coroutines.launch
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.FilterList
 import mihon.presentation.core.util.collectAsLazyPagingItems
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.i18n.MR
@@ -48,11 +47,6 @@ data class MangaSourceSearchScreen(
 
     @Composable
     override fun Content() {
-        if (!ifMangaSourcesLoaded()) {
-            LoadingScreen()
-            return
-        }
-
         val uriHandler = LocalUriHandler.current
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
@@ -62,6 +56,12 @@ data class MangaSourceSearchScreen(
                 create(sourceId = sourceId, listingQuery = query)
             }
         val state by viewModel.state.collectAsState()
+
+        val source = state.source
+        if (source == null) {
+            LoadingScreen()
+            return
+        }
 
         val snackbarHostState = remember { SnackbarHostState() }
 
@@ -78,7 +78,7 @@ data class MangaSourceSearchScreen(
             floatingActionButton = {
                 SmallExtendedFloatingActionButton(
                     text = { Text(text = stringResource(MR.strings.action_filter)) },
-                    icon = { Icon(Icons.Outlined.FilterList, contentDescription = null) },
+                    icon = { Icon(MaterialSymbols.Rounded.FilterList, contentDescription = null) },
                     onClick = viewModel::openFilterSheet,
                     modifier = Modifier.animateFloatingActionButton(
                         visible = state.filters.isNotEmpty(),
@@ -92,19 +92,19 @@ data class MangaSourceSearchScreen(
                 viewModel.setDialog(BrowseMangaSourceViewModel.Dialog.Migrate(newManga = it, oldManga = oldManga))
             }
             BrowseSourceContent(
-                source = viewModel.source,
+                source = source,
                 mangaList = viewModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
                 columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
                 displayMode = viewModel.displayMode,
                 snackbarHostState = snackbarHostState,
                 contentPadding = paddingValues,
                 onWebViewClick = {
-                    val source = viewModel.source as? HttpSource ?: return@BrowseSourceContent
+                    val httpSource = source as? HttpSource ?: return@BrowseSourceContent
                     navigator.push(
                         WebViewScreen(
-                            url = source.baseUrl,
-                            initialTitle = source.name,
-                            sourceId = source.id,
+                            url = httpSource.getHomeUrl(),
+                            initialTitle = httpSource.name,
+                            sourceId = httpSource.id,
                         ),
                     )
                 },

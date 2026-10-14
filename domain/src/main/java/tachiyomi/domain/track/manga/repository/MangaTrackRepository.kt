@@ -21,7 +21,11 @@ interface MangaTrackRepository {
 
     suspend fun delete(mangaId: Long, trackerId: Long)
 
-    suspend fun insertManga(track: MangaTrack)
+    suspend fun upsertManga(track: MangaTrack)
 
-    suspend fun insertAllManga(tracks: List<MangaTrack>)
+    suspend fun upsertAllManga(tracks: List<MangaTrack>)
+
+    suspend fun insertManga(track: MangaTrack) = upsertManga(track)
+
+    suspend fun insertAllManga(tracks: List<MangaTrack>) = upsertAllManga(tracks)
 }

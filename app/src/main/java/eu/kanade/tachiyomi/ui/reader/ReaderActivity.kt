@@ -8,7 +8,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
-import android.graphics.Color
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
@@ -44,13 +43,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
-import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.google.android.material.elevation.SurfaceColors
 import com.google.android.material.transition.platform.MaterialContainerTransform
-import com.hippo.unifile.UniFile
 import dev.chrisbanes.insetter.applyInsetter
 import dev.zacsweers.metro.Inject
-import eu.kanade.core.util.ifMangaSourcesLoaded
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.reader.DisplayRefreshHost
@@ -124,7 +120,6 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.util.collectAsState
-import java.io.ByteArrayOutputStream
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LargeClass")
@@ -411,11 +406,7 @@ class ReaderActivity : BaseActivity() {
                 )
             }
 
-            if (!ifMangaSourcesLoaded()) {
-                return@setComposeContent
-            }
-
-            val isHttpSource = viewModel.getSource() is HttpSource
+            val isHttpSource = state.source is HttpSource
             val isFullscreen by readerPreferences.fullscreen.collectAsState()
             val flashOnPageChange by readerPreferences.flashOnPageChange.collectAsState()
 

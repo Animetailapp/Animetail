@@ -34,6 +34,7 @@ class ChapterLoader(
     private val source: MangaSource,
     private val readerPreferences: ReaderPreferences,
     private val sourcePreferences: SourcePreferences,
+    private val canLoadAhead: () -> Boolean = { true },
 ) {
 
     /**
@@ -85,13 +86,12 @@ class ChapterLoader(
      */
     private fun getPageLoader(chapter: ReaderChapter): PageLoader {
         val dbChapter = chapter.chapter
-        val isDownloaded = downloadManager.isChapterDownloaded(
+        val isDownloaded = downloadManager.isChapterDownloadedOnDisk(
             chapterName = dbChapter.name,
             chapterScanlator = dbChapter.scanlator,
             chapterUrl = dbChapter.url,
             mangaTitle = manga.ogTitle,
-            sourceId = manga.source,
-            skipCache = true,
+            source = source,
         )
         return when {
             isDownloaded -> DownloadPageLoader(
@@ -117,6 +117,7 @@ class ChapterLoader(
                 chapterCache,
                 readerPreferences,
                 sourcePreferences,
+                canLoadAhead,
             )
 
             source is StubMangaSource -> error(

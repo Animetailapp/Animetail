@@ -33,6 +33,7 @@ fun MangaHistoryScreen(
     searchQuery: String? = null,
 ) {
     Scaffold(
+
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { contentPadding ->
         state.list.let {

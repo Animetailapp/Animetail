@@ -7,9 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material3.Badge
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +29,9 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.YearMonth
 import mihon.feature.upcoming.components.calendar.Calendar
 import mihon.feature.upcoming.manga.components.UpcomingItem
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.automirroredrounded.Help
+import mihon.icons.materialsymbols.rounded.FilterList
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
@@ -110,13 +110,13 @@ private fun UpcomingToolbar(
                 listOf(
                     AppBar.Action(
                         title = stringResource(MR.strings.action_filter),
-                        icon = Icons.Outlined.FilterList,
+                        icon = MaterialSymbols.Rounded.FilterList,
                         iconTint = if (hasFilters) MaterialTheme.colorScheme.active else LocalContentColor.current,
                         onClick = onClickFilter,
                     ),
                     AppBar.Action(
                         title = stringResource(MR.strings.upcoming_guide),
-                        icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                        icon = MaterialSymbols.AutoMirroredRounded.Help,
                         onClick = { uriHandler.openUri(Constants.URL_HELP_UPCOMING) },
                     ),
                 ),

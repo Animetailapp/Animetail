@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.browse.anime.extension
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,7 +34,7 @@ fun animeExtensionsTab(
     val context = LocalContext.current
 
     val updatesCount by extensionsViewModel.updatesCount.collectAsStateWithLifecycle()
-    var privateExtensionToUninstall by remember { mutableStateOf<AnimeExtension?>(null) }
+    var privateExtensionToUninstall by remember { mutableStateOf<AnimeExtension.Installed?>(null) }
 
     return TabContent(
         titleRes = AYMR.strings.label_anime_extensions,
@@ -56,17 +57,19 @@ fun animeExtensionsTab(
         content = { contentPadding, _ ->
             val state by extensionsViewModel.state.collectAsStateWithLifecycle()
 
+            BackHandler(enabled = state.searchQuery != null) {
+                extensionsViewModel.search(null)
+            }
+
             AnimeExtensionScreen(
                 state = state,
                 contentPadding = contentPadding,
                 searchQuery = state.searchQuery,
                 onLongClickItem = { extension ->
                     when (extension) {
-                        is AnimeExtension.Available -> extensionsViewModel.installExtension(
-                            extension,
-                        )
+                        is AnimeExtension.Available -> extensionsViewModel.installExtension(extension)
 
-                        else -> {
+                        is AnimeExtension.Installed -> {
                             if (context.isPackageInstalled(extension.pkgName)) {
                                 extensionsViewModel.uninstallExtension(extension)
                             } else {

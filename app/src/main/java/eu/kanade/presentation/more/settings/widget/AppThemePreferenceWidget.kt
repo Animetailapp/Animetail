@@ -21,8 +21,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -48,13 +46,13 @@ import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.tachiyomi.util.system.DeviceUtil
 import eu.kanade.tachiyomi.util.system.isDynamicColorAvailable
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.roundedfilled.CheckCircle
 import tachiyomi.core.common.preference.InMemoryPreferenceStore
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.secondaryItemAlpha
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.fullType
 
 @Composable
 internal fun AppThemePreferenceWidget(
@@ -175,7 +173,7 @@ fun AppThemePreviewItem(
             ) {
                 if (selected) {
                     Icon(
-                        imageVector = Icons.Filled.CheckCircle,
+                        imageVector = MaterialSymbols.RoundedFilled.CheckCircle,
                         contentDescription = stringResource(MR.strings.selected),
                         tint = MaterialTheme.colorScheme.primary,
                     )
@@ -261,7 +259,6 @@ fun AppThemePreviewItem(
 @Composable
 private fun AppThemesListPreview() {
     var appTheme by remember { mutableStateOf(AppTheme.DEFAULT) }
-    Injekt.addSingleton(fullType<UiPreferences>(), UiPreferences(InMemoryPreferenceStore()))
     TachiyomiTheme(appTheme = appTheme) {
         Surface {
             AppThemesList(

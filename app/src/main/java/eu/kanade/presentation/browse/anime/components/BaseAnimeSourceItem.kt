@@ -3,12 +3,14 @@ package eu.kanade.presentation.browse.anime.components
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.browse.BaseBrowseItem
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import tachiyomi.domain.source.anime.model.AnimeSource
@@ -40,7 +42,7 @@ fun BaseAnimeSourceItem(
 }
 
 private val defaultIcon: @Composable RowScope.(AnimeSource) -> Unit = { source ->
-    AnimeSourceIcon(source = source)
+    AnimeSourceIcon(source = source, modifier = Modifier.size(48.dp))
 }
 
 private val defaultContent: @Composable RowScope.(AnimeSource, String?) -> Unit = { source, sourceLangString ->

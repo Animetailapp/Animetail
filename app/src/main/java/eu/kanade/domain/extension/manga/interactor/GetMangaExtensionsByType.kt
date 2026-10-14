@@ -15,36 +15,29 @@ class GetMangaExtensionsByType(
 ) {
 
     fun subscribe(): Flow<MangaExtensions> {
-        val showNsfwSources = preferences.showNsfwSource.get()
+        val enabledContentWarnings = preferences.enabledContentWarnings.get()
 
         return combine(
             preferences.enabledLanguages.changes(),
             preferences.disabledRepos.changes(),
-            extensionManager.installedExtensionsFlow,
-            extensionManager.untrustedExtensionsFlow,
+            extensionManager.loadedExtensionsFlow,
+            extensionManager.notLoadedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
-        ) { enabledLanguages, disabledRepos, _installed, _untrusted, _available ->
-            val (updates, installed) = _installed
-                .filter { (showNsfwSources || !it.isNsfw) }
-                .sortedWith(
-                    compareBy<MangaExtension.Installed> { !it.isObsolete }
-                        .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name },
-                )
-                .partition { it.hasUpdate }
+        ) { enabledLanguages, disabledRepos, _loaded, _notLoaded, _available ->
+            val byName = compareBy<MangaExtension, String>(String.CASE_INSENSITIVE_ORDER) { it.name }
 
-            val untrusted = _untrusted
-                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+            val (loadedUpdates, loaded) = _loaded.partition { it.hasUpdate }
+            val (notLoadedUpdates, notLoaded) = _notLoaded.partition { it.hasUpdate }
+
+            val updates = (loadedUpdates + notLoadedUpdates).sortedWith(byName)
 
             val available = _available
                 .filter { extension ->
                     extension.store.indexUrl !in disabledRepos &&
-                        _installed.none {
-                            it.pkgName == extension.pkgName
+                        (_loaded + _notLoaded).none {
+                            it.pkgName == extension.pkgName && extension.store.signingKey in it.signatures
                         } &&
-                        _untrusted.none {
-                            it.pkgName == extension.pkgName
-                        } &&
-                        (showNsfwSources || !extension.isNsfw)
+                        extension.contentWarning in enabledContentWarnings
                 }
                 .flatMap { ext ->
                     if (ext.sources.isEmpty()) {
@@ -60,9 +53,17 @@ class GetMangaExtensionsByType(
                             )
                         }
                 }
-                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+                .sortedWith(
+                    compareBy<MangaExtension.Available, String>(String.CASE_INSENSITIVE_ORDER) { it.name }
+                        .thenBy { it.store.signingKey },
+                )
 
-            MangaExtensions(updates, installed, available, untrusted)
+            MangaExtensions(
+                updates = updates,
+                loaded = loaded.sortedWith(compareBy<MangaExtension.Loaded> { !it.isObsolete }.then(byName)),
+                available = available,
+                notLoaded = notLoaded.sortedWith(byName),
+            )
         }
     }
 }

@@ -8,12 +8,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,15 +23,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.components.ArrowModifier
 import eu.kanade.presentation.components.DropdownMenu
+import eu.kanade.presentation.components.INDICATOR_AMPLITUDE
 import eu.kanade.presentation.components.IndicatorModifier
 import eu.kanade.presentation.components.IndicatorSize
 import eu.kanade.presentation.components.IndicatorStrokeWidth
+import eu.kanade.presentation.components.IndicatorWavelength
+import eu.kanade.presentation.components.TRACK_ALPHA
 import eu.kanade.presentation.components.commonClickable
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
@@ -141,39 +146,38 @@ private fun DownloadingIndicator(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        val arrowColor: Color
-        val strokeColor = MaterialTheme.colorScheme.onSurfaceVariant
+        val color = MaterialTheme.colorScheme.onSurfaceVariant
+        val trackColor = color.copy(alpha = TRACK_ALPHA)
+        val stroke = Stroke(width = with(LocalDensity.current) { IndicatorStrokeWidth.toPx() }, cap = StrokeCap.Round)
         val downloadProgress = downloadProgressProvider()
         val indeterminate = downloadState == AnimeDownload.State.QUEUE ||
             (downloadState == AnimeDownload.State.DOWNLOADING && downloadProgress == 0)
         if (indeterminate) {
-            arrowColor = strokeColor
-            CircularProgressIndicator(
+            CircularWavyProgressIndicator(
                 modifier = IndicatorModifier,
-                color = strokeColor,
-                strokeWidth = IndicatorStrokeWidth,
+                color = color,
                 trackColor = Color.Transparent,
-                strokeCap = StrokeCap.Butt,
+                stroke = stroke,
+                trackStroke = stroke,
+                // Only an active download waves, so a queued one reads as waiting
+                amplitude = if (downloadState == AnimeDownload.State.DOWNLOADING) INDICATOR_AMPLITUDE else 0f,
+                wavelength = IndicatorWavelength,
             )
         } else {
             val animatedProgress by animateFloatAsState(
                 targetValue = downloadProgress / 100f,
-                animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
+                animationSpec = WavyProgressIndicatorDefaults.ProgressAnimationSpec,
                 label = "progress",
             )
-            arrowColor = if (animatedProgress < 0.5f) {
-                strokeColor
-            } else {
-                MaterialTheme.colorScheme.background
-            }
-            CircularProgressIndicator(
+            CircularWavyProgressIndicator(
                 progress = { animatedProgress },
                 modifier = IndicatorModifier,
-                color = strokeColor,
-                strokeWidth = IndicatorSize / 2,
-                trackColor = Color.Transparent,
-                strokeCap = StrokeCap.Butt,
-                gapSize = 0.dp,
+                color = color,
+                trackColor = trackColor,
+                stroke = stroke,
+                trackStroke = stroke,
+                amplitude = { WavyProgressIndicatorDefaults.indicatorAmplitude(it) * INDICATOR_AMPLITUDE },
+                wavelength = IndicatorWavelength,
             )
         }
         DropdownMenu(expanded = isMenuExpanded, onDismissRequest = { isMenuExpanded = false }) {
@@ -196,7 +200,7 @@ private fun DownloadingIndicator(
             imageVector = Icons.Outlined.ArrowDownward,
             contentDescription = null,
             modifier = ArrowModifier,
-            tint = arrowColor,
+            tint = color,
         )
     }
 }

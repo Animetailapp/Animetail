@@ -61,7 +61,7 @@ class AnimeExtensionDetailsViewModel(
         fun create(pkgName: String): AnimeExtensionDetailsViewModel
     }
 
-    val state: StateFlow<State> = extensionManager.installedExtensionsFlow
+    val state: StateFlow<State> = extensionManager.loadedExtensionsFlow
         .map { it.firstOrNull { extension -> extension.pkgName == pkgName } }
         .distinctUntilChanged()
         .flatMapLatest { extension ->
@@ -113,7 +113,7 @@ class AnimeExtensionDetailsViewModel(
         toggleIncognito.await(pkgName, isIncognito)
     }
 
-    private fun subscribeToSources(extension: AnimeExtension.Installed): Flow<ImmutableList<AnimeExtensionSourceItem>> {
+    private fun subscribeToSources(extension: AnimeExtension.Loaded): Flow<ImmutableList<AnimeExtensionSourceItem>> {
         return getExtensionSources.subscribe(extension)
             .catch { throwable ->
                 logcat(LogPriority.ERROR, throwable)
@@ -143,7 +143,7 @@ class AnimeExtensionDetailsViewModel(
 
         @Immutable
         data class Success(
-            val extension: AnimeExtension.Installed,
+            val extension: AnimeExtension.Loaded,
             val isIncognito: Boolean,
             val sources: ImmutableList<AnimeExtensionSourceItem> = persistentListOf(),
         ) : State

@@ -291,6 +291,12 @@ class Tmdb(id: Long) : BaseTracker(id, "TMDB"), AnimeTracker {
         }
     }
 
+    override suspend fun updateUserConfig() {
+        val account = api.getAccount()
+        val username = account.optString("username").ifEmpty { account.optString("name", "tmdb") }
+        saveDisplayUsername(username)
+    }
+
     @Suppress("unused")
     suspend fun getAuthUrl(): String {
         if (apiKey.isBlank()) throw Exception("TMDB API key required. Please save your API key first.")

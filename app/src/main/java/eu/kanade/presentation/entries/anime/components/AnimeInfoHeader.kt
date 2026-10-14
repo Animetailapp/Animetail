@@ -83,7 +83,9 @@ import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.entries.components.DotSeparatorText
 import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.tachiyomi.R
+import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.SAnime
+import eu.kanade.tachiyomi.source.anime.getNameForAnimeInfo
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
@@ -114,7 +116,7 @@ fun AnimeInfoBox(
     isTabletUi: Boolean,
     appBarPadding: Dp,
     anime: Anime,
-    sourceName: String,
+    source: AnimeSource,
     isStubSource: Boolean,
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
@@ -151,7 +153,7 @@ fun AnimeInfoBox(
                 AnimeAndSourceTitlesSmall(
                     appBarPadding = appBarPadding,
                     anime = anime,
-                    sourceName = sourceName,
+                    source = source,
                     isStubSource = isStubSource,
                     onCoverClick = onCoverClick,
                     doSearch = doSearch,
@@ -160,7 +162,7 @@ fun AnimeInfoBox(
                 AnimeAndSourceTitlesLarge(
                     appBarPadding = appBarPadding,
                     anime = anime,
-                    sourceName = sourceName,
+                    source = source,
                     isStubSource = isStubSource,
                     onCoverClick = onCoverClick,
                     doSearch = doSearch,
@@ -389,7 +391,7 @@ fun ExpandableAnimeDescription(
 private fun AnimeAndSourceTitlesLarge(
     appBarPadding: Dp,
     anime: Anime,
-    sourceName: String,
+    source: AnimeSource,
     isStubSource: Boolean,
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
@@ -435,7 +437,7 @@ private fun AnimeAndSourceTitlesLarge(
             author = anime.author,
             artist = anime.artist,
             status = anime.status,
-            sourceName = sourceName,
+            source = source,
             isStubSource = isStubSource,
             doSearch = doSearch,
             textAlign = TextAlign.Center,
@@ -447,7 +449,7 @@ private fun AnimeAndSourceTitlesLarge(
 private fun AnimeAndSourceTitlesSmall(
     appBarPadding: Dp,
     anime: Anime,
-    sourceName: String,
+    source: AnimeSource,
     isStubSource: Boolean,
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
@@ -509,7 +511,7 @@ private fun AnimeAndSourceTitlesSmall(
                     author = anime.author,
                     artist = anime.artist,
                     status = anime.status,
-                    sourceName = sourceName,
+                    source = source,
                     isStubSource = isStubSource,
                     doSearch = doSearch,
                 )
@@ -524,7 +526,7 @@ private fun ColumnScope.AnimeContentInfo(
     author: String?,
     artist: String?,
     status: Long,
-    sourceName: String,
+    source: AnimeSource,
     isStubSource: Boolean,
     doSearch: (query: String, global: Boolean) -> Unit,
     textAlign: TextAlign? = LocalTextStyle.current.textAlign,
@@ -652,10 +654,10 @@ private fun ColumnScope.AnimeContentInfo(
                 )
             }
             Text(
-                text = sourceName,
+                text = source.getNameForAnimeInfo(),
                 modifier = Modifier.clickableNoIndication {
                     doSearch(
-                        sourceName,
+                        source.query(),
                         false,
                     )
                 },
@@ -665,6 +667,8 @@ private fun ColumnScope.AnimeContentInfo(
         }
     }
 }
+
+private fun AnimeSource.query(): String = """src:"$name" lang:$lang""".takeIf { name.isNotBlank() } ?: "srcid:$id"
 
 @Composable
 private fun AnimeSummary(

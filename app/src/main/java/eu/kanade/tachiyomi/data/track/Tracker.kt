@@ -6,6 +6,8 @@ import androidx.annotation.DrawableRes
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import okhttp3.OkHttpClient
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
@@ -38,9 +40,15 @@ interface Tracker {
     @CallSuper
     fun logout()
 
+    suspend fun refreshUser()
+
     val isLoggedIn: Boolean
 
     val isLoggedInFlow: Flow<Boolean>
+
+    val isRefreshingFlow: StateFlow<Boolean>
+
+    val refreshResultFlow: SharedFlow<RefreshResult>
 
     fun getUsername(): String
 

@@ -11,14 +11,12 @@ class MangaSourcesBackupCreator(
     private val mangaSourceManager: MangaSourceManager,
 ) {
 
-    operator fun invoke(mangas: List<BackupManga>): List<BackupSource> {
-        return mangas
-            .asSequence()
-            .map(BackupManga::source)
-            .distinct()
-            .map(mangaSourceManager::getOrStub)
-            .map { it.toBackupSource() }
-            .toList()
+    suspend operator fun invoke(sourceIds: Set<Long>): List<BackupSource> {
+        return sourceIds.map { mangaSourceManager.getOrStub(it).toBackupSource() }
+    }
+
+    suspend operator fun invoke(mangas: List<BackupManga>): List<BackupSource> {
+        return invoke(mangas.map { it.source }.toSet())
     }
 }
 

@@ -1,0 +1,24 @@
+query AniListGetMangaMetadata(
+  $manga_id: Int!,
+) {
+  Media (id: $manga_id, type: MANGA) {
+    id
+    title {
+      userPreferred
+    }
+    coverImage {
+      large
+    }
+    description
+    staff {
+      edges {
+        role
+        node {
+          name {
+            userPreferred
+          }
+        }
+      }
+    }
+  }
+}

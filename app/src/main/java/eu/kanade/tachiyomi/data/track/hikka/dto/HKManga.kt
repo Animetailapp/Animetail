@@ -37,8 +37,8 @@ data class HKManga(
     val startDate: Long? = null,
     val read: List<HKRead>? = emptyList(),
 ) {
-    fun toTrack(trackId: Long): MangaTrackSearch {
-        return MangaTrackSearch.create(trackId).apply {
+    fun toTrack(trackerId: Long): MangaTrackSearch {
+        return MangaTrackSearch.create(trackerId).apply {
             remote_id = stringToNumber(this@HKManga.slug)
             title = this@HKManga.titleUa ?: this@HKManga.titleEn ?: this@HKManga.titleOriginal
             total_chapters = this@HKManga.chapters?.toLong() ?: 0
@@ -68,8 +68,8 @@ data class HKManga(
         }
     }
 
-    fun toAnimeTrack(trackId: Long): AnimeTrackSearch {
-        return AnimeTrackSearch.create(trackId).apply {
+    fun toAnimeTrack(trackerId: Long): AnimeTrackSearch {
+        return AnimeTrackSearch.create(trackerId).apply {
             remote_id = stringToNumber(this@HKManga.slug)
             title = this@HKManga.titleUa ?: this@HKManga.titleEn ?: this@HKManga.titleOriginal
             total_episodes = this@HKManga.chapters?.toLong() ?: 0

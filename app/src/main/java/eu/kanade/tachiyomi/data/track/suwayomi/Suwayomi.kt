@@ -18,7 +18,7 @@ import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
 
 class Suwayomi(id: Long) : BaseTracker(id, "Suwayomi"), EnhancedMangaTracker, MangaTracker {
 
-    val api by lazy { SuwayomiApi(id) }
+    val api by lazy { SuwayomiApi(id, appGraph.mangaSourceManager) }
 
     override fun getLogo() = R.drawable.ic_tracker_suwayomi
 
@@ -60,11 +60,11 @@ class Suwayomi(id: Long) : BaseTracker(id, "Suwayomi"), EnhancedMangaTracker, Ma
             }
         }
 
-        return api.updateProgress(track)
+        return api.updateProgress(track, getPrefTrackerDelete()) ?: throw Exception("Could not update manga")
     }
 
     override suspend fun bind(track: MangaTrack, hasReadChapters: Boolean): MangaTrack {
-        return track
+        return api.updateProgress(track, getPrefTrackerDelete()) ?: throw Exception("Could not bind manga")
     }
 
     override suspend fun searchManga(query: String): List<MangaTrackSearch> {
@@ -80,7 +80,7 @@ class Suwayomi(id: Long) : BaseTracker(id, "Suwayomi"), EnhancedMangaTracker, Ma
     }
 
     override suspend fun refresh(track: MangaTrack): MangaTrack {
-        val remoteTrack = api.getTrackSearch(track.tracking_url)
+        val remoteTrack = api.getTrackSearch(track.remote_id) ?: throw Exception("Could not find manga")
         track.copyPersonalFrom(remoteTrack)
         track.total_chapters = remoteTrack.total_chapters
         return track
@@ -98,23 +98,32 @@ class Suwayomi(id: Long) : BaseTracker(id, "Suwayomi"), EnhancedMangaTracker, Ma
         "eu.kanade.tachiyomi.extension.all.tachidesk.Tachidesk",
     )
 
-    override suspend fun match(manga: DomainManga): MangaTrackSearch? =
-        try {
-            api.getTrackSearch(manga.url)
-        } catch (e: Exception) {
+    override suspend fun match(manga: DomainManga): MangaTrackSearch? {
+        return try {
+            api.getTrackSearch(manga.url.getMangaId())
+        } catch (_: Exception) {
             null
         }
+    }
 
-    override fun isTrackFrom(track: DomainTrack, manga: DomainManga, source: MangaSource?): Boolean = source?.let {
-        accept(
-            it,
-        )
-    } == true
+    override fun isTrackFrom(track: DomainTrack, manga: DomainManga, source: MangaSource?): Boolean {
+        return track.remoteUrl == manga.url && source?.let { accept(it) } == true
+    }
 
-    override fun migrateTrack(track: DomainTrack, manga: DomainManga, newSource: MangaSource): DomainTrack? =
-        if (accept(newSource)) {
+    override fun migrateTrack(track: DomainTrack, manga: DomainManga, newSource: MangaSource): DomainTrack? {
+        return if (accept(newSource)) {
             track.copy(remoteUrl = manga.url)
         } else {
             null
         }
+    }
+
+    private fun String.getMangaId(): Long = this.substringAfterLast('/').toLong()
+
+    private fun getPrefTrackerDelete(): Boolean {
+        val preferences = api.sourcePreferences()
+        return preferences.getBoolean("pref_tracker_delete", false)
+    }
+
+    override suspend fun updateUserConfig() = Unit
 }

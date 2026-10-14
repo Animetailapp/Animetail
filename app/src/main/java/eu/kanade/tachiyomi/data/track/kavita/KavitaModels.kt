@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.data.track.kavita
 
-import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -9,8 +9,9 @@ data class SeriesDto(
     val id: Int,
     val name: String,
     val originalName: String = "",
-    val thumbnail_url: String? = "",
-    val stringResourcedName: String? = "",
+    @SerialName("thumbnailUrl")
+    val thumbnailUrl: String? = "",
+    val localizedName: String? = "",
     val sortName: String? = "",
     val pages: Int,
     val coverImageLocked: Boolean = true,
@@ -22,7 +23,7 @@ data class SeriesDto(
     val libraryId: Int,
     val libraryName: String? = "",
 ) {
-    fun toTrack(): MangaTrackSearch = MangaTrackSearch.create(TrackerManager.KAVITA).also {
+    fun toTrack(trackerId: Long): MangaTrackSearch = MangaTrackSearch.create(trackerId).also {
         it.title = name
         it.summary = ""
     }
@@ -69,14 +70,7 @@ class OAuth(
         SourceAuth(3),
     ),
 ) {
-    fun getToken(apiUrl: String): String? {
-        for (authentication in authentications) {
-            if (authentication.apiUrl == apiUrl) {
-                return authentication.jwtToken
-            }
-        }
-        return null
-    }
+    fun getToken(apiUrl: String): String? = authentications.find { it.apiUrl == apiUrl }?.jwtToken
 }
 
 data class SourceAuth(

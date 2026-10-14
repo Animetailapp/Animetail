@@ -1,6 +1,6 @@
 package tachiyomi.data.category.anime
 
-import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.category.anime.repository.AnimeCategoryRepository
 import tachiyomi.domain.category.model.Category
+import tachiyomi.domain.category.model.NewCategory
 
 @Inject
 @SingleIn(AppScope::class)
@@ -43,6 +44,15 @@ class AnimeCategoryRepositoryImpl(
         }
     }
 
+    override suspend fun getCategoriesByAnimeIds(animeIds: List<Long>): Map<Long, List<Category>> {
+        return handler.awaitList {
+            categoriesQueries.getCategoriesByAnimeIds(animeIds) { animeId, id, name, order, flags, hidden ->
+                animeId to mapCategory(id, name, order, flags, hidden)
+            }
+        }
+            .groupBy({ it.first }, { it.second })
+    }
+
     override suspend fun getVisibleCategoriesByAnimeId(animeId: Long): List<Category> {
         return handler.awaitList {
             categoriesQueries.getVisibleCategoriesByAnimeId(animeId, ::mapCategory)
@@ -61,13 +71,18 @@ class AnimeCategoryRepositoryImpl(
         }
     }
 
-    override suspend fun insertAnimeCategory(category: Category) {
+    override suspend fun insertAnimeCategory(category: NewCategory) {
         handler.await {
             categoriesQueries.insert(
                 name = category.name,
-                order = category.order,
                 flags = category.flags,
-            ).awaitAsOne()
+            )
+        }
+    }
+
+    override suspend fun insertAllAnimeCategories(categories: List<NewCategory>) {
+        handler.await(inTransaction = true) {
+            categories.forEach { insertAnimeCategory(it) }
         }
     }
 
@@ -97,7 +112,12 @@ class AnimeCategoryRepositoryImpl(
 
     override suspend fun updateAnimeCategoryAllOrders(orderedIds: List<Long>) {
         handler.await(inTransaction = true) {
-            orderedIds.forEachIndexed { index, id ->
+            val current = categoriesQueries.getUserCategoryIds().awaitAsList()
+            val ids = orderedIds.filter { it in current } + current.filterNot { it in orderedIds }
+            ids.forEachIndexed { index, id ->
+                categoriesQueries.updateOrder(order = -index - 2L, categoryId = id)
+            }
+            ids.forEachIndexed { index, id ->
                 categoriesQueries.updateOrder(order = index.toLong(), categoryId = id)
             }
         }

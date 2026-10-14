@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
@@ -199,6 +200,7 @@ fun AnimeScreen(
     onRelatedAnimeClick: (Anime) -> Unit,
     onRelatedAnimeLongClick: (Anime) -> Unit,
     // KMK <--
+    downloadProgressProvider: (Long) -> Int = { 0 },
 ) {
     val context = LocalContext.current
     val onCopyTagToClipboard: (tag: String) -> Unit = {
@@ -227,6 +229,7 @@ fun AnimeScreen(
             navigateUp = navigateUp,
             onEpisodeClicked = onEpisodeClicked,
             onDownloadEpisode = onDownloadEpisode,
+            downloadProgressProvider = downloadProgressProvider,
             onAddToLibraryClicked = onAddToLibraryClicked,
             onWebViewClicked = onWebViewClicked,
             onWebViewLongClicked = onWebViewLongClicked,
@@ -286,6 +289,7 @@ fun AnimeScreen(
             navigateUp = navigateUp,
             onEpisodeClicked = onEpisodeClicked,
             onDownloadEpisode = onDownloadEpisode,
+            downloadProgressProvider = downloadProgressProvider,
             onAddToLibraryClicked = onAddToLibraryClicked,
             onWebViewClicked = onWebViewClicked,
             onWebViewLongClicked = onWebViewLongClicked,
@@ -409,6 +413,7 @@ private fun AnimeScreenSmallImpl(
     onRelatedAnimeClick: (Anime) -> Unit,
     onRelatedAnimeLongClick: (Anime) -> Unit,
     // KMK <--
+    downloadProgressProvider: (Long) -> Int = { 0 },
 ) {
     val density = LocalDensity.current
     val offsetGridPaddingPx = with(density) { GRID_PADDING.roundToPx() }
@@ -586,7 +591,7 @@ private fun AnimeScreenSmallImpl(
                             isTabletUi = false,
                             appBarPadding = topPadding,
                             anime = state.anime,
-                            sourceName = remember { state.source.getNameForAnimeInfo() },
+                            source = remember { state.source },
                             isStubSource = remember { state.source is StubAnimeSource },
                             onCoverClick = onCoverClicked,
                             doSearch = onSearch,
@@ -803,6 +808,7 @@ private fun AnimeScreenSmallImpl(
                                 episodeSwipeEndAction = episodeSwipeEndAction,
                                 onEpisodeClicked = onEpisodeClicked,
                                 onDownloadEpisode = onDownloadEpisode,
+                                downloadProgressProvider = downloadProgressProvider,
                                 onEpisodeSelected = onEpisodeSelected,
                                 onEpisodeSwipe = onEpisodeSwipe,
                                 itemModifier = Modifier.ignorePadding(offsetGridPaddingPx),
@@ -891,6 +897,7 @@ fun AnimeScreenLargeImpl(
     onRelatedAnimeClick: (Anime) -> Unit,
     onRelatedAnimeLongClick: (Anime) -> Unit,
     // KMK <--
+    downloadProgressProvider: (Long) -> Int = { 0 },
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
@@ -977,27 +984,27 @@ fun AnimeScreenLargeImpl(
                 )
             },
             bottomBar = {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.BottomEnd,
-                ) {
-                    val selectedEpisodes = remember(episodes) {
-                        episodes.filter { it.selected }
-                    }
-                    SharedAnimeBottomActionMenu(
-                        selected = selectedEpisodes,
-                        onEpisodeClicked = onEpisodeClicked,
-                        onMultiBookmarkClicked = onMultiBookmarkClicked,
-                        onMultiFillermarkClicked = onMultiFillermarkClicked,
-                        onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
-                        onMarkPreviousAsSeenClicked = onMarkPreviousAsSeenClicked,
-                        onDownloadEpisode = onDownloadEpisode,
-                        onMultiDeleteClicked = onMultiDeleteClicked,
-                        onSetDateClicked = onSetDateClicked,
-                        fillFraction = 0.5f,
-                        alwaysUseExternalPlayer = alwaysUseExternalPlayer,
-                    )
+                val selectedEpisodes = remember(episodes) {
+                    episodes.filter { it.selected }
                 }
+                // Aligned by its own modifier: a wrapper would always be laid out, and the scaffold then drops the
+                // navigation bar inset under the FAB
+                SharedAnimeBottomActionMenu(
+                    selected = selectedEpisodes,
+                    onEpisodeClicked = onEpisodeClicked,
+                    onMultiBookmarkClicked = onMultiBookmarkClicked,
+                    onMultiFillermarkClicked = onMultiFillermarkClicked,
+                    onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
+                    onMarkPreviousAsSeenClicked = onMarkPreviousAsSeenClicked,
+                    onDownloadEpisode = onDownloadEpisode,
+                    onMultiDeleteClicked = onMultiDeleteClicked,
+                    onSetDateClicked = onSetDateClicked,
+                    fillFraction = 0.5f,
+                    alwaysUseExternalPlayer = alwaysUseExternalPlayer,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentWidth(Alignment.End),
+                )
             },
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             floatingActionButton = {
@@ -1052,7 +1059,7 @@ fun AnimeScreenLargeImpl(
                                 isTabletUi = true,
                                 appBarPadding = contentPadding.calculateTopPadding(),
                                 anime = state.anime,
-                                sourceName = remember { state.source.getNameForAnimeInfo() },
+                                source = remember { state.source },
                                 isStubSource = remember { state.source is StubAnimeSource },
                                 onCoverClick = onCoverClicked,
                                 doSearch = onSearch,
@@ -1252,6 +1259,7 @@ fun AnimeScreenLargeImpl(
                                         episodeSwipeEndAction = episodeSwipeEndAction,
                                         onEpisodeClicked = onEpisodeClicked,
                                         onDownloadEpisode = onDownloadEpisode,
+                                        downloadProgressProvider = downloadProgressProvider,
                                         onEpisodeSelected = onEpisodeSelected,
                                         onEpisodeSwipe = onEpisodeSwipe,
                                         itemModifier = Modifier.ignorePadding(offsetGridPaddingPx),
@@ -1369,6 +1377,7 @@ private fun LazyGridScope.sharedEpisodeItems(
     episodeSwipeEndAction: LibraryPreferences.EpisodeSwipeAction,
     onEpisodeClicked: (Episode, Boolean) -> Unit,
     onDownloadEpisode: ((List<EpisodeList.Item>, EpisodeDownloadAction) -> Unit)?,
+    downloadProgressProvider: (Long) -> Int = { 0 },
     onEpisodeSelected: (EpisodeList.Item, Boolean, Boolean, Boolean) -> Unit,
     onEpisodeSwipe: (EpisodeList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
     itemModifier: Modifier = Modifier,
@@ -1453,7 +1462,7 @@ private fun LazyGridScope.sharedEpisodeItems(
                     isAnyEpisodeSelected = isAnyEpisodeSelected,
                     downloadIndicatorEnabled = !isAnyEpisodeSelected && !anime.isLocal(),
                     downloadStateProvider = { episodeItem.downloadState },
-                    downloadProgressProvider = { episodeItem.downloadProgress },
+                    downloadProgressProvider = { downloadProgressProvider(episodeItem.id) },
                     episodeSwipeStartAction = episodeSwipeStartAction,
                     episodeSwipeEndAction = episodeSwipeEndAction,
                     onLongClick = {

@@ -17,7 +17,7 @@ class ExtensionsBackupCreator(
 
     operator fun invoke(): List<BackupExtension> {
         val installedExtensions = mutableListOf<BackupExtension>()
-        animeExtensionManager.installedExtensionsFlow.value.forEach {
+        animeExtensionManager.installedExtensions.forEach {
             val packageName = it.pkgName
             val apk = File(
                 context.packageManager
@@ -30,7 +30,7 @@ class ExtensionsBackupCreator(
                 BackupExtension(packageName, apk),
             )
         }
-        mangaExtensionManager.installedExtensionsFlow.value.forEach {
+        mangaExtensionManager.installedExtensions.forEach {
             val packageName = it.pkgName
             val apk = File(
                 context.packageManager

@@ -82,13 +82,10 @@ class DeepLinkMangaViewModel(
     private suspend fun getChapterFromSChapter(sChapter: SChapter, manga: Manga, source: MangaSource): Chapter? {
         val localChapter = getChapterByUrlAndMangaId.await(sChapter.url, manga.id)
 
-        return if (localChapter == null) {
-            val sourceChapters = source.getChapterList(manga.toSManga())
-            val newChapters = syncChaptersWithSource.await(sourceChapters, manga, source, false)
-            newChapters.find { it.url == sChapter.url }
-        } else {
-            localChapter
-        }
+        if (localChapter != null) return localChapter
+        val sourceChapters = source.getChapterList(manga.toSManga())
+        syncChaptersWithSource.await(sourceChapters, manga, source, false)
+        return getChapterByUrlAndMangaId.await(sChapter.url, manga.id)
     }
 
     private suspend fun getMangaFromSManga(sManga: SManga, sourceId: Long): Manga {

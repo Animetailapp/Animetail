@@ -12,9 +12,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicReference
 
@@ -23,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 abstract class InstallerManga(private val service: Service) {
 
-    private val extensionManager: MangaExtensionManager by injectLazy()
+    protected val extensionManager: MangaExtensionManager = Injekt.get<Context>().appGraph.mangaExtensionManager
 
     private var waitingInstall = AtomicReference<Entry>(null)
     private val queue = Collections.synchronizedList(mutableListOf<Entry>())
@@ -43,8 +44,8 @@ abstract class InstallerManga(private val service: Service) {
      * @param downloadId Download ID as known by [MangaExtensionManager]
      * @param uri Uri of APK to install
      */
-    fun addToQueue(downloadId: Long, uri: Uri) {
-        queue.add(Entry(downloadId, uri))
+    fun addToQueue(downloadId: Long, uri: Uri, pkgName: String? = null) {
+        queue.add(Entry(downloadId, uri, pkgName))
         checkQueue()
     }
 
@@ -95,13 +96,17 @@ abstract class InstallerManga(private val service: Service) {
         if (!ready) {
             return
         }
-        if (queue.isEmpty()) {
-            service.stopSelf()
-            return
-        }
-        val nextEntry = queue.first()
-        if (waitingInstall.compareAndSet(null, nextEntry)) {
+        val nextEntry = synchronized(queue) {
+            if (queue.isEmpty()) {
+                if (waitingInstall.get() == null) {
+                    service.stopSelf()
+                }
+                return
+            }
+            if (!waitingInstall.compareAndSet(null, queue.first())) return
             queue.removeAt(0)
+        }
+        installerScope.launch(Dispatchers.IO) {
             processEntry(nextEntry)
         }
     }
@@ -112,9 +117,19 @@ abstract class InstallerManga(private val service: Service) {
     @CallSuper
     open fun onDestroy() {
         installerScope.cancel()
-        queue.forEach { extensionManager.updateInstallStep(it.downloadId, InstallStep.Error) }
-        queue.clear()
-        waitingInstall.set(null)
+        val remaining = synchronized(queue) { queue.toList().also { queue.clear() } }
+        remaining.forEach {
+            extensionManager.updateInstallStep(
+                it.downloadId,
+                InstallStep.Error("The installer stopped before it got to this one"),
+            )
+        }
+        waitingInstall.getAndSet(null)?.let {
+            extensionManager.updateInstallStep(
+                it.downloadId,
+                InstallStep.Error("The installer stopped before it got to this one"),
+            )
+        }
     }
 
     protected fun getActiveEntry(): Entry? = waitingInstall.get()
@@ -126,7 +141,10 @@ abstract class InstallerManga(private val service: Service) {
      */
     private fun cancelQueue(downloadId: Long) {
         val waitingInstall = this.waitingInstall.get()
-        val toCancel = queue.find { it.downloadId == downloadId } ?: waitingInstall ?: return
+        // Every new install cancels its own previous attempt first, which mustn't hit another extension's install
+        val toCancel = synchronized(queue) { queue.find { it.downloadId == downloadId } }
+            ?: waitingInstall?.takeIf { it.downloadId == downloadId }
+            ?: return
         if (cancelEntry(toCancel)) {
             queue.remove(toCancel)
             if (waitingInstall == toCancel) {
@@ -144,7 +162,7 @@ abstract class InstallerManga(private val service: Service) {
      * @param downloadId Download ID as known by [MangaExtensionManager]
      * @param uri Uri of APK to install
      */
-    data class Entry(val downloadId: Long, val uri: Uri)
+    data class Entry(val downloadId: Long, val uri: Uri, val pkgName: String? = null)
 
     init {
         extensionManager.installerCancelEvents

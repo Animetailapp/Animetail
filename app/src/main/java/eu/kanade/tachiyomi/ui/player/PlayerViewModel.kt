@@ -1182,7 +1182,7 @@ class PlayerViewModel(
 
     // ====== OLD ======
 
-    val incognitoMode: Boolean by lazy { getIncognitoState.await(currentAnime.value?.source) }
+    val incognitoMode: Boolean by lazy { runBlocking { getIncognitoState.await(currentAnime.value?.source) } }
     private val downloadAheadAmount = downloadPreferences.autoDownloadWhileWatching.get()
 
     internal val relativeTime = uiPreferences.relativeTime.get()

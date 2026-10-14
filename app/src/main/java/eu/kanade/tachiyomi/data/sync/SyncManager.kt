@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.data.sync
 
 import android.content.Context
 import android.net.Uri
-import app.cash.sqldelight.async.coroutines.awaitAsList
-import data.Chapters
 import dataanime.Episodes
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
@@ -23,6 +21,7 @@ import eu.kanade.tachiyomi.data.backup.restore.restorers.MangaRestorer
 import eu.kanade.tachiyomi.data.sync.service.GoogleDriveSyncService
 import eu.kanade.tachiyomi.data.sync.service.SyncData
 import eu.kanade.tachiyomi.data.sync.service.SyncYomiSyncService
+import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
@@ -42,6 +41,7 @@ import java.io.File
 import java.io.IOException
 import java.util.Date
 import kotlin.system.measureTimeMillis
+import data.Chapter as DbChapter
 
 /**
  * A manager to handle synchronization tasks in the app, such as updating
@@ -87,11 +87,6 @@ class SyncManager(
     @Suppress("ReturnCount", "LongMethod")
     suspend fun syncData() {
         // Reset isSyncing in case it was left over or failed syncing during restore.
-        mangaHandler.await(inTransaction = true) {
-            mangasQueries.resetIsSyncing()
-            chaptersQueries.resetIsSyncing()
-        }
-
         animeHandler.await(inTransaction = true) {
             animesQueries.resetIsSyncing()
             episodesQueries.resetIsSyncing()
@@ -113,8 +108,8 @@ class SyncManager(
         )
 
         logcat(LogPriority.DEBUG) { "Begin create backup" }
-        val backupManga = backupCreator.backupMangas(databaseManga, backupOptions)
-        val backupAnime = backupCreator.backupAnimes(databaseAnime, backupOptions)
+        val backupManga = backupCreator.backupMangas(databaseManga, backupOptions).toList()
+        val backupAnime = backupCreator.backupAnimes(databaseAnime, backupOptions).toList()
         val backup = Backup(
             backupManga = backupManga,
             backupCategories = backupCreator.backupMangaCategories(backupOptions),
@@ -250,11 +245,11 @@ class SyncManager(
      * @return a list of all manga stored in the database
      */
     private suspend fun getAllMangaFromDB(): List<Manga> {
-        return mangaHandler.awaitList { mangasQueries.getAllManga(::mapManga) }
+        return mangaHandler.awaitList { mangaQueries.getAllManga(::mapManga) }
     }
 
     private suspend fun getAllMangaThatNeedsSync(): List<Manga> {
-        return mangaHandler.awaitList { mangasQueries.getMangasWithFavoriteTimestamp(::mapManga) }
+        return mangaHandler.awaitList { mangaQueries.getFavorites(::mapManga) }
     }
 
     private suspend fun getAllAnimeFromDB(): List<Anime> {
@@ -267,11 +262,11 @@ class SyncManager(
 
     @Suppress("ReturnCount")
     private suspend fun isMangaDifferent(localManga: Manga, remoteManga: BackupManga): Boolean {
-        val localChapters = mangaHandler.await {
-            chaptersQueries.getChaptersByMangaId(
+        val localChapters = mangaHandler.awaitList {
+            chapterQueries.getChaptersByMangaId(
                 localManga.id,
                 0,
-            ).awaitAsList()
+            )
         }
         val localCategories = getMangaCategories.await(localManga.id).map { it.order }
 
@@ -279,7 +274,7 @@ class SyncManager(
             return true
         }
 
-        if (localManga.version != remoteManga.version) {
+        if (localManga.favorite != remoteManga.favorite) {
             return true
         }
 
@@ -292,7 +287,7 @@ class SyncManager(
 
     @Suppress("ReturnCount")
     private suspend fun isAnimeDifferent(localAnime: Anime, remoteAnime: BackupAnime): Boolean {
-        val localEpisodes = animeHandler.await { episodesQueries.getEpisodesByAnimeId(localAnime.id).awaitAsList() }
+        val localEpisodes = animeHandler.awaitList { episodesQueries.getEpisodesByAnimeId(localAnime.id) }
         val localCategories = getAnimeCategories.await(localAnime.id).map { it.order }
 
         if (areEpisodesDifferent(localEpisodes, remoteAnime.episodes)) {
@@ -311,8 +306,11 @@ class SyncManager(
     }
 
     @Suppress("ReturnCount")
-    private fun areChaptersDifferent(localChapters: List<Chapters>, remoteChapters: List<BackupChapter>): Boolean {
-        val localChapterMap = localChapters.associateBy { it.url }
+    private fun areChaptersDifferent(
+        localChapters: List<DbChapter>,
+        remoteChapters: List<BackupChapter>,
+    ): Boolean {
+        val localChapterMap = localChapters.associateBy { it.remote_url }
         val remoteChapterMap = remoteChapters.associateBy { it.url }
 
         if (localChapterMap.size != remoteChapterMap.size) {
@@ -322,8 +320,12 @@ class SyncManager(
         for ((url, localChapter) in localChapterMap) {
             val remoteChapter = remoteChapterMap[url]
 
-            // If a matching remote chapter doesn't exist, or the version numbers are different, consider them different
-            if (remoteChapter == null || localChapter.version != remoteChapter.version) {
+            // If a matching remote chapter doesn't exist, or the state is different, consider them different
+            if (remoteChapter == null ||
+                localChapter.user_read != remoteChapter.read ||
+                localChapter.user_bookmark != remoteChapter.bookmark ||
+                localChapter.user_last_page_read != remoteChapter.lastPageRead
+            ) {
                 return true
             }
         }
@@ -468,7 +470,15 @@ class SyncManager(
             val key = Triple(nonFavorite.source, nonFavorite.url, nonFavorite.title)
             localMangaMap[key]?.let { localManga ->
                 if (localManga.favorite != nonFavorite.favorite) {
-                    val updatedManga = localManga.copy(favorite = nonFavorite.favorite)
+                    val updatedManga = localManga.copy(
+                        favoriteAt = if (nonFavorite.favorite) {
+                            nonFavorite.dateAdded.takeIf { it != 0L }
+                                ?: nonFavorite.favoriteModifiedAt?.times(1000)
+                                ?: System.currentTimeMillis()
+                        } else {
+                            null
+                        },
+                    )
                     mangaRestorer.updateMangaInDb(updatedManga)
                 }
             }

@@ -15,11 +15,15 @@ interface MangaHistoryRepository {
 
     suspend fun getHistoryByMangaId(mangaId: Long): List<MangaHistory>
 
+    suspend fun getHistoryByMangaIds(mangaIds: List<Long>): Map<Long, List<MangaHistory>>
+
     suspend fun resetMangaHistory(historyId: Long)
 
     suspend fun resetHistoryByMangaId(mangaId: Long)
 
     suspend fun deleteAllMangaHistory(): Boolean
+
+    suspend fun deleteResetHistory()
 
     suspend fun upsertMangaHistory(historyUpdate: MangaHistoryUpdate)
 }

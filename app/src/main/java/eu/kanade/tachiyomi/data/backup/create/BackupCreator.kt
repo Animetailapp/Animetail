@@ -8,6 +8,7 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.data.backup.BackupFileValidator
+import eu.kanade.tachiyomi.data.backup.BackupWriter
 import eu.kanade.tachiyomi.data.backup.create.creators.AnimeBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.AnimeCategoriesBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.AnimeExtensionStoresBackupCreator
@@ -30,6 +31,8 @@ import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
 import eu.kanade.tachiyomi.data.backup.models.BackupSource
 import eu.kanade.tachiyomi.data.backup.models.BackupSourcePreferences
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
 import okio.buffer
@@ -114,35 +117,44 @@ class BackupCreator(
             }
             val backupManga = backupMangas(getMangaFavorites.await() + nonFavoriteManga, options)
 
-            val backup = Backup(
-                backupManga = backupManga,
-                backupCategories = backupMangaCategories(options),
-                backupSources = backupMangaSources(backupManga),
-                backupPreferences = backupAppPreferences(options),
-                backupSourcePreferences = backupSourcePreferences(options),
-                backupMangaExtensionStore = backupMangaExtensionStores(options),
-
-                isLegacy = false,
-                backupAnime = backupAnime,
-                backupAnimeCategories = backupAnimeCategories(options),
-                backupAnimeSources = backupAnimeSources(backupAnime),
-                backupExtensions = backupExtensions(options),
-                backupAnimeExtensionStore = backupAnimeExtensionStores(options),
-                backupCustomButton = backupCustomButtons(options),
-            )
-
-            val byteArray = parser.encodeToByteArray(Backup.serializer(), backup)
-            if (byteArray.isEmpty()) {
-                throw IllegalStateException(context.stringResource(MR.strings.empty_backup_error))
-            }
-
             file.openOutputStream()
                 .also {
                     // Force overwrite old file
                     (it as? FileOutputStream)?.channel?.truncate(0)
                 }
                 .sink().gzip().buffer().use {
-                    it.write(byteArray)
+                    val writer = BackupWriter(it, parser)
+                    val mangaSourceIds = mutableSetOf<Long>()
+                    backupManga.collect { manga ->
+                        writer.writeMangaEntry(manga)
+                        mangaSourceIds += manga.source
+                    }
+                    val animeSourceIds = mutableSetOf<Long>()
+                    backupAnime.collect { anime ->
+                        writer.writeAnimeEntry(anime)
+                        animeSourceIds += anime.source
+                    }
+                    writer.writeMetadata(
+                        Backup(
+                            backupManga = emptyList(),
+                            backupCategories = backupMangaCategories(options),
+                            backupSources = backupMangaSources(mangaSourceIds),
+                            backupPreferences = backupAppPreferences(options),
+                            backupSourcePreferences = backupSourcePreferences(options),
+                            backupMangaExtensionStore = backupMangaExtensionStores(options),
+
+                            isLegacy = false,
+                            backupAnime = emptyList(),
+                            backupAnimeCategories = backupAnimeCategories(options),
+                            backupAnimeSources = backupAnimeSources(animeSourceIds),
+                            backupExtensions = backupExtensions(options),
+                            backupAnimeExtensionStore = backupAnimeExtensionStores(options),
+                            backupCustomButton = backupCustomButtons(options),
+                        ),
+                    )
+                    if (writer.isEmpty) {
+                        throw IllegalStateException(context.stringResource(MR.strings.empty_backup_error))
+                    }
                 }
             val fileUri = file.uri
 
@@ -173,22 +185,31 @@ class BackupCreator(
         return mangaCategoriesBackupCreator()
     }
 
-    suspend fun backupMangas(mangas: List<Manga>, options: BackupOptions): List<BackupManga> {
-        if (!options.libraryEntries) return emptyList()
+    fun backupMangas(mangas: List<Manga>, options: BackupOptions): Flow<BackupManga> {
+        if (!options.libraryEntries) return emptyFlow()
 
         return mangaBackupCreator(mangas, options)
     }
 
-    suspend fun backupAnimes(animes: List<Anime>, options: BackupOptions): List<BackupAnime> {
-        if (!options.libraryEntries) return emptyList()
+    fun backupAnimes(animes: List<Anime>, options: BackupOptions): Flow<BackupAnime> {
+        if (!options.libraryEntries) return emptyFlow()
 
         return animeBackupCreator(animes, options)
+    }
+
+    fun backupAnimeSources(sourceIds: Set<Long>): List<BackupAnimeSource> {
+        return animeSourcesBackupCreator(sourceIds)
+    }
+
+    suspend fun backupMangaSources(sourceIds: Set<Long>): List<BackupSource> {
+        return mangaSourcesBackupCreator(sourceIds)
     }
 
     fun backupAnimeSources(animes: List<BackupAnime>): List<BackupAnimeSource> {
         return animeSourcesBackupCreator(animes)
     }
-    fun backupMangaSources(mangas: List<BackupManga>): List<BackupSource> {
+
+    suspend fun backupMangaSources(mangas: List<BackupManga>): List<BackupSource> {
         return mangaSourcesBackupCreator(mangas)
     }
 
@@ -216,7 +237,7 @@ class BackupCreator(
         return customButtonBackupCreator()
     }
 
-    fun backupSourcePreferences(options: BackupOptions): List<BackupSourcePreferences> {
+    suspend fun backupSourcePreferences(options: BackupOptions): List<BackupSourcePreferences> {
         if (!options.sourceSettings) return emptyList()
 
         return preferenceBackupCreator.createSource(includePrivatePreferences = options.privateSettings)

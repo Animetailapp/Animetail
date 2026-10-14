@@ -4,73 +4,86 @@ import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.backup.create.BackupOptions
 import eu.kanade.tachiyomi.data.backup.models.BackupAnime
 import eu.kanade.tachiyomi.data.backup.models.BackupAnimeHistory
-import eu.kanade.tachiyomi.data.backup.models.BackupEpisode
-import eu.kanade.tachiyomi.data.backup.models.backupAnimeTrackMapper
-import eu.kanade.tachiyomi.data.backup.models.backupEpisodeMapper
+import eu.kanade.tachiyomi.data.backup.models.toBackupEpisode
+import eu.kanade.tachiyomi.data.backup.models.toBackupTracking
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import tachiyomi.data.MemoColumnAdapter
-import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
-import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
+import tachiyomi.domain.category.anime.repository.AnimeCategoryRepository
 import tachiyomi.domain.entries.anime.model.Anime
-import tachiyomi.domain.history.anime.interactor.GetAnimeHistory
+import tachiyomi.domain.history.anime.repository.AnimeHistoryRepository
+import tachiyomi.domain.items.episode.repository.EpisodeRepository
+import tachiyomi.domain.track.anime.repository.AnimeTrackRepository
 
 @Inject
 class AnimeBackupCreator(
-    private val handler: AnimeDatabaseHandler,
-    private val getCategories: GetAnimeCategories,
-    private val getHistory: GetAnimeHistory,
+    private val episodeRepository: EpisodeRepository,
+    private val categoryRepository: AnimeCategoryRepository,
+    private val historyRepository: AnimeHistoryRepository,
+    private val trackRepository: AnimeTrackRepository,
 ) {
 
-    suspend operator fun invoke(animes: List<Anime>, options: BackupOptions): List<BackupAnime> {
-        return animes.map {
-            backupAnime(it, options)
+    /**
+     * Builds the entries a chunk at a time, so only one chunk's episodes are held at once.
+     */
+    operator fun invoke(animes: List<Anime>, options: BackupOptions): Flow<BackupAnime> = flow {
+        animes.chunked(CHUNK_SIZE).forEach { chunk ->
+            backupAnimes(chunk, options).forEach { emit(it) }
         }
     }
 
-    private suspend fun backupAnime(anime: Anime, options: BackupOptions): BackupAnime {
-        // Entry for this anime
-        val animeObject = anime.toBackupAnime()
+    private suspend fun backupAnimes(animes: List<Anime>, options: BackupOptions): List<BackupAnime> {
+        val animeIds = animes.map { it.id }
 
-        if (options.chapters) {
-            // Backup all the episodes
-            handler.awaitList {
-                episodesQueries.getEpisodesByAnimeId(
-                    animeId = anime.id,
-                    mapper = backupEpisodeMapper,
-                )
-            }
-                .takeUnless(List<BackupEpisode>::isEmpty)
-                ?.let { animeObject.episodes = it }
+        // History is backed up by episode URL, so it needs the episodes too
+        val episodesByAnimeId = if (options.chapters || options.history) {
+            episodeRepository.getEpisodesByAnimeIds(animeIds)
+        } else {
+            emptyMap()
         }
-
-        if (options.categories) {
-            // Backup categories for this anime
-            val categoriesForAnime = getCategories.await(anime.id)
-            if (categoriesForAnime.isNotEmpty()) {
-                animeObject.categories = categoriesForAnime.map { it.order }
-            }
+        val categoriesByAnimeId = if (options.categories) {
+            categoryRepository.getCategoriesByAnimeIds(animeIds)
+        } else {
+            emptyMap()
         }
-
-        if (options.tracking) {
-            val tracks = handler.awaitList { anime_syncQueries.getTracksByAnimeId(anime.id, backupAnimeTrackMapper) }
-            if (tracks.isNotEmpty()) {
-                animeObject.tracking = tracks
-            }
+        val tracksByAnimeId = if (options.tracking) {
+            trackRepository.getTracksByAnimeIds(animeIds).groupBy { it.animeId }
+        } else {
+            emptyMap()
         }
+        val historyByAnimeId = if (options.history) historyRepository.getHistoryByAnimeIds(animeIds) else emptyMap()
 
-        if (options.history) {
-            val historyByAnimeId = getHistory.await(anime.id)
-            if (historyByAnimeId.isNotEmpty()) {
-                val history = historyByAnimeId.map { history ->
-                    val episode = handler.awaitOne { episodesQueries.getEpisodeById(history.episodeId) }
-                    BackupAnimeHistory(episode.url, history.seenAt?.time ?: 0L)
+        return animes.map { anime ->
+            val animeObject = anime.toBackupAnime()
+            val episodes = episodesByAnimeId[anime.id].orEmpty()
+
+            if (options.chapters) {
+                animeObject.episodes = episodes.map { it.toBackupEpisode() }
+            }
+
+            if (options.categories) {
+                animeObject.categories = categoriesByAnimeId[anime.id].orEmpty().map { it.order }
+            }
+
+            if (options.tracking) {
+                animeObject.tracking = tracksByAnimeId[anime.id].orEmpty().map { it.toBackupTracking() }
+            }
+
+            if (options.history) {
+                val episodeUrlsById = episodes.associate { it.id to it.url }
+                animeObject.history = historyByAnimeId[anime.id].orEmpty().mapNotNull { history ->
+                    // An episode removed since its history was seen takes that history with it
+                    val url = episodeUrlsById[history.episodeId] ?: return@mapNotNull null
+                    BackupAnimeHistory(url, history.seenAt?.time ?: 0L)
                 }
-                if (history.isNotEmpty()) {
-                    animeObject.history = history
-                }
             }
-        }
 
-        return animeObject
+            animeObject
+        }
+    }
+
+    private companion object {
+        const val CHUNK_SIZE = 100
     }
 }
 

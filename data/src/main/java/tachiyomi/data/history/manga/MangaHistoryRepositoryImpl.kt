@@ -48,6 +48,15 @@ class MangaHistoryRepositoryImpl(
             .awaitAsList()
     }
 
+    override suspend fun getHistoryByMangaIds(mangaIds: List<Long>): Map<Long, List<MangaHistory>> {
+        return database.historyQueries
+            .getHistoryByMangaIds(mangaIds) { mangaId, id, chapterId, readAt, readDuration ->
+                mangaId to MangaHistoryMapper.mapMangaHistory(id, chapterId, readAt, readDuration)
+            }
+            .awaitAsList()
+            .groupBy({ it.first }, { it.second })
+    }
+
     override suspend fun resetMangaHistory(historyId: Long) {
         try {
             database.historyQueries.resetHistoryById(historyId)
@@ -74,12 +83,16 @@ class MangaHistoryRepositoryImpl(
         }
     }
 
+    override suspend fun deleteResetHistory() {
+        database.historyQueries.removeResettedHistory()
+    }
+
     override suspend fun upsertMangaHistory(historyUpdate: MangaHistoryUpdate) {
         try {
             database.historyQueries.upsert(
-                historyUpdate.chapterId,
-                historyUpdate.readAt,
-                historyUpdate.sessionReadDuration,
+                chapterId = historyUpdate.chapterId,
+                readAt = historyUpdate.readAt,
+                readDuration = historyUpdate.sessionReadDuration,
             )
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, throwable = e)

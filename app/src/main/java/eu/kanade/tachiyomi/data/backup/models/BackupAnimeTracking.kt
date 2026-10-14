@@ -54,6 +54,22 @@ data class BackupAnimeTracking(
     }
 }
 
+fun AnimeTrack.toBackupTracking(): BackupAnimeTracking =
+    BackupAnimeTracking(
+        syncId = trackerId.toInt(),
+        mediaId = remoteId,
+        libraryId = libraryId ?: 0,
+        title = title,
+        lastEpisodeSeen = lastEpisodeSeen.toFloat(),
+        totalEpisodes = totalEpisodes.toInt(),
+        score = score.toFloat(),
+        status = status.toInt(),
+        startedWatchingDate = startDate,
+        finishedWatchingDate = finishDate,
+        trackingUrl = remoteUrl,
+        private = private,
+    )
+
 val backupAnimeTrackMapper = {
         _id: Long,
         anime_id: Long,

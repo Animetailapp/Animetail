@@ -2,7 +2,7 @@ package tachiyomi.domain.entries.manga.interactor
 
 import dev.zacsweers.metro.Inject
 import tachiyomi.domain.entries.manga.model.Manga
-import tachiyomi.domain.entries.manga.model.MangaUpdate
+import tachiyomi.domain.entries.manga.model.MangaRemoteUpdate
 import tachiyomi.domain.entries.manga.repository.MangaRepository
 
 @Inject
@@ -21,7 +21,7 @@ class NetworkToLocalManga(
             manga.source == LOCAL_MANGA_SOURCE_ID -> {
                 val mergedManga = mergeLocalManga(localManga, manga)
                 if (mergedManga != localManga) {
-                    mangaRepository.updateManga(mergedManga.toDatabaseUpdate())
+                    mangaRepository.updateRemote(mergedManga.toDatabaseUpdate())
                 }
                 mergedManga
             }
@@ -70,8 +70,8 @@ class NetworkToLocalManga(
         )
     }
 
-    private fun Manga.toDatabaseUpdate(): MangaUpdate {
-        return MangaUpdate(
+    private fun Manga.toDatabaseUpdate(): MangaRemoteUpdate {
+        return MangaRemoteUpdate(
             id = id,
             title = ogTitle,
             artist = ogArtist,
@@ -80,7 +80,10 @@ class NetworkToLocalManga(
             genre = ogGenre,
             status = ogStatus,
             thumbnailUrl = thumbnailUrl,
+            updateStrategy = updateStrategy,
+            memo = memo,
             initialized = initialized,
+            coverLastModified = coverLastModified,
         )
     }
 

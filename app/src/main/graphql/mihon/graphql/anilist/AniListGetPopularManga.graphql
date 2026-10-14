@@ -1,0 +1,7 @@
+query AniListGetPopularManga {
+  Page (perPage: 15) {
+    media(sort: TRENDING_DESC, type: MANGA, format_not_in: [NOVEL], isAdult: false) {
+      ...MangaFragment
+    }
+  }
+}

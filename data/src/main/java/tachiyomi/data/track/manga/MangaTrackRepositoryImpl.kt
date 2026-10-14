@@ -18,64 +18,72 @@ class MangaTrackRepositoryImpl(
 ) : MangaTrackRepository {
 
     override suspend fun getTrackByMangaId(id: Long): MangaTrack? {
-        return handler.awaitOneOrNull { manga_syncQueries.getTrackById(id, MangaTrackMapper::mapTrack) }
+        return handler.awaitOneOrNull { manga_trackQueries.getTrackById(id, MangaTrackMapper::mapTrack) }
     }
 
     // SY -->
     override suspend fun getMangaTracks(): List<MangaTrack> {
         return handler.awaitList {
-            manga_syncQueries.getTracks(::mapTrack)
+            manga_trackQueries.getTracks(::mapTrack)
         }
     }
 
     override suspend fun getTracksByMangaIds(mangaIds: List<Long>): List<MangaTrack> {
         return handler.awaitList {
-            manga_syncQueries.getTracksByMangaIds(mangaIds, ::mapTrack)
+            manga_trackQueries.getTracksByMangaIds(mangaIds, ::mapTrack)
         }
     }
     // SY <--
 
     override suspend fun getTracksByMangaId(mangaId: Long): List<MangaTrack> {
         return handler.awaitList {
-            manga_syncQueries.getTracksByMangaId(mangaId, MangaTrackMapper::mapTrack)
+            manga_trackQueries.getTracksByMangaId(mangaId, MangaTrackMapper::mapTrack)
         }
     }
 
     override fun getMangaTracksAsFlow(): Flow<List<MangaTrack>> {
         return handler.subscribeToList {
-            manga_syncQueries.getTracks(MangaTrackMapper::mapTrack)
+            manga_trackQueries.getTracks(MangaTrackMapper::mapTrack)
         }
     }
 
     override fun getTracksByMangaIdAsFlow(mangaId: Long): Flow<List<MangaTrack>> {
         return handler.subscribeToList {
-            manga_syncQueries.getTracksByMangaId(mangaId, MangaTrackMapper::mapTrack)
+            manga_trackQueries.getTracksByMangaId(mangaId, MangaTrackMapper::mapTrack)
         }
     }
 
     override suspend fun delete(mangaId: Long, trackerId: Long) {
         handler.await {
-            manga_syncQueries.delete(
+            manga_trackQueries.delete(
                 mangaId = mangaId,
-                syncId = trackerId,
+                trackerId = trackerId,
             )
         }
     }
 
+    override suspend fun upsertManga(track: MangaTrack) {
+        upsertValues(track)
+    }
+
+    override suspend fun upsertAllManga(tracks: List<MangaTrack>) {
+        upsertValues(*tracks.toTypedArray())
+    }
+
     override suspend fun insertManga(track: MangaTrack) {
-        insertValues(track)
+        upsertValues(track)
     }
 
     override suspend fun insertAllManga(tracks: List<MangaTrack>) {
-        insertValues(*tracks.toTypedArray())
+        upsertValues(*tracks.toTypedArray())
     }
 
-    private suspend fun insertValues(vararg tracks: MangaTrack) {
+    private suspend fun upsertValues(vararg tracks: MangaTrack) {
         handler.await(inTransaction = true) {
             tracks.forEach { mangaTrack ->
-                manga_syncQueries.insert(
+                manga_trackQueries.upsert(
                     mangaId = mangaTrack.mangaId,
-                    syncId = mangaTrack.trackerId,
+                    trackerId = mangaTrack.trackerId,
                     remoteId = mangaTrack.remoteId,
                     libraryId = mangaTrack.libraryId,
                     title = mangaTrack.title,

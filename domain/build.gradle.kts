@@ -19,6 +19,7 @@ kotlin {
 dependencies {
     implementation(projects.sourceApi)
     implementation(projects.core.common)
+    implementation(projects.core.metro)
 
     implementation(libs.metro.runtime)
 
@@ -29,7 +30,7 @@ dependencies {
 
     implementation(libs.unifile)
 
-    api(libs.sqldelight.androidxPaging)
+    api(libs.androidx.paging.runtime)
 
     compileOnly(platform(libs.androidx.compose.bom))
     compileOnly(libs.androidx.compose.runtimeAnnotation)

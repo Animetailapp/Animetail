@@ -56,7 +56,7 @@ class MangaExtensionDetailsViewModel(
         fun create(pkgName: String): MangaExtensionDetailsViewModel
     }
 
-    val state: StateFlow<State> = extensionManager.installedExtensionsFlow
+    val state: StateFlow<State> = extensionManager.loadedExtensionsFlow
         .map { it.firstOrNull { extension -> extension.pkgName == pkgName } }
         .distinctUntilChanged()
         .flatMapLatest { extension ->
@@ -73,7 +73,7 @@ class MangaExtensionDetailsViewModel(
     private val successState: State.Success?
         get() = state.value as? State.Success
 
-    private fun subscribeToSources(extension: MangaExtension.Installed): Flow<List<MangaExtensionSourceItem>> {
+    private fun subscribeToSources(extension: MangaExtension.Loaded): Flow<List<MangaExtensionSourceItem>> {
         return getExtensionSources.subscribe(extension)
             .map {
                 it.sortedWith(
@@ -141,7 +141,7 @@ class MangaExtensionDetailsViewModel(
 
         @Immutable
         data class Success(
-            val extension: MangaExtension.Installed,
+            val extension: MangaExtension.Loaded,
             val isIncognito: Boolean,
             val sources: List<MangaExtensionSourceItem>,
         ) : State

@@ -5,6 +5,7 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
+import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
 
@@ -23,7 +24,9 @@ class DeleteMangaCategory(
             return@withNonCancellableContext Result.InternalError(e)
         }
 
-        val orderedIds = categoryRepository.getAllMangaCategories().map { it.id }
+        val orderedIds = categoryRepository.getAllMangaCategories()
+            .filterNot(Category::isSystemCategory)
+            .map { it.id }
 
         val defaultCategory = libraryPreferences.defaultCategory.get()
         if (defaultCategory == categoryId.toInt()) {

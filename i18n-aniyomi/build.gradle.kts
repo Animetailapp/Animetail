@@ -39,6 +39,11 @@ tasks {
     val generatedAndroidResourceDir = layout.buildDirectory.dir("generated/android/res")
     val localesConfigTask = register<GenerateLocalesConfigTask>("generateLocalesConfig") {
         outputDir.set(generatedAndroidResourceDir)
+        localeFiles.from(
+            layout.projectDirectory.dir("src/commonMain/moko-resources").asFileTree.matching {
+                include("**/strings*.xml", "**/plurals*.xml")
+            },
+        )
     }
 }
 

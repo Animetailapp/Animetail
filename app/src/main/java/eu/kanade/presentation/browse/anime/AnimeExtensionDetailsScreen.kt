@@ -14,13 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Launch
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
@@ -33,17 +30,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.kanade.domain.extension.anime.interactor.AnimeExtensionSourceItem
 import eu.kanade.presentation.browse.anime.components.AnimeExtensionIcon
-import eu.kanade.presentation.browse.manga.NsfwWarningDialog
+import eu.kanade.presentation.browse.components.ExtensionPill
+import eu.kanade.presentation.browse.components.label
+import eu.kanade.presentation.browse.manga.ContentWarningDialog
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.WarningBanner
@@ -57,6 +57,8 @@ import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.Settings
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -93,37 +95,20 @@ fun AnimeExtensionDetailsScreen(
                 navigateUp = navigateUp,
                 actions = {
                     AppBarActions(
-                        actions = persistentListOf<AppBar.AppBarAction>().builder()
-                            .apply {
-                                if (url != null) {
-                                    add(
-                                        AppBar.Action(
-                                            title = stringResource(MR.strings.action_open_repo),
-                                            icon = Icons.AutoMirrored.Outlined.Launch,
-                                            onClick = {
-                                                uriHandler.openUri(url)
-                                            },
-                                        ),
-                                    )
-                                }
-                                addAll(
-                                    listOf(
-                                        AppBar.OverflowAction(
-                                            title = stringResource(MR.strings.action_enable_all),
-                                            onClick = onClickEnableAll,
-                                        ),
-                                        AppBar.OverflowAction(
-                                            title = stringResource(MR.strings.action_disable_all),
-                                            onClick = onClickDisableAll,
-                                        ),
-                                        AppBar.OverflowAction(
-                                            title = stringResource(MR.strings.pref_clear_cookies),
-                                            onClick = onClickClearCookies,
-                                        ),
-                                    ),
-                                )
-                            }
-                            .build(),
+                        actions = listOf(
+                            AppBar.OverflowAction(
+                                title = stringResource(MR.strings.action_enable_all),
+                                onClick = onClickEnableAll,
+                            ),
+                            AppBar.OverflowAction(
+                                title = stringResource(MR.strings.action_disable_all),
+                                onClick = onClickDisableAll,
+                            ),
+                            AppBar.OverflowAction(
+                                title = stringResource(MR.strings.pref_clear_cookies),
+                                onClick = onClickClearCookies,
+                            ),
+                        ),
                     )
                 },
                 scrollBehavior = scrollBehavior,
@@ -134,6 +119,11 @@ fun AnimeExtensionDetailsScreen(
         AnimeExtensionDetails(
             contentPadding = paddingValues,
             extension = state.extension,
+            onClickStore = state.extension.store
+                ?.contact
+                ?.website
+                ?.takeIf { it.isNotBlank() }
+                ?.let { website -> { uriHandler.openUri(website) } },
             sources = state.sources,
             incognitoMode = state.isIncognito,
             onClickSourcePreferences = onClickSourcePreferences,
@@ -147,7 +137,8 @@ fun AnimeExtensionDetailsScreen(
 @Composable
 private fun AnimeExtensionDetails(
     contentPadding: PaddingValues,
-    extension: AnimeExtension.Installed,
+    extension: AnimeExtension.Loaded,
+    onClickStore: (() -> Unit)?,
     sources: ImmutableList<AnimeExtensionSourceItem>,
     incognitoMode: Boolean,
     onClickSourcePreferences: (sourceId: Long) -> Unit,
@@ -156,7 +147,8 @@ private fun AnimeExtensionDetails(
     onClickIncognito: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
-    var showNsfwWarning by remember { mutableStateOf(false) }
+    var showContentWarning by remember { mutableStateOf(false) }
+    val contentWarning = extension.contentWarning.label
 
     ScrollbarLazyColumn(
         contentPadding = contentPadding,
@@ -171,6 +163,7 @@ private fun AnimeExtensionDetails(
             DetailsHeader(
                 extension = extension,
                 extIncognitoMode = incognitoMode,
+                onClickStore = onClickStore,
                 onClickUninstall = onClickUninstall,
                 onClickAppInfo = {
                     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -179,8 +172,8 @@ private fun AnimeExtensionDetails(
                     }
                     Unit
                 }.takeIf { extension.isShared },
-                onClickAgeRating = {
-                    showNsfwWarning = true
+                onClickContentWarning = {
+                    showContentWarning = true
                 },
                 onExtIncognitoChange = onClickIncognito,
             )
@@ -198,10 +191,12 @@ private fun AnimeExtensionDetails(
             )
         }
     }
-    if (showNsfwWarning) {
-        NsfwWarningDialog(
+    if (showContentWarning && contentWarning != null) {
+        ContentWarningDialog(
+            label = contentWarning.title,
+            description = contentWarning.description,
             onClickConfirm = {
-                showNsfwWarning = false
+                showContentWarning = false
             },
         )
     }
@@ -209,14 +204,16 @@ private fun AnimeExtensionDetails(
 
 @Composable
 private fun DetailsHeader(
-    extension: AnimeExtension,
+    extension: AnimeExtension.Installed,
     extIncognitoMode: Boolean,
-    onClickAgeRating: () -> Unit,
+    onClickStore: (() -> Unit)?,
+    onClickContentWarning: () -> Unit,
     onClickUninstall: () -> Unit,
     onClickAppInfo: (() -> Unit)?,
     onExtIncognitoChange: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
+    val contentWarning = extension.contentWarning.label
 
     Column {
         Column(
@@ -233,11 +230,11 @@ private fun DetailsHeader(
                             """
                             Extension name: ${extension.name} (lang: ${extension.lang}; package: ${extension.pkgName})
                             Extension version: ${extension.versionName} (lib: ${extension.libVersion}; version code: ${extension.versionCode})
-                            NSFW: ${extension.isNsfw}
+                            Content warning: ${extension.contentWarning}
                             """.trimIndent(),
                         )
 
-                        if (extension is AnimeExtension.Installed) {
+                        if (extension is AnimeExtension.Loaded) {
                             append("\n\n")
                             append(
                                 """
@@ -266,21 +263,42 @@ private fun DetailsHeader(
                 textAlign = TextAlign.Center,
             )
 
-            val strippedPkgName = extension.pkgName.substringAfter(
-                "eu.kanade.tachiyomi.animeextension.",
+            Text(
+                text = extension.pkgName,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Text(
-                text = strippedPkgName,
-                style = MaterialTheme.typography.bodySmall,
-            )
+            extension.store?.let { store ->
+                Text(
+                    text = store.name,
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable(enabled = onClickStore != null) { onClickStore?.invoke() }
+                        .padding(
+                            horizontal = MaterialTheme.padding.extraSmall,
+                            vertical = MaterialTheme.padding.extraSmall / 2,
+                        ),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            if ((extension as? AnimeExtension.Loaded)?.isShared == false) {
+                ExtensionPill(
+                    text = stringResource(MR.strings.ext_installer_private),
+                    modifier = Modifier.padding(top = MaterialTheme.padding.small),
+                )
+            }
         }
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    horizontal = MaterialTheme.padding.extraLarge,
+                    horizontal = MaterialTheme.padding.medium,
                     vertical = MaterialTheme.padding.small,
                 ),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -295,23 +313,20 @@ private fun DetailsHeader(
             InfoDivider()
 
             InfoText(
-                modifier = Modifier.weight(if (extension.isNsfw) 1.5f else 1f),
+                modifier = Modifier.weight(1f),
                 primaryText = LocaleHelper.getSourceDisplayName(extension.lang, context),
                 secondaryText = stringResource(MR.strings.ext_info_language),
             )
 
-            if (extension.isNsfw) {
+            if (contentWarning != null) {
                 InfoDivider()
 
                 InfoText(
                     modifier = Modifier.weight(1f),
-                    primaryText = stringResource(MR.strings.ext_nsfw_short),
-                    primaryTextStyle = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                    secondaryText = stringResource(MR.strings.ext_info_age_rating),
-                    onClick = onClickAgeRating,
+                    primaryText = stringResource(contentWarning.title),
+                    primaryTextColor = contentWarning.color,
+                    secondaryText = stringResource(MR.strings.ext_info_warning),
+                    onClick = onClickContentWarning,
                 )
             }
         }
@@ -330,14 +345,11 @@ private fun DetailsHeader(
             }
 
             if (onClickAppInfo != null) {
-                Button(
+                FilledTonalButton(
                     modifier = Modifier.weight(1f),
                     onClick = onClickAppInfo,
                 ) {
-                    Text(
-                        text = stringResource(MR.strings.ext_app_info),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
+                    Text(stringResource(MR.strings.ext_app_info))
                 }
             }
         }
@@ -369,7 +381,7 @@ private fun InfoText(
     primaryText: String,
     secondaryText: String,
     modifier: Modifier = Modifier,
-    primaryTextStyle: TextStyle = MaterialTheme.typography.bodyLarge,
+    primaryTextColor: Color = Color.Unspecified,
     onClick: (() -> Unit)? = null,
 ) {
     val clickableModifier = if (onClick != null) {
@@ -386,13 +398,16 @@ private fun InfoText(
         Text(
             text = primaryText,
             textAlign = TextAlign.Center,
-            style = primaryTextStyle,
+            style = MaterialTheme.typography.titleSmall,
+            color = primaryTextColor,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
         )
 
         Text(
             text = secondaryText + if (onClick != null) " ⓘ" else "",
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
         )
     }
@@ -401,7 +416,9 @@ private fun InfoText(
 @Composable
 private fun InfoDivider() {
     VerticalDivider(
-        modifier = Modifier.height(20.dp),
+        modifier = Modifier
+            .padding(horizontal = MaterialTheme.padding.small)
+            .height(24.dp),
     )
 }
 
@@ -426,11 +443,10 @@ private fun SourceSwitchPreference(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (source.source is ConfigurableAnimeSource) {
-                    IconButton(onClick = { onClickSourcePreferences(source.source.id) }) {
+                    FilledTonalIconButton(onClick = { onClickSourcePreferences(source.source.id) }) {
                         Icon(
-                            imageVector = Icons.Outlined.Settings,
+                            imageVector = MaterialSymbols.Rounded.Settings,
                             contentDescription = stringResource(MR.strings.label_settings),
-                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }

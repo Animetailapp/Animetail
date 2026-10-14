@@ -51,13 +51,15 @@ class DiscordLoginActivity : BaseActivity() {
                 Log.i(TAG, "Authorization successful, fetching user info")
                 scope.launch {
                     val token = DiscordRpcManager.getAccessToken()
+                    val refreshToken = DiscordRpcManager.getRefreshToken()
+                    val expiresAt = DiscordRpcManager.getExpiresAt()
                     if (token != null) {
                         val user = withContext(Dispatchers.IO) {
                             DiscordRpcManager.fetchCurrentUser(token)
                         }
                         if (user != null) {
                             Log.i(TAG, "Got user info: ${user.username}")
-                            saveAccount(user, token)
+                            saveAccount(user, token, refreshToken, expiresAt)
                             handleLoginSuccess()
                         } else {
                             Log.e(TAG, "Failed to fetch user info")
@@ -78,13 +80,20 @@ class DiscordLoginActivity : BaseActivity() {
     /**
      * Creates a DiscordAccount and saves it to preferences.
      */
-    private fun saveAccount(user: eu.kanade.tachiyomi.data.connections.discord.DiscordUser, token: String) {
+    private fun saveAccount(
+        user: eu.kanade.tachiyomi.data.connections.discord.DiscordUser,
+        token: String,
+        refreshToken: String?,
+        expiresAt: Long,
+    ) {
         val account = DiscordAccount(
             id = user.id,
             username = user.username,
             avatarUrl = user.avatar,
             token = token,
             isActive = true,
+            refreshToken = refreshToken,
+            expiresAt = expiresAt,
         )
 
         Log.i(TAG, "Saving Discord account: ${account.username}")
@@ -101,7 +110,12 @@ class DiscordLoginActivity : BaseActivity() {
         )
 
         // Also store in DiscordTokenStore for the native SDK
-        DiscordTokenStore.store(token)
+        val expiresInSeconds = if (expiresAt > System.currentTimeMillis()) {
+            (expiresAt - System.currentTimeMillis()) / 1000L
+        } else {
+            0L
+        }
+        DiscordTokenStore.store(token, refreshToken, expiresInSeconds)
     }
 
     /**

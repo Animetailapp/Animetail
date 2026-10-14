@@ -7,10 +7,7 @@ import eu.kanade.tachiyomi.data.backup.models.BackupAnimeHistory
 import eu.kanade.tachiyomi.data.backup.models.BackupAnimeTracking
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupEpisode
-import tachiyomi.data.AnimeUpdateStrategyColumnAdapter
 import tachiyomi.data.CastColumnAdapter
-import tachiyomi.data.FetchTypeColumnAdapter
-import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.entries.anime.interactor.AnimeFetchInterval
@@ -19,7 +16,7 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
-import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
+import tachiyomi.domain.track.anime.interactor.UpsertAnimeTrack
 import tachiyomi.domain.track.anime.model.AnimeTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -35,7 +32,7 @@ class AnimeRestorer(
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
     private val updateAnime: UpdateAnime,
     private val getTracks: GetAnimeTracks,
-    private val insertTrack: InsertAnimeTrack,
+    private val upsertTrack: UpsertAnimeTrack,
     fetchInterval: AnimeFetchInterval,
 ) {
 
@@ -45,6 +42,13 @@ class AnimeRestorer(
     init {
         now = ZonedDateTime.now()
         currentFetchWindow = fetchInterval.getWindow(now)
+    }
+
+    suspend fun getExistingMatcher(): (BackupAnime) -> Boolean {
+        val urlsBySource = handler.awaitList { animesQueries.getAllAnimeSourceAndUrl() }
+            .groupBy({ it.source }, { it.url })
+
+        return { it.url in urlsBySource[it.source].orEmpty() }
     }
 
     suspend fun sortByNew(backupAnimes: List<BackupAnime>): List<BackupAnime> {
@@ -138,7 +142,7 @@ class AnimeRestorer(
                 artist = anime.artist,
                 author = anime.author,
                 description = anime.description,
-                genre = anime.genre?.joinToString(separator = ", "),
+                genre = anime.genre,
                 title = anime.title,
                 status = anime.status,
                 thumbnailUrl = anime.thumbnailUrl,
@@ -152,11 +156,11 @@ class AnimeRestorer(
                 coverLastModified = anime.coverLastModified,
                 dateAdded = anime.dateAdded,
                 animeId = anime.id,
-                updateStrategy = anime.updateStrategy.let(AnimeUpdateStrategyColumnAdapter::encode),
+                updateStrategy = anime.updateStrategy,
                 version = anime.version,
                 isSyncing = 1,
                 notes = anime.notes,
-                fetchType = anime.fetchType.let(FetchTypeColumnAdapter::encode),
+                fetchType = anime.fetchType,
                 parentId = anime.parentId,
                 seasonFlags = anime.seasonFlags,
                 seasonNumber = anime.seasonNumber,
@@ -164,7 +168,7 @@ class AnimeRestorer(
                 cast = anime.cast?.let(CastColumnAdapter::encode),
                 backgroundUrl = anime.backgroundUrl,
                 backgroundLastModified = anime.backgroundLastModified,
-                memo = anime.memo.let(MemoColumnAdapter::encode),
+                memo = anime.memo,
             )
         }
         return anime
@@ -185,9 +189,18 @@ class AnimeRestorer(
             .associateBy { it.url }
 
         val (existingEpisodes, newEpisodes) = backupEpisodes
-            .mapNotNull { backupEpisode ->
-                val episode = backupEpisode.toEpisodeImpl().copy(animeId = anime.id)
-
+            .map { it.toEpisodeImpl().copy(animeId = anime.id) }
+            .groupBy { it.url }
+            .map { (_, copies) ->
+                copies.reduce { kept, other ->
+                    kept.copy(
+                        seen = kept.seen || other.seen,
+                        bookmark = kept.bookmark || other.bookmark,
+                        lastSecondSeen = kotlin.math.max(kept.lastSecondSeen, other.lastSecondSeen),
+                    )
+                }
+            }
+            .mapNotNull { episode ->
                 val dbEpisode = dbEpisodesByUrl[episode.url]
 
                 when {
@@ -287,7 +300,7 @@ class AnimeRestorer(
                     version = episode.version,
                     isSyncing = 0,
                     dateUploadOverride = episode.dateUploadOverride,
-                    memo = episode.memo.let(MemoColumnAdapter::encode),
+                    memo = episode.memo,
                 )
             }
         }
@@ -387,41 +400,37 @@ class AnimeRestorer(
     }
 
     private suspend fun restoreHistory(anime: Anime, backupHistory: List<BackupAnimeHistory>) {
-        val toUpdate = backupHistory.mapNotNull { history ->
-            val dbHistory = handler.awaitOneOrNull {
-                animehistoryQueries.getHistoryByEpisodeUrlAndAnimeId(history.url, anime.id)
-            }
-            val item = history.getHistoryImpl()
-
-            if (dbHistory == null) {
-                val episode = handler.awaitOneOrNull {
-                    episodesQueries.getEpisodeByUrlAndAnimeId(history.url, anime.id)
+        val toUpdate = backupHistory
+            .groupBy { it.url }
+            .mapNotNull { (url, copies) ->
+                val seenAt = copies.maxOf { it.lastRead }
+                val dbHistory = handler.awaitOneOrNull {
+                    animehistoryQueries.getHistoryByEpisodeUrlAndAnimeId(url, anime.id)
                 }
-                return@mapNotNull if (episode == null) {
-                    // Episode doesn't exist; skip
-                    null
-                } else {
+
+                if (dbHistory == null) {
+                    val episode = handler.awaitOneOrNull {
+                        episodesQueries.getEpisodeByUrlAndAnimeId(url, anime.id)
+                    }
+                        // Episode doesn't exist; skip
+                        ?: return@mapNotNull null
                     // New history entry
-                    item.copy(episodeId = episode._id)
+                    return@mapNotNull Pair(episode._id, Date(seenAt))
                 }
-            }
 
-            // Update history entry
-            item.copy(
-                id = dbHistory._id,
-                episodeId = dbHistory.episode_id,
-                seenAt = max(item.seenAt?.time ?: 0L, dbHistory.last_seen?.time ?: 0L)
-                    .takeIf { it > 0L }
-                    ?.let { Date(it) },
-            )
-        }
+                // Update history entry
+                Pair(
+                    dbHistory.episode_id,
+                    Date(max(seenAt, dbHistory.last_seen?.time ?: 0L)),
+                )
+            }
 
         if (toUpdate.isNotEmpty()) {
             handler.await(true) {
-                toUpdate.forEach {
+                toUpdate.forEach { (episodeId, seenAt) ->
                     animehistoryQueries.upsert(
-                        it.episodeId,
-                        it.seenAt,
+                        episodeId,
+                        seenAt,
                     )
                 }
             }
@@ -441,22 +450,15 @@ class AnimeRestorer(
                         animeId = anime.id,
                     )
 
-                if (track.forComparison() == dbTrack.forComparison()) {
-                    // Same state; skip
-                    return@mapNotNull null
-                }
+                if (track.lastEpisodeSeen <= dbTrack.lastEpisodeSeen) return@mapNotNull null
 
                 // Update to an existing track
-                dbTrack.copy(
-                    remoteId = track.remoteId,
-                    libraryId = track.libraryId,
-                    lastEpisodeSeen = max(dbTrack.lastEpisodeSeen, track.lastEpisodeSeen),
-                )
+                dbTrack.copy(lastEpisodeSeen = track.lastEpisodeSeen)
             }
             .partition { it.id > 0 }
 
         if (newTracks.isNotEmpty()) {
-            insertTrack.awaitAll(newTracks)
+            upsertTrack.awaitAll(newTracks)
         }
         if (existingTracks.isNotEmpty()) {
             handler.await(true) {
@@ -481,6 +483,4 @@ class AnimeRestorer(
             }
         }
     }
-
-    private fun AnimeTrack.forComparison() = this.copy(id = 0L, animeId = 0L)
 }

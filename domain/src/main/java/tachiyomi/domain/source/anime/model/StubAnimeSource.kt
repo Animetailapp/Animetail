@@ -12,7 +12,7 @@ import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 
 @Suppress("OverridingDeprecatedMember")
-class StubAnimeSource(
+data class StubAnimeSource(
     override val id: Long,
     override val lang: String,
     override val name: String,

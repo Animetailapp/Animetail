@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.util.system.setDefaultSettings
 import eu.kanade.tachiyomi.util.system.setUserAgent
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.Headers
 import okhttp3.Interceptor
@@ -58,15 +59,23 @@ abstract class WebViewInterceptor(
             return response
         }
 
-        if (!WebViewUtil.supportsWebView(context)) {
-            scope.launch {
-                context.toast(MR.strings.information_webview_required, Toast.LENGTH_LONG)
-            }
-            return response
-        }
-        initWebView
+        if (!prepareWebView()) return response
 
         return intercept(chain, request, response)
+    }
+
+    /**
+     * Returns whether a WebView can be used, initializing it if so.
+     */
+    protected fun prepareWebView(): Boolean {
+        if (!WebViewUtil.supportsWebView(context)) {
+            scope.launch(Dispatchers.Main) {
+                context.toast(MR.strings.information_webview_required, Toast.LENGTH_LONG)
+            }
+            return false
+        }
+        initWebView
+        return true
     }
 
     fun parseHeaders(headers: Headers): Map<String, String> {

@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.JsonObject
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.items.episode.model.EpisodeUpdate
@@ -86,7 +85,7 @@ class EpisodeRepositoryImpl(
                     previewUrl = episodeUpdate.previewUrl,
                     fillermark = episodeUpdate.fillermark,
                     dateUploadOverride = episodeUpdate.dateUploadOverride,
-                    memo = episodeUpdate.memo?.let(MemoColumnAdapter::encode),
+                    memo = episodeUpdate.memo,
                 )
             }
         }
@@ -102,6 +101,13 @@ class EpisodeRepositoryImpl(
 
     override suspend fun getEpisodeByAnimeId(animeId: Long): List<Episode> {
         return handler.awaitList { episodesQueries.getEpisodesByAnimeId(animeId, ::mapEpisode) }
+    }
+
+    override suspend fun getEpisodesByAnimeIds(animeIds: List<Long>): Map<Long, List<Episode>> {
+        return handler.awaitList {
+            episodesQueries.getEpisodesByAnimeIds(animeIds, ::mapEpisode)
+        }
+            .groupBy { it.animeId }
     }
 
     override suspend fun getBookmarkedEpisodesByAnimeId(animeId: Long): List<Episode> {

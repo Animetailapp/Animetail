@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.util.fastFilter
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -93,13 +94,22 @@ class MangaUpdatesViewModel(
 
     private val dialog = MutableStateFlow<Dialog?>(null)
 
-    private val downloadStates = MutableStateFlow(emptyMap<Long, DownloadProgress>())
+    private val downloadStates = MutableStateFlow(emptyMap<Long, MangaDownload.State>())
+
+    // Progress ticks often, so only the download indicators that read it recompose instead of every tick rebuilding
+    // the list
+    private val downloadProgress = mutableStateMapOf<Long, Int>()
 
     init {
         viewModelScope.launchIO {
-            merge(downloadManager.statusFlow(), downloadManager.progressFlow())
+            downloadManager.statusFlow()
                 .catch { logcat(LogPriority.ERROR, it) }
                 .collect(this@MangaUpdatesViewModel::updateDownloadState)
+        }
+        viewModelScope.launchIO {
+            downloadManager.progressFlow()
+                .catch { logcat(LogPriority.ERROR, it) }
+                .collect { downloadProgress[it.chapter.id] = it.progress }
         }
     }
 
@@ -113,8 +123,13 @@ class MangaUpdatesViewModel(
             ) {
                 it - chapterId
             } else {
-                it + (chapterId to DownloadProgress(download.status, download.progress))
+                it + (chapterId to download.status)
             }
+        }
+        if (download.status == MangaDownload.State.DOWNLOADING) {
+            downloadProgress[chapterId] = download.progress
+        } else {
+            downloadProgress.remove(chapterId)
         }
     }
 
@@ -176,18 +191,13 @@ class MangaUpdatesViewModel(
             isLoading = items == null,
             hasActiveFilters = hasActiveFilters,
             items = items.orEmpty().map { item ->
-                val download = downloads[item.update.chapterId]
+                val downloadState = downloads[item.update.chapterId]
                 item.copy(
                     selected = item.update.chapterId in selectedIds,
-                    downloadStateProvider = if (download != null) {
-                        { download.status }
+                    downloadStateProvider = if (downloadState != null) {
+                        { downloadState }
                     } else {
                         item.downloadStateProvider
-                    },
-                    downloadProgressProvider = if (download != null) {
-                        { download.progress }
-                    } else {
-                        item.downloadProgressProvider
                     },
                 )
             },
@@ -231,7 +241,7 @@ class MangaUpdatesViewModel(
                 MangaUpdatesItem(
                     update = update,
                     downloadStateProvider = { downloadState },
-                    downloadProgressProvider = { activeDownload?.progress ?: 0 },
+                    downloadProgressProvider = { downloadProgress[update.chapterId] ?: 0 },
                 )
             }
     }
@@ -308,7 +318,7 @@ class MangaUpdatesViewModel(
         viewModelScope.launchIO {
             updates
                 .filterNot { it.update.bookmark == bookmark }
-                .map { ChapterUpdate(id = it.update.chapterId, bookmark = bookmark) }
+                .map { ChapterUpdate(it.update.chapterId) { this.bookmark = bookmark } }
                 .let { updateChapter.awaitAll(it) }
         }
         toggleAllSelection(false)
@@ -478,8 +488,6 @@ class MangaUpdatesViewModel(
         val filterIncludedCategories: List<Long>,
         val filterExcludedCategories: List<Long>,
     )
-
-    private data class DownloadProgress(val status: MangaDownload.State, val progress: Int)
 
     @Immutable
     data class State(

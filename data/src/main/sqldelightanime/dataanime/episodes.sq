@@ -65,6 +65,12 @@ SELECT *
 FROM episodes
 WHERE anime_id = :animeId;
 
+getEpisodesByAnimeIds:
+SELECT *
+FROM episodes
+WHERE anime_id IN :animeIds
+ORDER BY anime_id, url;
+
 getBookmarkedEpisodesByAnimeId:
 SELECT *
 FROM episodes

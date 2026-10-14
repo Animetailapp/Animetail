@@ -16,14 +16,15 @@ import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -33,7 +34,6 @@ import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import java.util.concurrent.Executors
 
 abstract class AnimeSearchViewModel(
     initialState: State = State(),
@@ -54,7 +54,7 @@ abstract class AnimeSearchViewModel(
         state.update(function)
     }
 
-    private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
+    private val coroutineDispatcher = Dispatchers.IO.limitedParallelism(5)
     private var searchJob: Job? = null
 
     private val enabledLanguages = sourcePreferences.enabledLanguages.get()
@@ -104,7 +104,7 @@ abstract class AnimeSearchViewModel(
             )
     }
 
-    private fun getSelectedSources(): List<AnimeSource> {
+    private suspend fun getSelectedSources(): List<AnimeSource> {
         val enabledSources = getEnabledSources()
 
         val filter = extensionFilter
@@ -112,7 +112,7 @@ abstract class AnimeSearchViewModel(
             return enabledSources
         }
 
-        return extensionManager.installedExtensionsFlow.value
+        return extensionManager.getLoadedExtensions()
             .filter { it.pkgName == filter }
             .flatMap { it.sources }
             .filter { it in enabledSources }
@@ -142,25 +142,26 @@ abstract class AnimeSearchViewModel(
         this.lastQuery = query
         this.lastSourceFilter = sourceFilter
 
-        val sources = getSelectedSources()
-
-        // Reuse previous results if possible
-        if (sameQuery) {
-            val existingResults = state.value.items
-            updateItems(
-                sources
-                    .associateWith { existingResults[it] ?: AnimeSearchItemResult.Loading }
-                    .toPersistentMap(),
-            )
-        } else {
-            updateItems(
-                sources
-                    .associateWith { AnimeSearchItemResult.Loading }
-                    .toPersistentMap(),
-            )
-        }
+        searchJob?.cancel()
 
         searchJob = viewModelScope.launch {
+            val sources = getSelectedSources()
+
+            // Reuse previous results if possible
+            if (sameQuery) {
+                val existingResults = state.value.items
+                updateItems(
+                    sources
+                        .associateWith { existingResults[it] ?: AnimeSearchItemResult.Loading }
+                        .toPersistentMap(),
+                )
+            } else {
+                updateItems(
+                    sources
+                        .associateWith { AnimeSearchItemResult.Loading }
+                        .toPersistentMap(),
+                )
+            }
             sources.map { source ->
                 async {
                     if (state.value.items[source] !is AnimeSearchItemResult.Loading) {
@@ -208,10 +209,14 @@ abstract class AnimeSearchViewModel(
     }
 
     private fun updateItem(source: AnimeSource, result: AnimeSearchItemResult) {
-        val newItems = state.value.items.mutate {
-            it[source] = result
+        state.update { currentState ->
+            val newItems = currentState.items.mutate {
+                it[source] = result
+            }
+            currentState.copy(
+                items = newItems.toSortedMap(sortComparator(newItems)).toPersistentMap(),
+            )
         }
-        updateItems(newItems)
     }
 
     @Immutable

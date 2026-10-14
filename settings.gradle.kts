@@ -44,6 +44,8 @@ include(":i18n-aniyomi")
 // TAIL -->
 include(":i18n-tail")
 // TAIL <--
+include(":icons:material-symbols")
+include(":icons:simple-icons")
 include(":macrobenchmark")
 include(":presentation-core")
 include(":presentation-widget")

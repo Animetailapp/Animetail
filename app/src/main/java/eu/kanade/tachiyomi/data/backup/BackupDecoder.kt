@@ -4,9 +4,12 @@ import android.content.Context
 import android.net.Uri
 import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.backup.models.Backup
-import eu.kanade.tachiyomi.data.backup.models.LegacyBackup
-import kotlinx.serialization.SerializationException
+import eu.kanade.tachiyomi.data.backup.models.BackupAnime
+import eu.kanade.tachiyomi.data.backup.models.BackupManga
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.protobuf.ProtoBuf
+import okio.BufferedSource
 import okio.buffer
 import okio.gzip
 import okio.source
@@ -20,9 +23,77 @@ class BackupDecoder(
     private val parser: ProtoBuf,
 ) {
     /**
-     * Decode a potentially-gzipped backup.
+     * Decode everything but the entries of a potentially-gzipped backup, counting the entries without decoding them.
      */
-    fun decode(uri: Uri): Backup {
+    fun decodeMetadata(uri: Uri): Metadata {
+        return read(uri) { reader ->
+            orInvalid {
+                var mangaCount = 0
+                var animeCount = 0
+                while (reader.nextEntry()) {
+                    when (reader.currentEntryType) {
+                        BackupReader.EntryType.MANGA -> {
+                            reader.skipEntry()
+                            mangaCount++
+                        }
+
+                        BackupReader.EntryType.ANIME -> {
+                            reader.skipEntry()
+                            animeCount++
+                        }
+
+                        BackupReader.EntryType.NONE -> {}
+                    }
+                }
+                Metadata(mangaCount, animeCount, reader.readMetadata())
+            }
+        }
+    }
+
+    /**
+     * Decode the manga entries of a potentially-gzipped backup one at a time, skipping those whose index [include] rejects.
+     */
+    fun decodeMangaEntries(uri: Uri, include: (index: Int) -> Boolean = { true }): Flow<BackupManga> = flow {
+        read(uri) { reader ->
+            var index = 0
+            while (orInvalid { reader.nextEntry() }) {
+                if (reader.currentEntryType == BackupReader.EntryType.MANGA) {
+                    if (include(index++)) {
+                        emit(orInvalid { reader.readMangaEntry() })
+                    } else {
+                        orInvalid { reader.skipEntry() }
+                    }
+                } else {
+                    orInvalid { reader.skipEntry() }
+                }
+            }
+        }
+    }
+
+    fun decodeEntries(uri: Uri, include: (index: Int) -> Boolean = { true }): Flow<BackupManga> =
+        decodeMangaEntries(uri, include)
+
+    /**
+     * Decode the anime entries of a potentially-gzipped backup one at a time, skipping those whose index [include] rejects.
+     */
+    fun decodeAnimeEntries(uri: Uri, include: (index: Int) -> Boolean = { true }): Flow<BackupAnime> = flow {
+        read(uri) { reader ->
+            var index = 0
+            while (orInvalid { reader.nextEntry() }) {
+                if (reader.currentEntryType == BackupReader.EntryType.ANIME) {
+                    if (include(index++)) {
+                        emit(orInvalid { reader.readAnimeEntry() })
+                    } else {
+                        orInvalid { reader.skipEntry() }
+                    }
+                } else {
+                    orInvalid { reader.skipEntry() }
+                }
+            }
+        }
+    }
+
+    private inline fun <T> read(uri: Uri, block: (BackupReader) -> T): T {
         return context.contentResolver.openInputStream(uri)!!.use { inputStream ->
             val source = inputStream.source().buffer()
 
@@ -30,7 +101,7 @@ class BackupDecoder(
                 require(2)
             }
             val id1id2 = peeked.readShort()
-            val backupString = when (id1id2.toInt()) {
+            val backupSource: BufferedSource = when (id1id2.toInt()) {
                 0x1f8b -> source.gzip().buffer()
 
                 // 0x1f8b is gzip magic bytes
@@ -39,19 +110,27 @@ class BackupDecoder(
                 }
 
                 else -> source
-            }.use { it.readByteArray() }
-
-            try {
-                if (BackupDetector.isLegacyBackup(backupString)) {
-                    parser.decodeFromByteArray(LegacyBackup.serializer(), backupString)
-                        .toBackup()
-                } else {
-                    parser.decodeFromByteArray(Backup.serializer(), backupString)
-                }
-            } catch (_: SerializationException) {
-                throw IOException(context.stringResource(MR.strings.invalid_backup_file_unknown))
             }
+
+            backupSource.use { block(BackupReader(it, parser)) }
         }
+    }
+
+    // Only around reading, so the JSON error above and anything thrown downstream of emit keep their own messages
+    private inline fun <T> orInvalid(block: () -> T): T {
+        return try {
+            block()
+        } catch (e: IOException) {
+            throw IOException(context.stringResource(MR.strings.invalid_backup_file_unknown), e)
+        }
+    }
+
+    data class Metadata(
+        val mangaCount: Int,
+        val animeCount: Int,
+        val backup: Backup,
+    ) {
+        val entryCount: Int get() = mangaCount + animeCount
     }
 
     companion object {

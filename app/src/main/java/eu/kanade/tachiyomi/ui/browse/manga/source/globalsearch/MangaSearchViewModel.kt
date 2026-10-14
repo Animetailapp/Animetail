@@ -11,8 +11,8 @@ import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +29,6 @@ import tachiyomi.domain.entries.manga.interactor.GetManga
 import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import java.util.concurrent.Executors
 
 abstract class MangaSearchViewModel(
     initialState: State = State(),
@@ -50,7 +49,7 @@ abstract class MangaSearchViewModel(
         state.update(function)
     }
 
-    private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
+    private val coroutineDispatcher = Dispatchers.IO.limitedParallelism(5)
     private var searchJob: Job? = null
 
     private val enabledLanguages = sourcePreferences.enabledLanguages.get()
@@ -89,7 +88,7 @@ abstract class MangaSearchViewModel(
         }
     }
 
-    open fun getEnabledSources(): List<CatalogueSource> {
+    open suspend fun getEnabledSources(): List<CatalogueSource> {
         return sourceManager.getCatalogueSources()
             .filter { it.lang in enabledLanguages && "${it.id}" !in disabledSources }
             .sortedWith(
@@ -100,7 +99,7 @@ abstract class MangaSearchViewModel(
             )
     }
 
-    private fun getSelectedSources(): List<CatalogueSource> {
+    private suspend fun getSelectedSources(): List<CatalogueSource> {
         val enabledSources = getEnabledSources()
 
         val filter = extensionFilter
@@ -108,7 +107,7 @@ abstract class MangaSearchViewModel(
             return enabledSources
         }
 
-        return extensionManager.installedExtensionsFlow.value
+        return extensionManager.getLoadedExtensions()
             .filter { it.pkgName == filter }
             .flatMap { it.sources }
             .filterIsInstance<CatalogueSource>()
@@ -140,25 +139,24 @@ abstract class MangaSearchViewModel(
         this.lastSourceFilter = sourceFilter
 
         searchJob?.cancel()
-        val sources = getSelectedSources()
-
-        // Reuse previous results if possible
-        if (sameQuery) {
-            val existingResults = state.value.items
-            updateItems(
-                sources
-                    .associateWith { existingResults[it] ?: MangaSearchItemResult.Loading }
-                    .toMap(),
-            )
-        } else {
-            updateItems(
-                sources
-                    .associateWith { MangaSearchItemResult.Loading }
-                    .toMap(),
-            )
-        }
 
         searchJob = viewModelScope.launchIO {
+            val sources = getSelectedSources()
+
+            // Reuse previous results if possible
+            if (sameQuery) {
+                val existingResults = state.value.items
+                updateItems(
+                    sources
+                        .associateWith { existingResults[it] ?: MangaSearchItemResult.Loading },
+                )
+            } else {
+                updateItems(
+                    sources
+                        .associateWith { MangaSearchItemResult.Loading },
+                )
+            }
+
             sources.map { source ->
                 async {
                     if (state.value.items[source] !is MangaSearchItemResult.Loading) {
@@ -206,10 +204,12 @@ abstract class MangaSearchViewModel(
     }
 
     private fun updateItem(source: CatalogueSource, result: MangaSearchItemResult) {
-        val newItems = state.value.items.toMutableMap().apply {
-            this[source] = result
+        state.update { currentState ->
+            val newItems = currentState.items + (source to result)
+            currentState.copy(
+                items = newItems.toSortedMap(sortComparator(newItems)),
+            )
         }
-        updateItems(newItems)
     }
 
     fun setMigrateDialog(currentId: Long, target: Manga) {

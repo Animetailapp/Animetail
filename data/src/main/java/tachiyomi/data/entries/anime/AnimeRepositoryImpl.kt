@@ -11,11 +11,7 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.data.AnimeUpdateStrategyColumnAdapter
 import tachiyomi.data.CastColumnAdapter
-import tachiyomi.data.FetchTypeColumnAdapter
-import tachiyomi.data.MemoColumnAdapter
-import tachiyomi.data.StringListColumnAdapter
 import tachiyomi.data.entries.anime.AnimeMapper
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.entries.anime.model.Anime
@@ -220,7 +216,7 @@ class AnimeRepositoryImpl(
                     artist = value.artist,
                     author = value.author,
                     description = value.description,
-                    genre = value.genre?.let(StringListColumnAdapter::encode),
+                    genre = value.genre,
                     title = value.title,
                     status = value.status,
                     thumbnailUrl = value.thumbnailUrl,
@@ -237,16 +233,16 @@ class AnimeRepositoryImpl(
                     dateAdded = value.dateAdded,
                     cast = value.cast?.let(CastColumnAdapter::encode),
                     animeId = value.id,
-                    updateStrategy = value.updateStrategy?.let(AnimeUpdateStrategyColumnAdapter::encode),
+                    updateStrategy = value.updateStrategy,
                     version = value.version,
                     isSyncing = 0,
                     notes = value.notes,
-                    fetchType = value.fetchType?.let(FetchTypeColumnAdapter::encode),
+                    fetchType = value.fetchType,
                     parentId = value.parentId,
                     seasonFlags = value.seasonFlags,
                     seasonNumber = value.seasonNumber,
                     seasonSourceOrder = value.seasonSourceOrder,
-                    memo = value.memo?.let(MemoColumnAdapter::encode),
+                    memo = value.memo,
                 )
             }
         }

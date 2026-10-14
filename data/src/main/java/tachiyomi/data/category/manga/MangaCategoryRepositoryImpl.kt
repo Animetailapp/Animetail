@@ -11,6 +11,7 @@ import tachiyomi.data.Database
 import tachiyomi.data.subscribeToList
 import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.category.model.Category
+import tachiyomi.domain.category.model.NewCategory
 
 @Inject
 @SingleIn(AppScope::class)
@@ -20,93 +21,112 @@ class MangaCategoryRepositoryImpl(
 ) : MangaCategoryRepository {
 
     override suspend fun getMangaCategory(id: Long): Category? {
-        return database.categoriesQueries
+        return database.categoryQueries
             .getCategory(id, ::mapCategory)
             .awaitAsOneOrNull()
     }
 
     override suspend fun getAllMangaCategories(): List<Category> {
-        return database.categoriesQueries
+        return database.categoryQueries
             .getCategories(::mapCategory)
             .awaitAsList()
     }
 
     override suspend fun getAllVisibleMangaCategories(): List<Category> {
-        return database.categoriesQueries
+        return database.categoryQueries
             .getVisibleCategories(::mapCategory)
             .awaitAsList()
     }
 
     override fun getAllMangaCategoriesAsFlow(): Flow<List<Category>> {
-        return database.categoriesQueries
+        return database.categoryQueries
             .getCategories(::mapCategory)
             .subscribeToList()
     }
 
     override fun getAllVisibleMangaCategoriesAsFlow(): Flow<List<Category>> {
-        return database.categoriesQueries
+        return database.categoryQueries
             .getVisibleCategories(::mapCategory)
             .subscribeToList()
     }
 
     override suspend fun getCategoriesByMangaId(mangaId: Long): List<Category> {
-        return database.categoriesQueries
+        return database.categoryQueries
             .getCategoriesByMangaId(mangaId, ::mapCategory)
             .awaitAsList()
     }
 
+    override suspend fun getCategoriesByMangaIds(mangaIds: List<Long>): Map<Long, List<Category>> {
+        return database.categoryQueries
+            .getCategoriesByMangaIds(mangaIds) { mangaId, id, name, order, flags, hidden ->
+                mangaId to mapCategory(id, name, order, flags, hidden)
+            }
+            .awaitAsList()
+            .groupBy({ it.first }, { it.second })
+    }
+
     override suspend fun getVisibleCategoriesByMangaId(mangaId: Long): List<Category> {
-        return database.categoriesQueries
+        return database.categoryQueries
             .getVisibleCategoriesByMangaId(mangaId, ::mapCategory)
             .awaitAsList()
     }
 
     override fun getCategoriesByMangaIdAsFlow(mangaId: Long): Flow<List<Category>> {
-        return database.categoriesQueries
+        return database.categoryQueries
             .getCategoriesByMangaId(mangaId, ::mapCategory)
             .subscribeToList()
     }
 
     override fun getVisibleCategoriesByMangaIdAsFlow(mangaId: Long): Flow<List<Category>> {
-        return database.categoriesQueries
+        return database.categoryQueries
             .getVisibleCategoriesByMangaId(mangaId, ::mapCategory)
             .subscribeToList()
     }
 
-    override suspend fun insertMangaCategory(category: Category) {
-        database.categoriesQueries.insert(
+    override suspend fun insertMangaCategory(category: NewCategory) {
+        database.categoryQueries.insert(
             name = category.name,
-            order = category.order,
             flags = category.flags,
         )
     }
 
+    override suspend fun insertAllMangaCategories(categories: List<NewCategory>) {
+        database.transaction {
+            categories.forEach { insertMangaCategory(it) }
+        }
+    }
+
     override suspend fun updateMangaCategoryName(categoryId: Long, name: String) {
-        database.categoriesQueries.updateName(name = name, categoryId = categoryId)
+        database.categoryQueries.updateName(name = name, id = categoryId)
     }
 
     override suspend fun updateMangaCategoryFlags(categoryId: Long, flags: Long) {
-        database.categoriesQueries.updateFlags(flags = flags, categoryId = categoryId)
+        database.categoryQueries.updateFlags(flags = flags, id = categoryId)
     }
 
     override suspend fun updateMangaCategoryHidden(categoryId: Long, hidden: Boolean) {
-        database.categoriesQueries.updateHidden(hidden = if (hidden) 1L else 0L, categoryId = categoryId)
+        database.categoryQueries.updateHidden(hidden = if (hidden) 1L else 0L, id = categoryId)
     }
 
-    override suspend fun updateAllMangaCategoryFlags(flags: Long?) {
-        database.categoriesQueries.updateAllFlags(flags = flags)
+    override suspend fun updateAllMangaCategoryFlags(flags: Long) {
+        database.categoryQueries.updateAllFlags(flags = flags)
     }
 
     override suspend fun updateMangaCategoryAllOrders(orderedIds: List<Long>) {
         database.transaction {
-            orderedIds.forEachIndexed { index, id ->
-                database.categoriesQueries.updateOrder(order = index.toLong(), categoryId = id)
+            val current = database.categoryQueries.getUserCategoryIds().awaitAsList()
+            val ids = orderedIds.filter { it in current } + current.filterNot { it in orderedIds }
+            ids.forEachIndexed { index, id ->
+                database.categoryQueries.updateOrder(order = -index - 2L, id = id)
+            }
+            ids.forEachIndexed { index, id ->
+                database.categoryQueries.updateOrder(order = index.toLong(), id = id)
             }
         }
     }
 
     override suspend fun deleteMangaCategory(categoryId: Long) {
-        database.categoriesQueries.delete(categoryId = categoryId)
+        database.categoryQueries.delete(id = categoryId)
     }
 
     private fun mapCategory(

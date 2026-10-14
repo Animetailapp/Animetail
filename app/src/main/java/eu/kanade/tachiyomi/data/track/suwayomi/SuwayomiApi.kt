@@ -1,110 +1,112 @@
 package eu.kanade.tachiyomi.data.track.suwayomi
 
-import android.app.Application
 import android.content.SharedPreferences
-import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
-import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
-import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.NetworkHelper
-import eu.kanade.tachiyomi.network.PUT
-import eu.kanade.tachiyomi.network.awaitSuccess
-import eu.kanade.tachiyomi.network.parseAs
-import kotlinx.serialization.json.Json
-import mihon.app.di.appGraph
-import okhttp3.Credentials
-import okhttp3.Dns
-import okhttp3.FormBody
-import okhttp3.Headers
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.network.okHttpClient
+import eu.kanade.tachiyomi.network.dataOrElse
+import eu.kanade.tachiyomi.source.ConfigurableSource
+import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.source.sourcePreferences
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import mihon.graphql.suwayomi.SuwayomiGetMangaQuery
+import mihon.graphql.suwayomi.SuwayomiGetMangaUnreadChaptersQuery
+import mihon.graphql.suwayomi.SuwayomiMarkAndDeleteChaptersMutation
+import mihon.graphql.suwayomi.SuwayomiMarkChaptersReadMutation
+import mihon.graphql.suwayomi.SuwayomiUpdateMangaProgressMutation
 import okhttp3.OkHttpClient
-import tachiyomi.core.common.util.lang.withIOContext
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
-import java.nio.charset.Charset
 import java.security.MessageDigest
+import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack as Track
+import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch as TrackSearch
+import eu.kanade.tachiyomi.source.MangaSource as Source
+import tachiyomi.domain.source.manga.service.MangaSourceManager as SourceManager
 
 class SuwayomiApi(
-    private val trackId: Long,
+    private val trackerId: Long,
+    private val sourceManager: SourceManager,
 ) {
+    // Blocking is fine here: these are only touched from OkHttp and tracker threads.
+    private val source: Source by lazy { runBlocking { sourceManager.get(sourceId)!! } }
+    private val httpSource: HttpSource by lazy { source as HttpSource }
+    private val configurableSource: ConfigurableSource by lazy { source as ConfigurableSource }
+    private val client: OkHttpClient by lazy { httpSource.client }
+    private val baseUrl: String by lazy { httpSource.baseUrl.trimEnd('/') }
+    private val apiUrl: String by lazy { "$baseUrl/api/graphql" }
 
-    private val appGraph get() = Injekt.get<Application>().appGraph
-    private val network get() = appGraph.networkHelper
-    private val json: Json get() = appGraph.json
-
-    private val client: OkHttpClient by lazy {
-        network.client.newBuilder()
-            .dns(Dns.SYSTEM) // don't use DNS over HTTPS as it breaks IP addressing
+    private val graphQlClient by lazy {
+        ApolloClient.Builder()
+            .serverUrl(apiUrl)
+            .okHttpClient(client)
+            .dispatcher(Dispatchers.IO)
+            // required to log the error body in dataOrElse, which also properly closes it
+            .httpExposeErrorBody(true)
             .build()
     }
 
-    private fun headersBuilder(): Headers.Builder = Headers.Builder().apply {
-        add("User-Agent", network.defaultUserAgentProvider())
-        if (basePassword.isNotEmpty() && baseLogin.isNotEmpty()) {
-            val credentials = Credentials.basic(baseLogin, basePassword)
-            add("Authorization", credentials)
-        }
-    }
+    fun sourcePreferences(): SharedPreferences = configurableSource.sourcePreferences()
 
-    private val headers: Headers by lazy { headersBuilder().build() }
-
-    private val baseUrl by lazy { getPrefBaseUrl() }
-    private val baseLogin by lazy { getPrefBaseLogin() }
-    private val basePassword by lazy { getPrefBasePassword() }
-
-    suspend fun getTrackSearch(trackUrl: String): MangaTrackSearch = withIOContext {
-        val url = try {
-            // test if getting api url or manga id
-            val mangaId = trackUrl.toLong()
-            "$baseUrl/api/v1/manga/$mangaId"
-        } catch (e: NumberFormatException) {
-            trackUrl
-        }
-
-        val manga = with(json) {
-            client.newCall(GET("$url/full", headers))
-                .awaitSuccess()
-                .parseAs<MangaDataClass>()
-        }
-
-        MangaTrackSearch.create(trackId).apply {
-            title = manga.title
-            cover_url = "$url/thumbnail"
-            summary = manga.description.orEmpty()
-            tracking_url = url
-            total_chapters = manga.chapterCount
-            publishing_status = manga.status
-            last_chapter_read = manga.lastChapterRead?.chapterNumber ?: 0.0
-            status = when (manga.unreadCount) {
-                manga.chapterCount -> Suwayomi.UNREAD
-                0L -> Suwayomi.COMPLETED
-                else -> Suwayomi.READING
+    suspend fun getTrackSearch(mangaId: Long): TrackSearch? {
+        return graphQlClient
+            .query(
+                SuwayomiGetMangaQuery(mangaId = mangaId.toInt()),
+            )
+            .execute()
+            .dataOrElse(
+                errorLog = "Suwayomi: Failed to find manga in library",
+                default = { null },
+            ) {
+                it.manga.mangaFragment.toTrackSearch(trackerId, baseUrl)
             }
-        }
     }
 
-    suspend fun updateProgress(track: MangaTrack): MangaTrack {
-        val url = track.tracking_url
-        val chapters = with(json) {
-            client.newCall(GET("$url/chapters", headers))
-                .awaitSuccess()
-                .parseAs<List<ChapterDataClass>>()
+    suspend fun updateProgress(track: Track, deleteDownloadsOnServer: Boolean = false): Track? {
+        val mangaId = track.remote_id
+
+        val chaptersToMark = graphQlClient
+            .query(
+                SuwayomiGetMangaUnreadChaptersQuery(
+                    mangaId = mangaId.toInt(),
+                    chapterNumber = track.last_chapter_read,
+                ),
+            )
+            .execute()
+            .dataOrElse(
+                errorLog = "Suwayomi: Failed to get chapters data",
+                default = { null },
+            ) {
+                it.chapters.nodes.map { chapter -> chapter.id }
+            }
+            ?: throw Exception("Could not get chapters data")
+
+        if (chaptersToMark.isEmpty()) {
+            return getTrackSearch(mangaId)
         }
-        val lastChapterIndex = chapters
-            .first { kotlin.math.abs(it.chapterNumber - track.last_chapter_read) <= 0.001 }
-            .index
 
-        client.newCall(
-            PUT(
-                "$url/chapter/$lastChapterIndex",
-                headers,
-                FormBody.Builder(Charset.forName("utf8"))
-                    .add("markPrevRead", "true")
-                    .add("read", "true")
-                    .build(),
-            ),
-        ).awaitSuccess()
+        val markMutation = if (deleteDownloadsOnServer) {
+            SuwayomiMarkAndDeleteChaptersMutation(chapters = chaptersToMark)
+        } else {
+            SuwayomiMarkChaptersReadMutation(chapters = chaptersToMark)
+        }
 
-        return getTrackSearch(track.tracking_url)
+        graphQlClient
+            .mutation(markMutation)
+            .execute()
+            .dataOrElse(
+                errorLog = "Suwayomi: Failed to mark chapters",
+                default = {},
+            ) {}
+
+        graphQlClient
+            .mutation(
+                SuwayomiUpdateMangaProgressMutation(mangaId = mangaId.toInt()),
+            )
+            .execute()
+            .dataOrElse(
+                errorLog = "Suwayomi: Failed to update progress",
+                default = {},
+            ) {}
+
+        return getTrackSearch(mangaId)
     }
 
     private val sourceId by lazy {
@@ -112,22 +114,4 @@ class SuwayomiApi(
         val bytes = MessageDigest.getInstance("MD5").digest(key.toByteArray())
         (0..7).map { bytes[it].toLong() and 0xff shl 8 * (7 - it) }.reduce(Long::or) and Long.MAX_VALUE
     }
-
-    private val preferences: SharedPreferences by lazy {
-        Injekt.get<Application>().getSharedPreferences("source_$sourceId", 0x0000)
-    }
-
-    private fun getPrefBaseUrl(): String = preferences.getString(ADDRESS_TITLE, ADDRESS_DEFAULT)!!
-    private fun getPrefBaseLogin(): String = preferences.getString(LOGIN_TITLE, LOGIN_DEFAULT)!!
-    private fun getPrefBasePassword(): String = preferences.getString(
-        PASSWORD_TITLE,
-        PASSWORD_DEFAULT,
-    )!!
 }
-
-private const val ADDRESS_TITLE = "Server URL Address"
-private const val ADDRESS_DEFAULT = ""
-private const val LOGIN_TITLE = "Login (Basic Auth)"
-private const val LOGIN_DEFAULT = ""
-private const val PASSWORD_TITLE = "Password (Basic Auth)"
-private const val PASSWORD_DEFAULT = ""

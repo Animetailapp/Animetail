@@ -5,6 +5,7 @@ import tachiyomi.domain.items.chapter.model.toChapterUpdate as toNewChapterUpdat
 
 typealias Chapter = tachiyomi.domain.items.chapter.model.Chapter
 typealias ChapterUpdate = tachiyomi.domain.items.chapter.model.ChapterUpdate
+typealias ChapterRemoteUpdate = tachiyomi.domain.items.chapter.model.ChapterRemoteUpdate
 typealias NoChaptersException = tachiyomi.domain.items.chapter.model.NoChaptersException
 
 fun NewChapter.toChapterUpdate(): ChapterUpdate = toNewChapterUpdate()

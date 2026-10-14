@@ -58,6 +58,15 @@ class Discord(id: Long) : ConnectionsService(id) {
         if (account.isActive) {
             accounts.replaceAll { it.copy(isActive = false) }
             connectionsPreferences.connectionsToken(this).set(account.token)
+            DiscordTokenStore.store(
+                token = account.token,
+                refreshToken = account.refreshToken,
+                expiresInSeconds = if (account.expiresAt > System.currentTimeMillis()) {
+                    (account.expiresAt - System.currentTimeMillis()) / 1000L
+                } else {
+                    0L
+                },
+            )
         }
 
         val index = accounts.indexOfFirst { it.id == account.id }
@@ -84,9 +93,33 @@ class Discord(id: Long) : ConnectionsService(id) {
         // Update active token and restart RPC
         accounts.find { it.id == accountId }?.let { account ->
             connectionsPreferences.connectionsToken(this).set(account.token)
+            DiscordTokenStore.store(
+                token = account.token,
+                refreshToken = account.refreshToken,
+                expiresInSeconds = if (account.expiresAt > System.currentTimeMillis()) {
+                    (account.expiresAt - System.currentTimeMillis()) / 1000L
+                } else {
+                    0L
+                },
+            )
             // Trigger RPC restart
             connectionsPreferences.enableDiscordRPC().set(false)
             connectionsPreferences.enableDiscordRPC().set(true)
+        }
+    }
+
+    fun updateToken(token: String, refreshToken: String?, expiresAt: Long) {
+        val accounts = getAccounts().toMutableList()
+        val activeIndex = accounts.indexOfFirst { it.isActive }
+        if (activeIndex >= 0) {
+            val active = accounts[activeIndex]
+            accounts[activeIndex] = active.copy(
+                token = token,
+                refreshToken = refreshToken ?: active.refreshToken,
+                expiresAt = if (expiresAt > 0) expiresAt else active.expiresAt,
+            )
+            connectionsPreferences.connectionsToken(this).set(token)
+            saveAccounts(accounts)
         }
     }
 

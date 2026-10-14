@@ -2,7 +2,6 @@ package eu.kanade.presentation.browse.manga
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,24 +9,21 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.GetApp
-import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.SplitButtonDefaults
+import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,16 +33,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.browse.BaseBrowseItem
+import eu.kanade.presentation.browse.components.ExtensionPill
+import eu.kanade.presentation.browse.components.label
 import eu.kanade.presentation.browse.manga.components.MangaExtensionIcon
+import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.components.WarningBanner
-import eu.kanade.presentation.entries.components.DotSeparatorNoSpaceText
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.extension.InstallStep
@@ -54,7 +55,18 @@ import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionUiModel
 import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionsViewModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
+import eu.kanade.tachiyomi.util.system.copyToClipboard
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
+import mihon.domain.extension.model.ExtensionStore
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.Close
+import mihon.icons.materialsymbols.rounded.Download
+import mihon.icons.materialsymbols.rounded.ExpandMore
+import mihon.icons.materialsymbols.rounded.Info
+import mihon.icons.materialsymbols.rounded.Refresh
+import mihon.icons.materialsymbols.rounded.Settings
+import mihon.icons.materialsymbols.rounded.VerifiedUser
+import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.material.PullRefresh
@@ -66,7 +78,6 @@ import tachiyomi.presentation.core.screens.EmptyScreenAction
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.theme.header
 import tachiyomi.presentation.core.util.plus
-import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 @Composable
 fun MangaExtensionScreen(
@@ -77,10 +88,10 @@ fun MangaExtensionScreen(
     onClickItemCancel: (MangaExtension) -> Unit,
     onOpenWebView: (MangaExtension.Available) -> Unit,
     onInstallExtension: (MangaExtension.Available) -> Unit,
-    onUninstallExtension: (MangaExtension) -> Unit,
+    onUninstallExtension: (MangaExtension.Installed) -> Unit,
     onUpdateExtension: (MangaExtension.Installed) -> Unit,
-    onTrustExtension: (MangaExtension.Untrusted) -> Unit,
-    onOpenExtension: (MangaExtension.Installed) -> Unit,
+    onTrustExtension: (MangaExtension.NotLoaded) -> Unit,
+    onOpenExtension: (MangaExtension.Loaded) -> Unit,
     onClickUpdateAll: () -> Unit,
     onRefresh: () -> Unit,
 ) {
@@ -106,7 +117,7 @@ fun MangaExtensionScreen(
                     actions = listOf(
                         EmptyScreenAction(
                             stringRes = MR.strings.extensionStores,
-                            icon = Icons.Outlined.Settings,
+                            icon = MaterialSymbols.Rounded.Settings,
                             onClick = { navigator.push(ExtensionStoresScreen(isManga = true)) },
                         ),
                     ),
@@ -140,14 +151,15 @@ private fun ExtensionContent(
     onOpenWebView: (MangaExtension.Available) -> Unit,
     onClickItemCancel: (MangaExtension) -> Unit,
     onInstallExtension: (MangaExtension.Available) -> Unit,
-    onUninstallExtension: (MangaExtension) -> Unit,
+    onUninstallExtension: (MangaExtension.Installed) -> Unit,
     onUpdateExtension: (MangaExtension.Installed) -> Unit,
-    onTrustExtension: (MangaExtension.Untrusted) -> Unit,
-    onOpenExtension: (MangaExtension.Installed) -> Unit,
+    onTrustExtension: (MangaExtension.NotLoaded) -> Unit,
+    onOpenExtension: (MangaExtension.Loaded) -> Unit,
     onClickUpdateAll: () -> Unit,
 ) {
     val context = LocalContext.current
-    var trustState by remember { mutableStateOf<MangaExtension.Untrusted?>(null) }
+    var notLoadedState by remember { mutableStateOf<MangaExtension.NotLoaded?>(null) }
+    var installErrorState by remember { mutableStateOf<InstallStep.Error?>(null) }
     val installGranted = rememberRequestPackageInstallsPermissionState(initialValue = true)
 
     FastScrollLazyColumn(
@@ -207,8 +219,8 @@ private fun ExtensionContent(
                 contentType = { "item" },
                 key = { item ->
                     when (item.extension) {
-                        is MangaExtension.Untrusted -> "extension-untrusted-${item.hashCode()}"
-                        is MangaExtension.Installed -> "extension-installed-${item.hashCode()}"
+                        is MangaExtension.NotLoaded -> "extension-not-loaded-${item.hashCode()}"
+                        is MangaExtension.Loaded -> "extension-loaded-${item.hashCode()}"
                         is MangaExtension.Available -> "extension-available-${item.hashCode()}"
                     }
                 },
@@ -220,10 +232,10 @@ private fun ExtensionContent(
                         when (it) {
                             is MangaExtension.Available -> onInstallExtension(it)
 
-                            is MangaExtension.Installed -> onOpenExtension(it)
+                            is MangaExtension.Loaded -> onOpenExtension(it)
 
-                            is MangaExtension.Untrusted -> {
-                                trustState = it
+                            is MangaExtension.NotLoaded -> {
+                                notLoadedState = it
                             }
                         }
                     },
@@ -231,16 +243,21 @@ private fun ExtensionContent(
                     onClickItemSecondaryAction = {
                         when (it) {
                             is MangaExtension.Available -> onOpenWebView(it)
-                            is MangaExtension.Installed -> onOpenExtension(it)
-                            else -> {}
+
+                            is MangaExtension.Loaded -> onOpenExtension(it)
+
+                            is MangaExtension.NotLoaded -> {
+                                notLoadedState = it
+                            }
                         }
                     },
                     onClickItemCancel = onClickItemCancel,
+                    onClickItemError = { installErrorState = it },
                     onClickItemAction = {
                         when (it) {
                             is MangaExtension.Available -> onInstallExtension(it)
 
-                            is MangaExtension.Installed -> {
+                            is MangaExtension.Loaded -> {
                                 if (it.hasUpdate) {
                                     onUpdateExtension(it)
                                 } else {
@@ -248,8 +265,12 @@ private fun ExtensionContent(
                                 }
                             }
 
-                            is MangaExtension.Untrusted -> {
-                                trustState = it
+                            is MangaExtension.NotLoaded -> {
+                                if (it.hasUpdate) {
+                                    onUpdateExtension(it)
+                                } else {
+                                    notLoadedState = it
+                                }
                             }
                         }
                     },
@@ -257,21 +278,80 @@ private fun ExtensionContent(
             }
         }
     }
-    if (trustState != null) {
-        ExtensionTrustDialog(
-            onClickConfirm = {
-                onTrustExtension(trustState!!)
-                trustState = null
-            },
-            onClickDismiss = {
-                onUninstallExtension(trustState!!)
-                trustState = null
-            },
-            onDismissRequest = {
-                trustState = null
-            },
+    notLoadedState?.let { extension ->
+        val dismiss = { notLoadedState = null }
+        if (extension.reason is MangaExtension.NotLoaded.Reason.Untrusted) {
+            ExtensionTrustDialog(
+                onClickConfirm = {
+                    onTrustExtension(extension)
+                    dismiss()
+                },
+                onClickDismiss = {
+                    onUninstallExtension(extension)
+                    dismiss()
+                },
+                onDismissRequest = dismiss,
+            )
+        } else {
+            ExtensionNotLoadedDialog(
+                reason = extension.reason,
+                onClickUninstall = {
+                    onUninstallExtension(extension)
+                    dismiss()
+                },
+                onDismissRequest = dismiss,
+            )
+        }
+    }
+    installErrorState?.let { error ->
+        ExtensionInstallErrorDialog(
+            error = error,
+            onDismissRequest = { installErrorState = null },
         )
     }
+}
+
+@Composable
+fun ExtensionInstallErrorDialog(
+    error: InstallStep.Error,
+    onDismissRequest: () -> Unit,
+) {
+    AlertDialog(
+        title = {
+            Text(text = stringResource(MR.strings.ext_install_error))
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small)) {
+                Text(
+                    text = error.message,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                error.stackTrace?.let { stackTrace ->
+                    val context = LocalContext.current
+                    TextButton(
+                        onClick = {
+                            context.copyToClipboard(
+                                label = context.stringResource(MR.strings.ext_copy_stacktrace),
+                                content = stackTrace,
+                            )
+                        },
+                        contentPadding = PaddingValues(0.dp),
+                    ) {
+                        Text(text = stringResource(MR.strings.ext_copy_stacktrace))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(text = stringResource(MR.strings.action_ok))
+            }
+        },
+        onDismissRequest = onDismissRequest,
+    )
 }
 
 @Composable
@@ -280,50 +360,30 @@ private fun ExtensionItem(
     onClickItem: (MangaExtension) -> Unit,
     onLongClickItem: (MangaExtension) -> Unit,
     onClickItemCancel: (MangaExtension) -> Unit,
+    onClickItemError: (InstallStep.Error) -> Unit,
     onClickItemAction: (MangaExtension) -> Unit,
     onClickItemSecondaryAction: (MangaExtension) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val (extension, installStep) = item
+    val store = when (extension) {
+        is MangaExtension.Available -> extension.store
+        is MangaExtension.Installed -> extension.store
+    }
+
     BaseBrowseItem(
-        modifier = modifier
-            .combinedClickable(
-                onClick = { onClickItem(extension) },
-                onLongClick = { onLongClickItem(extension) },
-            ),
+        modifier = modifier,
         onClickItem = { onClickItem(extension) },
         onLongClickItem = { onLongClickItem(extension) },
         icon = {
-            Box(
-                modifier = Modifier
-                    .size(40.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                val idle = installStep.isCompleted()
-                if (!idle) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(40.dp),
-                        strokeWidth = 2.dp,
-                    )
-                }
-
-                val padding by animateDpAsState(
-                    targetValue = if (idle) 0.dp else 8.dp,
-                    label = "iconPadding",
-                )
-                MangaExtensionIcon(
-                    extension = extension,
-                    modifier = Modifier
-                        .matchParentSize()
-                        .padding(padding),
-                )
-            }
+            ExtensionItemIcon(extension = extension, installStep = installStep)
         },
         action = {
             ExtensionItemActions(
                 extension = extension,
                 installStep = installStep,
                 onClickItemCancel = onClickItemCancel,
+                onClickItemError = onClickItemError,
                 onClickItemAction = onClickItemAction,
                 onClickItemSecondaryAction = onClickItemSecondaryAction,
             )
@@ -332,6 +392,7 @@ private fun ExtensionItem(
         ExtensionItemContent(
             extension = extension,
             installStep = installStep,
+            store = store,
             modifier = Modifier.weight(1f),
         )
     }
@@ -341,6 +402,7 @@ private fun ExtensionItem(
 private fun ExtensionItemContent(
     extension: MangaExtension,
     installStep: InstallStep,
+    store: ExtensionStore?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -352,58 +414,108 @@ private fun ExtensionItemContent(
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.bodyMedium,
         )
-        // Won't look good but it's not like we can ellipsize overflowing content
-        FlowRow(
-            modifier = Modifier.secondaryItemAlpha(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
-        ) {
-            ProvideTextStyle(value = MaterialTheme.typography.bodySmall) {
-                if (extension is MangaExtension.Installed && extension.lang.isNotEmpty()) {
-                    Text(
-                        text = LocaleHelper.getSourceDisplayName(
-                            extension.lang,
-                            LocalContext.current,
-                        ),
-                    )
-                }
 
-                if (extension.versionName.isNotEmpty()) {
-                    Text(
-                        text = extension.versionName,
-                    )
-                }
+        if (store != null) {
+            Text(
+                text = store.name,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
-                // KMK -->
-                Text(text = extension.repoName?.let { "@$it" } ?: "(?)")
-                // KMK <--
+        ExtensionItemMetadata(extension = extension, installStep = installStep)
+    }
+}
 
-                val warning = when {
-                    extension is MangaExtension.Untrusted -> MR.strings.ext_untrusted
-                    extension is MangaExtension.Installed && extension.isObsolete -> MR.strings.ext_obsolete
-                    extension.isNsfw -> MR.strings.ext_nsfw_short
-                    else -> null
-                }
-                if (warning != null) {
-                    Text(
-                        text = stringResource(warning).uppercase(),
-                        color = MaterialTheme.colorScheme.error,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+@Composable
+private fun ExtensionItemIcon(
+    extension: MangaExtension,
+    installStep: InstallStep,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.size(48.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        val idle = installStep.isCompleted()
+        if (!idle) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(48.dp),
+                strokeWidth = 2.dp,
+            )
+        }
 
-                if (!installStep.isCompleted()) {
-                    DotSeparatorNoSpaceText()
-                    Text(
-                        text = when (installStep) {
-                            InstallStep.Pending -> stringResource(MR.strings.ext_pending)
-                            InstallStep.Downloading -> stringResource(MR.strings.ext_downloading)
-                            InstallStep.Installing -> stringResource(MR.strings.ext_installing)
-                            else -> error("Must not show non-install process text")
-                        },
-                    )
-                }
-            }
+        val padding by animateDpAsState(
+            targetValue = if (idle) 0.dp else 8.dp,
+            label = "iconPadding",
+        )
+        MangaExtensionIcon(
+            extension = extension,
+            modifier = Modifier
+                .matchParentSize()
+                .padding(padding),
+        )
+    }
+}
+
+/**
+ * Plain text for what an extension simply is, pills for the few things worth noticing about it.
+ * Won't look good when it wraps, but it's not like overflowing content can be ellipsized.
+ */
+@Composable
+private fun ExtensionItemMetadata(
+    extension: MangaExtension,
+    installStep: InstallStep,
+    modifier: Modifier = Modifier,
+) {
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall / 2),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        val facts = listOfNotNull(
+            (extension as? MangaExtension.Loaded)
+                ?.lang
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { LocaleHelper.getSourceDisplayName(it, LocalContext.current) },
+            extension.versionName.takeIf { it.isNotEmpty() },
+        )
+        if (facts.isNotEmpty()) {
+            Text(
+                text = facts.joinToString(" \u2022 "),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        val notable = listOfNotNull(
+            when (installStep) {
+                InstallStep.Pending -> MR.strings.ext_pending
+                InstallStep.Downloading -> MR.strings.ext_downloading
+                InstallStep.Installing -> MR.strings.ext_installing
+                else -> null
+            }?.let { it to MaterialTheme.colorScheme.primary },
+            when {
+                extension is MangaExtension.NotLoaded ->
+                    extension.reason.labelRes?.let { it to MaterialTheme.colorScheme.error }
+
+                extension is MangaExtension.Loaded && extension.isObsolete ->
+                    MR.strings.ext_obsolete to MaterialTheme.colorScheme.error
+
+                else -> null
+            },
+            extension.contentWarning.label?.let { it.title to it.color },
+            (extension as? MangaExtension.Loaded)
+                ?.takeIf { !it.isShared }
+                ?.let { MR.strings.ext_installer_private to MaterialTheme.colorScheme.onSurfaceVariant },
+        )
+        notable.forEach { (label, color) ->
+            ExtensionPill(text = stringResource(label), color = color)
         }
     }
 }
@@ -414,86 +526,159 @@ private fun ExtensionItemActions(
     installStep: InstallStep,
     modifier: Modifier = Modifier,
     onClickItemCancel: (MangaExtension) -> Unit = {},
+    onClickItemError: (InstallStep.Error) -> Unit = {},
     onClickItemAction: (MangaExtension) -> Unit = {},
     onClickItemSecondaryAction: (MangaExtension) -> Unit = {},
 ) {
-    val isIdle = installStep.isCompleted()
+    val isUntrusted = (extension as? MangaExtension.NotLoaded)?.reason is MangaExtension.NotLoaded.Reason.Untrusted
+    val secondaryAction = when (extension) {
+        is MangaExtension.Available -> extension.sources.takeIf { it.isNotEmpty() }
+            ?.let { stringResource(MR.strings.action_open_in_web_view) }
+
+        is MangaExtension.Loaded -> stringResource(MR.strings.action_settings)
+
+        is MangaExtension.NotLoaded -> if (isUntrusted) {
+            stringResource(MR.strings.ext_trust)
+        } else {
+            stringResource(MR.strings.ext_not_loaded_details)
+        }
+    }
+        ?.let { it to { onClickItemSecondaryAction(extension) } }
 
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         when {
-            !isIdle -> {
+            !installStep.isCompleted() -> {
                 IconButton(onClick = { onClickItemCancel(extension) }) {
                     Icon(
-                        imageVector = Icons.Outlined.Close,
+                        imageVector = MaterialSymbols.Rounded.Close,
                         contentDescription = stringResource(MR.strings.action_cancel),
                     )
                 }
             }
 
-            installStep == InstallStep.Error -> {
-                IconButton(onClick = { onClickItemAction(extension) }) {
+            installStep is InstallStep.Error -> {
+                ExtensionSplitButton(
+                    icon = MaterialSymbols.Rounded.Refresh,
+                    contentDescription = stringResource(MR.strings.action_retry),
+                    onClick = { onClickItemAction(extension) },
+                    menuItems = listOfNotNull(
+                        stringResource(MR.strings.ext_install_error_details) to { onClickItemError(installStep) },
+                        secondaryAction,
+                    ),
+                )
+            }
+
+            extension is MangaExtension.Available -> {
+                ExtensionSplitButton(
+                    icon = MaterialSymbols.Rounded.Download,
+                    contentDescription = stringResource(MR.strings.ext_install),
+                    onClick = { onClickItemAction(extension) },
+                    menuItems = listOfNotNull(secondaryAction),
+                )
+            }
+
+            extension is MangaExtension.Installed && extension.hasUpdate -> {
+                ExtensionSplitButton(
+                    icon = MaterialSymbols.Rounded.Download,
+                    contentDescription = stringResource(MR.strings.ext_update),
+                    onClick = { onClickItemAction(extension) },
+                    menuItems = listOfNotNull(secondaryAction),
+                )
+            }
+
+            extension is MangaExtension.Loaded -> {
+                FilledTonalIconButton(onClick = { onClickItemSecondaryAction(extension) }) {
                     Icon(
-                        imageVector = Icons.Outlined.Refresh,
-                        contentDescription = stringResource(MR.strings.action_retry),
+                        imageVector = MaterialSymbols.Rounded.Settings,
+                        contentDescription = stringResource(MR.strings.action_settings),
                     )
                 }
             }
 
-            installStep == InstallStep.Idle -> {
-                when (extension) {
-                    is MangaExtension.Installed -> {
-                        IconButton(onClick = { onClickItemSecondaryAction(extension) }) {
-                            Icon(
-                                imageVector = Icons.Outlined.Settings,
-                                contentDescription = stringResource(MR.strings.action_settings),
-                            )
-                        }
-
-                        if (extension.hasUpdate) {
-                            IconButton(onClick = { onClickItemAction(extension) }) {
-                                Icon(
-                                    imageVector = Icons.Outlined.GetApp,
-                                    contentDescription = stringResource(MR.strings.ext_update),
-                                )
-                            }
-                        }
-                    }
-
-                    is MangaExtension.Untrusted -> {
-                        IconButton(onClick = { onClickItemAction(extension) }) {
-                            Icon(
-                                imageVector = Icons.Outlined.VerifiedUser,
-                                contentDescription = stringResource(MR.strings.ext_trust),
-                            )
-                        }
-                    }
-
-                    is MangaExtension.Available -> {
-                        if (extension.sources.isNotEmpty()) {
-                            IconButton(
-                                onClick = { onClickItemSecondaryAction(extension) },
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Public,
-                                    contentDescription = stringResource(MR.strings.action_open_in_web_view),
-                                )
-                            }
-                        }
-
-                        IconButton(onClick = { onClickItemAction(extension) }) {
-                            Icon(
-                                imageVector = Icons.Outlined.GetApp,
-                                contentDescription = stringResource(MR.strings.ext_install),
-                            )
-                        }
-                    }
+            extension is MangaExtension.NotLoaded -> {
+                IconButton(onClick = { onClickItemSecondaryAction(extension) }) {
+                    Icon(
+                        imageVector = if (isUntrusted) {
+                            MaterialSymbols.Rounded.VerifiedUser
+                        } else {
+                            MaterialSymbols.Rounded.Info
+                        },
+                        contentDescription = secondaryAction?.first,
+                    )
                 }
             }
         }
     }
+}
+
+@Composable
+fun ExtensionSplitButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    menuItems: List<Pair<String, () -> Unit>>,
+) {
+    if (menuItems.isEmpty()) {
+        FilledTonalIconButton(onClick = onClick) {
+            Icon(imageVector = icon, contentDescription = contentDescription)
+        }
+        return
+    }
+
+    val size = SplitButtonDefaults.ExtraSmallContainerHeight
+    var expanded by remember { mutableStateOf(false) }
+    SplitButtonLayout(
+        leadingButton = {
+            SplitButtonDefaults.TonalLeadingButton(
+                onClick = onClick,
+                modifier = Modifier.height(size),
+                shapes = SplitButtonDefaults.leadingButtonShapesFor(size),
+                contentPadding = SplitButtonDefaults.leadingButtonContentPaddingFor(size),
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(SplitButtonDefaults.leadingButtonIconSizeFor(size)),
+                )
+            }
+        },
+        trailingButton = {
+            Box {
+                SplitButtonDefaults.TonalTrailingButton(
+                    checked = expanded,
+                    onCheckedChange = { expanded = it },
+                    modifier = Modifier.height(size),
+                    shapes = SplitButtonDefaults.trailingButtonShapesFor(size),
+                    contentPadding = SplitButtonDefaults.trailingButtonContentPaddingFor(size),
+                ) {
+                    Icon(
+                        imageVector = MaterialSymbols.Rounded.ExpandMore,
+                        contentDescription = stringResource(MR.strings.action_menu),
+                        modifier = Modifier.size(SplitButtonDefaults.trailingButtonIconSizeFor(size)),
+                    )
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    offset = DpOffset.Zero,
+                ) {
+                    menuItems.forEach { (text, action) ->
+                        DropdownMenuItem(
+                            text = { Text(text = text) },
+                            onClick = {
+                                expanded = false
+                                action()
+                            },
+                        )
+                    }
+                }
+            }
+        },
+    )
 }
 
 @Composable
@@ -528,6 +713,85 @@ fun ExtensionHeader(
         )
         action()
     }
+}
+
+/**
+ * Only the reasons the user can act on are worth naming in the row; the rest all mean "broken" to
+ * them and are spelled out in [ExtensionNotLoadedDialog] instead.
+ */
+private val MangaExtension.NotLoaded.Reason.labelRes: StringResource?
+    get() = when (this) {
+        is MangaExtension.NotLoaded.Reason.Untrusted -> MR.strings.ext_untrusted
+
+        MangaExtension.NotLoaded.Reason.Filtered -> MR.strings.ext_filtered
+
+        // The section header already says these aren't loaded; the dialog says why
+        MangaExtension.NotLoaded.Reason.Unsigned,
+        MangaExtension.NotLoaded.Reason.UnsupportedLibVersion,
+        MangaExtension.NotLoaded.Reason.Malformed,
+        is MangaExtension.NotLoaded.Reason.Failed,
+        -> null
+    }
+
+private val MangaExtension.NotLoaded.Reason.descriptionRes: StringResource
+    get() = when (this) {
+        is MangaExtension.NotLoaded.Reason.Untrusted -> MR.strings.untrusted_extension_message
+        MangaExtension.NotLoaded.Reason.Filtered -> MR.strings.ext_filtered_message
+        MangaExtension.NotLoaded.Reason.Unsigned -> MR.strings.ext_unsigned_message
+        MangaExtension.NotLoaded.Reason.UnsupportedLibVersion -> MR.strings.ext_unsupported_message
+        MangaExtension.NotLoaded.Reason.Malformed -> MR.strings.ext_malformed_message
+        is MangaExtension.NotLoaded.Reason.Failed -> MR.strings.ext_load_failed_message
+    }
+
+@Composable
+private fun ExtensionNotLoadedDialog(
+    reason: MangaExtension.NotLoaded.Reason,
+    onClickUninstall: () -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    AlertDialog(
+        title = {
+            Text(text = stringResource(MR.strings.ext_not_loaded_dialog))
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small)) {
+                Text(text = stringResource(reason.descriptionRes))
+
+                if (reason is MangaExtension.NotLoaded.Reason.Failed) {
+                    Text(
+                        text = reason.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    val context = LocalContext.current
+                    TextButton(
+                        onClick = {
+                            context.copyToClipboard(
+                                label = context.stringResource(MR.strings.ext_copy_stacktrace),
+                                content = reason.stackTrace,
+                            )
+                        },
+                        contentPadding = PaddingValues(0.dp),
+                    ) {
+                        Text(text = stringResource(MR.strings.ext_copy_stacktrace))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(text = stringResource(MR.strings.action_ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onClickUninstall) {
+                Text(text = stringResource(MR.strings.ext_uninstall))
+            }
+        },
+        onDismissRequest = onDismissRequest,
+    )
 }
 
 @Composable

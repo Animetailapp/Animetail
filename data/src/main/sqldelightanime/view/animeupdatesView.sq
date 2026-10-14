@@ -27,6 +27,7 @@ getRecentAnimeUpdates:
 SELECT *
 FROM animeupdatesView
 WHERE dateUpload > :after
+ORDER BY datefetch DESC
 LIMIT :limit;
 
 getUpdatesBySeenStatus:
@@ -34,5 +35,5 @@ SELECT *
 FROM animeupdatesView
 WHERE seen = :seen
 AND dateUpload > :after
-
+ORDER BY datefetch DESC
 LIMIT :limit;

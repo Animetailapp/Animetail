@@ -8,10 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -37,7 +33,6 @@ import androidx.compose.ui.platform.LocalUriHandler
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
-import eu.kanade.core.util.ifMangaSourcesLoaded
 import eu.kanade.presentation.browse.RemoveEntryDialog
 import eu.kanade.presentation.browse.manga.BrowseSourceContent
 import eu.kanade.presentation.browse.manga.MissingSourceScreen
@@ -59,6 +54,10 @@ import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.FilterList
+import mihon.icons.materialsymbols.rounded.NewReleases
+import mihon.icons.materialsymbols.roundedfilled.Favorite
 import mihon.presentation.core.util.collectAsLazyPagingItems
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.source.manga.model.StubMangaSource
@@ -80,11 +79,6 @@ data class BrowseMangaSourceScreen(
 
     @Composable
     override fun Content() {
-        if (!ifMangaSourcesLoaded()) {
-            LoadingScreen()
-            return
-        }
-
         val viewModel =
             assistedMetroViewModel<BrowseMangaSourceViewModel, BrowseMangaSourceViewModel.Factory> {
                 create(sourceId = sourceId, listingQuery = listingQuery)
@@ -102,9 +96,15 @@ data class BrowseMangaSourceScreen(
             }
         }
 
-        if (viewModel.source is StubMangaSource) {
+        val source = state.source
+        if (source == null) {
+            LoadingScreen()
+            return
+        }
+
+        if (source is StubMangaSource) {
             MissingSourceScreen(
-                source = viewModel.source,
+                source = source,
                 navigateUp = navigateUp,
             )
             return
@@ -117,18 +117,18 @@ data class BrowseMangaSourceScreen(
 
         val onHelpClick = { uriHandler.openUri(LocalMangaSource.HELP_URL) }
         val onWebViewClick = f@{
-            val source = viewModel.source as? HttpSource ?: return@f
+            val httpSource = source as? HttpSource ?: return@f
             navigator.push(
                 WebViewScreen(
-                    url = source.baseUrl,
-                    initialTitle = source.name,
-                    sourceId = source.id,
+                    url = httpSource.getHomeUrl(),
+                    initialTitle = httpSource.name,
+                    sourceId = httpSource.id,
                 ),
             )
         }
 
-        LaunchedEffect(viewModel.source) {
-            assistUrl = (viewModel.source as? HttpSource)?.baseUrl
+        LaunchedEffect(source) {
+            assistUrl = (source as? HttpSource)?.getHomeUrl()
         }
 
         var topBarHeight by remember { mutableIntStateOf(0) }
@@ -142,7 +142,7 @@ data class BrowseMangaSourceScreen(
                     BrowseMangaSourceToolbar(
                         searchQuery = state.toolbarQuery,
                         onSearchQueryChange = viewModel::setToolbarQuery,
-                        source = viewModel.source,
+                        source = source,
                         displayMode = viewModel.displayMode,
                         onDisplayModeChange = { viewModel.displayMode = it },
                         navigateUp = navigateUp,
@@ -166,7 +166,7 @@ data class BrowseMangaSourceScreen(
                             },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Outlined.Favorite,
+                                    imageVector = MaterialSymbols.RoundedFilled.Favorite,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .size(FilterChipDefaults.IconSize),
@@ -176,7 +176,7 @@ data class BrowseMangaSourceScreen(
                                 Text(text = stringResource(MR.strings.popular))
                             },
                         )
-                        if ((viewModel.source as CatalogueSource).supportsLatest) {
+                        if ((source as? CatalogueSource)?.supportsLatest == true) {
                             FilterChip(
                                 selected = state.listing == Listing.Latest,
                                 onClick = {
@@ -185,7 +185,7 @@ data class BrowseMangaSourceScreen(
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = Icons.Outlined.NewReleases,
+                                        imageVector = MaterialSymbols.Rounded.NewReleases,
                                         contentDescription = null,
                                         modifier = Modifier
                                             .size(FilterChipDefaults.IconSize),
@@ -202,7 +202,7 @@ data class BrowseMangaSourceScreen(
                                 onClick = viewModel::openFilterSheet,
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = Icons.Outlined.FilterList,
+                                        imageVector = MaterialSymbols.Rounded.FilterList,
                                         contentDescription = null,
                                         modifier = Modifier
                                             .size(FilterChipDefaults.IconSize),
@@ -221,7 +221,7 @@ data class BrowseMangaSourceScreen(
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         ) { paddingValues ->
             BrowseSourceContent(
-                source = viewModel.source,
+                source = source,
                 mangaList = viewModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
                 columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
                 entries = viewModel.getColumnsPreferenceForCurrentOrientation(LocalConfiguration.current.orientation),

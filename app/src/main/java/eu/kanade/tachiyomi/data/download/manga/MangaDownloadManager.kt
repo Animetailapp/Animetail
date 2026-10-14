@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
+import mihon.core.metro.AppCoroutineScope
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.util.lang.launchIO
@@ -42,6 +43,7 @@ import tachiyomi.i18n.MR
 @Inject
 @SingleIn(AppScope::class)
 class MangaDownloadManager(
+    @AppCoroutineScope private val scope: CoroutineScope,
     private val context: Context,
     private val provider: MangaDownloadProvider,
     private val cache: MangaDownloadCache,
@@ -54,8 +56,6 @@ class MangaDownloadManager(
     private val pendingDeleter: MangaDownloadPendingDeleter,
 ) {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     val isRunning: Boolean
         get() = downloader.isRunning
     val queueState
@@ -67,14 +67,13 @@ class MangaDownloadManager(
     val isDownloaderRunning
         get() = MangaDownloadJob.isRunningFlow(context)
 
+    /**
+     * Starts the download worker, which runs the downloader.
+     */
     fun startDownloads() {
         if (downloader.isRunning) return
 
-        if (MangaDownloadJob.isRunning(context)) {
-            downloader.start()
-        } else {
-            MangaDownloadJob.start(context)
-        }
+        MangaDownloadJob.start(context)
     }
 
     fun pauseDownloads() {
@@ -120,8 +119,17 @@ class MangaDownloadManager(
         downloader.updateQueue(downloads)
     }
 
-    fun downloadChapters(manga: Manga, chapters: List<Chapter>, autoStart: Boolean = true) {
-        downloader.queueChapters(manga, chapters, autoStart)
+    /**
+     * Tells the downloader to enqueue the given list of chapters.
+     *
+     * @param manga the manga of the chapters.
+     * @param chapters the list of chapters to enqueue.
+     * @param autoStart whether to start the downloader after enqueing the chapters.
+     */
+    suspend fun downloadChapters(manga: Manga, chapters: List<Chapter>, autoStart: Boolean = true) {
+        if (downloader.queueChapters(manga, chapters, autoStart)) {
+            startDownloads()
+        }
     }
 
     fun addDownloadsToStartOfQueue(downloads: List<MangaDownload>) {
@@ -130,7 +138,7 @@ class MangaDownloadManager(
             addAll(0, downloads)
             reorderQueue(this)
         }
-        if (!MangaDownloadJob.isRunning(context)) startDownloads()
+        startDownloads()
     }
 
     fun buildPageList(source: MangaSource, manga: Manga, chapter: Chapter): List<Page> {
@@ -154,22 +162,40 @@ class MangaDownloadManager(
             }
     }
 
+    /**
+     * Returns true if the chapter is downloaded.
+     *
+     * @param chapterName the name of the chapter to query.
+     * @param chapterScanlator scanlator of the chapter to query
+     * @param mangaTitle the title of the manga to query.
+     * @param sourceId the id of the source of the chapter.
+     */
     fun isChapterDownloaded(
         chapterName: String,
         chapterScanlator: String?,
         chapterUrl: String,
         mangaTitle: String,
         sourceId: Long,
-        skipCache: Boolean = false,
     ): Boolean {
-        return cache.isChapterDownloaded(
-            chapterName = chapterName,
-            chapterScanlator = chapterScanlator,
-            chapterUrl = chapterUrl,
-            mangaTitle = mangaTitle,
-            sourceId = sourceId,
-            skipCache = skipCache,
-        )
+        return cache.isChapterDownloaded(chapterName, chapterScanlator, chapterUrl, mangaTitle, sourceId)
+    }
+
+    /**
+     * Returns true if the chapter is present on disk, bypassing the directory cache.
+     *
+     * @param chapterName the name of the chapter to query.
+     * @param chapterScanlator scanlator of the chapter to query
+     * @param mangaTitle the title of the manga to query.
+     * @param source the source of the chapter.
+     */
+    fun isChapterDownloadedOnDisk(
+        chapterName: String,
+        chapterScanlator: String?,
+        chapterUrl: String,
+        mangaTitle: String,
+        source: MangaSource,
+    ): Boolean {
+        return provider.findChapterDir(chapterName, chapterScanlator, chapterUrl, mangaTitle, source) != null
     }
 
     fun getDownloadCount(): Int {
@@ -248,7 +274,10 @@ class MangaDownloadManager(
         pendingDeleter.addChapters(getChaptersToDelete(chapters, manga), manga)
     }
 
-    fun deletePendingChapters() {
+    /**
+     * Triggers the execution of the deletion of pending chapters.
+     */
+    suspend fun deletePendingChapters() {
         val pendingChapters = pendingDeleter.getPendingChapters()
         for ((manga, chapters) in pendingChapters) {
             val source = sourceManager.get(manga.source) ?: continue

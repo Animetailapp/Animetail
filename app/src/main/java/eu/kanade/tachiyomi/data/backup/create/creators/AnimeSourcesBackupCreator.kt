@@ -11,14 +11,12 @@ class AnimeSourcesBackupCreator(
     private val animeSourceManager: AnimeSourceManager,
 ) {
 
+    operator fun invoke(sourceIds: Set<Long>): List<BackupAnimeSource> {
+        return sourceIds.map { animeSourceManager.getOrStub(it).toBackupSource() }
+    }
+
     operator fun invoke(animes: List<BackupAnime>): List<BackupAnimeSource> {
-        return animes
-            .asSequence()
-            .map(BackupAnime::source)
-            .distinct()
-            .map(animeSourceManager::getOrStub)
-            .map { it.toBackupSource() }
-            .toList()
+        return invoke(animes.map { it.source }.toSet())
     }
 }
 

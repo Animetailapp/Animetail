@@ -10,6 +10,7 @@ import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.IBinder
 import androidx.core.content.ContextCompat
 import eu.kanade.tachiyomi.BuildConfig
@@ -59,7 +60,11 @@ class ShizukuInstallerManga(private val service: Service) : InstallerManga(servi
         service.applicationContext,
         0,
         Intent(ACTION_INSTALL_RESULT).setPackage(BuildConfig.APPLICATION_ID),
-        PendingIntent.FLAG_MUTABLE,
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        },
     )
 
     private val receiver = object : BroadcastReceiver() {
@@ -72,13 +77,16 @@ class ShizukuInstallerManga(private val service: Service) : InstallerManga(servi
                 continueQueue(InstallStep.Installed)
             } else {
                 logcat(LogPriority.ERROR) { "Failed to install extension $packageName: $message" }
-                continueQueue(InstallStep.Error)
+                continueQueue(InstallStep.Error(message ?: "Shizuku failed to install it ($status)"))
             }
         }
     }
 
     private val shizukuDeadListener = Shizuku.OnBinderDeadListener {
         logcat { "Shizuku was killed prematurely" }
+        getActiveEntry()?.let {
+            extensionManager.updateInstallStep(it.downloadId, InstallStep.Error("Shizuku was killed prematurely"))
+        }
         service.stopSelf()
     }
 
@@ -89,6 +97,12 @@ class ShizukuInstallerManga(private val service: Service) : InstallerManga(servi
                     checkQueue()
                     Shizuku.bindUserService(shizukuArgs, connection)
                 } else {
+                    getActiveEntry()?.let {
+                        extensionManager.updateInstallStep(
+                            it.downloadId,
+                            InstallStep.Error("Shizuku permission was not granted"),
+                        )
+                    }
                     service.stopSelf()
                 }
                 Shizuku.removeRequestPermissionResultListener(this)
@@ -101,13 +115,16 @@ class ShizukuInstallerManga(private val service: Service) : InstallerManga(servi
     override fun processEntry(entry: Entry) {
         super.processEntry(entry)
         try {
-            service.contentResolver.openAssetFileDescriptor(entry.uri, "r").use {
-                shellInterface?.install(it, statusIntent.intentSender)
+            val shell = shellInterface ?: throw IllegalStateException("Shizuku service is not connected")
+            val afd = service.contentResolver.openAssetFileDescriptor(entry.uri, "r")
+                ?: throw IllegalStateException("Cannot open extension file descriptor")
+            afd.use {
+                shell.install(it, statusIntent.intentSender)
             }
             service.contentResolver.delete(entry.uri, null, null)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Failed to install extension ${entry.downloadId} ${entry.uri}" }
-            continueQueue(InstallStep.Error)
+            continueQueue(InstallStep.Error.from(e))
         }
     }
 
@@ -136,12 +153,15 @@ class ShizukuInstallerManga(private val service: Service) : InstallerManga(servi
             service,
             receiver,
             IntentFilter(ACTION_INSTALL_RESULT),
-            ContextCompat.RECEIVER_NOT_EXPORTED,
+            ContextCompat.RECEIVER_EXPORTED,
         )
 
         if (!Shizuku.pingBinder()) {
             logcat(LogPriority.ERROR) { "Shizuku is not ready to use" }
             service.toast(MR.strings.ext_installer_shizuku_stopped)
+            getActiveEntry()?.let {
+                extensionManager.updateInstallStep(it.downloadId, InstallStep.Error("Shizuku is not running"))
+            }
             service.stopSelf()
         } else if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
             Shizuku.bindUserService(shizukuArgs, connection)

@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.data.backup
 import android.net.Uri
 import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.track.TrackerManager
+import kotlinx.coroutines.CancellationException
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 
@@ -19,9 +20,18 @@ class BackupFileValidator(
      *
      * @return List of missing sources or missing trackers.
      */
-    fun validate(uri: Uri): Results {
+    suspend fun validate(uri: Uri): Results {
+        val trackerIds = mutableSetOf<Int>()
         val backup = try {
-            backupDecoder.decode(uri)
+            backupDecoder.decodeMangaEntries(uri).collect { manga ->
+                manga.tracking.mapTo(trackerIds) { it.syncId }
+            }
+            backupDecoder.decodeAnimeEntries(uri).collect { anime ->
+                anime.tracking.mapTo(trackerIds) { it.syncId }
+            }
+            backupDecoder.decodeMetadata(uri).backup
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             throw IllegalStateException(e)
         }
@@ -29,38 +39,29 @@ class BackupFileValidator(
         val sources = backup.backupSources.associate { it.sourceId to it.name }
         val animesources = backup.backupAnimeSources.associate { it.sourceId to it.name }
         val missingSources = sources
-            .filter { mangaSourceManager.get(it.key) == null }
-            .values.map {
-                val id = it.toLongOrNull()
-                if (id == null) {
-                    it
-                } else {
+            .filterKeys { mangaSourceManager.get(it) == null }
+            .map { (id, name) ->
+                if (name.isBlank() || name.toLongOrNull() != null) {
                     mangaSourceManager.getOrStub(id).toString()
+                } else {
+                    name
                 }
             }
             .distinct()
             .sorted() +
             animesources
-                .filter { animeSourceManager.get(it.key) == null }
-                .values.map {
-                    val id = it.toLongOrNull()
-                    if (id == null) {
-                        it
-                    } else {
+                .filterKeys { animeSourceManager.get(it) == null }
+                .map { (id, name) ->
+                    if (name.isBlank() || name.toLongOrNull() != null) {
                         animeSourceManager.getOrStub(id).toString()
+                    } else {
+                        name
                     }
                 }
                 .distinct()
                 .sorted()
 
-        val animeTrackers = backup.backupAnime
-            .flatMap { it.tracking }
-            .map { it.syncId }
-        val mangaTrackers = backup.backupManga
-            .flatMap { it.tracking }
-            .map { it.syncId }
-        val trackers = (animeTrackers + mangaTrackers).distinct()
-        val missingTrackers = trackers
+        val missingTrackers = trackerIds
             .mapNotNull { trackerManager.get(it.toLong()) }
             .filter { !it.isLoggedIn }
             .map { it.name }

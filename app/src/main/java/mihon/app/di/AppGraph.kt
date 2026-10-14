@@ -98,6 +98,7 @@ import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionInstallActivity
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionInstallActivity
+import eu.kanade.tachiyomi.network.JavaScriptEngine
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.ui.base.delegate.SecureActivityDelegateImpl
@@ -117,12 +118,14 @@ import eu.kanade.tachiyomi.util.CrashLogUtil
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.protobuf.ProtoBuf
 import mihon.core.metro.IsDebugBuild
 import mihon.domain.extension.anime.interactor.GetAnimeExtensionStoreCountAsFlow
 import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
 import mihon.domain.extension.manga.interactor.GetMangaExtensionStoreCountAsFlow
 import mihon.domain.extension.manga.interactor.GetMangaExtensionStores
 import mihon.domain.source.interactor.UpdateAnimeFromRemote
+import nl.adaptivity.xmlutil.serialization.XML
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.domain.backup.service.BackupPreferences
 import tachiyomi.domain.category.anime.interactor.CreateAnimeCategoryWithName
@@ -221,10 +224,12 @@ import tachiyomi.domain.track.anime.interactor.DeleteAnimeTrack
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.domain.track.anime.interactor.GetTracksPerAnime
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
+import tachiyomi.domain.track.anime.interactor.UpsertAnimeTrack
 import tachiyomi.domain.track.manga.interactor.DeleteMangaTrack
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.domain.track.manga.interactor.GetTracksPerManga
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
+import tachiyomi.domain.track.manga.interactor.UpsertMangaTrack
 import tachiyomi.domain.updates.anime.interactor.GetAnimeUpdates
 import tachiyomi.domain.updates.manga.interactor.GetMangaUpdates
 import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
@@ -292,6 +297,7 @@ interface AppGraph : ViewModelGraph {
     val torrentServerUtils: TorrentServerUtils
 
     val crashLogUtil: CrashLogUtil
+    val databaseRepository: mihon.domain.database.repository.DatabaseRepository
 
     val mangaDownloadManager: MangaDownloadManager
     val animeDownloadManager: AnimeDownloadManager
@@ -324,7 +330,10 @@ interface AppGraph : ViewModelGraph {
     val localEpisodeThumbnailManager: LocalEpisodeThumbnailManager
 
     val json: Json
+    val protoBuf: ProtoBuf
+    val xml: XML
     val networkHelper: NetworkHelper
+    val javaScriptEngine: JavaScriptEngine
     val coroutineScope: CoroutineScope
 
     val getManga: GetManga
@@ -339,8 +348,10 @@ interface AppGraph : ViewModelGraph {
     val resetAnimeCategoryFlags: ResetAnimeCategoryFlags
     val addMangaTracks: AddMangaTracks
     val addAnimeTracks: AddAnimeTracks
-    val insertMangaTrack: InsertMangaTrack
-    val insertAnimeTrack: InsertAnimeTrack
+    val upsertMangaTrack: UpsertMangaTrack
+    val insertMangaTrack: InsertMangaTrack get() = upsertMangaTrack
+    val upsertAnimeTrack: UpsertAnimeTrack
+    val insertAnimeTrack: InsertAnimeTrack get() = upsertAnimeTrack
     val upsertAnimeHistory: UpsertAnimeHistory
     val updateEpisode: UpdateEpisode
     val getEpisodesByAnimeId: GetEpisodesByAnimeId

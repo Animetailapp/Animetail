@@ -23,7 +23,7 @@ import tachiyomi.domain.items.episode.interactor.UpdateEpisode
 import tachiyomi.domain.items.episode.model.toEpisodeUpdate
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
-import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
+import tachiyomi.domain.track.anime.interactor.UpsertAnimeTrack
 import java.time.Instant
 
 @Inject
@@ -39,7 +39,7 @@ class MigrateAnimeUseCase(
     private val getCategories: GetAnimeCategories,
     private val setAnimeCategories: SetAnimeCategories,
     private val getTracks: GetAnimeTracks,
-    private val insertTrack: InsertAnimeTrack,
+    private val upsertTrack: UpsertAnimeTrack,
     private val coverCache: AnimeCoverCache,
 ) {
     private val enhancedServices by lazy { trackerManager.trackers.filterIsInstance<EnhancedAnimeTracker>() }
@@ -131,7 +131,7 @@ class MigrateAnimeUseCase(
                 }
             }
                 .takeIf { it.isNotEmpty() }
-                ?.let { insertTrack.awaitAll(it) }
+                ?.let { upsertTrack.awaitAll(it) }
 
             // Delete downloaded
             if (MigrationFlag.REMOVE_DOWNLOAD in flags && currentSource != null) {

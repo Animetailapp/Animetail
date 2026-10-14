@@ -91,7 +91,7 @@ class ShellInterface : IShellInterface.Stub() {
                 String::class.java,
                 String::class.java,
                 Int::class.java,
-            ).invoke(packageInstaller, params, packageName, packageName, userId) as Int
+            ).invoke(packageInstaller, params, packageName, null, userId) as Int
         } else {
             packageInstaller::class.java.getMethod(
                 "createSession",
@@ -105,13 +105,14 @@ class ShellInterface : IShellInterface.Stub() {
             .getMethod("openSession", Int::class.java)
             .invoke(packageInstaller, sessionId)
 
+        val apkLength = if (apk.length >= 0) apk.length else apk.parcelFileDescriptor.statSize
         session::class.java.getMethod(
             "openWrite",
             String::class.java,
             Long::class.java,
             Long::class.java,
         )
-            .invoke(session, "extension", 0L, apk.length)
+            .invoke(session, "extension", 0L, apkLength)
             .let { it as ParcelFileDescriptor }
             .let { fd ->
                 val revocable = Class.forName("android.os.SystemProperties")

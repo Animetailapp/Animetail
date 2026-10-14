@@ -1,5 +1,6 @@
 package mihon.data.extension.repository
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -50,7 +51,17 @@ class AnimeExtensionStoreRepositoryImpl(
                 .filter { it.indexUrl !in disabledRepos }
                 .forEach { store ->
                     service.fetch(store.indexUrl)
-                        .mapCatching { upsert(it) }
+                        .mapCatching {
+                            handler.await(inTransaction = true) {
+                                if (!extension_storeQueries.contains(store.indexUrl).awaitAsOne()) {
+                                    return@await
+                                }
+                                upsert(it)
+                                if (store.indexUrl != it.indexUrl) {
+                                    extension_storeQueries.delete(store.indexUrl)
+                                }
+                            }
+                        }
                         .onFailure {
                             logcat(LogPriority.ERROR, it) {
                                 "Failed to refresh extension store '${store.name} (${store.indexUrl})'"
@@ -62,7 +73,7 @@ class AnimeExtensionStoreRepositoryImpl(
         }
     }
 
-    private suspend fun upsert(store: ExtensionStore) {
+    override suspend fun upsert(store: ExtensionStore) {
         handler.await {
             extension_storeQueries.upsert(
                 indexUrl = store.indexUrl,

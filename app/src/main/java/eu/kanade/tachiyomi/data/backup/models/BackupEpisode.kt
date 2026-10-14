@@ -61,6 +61,28 @@ class BackupEpisode(
     }
 }
 
+fun Episode.toBackupEpisode(): BackupEpisode =
+    BackupEpisode(
+        url = url,
+        name = name,
+        episodeNumber = episodeNumber.toFloat(),
+        scanlator = scanlator,
+        summary = summary,
+        previewUrl = previewUrl,
+        seen = seen,
+        bookmark = bookmark,
+        fillermark = fillermark,
+        lastSecondSeen = lastSecondSeen,
+        totalSeconds = totalSeconds,
+        dateFetch = dateFetch,
+        dateUpload = dateUpload,
+        sourceOrder = sourceOrder,
+        lastModifiedAt = lastModifiedAt,
+        version = version,
+        dateUploadOverride = dateUploadOverride,
+        memo = MemoColumnAdapter.encode(memo),
+    )
+
 val backupEpisodeMapper = {
         _: Long,
         _: Long,

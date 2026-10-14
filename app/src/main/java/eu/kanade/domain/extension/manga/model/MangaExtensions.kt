@@ -4,7 +4,7 @@ import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 
 data class MangaExtensions(
     val updates: List<MangaExtension.Installed>,
-    val installed: List<MangaExtension.Installed>,
+    val loaded: List<MangaExtension.Loaded>,
     val available: List<MangaExtension.Available>,
-    val untrusted: List<MangaExtension.Untrusted>,
+    val notLoaded: List<MangaExtension.NotLoaded>,
 )

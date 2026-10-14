@@ -6,7 +6,9 @@ import dev.zacsweers.metro.Inject
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
+import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
+import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.util.storage.getUriCompat
 import eu.kanade.tachiyomi.util.system.WebViewUtil
@@ -74,36 +76,10 @@ class CrashLogUtil(
         //    FFmpeg version: ${Utils.VERSIONS.ffmpeg}
     }
 
-    private fun getMangaExtensionsInfo(): String? {
+    private suspend fun getMangaExtensionsInfo(): String? {
         val availableExtensions = mangaExtensionManager.availableExtensionsFlow.value.associateBy { it.pkgName }
 
-        val extensionInfoList = mangaExtensionManager.installedExtensionsFlow.value
-            .sortedBy { it.name }
-            .mapNotNull {
-                val availableExtension = availableExtensions[it.pkgName]
-                val hasUpdate = (availableExtension?.versionCode ?: 0) > it.versionCode
-
-                if (!hasUpdate && !it.isObsolete) return@mapNotNull null
-
-                """
-                    - ${it.name}
-                      Installed: ${it.versionName} / Available: ${availableExtension?.versionName ?: "?"}
-                      Obsolete: ${it.isObsolete}
-                """.trimIndent()
-            }
-
-        return if (extensionInfoList.isNotEmpty()) {
-            (listOf("Problematic extensions:") + extensionInfoList)
-                .joinToString("\n")
-        } else {
-            null
-        }
-    }
-
-    private fun getAnimeExtensionsInfo(): String? {
-        val availableExtensions = animeExtensionManager.availableExtensionsFlow.value.associateBy { it.pkgName }
-
-        val extensionInfoList = animeExtensionManager.installedExtensionsFlow.value
+        val outdatedInfoList = mangaExtensionManager.getLoadedExtensions()
             .sortedBy { it.name }
             .mapNotNull {
                 val availableExtension = availableExtensions[it.pkgName]
@@ -118,11 +94,93 @@ class CrashLogUtil(
                 """.trimIndent()
             }
 
+        val notLoadedInfoList = mangaExtensionManager.getNotLoadedExtensions()
+            .sortedBy { it.name }
+            .map { extension ->
+                buildString {
+                    appendLine("- ${extension.name}")
+                    appendLine("  Installed: ${extension.versionName} (lib ${extension.libVersion ?: "?"})")
+                    append("  Not loaded: ${extension.reason.description}")
+
+                    val reason = extension.reason
+                    if (reason is MangaExtension.NotLoaded.Reason.Failed) {
+                        appendLine()
+                        append(reason.stackTrace.trimEnd().prependIndent("  "))
+                    }
+                }
+            }
+
+        val extensionInfoList = outdatedInfoList + notLoadedInfoList
+
         return if (extensionInfoList.isNotEmpty()) {
-            (listOf("Problematic extensions:") + extensionInfoList)
+            (listOf("Problematic manga extensions:") + extensionInfoList)
+                .joinToString("\n")
+        } else {
+            null
+        }
+    }
+
+    private suspend fun getAnimeExtensionsInfo(): String? {
+        val availableExtensions = animeExtensionManager.availableExtensionsFlow.value.associateBy { it.pkgName }
+
+        val outdatedInfoList = animeExtensionManager.getLoadedExtensions()
+            .sortedBy { it.name }
+            .mapNotNull {
+                val availableExtension = availableExtensions[it.pkgName]
+                val hasUpdate = (availableExtension?.versionCode ?: 0) > it.versionCode
+
+                if (!hasUpdate && !it.isObsolete) return@mapNotNull null
+
+                """
+                    - ${it.name}
+                      Installed: ${it.versionName} / Available: ${availableExtension?.versionName ?: "?"}
+                      Orphaned: ${it.isObsolete}
+                """.trimIndent()
+            }
+
+        val notLoadedInfoList = animeExtensionManager.getNotLoadedExtensions()
+            .sortedBy { it.name }
+            .map { extension ->
+                buildString {
+                    appendLine("- ${extension.name}")
+                    appendLine("  Installed: ${extension.versionName} (lib ${extension.libVersion ?: "?"})")
+                    append("  Not loaded: ${extension.reason.description}")
+
+                    val reason = extension.reason
+                    if (reason is AnimeExtension.NotLoaded.Reason.Failed) {
+                        appendLine()
+                        append(reason.stackTrace.trimEnd().prependIndent("  "))
+                    }
+                }
+            }
+
+        val extensionInfoList = outdatedInfoList + notLoadedInfoList
+
+        return if (extensionInfoList.isNotEmpty()) {
+            (listOf("Problematic anime extensions:") + extensionInfoList)
                 .joinToString("\n")
         } else {
             null
         }
     }
 }
+
+private val MangaExtension.NotLoaded.Reason.description: String
+    get() = when (this) {
+        is MangaExtension.NotLoaded.Reason.Untrusted -> "Untrusted"
+        MangaExtension.NotLoaded.Reason.Filtered -> "Filtered by content warning"
+        MangaExtension.NotLoaded.Reason.Unsigned -> "Unsigned"
+        MangaExtension.NotLoaded.Reason.UnsupportedLibVersion -> "Unsupported lib version"
+        MangaExtension.NotLoaded.Reason.Malformed -> "Malformed"
+        is MangaExtension.NotLoaded.Reason.Failed -> "Failed ($message)"
+    }
+
+private val AnimeExtension.NotLoaded.Reason.description: String
+    get() = when (this) {
+        is AnimeExtension.NotLoaded.Reason.Untrusted -> "Untrusted"
+        AnimeExtension.NotLoaded.Reason.Filtered -> "Filtered by content warning"
+        AnimeExtension.NotLoaded.Reason.Unsigned -> "Unsigned"
+        AnimeExtension.NotLoaded.Reason.UnsupportedLibVersion -> "Unsupported lib version"
+        AnimeExtension.NotLoaded.Reason.Malformed -> "Malformed"
+        is AnimeExtension.NotLoaded.Reason.Failed -> "Failed ($message)"
+    }

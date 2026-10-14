@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import tachiyomi.core.common.util.lang.launchIO
@@ -51,9 +50,7 @@ class AndroidAnimeSourceManager(
 
     init {
         scope.launchIO {
-            extensionManager.isInitialized.first { it }
-
-            extensionManager.installedExtensionsFlow
+            extensionManager.loadedExtensionsFlow
                 .collectLatest { extensions ->
                     val mutableMap = ConcurrentHashMap<Long, AnimeSource>(
                         mapOf(LocalAnimeSource.ID to localSource),
@@ -72,9 +69,8 @@ class AndroidAnimeSourceManager(
         scope.launchIO {
             sourceRepository.subscribeAllAnime()
                 .collectLatest { sources ->
-                    val mutableMap = stubSourcesMap.toMutableMap()
                     sources.forEach {
-                        mutableMap[it.id] = it
+                        stubSourcesMap[it.id] = it
                     }
                 }
         }
