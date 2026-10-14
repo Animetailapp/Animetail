@@ -117,6 +117,7 @@ import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.more.NewUpdateScreen
 import eu.kanade.tachiyomi.ui.more.OnboardingScreen
 import eu.kanade.tachiyomi.ui.player.ExternalIntents
+import eu.kanade.presentation.more.AppMigratingScreen
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
 import eu.kanade.tachiyomi.util.system.dpToPx
 import eu.kanade.tachiyomi.util.system.isNavigationBarNeedsScrim
@@ -125,6 +126,8 @@ import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.util.system.updaterEnabled
 import eu.kanade.tachiyomi.util.view.setComposeContent
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
@@ -140,6 +143,7 @@ import mihon.app.di.AppGraph
 import mihon.app.di.appGraph
 import mihon.core.metro.metroGraph
 import mihon.core.migration.Migrator
+import mihon.domain.database.repository.DatabaseRepository
 import mihon.feature.support.SupportUsScreen
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.automirroredrounded.OpenInNew
@@ -162,6 +166,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
+import kotlin.time.TimeSource
 import kotlin.time.times
 
 class MainActivity : BaseActivity() {
@@ -177,6 +182,11 @@ class MainActivity : BaseActivity() {
     @Inject lateinit var downloadCache: MangaDownloadCache
 
     @Inject lateinit var chapterCache: ChapterCache
+
+    @Inject lateinit var databaseRepository: DatabaseRepository
+
+    private val isAppMigrating = MutableStateFlow(Migrator.isRunning)
+    private val didMigration = MutableStateFlow(false)
 
     @Inject lateinit var getAnimeIncognitoState: GetAnimeIncognitoState
 
@@ -213,7 +223,13 @@ class MainActivity : BaseActivity() {
             com.discord.socialsdk.DiscordSocialSdkInit.setEngineActivity(this)
         } catch (_: Exception) {}
 
-        val didMigration = Migrator.awaitAndRelease()
+        lifecycleScope.launch {
+            didMigration.value = Migrator.awaitAndRelease()
+            isAppMigrating.value = false
+        }
+        // Uncaught on purpose: a failed database migration otherwise leaves the migrating screen up for good,
+        // while the crash screen tells what went wrong and lets the logs be shared
+        lifecycleScope.launch { databaseRepository.awaitOpen() }
 
         // Do not let the launcher create a new activity http://stackoverflow.com/questions/16283079
         if (!isTaskRoot) {
@@ -227,6 +243,27 @@ class MainActivity : BaseActivity() {
         // <-- AM (DISCORD)
 
         setComposeContent {
+            val appMigrating by isAppMigrating.collectAsState()
+            val databaseMigrating by databaseRepository.isMigrating.collectAsState()
+            val migrating = appMigrating || databaseMigrating
+            var migratingSince by remember { mutableStateOf(if (migrating) TimeSource.Monotonic.markNow() else null) }
+            LaunchedEffect(migrating) {
+                val since = migratingSince
+                if (migrating) {
+                    if (since == null) migratingSince = TimeSource.Monotonic.markNow()
+                } else if (since != null) {
+                    // A migration that finishes right away would otherwise only flash the screen
+                    delay(MIGRATING_SCREEN_MIN_DURATION - since.elapsedNow())
+                    migratingSince = null
+                }
+            }
+            if (migrating || migratingSince != null) {
+                AppMigratingScreen()
+                // Release the splash screen so the reason for the wait shows
+                LaunchedEffect(Unit) { ready = true }
+                return@setComposeContent
+            }
+
             val context = LocalContext.current
 
             var incognito by remember { mutableStateOf(false) }
@@ -370,7 +407,8 @@ class MainActivity : BaseActivity() {
                 ShowDonationCampaign()
             }
 
-            var showChangelog by remember { mutableStateOf(didMigration && !BuildConfig.DEBUG) }
+            val didMigrate by didMigration.collectAsState()
+            var showChangelog by remember(didMigrate) { mutableStateOf(didMigrate && !BuildConfig.DEBUG) }
             if (showChangelog) {
                 AlertDialog(
                     onDismissRequest = { showChangelog = false },
@@ -904,3 +942,6 @@ class MainActivity : BaseActivity() {
 private const val SPLASH_MIN_DURATION = 500 // ms
 private const val SPLASH_MAX_DURATION = 5000 // ms
 private const val SPLASH_EXIT_ANIM_DURATION = 400L // ms
+
+private val MIGRATING_SCREEN_MIN_DURATION = 1.seconds
+

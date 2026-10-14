@@ -297,6 +297,7 @@ interface AppGraph : ViewModelGraph {
     val torrentServerUtils: TorrentServerUtils
 
     val crashLogUtil: CrashLogUtil
+    val databaseRepository: mihon.domain.database.repository.DatabaseRepository
 
     val mangaDownloadManager: MangaDownloadManager
     val animeDownloadManager: AnimeDownloadManager
