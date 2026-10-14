@@ -29,7 +29,7 @@ android {
         applicationId = "com.dark.animetailv2"
 
         versionCode = 143
-        versionName = "0.20.4.0"
+        versionName = "0.21.2.0"
 
         buildConfigField("boolean", "UPDATER_ENABLED", "${Config.enableUpdater}")
         buildConfigField("Long", "DISCORD_APP_ID", "1173423931865170070L")

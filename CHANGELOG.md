@@ -10,7 +10,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
-## [v0.20.4.0] - 2026-10-14
+## [v0.21.2.0] - 2026-10-14
 
 ### Added
 - Added support for [Comick](https://comick.dev) tracker with manga and anime metadata support ([@MajorTanya](https://github.com/MajorTanya)) ([#4056](https://github.com/mihonapp/mihon/pull/4056))
