@@ -3,12 +3,18 @@ package eu.kanade.tachiyomi.data.track.kitsu
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuUser
+import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
+import mihon.graphql.kitsu.KitsuFindLibAnimeQuery
 import mihon.graphql.kitsu.KitsuFindLibMangaQuery
+import mihon.graphql.kitsu.KitsuGetAnimeDetailsByIdQuery
+import mihon.graphql.kitsu.KitsuGetAnimeDetailsBySlugQuery
 import mihon.graphql.kitsu.KitsuGetCurrentAccountQuery
 import mihon.graphql.kitsu.KitsuGetMangaDetailsByIdQuery
 import mihon.graphql.kitsu.KitsuGetMangaDetailsBySlugQuery
+import mihon.graphql.kitsu.KitsuSearchAnimeByTitleQuery
 import mihon.graphql.kitsu.KitsuSearchMangaByTitleQuery
+import mihon.graphql.kitsu.fragment.AnimeFragment
 import mihon.graphql.kitsu.fragment.MangaFragment
 import mihon.graphql.kitsu.type.LibraryEntryStatusEnum
 import mihon.graphql.kitsu.type.MangaSubtypeEnum
@@ -23,12 +29,12 @@ internal fun MangaTrack.toKitsuStatus() = when (this.status) {
     else -> throw Exception("Unknown status: ${this.status}")
 }
 
-internal fun AnimeTrack.toKitsuApiStatus() = when (status) {
-    Kitsu.WATCHING -> "CURRENT"
-    Kitsu.COMPLETED -> "COMPLETED"
-    Kitsu.ON_HOLD -> "ON_HOLD"
-    Kitsu.DROPPED -> "DROPPED"
-    Kitsu.PLAN_TO_WATCH -> "PLANNED"
+internal fun AnimeTrack.toKitsuStatus() = when (status) {
+    Kitsu.WATCHING -> LibraryEntryStatusEnum.CURRENT
+    Kitsu.COMPLETED -> LibraryEntryStatusEnum.COMPLETED
+    Kitsu.ON_HOLD -> LibraryEntryStatusEnum.ON_HOLD
+    Kitsu.DROPPED -> LibraryEntryStatusEnum.DROPPED
+    Kitsu.PLAN_TO_WATCH -> LibraryEntryStatusEnum.PLANNED
     else -> throw Exception("Unknown status: $status")
 }
 
@@ -41,12 +47,12 @@ internal fun LibraryEntryStatusEnum.toLocalStatus(): Long = when (this) {
     else -> throw Exception("Unknown status: $this")
 }
 
-internal fun String.toKitsuLocalStatusAnime() = when (this) {
-    "CURRENT" -> Kitsu.WATCHING
-    "COMPLETED" -> Kitsu.COMPLETED
-    "ON_HOLD" -> Kitsu.ON_HOLD
-    "DROPPED" -> Kitsu.DROPPED
-    "PLANNED" -> Kitsu.PLAN_TO_WATCH
+internal fun LibraryEntryStatusEnum.toLocalStatusAnime(): Long = when (this) {
+    LibraryEntryStatusEnum.CURRENT -> Kitsu.WATCHING
+    LibraryEntryStatusEnum.PLANNED -> Kitsu.PLAN_TO_WATCH
+    LibraryEntryStatusEnum.COMPLETED -> Kitsu.COMPLETED
+    LibraryEntryStatusEnum.ON_HOLD -> Kitsu.ON_HOLD
+    LibraryEntryStatusEnum.DROPPED -> Kitsu.DROPPED
     else -> throw Exception("Unknown status: $this")
 }
 
@@ -84,6 +90,32 @@ internal fun KitsuFindLibMangaQuery.FindMangaById.toTrackSearch(trackId: Long): 
     }
 }
 
+internal fun KitsuGetAnimeDetailsByIdQuery.FindAnimeById.toTrackSearch(trackId: Long): AnimeTrackSearch {
+    return animeFragment.toTrackSearch(trackId)
+}
+
+internal fun KitsuGetAnimeDetailsBySlugQuery.FindAnimeBySlug.toTrackSearch(trackId: Long): AnimeTrackSearch {
+    return animeFragment.toTrackSearch(trackId)
+}
+
+internal fun KitsuSearchAnimeByTitleQuery.Node.toTrackSearch(trackId: Long): AnimeTrackSearch {
+    return animeFragment.toTrackSearch(trackId)
+}
+
+internal fun KitsuFindLibAnimeQuery.FindAnimeById.toTrackSearch(trackId: Long): AnimeTrackSearch? {
+    if (myLibraryEntry == null) return null
+
+    return animeFragment.toTrackSearch(trackId).apply {
+        library_id = myLibraryEntry.id.toLong()
+        started_watching_date = myLibraryEntry.startedAt?.toEpochMilliseconds() ?: 0
+        finished_watching_date = myLibraryEntry.finishedAt?.toEpochMilliseconds() ?: 0
+        status = myLibraryEntry.status.toLocalStatusAnime()
+        score = myLibraryEntry.rating?.toDouble() ?: 0.0
+        last_episode_seen = myLibraryEntry.progress.toDouble()
+        private = myLibraryEntry.private
+    }
+}
+
 private fun MangaFragment.toTrackSearch(trackId: Long): MangaTrackSearch {
     val kitsuManga = this
     return MangaTrackSearch.create(trackId).apply {
@@ -111,6 +143,35 @@ private fun MangaFragment.toTrackSearch(trackId: Long): MangaTrackSearch {
         artists = kitsuManga.staff.nodes
             ?.filterNotNull()
             ?.filter { it.role.contains("Art") }
+            ?.map { it.person.name }
+            ?: emptyList()
+    }
+}
+
+internal fun AnimeFragment.toTrackSearch(trackId: Long): AnimeTrackSearch {
+    val kitsuAnime = this
+    return AnimeTrackSearch.create(trackId).apply {
+        remote_id = kitsuAnime.id.toLong()
+        title = kitsuAnime.titles.preferred
+        total_episodes = kitsuAnime.episodeCount?.toLong() ?: 0
+        cover_url = kitsuAnime.posterImage?.views?.firstOrNull()?.url ?: kitsuAnime.posterImage?.original?.url.orEmpty()
+        summary = (kitsuAnime.description["en"] as? String).orEmpty()
+        tracking_url = "https://kitsu.app/anime/${kitsuAnime.slug}"
+        score = kitsuAnime.averageRating ?: -1.0
+        publishing_status = when (kitsuAnime.status) {
+            ReleaseStatusEnum.TBA -> ReleaseStatusEnum.TBA.rawValue
+            else -> kitsuAnime.status.rawValue.lowercase().replaceFirstChar { it.uppercase() }
+        }
+        publishing_type = kitsuAnime.subtype.rawValue.lowercase().replaceFirstChar { it.uppercase() }
+        start_date = kitsuAnime.startDate.orEmpty()
+        authors = kitsuAnime.staff.nodes
+            ?.filterNotNull()
+            ?.filter { it.role.contains("Director") || it.role.contains("Creator") }
+            ?.map { it.person.name }
+            ?: emptyList()
+        artists = kitsuAnime.staff.nodes
+            ?.filterNotNull()
+            ?.filter { it.role.contains("Animation") || it.role.contains("Character") }
             ?.map { it.person.name }
             ?: emptyList()
     }
