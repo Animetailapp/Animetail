@@ -8,6 +8,8 @@ import com.hippo.unifile.UniFile
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import eu.kanade.tachiyomi.data.download.associateSourceDirectories
+import eu.kanade.tachiyomi.data.download.restoreSharedDirectories
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.util.size
 import kotlinx.coroutines.CancellationException
@@ -100,7 +102,7 @@ class MangaDownloadCache(
         .stateIn(scope, SharingStarted.WhileSubscribed(), false)
 
     private val diskCacheFile: AtomicFile
-        get() = AtomicFile(File(context.cacheDir, "dl_index_cache_v3"))
+        get() = AtomicFile(File(context.cacheDir, "dl_index_cache_v4"))
 
     private val rootDownloadsDirMutex = Mutex()
     private var rootDownloadsDir = RootDirectory(storageManager.getDownloadsDirectory())
@@ -113,6 +115,9 @@ class MangaDownloadCache(
                     if (diskCacheFile.baseFile.exists()) {
                         val diskCache = diskCacheFile.openRead().use {
                             ProtoBuf.decodeFromByteArray<RootDirectory>(it.readBytes())
+                        }
+                        diskCache.sourceDirs = restoreSharedDirectories(diskCache.sourceDirs) { sourceDir ->
+                            sourceDir.dir?.uri?.toString()
                         }
                         rootDownloadsDir = diskCache
                         lastRenew = System.currentTimeMillis()
@@ -163,7 +168,8 @@ class MangaDownloadCache(
     fun getTotalDownloadCount(): Int {
         renewCache()
 
-        return rootDownloadsDir.sourceDirs.values.sumOf { sourceDir ->
+        // The disk index stores a folder shared by several ids once per id
+        return rootDownloadsDir.sourceDirs.values.distinctBy { it.dir?.uri }.sumOf { sourceDir ->
             sourceDir.mangaDirs.values.sumOf { mangaDir ->
                 mangaDir.chapterDirs.size
             }
@@ -194,7 +200,7 @@ class MangaDownloadCache(
     fun getTotalDownloadSize(): Long {
         renewCache()
 
-        return rootDownloadsDir.sourceDirs.values.sumOf { sourceDir ->
+        return rootDownloadsDir.sourceDirs.values.distinctBy { it.dir?.uri }.sumOf { sourceDir ->
             sourceDir.dir?.size() ?: 0L
         }
     }
@@ -361,20 +367,20 @@ class MangaDownloadCache(
                     sources = getSources()
                 }
 
-                val sourceMap = sources.associate { provider.getSourceDirName(it).lowercase() to it.id }
+                val sourceIdsByDirName = sources.groupBy({ provider.getSourceDirName(it).lowercase() }, { it.id })
 
                 rootDownloadsDirMutex.withLock {
                     val updatedRootDir = RootDirectory(storageManager.getDownloadsDirectory())
 
-                    updatedRootDir.sourceDirs = updatedRootDir.dir?.listFiles().orEmpty()
-                        .filter { it.isDirectory && !it.name.isNullOrBlank() }
-                        .mapNotNull { dir ->
-                            val sourceId = sourceMap[dir.name!!.lowercase()]
-                            sourceId?.let { it to SourceDirectory(dir) }
-                        }
-                        .toMap()
+                    updatedRootDir.sourceDirs = associateSourceDirectories(
+                        directories = updatedRootDir.dir?.listFiles().orEmpty()
+                            .filter { it.isDirectory && !it.name.isNullOrBlank() },
+                        sourceIdsByDirName = sourceIdsByDirName,
+                        directoryName = { it.name!! },
+                        createEntry = { SourceDirectory(it) },
+                    )
 
-                    updatedRootDir.sourceDirs.values.map { sourceDir ->
+                    updatedRootDir.sourceDirs.values.distinct().map { sourceDir ->
                         async {
                             sourceDir.mangaDirs = sourceDir.dir?.listFiles().orEmpty()
                                 .filter { it.isDirectory && !it.name.isNullOrBlank() }
