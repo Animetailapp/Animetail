@@ -28,7 +28,7 @@ android {
     defaultConfig {
         applicationId = "com.dark.animetailv2"
 
-        versionCode = 143
+        versionCode = 144
         versionName = "0.21.2.0"
 
         buildConfigField("boolean", "UPDATER_ENABLED", "${Config.enableUpdater}")
