@@ -1,4 +1,4 @@
-DROP VIEW libraryView;
+DROP VIEW IF EXISTS libraryView;
 
 CREATE VIEW libraryView AS
 SELECT

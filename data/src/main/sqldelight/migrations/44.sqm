@@ -1,11 +1,11 @@
 -- Merge favorite, date_added and favorite_modified_at into favorite_at
 
-DROP VIEW historyView;
-DROP VIEW libraryView;
-DROP VIEW updatesView;
+DROP VIEW IF EXISTS historyView;
+DROP VIEW IF EXISTS libraryView;
+DROP VIEW IF EXISTS updatesView;
 
-DROP TRIGGER update_last_favorited_at_mangas;
-DROP INDEX library_favorite_index;
+DROP TRIGGER IF EXISTS update_last_favorited_at_mangas;
+DROP INDEX IF EXISTS library_favorite_index;
 
 ALTER TABLE mangas ADD COLUMN favorite_at INTEGER;
 

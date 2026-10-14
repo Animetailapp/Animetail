@@ -9,9 +9,9 @@ import kotlinx.serialization.json.JsonObject;
 -- ---------------------------------------------------------------------------------------------------------
 
 -- Every view reads `mangas`, so they are dropped here and recreated against the new table below
-DROP VIEW historyView;
-DROP VIEW libraryView;
-DROP VIEW updatesView;
+DROP VIEW IF EXISTS historyView;
+DROP VIEW IF EXISTS libraryView;
+DROP VIEW IF EXISTS updatesView;
 
 -- Entries sharing a source and url are merged into one, since the new table won't hold both. The copies are
 -- ranked with the ones in the library first, since that is the entry the user has, then by age. The first
