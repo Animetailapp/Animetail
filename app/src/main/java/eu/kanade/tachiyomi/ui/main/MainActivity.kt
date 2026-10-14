@@ -182,7 +182,6 @@ class MainActivity : BaseActivity() {
 
     @Inject lateinit var getMangaIncognitoState: GetMangaIncognitoState
 
-
     @Inject lateinit var animeExtensionManager: AnimeExtensionManager
 
     @Inject lateinit var mangaExtensionManager: MangaExtensionManager

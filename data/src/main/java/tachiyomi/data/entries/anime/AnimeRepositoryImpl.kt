@@ -11,7 +11,6 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
-
 import tachiyomi.data.CastColumnAdapter
 import tachiyomi.data.entries.anime.AnimeMapper
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler

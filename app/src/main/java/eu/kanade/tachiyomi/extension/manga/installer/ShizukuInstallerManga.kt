@@ -98,7 +98,10 @@ class ShizukuInstallerManga(private val service: Service) : InstallerManga(servi
                     Shizuku.bindUserService(shizukuArgs, connection)
                 } else {
                     getActiveEntry()?.let {
-                        extensionManager.updateInstallStep(it.downloadId, InstallStep.Error("Shizuku permission was not granted"))
+                        extensionManager.updateInstallStep(
+                            it.downloadId,
+                            InstallStep.Error("Shizuku permission was not granted"),
+                        )
                     }
                     service.stopSelf()
                 }

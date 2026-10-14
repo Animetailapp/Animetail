@@ -226,7 +226,9 @@ private fun AnimeExtensionContent(
                     onClickItem = {
                         when (it) {
                             is AnimeExtension.Available -> onInstallExtension(it)
+
                             is AnimeExtension.Loaded -> onOpenExtension(it)
+
                             is AnimeExtension.NotLoaded -> {
                                 notLoadedState = it
                             }
@@ -236,7 +238,9 @@ private fun AnimeExtensionContent(
                     onClickItemSecondaryAction = {
                         when (it) {
                             is AnimeExtension.Available -> onOpenWebView(it)
+
                             is AnimeExtension.Loaded -> onOpenExtension(it)
+
                             is AnimeExtension.NotLoaded -> {
                                 notLoadedState = it
                             }
@@ -247,6 +251,7 @@ private fun AnimeExtensionContent(
                     onClickItemAction = {
                         when (it) {
                             is AnimeExtension.Available -> onInstallExtension(it)
+
                             is AnimeExtension.Loaded -> {
                                 if (it.hasUpdate) {
                                     onUpdateExtension(it)
@@ -254,6 +259,7 @@ private fun AnimeExtensionContent(
                                     onOpenExtension(it)
                                 }
                             }
+
                             is AnimeExtension.NotLoaded -> {
                                 if (it.hasUpdate) {
                                     onUpdateExtension(it)
@@ -449,8 +455,10 @@ private fun AnimeExtensionItemMetadata(
             when {
                 extension is AnimeExtension.NotLoaded ->
                     extension.reason.labelRes?.let { it to MaterialTheme.colorScheme.error }
+
                 extension is AnimeExtension.Loaded && extension.isObsolete ->
                     MR.strings.ext_obsolete to MaterialTheme.colorScheme.error
+
                 else -> null
             },
             extension.contentWarning.label?.let { it.title to it.color },
@@ -478,7 +486,9 @@ private fun AnimeExtensionItemActions(
     val secondaryAction = when (extension) {
         is AnimeExtension.Available -> extension.sources.takeIf { it.isNotEmpty() }
             ?.let { stringResource(MR.strings.action_open_in_web_view) }
+
         is AnimeExtension.Loaded -> stringResource(MR.strings.action_settings)
+
         is AnimeExtension.NotLoaded -> if (isUntrusted) {
             stringResource(MR.strings.ext_trust)
         } else {
@@ -501,6 +511,7 @@ private fun AnimeExtensionItemActions(
                     )
                 }
             }
+
             installStep is InstallStep.Error -> {
                 ExtensionSplitButton(
                     icon = MaterialSymbols.Rounded.Refresh,
@@ -512,6 +523,7 @@ private fun AnimeExtensionItemActions(
                     ),
                 )
             }
+
             extension is AnimeExtension.Available -> {
                 ExtensionSplitButton(
                     icon = MaterialSymbols.Rounded.Download,
@@ -520,6 +532,7 @@ private fun AnimeExtensionItemActions(
                     menuItems = listOfNotNull(secondaryAction),
                 )
             }
+
             extension is AnimeExtension.Installed && extension.hasUpdate -> {
                 ExtensionSplitButton(
                     icon = MaterialSymbols.Rounded.Download,
@@ -528,6 +541,7 @@ private fun AnimeExtensionItemActions(
                     menuItems = listOfNotNull(secondaryAction),
                 )
             }
+
             extension is AnimeExtension.Loaded -> {
                 FilledTonalIconButton(onClick = { onClickItemSecondaryAction(extension) }) {
                     Icon(
@@ -536,6 +550,7 @@ private fun AnimeExtensionItemActions(
                     )
                 }
             }
+
             extension is AnimeExtension.NotLoaded -> {
                 IconButton(onClick = { onClickItemSecondaryAction(extension) }) {
                     Icon(

@@ -231,7 +231,9 @@ private fun ExtensionContent(
                     onClickItem = {
                         when (it) {
                             is MangaExtension.Available -> onInstallExtension(it)
+
                             is MangaExtension.Loaded -> onOpenExtension(it)
+
                             is MangaExtension.NotLoaded -> {
                                 notLoadedState = it
                             }
@@ -241,7 +243,9 @@ private fun ExtensionContent(
                     onClickItemSecondaryAction = {
                         when (it) {
                             is MangaExtension.Available -> onOpenWebView(it)
+
                             is MangaExtension.Loaded -> onOpenExtension(it)
+
                             is MangaExtension.NotLoaded -> {
                                 notLoadedState = it
                             }
@@ -252,6 +256,7 @@ private fun ExtensionContent(
                     onClickItemAction = {
                         when (it) {
                             is MangaExtension.Available -> onInstallExtension(it)
+
                             is MangaExtension.Loaded -> {
                                 if (it.hasUpdate) {
                                     onUpdateExtension(it)
@@ -259,6 +264,7 @@ private fun ExtensionContent(
                                     onOpenExtension(it)
                                 }
                             }
+
                             is MangaExtension.NotLoaded -> {
                                 if (it.hasUpdate) {
                                     onUpdateExtension(it)
@@ -497,8 +503,10 @@ private fun ExtensionItemMetadata(
             when {
                 extension is MangaExtension.NotLoaded ->
                     extension.reason.labelRes?.let { it to MaterialTheme.colorScheme.error }
+
                 extension is MangaExtension.Loaded && extension.isObsolete ->
                     MR.strings.ext_obsolete to MaterialTheme.colorScheme.error
+
                 else -> null
             },
             extension.contentWarning.label?.let { it.title to it.color },
@@ -526,7 +534,9 @@ private fun ExtensionItemActions(
     val secondaryAction = when (extension) {
         is MangaExtension.Available -> extension.sources.takeIf { it.isNotEmpty() }
             ?.let { stringResource(MR.strings.action_open_in_web_view) }
+
         is MangaExtension.Loaded -> stringResource(MR.strings.action_settings)
+
         is MangaExtension.NotLoaded -> if (isUntrusted) {
             stringResource(MR.strings.ext_trust)
         } else {
@@ -549,6 +559,7 @@ private fun ExtensionItemActions(
                     )
                 }
             }
+
             installStep is InstallStep.Error -> {
                 ExtensionSplitButton(
                     icon = MaterialSymbols.Rounded.Refresh,
@@ -560,6 +571,7 @@ private fun ExtensionItemActions(
                     ),
                 )
             }
+
             extension is MangaExtension.Available -> {
                 ExtensionSplitButton(
                     icon = MaterialSymbols.Rounded.Download,
@@ -568,6 +580,7 @@ private fun ExtensionItemActions(
                     menuItems = listOfNotNull(secondaryAction),
                 )
             }
+
             extension is MangaExtension.Installed && extension.hasUpdate -> {
                 ExtensionSplitButton(
                     icon = MaterialSymbols.Rounded.Download,
@@ -576,6 +589,7 @@ private fun ExtensionItemActions(
                     menuItems = listOfNotNull(secondaryAction),
                 )
             }
+
             extension is MangaExtension.Loaded -> {
                 FilledTonalIconButton(onClick = { onClickItemSecondaryAction(extension) }) {
                     Icon(
@@ -584,6 +598,7 @@ private fun ExtensionItemActions(
                     )
                 }
             }
+
             extension is MangaExtension.NotLoaded -> {
                 IconButton(onClick = { onClickItemSecondaryAction(extension) }) {
                     Icon(

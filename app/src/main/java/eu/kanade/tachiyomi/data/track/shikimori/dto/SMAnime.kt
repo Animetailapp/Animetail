@@ -1,55 +1,8 @@
 package eu.kanade.tachiyomi.data.track.shikimori.dto
 
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
-import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
-@Serializable
-data class SMSearchResult(
-    val data: SMMangaResults,
-)
-
-@Serializable
-data class SMMangaResults(
-    val mangas: List<SMManga>,
-)
-
-@Serializable
-data class SMManga(
-    val id: Long,
-    val name: String,
-    val chapters: Long,
-    val score: Double?,
-    val url: String,
-    val status: String?,
-    val poster: SMPoster?,
-    val airedOn: SMAiredDate?,
-    val description: String?,
-    val kind: String?,
-    val personRoles: List<SMPersonRole>?,
-) {
-    fun toTrack(trackerId: Long): MangaTrackSearch {
-        return MangaTrackSearch.create(trackerId).apply {
-            remote_id = this@SMManga.id
-            title = name
-            total_chapters = chapters
-            cover_url = poster?.mainUrl.orEmpty()
-            summary = description.orEmpty()
-            score = this@SMManga.score?.takeIf { it > 0.0 } ?: -1.0
-            tracking_url = url
-            publishing_status = this@SMManga.status.orEmpty()
-            publishing_type = kind?.replace("one_shot", "oneshot").orEmpty()
-            start_date = airedOn?.date.orEmpty()
-            personRoles?.forEach { personRole ->
-                personRole.roles.forEach { role ->
-                    if ("Story" in role) authors += personRole.person.name
-                    if ("Art" in role) artists += personRole.person.name
-                }
-            }
-        }
-    }
-}
 
 @Serializable
 data class SMAnimeSearchResult(
@@ -75,8 +28,8 @@ data class SMAnime(
     val kind: String?,
     val personRoles: List<SMPersonRole>?,
 ) {
-    fun toTrack(trackerId: Long): AnimeTrackSearch {
-        return AnimeTrackSearch.create(trackerId).apply {
+    fun toTrack(trackId: Long): AnimeTrackSearch {
+        return AnimeTrackSearch.create(trackId).apply {
             remote_id = this@SMAnime.id
             title = name
             total_episodes = episodes
@@ -104,7 +57,7 @@ data class SMPoster(
 
 @Serializable
 data class SMAiredDate(
-    val date: String?,
+    val date: String,
 )
 
 @Serializable
@@ -117,4 +70,48 @@ data class SMPersonRole(
 @Serializable
 data class SMPerson(
     val name: String,
+)
+
+@Serializable
+data class SMAnimeUserListResult(
+    val data: SMAnimeUserListEntries,
+)
+
+@Serializable
+data class SMAnimeUserListEntries(
+    val animes: List<SMAnimeUserListAnime>,
+)
+
+@Serializable
+data class SMAnimeUserListAnime(
+    val id: String,
+    val url: String,
+    val name: String,
+    @SerialName("episodes")
+    val totalEpisodes: Long,
+    val userRate: SMAnimeUserRate?,
+) {
+    fun toTrack(trackId: Long): eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack {
+        return eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack.create(trackId).apply {
+            title = name
+            total_episodes = totalEpisodes
+            tracking_url = url
+            if (userRate != null) {
+                remote_id = userRate.rateId.toLong()
+                library_id = userRate.rateId.toLong()
+                last_episode_seen = userRate.episodes.toDouble()
+                score = userRate.score
+                status = eu.kanade.tachiyomi.data.track.shikimori.toTrackStatus(userRate.status)
+            }
+        }
+    }
+}
+
+@Serializable
+data class SMAnimeUserRate(
+    @SerialName("id")
+    val rateId: String,
+    val episodes: Long,
+    val status: String,
+    val score: Double,
 )

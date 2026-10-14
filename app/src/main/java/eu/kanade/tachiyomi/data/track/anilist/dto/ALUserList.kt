@@ -30,19 +30,6 @@ data class ALUserListItem(
     val media: ALSearchItem,
     val private: Boolean,
 ) {
-    fun toALUserManga(): ALUserManga {
-        return ALUserManga(
-            libraryId = this@ALUserListItem.id,
-            listStatus = status,
-            scoreRaw = scoreRaw,
-            chaptersRead = progress,
-            startDateFuzzy = startedAt.toEpochMilli(),
-            completedDateFuzzy = completedAt.toEpochMilli(),
-            manga = media.toALManga(),
-            private = private,
-        )
-    }
-
     fun toALUserAnime(): ALUserAnime {
         return ALUserAnime(
             libraryId = this@ALUserListItem.id,

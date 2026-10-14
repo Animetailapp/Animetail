@@ -59,7 +59,12 @@ class AnimeExtensionInstallService : Service() {
         } ?: intent?.getSerializableExtraCompat<BasePreferences.ExtensionInstaller>(EXTRA_INSTALLER)
         if (uri == null || id == null || installerUsed == null) {
             id?.let {
-                runCatching { Injekt.get<AnimeExtensionManager>().updateInstallStep(it, InstallStep.Error("Invalid install intent parameters")) }
+                runCatching {
+                    Injekt.get<AnimeExtensionManager>().updateInstallStep(
+                        it,
+                        InstallStep.Error("Invalid install intent parameters"),
+                    )
+                }
             }
             stopSelf()
             return START_NOT_STICKY
@@ -75,7 +80,10 @@ class AnimeExtensionInstallService : Service() {
 
                 else -> {
                     logcat(LogPriority.ERROR) { "Not implemented for installer $installerUsed" }
-                    Injekt.get<AnimeExtensionManager>().updateInstallStep(id, InstallStep.Error("Not implemented for installer $installerUsed"))
+                    Injekt.get<AnimeExtensionManager>().updateInstallStep(
+                        id,
+                        InstallStep.Error("Not implemented for installer $installerUsed"),
+                    )
                     stopSelf()
                     return START_NOT_STICKY
                 }

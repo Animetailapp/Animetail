@@ -19,7 +19,6 @@ import eu.kanade.domain.extension.anime.interactor.GetAnimeExtensionLanguages
 import eu.kanade.domain.extension.anime.interactor.GetAnimeExtensionSources
 import eu.kanade.domain.extension.anime.interactor.GetAnimeExtensionsByType
 import eu.kanade.domain.extension.anime.interactor.TrustAnimeExtension
-import eu.kanade.domain.extension.manga.interactor.GetExtensionSources as GetMangaExtensionSources
 import eu.kanade.domain.extension.manga.interactor.GetMangaExtensionLanguages
 import eu.kanade.domain.extension.manga.interactor.GetMangaExtensionsByType
 import eu.kanade.domain.extension.manga.interactor.TrustMangaExtension
@@ -218,6 +217,7 @@ import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.api.InjektionException
 import uy.kohesive.injekt.api.TypeReference
 import java.lang.reflect.Type
+import eu.kanade.domain.extension.manga.interactor.GetExtensionSources as GetMangaExtensionSources
 
 class MetroInjektRegistrar(
     private val application: Application,

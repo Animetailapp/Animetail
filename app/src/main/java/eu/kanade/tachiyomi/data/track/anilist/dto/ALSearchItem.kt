@@ -18,29 +18,6 @@ data class ALSearchItem(
     val studios: ALStudios? = null,
     val countryOfOrigin: String = "",
 ) {
-    fun toALManga(): ALManga = ALManga(
-        remoteId = id,
-        title = title.preferred,
-        imageUrl = coverImage.large,
-        description = description,
-        format = if (format != null && format != "MANGA") {
-            format.replace("_", "-")
-        } else if (format == null) {
-            "Unknown"
-        } else {
-            when (countryOfOrigin) {
-                "KR" -> "Manhwa"
-                "CN", "TW" -> "Manhua"
-                else -> "Manga"
-            }
-        },
-        publishingStatus = status ?: "",
-        startDateFuzzy = startDate.toEpochMilli(),
-        totalChapters = chapters ?: 0,
-        averageScore = averageScore ?: -1,
-        staff = staff ?: ALStaff(emptyList()),
-    )
-
     fun toALAnime(): ALAnime = ALAnime(
         remoteId = id,
         title = title.preferred,

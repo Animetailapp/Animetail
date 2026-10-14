@@ -390,8 +390,6 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         }
     }
 
-
-
     private fun initializeMigrator() {
         val preference = preferenceStore.getInt(Preference.appStateKey("last_version_code"), 0)
         logcat {

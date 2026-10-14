@@ -120,12 +120,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import mihon.core.metro.IsDebugBuild
-import nl.adaptivity.xmlutil.serialization.XML
 import mihon.domain.extension.anime.interactor.GetAnimeExtensionStoreCountAsFlow
 import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
 import mihon.domain.extension.manga.interactor.GetMangaExtensionStoreCountAsFlow
 import mihon.domain.extension.manga.interactor.GetMangaExtensionStores
 import mihon.domain.source.interactor.UpdateAnimeFromRemote
+import nl.adaptivity.xmlutil.serialization.XML
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.domain.backup.service.BackupPreferences
 import tachiyomi.domain.category.anime.interactor.CreateAnimeCategoryWithName

@@ -9,10 +9,10 @@ import eu.kanade.tachiyomi.data.backup.models.toBackupTracking
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import mihon.core.common.extensions.toByteArray
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
-import tachiyomi.domain.items.chapter.repository.ChapterRepository
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.repository.MangaRepository
 import tachiyomi.domain.history.manga.interactor.GetMangaHistory
+import tachiyomi.domain.items.chapter.repository.ChapterRepository
 import tachiyomi.domain.track.manga.repository.MangaTrackRepository
 
 @Inject
