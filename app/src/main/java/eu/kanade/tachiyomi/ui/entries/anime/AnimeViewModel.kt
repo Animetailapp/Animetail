@@ -7,6 +7,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.Lifecycle
@@ -771,10 +772,16 @@ class AnimeViewModel(
 
     // Episodes list - start
 
+    private val downloadProgress = mutableStateMapOf<Long, Int>()
+
+    fun getDownloadProgress(episodeId: Long): Int {
+        return downloadProgress[episodeId] ?: 0
+    }
+
     private fun observeDownloads() {
         viewModelScope.launchIO {
             downloadManager.statusFlow()
-                .filter { it.anime.id == successState?.anime?.id }
+                .filter { it.anime.id == animeId }
                 .catch { error -> logcat(LogPriority.ERROR, error) }
                 .collect {
                     withUIContext {
@@ -785,24 +792,27 @@ class AnimeViewModel(
 
         viewModelScope.launchIO {
             downloadManager.progressFlow()
-                .filter { it.anime.id == successState?.anime?.id }
+                .filter { it.anime.id == animeId }
                 .catch { error -> logcat(LogPriority.ERROR, error) }
                 .collect {
-                    withUIContext {
-                        updateDownloadState(it)
-                    }
+                    downloadProgress[it.episode.id] = it.progress
                 }
         }
     }
 
     private fun updateDownloadState(download: AnimeDownload) {
+        if (download.status == AnimeDownload.State.DOWNLOADING) {
+            downloadProgress[download.episode.id] = download.progress
+        } else {
+            downloadProgress.remove(download.episode.id)
+        }
         updateSuccessState { successState ->
             val modifiedIndex = successState.episodes.indexOfFirst { it.id == download.episode.id }
             if (modifiedIndex < 0) return@updateSuccessState successState
 
             val newEpisodes = successState.episodes.toMutableList().apply {
                 val item = removeAt(modifiedIndex)
-                    .copy(downloadState = download.status, downloadProgress = download.progress)
+                    .copy(downloadState = download.status)
                 add(modifiedIndex, item)
             }
             successState.copy(episodes = newEpisodes)
@@ -1911,6 +1921,7 @@ class AnimeViewModel(
         // SY <--
 
         data class SetEpisodeDate(val episodes: List<Episode>) : Dialog
+        data object RemoveFromLibrary : Dialog
         data object ChangeAnimeSkipIntro : Dialog
         data object EpisodeSettingsSheet : Dialog
         data object SeasonSettingsSheet : Dialog
@@ -1920,6 +1931,12 @@ class AnimeViewModel(
 
     fun dismissDialog() {
         updateSuccessState { it.copy(dialog = null) }
+    }
+
+    fun showRemoveFromLibraryDialog() {
+        if (successState?.anime?.favorite == true) {
+            updateSuccessState { it.copy(dialog = Dialog.RemoveFromLibrary) }
+        }
     }
 
     fun showDeleteEpisodeDialog(episodes: List<Episode>) {

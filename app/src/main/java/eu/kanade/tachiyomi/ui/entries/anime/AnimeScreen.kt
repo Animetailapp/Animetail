@@ -31,6 +31,7 @@ import eu.kanade.core.util.ifAnimeSourcesLoaded
 import eu.kanade.domain.entries.anime.model.hasCustomBackground
 import eu.kanade.domain.entries.anime.model.hasCustomCover
 import eu.kanade.domain.entries.anime.model.toSAnime
+import eu.kanade.presentation.browse.RemoveEntryDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
 import eu.kanade.presentation.entries.EditCoverAction
@@ -214,8 +215,13 @@ class AnimeScreen(
             onDownloadEpisode = viewModel::runEpisodeDownloadActions.takeIf {
                 !successState.source.isLocalOrStub() && successState.anime.fetchType == FetchType.Episodes
             },
+            downloadProgressProvider = viewModel::getDownloadProgress,
             onAddToLibraryClicked = {
-                viewModel.toggleFavorite()
+                if (successState.anime.favorite) {
+                    viewModel.showRemoveFromLibraryDialog()
+                } else {
+                    viewModel.toggleFavorite()
+                }
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             },
             onWebViewClicked = {
@@ -349,6 +355,16 @@ class AnimeScreen(
                     onConfirm = { include, _ ->
                         viewModel.moveAnimeToCategoriesAndAddToLibrary(dialog.anime, include)
                     },
+                )
+            }
+
+            AnimeViewModel.Dialog.RemoveFromLibrary -> {
+                RemoveEntryDialog(
+                    onDismissRequest = onDismissRequest,
+                    onConfirm = {
+                        if (successState.anime.favorite) viewModel.toggleFavorite()
+                    },
+                    entryToRemove = successState.anime.title,
                 )
             }
 

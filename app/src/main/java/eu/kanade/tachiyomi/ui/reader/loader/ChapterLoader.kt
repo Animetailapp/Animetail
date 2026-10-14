@@ -34,6 +34,7 @@ class ChapterLoader(
     private val source: MangaSource,
     private val readerPreferences: ReaderPreferences,
     private val sourcePreferences: SourcePreferences,
+    private val canLoadAhead: () -> Boolean = { true },
 ) {
 
     /**
@@ -116,6 +117,7 @@ class ChapterLoader(
                 chapterCache,
                 readerPreferences,
                 sourcePreferences,
+                canLoadAhead,
             )
 
             source is StubMangaSource -> error(

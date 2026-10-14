@@ -199,6 +199,7 @@ fun AnimeScreen(
     onRelatedAnimeClick: (Anime) -> Unit,
     onRelatedAnimeLongClick: (Anime) -> Unit,
     // KMK <--
+    downloadProgressProvider: (Long) -> Int = { 0 },
 ) {
     val context = LocalContext.current
     val onCopyTagToClipboard: (tag: String) -> Unit = {
@@ -227,6 +228,7 @@ fun AnimeScreen(
             navigateUp = navigateUp,
             onEpisodeClicked = onEpisodeClicked,
             onDownloadEpisode = onDownloadEpisode,
+            downloadProgressProvider = downloadProgressProvider,
             onAddToLibraryClicked = onAddToLibraryClicked,
             onWebViewClicked = onWebViewClicked,
             onWebViewLongClicked = onWebViewLongClicked,
@@ -286,6 +288,7 @@ fun AnimeScreen(
             navigateUp = navigateUp,
             onEpisodeClicked = onEpisodeClicked,
             onDownloadEpisode = onDownloadEpisode,
+            downloadProgressProvider = downloadProgressProvider,
             onAddToLibraryClicked = onAddToLibraryClicked,
             onWebViewClicked = onWebViewClicked,
             onWebViewLongClicked = onWebViewLongClicked,
@@ -409,6 +412,7 @@ private fun AnimeScreenSmallImpl(
     onRelatedAnimeClick: (Anime) -> Unit,
     onRelatedAnimeLongClick: (Anime) -> Unit,
     // KMK <--
+    downloadProgressProvider: (Long) -> Int = { 0 },
 ) {
     val density = LocalDensity.current
     val offsetGridPaddingPx = with(density) { GRID_PADDING.roundToPx() }
@@ -803,6 +807,7 @@ private fun AnimeScreenSmallImpl(
                                 episodeSwipeEndAction = episodeSwipeEndAction,
                                 onEpisodeClicked = onEpisodeClicked,
                                 onDownloadEpisode = onDownloadEpisode,
+                                downloadProgressProvider = downloadProgressProvider,
                                 onEpisodeSelected = onEpisodeSelected,
                                 onEpisodeSwipe = onEpisodeSwipe,
                                 itemModifier = Modifier.ignorePadding(offsetGridPaddingPx),
@@ -891,6 +896,7 @@ fun AnimeScreenLargeImpl(
     onRelatedAnimeClick: (Anime) -> Unit,
     onRelatedAnimeLongClick: (Anime) -> Unit,
     // KMK <--
+    downloadProgressProvider: (Long) -> Int = { 0 },
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
@@ -1252,6 +1258,7 @@ fun AnimeScreenLargeImpl(
                                         episodeSwipeEndAction = episodeSwipeEndAction,
                                         onEpisodeClicked = onEpisodeClicked,
                                         onDownloadEpisode = onDownloadEpisode,
+                                        downloadProgressProvider = downloadProgressProvider,
                                         onEpisodeSelected = onEpisodeSelected,
                                         onEpisodeSwipe = onEpisodeSwipe,
                                         itemModifier = Modifier.ignorePadding(offsetGridPaddingPx),
@@ -1369,6 +1376,7 @@ private fun LazyGridScope.sharedEpisodeItems(
     episodeSwipeEndAction: LibraryPreferences.EpisodeSwipeAction,
     onEpisodeClicked: (Episode, Boolean) -> Unit,
     onDownloadEpisode: ((List<EpisodeList.Item>, EpisodeDownloadAction) -> Unit)?,
+    downloadProgressProvider: (Long) -> Int = { 0 },
     onEpisodeSelected: (EpisodeList.Item, Boolean, Boolean, Boolean) -> Unit,
     onEpisodeSwipe: (EpisodeList.Item, LibraryPreferences.EpisodeSwipeAction) -> Unit,
     itemModifier: Modifier = Modifier,
@@ -1453,7 +1461,7 @@ private fun LazyGridScope.sharedEpisodeItems(
                     isAnyEpisodeSelected = isAnyEpisodeSelected,
                     downloadIndicatorEnabled = !isAnyEpisodeSelected && !anime.isLocal(),
                     downloadStateProvider = { episodeItem.downloadState },
-                    downloadProgressProvider = { episodeItem.downloadProgress },
+                    downloadProgressProvider = { downloadProgressProvider(episodeItem.id) },
                     episodeSwipeStartAction = episodeSwipeStartAction,
                     episodeSwipeEndAction = episodeSwipeEndAction,
                     onLongClick = {

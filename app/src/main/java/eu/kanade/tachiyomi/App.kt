@@ -94,7 +94,11 @@ import eu.kanade.tachiyomi.data.coil.AnimeCoverKeyer
 import eu.kanade.tachiyomi.data.coil.AnimeImageFetcher
 import eu.kanade.tachiyomi.data.coil.AnimeKeyer
 import eu.kanade.tachiyomi.data.coil.BufferedSourceFetcher
+import eu.kanade.tachiyomi.data.coil.CoverRequestInterceptor
+import eu.kanade.tachiyomi.data.coil.ExtensionIconFetcher
 import eu.kanade.tachiyomi.data.coil.ImageDecoder
+import eu.kanade.tachiyomi.data.coil.InstalledExtensionIconKeyer
+import eu.kanade.tachiyomi.data.coil.InstalledSourceIconKeyer
 import eu.kanade.tachiyomi.data.coil.MangaCoverFetcher
 import eu.kanade.tachiyomi.data.coil.MangaCoverKeyer
 import eu.kanade.tachiyomi.data.coil.MangaKeyer
@@ -298,6 +302,10 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
 
     @Inject lateinit var animeSourceManager: AnimeSourceManager
 
+    @Inject lateinit var mangaExtensionManager: MangaExtensionManager
+
+    @Inject lateinit var animeExtensionManager: AnimeExtensionManager
+
     @Inject lateinit var mangaWidgetManager: MangaWidgetManager
 
     @Inject lateinit var animeWidgetManager: AnimeWidgetManager
@@ -427,11 +435,17 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                         animeSourceManager,
                     ),
                 )
+                add(ExtensionIconFetcher.ExtensionFactory(context))
+                add(ExtensionIconFetcher.SourceFactory(context, lazy { mangaExtensionManager }, lazy { animeExtensionManager }))
                 // Keyer
                 add(AnimeKeyer())
                 add(MangaKeyer())
                 add(AnimeCoverKeyer(animeCoverCache))
                 add(MangaCoverKeyer(coverCache))
+                add(InstalledExtensionIconKeyer())
+                add(InstalledSourceIconKeyer())
+                // Interceptor
+                add(CoverRequestInterceptor())
             }
 
             crossfade((300 * this@App.animatorDurationScale).toInt())

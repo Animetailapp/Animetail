@@ -7,6 +7,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.Lifecycle
@@ -744,10 +745,16 @@ class MangaViewModel(
 
     // Chapters list - start
 
+    private val downloadProgress = mutableStateMapOf<Long, Int>()
+
+    fun getDownloadProgress(chapterId: Long): Int {
+        return downloadProgress[chapterId] ?: 0
+    }
+
     private fun observeDownloads() {
         viewModelScope.launchIO {
             downloadManager.statusFlow()
-                .filter { it.manga.id == successState?.manga?.id }
+                .filter { it.manga.id == mangaId }
                 .catch { error -> logcat(LogPriority.ERROR, error) }
                 .collect {
                     withUIContext {
@@ -758,24 +765,27 @@ class MangaViewModel(
 
         viewModelScope.launchIO {
             downloadManager.progressFlow()
-                .filter { it.manga.id == successState?.manga?.id }
+                .filter { it.manga.id == mangaId }
                 .catch { error -> logcat(LogPriority.ERROR, error) }
                 .collect {
-                    withUIContext {
-                        updateDownloadState(it)
-                    }
+                    downloadProgress[it.chapter.id] = it.progress
                 }
         }
     }
 
     private fun updateDownloadState(download: MangaDownload) {
+        if (download.status == MangaDownload.State.DOWNLOADING) {
+            downloadProgress[download.chapter.id] = download.progress
+        } else {
+            downloadProgress.remove(download.chapter.id)
+        }
         updateSuccessState { successState ->
             val modifiedIndex = successState.chapters.indexOfFirst { it.id == download.chapter.id }
             if (modifiedIndex < 0) return@updateSuccessState successState
 
             val newChapters = successState.chapters.toMutableList().apply {
                 val item = removeAt(modifiedIndex)
-                    .copy(downloadState = download.status, downloadProgress = download.progress)
+                    .copy(downloadState = download.status)
                 add(modifiedIndex, item)
             }
             successState.copy(chapters = newChapters)
@@ -1391,6 +1401,7 @@ class MangaViewModel(
         // SY <--
         data class Migrate(val newManga: Manga, val oldManga: Manga) : Dialog
         data class SetMangaFetchInterval(val manga: Manga) : Dialog
+        data object RemoveFromLibrary : Dialog
         data object SettingsSheet : Dialog
         data object TrackSheet : Dialog
         data object FullCover : Dialog
@@ -1398,6 +1409,12 @@ class MangaViewModel(
 
     fun dismissDialog() {
         updateSuccessState { it.copy(dialog = null) }
+    }
+
+    fun showRemoveFromLibraryDialog() {
+        if (successState?.manga?.favorite == true) {
+            updateSuccessState { it.copy(dialog = Dialog.RemoveFromLibrary) }
+        }
     }
 
     fun showDeleteChapterDialog(chapters: List<Chapter>) {

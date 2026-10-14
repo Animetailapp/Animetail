@@ -70,6 +70,11 @@ object SettingsReaderScreen : SearchableSettings {
             ),
             SY <-- */
             Preference.PreferenceItem.SwitchPreference(
+                preference = readerPref.loadAheadOnlyOverWifi,
+                title = stringResource(MR.strings.pref_load_ahead_only_over_wifi),
+                subtitle = stringResource(MR.strings.pref_load_ahead_only_over_wifi_summary),
+            ),
+            Preference.PreferenceItem.SwitchPreference(
                 preference = readerPref.flashOnPageChange,
                 title = stringResource(MR.strings.pref_flash_page),
                 subtitle = stringResource(MR.strings.pref_flash_page_summ),
