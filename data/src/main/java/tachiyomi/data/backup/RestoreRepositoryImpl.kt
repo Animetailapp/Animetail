@@ -34,11 +34,12 @@ class RestoreRepositoryImpl(
     private val trackRepository: MangaTrackRepository,
 ) : RestoreRepository {
 
-    override suspend fun getMangaUrlsBySourceId(): Map<Long, List<String>> {
+    override suspend fun getMangaUrlsBySourceId(): Map<Long, Set<String>> {
         return database.mangaQueries
             .getAllMangaSourceAndUrl()
             .awaitAsList()
             .groupBy({ it.source_id }, { it.remote_url })
+            .mapValues { it.value.toSet() }
     }
 
     override suspend fun restoreManga(entries: List<RestoredManga>, update: suspend (Manga) -> MangaUpdate) {
@@ -93,49 +94,49 @@ class RestoreRepositoryImpl(
 
     private suspend fun updateManga(manga: Manga): Manga {
         database.mangaQueries.updateFromBackup(
-            favoriteAt = manga.favoriteAt,
-            artist = manga.ogArtist,
-            author = manga.ogAuthor,
-            description = manga.ogDescription,
-            genre = manga.ogGenre,
-            title = manga.ogTitle,
-            status = manga.ogStatus,
-            thumbnailUrl = manga.thumbnailUrl,
-            lastUpdate = manga.lastUpdate,
-            initialized = manga.initialized,
-            viewer = manga.viewerFlags,
-            chapterFlags = manga.chapterFlags,
-            coverLastModified = manga.coverLastModified,
-            mangaId = manga.id,
-            updateStrategy = manga.updateStrategy,
-            notes = manga.notes,
-            memo = manga.memo,
+            userFavoriteAt = manga.favoriteAt,
+            remoteArtist = manga.ogArtist,
+            remoteAuthor = manga.ogAuthor,
+            remoteDescription = manga.ogDescription,
+            remoteGenre = manga.ogGenre,
+            remoteTitle = manga.ogTitle,
+            remoteStatus = manga.ogStatus,
+            remoteCover = manga.thumbnailUrl,
+            stateChapterLastUpdate = manga.lastUpdate,
+            stateInitialized = manga.initialized,
+            userReaderFlags = manga.viewerFlags,
+            userChapterFlags = manga.chapterFlags,
+            stateCoverLastModified = manga.coverLastModified,
+            id = manga.id,
+            remoteUpdateStrategy = manga.updateStrategy,
+            userNotes = manga.notes,
+            remoteMemo = manga.memo,
         )
         return manga
     }
 
     private suspend fun insertManga(manga: Manga): Long {
         return database.mangaQueries.insertReturningId(
-            favoriteAt = manga.favoriteAt,
-            source = manga.source,
-            url = manga.url,
-            artist = manga.ogArtist,
-            author = manga.ogAuthor,
-            description = manga.ogDescription,
-            genre = manga.ogGenre,
-            title = manga.ogTitle,
-            status = manga.ogStatus,
-            thumbnailUrl = manga.thumbnailUrl,
-            lastUpdate = manga.lastUpdate,
-            nextUpdate = 0L,
-            calculateInterval = 0L,
-            initialized = manga.initialized,
-            viewerFlags = manga.viewerFlags,
-            chapterFlags = manga.chapterFlags,
-            coverLastModified = manga.coverLastModified,
-            updateStrategy = manga.updateStrategy,
-            notes = manga.notes,
-            memo = manga.memo,
+            userFavoriteAt = manga.favoriteAt,
+            sourceId = manga.source,
+            remoteUrl = manga.url,
+            remoteArtist = manga.ogArtist,
+            remoteAuthor = manga.ogAuthor,
+            remoteDescription = manga.ogDescription,
+            remoteGenre = manga.ogGenre,
+            remoteTitle = manga.ogTitle,
+            remoteStatus = manga.ogStatus,
+            remoteCover = manga.thumbnailUrl,
+            stateChapterLastUpdate = manga.lastUpdate,
+            stateChapterNextUpdate = 0L,
+            stateChapterFetchInterval = 0L,
+            stateInitialized = manga.initialized,
+            userReaderFlags = manga.viewerFlags,
+            userChapterFlags = manga.chapterFlags,
+            stateCoverLastModified = manga.coverLastModified,
+            remoteUpdateStrategy = manga.updateStrategy,
+            userNotes = manga.notes,
+            remoteMemo = manga.memo,
         )
             .awaitAsOne()
     }
@@ -184,30 +185,31 @@ class RestoreRepositoryImpl(
             .partition { it.id > 0 }
 
         newChapters.forEach { chapter ->
-            database.chapterQueries.insert(
+            database.chapterQueries.insertReturningId(
                 mangaId = chapter.mangaId,
-                url = chapter.url,
-                name = chapter.name,
-                scanlator = chapter.scanlator,
-                read = chapter.read,
-                bookmark = chapter.bookmark,
-                lastPageRead = chapter.lastPageRead,
-                chapterNumber = chapter.chapterNumber,
-                sourceOrder = chapter.sourceOrder,
-                dateFetch = chapter.dateFetch,
-                dateUpload = chapter.dateUpload,
-                dateUploadOverride = chapter.dateUploadOverride,
-                memo = chapter.memo,
+                remoteUrl = chapter.url,
+                remoteName = chapter.name,
+                remoteScanlator = chapter.scanlator,
+                remoteChapterNumber = chapter.chapterNumber,
+                remoteDateUpload = chapter.dateUpload,
+                remoteOrder = chapter.sourceOrder,
+                remoteMemo = chapter.memo,
+                userRead = chapter.read,
+                userBookmark = chapter.bookmark,
+                userLastPageRead = chapter.lastPageRead,
+                userDateUploadOverride = chapter.dateUploadOverride,
+                stateDateFetch = chapter.dateFetch,
             )
+                .awaitAsOneOrNull()
         }
         existingChapters.forEach { chapter ->
             database.chapterQueries.updateFromBackup(
-                read = chapter.read,
-                bookmark = chapter.bookmark,
-                lastPageRead = chapter.lastPageRead,
-                dateUploadOverride = chapter.dateUploadOverride,
-                chapterId = chapter.id,
-                memo = chapter.memo,
+                userRead = chapter.read,
+                userBookmark = chapter.bookmark,
+                userLastPageRead = chapter.lastPageRead,
+                userDateUploadOverride = chapter.dateUploadOverride,
+                id = chapter.id,
+                remoteMemo = chapter.memo,
             )
         }
     }
@@ -216,28 +218,30 @@ class RestoreRepositoryImpl(
         this.copy(id = 0L, mangaId = 0L, dateFetch = 0L, dateUpload = 0L)
 
     private suspend fun restoreHistory(manga: Manga, restoredHistory: List<RestoredHistory>) {
+        if (restoredHistory.isEmpty()) return
+        val chapterIdsByUrl = chapterRepository.getChapterByMangaId(manga.id).associate { it.url to it.id }
+        val dbHistoryByChapterId = database.historyQueries
+            .getHistoryByMangaId(manga.id)
+            .awaitAsList()
+            .associateBy { it.chapter_id }
+
         val toUpdate = restoredHistory
-            .groupBy { it.chapterUrl }
-            .mapNotNull { (chapterUrl, copies) ->
+            // Chapter doesn't exist; skip
+            .filter { it.chapterUrl in chapterIdsByUrl }
+            // A backup of a library that still had duplicate chapters carries a history entry for
+            // each copy; they are one chapter now, read as late as any copy and for as long as all
+            .groupBy { chapterIdsByUrl.getValue(it.chapterUrl) }
+            .map { (chapterId, copies) ->
                 val readAt = copies.maxOf { it.readAt?.time ?: 0L }
                 val readDuration = copies.sumOf { it.readDuration }
-                val dbHistory = database.historyQueries
-                    .getHistoryByChapterUrlAndMangaId(chapterUrl, manga.id)
-                    .awaitAsOneOrNull()
-
-                if (dbHistory == null) {
-                    val chapter = database.chapterQueries
-                        .getChapterByUrlAndMangaId(chapterUrl, manga.id)
-                        .awaitAsOneOrNull()
-                        // Chapter doesn't exist; skip
-                        ?: return@mapNotNull null
+                val dbHistory = dbHistoryByChapterId[chapterId]
                     // New history entry
-                    return@mapNotNull Triple(chapter.id, Date(readAt), readDuration)
-                }
+                    ?: return@map Triple(chapterId, Date(readAt), readDuration)
 
-                // Update history entry
+                // Update history entry. 0 is kept rather than written as NULL, since it marks history
+                // the user removed.
                 Triple(
-                    dbHistory.chapter_id,
+                    chapterId,
                     Date(max(readAt, dbHistory.read_at?.time ?: 0L)),
                     max(readDuration, dbHistory.read_duration) - dbHistory.read_duration,
                 )
@@ -274,15 +278,15 @@ class RestoreRepositoryImpl(
         existingTracks.forEach { track ->
             database.manga_trackQueries.update(
                 mangaId = track.mangaId,
-                syncId = track.trackerId,
-                mediaId = track.remoteId,
+                trackerId = track.trackerId,
+                remoteId = track.remoteId,
                 libraryId = track.libraryId,
                 title = track.title,
                 lastChapterRead = track.lastChapterRead,
-                totalChapter = track.totalChapters,
+                totalChapters = track.totalChapters,
                 status = track.status,
                 score = track.score,
-                trackingUrl = track.remoteUrl,
+                remoteUrl = track.remoteUrl,
                 startDate = track.startDate,
                 finishDate = track.finishDate,
                 `private` = track.private,
@@ -292,11 +296,6 @@ class RestoreRepositoryImpl(
     }
 
     private suspend fun restoreExcludedScanlators(manga: Manga, excludedScanlators: List<String>) {
-        if (excludedScanlators.isEmpty()) return
-        val existingExcludedScanlators = database.excluded_scanlatorQueries
-            .getExcludedScanlatorsByMangaId(manga.id)
-            .awaitAsList()
-        val toInsert = excludedScanlators.filter { it !in existingExcludedScanlators }
-        toInsert.forEach { database.excluded_scanlatorQueries.insert(manga.id, it) }
+        excludedScanlators.forEach { database.excluded_scanlatorQueries.insert(manga.id, it) }
     }
 }

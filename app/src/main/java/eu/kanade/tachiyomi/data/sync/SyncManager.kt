@@ -2,8 +2,6 @@ package eu.kanade.tachiyomi.data.sync
 
 import android.content.Context
 import android.net.Uri
-import app.cash.sqldelight.async.coroutines.awaitAsList
-import data.GetChaptersByMangaId
 import dataanime.Episodes
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
@@ -42,6 +40,7 @@ import java.io.File
 import java.io.IOException
 import java.util.Date
 import kotlin.system.measureTimeMillis
+import data.Chapter as DbChapter
 
 /**
  * A manager to handle synchronization tasks in the app, such as updating
@@ -262,11 +261,11 @@ class SyncManager(
 
     @Suppress("ReturnCount")
     private suspend fun isMangaDifferent(localManga: Manga, remoteManga: BackupManga): Boolean {
-        val localChapters = mangaHandler.await {
+        val localChapters = mangaHandler.awaitList {
             chapterQueries.getChaptersByMangaId(
                 localManga.id,
                 0,
-            ).awaitAsList()
+            )
         }
         val localCategories = getMangaCategories.await(localManga.id).map { it.order }
 
@@ -287,7 +286,7 @@ class SyncManager(
 
     @Suppress("ReturnCount")
     private suspend fun isAnimeDifferent(localAnime: Anime, remoteAnime: BackupAnime): Boolean {
-        val localEpisodes = animeHandler.await { episodesQueries.getEpisodesByAnimeId(localAnime.id).awaitAsList() }
+        val localEpisodes = animeHandler.awaitList { episodesQueries.getEpisodesByAnimeId(localAnime.id) }
         val localCategories = getAnimeCategories.await(localAnime.id).map { it.order }
 
         if (areEpisodesDifferent(localEpisodes, remoteAnime.episodes)) {
@@ -307,7 +306,7 @@ class SyncManager(
 
     @Suppress("ReturnCount")
     private fun areChaptersDifferent(
-        localChapters: List<GetChaptersByMangaId>,
+        localChapters: List<DbChapter>,
         remoteChapters: List<BackupChapter>,
     ): Boolean {
         val localChapterMap = localChapters.associateBy { it.remote_url }

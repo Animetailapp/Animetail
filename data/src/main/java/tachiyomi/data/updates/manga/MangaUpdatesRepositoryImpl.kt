@@ -1,5 +1,6 @@
 package tachiyomi.data.updates.manga
 
+import app.cash.sqldelight.Query
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
@@ -20,15 +21,12 @@ class MangaUpdatesRepositoryImpl(
     private val database: Database,
 ) : MangaUpdatesRepository {
 
-    override suspend fun awaitWithRead(read: Boolean, after: Long, limit: Long): List<MangaUpdatesWithRelations> {
-        return database.updatesViewQueries
-            .getUpdatesByReadStatus(
-                read = read,
-                after = after,
-                limit = limit,
-                mapper = ::mapUpdatesWithRelations,
-            )
-            .awaitAsList()
+    override suspend fun awaitWithRead(
+        read: Boolean,
+        after: Long,
+        limit: Long,
+    ): List<MangaUpdatesWithRelations> {
+        return getUpdatesByReadStatus(read = read, after = after, limit = limit).awaitAsList()
     }
 
     override fun subscribeAllMangaUpdates(
@@ -58,15 +56,28 @@ class MangaUpdatesRepositoryImpl(
             .subscribeToList()
     }
 
-    override fun subscribeWithRead(read: Boolean, after: Long, limit: Long): Flow<List<MangaUpdatesWithRelations>> {
-        return database.updatesViewQueries
-            .getUpdatesByReadStatus(
-                read = read,
+    override fun subscribeWithRead(
+        read: Boolean,
+        after: Long,
+        limit: Long,
+    ): Flow<List<MangaUpdatesWithRelations>> {
+        return getUpdatesByReadStatus(read = read, after = after, limit = limit).subscribeToList()
+    }
+
+    private fun getUpdatesByReadStatus(read: Boolean, after: Long, limit: Long): Query<MangaUpdatesWithRelations> {
+        return if (read) {
+            database.updatesViewQueries.getReadUpdates(
                 after = after,
                 limit = limit,
                 mapper = ::mapUpdatesWithRelations,
             )
-            .subscribeToList()
+        } else {
+            database.updatesViewQueries.getUnreadUpdates(
+                after = after,
+                limit = limit,
+                mapper = ::mapUpdatesWithRelations,
+            )
+        }
     }
 
     @Suppress("UNUSED_PARAMETER")

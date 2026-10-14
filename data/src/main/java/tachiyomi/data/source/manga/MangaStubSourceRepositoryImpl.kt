@@ -30,12 +30,12 @@ class MangaStubSourceRepositoryImpl(
     }
 
     override suspend fun upsertStubMangaSource(id: Long, lang: String, name: String) {
-        handler.await { sourceQueries.upsert(id, lang, name) }
+        handler.await { sourceQueries.upsert(id = id, name = name, language = lang) }
     }
 
     private fun mapStubSource(
         id: Long,
-        lang: String,
         name: String,
+        lang: String,
     ): StubMangaSource = StubMangaSource(id = id, lang = lang, name = name)
 }

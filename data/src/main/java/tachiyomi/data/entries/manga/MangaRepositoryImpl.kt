@@ -47,13 +47,13 @@ class MangaRepositoryImpl(
 
     override suspend fun getMangaByUrlAndSourceId(url: String, sourceId: Long): Manga? {
         return database.mangaQueries
-            .getMangaByUrlAndSource(url, sourceId, MangaMapper::mapManga)
+            .getMangaByUrlAndSource(sourceId = sourceId, remoteUrl = url, mapper = MangaMapper::mapManga)
             .awaitAsOneOrNull()
     }
 
     override fun getMangaByUrlAndSourceIdAsFlow(url: String, sourceId: Long): Flow<Manga?> {
         return database.mangaQueries
-            .getMangaByUrlAndSource(url, sourceId, MangaMapper::mapManga)
+            .getMangaByUrlAndSource(sourceId = sourceId, remoteUrl = url, mapper = MangaMapper::mapManga)
             .subscribeToOneOrNull()
     }
 
@@ -89,7 +89,7 @@ class MangaRepositoryImpl(
 
     override suspend fun getDuplicateLibraryManga(id: Long, title: String): List<Manga> {
         return database.mangaQueries
-            .getDuplicateLibraryManga(id, title, MangaMapper::mapManga)
+            .getDuplicateLibraryManga(id, title, MangaMapper::mapMangaWithChapterCount)
             .awaitAsList()
     }
 
@@ -160,33 +160,37 @@ class MangaRepositoryImpl(
             excludedScanlators.minus(current).forEach { scanlator ->
                 database.excluded_scanlatorQueries.insert(mangaId, scanlator)
             }
-            database.excluded_scanlatorQueries.remove(mangaId, current.minus(excludedScanlators))
+            val toRemove = current.minus(excludedScanlators)
+            // An empty delete still tells every chapter query to run again
+            if (toRemove.isNotEmpty()) {
+                database.excluded_scanlatorQueries.remove(mangaId, toRemove)
+            }
         }
     }
 
     override suspend fun insertManga(manga: Manga): Long? {
         return database.transactionWithResult {
             database.mangaQueries.insertReturningId(
-                source = manga.source,
-                url = manga.url,
-                artist = manga.ogArtist,
-                author = manga.ogAuthor,
-                description = manga.ogDescription,
-                genre = manga.ogGenre,
-                title = manga.ogTitle,
-                status = manga.ogStatus,
-                thumbnailUrl = manga.thumbnailUrl,
-                favoriteAt = manga.favoriteAt,
-                lastUpdate = manga.lastUpdate,
-                nextUpdate = manga.nextUpdate,
-                calculateInterval = manga.fetchInterval.toLong(),
-                initialized = manga.initialized,
-                viewerFlags = manga.viewerFlags,
-                chapterFlags = manga.chapterFlags,
-                coverLastModified = manga.coverLastModified,
-                updateStrategy = manga.updateStrategy,
-                notes = manga.notes,
-                memo = manga.memo,
+                sourceId = manga.source,
+                remoteUrl = manga.url,
+                remoteArtist = manga.ogArtist,
+                remoteAuthor = manga.ogAuthor,
+                remoteDescription = manga.ogDescription,
+                remoteGenre = manga.ogGenre,
+                remoteTitle = manga.ogTitle,
+                remoteStatus = manga.ogStatus,
+                remoteCover = manga.thumbnailUrl,
+                userFavoriteAt = manga.favoriteAt,
+                stateChapterLastUpdate = manga.lastUpdate,
+                stateChapterNextUpdate = manga.nextUpdate,
+                stateChapterFetchInterval = manga.fetchInterval.toLong(),
+                stateInitialized = manga.initialized,
+                userReaderFlags = manga.viewerFlags,
+                userChapterFlags = manga.chapterFlags,
+                stateCoverLastModified = manga.coverLastModified,
+                remoteUpdateStrategy = manga.updateStrategy,
+                userNotes = manga.notes,
+                remoteMemo = manga.memo,
             ).awaitAsOneOrNull()
         }
     }
@@ -204,18 +208,18 @@ class MangaRepositoryImpl(
     override suspend fun updateMangaRemote(update: MangaRemoteUpdate): Boolean {
         return try {
             database.mangaQueries.updateRemote(
-                artist = update.artist,
-                author = update.author,
-                description = update.description,
-                genre = update.genre,
-                title = update.title,
-                status = update.status,
-                thumbnailUrl = update.thumbnailUrl,
-                initialized = update.initialized,
-                coverLastModified = update.coverLastModified,
-                updateStrategy = update.updateStrategy,
-                memo = update.memo,
-                mangaId = update.id,
+                remoteArtist = update.artist,
+                remoteAuthor = update.author,
+                remoteDescription = update.description,
+                remoteGenre = update.genre,
+                remoteTitle = update.title,
+                remoteStatus = update.status,
+                remoteCover = update.thumbnailUrl,
+                stateInitialized = update.initialized,
+                stateCoverLastModified = update.coverLastModified,
+                remoteUpdateStrategy = update.updateStrategy,
+                remoteMemo = update.memo,
+                id = update.id,
             )
             true
         } catch (e: Exception) {
@@ -239,16 +243,16 @@ class MangaRepositoryImpl(
             mangaUpdates.forEach { value ->
                 with(value) {
                     database.mangaQueries.update(
-                        favoriteAtSet = isSet(::favoriteAt),
-                        favoriteAt = favoriteAt,
-                        lastUpdate = lastUpdate,
-                        nextUpdate = nextUpdate,
-                        calculateInterval = fetchInterval?.toLong(),
-                        viewer = viewerFlags,
-                        chapterFlags = chapterFlags,
-                        coverLastModified = coverLastModified,
-                        mangaId = id,
-                        notes = notes,
+                        userFavoriteAtSet = isSet(::favoriteAt),
+                        userFavoriteAt = favoriteAt,
+                        stateChapterLastUpdate = lastUpdate,
+                        stateChapterNextUpdate = nextUpdate,
+                        stateChapterFetchInterval = fetchInterval?.toLong(),
+                        userReaderFlags = viewerFlags,
+                        userChapterFlags = chapterFlags,
+                        stateCoverLastModified = coverLastModified,
+                        id = id,
+                        userNotes = notes,
                     )
                 }
             }

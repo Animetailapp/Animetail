@@ -88,18 +88,18 @@ class MangaCategoryRepositoryImpl(
     }
 
     override suspend fun updateMangaCategoryName(categoryId: Long, name: String) {
-        database.categoryQueries.updateName(name = name, categoryId = categoryId)
+        database.categoryQueries.updateName(name = name, id = categoryId)
     }
 
     override suspend fun updateMangaCategoryFlags(categoryId: Long, flags: Long) {
-        database.categoryQueries.updateFlags(flags = flags, categoryId = categoryId)
+        database.categoryQueries.updateFlags(flags = flags, id = categoryId)
     }
 
     override suspend fun updateMangaCategoryHidden(categoryId: Long, hidden: Boolean) {
-        database.categoryQueries.updateHidden(hidden = if (hidden) 1L else 0L, categoryId = categoryId)
+        database.categoryQueries.updateHidden(hidden = if (hidden) 1L else 0L, id = categoryId)
     }
 
-    override suspend fun updateAllMangaCategoryFlags(flags: Long?) {
+    override suspend fun updateAllMangaCategoryFlags(flags: Long) {
         database.categoryQueries.updateAllFlags(flags = flags)
     }
 
@@ -108,16 +108,16 @@ class MangaCategoryRepositoryImpl(
             val current = database.categoryQueries.getUserCategoryIds().awaitAsList()
             val ids = orderedIds.filter { it in current } + current.filterNot { it in orderedIds }
             ids.forEachIndexed { index, id ->
-                database.categoryQueries.updateOrder(order = -index - 2L, categoryId = id)
+                database.categoryQueries.updateOrder(order = -index - 2L, id = id)
             }
             ids.forEachIndexed { index, id ->
-                database.categoryQueries.updateOrder(order = index.toLong(), categoryId = id)
+                database.categoryQueries.updateOrder(order = index.toLong(), id = id)
             }
         }
     }
 
     override suspend fun deleteMangaCategory(categoryId: Long) {
-        database.categoryQueries.delete(categoryId = categoryId)
+        database.categoryQueries.delete(id = categoryId)
     }
 
     private fun mapCategory(
