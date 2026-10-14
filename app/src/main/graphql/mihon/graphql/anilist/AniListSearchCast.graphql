@@ -1,0 +1,44 @@
+query AniListSearchCast(
+  $query: String!,
+) {
+  Page (perPage: 10) {
+    media(search: $query, type: ANIME) {
+      id
+      characters {
+        edges {
+          role
+          node {
+            name {
+              userPreferred
+            }
+            image {
+              large
+            }
+          }
+          voiceActors {
+            name {
+              userPreferred
+            }
+            languageV2
+            image {
+              large
+            }
+          }
+        }
+      }
+      staff {
+        edges {
+          role
+          node {
+            name {
+              userPreferred
+            }
+            image {
+              large
+            }
+          }
+        }
+      }
+    }
+  }
+}

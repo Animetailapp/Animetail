@@ -4,15 +4,22 @@ import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUser
+import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.util.lang.htmlDecode
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
+import mihon.graphql.anilist.AniListGetAnimeDetailsQuery
 import mihon.graphql.anilist.AniListGetCurrentUserQuery
+import mihon.graphql.anilist.AniListGetLibAnimeQuery
 import mihon.graphql.anilist.AniListGetLibMangaQuery
 import mihon.graphql.anilist.AniListGetMangaDetailsQuery
+import mihon.graphql.anilist.AniListGetPopularAnimeQuery
+import mihon.graphql.anilist.AniListGetPopularMangaQuery
+import mihon.graphql.anilist.AniListSearchAnimeQuery
 import mihon.graphql.anilist.AniListSearchMangaQuery
+import mihon.graphql.anilist.fragment.AnimeFragment
 import mihon.graphql.anilist.fragment.MangaFragment
 import mihon.graphql.anilist.type.MediaListStatus
 import mihon.graphql.anilist.type.ScoreFormat
@@ -71,12 +78,72 @@ internal fun AniListGetLibMangaQuery.MediaList.toTrack(trackId: Long): MangaTrac
         }
 }
 
+internal fun AniListGetLibAnimeQuery.MediaList.toTrack(trackId: Long): AnimeTrack {
+    val mediaList = this
+    requireNotNull(mediaList.media) { "Missing Media data from AniList" }
+
+    return mediaList.media.animeFragment
+        .toTrackSearch(trackId)
+        .apply {
+            library_id = mediaList.id.toLong()
+            status = when (mediaList.status) {
+                MediaListStatus.CURRENT -> Anilist.WATCHING
+                MediaListStatus.COMPLETED -> Anilist.COMPLETED
+                MediaListStatus.PAUSED -> Anilist.ON_HOLD
+                MediaListStatus.DROPPED -> Anilist.DROPPED
+                MediaListStatus.PLANNING -> Anilist.PLAN_TO_WATCH
+                MediaListStatus.REPEATING -> Anilist.REWATCHING
+                else -> throw NotImplementedError("Unknown status: ${mediaList.status?.rawValue}")
+            }
+            score = mediaList.scoreRaw ?: 0.0
+            last_episode_seen = mediaList.progress?.toDouble() ?: 0.0
+
+            started_watching_date = mediaList.startedAt.let {
+                if (it == null || it.year == null || it.month == null || it.day == null) {
+                    0
+                } else {
+                    LocalDate(it.year, it.month, it.day)
+                        .atStartOfDayIn(TimeZone.currentSystemDefault())
+                        .toEpochMilliseconds()
+                }
+            }
+
+            finished_watching_date = mediaList.completedAt.let {
+                if (it == null || it.year == null || it.month == null || it.day == null) {
+                    0
+                } else {
+                    LocalDate(it.year, it.month, it.day)
+                        .atStartOfDayIn(TimeZone.currentSystemDefault())
+                        .toEpochMilliseconds()
+                }
+            }
+
+            private = mediaList.private ?: false
+        }
+}
+
 internal fun AniListSearchMangaQuery.Medium.toTrackSearch(trackId: Long): MangaTrackSearch {
     return mangaFragment.toTrackSearch(trackId)
 }
 
 internal fun AniListGetMangaDetailsQuery.Medium.toTrackSearch(trackId: Long): MangaTrackSearch {
     return mangaFragment.toTrackSearch(trackId)
+}
+
+internal fun AniListGetPopularMangaQuery.Medium.toTrackSearch(trackId: Long): MangaTrackSearch {
+    return mangaFragment.toTrackSearch(trackId)
+}
+
+internal fun AniListSearchAnimeQuery.Medium.toTrackSearch(trackId: Long): AnimeTrackSearch {
+    return animeFragment.toTrackSearch(trackId)
+}
+
+internal fun AniListGetAnimeDetailsQuery.Medium.toTrackSearch(trackId: Long): AnimeTrackSearch {
+    return animeFragment.toTrackSearch(trackId)
+}
+
+internal fun AniListGetPopularAnimeQuery.Medium.toTrackSearch(trackId: Long): AnimeTrackSearch {
+    return animeFragment.toTrackSearch(trackId)
 }
 
 private fun MangaFragment.toTrackSearch(trackId: Long): MangaTrackSearch {
@@ -121,6 +188,41 @@ private fun MangaFragment.toTrackSearch(trackId: Long): MangaTrackSearch {
     }
 }
 
+internal fun AnimeFragment.toTrackSearch(trackId: Long): AnimeTrackSearch {
+    val alAnime = this
+    return AnimeTrackSearch.create(trackId).apply {
+        remote_id = alAnime.id.toLong()
+        title = alAnime.title?.userPreferred ?: "(no title)"
+        total_episodes = alAnime.episodes?.toLong() ?: 0
+        cover_url = alAnime.coverImage?.large ?: ""
+        summary = alAnime.description?.htmlDecode() ?: ""
+        score = alAnime.averageScore?.toDouble() ?: -1.0
+        tracking_url = "https://anilist.co/anime/$remote_id"
+        publishing_status = alAnime.status?.rawValue ?: ""
+        publishing_type = alAnime.format?.rawValue?.replace("_", "-") ?: "TV"
+        start_date = alAnime.startDate?.let {
+            buildString {
+                it.year?.let { year -> append(year) }
+                it.month?.let { month -> append("-$month") }
+                it.day?.let { day -> append("-$day") }
+            }.trim('-')
+        } ?: ""
+
+        authors = alAnime.staff?.edges
+            ?.filter { "Original Creator" in (it?.role ?: "") }
+            ?.mapNotNull { it?.node?.name?.userPreferred }
+            ?: emptyList()
+
+        artists = alAnime.studios?.edges
+            ?.filter { it?.isMain == true }
+            ?.mapNotNull { it?.node?.name }
+            ?.ifEmpty {
+                alAnime.studios.edges.mapNotNull { it?.node?.name }
+            }
+            ?: emptyList()
+    }
+}
+
 internal fun MangaTrack.toApiStatus(): MediaListStatus = when (status) {
     Anilist.READING -> MediaListStatus.CURRENT
     Anilist.COMPLETED -> MediaListStatus.COMPLETED
@@ -131,13 +233,13 @@ internal fun MangaTrack.toApiStatus(): MediaListStatus = when (status) {
     else -> throw NotImplementedError("Unknown status: $status")
 }
 
-internal fun AnimeTrack.toApiStatus() = when (status) {
-    Anilist.WATCHING -> "CURRENT"
-    Anilist.COMPLETED -> "COMPLETED"
-    Anilist.ON_HOLD -> "PAUSED"
-    Anilist.DROPPED -> "DROPPED"
-    Anilist.PLAN_TO_WATCH -> "PLANNING"
-    Anilist.REWATCHING -> "REPEATING"
+internal fun AnimeTrack.toApiStatus(): MediaListStatus = when (status) {
+    Anilist.WATCHING -> MediaListStatus.CURRENT
+    Anilist.COMPLETED -> MediaListStatus.COMPLETED
+    Anilist.ON_HOLD -> MediaListStatus.PAUSED
+    Anilist.DROPPED -> MediaListStatus.DROPPED
+    Anilist.PLAN_TO_WATCH -> MediaListStatus.PLANNING
+    Anilist.REWATCHING -> MediaListStatus.REPEATING
     else -> throw NotImplementedError("Unknown status: $status")
 }
 

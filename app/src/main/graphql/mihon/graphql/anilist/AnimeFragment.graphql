@@ -1,0 +1,41 @@
+fragment AnimeFragment on Media {
+  id
+  staff {
+    edges {
+      role
+      node {
+        name {
+          userPreferred
+        }
+      }
+    }
+  }
+  studios {
+    edges {
+      isMain
+      node {
+        name
+      }
+    }
+  }
+  title {
+    userPreferred
+    romaji
+    english
+    native
+  }
+  coverImage {
+    large
+  }
+  format
+  countryOfOrigin
+  status
+  episodes
+  description
+  startDate {
+    year
+    month
+    day
+  }
+  averageScore
+}

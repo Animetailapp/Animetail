@@ -1,0 +1,7 @@
+query AniListGetPopularAnime {
+  Page (perPage: 15) {
+    media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
+      ...AnimeFragment
+    }
+  }
+}
