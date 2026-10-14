@@ -10,6 +10,46 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
+## [v0.20.4.0] - 2026-10-14
+
+### Added
+- Added support for [Comick](https://comick.dev) tracker with manga and anime metadata support ([@MajorTanya](https://github.com/MajorTanya)) ([#4056](https://github.com/mihonapp/mihon/pull/4056))
+- Migrated Anime & Manga trackers (AniList, Kitsu, Shikimori) to Apollo GraphQL native client ([@MajorTanya](https://github.com/MajorTanya), [@BrutuZ](https://github.com/BrutuZ)) ([#3827](https://github.com/mihonapp/mihon/pull/3827))
+- Streaming backup creation and restoration for Manga and Anime to prevent memory overflow on large libraries ([@NGB-Was-Taken](https://github.com/NGB-Was-Taken), [@AntsyLich](https://github.com/AntsyLich)) ([#4094](https://github.com/mihonapp/mihon/pull/4094))
+- Parallel page loading and preloading in manga reader ([@NGB-Was-Taken](https://github.com/NGB-Was-Taken)) ([#2986](https://github.com/mihonapp/mihon/pull/2986))
+- Visual database migration screen on startup with failure diagnostics ([@AntsyLich](https://github.com/AntsyLich)) ([`fd4f73c`](https://github.com/mihonapp/mihon/commit/fd4f73c), [`9dbb714`](https://github.com/mihonapp/mihon/commit/9dbb714))
+- Option to turn off MD5 hash suffix in downloaded chapter folder names ([@choppeh](https://github.com/choppeh), [@AntsyLich](https://github.com/AntsyLich)) ([#3966](https://github.com/mihonapp/mihon/pull/3966))
+- Confirmation dialog when unfavoriting manga from detail screen ([@WizaHX](https://github.com/WizaHX)) ([#4073](https://github.com/mihonapp/mihon/pull/4073))
+- Animated wavy progress indicator for downloading chapters ([@AntsyLich](https://github.com/AntsyLich)) ([`e562a9b`](https://github.com/mihonapp/mihon/commit/e562a9b))
+
+### Changed
+- Reworked database connections with Room-style connection pooling and enabled Write-Ahead Logging (WAL) on all devices ([@AntsyLich](https://github.com/AntsyLich)) ([`38e9308`](https://github.com/mihonapp/mihon/commit/38e9308), [`61cd786`](https://github.com/mihonapp/mihon/commit/61cd786))
+- Upgraded Gradle to v9.8.1, Kotlin to v2.4.21, SQLDelight to v2.4.1, and Compose BOM to beta ([`24bd3c9`](https://github.com/mihonapp/mihon/commit/24bd3c9), [`2f5b9c1`](https://github.com/mihonapp/mihon/commit/2f5b9c1), [`5b3505b`](https://github.com/mihonapp/mihon/commit/5b3505b))
+- Migrated extension and source icon loading to Coil ([@AntsyLich](https://github.com/AntsyLich)) ([`b15af71`](https://github.com/mihonapp/mihon/commit/b15af71))
+- Store timestamps as `Instant` and optimize `libraryView` reading last read date directly from history ([@AntsyLich](https://github.com/AntsyLich)) ([`5df78e3`](https://github.com/mihonapp/mihon/commit/5df78e3), [`44c1e19`](https://github.com/mihonapp/mihon/commit/44c1e19))
+
+### Improved
+- Improved downloader concurrency: downloads next chapter concurrently while current one finishes, controlled via `DownloadJob` ([@AntsyLich](https://github.com/AntsyLich)) ([`730e43f`](https://github.com/mihonapp/mihon/commit/730e43f), [`01d302f`](https://github.com/mihonapp/mihon/commit/01d302f))
+- Throttled search parallelism with `Dispatchers.IO.limitedParallelism` to prevent thread exhaustion ([@AntsyLich](https://github.com/AntsyLich)) ([`a4780e4`](https://github.com/mihonapp/mihon/commit/a4780e4))
+- Batch multi-ID SQL queries for categories, chapters, episodes, history, and tracking ([@AntsyLich](https://github.com/AntsyLich))
+- Smooth Webtoon scrolling and eliminated stutter between pages ([@AntsyLich](https://github.com/AntsyLich)) ([`b585613`](https://github.com/mihonapp/mihon/commit/b585613))
+- Faster duplicate detection and migration indexing with temporary indexes ([@AntsyLich](https://github.com/AntsyLich)) ([`a999e49`](https://github.com/mihonapp/mihon/commit/a999e49))
+
+### Fixed
+- Fixed Cloudflare challenges failing on non-GET requests and resolved race conditions with host-level concurrency locks ([@AntsyLich](https://github.com/AntsyLich), [@tigeryu8900](https://github.com/tigeryu8900)) ([`7ae858e`](https://github.com/mihonapp/mihon/commit/7ae858e), [`5a5ff22`](https://github.com/mihonapp/mihon/commit/5a5ff22))
+- Prevent app crashes when system WebView render process terminates unexpectedly ([@AntsyLich](https://github.com/AntsyLich)) ([`649fc83`](https://github.com/mihonapp/mihon/commit/649fc83))
+- Fixed extension installer queue concurrency and cancellation crashes ([@AntsyLich](https://github.com/AntsyLich)) ([`ae749bb`](https://github.com/mihonapp/mihon/commit/ae749bb), [`07b9fb6`](https://github.com/mihonapp/mihon/commit/07b9fb6), [`2df48e1`](https://github.com/mihonapp/mihon/commit/2df48e1))
+- Fixed chapter refresh failure in locales with non-ASCII numeric digits ([@AntsyLich](https://github.com/AntsyLich)) ([`8457fb9`](https://github.com/mihonapp/mihon/commit/8457fb9))
+- Fixed startup crash on Samsung devices running Android 9-11 ([@AntsyLich](https://github.com/AntsyLich)) ([`abb126a`](https://github.com/mihonapp/mihon/commit/abb126a))
+- Fixed start/resume FAB overlapping navigation bar on tablet screens ([@AntsyLich](https://github.com/AntsyLich)) ([`c279291`](https://github.com/mihonapp/mihon/commit/c279291))
+- Fixed back gesture crashes with updated `navigationevent` ([@AntsyLich](https://github.com/AntsyLich)) ([`43de88c`](https://github.com/mihonapp/mihon/commit/43de88c))
+- Fixed tracker start date shifting by UTC offset ([@hazptr](https://github.com/hazptr)) ([#4049](https://github.com/mihonapp/mihon/pull/4049))
+- Fixed Kitsu search returning novels in results ([@AntsyLich](https://github.com/AntsyLich)) ([`c0c0909`](https://github.com/mihonapp/mihon/commit/c0c0909))
+- Fixed split pages inserting into wrong chapters in reader ([@AntsyLich](https://github.com/AntsyLich)) ([`3156b4a`](https://github.com/mihonapp/mihon/commit/3156b4a))
+- Fixed crashes when opening invalid filter dialogs from extensions ([@AntsyLich](https://github.com/AntsyLich)) ([`c9e1b6e`](https://github.com/mihonapp/mihon/commit/c9e1b6e))
+- Fixed unrecognized chapter downloads with spaces, dots, or non-ASCII scanlator names ([@AntsyLich](https://github.com/AntsyLich)) ([`f0f1e4d`](https://github.com/mihonapp/mihon/commit/f0f1e4d))
+- Fixed CI build failure when assembling release without telemetry/crashlytics ([@dark25](https://github.com/dark25))
+
 ## [v0.18.2.1] - 2026-09-14
 
 ### Added
