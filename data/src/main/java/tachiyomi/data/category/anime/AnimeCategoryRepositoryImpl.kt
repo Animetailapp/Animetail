@@ -44,6 +44,15 @@ class AnimeCategoryRepositoryImpl(
         }
     }
 
+    override suspend fun getCategoriesByAnimeIds(animeIds: List<Long>): Map<Long, List<Category>> {
+        return handler.awaitList {
+            categoriesQueries.getCategoriesByAnimeIds(animeIds) { animeId, id, name, order, flags, hidden ->
+                animeId to mapCategory(id, name, order, flags, hidden)
+            }
+        }
+            .groupBy({ it.first }, { it.second })
+    }
+
     override suspend fun getVisibleCategoriesByAnimeId(animeId: Long): List<Category> {
         return handler.awaitList {
             categoriesQueries.getVisibleCategoriesByAnimeId(animeId, ::mapCategory)

@@ -1217,20 +1217,20 @@ open class WebGpuViewer(
                 }
             }
 
-              logcat(LogPriority.INFO) { "Decoding ${pageName(page)}" }
-              val started = SystemClock.uptimeMillis()
-              var done = false
-              try {
-                  buildPage(page, ImageDecoder.open(input), streaming = false) { false }
-                  done = true
-              } finally {
-                  val ms = SystemClock.uptimeMillis() - started
-                  logcat(LogPriority.INFO) {
-                      "${if (done) "Decoded" else "Failed decoding"} ${pageName(page)} in $ms ms"
-                  }
-              }
-          }
-      }
+            logcat(LogPriority.INFO) { "Decoding ${pageName(page)}" }
+            val started = SystemClock.uptimeMillis()
+            var done = false
+            try {
+                buildPage(page, ImageDecoder.open(input), streaming = false) { false }
+                done = true
+            } finally {
+                val ms = SystemClock.uptimeMillis() - started
+                logcat(LogPriority.INFO) {
+                    "${if (done) "Decoded" else "Failed decoding"} ${pageName(page)} in $ms ms"
+                }
+            }
+        }
+    }
 
     private fun pageName(page: ViewerReaderPage): String {
         val p = page.page

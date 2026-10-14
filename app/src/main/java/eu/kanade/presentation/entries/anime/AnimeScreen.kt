@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
@@ -983,27 +984,27 @@ fun AnimeScreenLargeImpl(
                 )
             },
             bottomBar = {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.BottomEnd,
-                ) {
-                    val selectedEpisodes = remember(episodes) {
-                        episodes.filter { it.selected }
-                    }
-                    SharedAnimeBottomActionMenu(
-                        selected = selectedEpisodes,
-                        onEpisodeClicked = onEpisodeClicked,
-                        onMultiBookmarkClicked = onMultiBookmarkClicked,
-                        onMultiFillermarkClicked = onMultiFillermarkClicked,
-                        onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
-                        onMarkPreviousAsSeenClicked = onMarkPreviousAsSeenClicked,
-                        onDownloadEpisode = onDownloadEpisode,
-                        onMultiDeleteClicked = onMultiDeleteClicked,
-                        onSetDateClicked = onSetDateClicked,
-                        fillFraction = 0.5f,
-                        alwaysUseExternalPlayer = alwaysUseExternalPlayer,
-                    )
+                val selectedEpisodes = remember(episodes) {
+                    episodes.filter { it.selected }
                 }
+                // Aligned by its own modifier: a wrapper would always be laid out, and the scaffold then drops the
+                // navigation bar inset under the FAB
+                SharedAnimeBottomActionMenu(
+                    selected = selectedEpisodes,
+                    onEpisodeClicked = onEpisodeClicked,
+                    onMultiBookmarkClicked = onMultiBookmarkClicked,
+                    onMultiFillermarkClicked = onMultiFillermarkClicked,
+                    onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
+                    onMarkPreviousAsSeenClicked = onMarkPreviousAsSeenClicked,
+                    onDownloadEpisode = onDownloadEpisode,
+                    onMultiDeleteClicked = onMultiDeleteClicked,
+                    onSetDateClicked = onSetDateClicked,
+                    fillFraction = 0.5f,
+                    alwaysUseExternalPlayer = alwaysUseExternalPlayer,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentWidth(Alignment.End),
+                )
             },
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             floatingActionButton = {

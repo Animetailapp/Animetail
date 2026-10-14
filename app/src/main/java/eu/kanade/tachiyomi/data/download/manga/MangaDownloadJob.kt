@@ -84,8 +84,10 @@ class MangaDownloadJob(context: Context, workerParams: WorkerParameters) : Corou
         val state = applicationContext.activeNetworkState()
         return when {
             !state.isOnline -> applicationContext.getString(R.string.download_notifier_no_network)
+
             downloadPreferences.downloadOnlyOverWifi.get() && !state.isWifi ->
                 applicationContext.getString(R.string.download_notifier_text_only_wifi)
+
             else -> null
         }
     }

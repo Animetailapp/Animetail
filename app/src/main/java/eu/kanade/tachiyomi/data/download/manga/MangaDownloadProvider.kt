@@ -363,4 +363,3 @@ private class ChapterDirNameParts(chapterName: String, val chapterScanlator: Str
                 .also { validChapterNames[index] = it }
     }
 }
-

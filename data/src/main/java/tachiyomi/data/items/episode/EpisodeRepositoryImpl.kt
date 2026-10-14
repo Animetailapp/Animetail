@@ -103,6 +103,13 @@ class EpisodeRepositoryImpl(
         return handler.awaitList { episodesQueries.getEpisodesByAnimeId(animeId, ::mapEpisode) }
     }
 
+    override suspend fun getEpisodesByAnimeIds(animeIds: List<Long>): Map<Long, List<Episode>> {
+        return handler.awaitList {
+            episodesQueries.getEpisodesByAnimeIds(animeIds, ::mapEpisode)
+        }
+            .groupBy { it.animeId }
+    }
+
     override suspend fun getBookmarkedEpisodesByAnimeId(animeId: Long): List<Episode> {
         return handler.awaitList {
             episodesQueries.getBookmarkedEpisodesByAnimeId(

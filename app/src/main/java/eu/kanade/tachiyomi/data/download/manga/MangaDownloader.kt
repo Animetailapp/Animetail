@@ -52,8 +52,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
-import java.util.concurrent.ConcurrentHashMap
-
 import logcat.LogPriority
 import mihon.core.archive.ZipWriter
 import nl.adaptivity.xmlutil.serialization.XML
@@ -77,6 +75,7 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -509,7 +508,6 @@ class MangaDownloader(
             notifier.onError(error.message, download.chapter.name, download.manga.title, download.manga.id)
         }
     }
-
 
     /**
      * Gets the image from the filesystem if it exists or downloads it otherwise.

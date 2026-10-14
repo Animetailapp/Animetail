@@ -356,7 +356,6 @@ class NotificationReceiver : BroadcastReceiver() {
         }
     }
 
-
     companion object {
         private const val NAME = "NotificationReceiver"
 

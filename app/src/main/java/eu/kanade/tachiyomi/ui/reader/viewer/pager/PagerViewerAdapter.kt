@@ -379,7 +379,9 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
             }
             index = joinedItems.indexOfFirst { it.first == newerPage || it.second == newerPage }
         }
-        viewer.pager.setCurrentItem(index, false)
+        if (index != -1 && index != viewer.pager.currentItem) {
+            viewer.pager.setCurrentItem(index, false)
+        }
     }
 
     @Suppress("MagicNumber")

@@ -69,5 +69,4 @@ object AppBindings {
     @SingleIn(AppScope::class)
     fun providesFilterSerializer(): xyz.nulldev.ts.api.http.serializer.FilterSerializer =
         xyz.nulldev.ts.api.http.serializer.FilterSerializer()
-
 }

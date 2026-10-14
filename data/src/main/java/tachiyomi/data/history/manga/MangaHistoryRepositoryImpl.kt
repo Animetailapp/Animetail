@@ -48,6 +48,15 @@ class MangaHistoryRepositoryImpl(
             .awaitAsList()
     }
 
+    override suspend fun getHistoryByMangaIds(mangaIds: List<Long>): Map<Long, List<MangaHistory>> {
+        return database.historyQueries
+            .getHistoryByMangaIds(mangaIds) { mangaId, id, chapterId, readAt, readDuration ->
+                mangaId to MangaHistoryMapper.mapMangaHistory(id, chapterId, readAt, readDuration)
+            }
+            .awaitAsList()
+            .groupBy({ it.first }, { it.second })
+    }
+
     override suspend fun resetMangaHistory(historyId: Long) {
         try {
             database.historyQueries.resetHistoryById(historyId)

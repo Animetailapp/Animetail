@@ -41,6 +41,15 @@ class AnimeHistoryRepositoryImpl(
         }
     }
 
+    override suspend fun getHistoryByAnimeIds(animeIds: List<Long>): Map<Long, List<AnimeHistory>> {
+        return handler.awaitList {
+            animehistoryQueries.getHistoryByAnimeIds(animeIds) { animeId, id, episodeId, lastSeen ->
+                animeId to AnimeHistoryMapper.mapAnimeHistory(id, episodeId, lastSeen)
+            }
+        }
+            .groupBy({ it.first }, { it.second })
+    }
+
     override suspend fun resetAnimeHistory(historyId: Long) {
         try {
             handler.await { animehistoryQueries.resetAnimeHistoryById(historyId) }

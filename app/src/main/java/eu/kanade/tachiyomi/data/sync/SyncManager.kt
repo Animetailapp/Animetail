@@ -21,6 +21,7 @@ import eu.kanade.tachiyomi.data.backup.restore.restorers.MangaRestorer
 import eu.kanade.tachiyomi.data.sync.service.GoogleDriveSyncService
 import eu.kanade.tachiyomi.data.sync.service.SyncData
 import eu.kanade.tachiyomi.data.sync.service.SyncYomiSyncService
+import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
@@ -107,8 +108,8 @@ class SyncManager(
         )
 
         logcat(LogPriority.DEBUG) { "Begin create backup" }
-        val backupManga = backupCreator.backupMangas(databaseManga, backupOptions)
-        val backupAnime = backupCreator.backupAnimes(databaseAnime, backupOptions)
+        val backupManga = backupCreator.backupMangas(databaseManga, backupOptions).toList()
+        val backupAnime = backupCreator.backupAnimes(databaseAnime, backupOptions).toList()
         val backup = Backup(
             backupManga = backupManga,
             backupCategories = backupCreator.backupMangaCategories(backupOptions),

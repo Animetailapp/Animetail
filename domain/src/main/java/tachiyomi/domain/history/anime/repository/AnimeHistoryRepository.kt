@@ -15,6 +15,8 @@ interface AnimeHistoryRepository {
 
     suspend fun getHistoryByAnimeId(animeId: Long): List<AnimeHistory>
 
+    suspend fun getHistoryByAnimeIds(animeIds: List<Long>): Map<Long, List<AnimeHistory>>
+
     suspend fun resetHistoryByAnimeId(animeId: Long)
 
     suspend fun deleteAllAnimeHistory(): Boolean

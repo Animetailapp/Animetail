@@ -20,6 +20,18 @@ JOIN episodes EP
 ON H.episode_id = EP._id
 WHERE EP.anime_id = :animeId AND EP._id = H.episode_id;
 
+getHistoryByAnimeIds:
+SELECT
+EP.anime_id,
+H._id,
+H.episode_id,
+H.last_seen
+FROM animehistory H
+JOIN episodes EP
+ON H.episode_id = EP._id
+WHERE EP.anime_id IN :animeIds
+ORDER BY EP.anime_id, H._id;
+
 getHistoryByEpisodeUrl:
 SELECT
 H._id,

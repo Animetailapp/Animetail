@@ -436,7 +436,15 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                     ),
                 )
                 add(ExtensionIconFetcher.ExtensionFactory(context))
-                add(ExtensionIconFetcher.SourceFactory(context, lazy { mangaExtensionManager }, lazy { animeExtensionManager }))
+                add(
+                    ExtensionIconFetcher.SourceFactory(
+                        context,
+                        lazy {
+                            mangaExtensionManager
+                        },
+                        lazy { animeExtensionManager },
+                    ),
+                )
                 // Keyer
                 add(AnimeKeyer())
                 add(MangaKeyer())

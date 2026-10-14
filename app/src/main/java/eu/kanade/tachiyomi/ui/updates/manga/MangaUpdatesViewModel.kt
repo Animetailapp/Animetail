@@ -489,7 +489,6 @@ class MangaUpdatesViewModel(
         val filterExcludedCategories: List<Long>,
     )
 
-
     @Immutable
     data class State(
         val isLoading: Boolean = true,

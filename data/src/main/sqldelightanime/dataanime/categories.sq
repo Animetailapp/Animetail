@@ -57,6 +57,20 @@ ON C._id = AC.category_id
 WHERE AC.anime_id = :animeId
 ORDER BY C.sort;
 
+getCategoriesByAnimeIds:
+SELECT
+AC.anime_id,
+C._id AS id,
+C.name,
+C.sort AS `order`,
+C.flags,
+C.hidden
+FROM categories C
+JOIN animes_categories AC
+ON C._id = AC.category_id
+WHERE AC.anime_id IN :animeIds
+ORDER BY AC.anime_id, C.sort;
+
 getVisibleCategoriesByAnimeId:
 SELECT
 C._id AS id,

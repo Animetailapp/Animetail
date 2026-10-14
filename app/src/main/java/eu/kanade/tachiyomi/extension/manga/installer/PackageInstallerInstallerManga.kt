@@ -45,6 +45,9 @@ class PackageInstallerInstallerManga(private val service: Service) : InstallerMa
                         service.startActivity(userAction, options)
                     } catch (e: Exception) {
                         logcat(LogPriority.ERROR, e) { "Failed to start user action activity" }
+                        activeSession?.let { (_, sessionId) ->
+                            runCatching { packageInstaller.abandonSession(sessionId) }
+                        }
                         continueQueue(InstallStep.Error.from(e))
                     }
                 }

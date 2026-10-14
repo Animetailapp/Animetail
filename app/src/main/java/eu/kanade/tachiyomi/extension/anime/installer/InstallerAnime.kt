@@ -96,18 +96,18 @@ abstract class InstallerAnime(private val service: Service) {
         if (!ready) {
             return
         }
-        if (queue.isEmpty()) {
-            if (waitingInstall.get() == null) {
-                service.stopSelf()
+        val nextEntry = synchronized(queue) {
+            if (queue.isEmpty()) {
+                if (waitingInstall.get() == null) {
+                    service.stopSelf()
+                }
+                return
             }
-            return
-        }
-        val nextEntry = queue.first()
-        if (waitingInstall.compareAndSet(null, nextEntry)) {
+            if (!waitingInstall.compareAndSet(null, queue.first())) return
             queue.removeAt(0)
-            installerScope.launch(Dispatchers.IO) {
-                processEntry(nextEntry)
-            }
+        }
+        installerScope.launch(Dispatchers.IO) {
+            processEntry(nextEntry)
         }
     }
 
@@ -117,13 +117,13 @@ abstract class InstallerAnime(private val service: Service) {
     @CallSuper
     open fun onDestroy() {
         installerScope.cancel()
-        queue.forEach {
+        val remaining = synchronized(queue) { queue.toList().also { queue.clear() } }
+        remaining.forEach {
             extensionManager.updateInstallStep(
                 it.downloadId,
                 InstallStep.Error("The installer stopped before it got to this one"),
             )
         }
-        queue.clear()
         waitingInstall.getAndSet(null)?.let {
             extensionManager.updateInstallStep(
                 it.downloadId,
@@ -141,7 +141,10 @@ abstract class InstallerAnime(private val service: Service) {
      */
     private fun cancelQueue(downloadId: Long) {
         val waitingInstall = this.waitingInstall.get()
-        val toCancel = queue.find { it.downloadId == downloadId } ?: waitingInstall ?: return
+        // Every new install cancels its own previous attempt first, which mustn't hit another extension's install
+        val toCancel = synchronized(queue) { queue.find { it.downloadId == downloadId } }
+            ?: waitingInstall?.takeIf { it.downloadId == downloadId }
+            ?: return
         if (cancelEntry(toCancel)) {
             queue.remove(toCancel)
             if (waitingInstall == toCancel) {

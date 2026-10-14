@@ -424,7 +424,6 @@ class AnimeUpdatesViewModel(
         libraryPreferences.newAnimeUpdatesCount.set(0)
     }
 
-
     @Immutable
     data class State(
         val isLoading: Boolean = true,

@@ -44,6 +44,13 @@ class AnimeRestorer(
         currentFetchWindow = fetchInterval.getWindow(now)
     }
 
+    suspend fun getExistingMatcher(): (BackupAnime) -> Boolean {
+        val urlsBySource = handler.awaitList { animesQueries.getAllAnimeSourceAndUrl() }
+            .groupBy({ it.source }, { it.url })
+
+        return { it.url in urlsBySource[it.source].orEmpty() }
+    }
+
     suspend fun sortByNew(backupAnimes: List<BackupAnime>): List<BackupAnime> {
         val urlsBySource = handler.awaitList { animesQueries.getAllAnimeSourceAndUrl() }
             .groupBy({ it.source }, { it.url })
