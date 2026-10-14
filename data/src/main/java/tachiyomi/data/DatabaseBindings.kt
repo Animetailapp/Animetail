@@ -7,9 +7,9 @@ import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConfiguration
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDatabaseType
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDriver
 import com.eygraber.sqldelight.androidx.driver.FileProvider
-import data.Chapters
+import data.Chapter
 import data.History
-import data.Mangas
+import data.Manga
 import dataanime.Animehistory
 import dataanime.Animes
 import dataanime.Episodes
@@ -45,15 +45,15 @@ object DatabaseBindings {
         return Database(
             driver = driver,
             historyAdapter = History.Adapter(
-                last_readAdapter = DateColumnAdapter,
+                read_atAdapter = DateColumnAdapter,
             ),
-            mangasAdapter = Mangas.Adapter(
-                genreAdapter = StringListColumnAdapter,
-                update_strategyAdapter = MangaUpdateStrategyColumnAdapter,
-                memoAdapter = MemoColumnAdapter,
+            mangaAdapter = Manga.Adapter(
+                remote_genreAdapter = StringListColumnAdapter,
+                remote_update_strategyAdapter = MangaUpdateStrategyColumnAdapter,
+                remote_memoAdapter = MemoColumnAdapter,
             ),
-            chaptersAdapter = Chapters.Adapter(
-                memoAdapter = MemoColumnAdapter,
+            chapterAdapter = Chapter.Adapter(
+                remote_memoAdapter = MemoColumnAdapter,
             ),
         )
     }

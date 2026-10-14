@@ -81,9 +81,9 @@ class MangaHistoryRepositoryImpl(
     override suspend fun upsertMangaHistory(historyUpdate: MangaHistoryUpdate) {
         try {
             database.historyQueries.upsert(
-                historyUpdate.chapterId,
-                historyUpdate.readAt,
-                historyUpdate.sessionReadDuration,
+                chapterId = historyUpdate.chapterId,
+                readAt = historyUpdate.readAt,
+                readDuration = historyUpdate.sessionReadDuration,
             )
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, throwable = e)

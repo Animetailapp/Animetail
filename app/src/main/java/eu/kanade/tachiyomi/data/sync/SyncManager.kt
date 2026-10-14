@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.data.sync
 import android.content.Context
 import android.net.Uri
 import app.cash.sqldelight.async.coroutines.awaitAsList
-import data.Chapters
+import data.GetChaptersByMangaId
 import dataanime.Episodes
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
@@ -245,11 +245,11 @@ class SyncManager(
      * @return a list of all manga stored in the database
      */
     private suspend fun getAllMangaFromDB(): List<Manga> {
-        return mangaHandler.awaitList { mangasQueries.getAllManga(::mapManga) }
+        return mangaHandler.awaitList { mangaQueries.getAllManga(::mapManga) }
     }
 
     private suspend fun getAllMangaThatNeedsSync(): List<Manga> {
-        return mangaHandler.awaitList { mangasQueries.getFavorites(::mapManga) }
+        return mangaHandler.awaitList { mangaQueries.getFavorites(::mapManga) }
     }
 
     private suspend fun getAllAnimeFromDB(): List<Anime> {
@@ -263,7 +263,7 @@ class SyncManager(
     @Suppress("ReturnCount")
     private suspend fun isMangaDifferent(localManga: Manga, remoteManga: BackupManga): Boolean {
         val localChapters = mangaHandler.await {
-            chaptersQueries.getChaptersByMangaId(
+            chapterQueries.getChaptersByMangaId(
                 localManga.id,
                 0,
             ).awaitAsList()
@@ -306,8 +306,11 @@ class SyncManager(
     }
 
     @Suppress("ReturnCount")
-    private fun areChaptersDifferent(localChapters: List<Chapters>, remoteChapters: List<BackupChapter>): Boolean {
-        val localChapterMap = localChapters.associateBy { it.url }
+    private fun areChaptersDifferent(
+        localChapters: List<GetChaptersByMangaId>,
+        remoteChapters: List<BackupChapter>,
+    ): Boolean {
+        val localChapterMap = localChapters.associateBy { it.remote_url }
         val remoteChapterMap = remoteChapters.associateBy { it.url }
 
         if (localChapterMap.size != remoteChapterMap.size) {
@@ -319,9 +322,9 @@ class SyncManager(
 
             // If a matching remote chapter doesn't exist, or the state is different, consider them different
             if (remoteChapter == null ||
-                localChapter.read != remoteChapter.read ||
-                localChapter.bookmark != remoteChapter.bookmark ||
-                localChapter.last_page_read != remoteChapter.lastPageRead
+                localChapter.user_read != remoteChapter.read ||
+                localChapter.user_bookmark != remoteChapter.bookmark ||
+                localChapter.user_last_page_read != remoteChapter.lastPageRead
             ) {
                 return true
             }
