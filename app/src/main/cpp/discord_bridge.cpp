@@ -411,10 +411,7 @@ void DiscordBridge::SetTokenAndConnect(const char* token) {
     if (!token) { LOGE("SetTokenAndConnect: null token"); return; }
     std::lock_guard<std::mutex> lock(mutex_);
     if (!client_) { LOGE("SetTokenAndConnect: no client"); return; }
-    if (authorized_) {
-        LOGW("SetTokenAndConnect: already authorized, skipping");
-        return;
-    }
+    if (token && strlen(token) == 0) { LOGW("SetTokenAndConnect: empty token"); return; }
     try {
         LOGI("SetTokenAndConnect: calling client_->UpdateToken(Bearer, token_len=%zu)...",
              strlen(token));
@@ -427,9 +424,14 @@ void DiscordBridge::SetTokenAndConnect(const char* token) {
                     authorized_ = true;
                     LOGI("SetTokenAndConnect: UpdateToken succeeded, authorized_=true");
                 } else {
+                    {
+                        std::lock_guard<std::mutex> lk(mutex_);
+                        authorized_ = false;
+                    }
                     LOGE("SetTokenAndConnect: UpdateToken FAILED: err=%s errCode=%d retryable=%s",
                          result.Error().c_str(), result.ErrorCode(),
                          result.Retryable() ? "true" : "false");
+                    FireNativeStatusCallback(0, false, false);
                 }
             }
         );
