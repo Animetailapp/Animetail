@@ -30,4 +30,8 @@ open class ReaderPage(
             field = value
             if (value) shiftedPage = false
         }
+
+    /** Set by a viewer before the download; filled during [Page.State.DownloadImage]. */
+    @Volatile
+    var downloadStream: DownloadStream? = null
 }
