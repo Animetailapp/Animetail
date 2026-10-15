@@ -20,10 +20,8 @@
 -keep class eu.kanade.tachiyomi.source.online.HttpSource { public protected *; }
 -keep class eu.kanade.tachiyomi.source.online.ParsedHttpSource { public protected *; }
 
--keep class eu.kanade.tachiyomi.animesource.model.** { public protected *; }
--keep class eu.kanade.tachiyomi.animesource.online.** { public protected *; }
--keep class eu.kanade.tachiyomi.animesource.** extends eu.kanade.tachiyomi.animesource.AnimeSource { public protected *; }
--keep class eu.kanade.tachiyomi.animesource.** extends eu.kanade.tachiyomi.torrentutils.** { public protected *; }
+-keep class eu.kanade.tachiyomi.animesource.** { public protected *; }
+-keep class eu.kanade.tachiyomi.torrentutils.** { public protected *; }
 
 # Final classes and top-level functions extensions only call into
 -keep,allowoptimization class eu.kanade.tachiyomi.AppInfo { public protected *; }
