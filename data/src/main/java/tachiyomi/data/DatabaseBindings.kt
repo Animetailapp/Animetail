@@ -109,6 +109,16 @@ object DatabaseBindings {
                 isForeignKeyConstraintsEnabled = true,
                 concurrencyModel = MultipleReadersSingleWriter(isWal = true, walCount = if (isLowRam) 1 else 4),
             ),
+            onOpen = {
+                try {
+                    execute(null, "ALTER TABLE animes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d'", 0)
+                } catch (_: Throwable) {
+                }
+                try {
+                    execute(null, "ALTER TABLE episodes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d'", 0)
+                } catch (_: Throwable) {
+                }
+            },
         )
         val database = AnimeDatabase(
             driver = driver,

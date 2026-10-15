@@ -50,11 +50,7 @@ internal object AnimeExtensionLoader {
     private const val METADATA_TORRENT = "tachiyomi.animeextension.torrent"
     private const val METADATA_TORRENT_ALT = "tachiyomi.animeextension.hasTorrent"
 
-    private val SUPPORTED_LIB_VERSIONS = listOf(
-        14.0,
-        16.0,
-        17.0,
-    )
+   private val SUPPORTED_LIB_VERSIONS = listOf(14.0, 16.0, 17.0)
 
     private val PRIVATE_EXTENSION_DIRS = listOf("animeextensions", "exts")
     private val PRIVATE_EXTENSION_EXTENSIONS = listOf("apk", "ext")
