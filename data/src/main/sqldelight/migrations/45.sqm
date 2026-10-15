@@ -32,7 +32,7 @@ ALTER TABLE mangas_copy RENAME TO mangas;
 CREATE TABLE chapters_copy AS
 SELECT
     _id, manga_id, url, name, scanlator, read, bookmark, last_page_read, chapter_number, source_order, date_fetch,
-    date_upload, memo
+    date_upload, memo, date_upload_override
 FROM chapters NOT INDEXED;
 DROP TABLE chapters;
 ALTER TABLE chapters_copy RENAME TO chapters;
@@ -230,7 +230,8 @@ SET read = merged.read,
     bookmark = merged.bookmark,
     last_page_read = merged.last_page_read,
     date_fetch = merged.date_fetch,
-    date_upload = merged.date_upload
+    date_upload = merged.date_upload,
+    date_upload_override = merged.date_upload_override
 FROM (
     SELECT
         D.keep_id,
@@ -241,7 +242,8 @@ FROM (
         -- wins when no copy recorded one. Updates only lists chapters fetched after the entry joined
         -- the library, so letting a 0 through would hide the merged chapter from it.
         coalesce(min(nullif(C.date_fetch, 0)), 0) AS date_fetch,
-        max(C.date_upload) AS date_upload
+        max(C.date_upload) AS date_upload,
+        max(C.date_upload_override) AS date_upload_override
     FROM duplicate_chapters D
     JOIN chapters C
     ON C._id = D._id
