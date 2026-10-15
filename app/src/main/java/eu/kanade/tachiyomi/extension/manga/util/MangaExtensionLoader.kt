@@ -51,13 +51,11 @@ internal object MangaExtensionLoader {
     private const val METADATA_NSFW = "tachiyomi.extension.nsfw"
     private const val METADATA_CONTENT_WARNING = "tachiyomi.extension.contentWarning"
 
-    const val LIB_VERSION_MIN = 1.2
-    const val LIB_VERSION_MAX = 1.5
+    const val LIB_VERSION_MIN = 1.4
+    const val LIB_VERSION_MAX = 1.6
 
     private val SUPPORTED_LIB_VERSIONS = listOf(
         LIB_VERSION_MIN,
-        1.3,
-        1.4,
         LIB_VERSION_MAX,
     )
 
