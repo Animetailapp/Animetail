@@ -6,14 +6,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.relativeDateText
 import eu.kanade.presentation.history.manga.components.MangaHistoryItem
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
+import eu.kanade.presentation.util.rememberIs24HourSystem
 import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryViewModel
 import kotlinx.datetime.LocalDate
+import mihon.app.di.appGraph
 import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
@@ -21,6 +28,7 @@ import tachiyomi.presentation.core.components.ListGroupHeader
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
+import tachiyomi.presentation.core.util.collectAsState
 
 @Composable
 fun MangaHistoryScreen(
@@ -72,6 +80,14 @@ private fun MangaHistoryScreenContent(
     onClickDelete: (MangaHistoryWithRelations) -> Unit,
     onClickFavorite: (MangaHistoryWithRelations) -> Unit,
 ) {
+    val context = LocalContext.current
+    val locale = LocalLocale.current
+    val is24HourSystem = rememberIs24HourSystem()
+    val timeFormat by remember { context.appGraph.uiPreferences.timeFormat }.collectAsState()
+    val timeFormatter = remember(timeFormat, locale, is24HourSystem) {
+        UiPreferences.timeFormat(timeFormat, locale.platformLocale, is24HourSystem)
+    }
+
     FastScrollLazyColumn(
         contentPadding = contentPadding,
     ) {
@@ -98,6 +114,7 @@ private fun MangaHistoryScreenContent(
                     MangaHistoryItem(
                         modifier = Modifier.animateItem(),
                         history = value,
+                        timeFormatter = timeFormatter,
                         onClickCover = { onClickCover(value) },
                         onClickResume = { onClickResume(value) },
                         onClickDelete = { onClickDelete(value) },
