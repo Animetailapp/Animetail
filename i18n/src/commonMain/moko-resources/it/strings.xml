@@ -279,7 +279,7 @@
     <string name="action_webview_forward">Avanti</string>
     <string name="action_webview_refresh">Aggiorna</string>
     <string name="pref_category_library">Libreria</string>
-    <string name="ext_obsolete">Obsoleta</string>
+    <string name="ext_obsolete">Orfana</string>
     <string name="obsolete_extension_message">Questa estensione non è più disponibile. Potrebbe non funzionare correttamente e causare problemi con l\'app. Si consiglia di disinstallarla.</string>
     <string name="pref_date_format">Formato data</string>
     <string name="pref_category_library_update">Aggiornamenti globali</string>
@@ -892,4 +892,26 @@
     <string name="download_bookmarked">Segnato</string>
     <string name="action_filter_excluded_scanlators">Filtrare i scanlator esclusi</string>
     <string name="considering">Considerando</string>
+    <string name="ext_content_warning_mixed_description">La fonte per questa estensione potebbe contenere contenuto non sicuro o 18+.</string>
+    <string name="downloading_with_progress">Scaricamento… (%d%%)</string>
+    <string name="ext_info_warning">Avviso</string>
+    <string name="ext_content_warning_nsfw">Per maggiorenni</string>
+    <string name="label_support_us">Supportaci</string>
+    <string name="pref_allowed_content_warnings">Avvisi sui contenuti consentiti</string>
+    <string name="ext_content_warning_nsfw_description">Le fonti per questa estensione sono dirette principalmente a contenuti 18+.</string>
+    <string name="theme_tokyonight">Tokyo Notte</string>
+    <string name="pref_category_extensions">Estensioni</string>
+    <string name="ext_content_warning_mixed">Misto</string>
+    <string name="ext_content_warning_safe">Sicuro</string>
+    <string name="content_warnings_info">Le estensioni installate ma non caricate restano nell\'elenco senza le loro sorgenti; quelle non installate vengono nascoste. Questo non impedisce che estensioni non ufficiali o segnalate in modo errato mostrino contenuti 18+ nell\'app.</string>
+    <string name="pref_apply_content_warnings_to_installed_summary">Quando è disattivata, le estensioni già installate continuano a caricarsi e ad aggiornarsi a prescindere dal loro avviso</string>
+    <string name="app_migrating_title">Completamento dell\'aggiornamento</string>
+    <string name="app_migrating_summary">Stiamo completando i preparativi dopo l\'aggiornamento. Può richiedere qualche minuto, quindi tieni l\'app aperta.</string>
+    <string name="pref_apply_content_warnings_to_installed">Applica anche alle estensioni installate</string>
+    <string name="pref_enable_chapter_name_hash">Attiva il suffisso hash nei nomi dei capitoli</string>
+    <string name="ext_filtered">Filtrata</string>
+    <string name="ext_not_loaded">Non caricata</string>
+    <string name="ext_not_loaded_dialog">Impossibile da caricare</string>
+    <string name="ext_not_loaded_details">Perché non è caricata</string>
+    <string name="ext_copy_stacktrace">Copia traccia di stack</string>
 </resources>
