@@ -18,6 +18,9 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 ### Removed
 - Remove the "Split tall images" download setting ([@AntsyLich](https://github.com/AntsyLich))
 
+### Fixed
+- Fixed covers reloading when removing an entry from the library ([@AntsyLich](https://github.com/AntsyLich))
+
 ## [v0.21.2.0] - 2026-10-14
 
 ### Added

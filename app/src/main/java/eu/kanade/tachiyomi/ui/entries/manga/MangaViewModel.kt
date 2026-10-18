@@ -577,10 +577,7 @@ class MangaViewModel(
             if (isFavorited) {
                 // Remove from library
                 if (updateManga.awaitUpdateFavorite(manga.id, false)) {
-                    // Remove covers and update last modified in db
-                    if (manga.removeCovers(coverCache) != manga) {
-                        updateManga.awaitUpdateCoverLastModified(manga.id)
-                    }
+                    manga.removeCovers(coverCache)
                     withUIContext { onRemoved() }
                 }
             } else {

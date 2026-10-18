@@ -604,10 +604,7 @@ class AnimeViewModel(
             if (isFavorited) {
                 // Remove from library
                 if (updateAnime.awaitUpdateFavorite(anime.id, false)) {
-                    // Remove covers and update last modified in db
-                    if (anime.removeCovers(coverCache) != anime) {
-                        updateAnime.awaitUpdateCoverLastModified(anime.id)
-                    }
+                    anime.removeCovers(coverCache)
                     withUIContext { onRemoved() }
                 }
             } else {

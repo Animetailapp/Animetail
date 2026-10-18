@@ -41,12 +41,8 @@ fun Manga.prepUpdateCover(coverCache: MangaCoverCache, remoteManga: SManga, refr
 }
 
 fun Manga.removeCovers(coverCache: MangaCoverCache): Manga {
-    if (isLocal()) return this
-    return if (coverCache.deleteFromCache(this, true) > 0) {
-        copy(coverLastModified = Clock.System.now().toEpochMilliseconds())
-    } else {
-        this
-    }
+    if (!isLocal()) coverCache.deleteFromCache(this, true)
+    return this
 }
 
 suspend fun Manga.editCover(

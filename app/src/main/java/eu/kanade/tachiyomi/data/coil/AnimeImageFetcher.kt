@@ -63,7 +63,7 @@ class AnimeImageFetcher(
     override suspend fun fetch(): FetchResult {
         // Use custom cover if exists
         val useCustomCover = options.extras.getOrDefault(USE_CUSTOM_COVER_KEY)
-        if (useCustomCover) {
+        if (useCustomCover && (options.useBackground || isLibraryAnime)) {
             val customCoverFile = customCoverFileLazy.value
             if (customCoverFile.exists()) {
                 return fileLoader(customCoverFile)
