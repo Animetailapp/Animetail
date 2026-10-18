@@ -15,6 +15,9 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 ### Added
 - Add a Time Format setting to customize how times are displayed ([@MajorTanya](https://github.com/MajorTanya)) ([#4118](https://github.com/mihonapp/mihon/pull/4118))
 
+### Removed
+- Remove the "Split tall images" download setting ([@AntsyLich](https://github.com/AntsyLich))
+
 ## [v0.21.2.0] - 2026-10-14
 
 ### Added
