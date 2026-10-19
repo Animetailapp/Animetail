@@ -61,8 +61,8 @@
         <item quantity="other">Sekvaj %d nelegitaj ĉapitroj</item>
     </plurals>
     <plurals name="num_repos">
-        <item quantity="one">%d deponejo</item>
-        <item quantity="other">%d deponejoj</item>
+        <item quantity="one">%d etendaĵejo</item>
+        <item quantity="other">%d etendaĵejoj</item>
     </plurals>
     <plurals name="update_check_notification_ext_updates">
         <item quantity="one">Disponebla ĝisdatigo de etendaĵo</item>
@@ -75,5 +75,21 @@
     <plurals name="pref_pages">
         <item quantity="one">1 paĝo</item>
         <item quantity="other">%1$s paĝoj</item>
+    </plurals>
+    <plurals name="migrationListScreen.migrateDialog.migrateTitle">
+        <item quantity="one">Ĉu migri %1$d elementon?</item>
+        <item quantity="other">Ĉu mirgi %1$d elementojn?</item>
+    </plurals>
+    <plurals name="migrationListScreen.migrateDialog.copyTitle">
+        <item quantity="one">Ĉu kopii %1$d elementon?</item>
+        <item quantity="other">Ĉu kopii %1$d elementojn?</item>
+    </plurals>
+    <plurals name="migrationListScreen.migrateDialog.skipText">
+        <item quantity="one">Elemento estis preterlasita</item>
+        <item quantity="other">%1$d elementoj estis preterlasitaj</item>
+    </plurals>
+    <plurals name="notification_update_error">
+        <item quantity="one">%1$d ĝisdatigo fiaskis</item>
+        <item quantity="other">%1$d ĝisdatigoj fiaskis</item>
     </plurals>
 </resources>
