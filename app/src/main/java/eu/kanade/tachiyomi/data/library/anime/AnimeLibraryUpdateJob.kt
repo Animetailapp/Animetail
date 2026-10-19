@@ -365,6 +365,7 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
 
         coroutineScope {
             animeToUpdate.groupBy { it.anime.source }.values
+                .sortedByDescending { it.size }
                 .map { animeInSource ->
                     async {
                         semaphore.withPermit {
