@@ -25,7 +25,16 @@ data class MangaDownload(
     val chapter: Chapter,
 ) {
 
-    var pages: List<Page>? = null
+    @Transient
+    private val _pagesFlow = MutableStateFlow<List<Page>?>(null)
+
+    @Transient
+    val pagesFlow = _pagesFlow.asStateFlow()
+    var pages: List<Page>?
+        get() = _pagesFlow.value
+        set(value) {
+            _pagesFlow.value = value
+        }
 
     val totalProgress: Int
         get() = pages?.sumOf(Page::progress) ?: 0
