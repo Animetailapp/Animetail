@@ -7,10 +7,13 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerConfig
+import eu.kanade.tachiyomi.ui.reader.viewer.webgpu.WebGpuShader
+import eu.kanade.tachiyomi.ui.reader.viewer.webgpu.WebGpuShaders
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
 import tachiyomi.core.common.preference.getEnumSet
+import tachiyomi.core.common.preference.getObjectFromString
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
 
@@ -259,6 +262,25 @@ class ReaderPreferences(
     val continuousMinWidth: Preference<Int> = preferenceStore.getInt("webgpu_continuous_minwidth", 100)
 
     val continuousGap: Preference<Int> = preferenceStore.getInt("webgpu_continuous_gap", 10)
+
+    val disableDoubleTapGestures: Preference<Boolean> =
+        preferenceStore.getBoolean("webgpu_disable_double_tap_gestures", false)
+
+    /** In run order. */
+    val imageFilters: Preference<List<WebGpuShader>> = preferenceStore.getObjectFromString(
+        "webgpu_image_filters",
+        emptyList(),
+        WebGpuShaders::serialize,
+        WebGpuShaders::deserialize,
+    )
+
+    /** In run order. */
+    val tileFilters: Preference<List<WebGpuShader>> = preferenceStore.getObjectFromString(
+        "webgpu_tile_filters",
+        emptyList(),
+        WebGpuShaders::serialize,
+        WebGpuShaders::deserialize,
+    )
 
     // endregion
 
