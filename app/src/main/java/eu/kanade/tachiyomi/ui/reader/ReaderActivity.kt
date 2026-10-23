@@ -81,6 +81,7 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsViewModel
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
+import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerConfig
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerViewer
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.R2LPagerViewer
@@ -96,7 +97,9 @@ import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.util.view.setComposeContent
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -170,6 +173,12 @@ class ReaderActivity : BaseActivity() {
     private val windowInsetsController by lazy { WindowInsetsControllerCompat(window, binding.root) }
 
     private var loadingIndicator: ReaderProgressIndicator? = null
+
+    /**
+     * Viewer used to display the pages (pager, webtoon, ...).
+     */
+    private val viewerFlow = MutableStateFlow<Viewer?>(null)
+    private val viewer: Viewer? inline get() = viewerFlow.value
 
     var isScrollingThroughPages = false
         private set
@@ -289,7 +298,7 @@ class ReaderActivity : BaseActivity() {
      */
     override fun onDestroy() {
         super.onDestroy()
-        viewModel.state.value.viewer?.destroy()
+        viewer?.destroy()
         config = null
         menuToggleToast?.cancel()
         readingModeToast?.cancel()
@@ -363,7 +372,7 @@ class ReaderActivity : BaseActivity() {
      * Dispatches a key event. If the viewer doesn't handle it, call the default implementation.
      */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        val handled = viewModel.state.value.viewer?.handleKeyEvent(event) ?: false
+        val handled = viewer?.handleKeyEvent(event) ?: false
         return handled || super.dispatchKeyEvent(event)
     }
 
@@ -372,7 +381,7 @@ class ReaderActivity : BaseActivity() {
      * implementation.
      */
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
-        val handled = viewModel.state.value.viewer?.handleGenericMotionEvent(event) ?: false
+        val handled = viewer?.handleGenericMotionEvent(event) ?: false
         return handled || super.dispatchGenericMotionEvent(event)
     }
 
@@ -396,10 +405,12 @@ class ReaderActivity : BaseActivity() {
 
         binding.dialogRoot.setComposeContent {
             val state by viewModel.state.collectAsState()
+            val currentViewer by viewerFlow.collectAsState()
             val settingsViewModel = remember {
                 ReaderSettingsViewModel(
                     readerState = viewModel.state,
                     hasDisplayCutout = hasCutout,
+                    viewerFlow = viewerFlow,
                     onChangeReadingMode = viewModel::setMangaReadingMode,
                     onChangeOrientation = viewModel::setMangaOrientationType,
                     preferences = readerPreferences,
@@ -454,7 +465,7 @@ class ReaderActivity : BaseActivity() {
                 onShare = ::shareChapter.takeIf { isHttpSource },
 
                 chapterNavigatorType = if (!verticalNavigator) {
-                    if (state.viewer is R2LPagerViewer || (state.viewer as? WebGpuViewer)?.isReversed ?: false) {
+                    if (currentViewer is R2LPagerViewer || (currentViewer as? WebGpuViewer)?.isReversed ?: false) {
                         ChapterNavigatorType.HORIZONTAL_RTL
                     } else {
                         ChapterNavigatorType.HORIZONTAL_LTR
@@ -513,7 +524,7 @@ class ReaderActivity : BaseActivity() {
                 doublePages = state.doublePages,
                 onClickPageLayout = {
                     if (readerPreferences.pageLayout.get() == PagerConfig.PageLayout.AUTOMATIC) {
-                        (viewModel.state.value.viewer as? PagerViewer)?.config?.let { config ->
+                        (viewer as? PagerViewer)?.config?.let { config ->
                             config.doublePages = !config.doublePages
                             reloadChapters(config.doublePages, true)
                         }
@@ -588,8 +599,8 @@ class ReaderActivity : BaseActivity() {
                         onSetAsCover = viewModel::setAsCover,
                         onShare = viewModel::shareImage,
                         onSave = viewModel::saveImage,
-                        onShareCombined = viewModel::shareImages,
-                        onSaveCombined = viewModel::saveImages,
+                        onShareCombined = ::shareCombinedImages,
+                        onSaveCombined = ::saveCombinedImages,
                         hasExtraPage = (state.dialog as? ReaderViewModel.Dialog.PageActions)?.extraPage != null,
                     )
                 }
@@ -676,7 +687,7 @@ class ReaderActivity : BaseActivity() {
                         val interval = intervalFloat.seconds
                         while (true) {
                             if (!viewModel.state.value.menuVisible) {
-                                viewModel.state.value.viewer.let { v ->
+                                viewer.let { v ->
                                     when (v) {
                                         is PagerViewer -> v.moveToNext()
 
@@ -731,7 +742,7 @@ class ReaderActivity : BaseActivity() {
     // SY -->
 
     fun reloadChapters(doublePages: Boolean, force: Boolean = false) {
-        val viewer = viewModel.state.value.viewer as? PagerViewer ?: return
+        val viewer = viewer as? PagerViewer ?: return
         viewer.updateShifting()
         if (!force && viewer.config.autoDoublePages) {
             setDoublePageMode(viewer)
@@ -762,7 +773,7 @@ class ReaderActivity : BaseActivity() {
     }
 
     private fun shiftDoublePages() {
-        val viewer = viewModel.state.value.viewer as? PagerViewer ?: return
+        val viewer = viewer as? PagerViewer ?: return
         viewer.config.let { config ->
             config.shiftDoublePage = !config.shiftDoublePage
             viewModel.state.value.viewerChapters?.let {
@@ -773,13 +784,25 @@ class ReaderActivity : BaseActivity() {
         }
     }
 
+    private fun saveCombinedImages() {
+        val viewer = viewer as? PagerViewer ?: return
+        val isLTR = (viewer !is R2LPagerViewer) xor viewer.config.invertDoublePages
+        viewModel.saveImages(isLTR, viewer.config.pageCanvasColor)
+    }
+
+    private fun shareCombinedImages(copyToClipboard: Boolean) {
+        val viewer = viewer as? PagerViewer ?: return
+        val isLTR = (viewer !is R2LPagerViewer) xor viewer.config.invertDoublePages
+        viewModel.shareImages(copyToClipboard, isLTR, viewer.config.pageCanvasColor)
+    }
+
     // SY <--
 
     /**
      * Called from the presenter when a manga is ready. Used to instantiate the appropriate viewer.
      */
     private fun updateViewer() {
-        val prevViewer = viewModel.state.value.viewer
+        val prevViewer = viewer
         val newViewer = ReadingMode.toViewer(viewModel.getMangaReadingMode(), this)
 
         if (window.sharedElementEnterTransition is MaterialContainerTransform) {
@@ -796,7 +819,7 @@ class ReaderActivity : BaseActivity() {
             prevViewer.destroy()
             binding.viewerContainer.removeAllViews()
         }
-        viewModel.onViewerLoaded(newViewer)
+        viewerFlow.value = newViewer
         updateViewerInset(readerPreferences.fullscreen.get())
         binding.viewerContainer.addView(newViewer.getView())
 
@@ -879,13 +902,13 @@ class ReaderActivity : BaseActivity() {
             viewerChapters.currChapter.pages?.find {
                 it.index == state.indexPageToShift && it.chapter.chapter.id == state.indexChapterToShift
             }?.let {
-                (viewModel.state.value.viewer as? PagerViewer)?.updateShifting(it)
+                (viewer as? PagerViewer)?.updateShifting(it)
             }
             viewModel.setIndexChapterToShift(null)
             viewModel.setIndexPageToShift(null)
         } else if (state.lastShiftDoubleState != null) {
             val currentChapter = viewerChapters.currChapter
-            (viewModel.state.value.viewer as? PagerViewer)?.config?.shiftDoublePage = (
+            (viewer as? PagerViewer)?.config?.shiftDoublePage = (
                 currentChapter.requestedPage +
                     (
                         currentChapter.pages?.take(currentChapter.requestedPage)
@@ -895,7 +918,7 @@ class ReaderActivity : BaseActivity() {
         }
         // SY <--
 
-        viewModel.state.value.viewer?.setChapters(viewerChapters)
+        viewer?.setChapters(viewerChapters)
 
         lifecycleScope.launchIO {
             viewModel.getChapterUrl()?.let { url ->
@@ -939,7 +962,7 @@ class ReaderActivity : BaseActivity() {
      * page is not found.
      */
     private fun moveToPageIndex(index: Int) {
-        val viewer = viewModel.state.value.viewer ?: return
+        val viewer = this.viewer ?: return
         val currentChapter = viewModel.state.value.currentChapter ?: return
         val page = currentChapter.pages?.getOrNull(index) ?: return
         viewer.moveToPage(page)
@@ -981,7 +1004,7 @@ class ReaderActivity : BaseActivity() {
     fun onPageSelected(page: ReaderPage, hasExtraPage: Boolean = false) {
         // SY -->
         val currentPageText = if (hasExtraPage) {
-            val invertDoublePage = (viewModel.state.value.viewer as? PagerViewer)?.config?.invertDoublePages ?: false
+            val invertDoublePage = (viewer as? PagerViewer)?.config?.invertDoublePages ?: false
             if ((resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_LTR) xor invertDoublePage) {
                 "${page.number}-${page.number + 1}"
             } else {
@@ -1124,7 +1147,7 @@ class ReaderActivity : BaseActivity() {
      * Updates viewer inset depending on fullscreen reader preferences.
      */
     private fun updateViewerInset(fullscreen: Boolean) {
-        viewModel.state.value.viewer?.getView()?.applyInsetter {
+        viewer?.getView()?.applyInsetter {
             if (!fullscreen) {
                 type(navigationBars = true, statusBars = true) {
                     padding()
@@ -1199,7 +1222,7 @@ class ReaderActivity : BaseActivity() {
                 .drop(1)
                 .onEach {
                     viewModel.setDoublePages(
-                        (viewModel.state.value.viewer as? PagerViewer)
+                        (viewer as? PagerViewer)
                             ?.config
                             ?.doublePages
                             ?: false,
@@ -1210,7 +1233,7 @@ class ReaderActivity : BaseActivity() {
             readerPreferences.dualPageSplitPaged.changes()
                 .drop(1)
                 .onEach {
-                    if (viewModel.state.value.viewer !is PagerViewer) return@onEach
+                    if (viewer !is PagerViewer) return@onEach
                     reloadChapters(
                         !it &&
                             when (readerPreferences.pageLayout.get()) {
