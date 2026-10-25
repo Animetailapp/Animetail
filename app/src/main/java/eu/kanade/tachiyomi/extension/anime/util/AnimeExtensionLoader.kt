@@ -26,6 +26,7 @@ import mihon.domain.extension.model.ExtensionStore.Companion.ANIMETAIL_SIGNATURE
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import java.io.File
+import java.io.IOException
 
 /**
  * Class that handles the loading of the extensions installed in the system.
@@ -91,14 +92,14 @@ internal object AnimeExtensionLoader {
             getPrivateExtensionDir(context),
             "${extension.packageName}.$PRIMARY_PRIVATE_EXTENSION_EXT",
         )
+        val staged = File(target.parentFile, "${target.name}.part")
         try {
-            target.delete()
-            legacyTarget.delete()
-            file.copyAndSetReadOnlyTo(target, overwrite = true)
-        } catch (e: Exception) {
-            target.delete()
-            throw e
+            file.copyAndSetReadOnlyTo(staged, overwrite = true)
+            if (!staged.renameTo(target)) throw IOException("Unable to replace ${target.name}")
+        } finally {
+            staged.delete()
         }
+        legacyTarget.delete()
         if (currentExtension != null) {
             AnimeExtensionInstallReceiver.notifyReplaced(context, extension.packageName)
         } else {
