@@ -59,15 +59,6 @@ inline fun <T> List<T>.fastFilterNot(predicate: (T) -> Boolean): List<T> {
     return fastFilter { !predicate(it) }
 }
 
-/**
- * Splits the original collection into pair of lists,
- * where *first* list contains elements for which [predicate] yielded `true`,
- * while *second* list contains elements for which [predicate] yielded `false`.
- *
- * **Do not use for collections that come from public APIs**, since they may not support random
- * access in an efficient way, and this method may actually be a lot slower. Only use for
- * collections that are created by code we control and are known to support random access.
- */
 @OptIn(ExperimentalContracts::class)
 inline fun <T> List<T>.fastPartition(predicate: (T) -> Boolean): Pair<List<T>, List<T>> {
     contract { callsInPlace(predicate) }
