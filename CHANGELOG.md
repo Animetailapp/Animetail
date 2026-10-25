@@ -29,9 +29,9 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Fixed WebView crashing for sources that set an Origin header ([@AntsyLich](https://github.com/AntsyLich)) ([`5f63c98`](https://github.com/mihonapp/mihon/commit/5f63c98))
 - Fixed WebView sending source headers to other sites ([@AntsyLich](https://github.com/AntsyLich)) ([`a01867d`](https://github.com/mihonapp/mihon/commit/a01867d))
 - Fixed downloads not showing for entries of a source sharing its name with another source ([@AntsyLich](https://github.com/AntsyLich)) ([`deeb9b2`](https://github.com/mihonapp/mihon/commit/deeb9b2))
-- Fixed covers reloading when removing an entry from the library ([@AntsyLich](https://github.com/AntsyLich))
-- Fixed the More tab icon pausing and then bouncing back when leaving the tab ([@AntsyLich](https://github.com/AntsyLich))
-- Fixed Shizuku extension installer being unavailable with Sui ([@AntsyLich](https://github.com/AntsyLich))
+- Fixed covers reloading when removing an entry from the library ([@AntsyLich](https://github.com/AntsyLich)) ([`a424282`](https://github.com/mihonapp/mihon/commit/a424282))
+- Fixed the More tab icon pausing and then bouncing back when leaving the tab ([@AntsyLich](https://github.com/AntsyLich)) ([`2ca6961`](https://github.com/mihonapp/mihon/commit/2ca6961))
+- Fixed Shizuku extension installer being unavailable with Sui ([@AntsyLich](https://github.com/AntsyLich)) ([`bd2ada2`](https://github.com/mihonapp/mihon/commit/bd2ada2))
 
 ## [v0.21.2.0] - 2026-10-14
 
