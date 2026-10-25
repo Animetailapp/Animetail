@@ -4,6 +4,8 @@ import android.net.Uri
 import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 
@@ -23,13 +25,9 @@ class BackupFileValidator(
     suspend fun validate(uri: Uri): Results {
         val trackerIds = mutableSetOf<Int>()
         val backup = try {
-            backupDecoder.decodeMangaEntries(uri).collect { manga ->
-                manga.tracking.mapTo(trackerIds) { it.syncId }
-            }
-            backupDecoder.decodeAnimeEntries(uri).collect { anime ->
-                anime.tracking.mapTo(trackerIds) { it.syncId }
-            }
-            backupDecoder.decodeMetadata(uri).backup
+            backupDecoder.decodeMetadata(uri, TrackedEntry.serializer()) { entry ->
+                entry.tracking.mapTo(trackerIds) { it.syncId }
+            }.backup
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -73,5 +71,15 @@ class BackupFileValidator(
     data class Results(
         val missingSources: List<String>,
         val missingTrackers: List<String>,
+    )
+
+    @Serializable
+    private class TrackedEntry(
+        @ProtoNumber(18) val tracking: List<TrackedService> = emptyList(),
+    )
+
+    @Serializable
+    private class TrackedService(
+        @ProtoNumber(1) val syncId: Int,
     )
 }
