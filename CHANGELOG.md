@@ -16,6 +16,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Add a Time Format setting to customize how times are displayed ([@MajorTanya](https://github.com/MajorTanya)) ([#4118](https://github.com/mihonapp/mihon/pull/4118))
 
 ### Changed
+- Keep online chapters cached for a day instead of up to a size limit ([@AntsyLich](https://github.com/AntsyLich))
 - Update the sources with the most entries first during library updates ([@AntsyLich](https://github.com/AntsyLich))
 
 ### Improved

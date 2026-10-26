@@ -280,7 +280,6 @@ dependencies {
     implementation(libs.stringSimilarity)
 
     // Disk
-    implementation(libs.diskLruCache)
     implementation(libs.unifile)
     implementation(libs.junrar)
     // SY -->

@@ -29,6 +29,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -52,7 +53,6 @@ import eu.kanade.presentation.more.settings.widget.PrefsHorizontalPadding
 import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.data.backup.create.BackupCreateJob
 import eu.kanade.tachiyomi.data.backup.restore.BackupRestoreJob
-import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.export.ExportEntry
 import eu.kanade.tachiyomi.data.export.ExportEntry.Companion.toExportEntry
@@ -307,7 +307,9 @@ object SettingsDataScreen : SearchableSettings {
 
         val chapterCache = remember { context.appGraph.chapterCache }
         var cacheReadableSizeSema by remember { mutableIntStateOf(0) }
-        val cacheReadableSize = remember(cacheReadableSizeSema) { chapterCache.readableSize }
+        val cacheReadableSize by produceState("", cacheReadableSizeSema) {
+            value = chapterCache.readableSize()
+        }
 
         // AM (FILE_SIZE) -->
         LaunchedEffect(Unit) {
