@@ -8,7 +8,7 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.util.lang.invert
 import tachiyomi.i18n.MR
 
-abstract class ViewerNavigation {
+abstract class ViewerNavigation(val invertMode: ReaderPreferences.TappingInvertMode) {
 
     sealed class NavigationRegion(val nameRes: StringResource, val color: Int) {
         data object MENU : NavigationRegion(
@@ -47,9 +47,7 @@ abstract class ViewerNavigation {
 
     private var constantMenuRegion: RectF = RectF(0f, 0f, 1f, 0.05f)
 
-    var invertMode: ReaderPreferences.TappingInvertMode = ReaderPreferences.TappingInvertMode.NONE
-
-    protected abstract var regionList: List<Region>
+    protected abstract val regionList: List<Region>
 
     /** Returns regions with applied inversion. */
     fun getRegions(): List<Region> {
@@ -66,4 +64,9 @@ abstract class ViewerNavigation {
             else -> NavigationRegion.MENU
         }
     }
+
+    override fun equals(other: Any?): Boolean =
+        other is ViewerNavigation && other.javaClass == javaClass && other.invertMode == invertMode
+
+    override fun hashCode(): Int = 31 * javaClass.hashCode() + invertMode.hashCode()
 }
