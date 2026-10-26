@@ -34,8 +34,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
 import androidx.core.graphics.ColorUtils
+import androidx.core.graphics.Insets
 import androidx.core.net.toUri
 import androidx.core.transition.doOnEnd
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -43,9 +45,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.google.android.material.elevation.SurfaceColors
 import com.google.android.material.transition.platform.MaterialContainerTransform
-import dev.chrisbanes.insetter.applyInsetter
 import dev.zacsweers.metro.Inject
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
@@ -76,12 +79,14 @@ import eu.kanade.tachiyomi.ui.reader.ReaderViewModel.SetAsCoverResult.Success
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
+import eu.kanade.tachiyomi.ui.reader.setting.GeneralSettings
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsViewModel
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
+import eu.kanade.tachiyomi.ui.reader.viewer.collectChanges
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerConfig
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerViewer
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.R2LPagerViewer
@@ -109,7 +114,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import logcat.LogPriority
 import mihon.app.di.AppGraph
@@ -157,15 +161,14 @@ class ReaderActivity : BaseActivity() {
     lateinit var binding: ReaderActivityBinding
 
     val viewModel by viewModels<ReaderViewModel> { graph.viewModelFactory }
+    val settingsViewModel by viewModels<ReaderSettingsViewModel> {
+        viewModelFactory {
+            initializer { ReaderSettingsViewModel(viewModel, readerPreferences, preferences, hasCutout) }
+        }
+    }
     private var assistUrl: String? = null
 
     private val hasCutout by lazy { hasDisplayCutout() }
-
-    /**
-     * Configuration at reader level, like background color or forced orientation.
-     */
-    private var config: ReaderConfig? = null
-
     private var menuToggleToast: Toast? = null
     private var readingModeToast: Toast? = null
     private val displayRefreshHost = DisplayRefreshHost()
@@ -216,8 +219,34 @@ class ReaderActivity : BaseActivity() {
             Notifications.ID_NEW_CHAPTERS,
         )
 
-        config = ReaderConfig()
         initializeMenu()
+        settingsViewModel.general.collectChanges(lifecycleScope, ::applyGeneralSettings)
+        settingsViewModel.brightness
+            .onEach(::setCustomBrightnessValue)
+            .launchIn(lifecycleScope)
+        setMenuVisibility(viewModel.state.value.menuVisible)
+        enableExhAutoScroll()
+        readerPreferences.pageLayout.changes()
+            .drop(1)
+            .onEach { viewModel.setDoublePages((viewer as? PagerViewer)?.config?.doublePages ?: false) }
+            .launchIn(lifecycleScope)
+        readerPreferences.dualPageSplitPaged.changes()
+            .drop(1)
+            .onEach {
+                if (viewer !is PagerViewer) return@onEach
+                reloadChapters(
+                    !it && when (readerPreferences.pageLayout.get()) {
+                        PagerConfig.PageLayout.DOUBLE_PAGES -> true
+
+                        PagerConfig.PageLayout.AUTOMATIC ->
+                            resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+                        else -> false
+                    },
+                    true,
+                )
+            }
+            .launchIn(lifecycleScope)
 
         // Finish when incognito mode is disabled
         preferences.incognitoMode.changes()
@@ -294,12 +323,11 @@ class ReaderActivity : BaseActivity() {
     }
 
     /**
-     * Called when the activity is destroyed. Cleans up the viewer, configuration and any view.
+     * Called when the activity is destroyed. Cleans up the viewer and any view.
      */
     override fun onDestroy() {
         super.onDestroy()
         viewer?.destroy()
-        config = null
         menuToggleToast?.cancel()
         readingModeToast?.cancel()
         // AM (DISCORD) -->
@@ -406,16 +434,6 @@ class ReaderActivity : BaseActivity() {
         binding.dialogRoot.setComposeContent {
             val state by viewModel.state.collectAsState()
             val currentViewer by viewerFlow.collectAsState()
-            val settingsViewModel = remember {
-                ReaderSettingsViewModel(
-                    readerState = viewModel.state,
-                    hasDisplayCutout = hasCutout,
-                    viewerFlow = viewerFlow,
-                    onChangeReadingMode = viewModel::setMangaReadingMode,
-                    onChangeOrientation = viewModel::setMangaOrientationType,
-                    preferences = readerPreferences,
-                )
-            }
 
             val isHttpSource = state.source is HttpSource
             val isFullscreen by readerPreferences.fullscreen.collectAsState()
@@ -820,7 +838,7 @@ class ReaderActivity : BaseActivity() {
             binding.viewerContainer.removeAllViews()
         }
         viewerFlow.value = newViewer
-        updateViewerInset(readerPreferences.fullscreen.get())
+        updateViewerInset(readerPreferences.fullscreen.get(), readerPreferences.drawUnderCutout.get())
         binding.viewerContainer.addView(newViewer.getView())
 
         // SY -->
@@ -1146,177 +1164,52 @@ class ReaderActivity : BaseActivity() {
     /**
      * Updates viewer inset depending on fullscreen reader preferences.
      */
-    private fun updateViewerInset(fullscreen: Boolean) {
-        viewer?.getView()?.applyInsetter {
-            if (!fullscreen) {
-                type(navigationBars = true, statusBars = true) {
-                    padding()
-                }
-            }
+    private fun updateViewerInset(fullscreen: Boolean, drawUnderCutout: Boolean) {
+        val view = binding.viewerContainer
+        view.applyInsetsPadding(ViewCompat.getRootWindowInsets(view), fullscreen, drawUnderCutout)
+        ViewCompat.setOnApplyWindowInsetsListener(view) { target, insets ->
+            target.applyInsetsPadding(insets, fullscreen, drawUnderCutout)
+            insets
         }
     }
 
-    /**
-     * Class that handles the user preferences of the reader.
-     */
-    private inner class ReaderConfig {
+    private fun View.applyInsetsPadding(
+        windowInsets: WindowInsetsCompat?,
+        fullscreen: Boolean,
+        drawUnderCutout: Boolean,
+    ) {
+        val insets = when {
+            !fullscreen -> windowInsets?.getInsets(WindowInsetsCompat.Type.systemBars())
+            !drawUnderCutout -> windowInsets?.getInsets(WindowInsetsCompat.Type.displayCutout())
+            else -> null
+        }
+            ?: Insets.NONE
 
-        private fun getCombinedPaint(grayscale: Boolean, invertedColors: Boolean): Paint {
-            return Paint().apply {
-                colorFilter = ColorMatrixColorFilter(
-                    ColorMatrix().apply {
-                        if (grayscale) {
-                            setSaturation(0f)
-                        }
-                        if (invertedColors) {
-                            postConcat(
-                                ColorMatrix(
-                                    floatArrayOf(
-                                        -1f, 0f, 0f, 0f, 255f,
-                                        0f, -1f, 0f, 0f, 255f,
-                                        0f, 0f, -1f, 0f, 255f,
-                                        0f, 0f, 0f, 1f, 0f,
-                                    ),
-                                ),
-                            )
-                        }
-                    },
-                )
+        setPadding(insets.left, insets.top, insets.right, insets.bottom)
+    }
+
+    private fun applyGeneralSettings(old: GeneralSettings?, new: GeneralSettings) {
+        if (old?.theme != new.theme) {
+            binding.readerContainer.setBackgroundColor(baseContext.readerBackgroundColor(new.theme))
+        }
+        if (old?.keepScreenOn != new.keepScreenOn) {
+            setKeepScreenOn(new.keepScreenOn)
+        }
+        if (old?.grayscale != new.grayscale || old?.invertedColors != new.invertedColors) {
+            setLayerPaint(new.grayscale, new.invertedColors)
+        }
+        if (old?.fullscreen != new.fullscreen || old?.drawUnderCutout != new.drawUnderCutout) {
+            WindowCompat.setDecorFitsSystemWindows(window, !new.fullscreen)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                window.attributes = window.attributes.apply {
+                    layoutInDisplayCutoutMode = if (new.drawUnderCutout) {
+                        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                    } else {
+                        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER
+                    }
+                }
             }
-        }
-
-        /*
-         * Initializes the reader subscriptions.
-         */
-        init {
-            readerPreferences.readerTheme.changes()
-                .onEach { theme ->
-                    binding.readerContainer.setBackgroundColor(baseContext.readerBackgroundColor(theme))
-                }
-                .launchIn(lifecycleScope)
-
-            readerPreferences.drawUnderCutout.changes()
-                .onEach(::setCutoutShort)
-                .launchIn(lifecycleScope)
-            readerPreferences.keepScreenOn.changes()
-                .onEach(::setKeepScreenOn)
-                .launchIn(lifecycleScope)
-
-            readerPreferences.customBrightness.changes()
-                .onEach(::setCustomBrightness)
-                .launchIn(lifecycleScope)
-
-            merge(readerPreferences.grayscale.changes(), readerPreferences.invertedColors.changes())
-                .onEach { setLayerPaint(readerPreferences.grayscale.get(), readerPreferences.invertedColors.get()) }
-                .launchIn(lifecycleScope)
-
-            readerPreferences.fullscreen.changes()
-                .onEach {
-                    WindowCompat.setDecorFitsSystemWindows(window, !it)
-                    updateViewerInset(it)
-                }
-                .launchIn(lifecycleScope)
-
-            // SY -->
-            readerPreferences.pageLayout.changes()
-                .drop(1)
-                .onEach {
-                    viewModel.setDoublePages(
-                        (viewer as? PagerViewer)
-                            ?.config
-                            ?.doublePages
-                            ?: false,
-                    )
-                }
-                .launchIn(lifecycleScope)
-
-            readerPreferences.dualPageSplitPaged.changes()
-                .drop(1)
-                .onEach {
-                    if (viewer !is PagerViewer) return@onEach
-                    reloadChapters(
-                        !it &&
-                            when (readerPreferences.pageLayout.get()) {
-                                PagerConfig.PageLayout.DOUBLE_PAGES -> true
-
-                                PagerConfig.PageLayout.AUTOMATIC ->
-                                    resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
-                                else -> false
-                            },
-                        true,
-                    )
-                }
-                .launchIn(lifecycleScope)
-            // SY <--
-        }
-
-        private fun setCutoutShort(enabled: Boolean) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
-
-            window.attributes.layoutInDisplayCutoutMode = when (enabled) {
-                true -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-                false -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER
-            }
-
-            // Trigger relayout
-            setMenuVisibility(viewModel.state.value.menuVisible)
-            // SY -->
-            enableExhAutoScroll()
-            // SY <--
-        }
-
-        /**
-         * Sets the keep screen on mode according to [enabled].
-         */
-        private fun setKeepScreenOn(enabled: Boolean) {
-            if (enabled) {
-                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            } else {
-                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            }
-        }
-
-        /**
-         * Sets the custom brightness overlay according to [enabled].
-         */
-        private fun setCustomBrightness(enabled: Boolean) {
-            if (enabled) {
-                readerPreferences.customBrightnessValue.changes()
-                    .sample(0.1.seconds)
-                    .onEach(::setCustomBrightnessValue)
-                    .launchIn(lifecycleScope)
-            } else {
-                setCustomBrightnessValue(0)
-            }
-        }
-
-        /**
-         * Sets the brightness of the screen. Range is [-75, 100].
-         * From -75 to -1 a semi-transparent black view is overlaid with the minimum brightness.
-         * From 1 to 100 it sets that value as brightness.
-         * 0 sets system brightness and hides the overlay.
-         */
-        private fun setCustomBrightnessValue(value: Int) {
-            // Calculate and set reader brightness.
-            val readerBrightness = when {
-                value > 0 -> {
-                    value / 100f
-                }
-
-                value < 0 -> {
-                    0.01f
-                }
-
-                else -> WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-            }
-            window.attributes = window.attributes.apply { screenBrightness = readerBrightness }
-
-            viewModel.setBrightnessOverlayValue(value)
-        }
-        private fun setLayerPaint(grayscale: Boolean, invertedColors: Boolean) {
-            val paint = if (grayscale || invertedColors) getCombinedPaint(grayscale, invertedColors) else null
-            binding.viewerContainer.setLayerType(LAYER_TYPE_HARDWARE, paint)
+            updateViewerInset(new.fullscreen, new.drawUnderCutout)
         }
     }
 
@@ -1349,5 +1242,69 @@ class ReaderActivity : BaseActivity() {
             }
         }
     }
+
     // <-- AM (DISCORD)
+    private fun getCombinedPaint(grayscale: Boolean, invertedColors: Boolean): Paint {
+        return Paint().apply {
+            colorFilter = ColorMatrixColorFilter(
+                ColorMatrix().apply {
+                    if (grayscale) {
+                        setSaturation(0f)
+                    }
+                    if (invertedColors) {
+                        postConcat(
+                            ColorMatrix(
+                                floatArrayOf(
+                                    -1f, 0f, 0f, 0f, 255f,
+                                    0f, -1f, 0f, 0f, 255f,
+                                    0f, 0f, -1f, 0f, 255f,
+                                    0f, 0f, 0f, 1f, 0f,
+                                ),
+                            ),
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    /**
+     * Sets the keep screen on mode according to [enabled].
+     */
+    private fun setKeepScreenOn(enabled: Boolean) {
+        if (enabled) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    /**
+     * Sets the brightness of the screen. Range is [-75, 100].
+     * From -75 to -1 a semi-transparent black view is overlaid with the minimum brightness.
+     * From 1 to 100 it sets that value as brightness.
+     * 0 sets system brightness and hides the overlay.
+     */
+    private fun setCustomBrightnessValue(value: Int) {
+        // Calculate and set reader brightness.
+        val readerBrightness = when {
+            value > 0 -> {
+                value / 100f
+            }
+
+            value < 0 -> {
+                0.01f
+            }
+
+            else -> WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        }
+        window.attributes = window.attributes.apply { screenBrightness = readerBrightness }
+
+        viewModel.setBrightnessOverlayValue(value)
+    }
+
+    private fun setLayerPaint(grayscale: Boolean, invertedColors: Boolean) {
+        val paint = if (grayscale || invertedColors) getCombinedPaint(grayscale, invertedColors) else null
+        binding.viewerContainer.setLayerType(LAYER_TYPE_HARDWARE, paint)
+    }
 }
