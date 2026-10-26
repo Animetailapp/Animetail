@@ -197,19 +197,20 @@ class PagerConfig(
 
     override fun defaultNavigation(): ViewerNavigation {
         return when (viewer) {
-            is VerticalPagerViewer -> LNavigation(tappingInverted)
-            else -> RightAndLeftNavigation(tappingInverted)
+            is VerticalPagerViewer -> LNavigation(tappingInverted, false)
+            else -> RightAndLeftNavigation(tappingInverted, viewer is R2LPagerViewer)
         }
     }
 
     override fun updateNavigation(navigationMode: Int) {
+        val isReversed = viewer is R2LPagerViewer
         navigator = when (navigationMode) {
             0 -> defaultNavigation()
-            1 -> LNavigation(tappingInverted)
-            2 -> KindlishNavigation(tappingInverted)
-            3 -> EdgeNavigation(tappingInverted)
-            4 -> RightAndLeftNavigation(tappingInverted)
-            5 -> DisabledNavigation(tappingInverted)
+            1 -> LNavigation(tappingInverted, isReversed)
+            2 -> KindlishNavigation(tappingInverted, isReversed)
+            3 -> EdgeNavigation(tappingInverted, isReversed)
+            4 -> RightAndLeftNavigation(tappingInverted, isReversed)
+            5 -> DisabledNavigation(tappingInverted, isReversed)
             else -> defaultNavigation()
         }
         navigationModeChangedListener?.invoke()
