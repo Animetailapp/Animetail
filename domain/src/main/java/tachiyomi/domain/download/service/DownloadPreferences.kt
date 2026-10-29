@@ -31,8 +31,6 @@ class DownloadPreferences(
         true,
     )
 
-    val splitTallImages: Preference<Boolean> = preferenceStore.getBoolean("split_tall_images", true)
-
     val autoDownloadWhileReading: Preference<Int> = preferenceStore.getInt("auto_download_while_reading", 0)
     val autoDownloadWhileWatching: Preference<Int> = preferenceStore.getInt("auto_download_while_watching", 0)
 

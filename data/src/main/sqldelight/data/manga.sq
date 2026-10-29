@@ -87,10 +87,6 @@ SELECT
     state_cover_last_modified, state_initialized
 FROM manga;
 
-getAllMangaSourceAndUrl:
-SELECT source_id, remote_url
-FROM manga;
-
 getSourceIdWithFavoriteCount:
 SELECT source_id, count(*)
 FROM manga

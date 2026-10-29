@@ -280,7 +280,6 @@ dependencies {
     implementation(libs.stringSimilarity)
 
     // Disk
-    implementation(libs.diskLruCache)
     implementation(libs.unifile)
     implementation(libs.junrar)
     // SY -->
@@ -307,7 +306,6 @@ dependencies {
 
     // UI libraries
     implementation(libs.material)
-    implementation(libs.flexibleAdapter)
     implementation(libs.photoView)
     implementation(libs.directionalViewPager) {
         exclude(group = "androidx.viewpager", module = "viewpager")

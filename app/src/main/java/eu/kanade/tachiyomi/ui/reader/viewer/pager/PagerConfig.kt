@@ -104,7 +104,7 @@ class PagerConfig(
             .register({ navigationMode = it }, { updateNavigation(navigationMode) })
 
         readerPreferences.pagerNavInverted
-            .register({ tappingInverted = it }, { navigator.invertMode = it })
+            .register({ tappingInverted = it }, { updateNavigation(navigationMode) })
         readerPreferences.pagerNavInverted.changes()
             .drop(1)
             .onEach { navigationModeChangedListener?.invoke() }
@@ -193,25 +193,24 @@ class PagerConfig(
     }
 
     override var navigator: ViewerNavigation = defaultNavigation()
-        set(value) {
-            field = value.also { it.invertMode = this.tappingInverted }
-        }
+        protected set
 
     override fun defaultNavigation(): ViewerNavigation {
         return when (viewer) {
-            is VerticalPagerViewer -> LNavigation()
-            else -> RightAndLeftNavigation()
+            is VerticalPagerViewer -> LNavigation(tappingInverted, false)
+            else -> RightAndLeftNavigation(tappingInverted, viewer is R2LPagerViewer)
         }
     }
 
     override fun updateNavigation(navigationMode: Int) {
+        val isReversed = viewer is R2LPagerViewer
         navigator = when (navigationMode) {
             0 -> defaultNavigation()
-            1 -> LNavigation()
-            2 -> KindlishNavigation()
-            3 -> EdgeNavigation()
-            4 -> RightAndLeftNavigation()
-            5 -> DisabledNavigation()
+            1 -> LNavigation(tappingInverted, isReversed)
+            2 -> KindlishNavigation(tappingInverted, isReversed)
+            3 -> EdgeNavigation(tappingInverted, isReversed)
+            4 -> RightAndLeftNavigation(tappingInverted, isReversed)
+            5 -> DisabledNavigation(tappingInverted, isReversed)
             else -> defaultNavigation()
         }
         navigationModeChangedListener?.invoke()

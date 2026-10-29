@@ -33,11 +33,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.chunked
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
@@ -51,7 +46,6 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.BitSet
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
@@ -246,22 +240,7 @@ class BackupRestorer(
     ) = launch {
         categoriesRestoreJob?.join()
 
-        val isExisting = animeRestorer.getExistingMatcher()
-        val existingIndices = BitSet()
-        val newAnimes = backupDecoder.decodeAnimeEntries(uri)
-            .withIndex()
-            .filter { (index, anime) ->
-                val exists = isExisting(anime)
-                if (exists) existingIndices.set(index)
-                !exists
-            }
-            .map { it.value }
-        val backupAnimes = flow {
-            emitAll(newAnimes)
-            emitAll(backupDecoder.decodeAnimeEntries(uri, existingIndices::get))
-        }
-
-        backupAnimes
+        backupDecoder.decodeAnimeEntries(uri)
             .chunked(100)
             .collect { chunk ->
                 val restoredAsBatch = try {
@@ -309,23 +288,7 @@ class BackupRestorer(
     ) = launch {
         categoriesRestoreJob?.join()
 
-        // New entries go first. Rather than hold the others back in memory, a second pass reads them again.
-        val isExisting = mangaRestorer.getExistingMatcher()
-        val existingIndices = BitSet()
-        val newMangas = backupDecoder.decodeMangaEntries(uri)
-            .withIndex()
-            .filter { (index, manga) ->
-                val exists = isExisting(manga)
-                if (exists) existingIndices.set(index)
-                !exists
-            }
-            .map { it.value }
-        val backupMangas = flow {
-            emitAll(newMangas)
-            emitAll(backupDecoder.decodeMangaEntries(uri, existingIndices::get))
-        }
-
-        backupMangas
+        backupDecoder.decodeMangaEntries(uri)
             .chunked(100)
             .collect { chunk ->
                 val restoredAsBatch = try {

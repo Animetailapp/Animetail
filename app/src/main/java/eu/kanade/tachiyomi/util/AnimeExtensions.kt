@@ -78,12 +78,8 @@ fun Anime.prepUpdateBackground(
     }
 }
 fun Anime.removeCovers(coverCache: AnimeCoverCache): Anime {
-    if (isLocal()) return this
-    return if (coverCache.deleteFromCache(this, true) > 0) {
-        return copy(coverLastModified = Instant.now().toEpochMilli())
-    } else {
-        this
-    }
+    if (!isLocal()) coverCache.deleteFromCache(this, true)
+    return this
 }
 
 fun Anime.removeBackgrounds(backgroundCache: AnimeBackgroundCache): Anime {

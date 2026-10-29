@@ -61,10 +61,8 @@ import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.components.NestedMenuItem
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.ui.download.anime.AnimeDownloadHeaderItem
 import eu.kanade.tachiyomi.ui.download.anime.AnimeDownloadQueueViewModel
 import eu.kanade.tachiyomi.ui.download.anime.animeDownloadTab
-import eu.kanade.tachiyomi.ui.download.manga.MangaDownloadHeaderItem
 import eu.kanade.tachiyomi.ui.download.manga.MangaDownloadQueueViewModel
 import eu.kanade.tachiyomi.ui.download.manga.mangaDownloadTab
 import kotlinx.collections.immutable.persistentListOf
@@ -96,13 +94,13 @@ data object DownloadsTab : Tab {
         val scope = rememberCoroutineScope()
         val animeViewModel = metroViewModel<AnimeDownloadQueueViewModel>()
         val mangaScreenModel = metroViewModel<MangaDownloadQueueViewModel>()
-        val animeDownloadList by animeViewModel.state.collectAsStateWithLifecycle()
-        val mangaDownloadList by mangaScreenModel.state.collectAsStateWithLifecycle()
+        val animeDownloadList by animeViewModel.composeState.collectAsStateWithLifecycle()
+        val mangaDownloadList by mangaScreenModel.composeState.collectAsStateWithLifecycle()
         val animeDownloadCount by remember {
-            derivedStateOf { animeDownloadList.sumOf { it.subItems.size } }
+            derivedStateOf { animeDownloadList.sumOf { it.downloads.size } }
         }
         val mangaDownloadCount by remember {
-            derivedStateOf { mangaDownloadList.sumOf { it.subItems.size } }
+            derivedStateOf { mangaDownloadList.sumOf { it.downloads.size } }
         }
 
         val state = rememberPagerState { 2 }
@@ -300,7 +298,7 @@ data object DownloadsTab : Tab {
     @Composable
     private fun AnimeActions(
         animeViewModel: AnimeDownloadQueueViewModel,
-        animeDownloadList: List<AnimeDownloadHeaderItem>,
+        animeDownloadList: List<DownloadQueueSection>,
     ) {
         if (animeDownloadList.isNotEmpty()) {
             var sortExpanded by remember { mutableStateOf(false) }
@@ -315,9 +313,9 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_newest)) },
                             onClick = {
-                                animeViewModel.reorderQueue(
+                                animeViewModel.reorderComposeQueue(
                                     {
-                                        it.download.episode.let { e ->
+                                        it.episode.let { e ->
                                             e.dateUploadOverride.takeIf { d -> d > 0 }
                                                 ?: e.dateUpload
                                         }
@@ -330,9 +328,9 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_oldest)) },
                             onClick = {
-                                animeViewModel.reorderQueue(
+                                animeViewModel.reorderComposeQueue(
                                     {
-                                        it.download.episode.let { e ->
+                                        it.episode.let { e ->
                                             e.dateUploadOverride.takeIf { d -> d > 0 }
                                                 ?: e.dateUpload
                                         }
@@ -354,8 +352,8 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_asc)) },
                             onClick = {
-                                animeViewModel.reorderQueue(
-                                    { it.download.episode.episodeNumber },
+                                animeViewModel.reorderComposeQueue(
+                                    { it.episode.episodeNumber },
                                     false,
                                 )
                                 closeMenu()
@@ -364,8 +362,8 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_desc)) },
                             onClick = {
-                                animeViewModel.reorderQueue(
-                                    { it.download.episode.episodeNumber },
+                                animeViewModel.reorderComposeQueue(
+                                    { it.episode.episodeNumber },
                                     true,
                                 )
                                 closeMenu()
@@ -394,7 +392,7 @@ data object DownloadsTab : Tab {
     @Composable
     private fun MangaActions(
         mangaScreenModel: MangaDownloadQueueViewModel,
-        mangaDownloadList: List<MangaDownloadHeaderItem>,
+        mangaDownloadList: List<DownloadQueueSection>,
     ) {
         if (mangaDownloadList.isNotEmpty()) {
             var sortExpanded by remember { mutableStateOf(false) }
@@ -409,9 +407,9 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_newest)) },
                             onClick = {
-                                mangaScreenModel.reorderQueue(
+                                mangaScreenModel.reorderComposeQueue(
                                     {
-                                        it.download.chapter.let { c ->
+                                        it.chapter.let { c ->
                                             c.dateUploadOverride.takeIf { d -> d > 0 }
                                                 ?: c.dateUpload
                                         }
@@ -424,9 +422,9 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_oldest)) },
                             onClick = {
-                                mangaScreenModel.reorderQueue(
+                                mangaScreenModel.reorderComposeQueue(
                                     {
-                                        it.download.chapter.let { c ->
+                                        it.chapter.let { c ->
                                             c.dateUploadOverride.takeIf { d -> d > 0 }
                                                 ?: c.dateUpload
                                         }
@@ -448,8 +446,8 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_asc)) },
                             onClick = {
-                                mangaScreenModel.reorderQueue(
-                                    { it.download.chapter.chapterNumber },
+                                mangaScreenModel.reorderComposeQueue(
+                                    { it.chapter.chapterNumber },
                                     false,
                                 )
                                 closeMenu()
@@ -458,8 +456,8 @@ data object DownloadsTab : Tab {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(MR.strings.action_desc)) },
                             onClick = {
-                                mangaScreenModel.reorderQueue(
-                                    { it.download.chapter.chapterNumber },
+                                mangaScreenModel.reorderComposeQueue(
+                                    { it.chapter.chapterNumber },
                                     true,
                                 )
                                 closeMenu()

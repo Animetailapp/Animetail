@@ -25,8 +25,6 @@ abstract class ViewerConfig(readerPreferences: ReaderPreferences, private val sc
     var navigationMode = 0
         protected set
 
-    var forceNavigationOverlay = false
-
     var navigationOverlayOnStart = false
 
     var dualPageSplit = false
@@ -59,11 +57,6 @@ abstract class ViewerConfig(readerPreferences: ReaderPreferences, private val sc
 
         readerPreferences.alwaysShowChapterTransition
             .register({ alwaysShowChapterTransition = it })
-
-        forceNavigationOverlay = readerPreferences.showNavigationOverlayNewUser.get()
-        if (forceNavigationOverlay) {
-            readerPreferences.showNavigationOverlayNewUser.set(false)
-        }
 
         readerPreferences.showNavigationOverlayOnStart
             .register({ navigationOverlayOnStart = it })

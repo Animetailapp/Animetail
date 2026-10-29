@@ -93,11 +93,6 @@ object SettingsDownloadScreen : SearchableSettings {
                 title = stringResource(MR.strings.pref_include_download_filename_hash),
                 subtitle = stringResource(MR.strings.pref_include_download_filename_hash_summary),
             ),
-            Preference.PreferenceItem.SwitchPreference(
-                preference = downloadPreferences.splitTallImages,
-                title = stringResource(MR.strings.split_tall_images),
-                subtitle = stringResource(MR.strings.split_tall_images_summary),
-            ),
             Preference.PreferenceItem.ListPreference(
                 preference = downloadPreferences.numberOfDownloads,
                 entries = (1..5).associateWith { it.toString() }.toMap(),

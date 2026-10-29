@@ -8,6 +8,8 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.AnimeSource
+import eu.kanade.tachiyomi.data.download.associateSourceDirectories
+import eu.kanade.tachiyomi.data.download.restoreSharedDirectories
 import eu.kanade.tachiyomi.util.size
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -100,7 +102,7 @@ class AnimeDownloadCache(
         .stateIn(scope, SharingStarted.WhileSubscribed(), false)
 
     private val diskCacheFile: File
-        get() = File(context.cacheDir, "dl_anime_index_cache_v3")
+        get() = File(context.cacheDir, "dl_anime_index_cache_v4")
 
     private val rootDownloadsDirMutex = Mutex()
     private var rootDownloadsDir = RootDirectory(storageManager.getDownloadsDirectory())
@@ -113,6 +115,9 @@ class AnimeDownloadCache(
                     if (diskCacheFile.exists()) {
                         val diskCache = diskCacheFile.inputStream().use {
                             ProtoBuf.decodeFromByteArray<RootDirectory>(it.readBytes())
+                        }
+                        diskCache.sourceDirs = restoreSharedDirectories(diskCache.sourceDirs) { sourceDir ->
+                            sourceDir.dir?.uri?.toString()
                         }
                         rootDownloadsDir = diskCache
                         lastRenew = System.currentTimeMillis()
@@ -172,7 +177,7 @@ class AnimeDownloadCache(
     fun getTotalDownloadCount(): Int {
         renewCache()
 
-        return rootDownloadsDir.sourceDirs.values.sumOf { sourceDir ->
+        return rootDownloadsDir.sourceDirs.values.distinctBy { it.dir?.uri }.sumOf { sourceDir ->
             sourceDir.animeDirs.values.sumOf { animeDir ->
                 animeDir.episodeDirs.size
             }
@@ -203,7 +208,7 @@ class AnimeDownloadCache(
     fun getTotalDownloadSize(): Long {
         renewCache()
 
-        return rootDownloadsDir.sourceDirs.values.sumOf { sourceDir ->
+        return rootDownloadsDir.sourceDirs.values.distinctBy { it.dir?.uri }.sumOf { sourceDir ->
             sourceDir.dir?.size() ?: 0L
         }
     }
@@ -369,22 +374,20 @@ class AnimeDownloadCache(
                     sources = getSources()
                 }
 
-                val sourceMap = sources.associate {
-                    provider.getSourceDirName(it).lowercase() to it.id
-                }
+                val sourceIdsByDirName = sources.groupBy({ provider.getSourceDirName(it).lowercase() }, { it.id })
 
                 rootDownloadsDirMutex.withLock {
                     val updatedRootDir = RootDirectory(storageManager.getDownloadsDirectory())
 
-                    updatedRootDir.sourceDirs = updatedRootDir.dir?.listFiles().orEmpty()
-                        .filter { it.isDirectory && !it.name.isNullOrBlank() }
-                        .mapNotNull { dir ->
-                            val sourceId = sourceMap[dir.name!!.lowercase()]
-                            sourceId?.let { it to SourceDirectory(dir) }
-                        }
-                        .toMap()
+                    updatedRootDir.sourceDirs = associateSourceDirectories(
+                        directories = updatedRootDir.dir?.listFiles().orEmpty()
+                            .filter { it.isDirectory && !it.name.isNullOrBlank() },
+                        sourceIdsByDirName = sourceIdsByDirName,
+                        directoryName = { it.name!! },
+                        createEntry = { SourceDirectory(it) },
+                    )
 
-                    updatedRootDir.sourceDirs.values.map { sourceDir ->
+                    updatedRootDir.sourceDirs.values.distinct().map { sourceDir ->
                         async {
                             sourceDir.animeDirs = sourceDir.dir?.listFiles().orEmpty()
                                 .filter { it.isDirectory && !it.name.isNullOrBlank() }

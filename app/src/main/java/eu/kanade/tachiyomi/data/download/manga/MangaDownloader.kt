@@ -10,7 +10,6 @@ import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.entries.manga.model.getComicInfo
 import eu.kanade.domain.items.chapter.model.toSChapter
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateNotifier
 import eu.kanade.tachiyomi.data.notification.NotificationHandler
@@ -54,6 +53,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import mihon.core.archive.ZipWriter
+import mihon.data.cache.ChapterCache
 import nl.adaptivity.xmlutil.serialization.XML
 import okhttp3.Response
 import okio.Throttler
@@ -73,7 +73,6 @@ import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import java.io.File
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
@@ -540,17 +539,11 @@ class MangaDownloader(
             val file = when {
                 imageFile != null -> imageFile
 
-                chapterCache.isImageInCache(page.imageUrl!!) -> copyImageFromCache(
-                    chapterCache.getImageFile(page.imageUrl!!),
-                    tmpDir,
-                    filename,
-                )
-
-                else -> downloadImage(page, download.source, tmpDir, filename, dataSaver)
+                else -> copyImageFromCache(page.imageUrl!!, tmpDir, filename)
+                    ?: downloadImage(page, download.source, tmpDir, filename, dataSaver)
             }
 
             // When the page is ready, set page path, progress (just in case) and status
-            splitTallImageIfNeeded(page, tmpDir)
             page.uri = file.uri
             page.progress = 100
             page.status = Page.State.READY
@@ -621,22 +614,25 @@ class MangaDownloader(
     }
 
     /**
-     * Copies the image from cache to file in tmpDir.
+     * Copies the image from cache to file in tmpDir, or returns null when it isn't cached.
      *
-     * @param cacheFile the file from cache.
+     * @param imageUrl the url of the image.
      * @param tmpDir the temporary directory of the download.
      * @param filename the filename of the image.
      */
-    private fun copyImageFromCache(cacheFile: File, tmpDir: UniFile, filename: String): UniFile {
-        val tmpFile = tmpDir.createFile("$filename.tmp")!!
-        cacheFile.inputStream().use { input ->
-            tmpFile.openOutputStream().use { output ->
-                input.copyTo(output)
+    private suspend fun copyImageFromCache(imageUrl: String, tmpDir: UniFile, filename: String): UniFile? {
+        val tmpFile = chapterCache.openImage(imageUrl)?.use { input ->
+            // Delete temp file if it exists
+            tmpDir.findFile("$filename.tmp")?.delete()
+            tmpDir.createFile("$filename.tmp")!!.also { tmpFile ->
+                tmpFile.openOutputStream().use { output ->
+                    input.copyTo(output)
+                }
             }
-        }
-        val extension = ImageUtil.findImageType(cacheFile.inputStream()) ?: return tmpFile
+        } ?: return null
+        chapterCache.removeImage(imageUrl)
+        val extension = tmpFile.openInputStream().use { ImageUtil.findImageType(it) } ?: return tmpFile
         tmpFile.renameTo("$filename.${extension.extension}")
-        cacheFile.delete()
         return tmpFile
     }
 
@@ -650,27 +646,6 @@ class MangaDownloader(
     private fun getImageExtension(response: Response, file: UniFile): String {
         val mime = response.body.contentType()?.run { if (type == "image") "image/$subtype" else null }
         return ImageUtil.getExtensionFromMimeType(mime) { file.openInputStream() }
-    }
-
-    private fun splitTallImageIfNeeded(page: Page, tmpDir: UniFile) {
-        if (!downloadPreferences.splitTallImages.get()) return
-
-        try {
-            val filenamePrefix = "%03d".format(Locale.ENGLISH, page.number)
-            val imageFile = tmpDir.listFiles()?.firstOrNull { it.name.orEmpty().startsWith(filenamePrefix) }
-                ?: error(context.stringResource(MR.strings.download_notifier_split_page_not_found, page.number))
-
-            // If the original page was previously split, then skip
-            if (imageFile.name.orEmpty().startsWith("${filenamePrefix}__")) return
-
-            ImageUtil.splitTallImage(
-                tmpDir,
-                imageFile,
-                filenamePrefix,
-            )
-        } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e) { "Failed to split downloaded image" }
-        }
     }
 
     /**

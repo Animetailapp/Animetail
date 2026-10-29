@@ -3,7 +3,6 @@ package eu.kanade.tachiyomi.ui.reader
 import android.content.Context
 import android.net.Uri
 import androidx.annotation.ColorInt
-import androidx.annotation.IntRange
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -27,7 +26,6 @@ import eu.kanade.domain.source.manga.interactor.GetMangaIncognitoState
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.manga.interactor.TrackChapter
 import eu.kanade.domain.track.service.TrackPreferences
-import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.data.database.models.manga.toDomainChapter
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
@@ -50,9 +48,6 @@ import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
-import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
-import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerViewer
-import eu.kanade.tachiyomi.ui.reader.viewer.pager.R2LPagerViewer
 import eu.kanade.tachiyomi.util.chapter.filterDownloaded
 import eu.kanade.tachiyomi.util.chapter.removeDuplicates
 import eu.kanade.tachiyomi.util.editCover
@@ -81,6 +76,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import logcat.LogPriority
+import mihon.data.cache.ChapterCache
 import tachiyomi.core.common.preference.toggle
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
@@ -545,12 +541,6 @@ class ReaderViewModel(
         eventChannel.trySend(Event.ReloadViewerChapters)
     }
 
-    fun onViewerLoaded(viewer: Viewer?) {
-        mutableState.update {
-            it.copy(viewer = viewer)
-        }
-    }
-
     /**
      * Called every time a page changes on the reader. Used to mark the flag of chapters being
      * read, update tracking services, enqueue downloaded chapter deletion, and updating the active chapter if this
@@ -974,10 +964,6 @@ class ReaderViewModel(
         mutableState.update { it.copy(menuVisible = visible) }
     }
 
-    fun showLoadingDialog() {
-        mutableState.update { it.copy(dialog = Dialog.Loading) }
-    }
-
     fun openReadingModeSelectDialog() {
         mutableState.update { it.copy(dialog = Dialog.ReadingModeSelect) }
     }
@@ -996,10 +982,6 @@ class ReaderViewModel(
 
     fun closeDialog() {
         mutableState.update { it.copy(dialog = null) }
-    }
-
-    fun setBrightnessOverlayValue(value: Int) {
-        mutableState.update { it.copy(brightnessOverlayValue = value) }
     }
 
     /**
@@ -1087,15 +1069,11 @@ class ReaderViewModel(
         }
     }
 
-    fun saveImages() {
+    fun saveImages(isLTR: Boolean, @ColorInt bg: Int) {
         val dialog = state.value.dialog as? Dialog.PageActions ?: return
         val secondPage = dialog.extraPage ?: return
-        val viewer = state.value.viewer as? PagerViewer ?: return
         val manga = manga ?: return
         if (dialog.page.status != Page.State.READY || secondPage.status != Page.State.READY) return
-
-        val isLTR = (viewer !is R2LPagerViewer) xor viewer.config.invertDoublePages
-        val bg = viewer.config.pageCanvasColor
 
         viewModelScope.launchNonCancellable {
             try {
@@ -1114,15 +1092,11 @@ class ReaderViewModel(
         }
     }
 
-    fun shareImages(copyToClipboard: Boolean) {
+    fun shareImages(copyToClipboard: Boolean, isLTR: Boolean, @ColorInt bg: Int) {
         val dialog = state.value.dialog as? Dialog.PageActions ?: return
         val secondPage = dialog.extraPage ?: return
-        val viewer = state.value.viewer as? PagerViewer ?: return
         val manga = manga ?: return
         if (dialog.page.status != Page.State.READY || secondPage.status != Page.State.READY) return
-
-        val isLTR = (viewer !is R2LPagerViewer) xor viewer.config.invertDoublePages
-        val bg = viewer.config.pageCanvasColor
 
         viewModelScope.launchNonCancellable {
             try {
@@ -1259,14 +1233,8 @@ class ReaderViewModel(
         val bookmarked: Boolean = false,
         val isLoadingAdjacentChapter: Boolean = false,
         val currentPage: Int = -1,
-
-        /**
-         * Viewer used to display the pages (pager, webtoon, ...).
-         */
-        val viewer: Viewer? = null,
         val dialog: Dialog? = null,
         val menuVisible: Boolean = false,
-        @IntRange(from = -100, to = 100) val brightnessOverlayValue: Int = 0,
         val currentPageText: String = "",
         val lastShiftDoubleState: Boolean? = null,
         val ehUtilsVisible: Boolean = false,
@@ -1285,7 +1253,6 @@ class ReaderViewModel(
     }
 
     sealed interface Dialog {
-        data object Loading : Dialog
         data object Settings : Dialog
         data object ReadingModeSelect : Dialog
         data object OrientationModeSelect : Dialog

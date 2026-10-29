@@ -34,12 +34,15 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 private val HISTORY_ITEM_HEIGHT = 96.dp
 
 @Composable
 fun MangaHistoryItem(
     history: MangaHistoryWithRelations,
+    timeFormatter: DateTimeFormatter,
     onClickCover: () -> Unit,
     onClickResume: () -> Unit,
     onClickDelete: () -> Unit,
@@ -74,7 +77,9 @@ fun MangaHistoryItem(
                 overflow = TextOverflow.Ellipsis,
                 style = textStyle,
             )
-            val readAt = remember { history.readAt?.toTimestampString() ?: "" }
+            val readAt = remember(timeFormatter, history.readAt) {
+                history.readAt?.toTimestampString(timeFormatter) ?: ""
+            }
             val lastPage = history.lastPageRead.takeIf { it > 0L }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -136,6 +141,7 @@ internal fun HistoryItemPreviews(
         Surface {
             MangaHistoryItem(
                 history = historyWithRelations,
+                timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT),
                 onClickCover = {},
                 onClickResume = {},
                 onClickDelete = {},

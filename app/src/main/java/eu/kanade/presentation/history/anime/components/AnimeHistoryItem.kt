@@ -42,6 +42,8 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.concurrent.TimeUnit
 
 private val HistoryItemHeight = 96.dp
@@ -49,6 +51,7 @@ private val HistoryItemHeight = 96.dp
 @Composable
 fun AnimeHistoryItem(
     history: AnimeHistoryWithRelations,
+    timeFormatter: DateTimeFormatter,
     onClickCover: () -> Unit,
     onClickResume: () -> Unit,
     onClickDelete: () -> Unit,
@@ -83,7 +86,9 @@ fun AnimeHistoryItem(
                 overflow = TextOverflow.Ellipsis,
                 style = textStyle,
             )
-            val seenAt = remember { history.seenAt?.toTimestampString() ?: "" }
+            val seenAt = remember(timeFormatter, history.seenAt) {
+                history.seenAt?.toTimestampString(timeFormatter) ?: ""
+            }
 
             var lastSecondSeen: Long? by remember { mutableStateOf(null) }
             var totalSeconds: Long? by remember { mutableStateOf(null) }
@@ -187,6 +192,7 @@ private fun HistoryItemPreviews(
         Surface {
             AnimeHistoryItem(
                 history = historyWithRelations,
+                timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT),
                 onClickCover = {},
                 onClickResume = {},
                 onClickDelete = {},

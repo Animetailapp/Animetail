@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.ui.reader.loader
 
 import android.content.Context
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadProvider
 import eu.kanade.tachiyomi.source.MangaSource
@@ -12,6 +11,7 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import kotlinx.coroutines.CoroutineScope
 import mihon.core.archive.archiveReader
 import mihon.core.archive.epubReader
+import mihon.data.cache.ChapterCache
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat

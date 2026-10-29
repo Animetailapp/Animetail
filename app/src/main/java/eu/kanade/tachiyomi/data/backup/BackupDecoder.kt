@@ -8,6 +8,7 @@ import eu.kanade.tachiyomi.data.backup.models.BackupAnime
 import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.protobuf.ProtoBuf
 import okio.BufferedSource
 import okio.buffer
@@ -50,19 +51,27 @@ class BackupDecoder(
         }
     }
 
-    /**
-     * Decode the manga entries of a potentially-gzipped backup one at a time, skipping those whose index [include] rejects.
-     */
-    fun decodeMangaEntries(uri: Uri, include: (index: Int) -> Boolean = { true }): Flow<BackupManga> = flow {
+    fun <T> decodeMetadata(uri: Uri, entry: DeserializationStrategy<T>, onEntry: (T) -> Unit): Metadata {
+        return read(uri) { reader ->
+            var mangaCount = 0
+            var animeCount = 0
+            while (orInvalid { reader.nextEntry() }) {
+                when (reader.currentEntryType) {
+                    BackupReader.EntryType.MANGA -> mangaCount++
+                    BackupReader.EntryType.ANIME -> animeCount++
+                    BackupReader.EntryType.NONE -> error("Missing entry type")
+                }
+                onEntry(orInvalid { reader.readEntry(entry) })
+            }
+            Metadata(mangaCount, animeCount, orInvalid { reader.readMetadata() })
+        }
+    }
+
+    fun decodeMangaEntries(uri: Uri): Flow<BackupManga> = flow {
         read(uri) { reader ->
-            var index = 0
             while (orInvalid { reader.nextEntry() }) {
                 if (reader.currentEntryType == BackupReader.EntryType.MANGA) {
-                    if (include(index++)) {
-                        emit(orInvalid { reader.readMangaEntry() })
-                    } else {
-                        orInvalid { reader.skipEntry() }
-                    }
+                    emit(orInvalid { reader.readMangaEntry() })
                 } else {
                     orInvalid { reader.skipEntry() }
                 }
@@ -70,22 +79,11 @@ class BackupDecoder(
         }
     }
 
-    fun decodeEntries(uri: Uri, include: (index: Int) -> Boolean = { true }): Flow<BackupManga> =
-        decodeMangaEntries(uri, include)
-
-    /**
-     * Decode the anime entries of a potentially-gzipped backup one at a time, skipping those whose index [include] rejects.
-     */
-    fun decodeAnimeEntries(uri: Uri, include: (index: Int) -> Boolean = { true }): Flow<BackupAnime> = flow {
+    fun decodeAnimeEntries(uri: Uri): Flow<BackupAnime> = flow {
         read(uri) { reader ->
-            var index = 0
             while (orInvalid { reader.nextEntry() }) {
                 if (reader.currentEntryType == BackupReader.EntryType.ANIME) {
-                    if (include(index++)) {
-                        emit(orInvalid { reader.readAnimeEntry() })
-                    } else {
-                        orInvalid { reader.skipEntry() }
-                    }
+                    emit(orInvalid { reader.readAnimeEntry() })
                 } else {
                     orInvalid { reader.skipEntry() }
                 }

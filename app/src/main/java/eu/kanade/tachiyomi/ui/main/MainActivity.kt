@@ -92,7 +92,6 @@ import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.core.common.Constants
-import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRpcManager
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
@@ -143,6 +142,7 @@ import mihon.app.di.AppGraph
 import mihon.app.di.appGraph
 import mihon.core.metro.metroGraph
 import mihon.core.migration.Migrator
+import mihon.data.cache.ChapterCache
 import mihon.domain.database.repository.DatabaseRepository
 import mihon.feature.support.SupportUsScreen
 import mihon.icons.materialsymbols.MaterialSymbols

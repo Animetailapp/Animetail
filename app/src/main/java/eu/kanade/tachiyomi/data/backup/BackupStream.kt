@@ -118,16 +118,19 @@ class BackupReader(
 
     fun readEntry(): BackupManga {
         check(currentEntryType == EntryType.MANGA)
+        return readEntry(BackupManga.serializer())
+    }
+
+    fun <T> readEntry(deserializer: DeserializationStrategy<T>): T {
         val bytes = source.readByteArray(takeEntryLength())
-        return decode(BackupManga.serializer(), bytes)
+        return decode(deserializer, bytes)
     }
 
     fun readMangaEntry(): BackupManga = readEntry()
 
     fun readAnimeEntry(): BackupAnime {
         check(currentEntryType == EntryType.ANIME)
-        val bytes = source.readByteArray(takeEntryLength())
-        return decode(BackupAnime.serializer(), bytes)
+        return readEntry(BackupAnime.serializer())
     }
 
     fun skipEntry() {
