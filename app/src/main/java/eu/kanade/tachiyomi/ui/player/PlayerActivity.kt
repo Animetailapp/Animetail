@@ -1205,6 +1205,7 @@ class PlayerActivity : BaseActivity() {
         httpServer = null
 
         setHttpOptions(video)
+        player.resetTrackSelection()
 
         if (viewModel.isLoadingEpisode.value) {
             viewModel.currentEpisode.value?.let { episode ->

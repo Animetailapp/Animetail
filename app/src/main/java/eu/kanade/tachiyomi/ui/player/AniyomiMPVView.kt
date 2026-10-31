@@ -60,6 +60,11 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         mpv?.setOptionString(name, value)
     }
 
+    fun resetTrackSelection() {
+        setSafeOptionString("sid", "no")
+        setSafeOptionString("aid", "auto")
+    }
+
     /**
      * Returns the video aspect ratio. Rotation is taken into account.
      */
@@ -89,9 +94,8 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         setSafeOptionString("tls-verify", "no")
         setSafeOptionString("tls-ca-file", "${context.filesDir.path}/${PlayerActivity.MPV_DIR}/cacert.pem")
 
-        // We handle selecting this in the viewmodel
-        mpv?.setOptionString("sid", "no")
-        mpv?.setOptionString("aid", "no")
+        // Select audio during initial preload to avoid demux_lavf refresh seeks on HLS streams
+        resetTrackSelection()
 
         // Limit demuxer cache since the defaults are too high for mobile devices
         val cacheMegs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) 64 else 32
