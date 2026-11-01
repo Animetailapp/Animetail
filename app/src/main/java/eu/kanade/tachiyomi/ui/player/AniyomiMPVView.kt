@@ -23,6 +23,7 @@ import android.os.Environment
 import android.util.AttributeSet
 import android.view.KeyCharacterMap
 import android.view.KeyEvent
+import animetail.feature.mpvfiles.MpvConfig
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.toColorHexString
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
@@ -226,6 +227,10 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
             "secondary-sub-delay",
             (subtitlePreferences.subtitlesSecondaryDelay().get() / 1000.0).toString(),
         )
+
+        val fontsDir = context.filesDir.resolve(PlayerActivity.MPV_DIR).resolve(MpvConfig.MPV_FONTS_DIR).path
+        setSafeOptionString("sub-fonts-dir", fontsDir)
+        setSafeOptionString("osd-fonts-dir", fontsDir)
 
         val font = subtitlePreferences.subtitleFont().get().let {
             if (it == "Sans Serif") "sans-serif" else it

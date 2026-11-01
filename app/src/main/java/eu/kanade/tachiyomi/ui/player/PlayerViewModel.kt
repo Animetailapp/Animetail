@@ -39,6 +39,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import animetail.feature.mpvfiles.MpvConfig
 import dev.icerock.moko.resources.StringResource
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Assisted
@@ -207,8 +208,13 @@ class PlayerViewModel(
     val cachePath: String = context.cacheDir.path
 
     val mpv = MPV(context.applicationContext) {
+        val mpvDir = context.filesDir.resolve(PlayerActivity.MPV_DIR)
+        val fontsDir = mpvDir.resolve(MpvConfig.MPV_FONTS_DIR)
+        MpvConfig.setupFontsConf(context.applicationContext)
         it.setOptionString("config", "yes")
-        it.setOptionString("config-dir", context.filesDir.resolve(PlayerActivity.MPV_DIR).toString())
+        it.setOptionString("config-dir", mpvDir.toString())
+        it.setOptionString("sub-fonts-dir", fontsDir.toString())
+        it.setOptionString("osd-fonts-dir", fontsDir.toString())
         it.setOptionString("gpu-shader-cache-dir", cachePath)
         it.setOptionString("icc-cache-dir", cachePath)
         it.setOptionString("keep-open", "yes")
