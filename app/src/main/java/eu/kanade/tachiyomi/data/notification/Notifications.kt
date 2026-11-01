@@ -98,6 +98,7 @@ object Notifications {
     private const val GROUP_APK_UPDATES = "group_apk_updates"
     const val CHANNEL_EXTENSIONS_UPDATE = "ext_apk_update_channel"
     const val ID_UPDATES_TO_EXTS = -401
+    const val ID_UPDATES_TO_ANIME_EXTS = -1401
     const val ID_EXTENSION_INSTALLER = -402
 
     private val deprecatedChannels = listOf(

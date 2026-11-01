@@ -408,9 +408,9 @@ class AnimeExtensionManager(
         preferences.animeExtensionUpdatesCount.set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
             lastNotifiedUpdateNames = emptyList()
-            extensionUpdateNotifier.dismiss()
+            extensionUpdateNotifier.dismiss(anime = true)
         } else if (lastNotifiedUpdateNames.isNotEmpty()) {
-            if (!extensionUpdateNotifier.isNotificationActive()) {
+            if (!extensionUpdateNotifier.isNotificationActive(anime = true)) {
                 lastNotifiedUpdateNames = emptyList()
             } else if (visibleUpdateNames != lastNotifiedUpdateNames) {
                 lastNotifiedUpdateNames = visibleUpdateNames
