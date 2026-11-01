@@ -233,7 +233,9 @@ class AnimeExtensionManager(
         initialized.await()
         setAvailableExtensions(extensions)
 
-        val names = (loadedExtensionsMapFlow.value.values + notLoadedExtensionsMapFlow.value.values)
+        val visibleNotLoaded = notLoadedExtensionsMapFlow.value.values
+            .filterNot { it.reason is AnimeExtension.NotLoaded.Reason.Filtered }
+        val names = (loadedExtensionsMapFlow.value.values + visibleNotLoaded)
             .filter { it.hasUpdate }
             .map { it.name }
         if (names.isNotEmpty()) {
@@ -393,7 +395,9 @@ class AnimeExtensionManager(
     }
 
     private fun updatePendingUpdatesCount() {
-        val pendingUpdateCount = (loadedExtensionsMapFlow.value.values + notLoadedExtensionsMapFlow.value.values)
+        val visibleNotLoaded = notLoadedExtensionsMapFlow.value.values
+            .filterNot { it.reason is AnimeExtension.NotLoaded.Reason.Filtered }
+        val pendingUpdateCount = (loadedExtensionsMapFlow.value.values + visibleNotLoaded)
             .count { it.hasUpdate }
         preferences.animeExtensionUpdatesCount.set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {

@@ -402,6 +402,11 @@ internal object MangaExtensionLoader {
             return notLoaded(MangaExtension.NotLoaded.Reason.UnsupportedLibVersion, libVersion)
         }
 
+        if (applyContentWarningsToInstalled && contentWarning !in enabledContentWarnings) {
+            logcat(LogPriority.WARN) { "Extension $pkgName with $contentWarning not allowed" }
+            return notLoaded(MangaExtension.NotLoaded.Reason.Filtered, libVersion)
+        }
+
         if (signatures.isEmpty()) {
             logcat(LogPriority.WARN) { "Package $pkgName isn't signed" }
             return notLoaded(MangaExtension.NotLoaded.Reason.Unsigned, libVersion)
@@ -412,11 +417,6 @@ internal object MangaExtensionLoader {
                 libVersion,
                 signatures.last(),
             )
-        }
-
-        if (applyContentWarningsToInstalled && contentWarning !in enabledContentWarnings) {
-            logcat(LogPriority.WARN) { "Extension $pkgName with $contentWarning not allowed" }
-            return notLoaded(MangaExtension.NotLoaded.Reason.Filtered, libVersion)
         }
 
         // Everything above is cheap to check again, everything below isn't. Nothing about this apk
