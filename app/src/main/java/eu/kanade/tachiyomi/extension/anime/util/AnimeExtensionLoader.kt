@@ -409,17 +409,17 @@ internal object AnimeExtensionLoader {
                 ?: versionName.substringBeforeLast('.').toDoubleOrNull()
                 ?: versionName.substringBefore('.').toDoubleOrNull()
             )
+        if (applyContentWarningsToInstalled && contentWarning !in enabledContentWarnings) {
+            logcat(LogPriority.WARN) { "Extension $pkgName with $contentWarning not allowed" }
+            return notLoaded(AnimeExtension.NotLoaded.Reason.Filtered, libVersion)
+        }
+
         if (libVersion == null || libVersion !in SUPPORTED_LIB_VERSIONS) {
             logcat(LogPriority.WARN) {
                 "Lib version is $libVersion, while only version(s) " +
                     "${SUPPORTED_LIB_VERSIONS.joinToString()} are supported"
             }
             return notLoaded(AnimeExtension.NotLoaded.Reason.UnsupportedLibVersion, libVersion)
-        }
-
-        if (applyContentWarningsToInstalled && contentWarning !in enabledContentWarnings) {
-            logcat(LogPriority.WARN) { "Extension $pkgName with $contentWarning not allowed" }
-            return notLoaded(AnimeExtension.NotLoaded.Reason.Filtered, libVersion)
         }
 
         if (signatures.isEmpty()) {

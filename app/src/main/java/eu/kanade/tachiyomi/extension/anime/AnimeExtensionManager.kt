@@ -79,6 +79,9 @@ class AnimeExtensionManager(
     @Volatile
     private var stores = emptyList<ExtensionStore>()
 
+    @Volatile
+    private var lastNotifiedUpdateNames = emptyList<String>()
+
     // Every store's listing, since more than one store can list the same extension
     private val availableExtensionListFlow = MutableStateFlow(emptyList<AnimeExtension.Available>())
 
@@ -238,6 +241,7 @@ class AnimeExtensionManager(
         val names = (loadedExtensionsMapFlow.value.values + visibleNotLoaded)
             .filter { it.hasUpdate }
             .map { it.name }
+        lastNotifiedUpdateNames = names
         if (names.isNotEmpty()) {
             extensionUpdateNotifier.promptUpdates(
                 names = names,
@@ -397,11 +401,20 @@ class AnimeExtensionManager(
     private fun updatePendingUpdatesCount() {
         val visibleNotLoaded = notLoadedExtensionsMapFlow.value.values
             .filterNot { it.reason is AnimeExtension.NotLoaded.Reason.Filtered }
-        val pendingUpdateCount = (loadedExtensionsMapFlow.value.values + visibleNotLoaded)
-            .count { it.hasUpdate }
+        val visibleUpdateNames = (loadedExtensionsMapFlow.value.values + visibleNotLoaded)
+            .filter { it.hasUpdate }
+            .map { it.name }
+        val pendingUpdateCount = visibleUpdateNames.size
         preferences.animeExtensionUpdatesCount.set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
+            lastNotifiedUpdateNames = emptyList()
             extensionUpdateNotifier.dismiss()
+        } else if (lastNotifiedUpdateNames.isNotEmpty() && visibleUpdateNames != lastNotifiedUpdateNames) {
+            lastNotifiedUpdateNames = visibleUpdateNames
+            extensionUpdateNotifier.promptUpdates(
+                names = visibleUpdateNames,
+                anime = true,
+            )
         }
     }
 
