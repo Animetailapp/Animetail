@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.system.cancelNotification
+import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.notify
 
 @Inject
@@ -43,6 +44,13 @@ class ExtensionUpdateNotifier(
                 setContentIntent(NotificationReceiver.openAnimeExtensionsPendingActivity(context))
             }
             setAutoCancel(true)
+            setOnlyAlertOnce(true)
+        }
+    }
+
+    fun isNotificationActive(): Boolean {
+        return context.notificationManager.activeNotifications.any {
+            it.id == Notifications.ID_UPDATES_TO_EXTS
         }
     }
 

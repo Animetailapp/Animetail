@@ -399,9 +399,13 @@ class MangaExtensionManager(
         if (pendingUpdateCount == 0) {
             lastNotifiedUpdateNames = emptyList()
             extensionUpdateNotifier.dismiss()
-        } else if (lastNotifiedUpdateNames.isNotEmpty() && visibleUpdateNames != lastNotifiedUpdateNames) {
-            lastNotifiedUpdateNames = visibleUpdateNames
-            extensionUpdateNotifier.promptUpdates(visibleUpdateNames)
+        } else if (lastNotifiedUpdateNames.isNotEmpty()) {
+            if (!extensionUpdateNotifier.isNotificationActive()) {
+                lastNotifiedUpdateNames = emptyList()
+            } else if (visibleUpdateNames != lastNotifiedUpdateNames) {
+                lastNotifiedUpdateNames = visibleUpdateNames
+                extensionUpdateNotifier.promptUpdates(visibleUpdateNames)
+            }
         }
     }
 
