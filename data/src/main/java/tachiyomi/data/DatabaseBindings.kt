@@ -118,6 +118,97 @@ object DatabaseBindings {
                     execute(null, "ALTER TABLE episodes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d'", 0)
                 } catch (_: Throwable) {
                 }
+                try {
+                    execute(null, "DROP VIEW IF EXISTS animelibView", 0)
+                    execute(
+                        null,
+                        """
+                        CREATE VIEW animelibView AS
+                        SELECT
+                            M.*,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.total, 0)
+                                WHEN 0 THEN coalesce(ASS.child_count, 0)
+                            END AS totalCount,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.seenCount, 0)
+                                WHEN 0 THEN coalesce(ASS.fully_seen_seasons, 0)
+                            END AS seenCount,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.latestUpload, 0)
+                                WHEN 0 THEN coalesce(ASS.max_latest_upload, 0)
+                            END AS latestUpload,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.fetchedAt, 0)
+                                WHEN 0 THEN coalesce(ASS.max_fetched_at, 0)
+                            END AS episodeFetchedAt,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(AHS.lastSeen, 0)
+                                WHEN 0 THEN coalesce(ASS.max_last_seen, 0)
+                            END AS lastSeen,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.bookmarkCount, 0)
+                                WHEN 0 THEN coalesce(ASS.total_bookmarks, 0)
+                            END AS bookmarkCount,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.fillermarkCount, 0)
+                                WHEN 0 THEN coalesce(ASS.total_fillermarks, 0)
+                            END AS fillermarkCount,
+                            coalesce(MC.category_id, 0) AS category
+                        FROM animes M
+                        LEFT JOIN episodestatsView AS ES ON M._id = ES.anime_id
+                        LEFT JOIN animehistorystatsView AS AHS ON M._id = AHS.anime_id
+                        LEFT JOIN animes_categories AS MC ON MC.anime_id = M._id
+                        LEFT JOIN animeseasonstatsView AS ASS ON M._id = ASS.parent_id
+                        WHERE M.favorite = 1
+                        """.trimIndent(),
+                        0,
+                    )
+                    execute(null, "DROP VIEW IF EXISTS animeseasonsView", 0)
+                    execute(
+                        null,
+                        """
+                        CREATE VIEW animeseasonsView AS
+                        SELECT
+                            M.*,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.total, 0)
+                                WHEN 0 THEN coalesce(ASS.child_count, 0)
+                            END AS totalCount,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.seenCount, 0)
+                                WHEN 0 THEN coalesce(ASS.fully_seen_seasons, 0)
+                            END AS seenCount,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.latestUpload, 0)
+                                WHEN 0 THEN coalesce(ASS.max_latest_upload, 0)
+                            END AS latestUpload,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.fetchedAt, 0)
+                                WHEN 0 THEN coalesce(ASS.max_fetched_at, 0)
+                            END AS episodeFetchedAt,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(AHS.lastSeen, 0)
+                                WHEN 0 THEN coalesce(ASS.max_last_seen, 0)
+                            END AS lastSeen,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.bookmarkCount, 0)
+                                WHEN 0 THEN coalesce(ASS.total_bookmarks, 0)
+                            END AS bookmarkCount,
+                            CASE M.fetch_type
+                                WHEN 1 THEN coalesce(ES.fillermarkCount, 0)
+                                WHEN 0 THEN coalesce(ASS.total_fillermarks, 0)
+                            END AS fillermarkCount
+                        FROM animes AS M
+                        LEFT JOIN episodestatsView AS ES ON M._id = ES.anime_id
+                        LEFT JOIN animehistorystatsView AS AHS ON M._id = AHS.anime_id
+                        LEFT JOIN animeseasonstatsView AS ASS ON M._id = ASS.parent_id
+                        WHERE M.parent_id IS NOT NULL
+                        """.trimIndent(),
+                        0,
+                    )
+                } catch (_: Throwable) {
+                }
             },
         )
         val database = AnimeDatabase(

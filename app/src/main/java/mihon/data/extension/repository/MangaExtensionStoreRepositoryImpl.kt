@@ -1,5 +1,6 @@
 package mihon.data.extension.repository
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
@@ -17,14 +18,15 @@ import mihon.domain.extension.manga.repository.MangaExtensionStoreRepository
 import mihon.domain.extension.model.ExtensionStore
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.Database
-import tachiyomi.data.handlers.manga.MangaDatabaseHandler
+import tachiyomi.data.subscribeToList
+import tachiyomi.data.subscribeToOne
 
 @Inject
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class MangaExtensionStoreRepositoryImpl(
     private val service: MangaExtensionStoreService,
-    private val handler: MangaDatabaseHandler,
+    private val database: Database,
     private val preferences: SourcePreferences,
 ) : MangaExtensionStoreRepository {
     override suspend fun insert(indexUrl: String): Result<Unit> {
@@ -32,17 +34,15 @@ class MangaExtensionStoreRepositoryImpl(
     }
 
     override suspend fun insertFromPreference(indexUrl: String, name: String) {
-        handler.await {
-            extension_storeQueries.upsert(
-                indexUrl = indexUrl,
-                name = name,
-                badgeLabel = name,
-                signingKey = "NO_SIGNING_KEY",
-                contactWebsite = indexUrl,
-                contactDiscord = null,
-                isLegacy = false,
-            )
-        }
+        database.extension_storeQueries.upsert(
+            indexUrl = indexUrl,
+            name = name,
+            badgeLabel = name,
+            signingKey = "NO_SIGNING_KEY",
+            contactWebsite = indexUrl,
+            contactDiscord = null,
+            isLegacy = false,
+        )
     }
 
     override suspend fun refreshAll() {
@@ -53,13 +53,13 @@ class MangaExtensionStoreRepositoryImpl(
                 .forEach { store ->
                     service.fetch(store.indexUrl)
                         .mapCatching {
-                            handler.await(inTransaction = true) {
-                                if (!extension_storeQueries.contains(store.indexUrl).awaitAsOne()) {
-                                    return@await
+                            database.transaction {
+                                if (!database.extension_storeQueries.contains(store.indexUrl).awaitAsOne()) {
+                                    return@transaction
                                 }
                                 upsert(it)
                                 if (store.indexUrl != it.indexUrl) {
-                                    extension_storeQueries.delete(store.indexUrl)
+                                    database.extension_storeQueries.delete(store.indexUrl)
                                 }
                             }
                         }
@@ -75,17 +75,15 @@ class MangaExtensionStoreRepositoryImpl(
     }
 
     override suspend fun upsert(store: ExtensionStore) {
-        handler.await {
-            extension_storeQueries.upsert(
-                indexUrl = store.indexUrl,
-                name = store.name,
-                badgeLabel = store.badgeLabel,
-                signingKey = store.signingKey,
-                contactWebsite = store.contact.website,
-                contactDiscord = store.contact.discord,
-                isLegacy = store.isLegacy,
-            )
-        }
+        database.extension_storeQueries.upsert(
+            indexUrl = store.indexUrl,
+            name = store.name,
+            badgeLabel = store.badgeLabel,
+            signingKey = store.signingKey,
+            contactWebsite = store.contact.website,
+            contactDiscord = store.contact.discord,
+            isLegacy = store.isLegacy,
+        )
     }
 
     override suspend fun fetchExtensions(): List<MangaExtension.Available> {
@@ -113,19 +111,25 @@ class MangaExtensionStoreRepositoryImpl(
     }
 
     override suspend fun getAll(): List<ExtensionStore> {
-        return handler.awaitList { extension_storeQueries.getAll(::extensionStoreMapper) }
+        return database.extension_storeQueries
+            .getAll(::extensionStoreMapper)
+            .awaitAsList()
     }
 
     override fun getAllAsFlow(): Flow<List<ExtensionStore>> {
-        return handler.subscribeToList { extension_storeQueries.getAll(::extensionStoreMapper) }
+        return database.extension_storeQueries
+            .getAll(::extensionStoreMapper)
+            .subscribeToList()
     }
 
     override fun getCountAsFlow(): Flow<Long> {
-        return handler.subscribeToOne { extension_storeQueries.getCount() }
+        return database.extension_storeQueries
+            .getCount()
+            .subscribeToOne()
     }
 
     override suspend fun remove(indexUrl: String) {
-        handler.await { extension_storeQueries.delete(indexUrl) }
+        database.extension_storeQueries.delete(indexUrl)
     }
 
     private fun extensionStoreMapper(

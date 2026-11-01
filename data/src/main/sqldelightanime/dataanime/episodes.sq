@@ -56,35 +56,53 @@ BEGIN
 END;
 
 getEpisodeById:
-SELECT *
+SELECT
+    _id, anime_id, url, name, scanlator, seen, bookmark, last_second_seen, total_seconds,
+    episode_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing,
+    summary, preview_url, fillermark, memo, date_upload_override
 FROM episodes
 WHERE _id = :id;
 
 getEpisodesByAnimeId:
-SELECT *
+SELECT
+    _id, anime_id, url, name, scanlator, seen, bookmark, last_second_seen, total_seconds,
+    episode_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing,
+    summary, preview_url, fillermark, memo, date_upload_override
 FROM episodes
 WHERE anime_id = :animeId;
 
 getEpisodesByAnimeIds:
-SELECT *
+SELECT
+    _id, anime_id, url, name, scanlator, seen, bookmark, last_second_seen, total_seconds,
+    episode_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing,
+    summary, preview_url, fillermark, memo, date_upload_override
 FROM episodes
 WHERE anime_id IN :animeIds
 ORDER BY anime_id, url;
 
 getBookmarkedEpisodesByAnimeId:
-SELECT *
+SELECT
+    _id, anime_id, url, name, scanlator, seen, bookmark, last_second_seen, total_seconds,
+    episode_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing,
+    summary, preview_url, fillermark, memo, date_upload_override
 FROM episodes
 WHERE bookmark
 AND anime_id = :animeId;
 
 
 getEpisodeByUrl:
-SELECT *
+SELECT
+    _id, anime_id, url, name, scanlator, seen, bookmark, last_second_seen, total_seconds,
+    episode_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing,
+    summary, preview_url, fillermark, memo, date_upload_override
 FROM episodes
 WHERE url = :episodeUrl;
 
 getEpisodeByUrlAndAnimeId:
-SELECT *
+SELECT
+    _id, anime_id, url, name, scanlator, seen, bookmark, last_second_seen, total_seconds,
+    episode_number, source_order, date_fetch, date_upload, last_modified_at, version, is_syncing,
+    summary, preview_url, fillermark, memo, date_upload_override
 FROM episodes
 WHERE url = :episodeUrl
 AND anime_id = :animeId
