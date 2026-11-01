@@ -21,7 +21,7 @@ SELECT
     A.episode_flags, A.cover_last_modified, A.date_added, A.update_strategy, A.calculate_interval,
     A.last_modified_at, A.favorite_modified_at, A.version, A.is_syncing, A.fetch_type,
     A.parent_id, A.season_flags, A.season_number, A.season_source_order, A.background_url,
-    A.background_last_modified, A."cast", A.memo, A.notes, R.name
+    A.background_last_modified, A.`cast`, A.memo, A.notes, R.name
 FROM anime_relations AS R
 JOIN animes AS A
 ON A._id = R.related_anime_id
