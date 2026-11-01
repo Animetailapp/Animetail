@@ -76,24 +76,44 @@ BEGIN
 END;
 
 getAnimeById:
-SELECT *
+SELECT
+    _id, source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+    last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
+    update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
+    is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
+    background_url, background_last_modified, `cast`, memo, notes
 FROM animes
 WHERE _id = :id;
 
 -- TODO: this should ideally never really have more than 1 result
 getAnimeByUrlAndSource:
-SELECT *
+SELECT
+    _id, source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+    last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
+    update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
+    is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
+    background_url, background_last_modified, `cast`, memo, notes
 FROM animes
 WHERE url = :url AND source = :source
 LIMIT 1;
 
 getFavorites:
-SELECT *
+SELECT
+    _id, source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+    last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
+    update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
+    is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
+    background_url, background_last_modified, `cast`, memo, notes
 FROM animes
 WHERE favorite = 1;
 
 getWatchedAnimeNotInLibrary:
-SELECT *
+SELECT
+    _id, source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+    last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
+    update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
+    is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
+    background_url, background_last_modified, `cast`, memo, notes
 FROM animes
 WHERE favorite = 0 AND _id IN (
     SELECT DISTINCT episodes.anime_id
@@ -102,7 +122,12 @@ WHERE favorite = 0 AND _id IN (
 );
 
 getAllAnime:
-SELECT *
+SELECT
+    _id, source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+    last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
+    update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
+    is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
+    background_url, background_last_modified, `cast`, memo, notes
 FROM animes;
 
 getAllAnimeSourceAndUrl:
@@ -110,7 +135,12 @@ SELECT source, url
 FROM animes;
 
 getAnimesWithFavoriteTimestamp:
-SELECT *
+SELECT
+    _id, source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+    last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
+    update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
+    is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
+    background_url, background_last_modified, `cast`, memo, notes
 FROM animes
 WHERE favorite_modified_at IS NOT NULL;
 
@@ -123,20 +153,35 @@ WHERE favorite = 1
 GROUP BY source;
 
 getFavoriteBySourceId:
-SELECT *
+SELECT
+    _id, source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+    last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
+    update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
+    is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
+    background_url, background_last_modified, `cast`, memo, notes
 FROM animes
 WHERE favorite = 1
 AND source = :sourceId;
 
 getDuplicateLibraryAnime:
-SELECT *
+SELECT
+    _id, source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+    last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
+    update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
+    is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
+    background_url, background_last_modified, `cast`, memo, notes
 FROM animes
 WHERE favorite = 1
 AND LOWER(title) = :title
 AND _id != :id;
 
 getUpcomingAnime:
-SELECT *
+SELECT
+    _id, source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+    last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
+    update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
+    is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
+    background_url, background_last_modified, `cast`, memo, notes
 FROM animes
 WHERE next_update >= :startOfDay
 AND favorite = 1
@@ -186,7 +231,12 @@ SET parent_id = NULL
 WHERE _id IN :animeIds;
 
 getChildrenByParentId:
-SELECT *
+SELECT
+    _id, source, url, artist, author, description, genre, title, status, thumbnail_url, favorite,
+    last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
+    update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
+    is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
+    background_url, background_last_modified, `cast`, memo, notes
 FROM animes
 WHERE parent_id = :parentId;
 

@@ -1,11 +1,13 @@
 package tachiyomi.data.source.manga
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
-import tachiyomi.data.handlers.manga.MangaDatabaseHandler
+import tachiyomi.data.Database
+import tachiyomi.data.subscribeToList
 import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.domain.source.manga.repository.MangaStubSourceRepository
 
@@ -13,24 +15,23 @@ import tachiyomi.domain.source.manga.repository.MangaStubSourceRepository
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class MangaStubSourceRepositoryImpl(
-    private val handler: MangaDatabaseHandler,
+    private val database: Database,
 ) : MangaStubSourceRepository {
 
     override fun subscribeAllManga(): Flow<List<StubMangaSource>> {
-        return handler.subscribeToList { sourceQueries.findAll(::mapStubSource) }
+        return database.sourceQueries
+            .findAll(::mapStubSource)
+            .subscribeToList()
     }
 
     override suspend fun getStubMangaSource(id: Long): StubMangaSource? {
-        return handler.awaitOneOrNull {
-            sourceQueries.findOne(
-                id,
-                ::mapStubSource,
-            )
-        }
+        return database.sourceQueries
+            .findOne(id, ::mapStubSource)
+            .awaitAsOneOrNull()
     }
 
     override suspend fun upsertStubMangaSource(id: Long, lang: String, name: String) {
-        handler.await { sourceQueries.upsert(id = id, name = name, language = lang) }
+        database.sourceQueries.upsert(id = id, name = name, language = lang)
     }
 
     private fun mapStubSource(
