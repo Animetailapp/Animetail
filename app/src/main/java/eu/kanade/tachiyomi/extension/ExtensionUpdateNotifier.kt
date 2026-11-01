@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.system.cancelNotification
+import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.notify
 
 @Inject
@@ -19,9 +20,13 @@ class ExtensionUpdateNotifier(
     private val securityPreferences: SecurityPreferences,
 ) {
 
+    private fun notificationId(anime: Boolean): Int {
+        return if (anime) Notifications.ID_UPDATES_TO_ANIME_EXTS else Notifications.ID_UPDATES_TO_EXTS
+    }
+
     fun promptUpdates(names: List<String>, anime: Boolean = false) {
         context.notify(
-            Notifications.ID_UPDATES_TO_EXTS,
+            notificationId(anime),
             Notifications.CHANNEL_EXTENSIONS_UPDATE,
         ) {
             setContentTitle(
@@ -43,10 +48,18 @@ class ExtensionUpdateNotifier(
                 setContentIntent(NotificationReceiver.openAnimeExtensionsPendingActivity(context))
             }
             setAutoCancel(true)
+            setOnlyAlertOnce(true)
         }
     }
 
-    fun dismiss() {
-        context.cancelNotification(Notifications.ID_UPDATES_TO_EXTS)
+    fun isNotificationActive(anime: Boolean = false): Boolean {
+        val targetId = notificationId(anime)
+        return context.notificationManager.activeNotifications.any {
+            it.id == targetId
+        }
+    }
+
+    fun dismiss(anime: Boolean = false) {
+        context.cancelNotification(notificationId(anime))
     }
 }

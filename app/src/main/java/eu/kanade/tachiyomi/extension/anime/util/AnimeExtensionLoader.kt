@@ -409,6 +409,11 @@ internal object AnimeExtensionLoader {
                 ?: versionName.substringBeforeLast('.').toDoubleOrNull()
                 ?: versionName.substringBefore('.').toDoubleOrNull()
             )
+        if (applyContentWarningsToInstalled && contentWarning !in enabledContentWarnings) {
+            logcat(LogPriority.WARN) { "Extension $pkgName with $contentWarning not allowed" }
+            return notLoaded(AnimeExtension.NotLoaded.Reason.Filtered, libVersion)
+        }
+
         if (libVersion == null || libVersion !in SUPPORTED_LIB_VERSIONS) {
             logcat(LogPriority.WARN) {
                 "Lib version is $libVersion, while only version(s) " +
@@ -427,11 +432,6 @@ internal object AnimeExtensionLoader {
                 libVersion,
                 signatures.last(),
             )
-        }
-
-        if (applyContentWarningsToInstalled && contentWarning !in enabledContentWarnings) {
-            logcat(LogPriority.WARN) { "Extension $pkgName with $contentWarning not allowed" }
-            return notLoaded(AnimeExtension.NotLoaded.Reason.Filtered, libVersion)
         }
 
         val isTorrent = metaData.getInt(METADATA_TORRENT) == 1 || metaData.getInt(METADATA_TORRENT_ALT) == 1

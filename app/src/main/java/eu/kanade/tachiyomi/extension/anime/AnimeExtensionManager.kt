@@ -79,6 +79,9 @@ class AnimeExtensionManager(
     @Volatile
     private var stores = emptyList<ExtensionStore>()
 
+    @Volatile
+    private var lastNotifiedUpdateNames = emptyList<String>()
+
     // Every store's listing, since more than one store can list the same extension
     private val availableExtensionListFlow = MutableStateFlow(emptyList<AnimeExtension.Available>())
 
@@ -233,9 +236,12 @@ class AnimeExtensionManager(
         initialized.await()
         setAvailableExtensions(extensions)
 
-        val names = (loadedExtensionsMapFlow.value.values + notLoadedExtensionsMapFlow.value.values)
+        val visibleNotLoaded = notLoadedExtensionsMapFlow.value.values
+            .filterNot { it.reason is AnimeExtension.NotLoaded.Reason.Filtered }
+        val names = (loadedExtensionsMapFlow.value.values + visibleNotLoaded)
             .filter { it.hasUpdate }
             .map { it.name }
+        lastNotifiedUpdateNames = names
         if (names.isNotEmpty()) {
             extensionUpdateNotifier.promptUpdates(
                 names = names,
@@ -393,11 +399,26 @@ class AnimeExtensionManager(
     }
 
     private fun updatePendingUpdatesCount() {
-        val pendingUpdateCount = (loadedExtensionsMapFlow.value.values + notLoadedExtensionsMapFlow.value.values)
-            .count { it.hasUpdate }
+        val visibleNotLoaded = notLoadedExtensionsMapFlow.value.values
+            .filterNot { it.reason is AnimeExtension.NotLoaded.Reason.Filtered }
+        val visibleUpdateNames = (loadedExtensionsMapFlow.value.values + visibleNotLoaded)
+            .filter { it.hasUpdate }
+            .map { it.name }
+        val pendingUpdateCount = visibleUpdateNames.size
         preferences.animeExtensionUpdatesCount.set(pendingUpdateCount)
         if (pendingUpdateCount == 0) {
-            extensionUpdateNotifier.dismiss()
+            lastNotifiedUpdateNames = emptyList()
+            extensionUpdateNotifier.dismiss(anime = true)
+        } else if (lastNotifiedUpdateNames.isNotEmpty()) {
+            if (!extensionUpdateNotifier.isNotificationActive(anime = true)) {
+                lastNotifiedUpdateNames = emptyList()
+            } else if (visibleUpdateNames != lastNotifiedUpdateNames) {
+                lastNotifiedUpdateNames = visibleUpdateNames
+                extensionUpdateNotifier.promptUpdates(
+                    names = visibleUpdateNames,
+                    anime = true,
+                )
+            }
         }
     }
 

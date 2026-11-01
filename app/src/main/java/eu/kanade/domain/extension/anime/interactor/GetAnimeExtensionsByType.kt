@@ -15,19 +15,22 @@ class GetAnimeExtensionsByType(
 ) {
 
     fun subscribe(): Flow<AnimeExtensions> {
-        val enabledContentWarnings = preferences.enabledContentWarnings.get()
-
         return combine(
-            preferences.enabledLanguages.changes(),
-            preferences.disabledRepos.changes(),
+            combine(
+                preferences.enabledLanguages.changes(),
+                preferences.disabledRepos.changes(),
+                preferences.enabledContentWarnings.changes(),
+                ::Triple,
+            ),
             extensionManager.loadedExtensionsFlow,
             extensionManager.notLoadedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
-        ) { enabledLanguages, disabledRepos, _loaded, _notLoaded, _available ->
+        ) { (enabledLanguages, disabledRepos, enabledContentWarnings), _loaded, _notLoaded, _available ->
             val byName = compareBy<AnimeExtension, String>(String.CASE_INSENSITIVE_ORDER) { it.name }
 
+            val visibleNotLoaded = _notLoaded.filterNot { it.reason is AnimeExtension.NotLoaded.Reason.Filtered }
             val (loadedUpdates, loaded) = _loaded.partition { it.hasUpdate }
-            val (notLoadedUpdates, notLoaded) = _notLoaded.partition { it.hasUpdate }
+            val (notLoadedUpdates, notLoaded) = visibleNotLoaded.partition { it.hasUpdate }
 
             val updates = (loadedUpdates + notLoadedUpdates).sortedWith(byName)
 
