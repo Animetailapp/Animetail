@@ -14,6 +14,7 @@ data class NetworkLegacyExtension(
     val code: Long,
     val version: String,
     val nsfw: Int,
+    val torrent: Int = 0,
     val sources: List<Source>?,
 ) {
     @Serializable

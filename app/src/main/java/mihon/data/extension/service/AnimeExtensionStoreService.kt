@@ -12,7 +12,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.okio.decodeFromBufferedSource
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
-import mihon.data.extension.model.NetworkExtensionStore
+import mihon.data.extension.model.NetworkAnimeExtensionStore
 import mihon.data.extension.model.NetworkLegacyExtension
 import mihon.data.extension.model.NetworkLegacyExtensionRepo
 import mihon.domain.extension.model.ExtensionStore
@@ -58,10 +58,10 @@ class AnimeExtensionStoreService(
                     0x7B.toByte() -> try {
                         json.decodeFromBufferedSource<NetworkLegacyExtensionRepo>(source.peek())
                     } catch (_: Exception) {
-                        json.decodeFromBufferedSource<NetworkExtensionStore>(source)
+                        json.decodeFromBufferedSource<NetworkAnimeExtensionStore>(source)
                     }
 
-                    else -> protoBuf.decodeFromByteArray<NetworkExtensionStore>(source.readByteArray())
+                    else -> protoBuf.decodeFromByteArray<NetworkAnimeExtensionStore>(source.readByteArray())
                 }
 
                 if (networkStore is NetworkLegacyExtensionRepo) {
@@ -92,9 +92,9 @@ class AnimeExtensionStoreService(
                     source.stripBom()
                     when (source.peek().readByte()) {
                         // "{..."
-                        0x7B.toByte() -> json.decodeFromBufferedSource<NetworkExtensionStore.ExtensionList>(source)
+                        0x7B.toByte() -> json.decodeFromBufferedSource<NetworkAnimeExtensionStore.ExtensionList>(source)
 
-                        else -> protoBuf.decodeFromByteArray<NetworkExtensionStore.ExtensionList>(
+                        else -> protoBuf.decodeFromByteArray<NetworkAnimeExtensionStore.ExtensionList>(
                             source.readByteArray(),
                         )
                     }
@@ -106,9 +106,9 @@ class AnimeExtensionStoreService(
                     source.stripBom()
                     val netStore = when (source.peek().readByte()) {
                         // "{..."
-                        0x7B.toByte() -> json.decodeFromBufferedSource<NetworkExtensionStore>(source)
+                        0x7B.toByte() -> json.decodeFromBufferedSource<NetworkAnimeExtensionStore>(source)
 
-                        else -> protoBuf.decodeFromByteArray<NetworkExtensionStore>(source.readByteArray())
+                        else -> protoBuf.decodeFromByteArray<NetworkAnimeExtensionStore>(source.readByteArray())
                     }
                     val extensionList = netStore.extensionList
                     if (extensionList != null) {
@@ -136,7 +136,7 @@ class AnimeExtensionStoreService(
     }
 
     private fun toAvailableExtensions(
-        extensionList: NetworkExtensionStore.ExtensionList,
+        extensionList: NetworkAnimeExtensionStore.ExtensionList,
         store: ExtensionStore,
     ): List<AnimeExtension.Available> {
         return extensionList.extensions
@@ -155,12 +155,12 @@ class AnimeExtensionStoreService(
                     versionName = extension.versionName,
                     lang = if (lang.size == 1) lang.first() else "all",
                     contentWarning = when (extension.contentWarning) {
-                        NetworkExtensionStore.ContentWarning.SAFE -> DomainContentWarning.SAFE
-                        NetworkExtensionStore.ContentWarning.MIXED -> DomainContentWarning.MIXED
-                        NetworkExtensionStore.ContentWarning.NSFW -> DomainContentWarning.NSFW
+                        NetworkAnimeExtensionStore.ContentWarning.SAFE -> DomainContentWarning.SAFE
+                        NetworkAnimeExtensionStore.ContentWarning.MIXED -> DomainContentWarning.MIXED
+                        NetworkAnimeExtensionStore.ContentWarning.NSFW -> DomainContentWarning.NSFW
                         else -> DomainContentWarning.SAFE
                     },
-                    isTorrent = false,
+                    isTorrent = extension.isTorrent,
                     sources = extension.sources.map { source ->
                         AnimeExtension.Available.AnimeSource(
                             id = source.id,
@@ -193,7 +193,7 @@ class AnimeExtensionStoreService(
             versionName = netExt.version,
             lang = netExt.lang,
             contentWarning = if (netExt.nsfw == 1) DomainContentWarning.NSFW else DomainContentWarning.SAFE,
-            isTorrent = false,
+            isTorrent = netExt.torrent == 1,
             sources = run {
                 val sources = netExt.sources
                 if (sources.isNullOrEmpty()) {
