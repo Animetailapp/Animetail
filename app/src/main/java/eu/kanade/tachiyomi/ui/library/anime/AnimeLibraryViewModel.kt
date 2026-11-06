@@ -458,11 +458,12 @@ class AnimeLibraryViewModel(
      * Get the categories and all its anime from the database.
      */
     private fun getLibraryFlow(): Flow<AnimeLibraryMap> {
-        val animelibAnimesFlow = combine<List<LibraryAnime>, ItemPreferences, Unit, Map<Long, List<AnimeLibraryItem>>>(
+        val animelibAnimesFlow = combine(
             getLibraryAnime.subscribe(),
             getAnimelibItemPreferencesFlow(),
             downloadCache.changes,
-        ) { animelibAnimeList, prefs, _ ->
+            sourceManager.sources,
+        ) { animelibAnimeList, prefs, _, _ ->
             animelibAnimeList
                 .map { animelibAnime ->
                     val source = sourceManager.getOrStub(animelibAnime.anime.source)
