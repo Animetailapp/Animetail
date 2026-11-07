@@ -25,11 +25,11 @@ class AnimeDatabaseMemoMigrationTest {
         driver.ensureAnimeMemoColumnsAndViews()
 
         executedSql shouldHaveSize 6
-        executedSql[0] shouldBe "ALTER TABLE animes ADD COLUMN memo TEXT NOT NULL DEFAULT '{}';"
-        executedSql[1] shouldBe "ALTER TABLE episodes ADD COLUMN memo TEXT NOT NULL DEFAULT '{}';"
-        executedSql[2] shouldBe "DROP VIEW IF EXISTS animelibView;"
+        executedSql[0] shouldBe "ALTER TABLE animes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d'"
+        executedSql[1] shouldBe "ALTER TABLE episodes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d'"
+        executedSql[2] shouldBe "DROP VIEW IF EXISTS animelibView"
         executedSql[3] shouldContain "CREATE VIEW animelibView AS"
-        executedSql[4] shouldBe "DROP VIEW IF EXISTS animeseasonsView;"
+        executedSql[4] shouldBe "DROP VIEW IF EXISTS animeseasonsView"
         executedSql[5] shouldContain "CREATE VIEW animeseasonsView AS"
     }
 
@@ -46,9 +46,9 @@ class AnimeDatabaseMemoMigrationTest {
         driver.ensureAnimeMemoColumnsAndViews()
 
         executedSql shouldHaveSize 6
-        executedSql[2] shouldBe "DROP VIEW IF EXISTS animelibView;"
+        executedSql[2] shouldBe "DROP VIEW IF EXISTS animelibView"
         executedSql[3] shouldContain "CREATE VIEW animelibView AS"
-        executedSql[4] shouldBe "DROP VIEW IF EXISTS animeseasonsView;"
+        executedSql[4] shouldBe "DROP VIEW IF EXISTS animeseasonsView"
         executedSql[5] shouldContain "CREATE VIEW animeseasonsView AS"
     }
 
