@@ -57,6 +57,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
+import mihon.domain.library.model.search.QueryNode
+import mihon.feature.library.matches
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
@@ -161,10 +163,11 @@ class AnimeLibraryViewModel(
                     .applyFilters(tracks, trackingFilter)
                     .applySort(tracks, sort.takeIf { groupType != AnimeLibraryGroup.BY_DEFAULT }, trackingFilter.keys)
                     .mapValues { (_, value) ->
-                        if (searchQuery != null) {
-                            value.filter { it.matches(searchQuery, sourceManager) }
-                        } else {
+                        if (searchQuery.isNullOrEmpty()) {
                             value
+                        } else {
+                            val queryNode = QueryNode.from(searchQuery)
+                            value.filter { queryNode.matches(it) }
                         }
                     }
             }
@@ -455,19 +458,23 @@ class AnimeLibraryViewModel(
      * Get the categories and all its anime from the database.
      */
     private fun getLibraryFlow(): Flow<AnimeLibraryMap> {
-        val animelibAnimesFlow = combine<List<LibraryAnime>, ItemPreferences, Unit, Map<Long, List<AnimeLibraryItem>>>(
+        val animelibAnimesFlow = combine(
             getLibraryAnime.subscribe(),
             getAnimelibItemPreferencesFlow(),
             downloadCache.changes,
-        ) { animelibAnimeList, prefs, _ ->
+            sourceManager.sources,
+        ) { animelibAnimeList, prefs, _, _ ->
             animelibAnimeList
                 .map { animelibAnime ->
+                    val source = sourceManager.getOrStub(animelibAnime.anime.source)
                     // Display mode based on user preference: take it from global library setting or category
                     AnimeLibraryItem(
                         libraryAnime = animelibAnime,
                         downloadCount = downloadManager.getDownloadCount(animelibAnime.anime),
                         unseenCount = animelibAnime.unseenCount,
                         isLocal = animelibAnime.anime.isLocal(),
+                        sourceName = source.name.lowercase(),
+                        sourceLanguage = source.lang,
                         badges = AnimeLibraryItem.Badges(
                             downloadCount = if (prefs.downloadBadge) {
                                 downloadManager.getDownloadCount(animelibAnime.anime)
@@ -485,7 +492,7 @@ class AnimeLibraryViewModel(
                                 false
                             },
                             sourceLanguage = if (prefs.languageBadge) {
-                                sourceManager.getOrStub(animelibAnime.anime.source).lang
+                                source.lang
                             } else {
                                 ""
                             },

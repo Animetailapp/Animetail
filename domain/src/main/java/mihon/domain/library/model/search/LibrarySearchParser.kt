@@ -67,6 +67,8 @@ class LibrarySearchParser(private val tokens: List<LibrarySearchLexer.Token>) {
             is LibrarySearchLexer.Token.Field -> {
                 MangaField.fromString(nextToken.field)?.let {
                     FieldQueryNode(it, nextToken.value, negated)
+                } ?: ComparisonField.fromString(nextToken.field)?.let {
+                    ComparisonQueryNode(it, nextToken.value, Comparator.EQ, negated)
                 } ?: GeneralQueryNode("${nextToken.field}:${nextToken.value}", negated)
             }
 

@@ -26,9 +26,9 @@ enum class ComparisonField(vararg val aliases: String) {
     DATE_ADDED("added"),
     FETCH_INTERVAL("fetchinterval", "fi"),
     NEXT_UPDATE("nextupdate", "nu"),
-    UNREAD("unread"),
-    READ("read"),
-    TOTAL("total"),
+    UNREAD("unread", "unseen"),
+    READ("read", "seen"),
+    TOTAL("total", "episodes", "chapters"),
     ;
 
     companion object {
