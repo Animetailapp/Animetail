@@ -11,6 +11,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 
@@ -40,7 +41,7 @@ class AnimeDatabaseMemoMigrationTest {
         val driver = ColdAsyncSqlDriver { sql ->
             executedSql += sql
             if (sql.startsWith("ALTER TABLE")) {
-                throw SQLException("duplicate column name: memo")
+                throw mockk<SQLException>()
             }
         }
 
@@ -57,7 +58,7 @@ class AnimeDatabaseMemoMigrationTest {
     fun `ensureAnimeMemoColumnsAndViews propagates view recreation failures`() = runTest {
         val driver = ColdAsyncSqlDriver { sql ->
             if (sql.contains("CREATE VIEW animelibView AS")) {
-                throw SQLException("view creation failed")
+                throw mockk<SQLException>()
             }
         }
 
