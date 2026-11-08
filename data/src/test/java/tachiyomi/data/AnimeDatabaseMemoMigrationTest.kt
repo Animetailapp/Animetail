@@ -7,6 +7,7 @@ import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlCursor
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlPreparedStatement
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -50,6 +51,19 @@ class AnimeDatabaseMemoMigrationTest {
         executedSql[3] shouldContain "CREATE VIEW animelibView AS"
         executedSql[4] shouldBe "DROP VIEW IF EXISTS animeseasonsView"
         executedSql[5] shouldContain "CREATE VIEW animeseasonsView AS"
+    }
+
+    @Test
+    fun `ensureAnimeMemoColumnsAndViews propagates view recreation failures`() = runTest {
+        val driver = ColdAsyncSqlDriver { sql ->
+            if (sql.contains("CREATE VIEW animelibView AS")) {
+                throw SQLException("view creation failed")
+            }
+        }
+
+        shouldThrow<SQLException> {
+            driver.ensureAnimeMemoColumnsAndViews()
+        }
     }
 
     /**
