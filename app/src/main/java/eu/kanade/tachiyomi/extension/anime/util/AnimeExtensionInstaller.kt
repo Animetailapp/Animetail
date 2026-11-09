@@ -91,7 +91,7 @@ class AnimeExtensionInstaller(
                 }
 
                 step.value = InstallStep.Installing
-                installApk(downloadId, tmpFile, packageInfo, isUpdateForPrivatelyInstalled, extension.pkgName)
+                installApk(downloadId, tmpFile, packageInfo, isUpdateForPrivatelyInstalled)
             } catch (e: Exception) {
                 if (e is InterruptedException) {
                     // Canceled
@@ -118,14 +118,12 @@ class AnimeExtensionInstaller(
      * @param tempFile The file of the extension to install. Delete after use.
      * @param packageInfo The package info already read from [tempFile].
      * @param isUpdateForPrivatelyInstalled If this install is an update for a privately installed extension
-     * @param pkgName Package name of the extension to install
      */
     private fun installApk(
         downloadId: Long,
         tempFile: File,
         packageInfo: PackageInfo,
         isUpdateForPrivatelyInstalled: Boolean = false,
-        pkgName: String? = null,
     ) {
         if (isUpdateForPrivatelyInstalled) {
             installApkPrivately(downloadId, tempFile, packageInfo)
@@ -156,7 +154,7 @@ class AnimeExtensionInstaller(
                             downloadId,
                             tempFile.getUriCompat(context),
                             installer,
-                            pkgName,
+                            packageInfo.packageName,
                         )
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
