@@ -54,8 +54,8 @@ import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.Add
 import mihon.icons.materialsymbols.rounded.Delete
 import mihon.icons.materialsymbols.rounded.DragHandle
-import mihon.icons.materialsymbols.rounded.KeyboardArrowDown
-import mihon.icons.materialsymbols.rounded.KeyboardArrowUp
+import mihon.icons.materialsymbols.rounded.ExpandLess
+import mihon.icons.materialsymbols.rounded.ExpandMore
 import mihon.icons.materialsymbols.rounded.Refresh
 import sh.calvin.reorderable.ReorderableColumn
 import tachiyomi.core.common.preference.Preference
@@ -196,7 +196,7 @@ internal fun WebGpuViewerSettings(viewModel: ReaderSettingsViewModel) {
     if (!isPaged || isSingle) {
         CheckboxItem(
             label = stringResource(MR.strings.pref_crop_borders),
-            pref = viewModel.preferences.cropBorders,
+            pref = if (isPaged) viewModel.preferences.cropBorders else viewModel.preferences.cropBordersWebtoon,
         )
     }
 
@@ -440,9 +440,9 @@ private fun ShaderList(labelRes: StringResource, pref: Preference<List<WebGpuSha
                             IconButton(onClick = { expanded = !expanded }) {
                                 Icon(
                                     imageVector = if (expanded) {
-                                        MaterialSymbols.Rounded.KeyboardArrowUp
+                                        MaterialSymbols.Rounded.ExpandLess
                                     } else {
-                                        MaterialSymbols.Rounded.KeyboardArrowDown
+                                        MaterialSymbols.Rounded.ExpandMore
                                     },
                                     contentDescription = stringResource(MR.strings.shader_parameters),
                                 )
@@ -514,27 +514,42 @@ private fun ShaderParams(
                     val span = max - min
                     val positions = if (integer && span <= SLIDER_POSITIONS) span.toInt() else SLIDER_POSITIONS
                     val position = ((value - min) / span * positions).roundToInt().coerceIn(0, positions)
-                    BaseSliderItem(
-                        value = position,
-                        valueRange = 0..positions,
-                        title = title,
-                        subtitle = subtitle,
-                        valueString = format.format(value),
-                        onChange = {
-                            val new = min + span * it / positions
-                            set(if (integer) new.roundToInt().toFloat() else new)
-                        },
-                        titleStyle = MaterialTheme.typography.bodyMedium,
-                        pillColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        modifier = itemModifier,
-                    )
+                    Column(modifier = itemModifier) {
+                        BaseSliderItem(
+                            value = position,
+                            valueRange = 0..positions,
+                            label = title,
+                            valueText = format.format(value),
+                            onChange = {
+                                val new = min + span * it / positions
+                                set(if (integer) new.roundToInt().toFloat() else new)
+                            },
+                            labelStyle = MaterialTheme.typography.bodyMedium,
+                            pillColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        )
+                        if (subtitle.isNotEmpty()) {
+                            Text(
+                                text = subtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 } else {
-                    var text by remember(value) { mutableStateOf(format.format(value)) }
+                    var text by remember(param.name) {
+                        mutableStateOf(if (integer) value.roundToInt().toString() else value.toString())
+                    }
+                    LaunchedEffect(value) {
+                        val currentParsed = text.replace(',', '.').toFloatOrNull()
+                        if (currentParsed != value) {
+                            text = if (integer) value.roundToInt().toString() else value.toString()
+                        }
+                    }
                     OutlinedTextField(
                         value = text,
                         onValueChange = { new ->
                             text = new
-                            val parsed = runCatching { format.parse(new)?.toFloat() }.getOrNull()
+                            val parsed = new.replace(',', '.').toFloatOrNull()
                             if (parsed != null && parsed.isFinite()) {
                                 set(if (integer) parsed.roundToInt().toFloat() else parsed)
                             }
@@ -542,7 +557,9 @@ private fun ShaderParams(
                         label = { Text(title) },
                         supportingText = { Text(subtitle) },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = if (integer) KeyboardType.Number else KeyboardType.Decimal,
+                        ),
                         modifier = itemModifier,
                     )
                 }
