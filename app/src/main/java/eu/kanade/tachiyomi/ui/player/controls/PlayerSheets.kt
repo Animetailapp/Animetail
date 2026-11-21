@@ -29,12 +29,14 @@ import eu.kanade.tachiyomi.ui.player.PlayerViewModel.VideoTrack
 import eu.kanade.tachiyomi.ui.player.Sheets
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.AudioTracksSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ChaptersSheet
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterPrioritySheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.MoreSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.PlaybackSpeedSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ScreenshotSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.SubtitlesSheet
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.VideoDownloadState
 import `is`.xyz.mpv.MPV
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -65,6 +67,13 @@ fun PlayerSheets(
     selectedVideoIndex: Pair<Int, Int>,
     onClickHoster: (Int) -> Unit,
     onClickVideo: (Int, Int) -> Unit,
+    onDownloadVideo: (Int, Int) -> Unit,
+    videoDownload: VideoDownloadState?,
+    onCancelDownload: () -> Unit,
+    onReloadHosters: () -> Unit,
+    onEditHosterPriority: () -> Unit,
+    disabledHosters: Set<String>,
+    onSaveHosterPriority: (List<String>, Set<String>) -> Unit,
     displayHosters: Pair<Boolean, Boolean>,
 
     // chapters sheet
@@ -146,7 +155,22 @@ fun PlayerSheets(
                 selectedVideoIndex = selectedVideoIndex,
                 onClickHoster = onClickHoster,
                 onClickVideo = onClickVideo,
+                onDownloadVideo = onDownloadVideo,
+                videoDownload = videoDownload,
+                onCancelDownload = onCancelDownload,
+                onReload = onReloadHosters,
+                onEditPriority = onEditHosterPriority,
                 displayHosters = displayHosters,
+                onDismissRequest = onDismissRequest,
+                dismissSheet = dismissSheet,
+            )
+        }
+
+        Sheets.HosterPriority -> {
+            HosterPrioritySheet(
+                hosterNames = hosterState.map { it.name },
+                disabledNames = disabledHosters,
+                onSave = onSaveHosterPriority,
                 onDismissRequest = onDismissRequest,
                 dismissSheet = dismissSheet,
             )

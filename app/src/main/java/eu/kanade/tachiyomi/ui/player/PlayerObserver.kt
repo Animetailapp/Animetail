@@ -4,7 +4,9 @@ import `is`.xyz.mpv.MPV
 import `is`.xyz.mpv.MPVNode
 import logcat.LogPriority
 
-class PlayerObserver(val activity: PlayerActivity) :
+// Takes the view model directly: mpv calls back on its own thread, and the activity's lazy
+// view model property isn't safe to initialize from there.
+class PlayerObserver(val activity: PlayerActivity, private val viewModel: PlayerViewModel) :
     MPV.EventObserver,
     MPV.LogObserver {
 
@@ -34,7 +36,9 @@ class PlayerObserver(val activity: PlayerActivity) :
     }
 
     override fun event(eventId: Int, data: MPVNode) {
-        activity.runOnUiThread { activity.event(eventId, data) }
+        // Read on mpv's thread: by the time the UI thread runs, a newer video may have been loaded.
+        val playbackId = viewModel.playbackId
+        activity.runOnUiThread { activity.event(eventId, data, playbackId) }
     }
 
     var httpError: String? = null
