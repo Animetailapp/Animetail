@@ -19,6 +19,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.DiskUtil.NOMEDIA_FILE
+import eu.kanade.tachiyomi.util.storage.renameToOrCopy
 import eu.kanade.tachiyomi.util.storage.saveTo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -73,6 +74,7 @@ import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import java.io.IOException
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
@@ -489,14 +491,16 @@ class MangaDownloader(
             )
 
             // Only rename the directory if it's downloaded
-            if (downloadPreferences.saveChaptersAsCBZ.get()) {
+            val chapterDir = if (downloadPreferences.saveChaptersAsCBZ.get()) {
                 archiveChapter(mangaDir, chapterDirname, tmpDir)
+                tmpDir
             } else {
-                tmpDir.renameTo(chapterDirname)
+                tmpDir.renameToOrCopy(chapterDirname)
+                    ?: throw IOException("Failed to move ${tmpDir.name} to $chapterDirname")
             }
             cache.addChapter(chapterDirname, mangaDir, download.manga)
 
-            DiskUtil.createNoMediaFile(tmpDir, context)
+            DiskUtil.createNoMediaFile(chapterDir, context)
 
             download.status = MangaDownload.State.DOWNLOADED
         } catch (error: Throwable) {
@@ -577,7 +581,7 @@ class MangaDownloader(
             val file = tmpDir.findFile("$filename.tmp")
                 ?: tmpDir.createFile("$filename.tmp")!!
 
-            try {
+            val image = try {
                 source.getImage(page, dataSaver, file.length()).use {
                     throttler.apply {
                         bytesPerSecond(downloadPreferences.downloadSpeedLimit.get().toLong() * 1024)
@@ -590,7 +594,7 @@ class MangaDownloader(
                         stream = file.openOutputStream(it.code == 206),
                     )
                     val extension = getImageExtension(it, file)
-                    file.renameTo("$filename.$extension")
+                    file.renameToOrCopy("$filename.$extension") ?: file
                 }
             } catch (e: HttpException) {
                 if (e.code == 416) {
@@ -598,7 +602,7 @@ class MangaDownloader(
                 }
                 throw e
             }
-            emit(file)
+            emit(image)
         }
             // Retry 3 times, waiting 2, 4 and 8 seconds between attempts.
             .retryWhen { _, attempt ->
@@ -632,8 +636,7 @@ class MangaDownloader(
         } ?: return null
         chapterCache.removeImage(imageUrl)
         val extension = tmpFile.openInputStream().use { ImageUtil.findImageType(it) } ?: return tmpFile
-        tmpFile.renameTo("$filename.${extension.extension}")
-        return tmpFile
+        return tmpFile.renameToOrCopy("$filename.${extension.extension}") ?: tmpFile
     }
 
     /**
@@ -707,7 +710,8 @@ class MangaDownloader(
                 writer.write(file)
             }
         }
-        zip.renameTo("$dirname.cbz")
+        zip.renameToOrCopy("$dirname.cbz")
+            ?: throw IOException("Failed to move ${zip.name} to $dirname.cbz")
         tmpDir.delete()
     }
 
