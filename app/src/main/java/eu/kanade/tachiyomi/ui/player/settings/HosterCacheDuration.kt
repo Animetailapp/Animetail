@@ -7,10 +7,10 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 
 /** Video link cache durations offered in the settings, in minutes. Zero turns the cache off. */
-val HOSTER_CACHE_DURATIONS = listOf(0, 30, 60, 120, 360, 720, 1440)
+val HOSTER_CACHE_DURATIONS = listOf(0, 30, 60, 120, 360, 720, 1440, 43200)
 
 /** Hoster list cache durations offered in the settings, in minutes. Zero turns the cache off. */
-val HOSTER_LIST_CACHE_DURATIONS = listOf(0, 60, 360, 720, 1440, 4320, 10080)
+val HOSTER_LIST_CACHE_DURATIONS = listOf(0, 60, 360, 720, 1440, 4320, 10080, 43200)
 
 private const val MINUTES_PER_HOUR = 60
 private const val MINUTES_PER_DAY = 1440
