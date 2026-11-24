@@ -45,6 +45,7 @@ class PlayerPreferences(
     fun disabledHosters() = preferenceStore.getString("pref_disabled_hosters", "")
     fun hosterCacheMinutes() = preferenceStore.getInt("pref_hoster_cache_minutes", 120)
     fun hosterListCacheMinutes() = preferenceStore.getInt("pref_hoster_list_cache_minutes", 1440)
+    fun videoCacheMaxMegabytes() = preferenceStore.getInt("pref_video_cache_max_megabytes", 512)
 
     // Display
 

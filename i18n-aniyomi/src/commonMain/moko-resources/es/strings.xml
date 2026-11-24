@@ -441,6 +441,13 @@
     <string name="pref_hoster_cache_clear_source_summary">Borra los enlaces guardados de esta fuente</string>
     <string name="pref_hoster_cache_duration_all_sources_summary">%s. Se aplica a todas las fuentes</string>
     <string name="pref_hoster_cache_cleared">Caché de enlaces limpiada</string>
+    <string name="pref_video_cache">Caché de video</string>
+    <string name="pref_video_cache_size">Tamaño de la caché de video</string>
+    <string name="pref_video_cache_size_summary">Guarda en el dispositivo lo que viste para que la próxima vez empiece al instante. Si falla, el video se reproduce sin ella. Actual: %s</string>
+    <string name="pref_video_cache_off">Desactivada</string>
+    <string name="pref_video_cache_clear">Limpiar caché de video</string>
+    <string name="pref_video_cache_clear_summary">En uso: %s</string>
+    <string name="pref_video_cache_cleared">Caché de video limpiada</string>
     <string name="player_hoster_reload">Recargar sin caché</string>
     <string name="player_hoster_priority_info">Los servidores de arriba se prueban primero. Los desmarcados solo se cargan al tocarlos en la hoja de calidades.</string>
     <string name="player_hoster_switching">Falló la reproducción, probando %s</string>

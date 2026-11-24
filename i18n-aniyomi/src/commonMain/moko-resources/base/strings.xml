@@ -85,6 +85,13 @@
     <string name="pref_hoster_cache_clear_source_summary">Removes the cached links of this source</string>
     <string name="pref_hoster_cache_duration_all_sources_summary">%s. Applies to all sources</string>
     <string name="pref_hoster_cache_cleared">Link cache cleared</string>
+    <string name="pref_video_cache">Video cache</string>
+    <string name="pref_video_cache_size">Video cache size</string>
+    <string name="pref_video_cache_size_summary">Keeps what you watched on the device so it starts instantly next time. If it fails, the video is played without it. Current: %s</string>
+    <string name="pref_video_cache_off">Off</string>
+    <string name="pref_video_cache_clear">Clear video cache</string>
+    <string name="pref_video_cache_clear_summary">In use: %s</string>
+    <string name="pref_video_cache_cleared">Video cache cleared</string>
     <string name="pref_player_fullscreen">Show content in display cutout</string>
     <string name="pref_player_hide_controls">Hide player controls when opening the player</string>
     <string name="pref_show_system_bar">Show system status bar with controls</string>

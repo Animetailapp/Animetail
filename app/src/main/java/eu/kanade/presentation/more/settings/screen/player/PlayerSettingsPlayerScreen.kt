@@ -2,9 +2,12 @@ package eu.kanade.presentation.more.settings.screen.player
 
 import android.content.Context
 import android.os.Build
+import android.text.format.Formatter
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -28,6 +31,7 @@ import eu.kanade.tachiyomi.ui.player.PlayerOrientation
 import eu.kanade.tachiyomi.ui.player.VLC_PLAYER
 import eu.kanade.tachiyomi.ui.player.WEB_VIDEO_CASTER
 import eu.kanade.tachiyomi.ui.player.X_PLAYER
+import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
 import eu.kanade.tachiyomi.ui.player.loader.HosterCache
 import eu.kanade.tachiyomi.ui.player.loader.HosterPriority
 import eu.kanade.tachiyomi.ui.player.settings.HOSTER_CACHE_DURATIONS
@@ -44,6 +48,8 @@ import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
+import tachiyomi.core.common.util.lang.launchIO
+import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
@@ -95,6 +101,7 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
             ),
             getControlsGroup(playerPreferences = playerPreferences),
             getHosterGroup(playerPreferences = playerPreferences),
+            getVideoCacheGroup(playerPreferences = playerPreferences),
             getDisplayGroup(playerPreferences = playerPreferences),
             getIntroSkipGroup(playerPreferences = playerPreferences),
             if (deviceSupportsPip) getPipGroup(playerPreferences = playerPreferences) else null,
@@ -224,6 +231,51 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                     onClick = {
                         HosterCache.shared(context).clear()
                         context.toast(AYMR.strings.pref_hoster_cache_cleared)
+                    },
+                ),
+            ),
+        )
+    }
+
+    @Composable
+    private fun getVideoCacheGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        val maxMegabytes = playerPreferences.videoCacheMaxMegabytes()
+        var usedBytes by remember { mutableLongStateOf(0L) }
+        LaunchedEffect(Unit) {
+            usedBytes = withIOContext { VideoCacheProxy.sharedStore.sizeBytes() }
+        }
+
+        return Preference.PreferenceGroup(
+            title = stringResource(AYMR.strings.pref_video_cache),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.ListPreference(
+                    preference = maxMegabytes,
+                    entries = VIDEO_CACHE_SIZES_MB
+                        .associateWith { megabytes ->
+                            if (megabytes == 0) {
+                                context.stringResource(AYMR.strings.pref_video_cache_off)
+                            } else {
+                                Formatter.formatShortFileSize(context, megabytes * 1024L * 1024L)
+                            }
+                        }
+                        .toImmutableMap(),
+                    title = stringResource(AYMR.strings.pref_video_cache_size),
+                    subtitle = stringResource(AYMR.strings.pref_video_cache_size_summary),
+                ),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(AYMR.strings.pref_video_cache_clear),
+                    subtitle = stringResource(
+                        AYMR.strings.pref_video_cache_clear_summary,
+                        Formatter.formatShortFileSize(context, usedBytes),
+                    ),
+                    onClick = {
+                        scope.launchIO {
+                            VideoCacheProxy.sharedStore.clear()
+                            usedBytes = 0L
+                        }
+                        context.toast(AYMR.strings.pref_video_cache_cleared)
                     },
                 ),
             ),
@@ -485,3 +537,5 @@ val externalPlayers = listOf(
     WEB_VIDEO_CASTER,
     AMNIS,
 )
+
+private val VIDEO_CACHE_SIZES_MB = listOf(0, 256, 512, 1024, 2048, 4096)

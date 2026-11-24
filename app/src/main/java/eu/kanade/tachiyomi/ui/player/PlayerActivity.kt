@@ -79,6 +79,7 @@ import eu.kanade.tachiyomi.databinding.PlayerLayoutBinding
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.source.anime.isNsfw
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
+import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
 import eu.kanade.tachiyomi.ui.player.controls.PlayerControls
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
 import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
@@ -169,6 +170,9 @@ class PlayerActivity : BaseActivity() {
 
     private var pipReceiver: BroadcastReceiver? = null
     private var httpServer: HttpServer? = null
+
+    // Playback opened through the video cache proxy; if it fails, it's retried once without it.
+    private var videoCachePlaybackId = -1
 
     private val noisyReceiver = object : BroadcastReceiver() {
         var initialized = false
@@ -875,9 +879,24 @@ class PlayerActivity : BaseActivity() {
                 }
 
                 logcat(LogPriority.ERROR) { errorMessage }
+                if (playbackId == videoCachePlaybackId && playbackId == viewModel.playbackId) {
+                    videoCachePlaybackId = -1
+                    retryWithoutVideoCache()
+                    return
+                }
                 viewModel.onPlaybackError(playbackId, errorMessage)
             }
         }
+    }
+
+    // The cache is only a speedup: a broken block or a host the proxy can't handle must never stop
+    // a video that plays fine on its own.
+    private fun retryWithoutVideoCache() {
+        val video = viewModel.currentVideo.value ?: return
+        // While the episode is still opening, setVideo picks the saved resume position itself.
+        val position = if (viewModel.isLoadingEpisode.value) null else (viewModel.pos.value * 1000).toLong()
+        logcat(LogPriority.WARN) { "Retrying ${video.videoTitle} without the video cache" }
+        runOnUiThread { setVideo(video, position, useVideoCache = false) }
     }
 
     fun createPipParams(): PictureInPictureParams {
@@ -1220,7 +1239,7 @@ class PlayerActivity : BaseActivity() {
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    fun setVideo(video: Video?, position: Long? = null) {
+    fun setVideo(video: Video?, position: Long? = null, useVideoCache: Boolean = true) {
         if (player.isExiting) return
         if (video == null) return
         viewModel.onVideoHandedToPlayer()
@@ -1246,7 +1265,7 @@ class PlayerActivity : BaseActivity() {
                 mpv.command("set", "start", "${resumePosition / 1000F}")
             }
         } else {
-            mpv.getPropertyInt("time-pos")?.let {
+            (position?.div(1000F) ?: mpv.getPropertyInt("time-pos"))?.let {
                 mpv.command("set", "start", "$it")
             }
         }
@@ -1286,6 +1305,11 @@ class PlayerActivity : BaseActivity() {
                     val newVideo = video.copyHttpServer(port)
                     videoUrl = newVideo.videoUrl
                     viewModel.updateVideo(newVideo)
+                } else if (useVideoCache && videoUrl.startsWith("http")) {
+                    VideoCacheProxy.shared?.proxyUrl(videoUrl)?.let {
+                        videoUrl = it
+                        videoCachePlaybackId = viewModel.playbackId
+                    }
                 }
 
                 mpv.command(
