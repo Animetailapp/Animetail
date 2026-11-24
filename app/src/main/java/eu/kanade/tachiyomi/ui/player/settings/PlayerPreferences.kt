@@ -41,6 +41,10 @@ class PlayerPreferences(
 
     fun showFailedHosters() = preferenceStore.getBoolean("pref_show_failed_hosters", false)
     fun showEmptyHosters() = preferenceStore.getBoolean("pref_show_empty_hosters", false)
+    fun hosterPriority() = preferenceStore.getString("pref_hoster_priority", "")
+    fun disabledHosters() = preferenceStore.getString("pref_disabled_hosters", "")
+    fun hosterCacheMinutes() = preferenceStore.getInt("pref_hoster_cache_minutes", 120)
+    fun hosterListCacheMinutes() = preferenceStore.getInt("pref_hoster_list_cache_minutes", 1440)
 
     // Display
 

@@ -4,8 +4,10 @@ import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
@@ -26,11 +28,18 @@ import eu.kanade.tachiyomi.ui.player.PlayerOrientation
 import eu.kanade.tachiyomi.ui.player.VLC_PLAYER
 import eu.kanade.tachiyomi.ui.player.WEB_VIDEO_CASTER
 import eu.kanade.tachiyomi.ui.player.X_PLAYER
+import eu.kanade.tachiyomi.ui.player.loader.HosterCache
+import eu.kanade.tachiyomi.ui.player.loader.HosterPriority
+import eu.kanade.tachiyomi.ui.player.settings.HOSTER_CACHE_DURATIONS
+import eu.kanade.tachiyomi.ui.player.settings.HOSTER_LIST_CACHE_DURATIONS
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.ui.player.settings.hosterCacheDurationLabel
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import eu.kanade.tachiyomi.util.LocalHttpServerService
+import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toPersistentMap
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
@@ -134,6 +143,32 @@ object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
     private fun getHosterGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
         val showFailure = playerPreferences.showFailedHosters()
         val showEmpty = playerPreferences.showEmptyHosters()
+        val switchOnFailure = playerPreferences.switchOnFailure()
+        val priorityPref = playerPreferences.hosterPriority()
+        val priority by priorityPref.collectAsState()
+        val context = LocalContext.current
+        val cacheMinutes = playerPreferences.hosterCacheMinutes()
+        val disabledPref = playerPreferences.disabledHosters()
+        val disabled by disabledPref.collectAsState()
+        // Hosters are named by each extension, so only the ones saved from the player are known.
+        val savedHosters = remember(priority, disabled) {
+            (HosterPriority.parseNames(priority) + HosterPriority.parseNames(disabled)).distinct()
+        }
+        val disabledHosters = remember(disabled) { HosterPriority.parseNames(disabled).toSet() }
+        var showPriorityDialog by remember { mutableStateOf(false) }
+
+        if (showPriorityDialog) {
+            HosterPriorityDialog(
+                hosterNames = savedHosters,
+                disabledNames = disabledHosters,
+                onConfirm = { order, disabledNames ->
+                    priorityPref.set(order.joinToString(", "))
+                    disabledPref.set(disabledNames.joinToString(", "))
+                    showPriorityDialog = false
+                },
+                onDismissRequest = { showPriorityDialog = false },
+            )
+        }
 
         return Preference.PreferenceGroup(
             title = stringResource(AYMR.strings.pref_hosters),
@@ -146,8 +181,58 @@ object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
                     preference = showEmpty,
                     title = stringResource(AYMR.strings.pref_hosters_show_empty),
                 ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = switchOnFailure,
+                    title = stringResource(AYMR.strings.pref_hosters_switch_on_error),
+                    subtitle = stringResource(AYMR.strings.pref_hosters_switch_on_error_summary),
+                ),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(AYMR.strings.pref_hosters_priority),
+                    subtitle = hosterPrioritySummary(savedHosters, disabledHosters),
+                    enabled = savedHosters.isNotEmpty(),
+                    onClick = { showPriorityDialog = true },
+                ),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(AYMR.strings.pref_hosters_priority_reset),
+                    enabled = savedHosters.isNotEmpty(),
+                    onClick = {
+                        priorityPref.set("")
+                        disabledPref.set("")
+                    },
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = playerPreferences.hosterListCacheMinutes(),
+                    entries = HOSTER_LIST_CACHE_DURATIONS
+                        .associateWith { context.hosterCacheDurationLabel(it) }
+                        .toImmutableMap(),
+                    title = stringResource(AYMR.strings.pref_hoster_list_cache_duration),
+                    subtitle = stringResource(AYMR.strings.pref_hoster_list_cache_duration_summary),
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = cacheMinutes,
+                    entries = HOSTER_CACHE_DURATIONS
+                        .associateWith { context.hosterCacheDurationLabel(it) }
+                        .toImmutableMap(),
+                    title = stringResource(AYMR.strings.pref_hoster_cache_duration),
+                    subtitle = stringResource(AYMR.strings.pref_hoster_cache_duration_summary),
+                ),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(AYMR.strings.pref_hoster_cache_clear),
+                    onClick = {
+                        HosterCache.shared.clear()
+                        context.toast(AYMR.strings.pref_hoster_cache_cleared)
+                    },
+                ),
             ),
         )
+    }
+
+    @Composable
+    private fun hosterPrioritySummary(hosters: List<String>, disabled: Set<String>): String {
+        if (hosters.isEmpty()) return stringResource(AYMR.strings.pref_hosters_priority_empty)
+        val enabled = hosters.filterNot { it in disabled }.joinToString(", ")
+        if (disabled.isEmpty()) return enabled
+        return stringResource(AYMR.strings.pref_hosters_priority_summary, enabled, disabled.size)
     }
 
     @Composable

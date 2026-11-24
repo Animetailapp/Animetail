@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import eu.kanade.core.util.ifAnimeSourcesLoaded
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.animesource.sourcePreferences
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.ExtensionPreferencesSource
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.ExtensionSourcePreferencesContent
@@ -27,7 +28,10 @@ class AnimeSourcePreferencesScreen(val sourceId: Long) : Screen() {
             val preferences = configurable?.let {
                 withContext(Dispatchers.IO) { it.sourcePreferences().apply { all } }
             }
-            ExtensionPreferencesSource(source.toString(), preferences) { configurable?.setupPreferenceScreen(it) }
+            ExtensionPreferencesSource(source.toString(), preferences) { screen ->
+                configurable?.setupPreferenceScreen(screen)
+                if (source is AnimeHttpSource) screen.addHosterCachePreferences(sourceId)
+            }
         }
     }
 }

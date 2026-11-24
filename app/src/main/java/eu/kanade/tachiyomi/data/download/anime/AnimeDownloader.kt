@@ -20,6 +20,7 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.UnmeteredSource
+import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.HttpServer
 import eu.kanade.tachiyomi.animesource.model.Track
 import eu.kanade.tachiyomi.animesource.model.Video
@@ -352,22 +353,33 @@ class AnimeDownloader(
         val tmpDir = animeDir.createDirectory(episodeDirname + TMP_DIR_SUFFIX)!!
 
         try {
-            if (download.video == null) {
-                // Pull video from network and add them to download object
-                val hosters = EpisodeLoader.getHosters(download.episode, download.anime, download.source)
-                if (hosters.isEmpty()) {
-                    throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
-                }
-                val bestVideo = HosterLoader.getBestVideo(download.source, hosters)
-                    ?: throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
-                download.video = bestVideo
+            // A video chosen by the user is kept; otherwise every failed video is skipped on the
+            // next pick, so the download moves on to the next hoster. Failures are keyed by hoster
+            // too because titles like "1080p" repeat across hosters.
+            val canSwitchVideo = download.video == null
+            val failedVideos = mutableSetOf<Pair<String, String>>()
+            var hosterName = ""
+            suspend fun pickNextVideo() {
+                val (hoster, video) = pickBestVideo(download, failedVideos)
+                hosterName = hoster.hosterName
+                download.video = video
             }
+            if (canSwitchVideo) pickNextVideo()
 
             withIOContext {
                 getOrDownloadVideoFile(download, tmpDir)
             }
 
+            while (canSwitchVideo && !isDownloadSuccessful(download, tmpDir)) {
+                failedVideos += hosterName to download.video!!.videoTitle
+                pickNextVideo()
+                withIOContext {
+                    getOrDownloadVideoFile(download, tmpDir)
+                }
+            }
+
             if (!isDownloadSuccessful(download, tmpDir)) {
+                EpisodeLoader.invalidateCache(download.episode, download.source)
                 download.status = AnimeDownload.State.ERROR
                 return
             }
@@ -385,6 +397,7 @@ class AnimeDownloader(
             if (error is CancellationException) throw error
             // If the video threw, it will resume here
             logcat(LogPriority.ERROR, error)
+            EpisodeLoader.invalidateCache(download.episode, download.source)
             download.status = AnimeDownload.State.ERROR
             notifier.onError(
                 error.message,
@@ -393,6 +406,20 @@ class AnimeDownloader(
                 download.anime.id,
             )
         }
+    }
+
+    private suspend fun pickBestVideo(
+        download: AnimeDownload,
+        failedVideos: Set<Pair<String, String>>,
+    ): Pair<Hoster, Video> {
+        val hosters = EpisodeLoader.getHosters(download.episode, download.anime, download.source)
+        if (hosters.isEmpty()) {
+            throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
+        }
+        return HosterLoader.getBestHosterVideo(download.source, hosters) { hoster, video ->
+            (hoster.hosterName to video.videoTitle) in failedVideos
+        }
+            ?: throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
     }
 
     /**
@@ -624,9 +651,6 @@ class AnimeDownloader(
                             }
                             localTmpFile.delete()
                         }
-                        tmpDir.findFile("$filename.tmp")?.apply {
-                            renameTo("$filename.mkv")
-                        }
                         continuation.resume(it)
                     } else {
                         localTmpFile?.delete()
@@ -641,6 +665,28 @@ class AnimeDownloader(
                 localTmpFile?.delete()
             }
         }
+
+        // ffmpeg skips HLS segments it can't fetch and still exits successfully, so a hoster that
+        // rejects them leaves a short or empty file. The size depends on quality and container,
+        // so the duration of the result is compared against the source instead.
+        val output = tmpDir.findFile("$filename.tmp")
+        if (output == null || output.length() < MIN_VIDEO_SIZE) {
+            output?.delete()
+            throw Exception("Downloaded video is empty")
+        }
+        if (duration > 0) {
+            val downloadedDuration = try {
+                getDuration(ffprobeCommand(output.uri.toFFmpegString(context), null))
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                null
+            }
+            if (downloadedDuration != null && downloadedDuration < duration * MIN_DURATION_RATIO) {
+                output.delete()
+                throw Exception("Downloaded video is incomplete")
+            }
+        }
+        output.renameTo("$filename.mkv")
     }
 
     private fun getFFmpegOptions(video: Video, headerOptions: String, ffmpegFilename: String): Array<String> {
@@ -968,3 +1014,5 @@ class AnimeDownloader(
 
 // Arbitrary minimum required space to start a download: 200 MB
 private const val MIN_DISK_SPACE = 200L * 1024 * 1024
+private const val MIN_VIDEO_SIZE = 512L * 1024
+private const val MIN_DURATION_RATIO = 0.9f

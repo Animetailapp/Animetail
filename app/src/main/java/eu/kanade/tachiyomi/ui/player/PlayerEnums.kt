@@ -102,6 +102,7 @@ enum class Sheets {
     SubtitleTracks,
     AudioTracks,
     QualityTracks,
+    HosterPriority,
     Chapters,
     More,
     Screenshot,

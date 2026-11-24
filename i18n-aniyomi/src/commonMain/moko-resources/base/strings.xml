@@ -70,6 +70,21 @@
     <string name="pref_hosters">Hosters</string>
     <string name="pref_hosters_show_failure">Display failed hosters</string>
     <string name="pref_hosters_show_empty">Display empty hosters</string>
+    <string name="pref_hosters_switch_on_error">Switch hoster on playback error</string>
+    <string name="pref_hosters_switch_on_error_summary">Automatically try the next available video when the current one fails to play</string>
+    <string name="pref_hosters_priority">Hoster priority</string>
+    <string name="pref_hosters_priority_summary">%1$s · %2$d disabled</string>
+    <string name="pref_hosters_priority_empty">Set it from the qualities sheet in the player</string>
+    <string name="pref_hosters_priority_reset">Reset hoster priority</string>
+    <string name="pref_hoster_cache">Link cache</string>
+    <string name="pref_hoster_cache_duration">Video links cache duration</string>
+    <string name="pref_hoster_cache_duration_summary">Final stream links of each hoster. They expire after a few hours. Current: %s</string>
+    <string name="pref_hoster_list_cache_duration">Hoster list cache duration</string>
+    <string name="pref_hoster_list_cache_duration_summary">Hosters available for each episode. They rarely change. Current: %s</string>
+    <string name="pref_hoster_cache_clear">Clear link cache</string>
+    <string name="pref_hoster_cache_clear_source_summary">Removes the cached links of this source</string>
+    <string name="pref_hoster_cache_duration_all_sources_summary">%s. Applies to all sources</string>
+    <string name="pref_hoster_cache_cleared">Link cache cleared</string>
     <string name="pref_player_fullscreen">Show content in display cutout</string>
     <string name="pref_player_hide_controls">Hide player controls when opening the player</string>
     <string name="pref_show_system_bar">Show system status bar with controls</string>
@@ -337,6 +352,14 @@
     <string name="player_hoster_tap_to_load">Tap to load videos</string>
     <string name="player_hoster_failed">Failed to load videos</string>
     <string name="player_sheets_qualities_title">Qualities</string>
+    <string name="player_hoster_reload">Reload without cache</string>
+    <string name="player_hoster_priority_info">Hosters at the top are tried first. Unchecked hosters are only loaded when tapped in the qualities sheet.</string>
+    <string name="player_hoster_switching">Playback failed, trying %s</string>
+    <string name="player_download_progress">Downloading</string>
+    <string name="player_download_waiting">Waiting to download</string>
+    <string name="player_download_failed">Download failed, pick another video to retry</string>
+    <string name="player_download_in_progress">This episode is already being downloaded</string>
+    <string name="player_download_already_done">This episode is already downloaded</string>
     <!-- Sheets - Decoders -->
     <string name="player_sheets_decoder_formatted">%1$s (%2$s)</string>
     <!-- Sheets - More Sheet -->

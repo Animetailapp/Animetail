@@ -129,7 +129,7 @@ class PlayerActivity : BaseActivity() {
     private val graph: AppGraph by lazy { metroGraph() }
     private val viewModel by viewModels<PlayerViewModel> { graph.viewModelFactory }
     private val binding by lazy { PlayerLayoutBinding.inflate(layoutInflater) }
-    private val playerObserver by lazy { PlayerObserver(this) }
+    private val playerObserver by lazy { PlayerObserver(this, viewModel) }
     val player by lazy { binding.player }
     private val mpv by lazy { viewModel.mpv }
     val windowInsetsController by lazy { WindowCompat.getInsetsController(window, window.decorView) }
@@ -268,13 +268,29 @@ class PlayerActivity : BaseActivity() {
                 withUIContext {
                     setInitialEpisodeError(exception)
                 }
+                // The activity is finishing and nothing was loaded to play.
+                return@launchNonCancellable
+            }
+
+            val source = viewModel.currentSource.value
+            if (source == null) {
+                logcat(LogPriority.ERROR) { "Player initialized without a source" }
+                withUIContext {
+                    setInitialEpisodeError(
+                        PlayerViewModel.ExceptionWithStringResource(
+                            "No source loaded",
+                            AYMR.strings.no_episode_loaded,
+                        ),
+                    )
+                }
+                return@launchNonCancellable
             }
 
             viewModel.updateIsLoadingHosters(false)
 
             lifecycleScope.launch {
                 viewModel.loadHosters(
-                    source = viewModel.currentSource.value!!,
+                    source = source,
                     hosterList = initResult.first.hosterList ?: emptyList(),
                     hosterIndex = initResult.first.videoIndex.first,
                     videoIndex = initResult.first.videoIndex.second,
@@ -823,7 +839,7 @@ class PlayerActivity : BaseActivity() {
         logcat(LogPriority.ERROR) { "Failed to load track: $url" }
     }
 
-    internal fun event(eventId: Int, data: MPVNode) {
+    internal fun event(eventId: Int, data: MPVNode, playbackId: Int) {
         if (player.isExiting) return
         when (eventId) {
             MPV.mpvEvent.MPV_EVENT_FILE_LOADED -> {
@@ -845,17 +861,7 @@ class PlayerActivity : BaseActivity() {
                 }
 
                 logcat(LogPriority.ERROR) { errorMessage }
-                showToast(errorMessage)
-
-                viewModel.setCurrentVideoError()
-
-                if (playerPreferences.switchOnFailure().get()) {
-                    if (!viewModel.loadBestVideo()) {
-                        finish()
-                    }
-                } else {
-                    viewModel.setIsStopped(true)
-                }
+                viewModel.onPlaybackError(playbackId, errorMessage)
             }
         }
     }
@@ -1180,6 +1186,8 @@ class PlayerActivity : BaseActivity() {
                         }
                     } else {
                         logcat(LogPriority.ERROR) { "Error getting links" }
+                        viewModel.updateIsLoadingEpisode(false)
+                        launchUI { toast(AYMR.strings.no_hosters) }
                     }
 
                     if (isInPictureInPictureMode && pipEpisodeToasts) {
@@ -1201,6 +1209,7 @@ class PlayerActivity : BaseActivity() {
     fun setVideo(video: Video?, position: Long? = null) {
         if (player.isExiting) return
         if (video == null) return
+        viewModel.onVideoHandedToPlayer()
         httpServer?.stop()
         httpServer = null
 

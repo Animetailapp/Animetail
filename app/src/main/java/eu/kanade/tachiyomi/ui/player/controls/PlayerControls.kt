@@ -75,6 +75,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.TextPlayerUpdate
 import eu.kanade.tachiyomi.ui.player.controls.components.ThumbnailPreview
 import eu.kanade.tachiyomi.ui.player.controls.components.VolumeSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.toFixed
+import eu.kanade.tachiyomi.ui.player.loader.HosterPriority
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
@@ -598,6 +599,9 @@ fun PlayerControls(
         val selectedAudio by viewModel.selectedAudio.collectAsState()
         val isLoadingHosters by viewModel.isLoadingHosters.collectAsState()
         val hosterState by viewModel.hosterState.collectAsState()
+        val videoDownload by viewModel.videoDownload.collectAsState()
+        val disabledHostersPref by playerPreferences.disabledHosters().collectAsState()
+        val disabledHosters = remember(disabledHostersPref) { HosterPriority.parseNames(disabledHostersPref).toSet() }
         val expandedState by viewModel.hosterExpandedList.collectAsState()
         val selectedHosterVideoIndex by viewModel.selectedHosterVideoIndex.collectAsState()
         val decoder by viewModel.currentDecoder.collectAsState()
@@ -627,6 +631,16 @@ fun PlayerControls(
             selectedVideoIndex = selectedHosterVideoIndex,
             onClickHoster = viewModel::onHosterClicked,
             onClickVideo = viewModel::onVideoClicked,
+            onDownloadVideo = viewModel::onVideoDownloadClicked,
+            videoDownload = videoDownload,
+            onCancelDownload = viewModel::cancelEpisodeDownload,
+            onReloadHosters = viewModel::reloadHostersWithoutCache,
+            onEditHosterPriority = { viewModel.showSheet(Sheets.HosterPriority) },
+            disabledHosters = disabledHosters,
+            onSaveHosterPriority = { order, disabled ->
+                viewModel.updateHosterPriority(order, disabled)
+                viewModel.showSheet(Sheets.QualityTracks)
+            },
             displayHosters = Pair(showFailedHosters, emptyHosters),
 
             chapter = currentChapter?.toSegment(),

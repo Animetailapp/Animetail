@@ -35,4 +35,19 @@
         <item quantity="many">Episodios %1$s y %2$d más</item>
         <item quantity="other">Episodios %1$s y %2$d más</item>
     </plurals>
+    <plurals name="hoster_cache_minutes">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="many">%1$d minutos</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
+    <plurals name="hoster_cache_hours">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="many">%1$d horas</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
+    <plurals name="hoster_cache_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="many">%1$d días</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
 </resources>

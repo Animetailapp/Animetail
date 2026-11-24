@@ -13,37 +13,37 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.player.components.PlayerSheet
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
+import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
@@ -79,6 +79,11 @@ fun QualitySheet(
     selectedVideoIndex: Pair<Int, Int>,
     onClickHoster: (Int) -> Unit,
     onClickVideo: (Int, Int) -> Unit,
+    onDownloadVideo: (Int, Int) -> Unit,
+    videoDownload: VideoDownloadState?,
+    onCancelDownload: () -> Unit,
+    onReload: () -> Unit,
+    onEditPriority: () -> Unit,
     displayHosters: Pair<Boolean, Boolean>,
     onDismissRequest: () -> Unit,
     dismissSheet: Boolean,
@@ -92,15 +97,50 @@ fun QualitySheet(
         modifier = modifier,
     ) {
         Column {
-            Text(
-                text = stringResource(AYMR.strings.player_sheets_qualities_title),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(
-                    top = MaterialTheme.padding.medium,
-                    start = MaterialTheme.padding.medium,
-                    bottom = MaterialTheme.padding.extraSmall,
-                ),
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        top = MaterialTheme.padding.medium,
+                        start = MaterialTheme.padding.medium,
+                        end = MaterialTheme.padding.small,
+                        bottom = MaterialTheme.padding.extraSmall,
+                    ),
+            ) {
+                Text(
+                    text = stringResource(AYMR.strings.player_sheets_qualities_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                val hasHosters = hosterState.isNotEmpty() && hosterState.first().name != Hoster.NO_HOSTER_LIST
+                if (hasHosters) {
+                    IconButton(onClick = onEditPriority, enabled = !isLoadingHosters) {
+                        Icon(
+                            imageVector = Icons.Outlined.SwapVert,
+                            contentDescription = stringResource(AYMR.strings.pref_hosters_priority),
+                        )
+                    }
+                }
+                IconButton(onClick = onReload, enabled = !isLoadingHosters) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = stringResource(AYMR.strings.player_hoster_reload),
+                    )
+                }
+            }
+
+            if (videoDownload != null) {
+                VideoDownloadStatus(
+                    download = videoDownload,
+                    onCancel = onCancelDownload,
+                    modifier = Modifier.padding(
+                        horizontal = MaterialTheme.padding.medium,
+                        vertical = MaterialTheme.padding.small,
+                    ),
+                )
+            }
+            val canDownload = videoDownload?.isActive != true
 
             AnimatedVisibility(
                 visible = isLoadingHosters,
@@ -143,6 +183,8 @@ fun QualitySheet(
                         videoState = (hosterState.first() as HosterState.Ready).videoState,
                         selectedVideoIndex = selectedVideoIndex.second,
                         onClickVideo = onClickVideo,
+                        onDownloadVideo = onDownloadVideo,
+                        downloadEnabled = canDownload,
                         modifier = modifier.padding(paddingValues = qualitySheetPadding),
                     )
                 } else {
@@ -152,6 +194,8 @@ fun QualitySheet(
                         selectedVideoIndex = selectedVideoIndex,
                         onClickHoster = onClickHoster,
                         onClickVideo = onClickVideo,
+                        onDownloadVideo = onDownloadVideo,
+                        downloadEnabled = canDownload,
                         displayHosters = displayHosters,
                         modifier = modifier.padding(paddingValues = qualitySheetPadding),
                     )
@@ -168,6 +212,8 @@ fun QualitySheetVideoContent(
     selectedVideoIndex: Int,
     onClickVideo: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
+    onDownloadVideo: ((Int, Int) -> Unit)? = null,
+    downloadEnabled: Boolean = true,
 ) {
     LazyColumn(modifier = modifier.fillMaxWidth()) {
         itemsIndexed(videoList) { videoIdx, video ->
@@ -176,7 +222,8 @@ fun QualitySheetVideoContent(
                 videoState = videoState[videoIdx],
                 selected = selectedVideoIndex == videoIdx,
                 onClick = { onClickVideo(0, videoIdx) },
-                noHoster = true,
+                onDownload = onDownloadVideo?.let { { it(0, videoIdx) } },
+                downloadEnabled = downloadEnabled,
             )
         }
     }
@@ -191,6 +238,8 @@ fun QualitySheetHosterContent(
     onClickVideo: (Int, Int) -> Unit,
     displayHosters: Pair<Boolean, Boolean>,
     modifier: Modifier = Modifier,
+    onDownloadVideo: ((Int, Int) -> Unit)? = null,
+    downloadEnabled: Boolean = true,
 ) {
     val validHosters = hosterState.withIndex().filter { (_, state) ->
         state is HosterState.Idle ||
@@ -211,6 +260,8 @@ fun QualitySheetHosterContent(
             selectedVideoIndex = selectedVideoIndex,
             onClickHoster = onClickHoster,
             onClickVideo = onClickVideo,
+            onDownloadVideo = onDownloadVideo,
+            downloadEnabled = downloadEnabled,
         )
 
         if (displayHosters.first) {
@@ -220,6 +271,8 @@ fun QualitySheetHosterContent(
                 selectedVideoIndex = selectedVideoIndex,
                 onClickHoster = onClickHoster,
                 onClickVideo = onClickVideo,
+                onDownloadVideo = onDownloadVideo,
+                downloadEnabled = downloadEnabled,
             )
         }
 
@@ -230,6 +283,8 @@ fun QualitySheetHosterContent(
                 selectedVideoIndex = selectedVideoIndex,
                 onClickHoster = onClickHoster,
                 onClickVideo = onClickVideo,
+                onDownloadVideo = onDownloadVideo,
+                downloadEnabled = downloadEnabled,
             )
         }
     }
@@ -241,11 +296,27 @@ internal fun LazyListScope.hosterContent(
     selectedVideoIndex: Pair<Int, Int>,
     onClickHoster: (Int) -> Unit,
     onClickVideo: (Int, Int) -> Unit,
+    onDownloadVideo: ((Int, Int) -> Unit)? = null,
+    downloadEnabled: Boolean = true,
 ) {
     hosters.forEach { (hosterIdx, hoster) ->
         val isExpanded = expandedState.getOrNull(hosterIdx) ?: false
 
         item {
+            // Most hosters hold a single video, so a header plus one child row would only repeat it.
+            if (hoster is HosterState.Ready && hoster.videoList.size == 1) {
+                VideoTrack(
+                    video = hoster.videoList.first(),
+                    videoState = hoster.videoState.first(),
+                    selected = selectedVideoIndex == Pair(hosterIdx, 0),
+                    onClick = { onClickVideo(hosterIdx, 0) },
+                    onDownload = onDownloadVideo?.let { { it(hosterIdx, 0) } },
+                    downloadEnabled = downloadEnabled,
+                    hosterName = hoster.name,
+                )
+                return@item
+            }
+
             HosterTrack(
                 hoster = hoster,
                 selected = selectedVideoIndex.first == hosterIdx,
@@ -260,7 +331,9 @@ internal fun LazyListScope.hosterContent(
             ) {
                 (hoster as? HosterState.Ready)?.let {
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = MaterialTheme.padding.medium),
                     ) {
                         it.videoList.forEachIndexed { videoIdx, video ->
                             VideoTrack(
@@ -268,7 +341,8 @@ internal fun LazyListScope.hosterContent(
                                 videoState = hoster.videoState[videoIdx],
                                 selected = selectedVideoIndex == Pair(hosterIdx, videoIdx),
                                 onClick = { onClickVideo(hosterIdx, videoIdx) },
-                                noHoster = false,
+                                onDownload = onDownloadVideo?.let { { it(hosterIdx, videoIdx) } },
+                                downloadEnabled = downloadEnabled,
                             )
                         }
                     }
@@ -286,158 +360,186 @@ fun HosterTrack(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Same layout as a single-video row so names and state icons line up.
     Row(
         modifier = modifier
-            .height(32.dp)
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
     ) {
-        Text(
-            text = hoster.name,
-            fontStyle = if (selected) FontStyle.Italic else FontStyle.Normal,
-            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Normal,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(end = MaterialTheme.padding.small),
-        )
-
-        when (hoster) {
-            is HosterState.Idle -> {
-                Text(
-                    text = stringResource(AYMR.strings.player_hoster_tap_to_load),
-                    modifier = Modifier.alpha(DISABLED_ALPHA),
-                )
-            }
-
-            is HosterState.Error -> {
-                Text(
-                    text = stringResource(AYMR.strings.player_hoster_failed),
-                    modifier = Modifier.alpha(DISABLED_ALPHA),
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Icon(Icons.Default.ErrorOutline, null, tint = MaterialTheme.colorScheme.error)
-            }
-
-            is HosterState.Loading -> {
-                Spacer(modifier = Modifier.weight(1f))
-                CircularProgressIndicator(
-                    modifier = Modifier.then(Modifier.size(24.dp)),
+        Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+            when (hoster) {
+                is HosterState.Loading -> CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
                 )
-            }
 
-            is HosterState.Ready -> {
-                Text(
-                    text = pluralStringResource(
-                        AYMR.plurals.hoster_video_count,
-                        hoster.videoList.size,
-                        hoster.videoList.size,
-                    ),
-                    modifier = Modifier.alpha(DISABLED_ALPHA),
+                is HosterState.Error -> Icon(
+                    imageVector = Icons.Default.ErrorOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
                 )
-                Spacer(modifier = Modifier.weight(1f))
-                if (isExpanded) {
-                    Icon(Icons.Default.KeyboardArrowUp, null)
-                } else {
-                    Icon(Icons.Default.KeyboardArrowDown, null)
+
+                is HosterState.Idle, is HosterState.Ready -> {}
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = MaterialTheme.padding.extraSmall),
+        ) {
+            Text(
+                text = hoster.name,
+                style = MaterialTheme.typography.titleSmall,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val status = when (hoster) {
+                is HosterState.Idle -> stringResource(AYMR.strings.player_hoster_tap_to_load)
+
+                is HosterState.Error -> stringResource(AYMR.strings.player_hoster_failed)
+
+                is HosterState.Loading -> null
+
+                is HosterState.Ready -> pluralStringResource(
+                    AYMR.plurals.hoster_video_count,
+                    hoster.videoList.size,
+                    hoster.videoList.size,
+                )
+            }
+            if (status != null) {
+                Text(
+                    text = status,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+            val icon = when (hoster) {
+                is HosterState.Idle, is HosterState.Error -> Icons.Default.Refresh
+
+                is HosterState.Ready -> {
+                    if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
                 }
+
+                is HosterState.Loading -> null
+            }
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
 }
 
+/**
+ * A playable video. With [hosterName] it stands for a whole single-video hoster and shows the
+ * hoster name above the video title.
+ */
 @Composable
 fun VideoTrack(
     video: Video,
     videoState: Video.State,
     selected: Boolean,
     onClick: () -> Unit,
-    noHoster: Boolean,
     modifier: Modifier = Modifier,
+    onDownload: (() -> Unit)? = null,
+    downloadEnabled: Boolean = true,
+    hosterName: String? = null,
 ) {
+    val failed = videoState == Video.State.ERROR
+    val titleColor = when {
+        selected -> MaterialTheme.colorScheme.primary
+        failed -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .heightIn(min = if (hosterName != null) 56.dp else 48.dp)
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
     ) {
-        if (noHoster) {
-            VideoText(
-                video = video,
-                selected = selected,
-                noHoster = true,
-                modifier = Modifier.weight(1f),
+        VideoStateIcon(videoState = videoState, selected = selected)
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = MaterialTheme.padding.extraSmall),
+        ) {
+            Text(
+                text = hosterName ?: video.videoTitle,
+                style = if (hosterName !=
+                    null
+                ) {
+                    MaterialTheme.typography.titleSmall
+                } else {
+                    MaterialTheme.typography.bodyMedium
+                },
+                fontWeight = if (selected) FontWeight.SemiBold else null,
+                color = titleColor,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
-            VideoIcon(
-                videoState = videoState,
-                noHoster = true,
-            )
-        } else {
-            VideoIcon(
-                videoState = videoState,
-                noHoster = false,
-            )
-            VideoText(
-                video = video,
-                selected = selected,
-                noHoster = false,
-                modifier = Modifier.weight(1f),
-            )
+            if (hosterName != null) {
+                Text(
+                    text = video.videoTitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
+        if (onDownload != null) {
+            IconButton(onClick = onDownload, enabled = downloadEnabled) {
+                Icon(
+                    imageVector = Icons.Outlined.Download,
+                    contentDescription = stringResource(MR.strings.action_download),
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun VideoIcon(
+private fun VideoStateIcon(
     videoState: Video.State,
-    noHoster: Boolean,
+    selected: Boolean,
 ) {
     Box(
-        modifier = Modifier.size(if (noHoster) 28.dp else 20.dp),
+        modifier = Modifier.size(24.dp),
         contentAlignment = Alignment.Center,
     ) {
-        when (videoState) {
-            Video.State.QUEUE, Video.State.READY -> {}
+        when {
+            videoState == Video.State.LOAD_VIDEO -> CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                strokeWidth = 2.dp,
+            )
 
-            Video.State.LOAD_VIDEO -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.fillMaxSize(),
-                    strokeWidth = 2.dp,
-                )
-            }
+            videoState == Video.State.ERROR -> Icon(
+                imageVector = Icons.Default.ErrorOutline,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+            )
 
-            Video.State.ERROR -> {
-                Icon(
-                    Icons.Default.ErrorOutline,
-                    null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            selected -> Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
-}
-
-@Composable
-private fun VideoText(
-    video: Video,
-    selected: Boolean,
-    noHoster: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = video.videoTitle,
-        fontStyle = if (selected) FontStyle.Italic else FontStyle.Normal,
-        fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Normal,
-        style = MaterialTheme.typography.bodyMedium,
-        color = if (selected) MaterialTheme.colorScheme.primary else Color.Unspecified,
-        maxLines = 6,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-            .padding(
-                vertical = if (noHoster) MaterialTheme.padding.small else MaterialTheme.padding.extraSmall,
-            ),
-    )
 }
