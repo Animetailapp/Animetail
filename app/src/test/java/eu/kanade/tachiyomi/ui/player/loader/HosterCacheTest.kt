@@ -5,6 +5,8 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.io.File
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -133,6 +135,31 @@ class HosterCacheTest {
         cache.putVideos(SOURCE, voe, videos)
 
         assertNull(cache.getVideos(SOURCE + 1, voe))
+    }
+
+    @Test
+    fun `entries survive a restart through the store`(@TempDir dir: File) {
+        val store = HosterCacheStore(File(dir, "hoster_cache.json"))
+        cache.putHosters(SOURCE, "/ep/1", listOf(voe))
+        cache.putVideos(SOURCE, voe, videos)
+        store.write(cache.toSnapshot())
+
+        val restarted = HosterCache(hosterTtl = { hosterTtl }, videoTtl = { videoTtl }, clock = { now }, store = store)
+
+        assertEquals(listOf("SUB Voe"), restarted.getHosters(SOURCE, "/ep/1")?.map { it.hosterName })
+        assertEquals(videos.map { it.videoUrl }, restarted.getVideos(SOURCE, voe)?.map { it.videoUrl })
+    }
+
+    @Test
+    fun `expired entries are not restored`(@TempDir dir: File) {
+        val store = HosterCacheStore(File(dir, "hoster_cache.json"))
+        cache.putVideos(SOURCE, voe, videos)
+        store.write(cache.toSnapshot())
+
+        now += 6.minutes.inWholeMilliseconds
+        val restarted = HosterCache(hosterTtl = { hosterTtl }, videoTtl = { videoTtl }, clock = { now }, store = store)
+
+        assertNull(restarted.getVideos(SOURCE, voe))
     }
 
     private companion object {
