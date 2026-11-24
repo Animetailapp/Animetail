@@ -34,5 +34,29 @@ class HosterPriority(rawKeywords: String, rawDisabled: String = "") {
 
     companion object {
         fun parseNames(raw: String): List<String> = raw.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+
+        /**
+         * Applies the order picked for one episode to the saved order without dropping the names
+         * of other sources: the episode's names replace the first of them in [savedOrder], or go
+         * first if none was saved.
+         *
+         * @param episodeOrder every hoster name of the episode, highest priority first.
+         */
+        fun mergeOrder(savedOrder: List<String>, episodeOrder: List<String>): List<String> {
+            val others = savedOrder.filterNot { it.isIn(episodeOrder) }
+            val insertAt = savedOrder.indexOfFirst { it.isIn(episodeOrder) }.coerceAtLeast(0)
+            return others.take(insertAt) + episodeOrder + others.drop(insertAt)
+        }
+
+        /**
+         * Replaces the disabled state of the episode's hosters, keeping the rest of [savedDisabled].
+         */
+        fun mergeDisabled(
+            savedDisabled: List<String>,
+            episodeNames: List<String>,
+            episodeDisabled: Set<String>,
+        ): List<String> = savedDisabled.filterNot { it.isIn(episodeNames) } + episodeDisabled
+
+        private fun String.isIn(names: List<String>) = names.any { it.equals(this, ignoreCase = true) }
     }
 }

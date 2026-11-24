@@ -18,8 +18,9 @@ import uy.kohesive.injekt.api.get
 import tachiyomi.core.common.preference.Preference as AppPreference
 
 /**
- * Appends the link cache settings to a source's preference screen. The duration is the app-wide
- * player setting, so it's kept out of the source's own preference store.
+ * Appends the link cache settings to a source's preference screen. The durations are the app-wide
+ * player settings, so they're kept out of the source's own preference store and say so in their
+ * summary; only clearing the cache is per source.
  */
 fun PreferenceScreen.addHosterCachePreferences(sourceId: Long) {
     val preferences = Injekt.get<PlayerPreferences>()
@@ -72,7 +73,9 @@ private fun PreferenceScreen.durationPreference(
     entryValues = durations.map { it.toString() }.toTypedArray()
     isPersistent = false
     value = preference.get().toString()
-    summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
+    summaryProvider = Preference.SummaryProvider<ListPreference> {
+        context.stringResource(AYMR.strings.pref_hoster_cache_duration_all_sources_summary, it.entry.toString())
+    }
     isIconSpaceReserved = false
     setOnPreferenceChangeListener { _, newValue ->
         preference.set((newValue as String).toInt())

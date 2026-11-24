@@ -106,16 +106,25 @@ class HosterLoader {
          *
          * @param source The source for the episode
          * @param hosterList the list of hosters
-         * @param isExcluded skips videos that already failed, e.g. in a previous download attempt
          * @return the video, or null if no valid video was found
          */
-        suspend fun getBestVideo(
+        suspend fun getBestVideo(source: AnimeSource, hosterList: List<Hoster>): Video? =
+            getBestHosterVideo(source, hosterList)?.second
+
+        /**
+         * Like [getBestVideo], but also returns the hoster of the video.
+         *
+         * @param isExcluded skips videos that already failed, e.g. in a previous download attempt.
+         * It receives the video before it's resolved.
+         */
+        suspend fun getBestHosterVideo(
             source: AnimeSource,
             hosterList: List<Hoster>,
-            isExcluded: (Video) -> Boolean = { false },
-        ): Video? {
+            isExcluded: (Hoster, Video) -> Boolean = { _, _ -> false },
+        ): Pair<Hoster, Video>? {
             hosterList.forEach { hoster ->
-                val hosterState = EpisodeLoader.loadHosterVideos(source, hoster).markExcluded(isExcluded)
+                val hosterState = EpisodeLoader.loadHosterVideos(source, hoster)
+                    .markExcluded { isExcluded(hoster, it) }
                 if (hosterState !is HosterState.Ready) return@forEach
 
                 val candidates = hosterState.videoList.indices
@@ -123,7 +132,7 @@ class HosterLoader {
                     .sortedByDescending { hosterState.videoList[it].preferred }
                 candidates.forEach { videoIdx ->
                     val resolvedVideo = getResolvedVideo(source, hosterState.videoList[videoIdx])
-                    if (resolvedVideo?.videoUrl?.isNotEmpty() == true) return resolvedVideo
+                    if (resolvedVideo?.videoUrl?.isNotEmpty() == true) return hoster to resolvedVideo
                 }
             }
             return null

@@ -46,4 +46,32 @@ class HosterPriorityTest {
             priority.sort(servers) { it },
         )
     }
+
+    @Test
+    fun `saving one episode keeps the order of other sources`() {
+        val merged = HosterPriority.mergeOrder(
+            savedOrder = listOf("Okru", "SUB Voe", "Filemoon", "SUB HLS"),
+            episodeOrder = listOf("SUB HLS", "SUB Voe"),
+        )
+
+        assertEquals(listOf("Okru", "SUB HLS", "SUB Voe", "Filemoon"), merged)
+    }
+
+    @Test
+    fun `an episode with no saved hosters goes first`() {
+        val merged = HosterPriority.mergeOrder(listOf("Okru"), listOf("sub voe", "SUB HLS"))
+
+        assertEquals(listOf("sub voe", "SUB HLS", "Okru"), merged)
+    }
+
+    @Test
+    fun `disabled hosters of other sources are kept`() {
+        val merged = HosterPriority.mergeDisabled(
+            savedDisabled = listOf("Okru", "SUB HLS"),
+            episodeNames = listOf("SUB HLS", "SUB Voe"),
+            episodeDisabled = setOf("SUB Voe"),
+        )
+
+        assertEquals(listOf("Okru", "SUB Voe"), merged)
+    }
 }

@@ -88,6 +88,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.VideoDownloadSta
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.getChangedAt
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
+import eu.kanade.tachiyomi.ui.player.loader.HosterPriority
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamSource
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
@@ -1597,20 +1598,24 @@ class PlayerViewModel(
         getHosterVideoLinksJob?.cancel()
         getHosterVideoLinksJob = viewModelScope.launchIO {
             _hosterState.update { _ -> hosterList.map(::initialHosterState) }
-            cachedHosterIndices = hosterList.indices
-                .filter { EpisodeLoader.hasCachedVideos(hosterList[it], source) }
-                .toMutableSet()
+            cachedHosterIndices.clear()
+            cachedHosterIndices.addAll(
+                hosterList.indices.filter { EpisodeLoader.hasCachedVideos(hosterList[it], source) },
+            )
+            val requestedHosterIdx = requestedVideo?.first
+                ?.takeIf { _hosterState.value.getOrNull(it) is HosterState.Idle }
             pendingHosterIndices.clear()
             pendingHosterIndices.addAll(
                 hosterList.indices.filter {
                     _hosterState.value[it] is HosterState.Idle &&
-                        !hosterList[it].lazy
+                        (!hosterList[it].lazy || it == requestedHosterIdx)
                 },
             )
             // A channel hands out hosters in priority order; launching one coroutine per hoster
-            // wouldn't, as they race for the permits.
+            // wouldn't, as they race for the permits. A hoster picked by the user goes first.
             val pendingHosters = Channel<Int>(Channel.UNLIMITED)
-            pendingHosterIndices.sorted().forEach { pendingHosters.trySend(it) }
+            pendingHosterIndices.sortedBy { if (it == requestedHosterIdx) -1 else it }
+                .forEach { pendingHosters.trySend(it) }
             pendingHosters.close()
 
             try {
@@ -1695,17 +1700,25 @@ class PlayerViewModel(
 
     // Hosters whose videos came from the cache. Their links may have expired, so on a playback
     // error they get one fresh extraction before moving on to the next hoster.
-    private var cachedHosterIndices = mutableSetOf<Int>()
+    private val cachedHosterIndices = ConcurrentHashMap.newKeySet<Int>()
 
     private suspend fun startPlaybackIfReady(source: AnimeSource, requestedVideo: Pair<Int, Int>?) {
         videoSelectionMutex.withLock {
             if (_selectedHosterVideoIndex.value.first != -1) return
+            if (requestedVideo != null && isHosterUnsettled(requestedVideo.first)) return
 
             val next = requestedVideo?.takeIf { isPlayable(it) }
                 ?: HosterLoader.selectNextInOrder(_hosterState.value)
                 ?: return
             playInOrder(source, next)
         }
+    }
+
+    // The video picked by the user is waited for; only once its hoster fails does the order decide.
+    // An idle hoster counts as unsettled since loadHosters always queues the requested one.
+    private fun isHosterUnsettled(hosterIdx: Int): Boolean {
+        val state = _hosterState.value.getOrNull(hosterIdx)
+        return state is HosterState.Loading || state is HosterState.Idle
     }
 
     private fun isPlayable(index: Pair<Int, Int>): Boolean {
@@ -1828,7 +1841,7 @@ class PlayerViewModel(
         // Nothing is selected when the list was reloaded under a video that was already playing.
         if (failedVideo != null) {
             updateVideoState(hosterIdx, videoIdx, failedVideo, Video.State.ERROR)
-            EpisodeLoader.invalidateCache(hosterList.value[hosterIdx], source)
+            hosterList.value.getOrNull(hosterIdx)?.let { EpisodeLoader.invalidateCache(it, source) }
         }
 
         if (!playerPreferences.switchOnFailure().get()) {
@@ -1875,13 +1888,19 @@ class PlayerViewModel(
 
     /**
      * Saves the hoster order and the disabled hosters picked in the qualities sheet and applies
-     * them to the current episode.
+     * them to the current episode. Hosters of other episodes and sources keep their saved order.
      *
      * @param hosterNames every hoster name of the episode, highest priority first.
      */
     fun updateHosterPriority(hosterNames: List<String>, disabledNames: Set<String>) {
-        playerPreferences.hosterPriority().set(hosterNames.joinToString(", "))
-        playerPreferences.disabledHosters().set(disabledNames.joinToString(", "))
+        val priority = playerPreferences.hosterPriority()
+        val disabled = playerPreferences.disabledHosters()
+        val savedOrder = HosterPriority.parseNames(priority.get())
+        val savedDisabled = HosterPriority.parseNames(disabled.get())
+        priority.set(HosterPriority.mergeOrder(savedOrder, hosterNames).joinToString(", "))
+        disabled.set(
+            HosterPriority.mergeDisabled(savedDisabled, hosterNames, disabledNames).joinToString(", "),
+        )
         reloadHosters(useCache = true)
     }
 

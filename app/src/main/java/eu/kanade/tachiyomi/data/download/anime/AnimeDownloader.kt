@@ -20,6 +20,7 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.UnmeteredSource
+import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.HttpServer
 import eu.kanade.tachiyomi.animesource.model.Track
 import eu.kanade.tachiyomi.animesource.model.Video
@@ -353,20 +354,25 @@ class AnimeDownloader(
 
         try {
             // A video chosen by the user is kept; otherwise every failed video is skipped on the
-            // next pick, so the download moves on to the next hoster.
+            // next pick, so the download moves on to the next hoster. Failures are keyed by hoster
+            // too because titles like "1080p" repeat across hosters.
             val canSwitchVideo = download.video == null
-            val failedVideos = mutableSetOf<String>()
-            if (canSwitchVideo) {
-                download.video = pickBestVideo(download, failedVideos)
+            val failedVideos = mutableSetOf<Pair<String, String>>()
+            var hosterName = ""
+            suspend fun pickNextVideo() {
+                val (hoster, video) = pickBestVideo(download, failedVideos)
+                hosterName = hoster.hosterName
+                download.video = video
             }
+            if (canSwitchVideo) pickNextVideo()
 
             withIOContext {
                 getOrDownloadVideoFile(download, tmpDir)
             }
 
             while (canSwitchVideo && !isDownloadSuccessful(download, tmpDir)) {
-                failedVideos += download.video!!.videoTitle
-                download.video = pickBestVideo(download, failedVideos)
+                failedVideos += hosterName to download.video!!.videoTitle
+                pickNextVideo()
                 withIOContext {
                     getOrDownloadVideoFile(download, tmpDir)
                 }
@@ -402,12 +408,17 @@ class AnimeDownloader(
         }
     }
 
-    private suspend fun pickBestVideo(download: AnimeDownload, failedVideos: Set<String>): Video {
+    private suspend fun pickBestVideo(
+        download: AnimeDownload,
+        failedVideos: Set<Pair<String, String>>,
+    ): Pair<Hoster, Video> {
         val hosters = EpisodeLoader.getHosters(download.episode, download.anime, download.source)
         if (hosters.isEmpty()) {
             throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
         }
-        return HosterLoader.getBestVideo(download.source, hosters) { it.videoTitle in failedVideos }
+        return HosterLoader.getBestHosterVideo(download.source, hosters) { hoster, video ->
+            (hoster.hosterName to video.videoTitle) in failedVideos
+        }
             ?: throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
     }
 
@@ -660,6 +671,7 @@ class AnimeDownloader(
         // so the duration of the result is compared against the source instead.
         val output = tmpDir.findFile("$filename.tmp")
         if (output == null || output.length() < MIN_VIDEO_SIZE) {
+            output?.delete()
             throw Exception("Downloaded video is empty")
         }
         if (duration > 0) {
@@ -670,6 +682,7 @@ class AnimeDownloader(
                 null
             }
             if (downloadedDuration != null && downloadedDuration < duration * MIN_DURATION_RATIO) {
+                output.delete()
                 throw Exception("Downloaded video is incomplete")
             }
         }

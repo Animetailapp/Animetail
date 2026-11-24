@@ -83,6 +83,7 @@
     <string name="pref_hoster_list_cache_duration_summary">Hosters available for each episode. They rarely change. Current: %s</string>
     <string name="pref_hoster_cache_clear">Clear link cache</string>
     <string name="pref_hoster_cache_clear_source_summary">Removes the cached links of this source</string>
+    <string name="pref_hoster_cache_duration_all_sources_summary">%s. Applies to all sources</string>
     <string name="pref_hoster_cache_cleared">Link cache cleared</string>
     <string name="pref_player_fullscreen">Show content in display cutout</string>
     <string name="pref_player_hide_controls">Hide player controls when opening the player</string>
