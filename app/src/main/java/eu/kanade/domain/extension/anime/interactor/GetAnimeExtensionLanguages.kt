@@ -13,14 +13,15 @@ class GetAnimeExtensionLanguages(
     private val extensionManager: AnimeExtensionManager,
 ) {
     fun subscribe(): Flow<List<String>> {
+        // Installed extensions count too, otherwise the list is empty when no repo is added.
         return combine(
             preferences.enabledLanguages.changes(),
             extensionManager.availableExtensionsFlow,
-        ) { enabledLanguage, availableExtensions ->
-            availableExtensions
-                .flatMap { ext ->
-                    ext.sources.map { it.lang }
-                }
+            extensionManager.loadedExtensionsFlow,
+        ) { enabledLanguage, availableExtensions, installedExtensions ->
+            val availableLanguages = availableExtensions.flatMap { ext -> ext.sources.map { it.lang } }
+            val installedLanguages = installedExtensions.flatMap { ext -> ext.sources.map { it.lang } }
+            (availableLanguages + installedLanguages)
                 .distinct()
                 .sortedWith(
                     compareBy<String> { it !in enabledLanguage }.then(LocaleHelper.comparator),
