@@ -1740,6 +1740,28 @@ class PlayerViewModel(
         val hoster = hosterList.value.getOrNull(hosterIdx) ?: return
         _hosterState.updateAt(hosterIdx, HosterState.Loading(hoster.hosterName))
         _hosterState.updateAt(hosterIdx, EpisodeLoader.loadHosterVideos(context, source, hoster))
+        restoreSelection(hosterIdx)
+    }
+
+    // A list reloaded under a playing video loses its indices; the video is marked again once
+    // its hoster is loaded, so the sheet keeps showing what is playing.
+    private var selectionToRestore: LastPlayedVideo? = null
+
+    private fun restoreSelection(hosterIdx: Int) {
+        val target = selectionToRestore ?: return
+        val hoster = _hosterState.value.getOrNull(hosterIdx) as? HosterState.Ready ?: return
+        if (hoster.name != target.hosterName) return
+        val videoIdx = hoster.videoList.indexOfFirst { it.videoTitle == target.videoTitle }
+        if (videoIdx == -1) return
+        selectionToRestore = null
+        _selectedHosterVideoIndex.compareAndSet(Pair(-1, -1), Pair(hosterIdx, videoIdx))
+    }
+
+    private fun selectedVideo(): LastPlayedVideo? {
+        val (hosterIdx, videoIdx) = _selectedHosterVideoIndex.value
+        val hoster = _hosterState.value.getOrNull(hosterIdx) as? HosterState.Ready ?: return null
+        val video = hoster.videoList.getOrNull(videoIdx) ?: return null
+        return LastPlayedVideo(hoster.name, video.videoTitle)
     }
 
     private fun loadAllPendingHosters() {
@@ -1870,10 +1892,8 @@ class PlayerViewModel(
         if (!playerPreferences.rememberLastVideo().get()) return
         val source = currentSource.value as? AnimeHttpSource ?: return
         val episodeUrl = currentEpisode.value?.url ?: return
-        val (hosterIdx, videoIdx) = _selectedHosterVideoIndex.value
-        val hoster = _hosterState.value.getOrNull(hosterIdx) as? HosterState.Ready ?: return
-        val video = hoster.videoList.getOrNull(videoIdx) ?: return
-        LastPlayedVideoStore.shared.put(source.id, episodeUrl, LastPlayedVideo(hoster.name, video.videoTitle))
+        val video = selectedVideo() ?: return
+        LastPlayedVideoStore.shared.put(source.id, episodeUrl, video)
     }
 
     // Reads the latest state inside the update: hosters finish loading concurrently, so a snapshot
@@ -1993,6 +2013,7 @@ class PlayerViewModel(
         val anime = currentAnime.value ?: return
         val source = currentSource.value ?: return
         val keepPlayback = currentVideo.value != null && !isLoadingEpisode.value
+        selectionToRestore = if (keepPlayback) selectedVideo() else null
 
         if (!useCache) EpisodeLoader.invalidateCache(context, episode, source)
         cancelHosterVideoLinksJob()
