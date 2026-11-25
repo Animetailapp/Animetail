@@ -32,4 +32,8 @@ dependencies {
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.runtime)
+
+    // Tests
+    testImplementation(libs.bundles.test)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
