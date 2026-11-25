@@ -241,9 +241,7 @@ class ExternalIntents(context: Context) {
             addExtrasAndFlags(true, this)
 
             val headers = Bundle()
-            video.headers?.forEach {
-                headers.putString(it.first, it.second)
-            }
+            videoHeaders(video)?.forEach { (name, value) -> headers.putString(name, value) }
 
             val localLangName = LocaleHelper.getSimpleLocaleDisplayName()
             video.subtitleTracks.firstOrNull {
@@ -349,18 +347,23 @@ class ExternalIntents(context: Context) {
      */
     private fun addVideoHeaders(isSupportedPlayer: Boolean, video: Video, intent: Intent): Intent {
         return intent.apply {
-            val headers = video.headers ?: (source as? AnimeHttpSource)?.headers
-            if (headers != null) {
-                var headersArray = arrayOf<String>()
-                for (header in headers) {
-                    headersArray += arrayOf(header.first, header.second)
-                }
-                putExtra("headers", headersArray)
-                val headersString = headersArray.drop(2).joinToString(": ")
-                if (!isSupportedPlayer) putExtra("http-header-fields", headersString)
+            val headers = videoHeaders(video) ?: return@apply
+            putExtra("headers", headers.flatMap { (name, value) -> listOf(name, value) }.toTypedArray())
+            if (!isSupportedPlayer) {
+                putExtra("http-header-fields", headers.joinToString(",") { (name, value) -> "$name: $value" })
             }
         }
     }
+
+    // Extensions may name headers in lower case, as OkHttp accepts, but some players only look
+    // for the usual spelling (mp4upload answers 403 when its "referer" is dropped).
+    private fun videoHeaders(video: Video): List<Pair<String, String>>? {
+        val headers = video.headers ?: (source as? AnimeHttpSource)?.headers ?: return null
+        return headers.map { (name, value) -> canonicalHeaderName(name) to value }
+    }
+
+    private fun canonicalHeaderName(name: String): String =
+        name.split('-').joinToString("-") { part -> part.lowercase().replaceFirstChar { it.uppercase() } }
 
     /**
      * Returns the MIME type based on the video's extension.
