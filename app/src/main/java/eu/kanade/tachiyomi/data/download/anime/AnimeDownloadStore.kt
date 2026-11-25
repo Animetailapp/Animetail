@@ -7,7 +7,8 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
-import kotlinx.coroutines.runBlocking
+import eu.kanade.tachiyomi.data.download.moveEntriesFromLegacyDownloadStore
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import tachiyomi.domain.entries.anime.interactor.GetAnime
@@ -31,7 +32,11 @@ class AnimeDownloadStore(
     /**
      * Preference file where active downloads are stored.
      */
-    private val preferences = context.getSharedPreferences("active_downloads", Context.MODE_PRIVATE)
+    private val preferences = context.getSharedPreferences("active_downloads_anime", Context.MODE_PRIVATE)
+
+    init {
+        preferences.moveEntriesFromLegacyDownloadStore(context) { deserialize(it) != null }
+    }
 
     /**
      * Counter used to keep the queue order.
@@ -90,9 +95,12 @@ class AnimeDownloadStore(
     }
 
     /**
-     * Returns the list of downloads to restore. It should be called in a background thread.
+     * Returns the list of downloads to restore. Waits for the sources to load first, since downloads
+     * whose source is not found are dropped.
      */
-    fun restore(): List<AnimeDownload> {
+    suspend fun restore(): List<AnimeDownload> {
+        sourceManager.isInitialized.first { it }
+
         val objs = preferences.all
             .mapNotNull { it.value as? String }
             .mapNotNull { deserialize(it) }
@@ -103,10 +111,10 @@ class AnimeDownloadStore(
             val cachedAnime = mutableMapOf<Long, Anime?>()
             for ((animeId, episodeId) in objs) {
                 val anime = cachedAnime.getOrPut(animeId) {
-                    runBlocking { getAnime.await(animeId) }
+                    getAnime.await(animeId)
                 } ?: continue
                 val source = sourceManager.get(anime.source) as? AnimeHttpSource ?: continue
-                val episode = runBlocking { getEpisode.await(episodeId) } ?: continue
+                val episode = getEpisode.await(episodeId) ?: continue
                 downloads.add(AnimeDownload(source, anime, episode))
             }
         }

@@ -6,6 +6,7 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
+import eu.kanade.tachiyomi.data.download.moveEntriesFromLegacyDownloadStore
 import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -24,7 +25,11 @@ class MangaDownloadStore(
     private val getChapter: GetChapter,
 ) {
 
-    private val preferences = context.getSharedPreferences("active_downloads", Context.MODE_PRIVATE)
+    private val preferences = context.getSharedPreferences("active_downloads_manga", Context.MODE_PRIVATE)
+
+    init {
+        preferences.moveEntriesFromLegacyDownloadStore(context) { deserialize(it) != null }
+    }
 
     private var counter = 0
 
