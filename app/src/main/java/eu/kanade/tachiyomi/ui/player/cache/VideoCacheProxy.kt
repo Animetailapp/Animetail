@@ -39,6 +39,12 @@ class VideoCacheProxy(
     // Only URLs carrying this token are served, other apps can't use the proxy as a relay.
     private val token = UUID.randomUUID().toString().replace("-", "")
     private var server: Server? = null
+
+    // External players can drop the headers a host requires (mp4upload answers 403 without its
+    // Referer), so the ones given in proxyUrl are added to every request made to that host.
+    private val hostHeaders = object : LinkedHashMap<String, Headers>() {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Headers>) = size > MAX_HOST_HEADERS
+    }
     private val prefetcher = SegmentPrefetcher(
         download = ::downloadToCache,
         isCached = { store.resource(it.toString()).isComplete() },
@@ -51,8 +57,9 @@ class VideoCacheProxy(
      * @param cacheKey identifies the video when its URL changes between plays, see [cacheKey].
      */
     @Synchronized
-    fun proxyUrl(url: String, cacheKey: String? = null): String? {
+    fun proxyUrl(url: String, cacheKey: String? = null, requiredHeaders: Headers? = null): String? {
         val httpUrl = url.toHttpUrlOrNull() ?: return null
+        if (requiredHeaders != null) synchronized(hostHeaders) { hostHeaders[httpUrl.host] = requiredHeaders }
         val port = startedPort() ?: return null
         return proxyUrl(port, httpUrl, cacheKey)
     }
@@ -102,7 +109,7 @@ class VideoCacheProxy(
         }
 
         private fun serveResource(url: HttpUrl, requestHeaders: Map<String, String>, cacheKey: String?): Response {
-            val forwardedHeaders = forwardedHeaders(requestHeaders)
+            val forwardedHeaders = withHostHeaders(url, forwardedHeaders(requestHeaders))
             val rangeHeader = requestHeaders["range"]
             val range = rangeHeader?.let { ByteRange.parse(it) ?: return passThrough(url, forwardedHeaders, it) }
             val start = range?.start ?: 0L
@@ -374,6 +381,11 @@ class VideoCacheProxy(
             .header("Range", "bytes=$offset-${end ?: ""}")
             .build()
 
+    private fun withHostHeaders(url: HttpUrl, headers: Headers): Headers {
+        val required = synchronized(hostHeaders) { hostHeaders[url.host] } ?: return headers
+        return headers.newBuilder().apply { required.forEach { (name, value) -> set(name, value) } }.build()
+    }
+
     private fun forwardedHeaders(requestHeaders: Map<String, String>): Headers {
         val builder = Headers.Builder()
         requestHeaders.forEach { (name, value) ->
@@ -402,6 +414,7 @@ class VideoCacheProxy(
 
     companion object {
         private const val LOCALHOST = "127.0.0.1"
+        private const val MAX_HOST_HEADERS = 32
         private const val OK = 200
         private const val PARTIAL_CONTENT = 206
         private const val PLAYLIST_PEEK_BYTES = 16L

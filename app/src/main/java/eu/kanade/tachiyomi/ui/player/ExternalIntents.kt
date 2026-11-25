@@ -25,6 +25,8 @@ import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.anime.isNsfw
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
+import eu.kanade.tachiyomi.ui.player.cache.isLoopbackUrl
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
@@ -37,6 +39,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import logcat.LogPriority
 import mihon.app.di.appGraph
+import okhttp3.Headers
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withIOContext
@@ -110,6 +113,8 @@ class ExternalIntents(context: Context) {
 
             videoUrl = getVideoUrl(source, context, video.copyHttpServer(port)) ?: return null
         }
+
+        videoUrl = proxiedWithHeaders(videoUrl, video) ?: videoUrl
 
         val pkgName = playerPreferences.externalPlayerPreference().get()
 
@@ -253,7 +258,6 @@ class ExternalIntents(context: Context) {
             }
 
             putExtra("android.media.intent.extra.HTTP_HEADERS", headers)
-            putExtra("secure_uri", true)
         }
     }
 
@@ -334,7 +338,6 @@ class ExternalIntents(context: Context) {
             putExtra("position", getLastSecondSeen().toInt())
             putExtra("return_result", true)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            if (isSupportedPlayer) putExtra("secure_uri", true)
         }
     }
 
@@ -353,6 +356,16 @@ class ExternalIntents(context: Context) {
                 putExtra("http-header-fields", headers.joinToString(",") { (name, value) -> "$name: $value" })
             }
         }
+    }
+
+    // Players that ignore the headers in the intent still get the video, the cache proxy adds them.
+    private fun proxiedWithHeaders(videoUrl: Uri, video: Video): Uri? {
+        val url = videoUrl.toString()
+        if (videoUrl.scheme !in setOf("http", "https") || url.isLoopbackUrl() || video.headers == null) return null
+        val requiredHeaders = Headers.Builder()
+            .apply { videoHeaders(video)?.forEach { (name, value) -> add(name, value) } }
+            .build()
+        return VideoCacheProxy.shared?.proxyUrl(url, requiredHeaders = requiredHeaders)?.toUri()
     }
 
     // Extensions may name headers in lower case, as OkHttp accepts, but some players only look
