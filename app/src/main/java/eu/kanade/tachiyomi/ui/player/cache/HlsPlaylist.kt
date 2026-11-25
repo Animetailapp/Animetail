@@ -21,6 +21,16 @@ object HlsPlaylist {
     fun isStatic(playlist: String): Boolean =
         "#EXT-X-ENDLIST" in playlist || "#EXT-X-STREAM-INF" in playlist
 
+    /** Segment URLs of a media playlist in playback order; empty for master playlists. */
+    fun mediaSegments(playlist: String, baseUrl: HttpUrl): List<HttpUrl> {
+        if ("#EXT-X-STREAM-INF" in playlist) return emptyList()
+        return playlist.lineSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !it.startsWith("#") }
+            .mapNotNull { baseUrl.resolve(it) }
+            .toList()
+    }
+
     // Some hosts serve playlists as text/plain or under misleading extensions.
     fun startsLikePlaylist(start: String): Boolean = start.trimStart('\uFEFF').startsWith(HEADER)
 

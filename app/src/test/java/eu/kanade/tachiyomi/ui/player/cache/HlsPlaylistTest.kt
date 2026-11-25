@@ -62,4 +62,16 @@ class HlsPlaylistTest {
         assertTrue(HlsPlaylist.isStatic("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\n720.m3u8"))
         assertFalse(HlsPlaylist.isStatic("#EXTM3U\n#EXTINF:4,\nlive-1.ts"))
     }
+
+    @Test
+    fun `media segments are listed in order and master playlists have none`() {
+        val media = "#EXTM3U\n#EXTINF:10,\nseg-1.ts\n#EXTINF:10,\nhttps://other.example/seg-2.ts\n#EXT-X-ENDLIST"
+        val master = "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\n720.m3u8"
+
+        assertEquals(
+            listOf("https://cdn.example/hls/720/seg-1.ts", "https://other.example/seg-2.ts"),
+            HlsPlaylist.mediaSegments(media, base).map { it.toString() },
+        )
+        assertEquals(emptyList<Any>(), HlsPlaylist.mediaSegments(master, base))
+    }
 }

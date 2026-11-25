@@ -121,6 +121,12 @@ class VideoCacheStore(
         fun hasBlock(index: Long, length: Long): Boolean =
             File(resourceDir, index.toString()).length() == blockLength(index, length).toLong()
 
+        fun isComplete(): Boolean {
+            val length = readInfo()?.length ?: return false
+            val blocks = (length + blockSize - 1) / blockSize
+            return (0 until blocks).all { hasBlock(it, length) }
+        }
+
         /** Returns the block, or null when it's missing or was not written completely. */
         fun readBlock(index: Long, length: Long): ByteArray? {
             val file = File(resourceDir, index.toString())

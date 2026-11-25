@@ -96,4 +96,16 @@ class CachedRangeStreamTest {
         assertNull(old.readBlock(0, 20))
         assertArrayEquals(content.copyOfRange(0, 10), recent.readBlock(0, 20))
     }
+
+    @Test
+    fun `end of the resource is reported only when it's read to the last byte`() {
+        val resource = store().resource("https://cdn.example/seg-1.ts")
+        var ends = 0
+
+        CachedRangeStream(resource, 25, 0, 9, ::upstream, onEndReached = { ends++ }).use { it.readBytes() }
+        assertEquals(0, ends)
+
+        CachedRangeStream(resource, 25, 0, 24, ::upstream, onEndReached = { ends++ }).use { it.readBytes() }
+        assertEquals(1, ends)
+    }
 }

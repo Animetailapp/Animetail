@@ -14,6 +14,7 @@ class UpstreamBody(val stream: InputStream, val offset: Long) : AutoCloseable by
  * @param openUpstream opens the resource at the given offset. It must fail rather than return
  * a body of a different size or one starting elsewhere.
  * @param upstream a body already opened by the caller at the start of a block.
+ * @param onEndReached called once the last byte of the resource was read.
  */
 class CachedRangeStream(
     private val resource: VideoCacheStore.Resource,
@@ -22,6 +23,7 @@ class CachedRangeStream(
     private val endInclusive: Long,
     private val openUpstream: (offset: Long) -> UpstreamBody,
     private var upstream: UpstreamBody? = null,
+    private val onEndReached: () -> Unit = {},
 ) : InputStream() {
 
     private val blockSize = resource.blockSize
@@ -56,6 +58,7 @@ class CachedRangeStream(
         ).toInt()
         System.arraycopy(block, positionInBlock, buffer, offset, available)
         position += available
+        if (position == length) onEndReached()
         return available
     }
 

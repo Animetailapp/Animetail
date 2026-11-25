@@ -38,6 +38,10 @@ class VideoCacheProxy(
     // Only URLs carrying this token are served, other apps can't use the proxy as a relay.
     private val token = UUID.randomUUID().toString().replace("-", "")
     private var server: Server? = null
+    private val prefetcher = SegmentPrefetcher(
+        download = ::downloadToCache,
+        isCached = { store.resource(it.toString()).isComplete() },
+    )
 
     /**
      * Returns the URL mpv should open to play [url] through the proxy, or null when the proxy
@@ -97,6 +101,8 @@ class VideoCacheProxy(
             val rangeHeader = requestHeaders["range"]
             val range = rangeHeader?.let { ByteRange.parse(it) ?: return passThrough(url, forwardedHeaders, it) }
             val start = range?.start ?: 0L
+            prefetcher.awaitPrefetch(url)
+            val onEndReached = { prefetcher.onSegmentPlayed(url, forwardedHeaders) }
             val resource = store.resource(url.toString())
             resource.touch()
 
@@ -109,6 +115,7 @@ class VideoCacheProxy(
                     start = start,
                     endInclusive = range.endFor(cachedInfo.length),
                     openUpstream = { offset -> openUpstream(url, forwardedHeaders, offset, cachedInfo.length) },
+                    onEndReached = onEndReached,
                 )
                 return rangeResponse(stream, cachedInfo, start, range)
             }
@@ -122,7 +129,7 @@ class VideoCacheProxy(
                 return playlistResponse(playlist)
             }
             return try {
-                serveUpstream(url, upstream, resource, blockStart, start, range, forwardedHeaders)
+                serveUpstream(url, upstream, resource, blockStart, start, range, forwardedHeaders, onEndReached)
             } catch (e: Exception) {
                 upstream.close()
                 throw e
@@ -137,6 +144,7 @@ class VideoCacheProxy(
             start: Long,
             range: ByteRange?,
             forwardedHeaders: Headers,
+            onEndReached: () -> Unit,
         ): Response {
             if (!upstream.isSuccessful) {
                 upstream.close()
@@ -177,12 +185,14 @@ class VideoCacheProxy(
                 endInclusive = range.endFor(length),
                 openUpstream = { offset -> openUpstream(url, forwardedHeaders, offset, length) },
                 upstream = UpstreamBody(upstream.body.byteStream(), blockStart),
+                onEndReached = onEndReached,
             )
             return rangeResponse(stream, info, start, range)
         }
 
         private fun playlistResponse(playlist: CachedPlaylist): Response {
             val baseUrl = playlist.url.toHttpUrl()
+            prefetcher.registerPlaylist(HlsPlaylist.mediaSegments(playlist.body, baseUrl))
             val rewritten = HlsPlaylist.rewrite(playlist.body, baseUrl) { proxyUrl(listeningPort, it) }
             return newFixedLengthResponse(Response.Status.OK, playlist.contentType ?: HLS_MIME_TYPE, rewritten)
         }
@@ -223,6 +233,27 @@ class VideoCacheProxy(
             upstream.header("Accept-Ranges")?.let { response.addHeader("Accept-Ranges", it) }
             return response
         }
+    }
+
+    private fun downloadToCache(url: HttpUrl, headers: Headers) {
+        val response = client.newCall(upstreamRequest(url, headers, 0)).execute()
+        val length = when (response.code) {
+            PARTIAL_CONTENT -> ByteRange.totalLength(response.header("Content-Range"))
+            OK -> response.body.contentLength().takeIf { it >= 0 }
+            else -> null
+        }
+        if (length == null || length == 0L) {
+            response.close()
+            return
+        }
+        val resource = store.resource(url.toString())
+        resource.writeInfo(CachedResourceInfo(length, response.header("Content-Type")))
+        val upstream = UpstreamBody(response.body.byteStream(), 0)
+        CachedRangeStream(resource, length, 0, length - 1, { openUpstream(url, headers, it, length) }, upstream)
+            .use { stream ->
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (stream.read(buffer) != -1) Unit
+            }
     }
 
     private fun openUpstream(url: HttpUrl, headers: Headers, offset: Long, expectedLength: Long): UpstreamBody {
