@@ -37,6 +37,7 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
+import tachiyomi.domain.entries.anime.model.withSourceCover
 import tachiyomi.domain.source.anime.interactor.CountFeedSavedSearchBySourceId
 import tachiyomi.domain.source.anime.interactor.DeleteFeedSavedSearchById
 import tachiyomi.domain.source.anime.interactor.GetFeedSavedSearchBySourceId
@@ -269,6 +270,7 @@ open class SourceFeedScreenModel(
             getAnime.subscribe(initialManga.url, initialManga.source)
                 .collectLatest { manga ->
                     value = manga
+                        ?.withSourceCover(initialManga)
                         // KMK -->
                         ?: initialManga
                     // KMK <--

@@ -3,6 +3,7 @@ package tachiyomi.domain.entries.manga.interactor
 import dev.zacsweers.metro.Inject
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaRemoteUpdate
+import tachiyomi.domain.entries.manga.model.withSourceCover
 import tachiyomi.domain.entries.manga.repository.MangaRepository
 
 @Inject
@@ -27,9 +28,13 @@ class NetworkToLocalManga(
             }
 
             !localManga.favorite -> {
+                val withSourceCover = localManga.withSourceCover(manga)
+                if (withSourceCover !== localManga) {
+                    mangaRepository.updateRemote(withSourceCover.toDatabaseUpdate())
+                }
                 // if the manga isn't a favorite, set its display title from source
                 // if it later becomes a favorite, updated title will go to db
-                localManga.copy(ogTitle = manga.title)
+                withSourceCover.copy(ogTitle = manga.title)
             }
 
             else -> {

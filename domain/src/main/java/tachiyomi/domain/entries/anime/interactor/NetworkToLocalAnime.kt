@@ -3,6 +3,7 @@ package tachiyomi.domain.entries.anime.interactor
 import dev.zacsweers.metro.Inject
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.anime.model.AnimeUpdate
+import tachiyomi.domain.entries.anime.model.withSourceCover
 import tachiyomi.domain.entries.anime.repository.AnimeRepository
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 
@@ -29,9 +30,15 @@ class NetworkToLocalAnime(
             }
 
             !localAnime.favorite -> {
+                val withSourceCover = localAnime.withSourceCover(anime)
+                if (withSourceCover !== localAnime) {
+                    animeRepository.updateAnime(
+                        AnimeUpdate(id = localAnime.id, thumbnailUrl = withSourceCover.thumbnailUrl),
+                    )
+                }
                 // if the anime isn't a favorite, set its display title from source
                 // if it later becomes a favorite, updated title will go to db
-                localAnime.copy(ogTitle = anime.title)
+                withSourceCover.copy(ogTitle = anime.title)
             }
 
             else -> {
