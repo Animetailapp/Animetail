@@ -45,6 +45,8 @@ object AnimeMapper {
         cast: List<eu.kanade.tachiyomi.animesource.model.Credit>?,
         memo: JsonObject,
         notes: String,
+        audioLanguage: String,
+        originalLanguage: String,
     ): Anime = Anime(
         id = id,
         source = source,
@@ -81,6 +83,8 @@ object AnimeMapper {
         seasonNumber = seasonNumber,
         seasonSourceOrder = seasonSourceOrder,
         memo = memo,
+        audioLanguage = audioLanguage,
+        originalLanguage = originalLanguage,
     )
 
     fun mapLibraryAnime(
@@ -118,6 +122,8 @@ object AnimeMapper {
         cast: List<eu.kanade.tachiyomi.animesource.model.Credit>?,
         memo: JsonObject,
         notes: String,
+        audioLanguage: String,
+        originalLanguage: String,
         totalCount: Long,
         seenCount: Double,
         latestUpload: Long,
@@ -162,6 +168,8 @@ object AnimeMapper {
             cast,
             memo,
             notes,
+            audioLanguage,
+            originalLanguage,
         ),
         category = category,
         totalCount = totalCount,
@@ -208,6 +216,8 @@ object AnimeMapper {
         cast: List<eu.kanade.tachiyomi.animesource.model.Credit>?,
         memo: JsonObject,
         notes: String,
+        audioLanguage: String,
+        originalLanguage: String,
         totalCount: Long,
         seenCount: Double,
         latestUpload: Long,
@@ -251,6 +261,8 @@ object AnimeMapper {
             cast,
             memo,
             notes,
+            audioLanguage,
+            originalLanguage,
         ),
         totalCount = totalCount,
         seenCount = seenCount.toLong(),
@@ -296,6 +308,8 @@ object AnimeMapper {
         cast: List<eu.kanade.tachiyomi.animesource.model.Credit>?,
         memo: JsonObject,
         notes: String,
+        audioLanguage: String,
+        originalLanguage: String,
         name: String,
     ): Pair<String, Anime> = name to mapAnime(
         id,
@@ -332,6 +346,8 @@ object AnimeMapper {
         cast,
         memo,
         notes,
+        audioLanguage,
+        originalLanguage,
     )
 
     fun mapDeletableAnime(

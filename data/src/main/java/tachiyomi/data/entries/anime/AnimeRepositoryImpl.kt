@@ -155,6 +155,7 @@ class AnimeRepositoryImpl(
                 seasonSourceOrder = anime.seasonSourceOrder,
                 cast = anime.cast,
                 memo = anime.memo,
+                audioLanguage = anime.audioLanguage,
             )
         }
     }
@@ -243,6 +244,8 @@ class AnimeRepositoryImpl(
                     seasonNumber = value.seasonNumber,
                     seasonSourceOrder = value.seasonSourceOrder,
                     memo = value.memo,
+                    audioLanguage = value.audioLanguage,
+                    originalLanguage = value.originalLanguage,
                 )
             }
         }

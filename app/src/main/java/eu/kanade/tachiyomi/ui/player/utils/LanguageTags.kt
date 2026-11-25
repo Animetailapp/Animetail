@@ -35,6 +35,14 @@ object LanguageTags {
     }
 
     /**
+     * Languages offered for a per-anime choice, besides those in the preferred languages setting.
+     * Anime audio is almost always one of these.
+     */
+    val COMMON_AUDIO_LANGUAGES = listOf(
+        "ja", "en", "zh", "ko", "es", "pt", "fr", "de", "it", "ru", "ar", "hi", "id", "th", "vi", "tr", "pl",
+    )
+
+    /**
      * Returns the ISO 639-1 code for [tag], or null when it isn't a recognizable language.
      * Accepts ISO 639-1 (`ja`), ISO 639-2/T and /B (`jpn`, `fre`), BCP 47 with a region
      * (`ja-JP`, `ja_JP`), the non-standard `jp` and English names (`Japanese`, `Spanish (Spain)`).
@@ -48,6 +56,28 @@ object LanguageTags {
             3 -> ISO3_TO_ISO1[primary]
             else -> ENGLISH_NAME_TO_ISO1[primary]
         }
+    }
+
+    /** Parses a comma separated preference value into normalized codes, keeping its order. */
+    fun parseList(value: String): List<String> {
+        return value.split(",").mapNotNull { normalize(it) }.distinct()
+    }
+
+    /** Display name of [tag] in [inLocale], e.g. `Japanese` for `ja`. */
+    fun displayName(tag: String, inLocale: Locale = Locale.getDefault()): String {
+        val locale = Locale.forLanguageTag(tag)
+        return locale.getDisplayLanguage(inLocale).ifEmpty { tag }
+            .replaceFirstChar { it.titlecase(inLocale) }
+    }
+
+    /**
+     * Adds the ISO 639-2 code next to each language (`ja` -> `ja,jpn`) so mpv's `alang` matches
+     * containers tagged either way. TrackSelect makes the final choice once tracks are known.
+     */
+    fun toMpvAlang(languages: List<String>): String {
+        return languages.map(String::trim).filter(String::isNotEmpty).flatMap { code ->
+            listOfNotNull(code, iso3(Locale.forLanguageTag(code)))
+        }.distinct().joinToString(",")
     }
 
     private fun iso3(locale: Locale): String? {

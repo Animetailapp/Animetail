@@ -13,12 +13,20 @@ class TrackSelect(
     private val audioPreferences: AudioPreferences,
 ) {
 
-    fun getPreferredTrackIndex(tracks: List<VideoTrack>, subtitle: Boolean = true): VideoTrack? {
+    /**
+     * @param audioLanguages the show's audio languages in order of preference (see
+     *   [AudioLanguageTarget.languages]); when null, audio uses the preferred languages setting.
+     */
+    fun getPreferredTrackIndex(
+        tracks: List<VideoTrack>,
+        subtitle: Boolean = true,
+        audioLanguages: List<String>? = null,
+    ): VideoTrack? {
         val prefLangs = if (subtitle) {
-            subtitlePreferences.preferredSubLanguages().get()
+            subtitlePreferences.preferredSubLanguages().get().split(",")
         } else {
-            audioPreferences.preferredAudioLanguages().get()
-        }.split(",").filter(String::isNotEmpty).map(String::trim)
+            audioLanguages ?: audioPreferences.preferredAudioLanguages().get().split(",")
+        }.filter(String::isNotEmpty).map(String::trim)
 
         val whitelist = if (subtitle) {
             subtitlePreferences.subtitleWhitelist().get()

@@ -170,6 +170,7 @@ fun AnimeScreen(
     onEditInfoClicked: () -> Unit,
     // SY <--
     changeAnimeSkipIntro: (() -> Unit)?,
+    changeAnimeAudioLanguage: (() -> Unit)?,
 
     // For bottom action menu
     onMultiBookmarkClicked: (List<Episode>, bookmarked: Boolean) -> Unit,
@@ -251,6 +252,7 @@ fun AnimeScreen(
             onEditInfoClicked = onEditInfoClicked,
             // SY <--
             changeAnimeSkipIntro = changeAnimeSkipIntro,
+            changeAnimeAudioLanguage = changeAnimeAudioLanguage,
             onMultiBookmarkClicked = onMultiBookmarkClicked,
             onMultiFillermarkClicked = onMultiFillermarkClicked,
             onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
@@ -306,6 +308,7 @@ fun AnimeScreen(
             onEditCategoryClicked = onEditCategoryClicked,
             onEditIntervalClicked = onEditFetchIntervalClicked,
             changeAnimeSkipIntro = changeAnimeSkipIntro,
+            changeAnimeAudioLanguage = changeAnimeAudioLanguage,
             onMigrateClicked = onMigrateClicked,
             onEditNotesClicked = onEditNotesClicked,
             // SY -->
@@ -382,6 +385,7 @@ private fun AnimeScreenSmallImpl(
     onEditInfoClicked: () -> Unit,
     // SY <--
     changeAnimeSkipIntro: (() -> Unit)?,
+    changeAnimeAudioLanguage: (() -> Unit)?,
     onSettingsClicked: (() -> Unit)?,
 
     // For bottom action menu
@@ -502,6 +506,7 @@ private fun AnimeScreenSmallImpl(
                     // KMK <--
                     onClickSettings = onSettingsClicked,
                     changeAnimeSkipIntro = changeAnimeSkipIntro,
+                    changeAnimeAudioLanguage = changeAnimeAudioLanguage,
                     actionModeCounter = selectedEpisodeCount,
                     onCancelActionMode = { onAllEpisodeSelected(false) },
                     onSelectAll = { onAllEpisodeSelected(true) },
@@ -866,6 +871,7 @@ fun AnimeScreenLargeImpl(
     onEditInfoClicked: () -> Unit,
     // SY <--
     changeAnimeSkipIntro: (() -> Unit)?,
+    changeAnimeAudioLanguage: (() -> Unit)?,
     onSettingsClicked: (() -> Unit)?,
 
     // For bottom action menu
@@ -975,6 +981,7 @@ fun AnimeScreenLargeImpl(
                     // KMK <--
                     onClickSettings = onSettingsClicked,
                     changeAnimeSkipIntro = changeAnimeSkipIntro,
+                    changeAnimeAudioLanguage = changeAnimeAudioLanguage,
                     actionModeCounter = selectedChapterCount,
                     onSelectAll = { onAllEpisodeSelected(true) },
                     onInvertSelection = { onInvertSelection() },

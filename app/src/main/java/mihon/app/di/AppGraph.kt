@@ -12,6 +12,8 @@ import dev.zacsweers.metrox.viewmodel.MetroViewModelFactory
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
+import eu.kanade.domain.entries.anime.interactor.GetAnimeAudioLanguage
+import eu.kanade.domain.entries.anime.interactor.SetAnimeAudioLanguage
 import eu.kanade.domain.entries.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.entries.anime.interactor.SyncSeasonsWithSource
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
@@ -438,6 +440,8 @@ interface AppGraph : ViewModelGraph {
     val updateAnimeFromRemote: UpdateAnimeFromRemote
     val imageSaver: ImageSaver
     val setAnimeViewerFlags: SetAnimeViewerFlags
+    val getAnimeAudioLanguage: GetAnimeAudioLanguage
+    val setAnimeAudioLanguage: SetAnimeAudioLanguage
     val setMangaViewerFlags: SetMangaViewerFlags
     val setAnimeEpisodeFlags: SetAnimeEpisodeFlags
     val setMangaChapterFlags: SetMangaChapterFlags

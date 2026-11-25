@@ -114,4 +114,5 @@ private fun Anime.toBackupAnime() =
         seasonNumber = this.seasonNumber,
         seasonSourceOrder = this.seasonSourceOrder,
         memo = MemoColumnAdapter.encode(this.memo),
+        audioLanguage = this.audioLanguage,
     )

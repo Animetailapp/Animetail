@@ -9,8 +9,10 @@ import eu.kanade.presentation.more.settings.screen.SearchableSettings
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.player.settings.AudioChannels
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
+import eu.kanade.tachiyomi.ui.player.settings.DefaultAudioLanguage
 import kotlinx.collections.immutable.toImmutableMap
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -28,6 +30,7 @@ object PlayerSettingsAudioScreen : Screen(), SearchableSettings {
     override fun getPreferences(): List<Preference> {
         val audioPreferences = remember { Injekt.get<AudioPreferences>() }
 
+        val defaultAudioLanguage = audioPreferences.defaultAudioLanguage()
         val prefLangs = audioPreferences.preferredAudioLanguages()
         val pitchCorrection = audioPreferences.enablePitchCorrection()
         val audioChannels = audioPreferences.audioChannels()
@@ -35,6 +38,16 @@ object PlayerSettingsAudioScreen : Screen(), SearchableSettings {
         val boostCap by boostCapPref.collectAsState()
 
         return listOf(
+            Preference.PreferenceItem.ListPreference(
+                preference = defaultAudioLanguage,
+                entries = DefaultAudioLanguage.entries.associateWith {
+                    stringResource(it.titleRes)
+                }.toImmutableMap(),
+                title = stringResource(TLMR.strings.pref_player_audio_default_language),
+                subtitleProvider = { value, entries ->
+                    "${entries[value]}\n${stringResource(TLMR.strings.pref_player_audio_default_language_summary)}"
+                },
+            ),
             Preference.PreferenceItem.EditTextInfoPreference(
                 preference = prefLangs,
                 dialogSubtitle = stringResource(AYMR.strings.pref_player_audio_lang_info),

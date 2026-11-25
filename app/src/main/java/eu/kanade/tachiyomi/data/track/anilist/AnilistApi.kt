@@ -282,6 +282,24 @@ class AnilistApi(
             }
     }
 
+    /** AniList `countryOfOrigin` (ISO 3166-1, e.g. `JP`) of the anime with the given AniList id. */
+    suspend fun getAnimeCountryOfOrigin(id: Long): String? {
+        return graphQlClient
+            .query(
+                AniListGetAnimeDetailsQuery(anime_id = id.toInt()),
+            )
+            .execute()
+            .dataOrElse(
+                errorLog = "AniList: Failed to get anime country of origin",
+                default = { null },
+            ) {
+                it.Page?.media
+                    ?.firstOrNull()
+                    ?.animeFragment
+                    ?.countryOfOrigin
+            }
+    }
+
     suspend fun getPopularAnime(): List<AnimeTrackSearch> {
         return graphQlClient
             .query(

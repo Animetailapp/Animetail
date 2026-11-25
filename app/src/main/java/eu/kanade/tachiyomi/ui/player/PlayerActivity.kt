@@ -88,6 +88,7 @@ import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
+import eu.kanade.tachiyomi.ui.player.utils.LanguageTags
 import eu.kanade.tachiyomi.util.system.powerManager
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
@@ -1215,6 +1216,10 @@ class PlayerActivity : BaseActivity() {
 
         setHttpOptions(video)
         player.resetTrackSelection()
+        // mpv's initial audio pick follows the show's language; TrackSelect confirms it once tracks load
+        viewModel.audioTarget?.languages?.takeIf { it.isNotEmpty() }?.let { languages ->
+            mpv.setPropertyString("alang", LanguageTags.toMpvAlang(languages))
+        }
 
         if (viewModel.isLoadingEpisode.value) {
             viewModel.currentEpisode.value?.let { episode ->

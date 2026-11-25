@@ -162,6 +162,8 @@ class AnimeRestorer(
                 backgroundUrl = anime.backgroundUrl,
                 backgroundLastModified = anime.backgroundLastModified,
                 memo = anime.memo,
+                audioLanguage = anime.audioLanguage,
+                originalLanguage = null,
             )
         }
         return anime
@@ -337,6 +339,7 @@ class AnimeRestorer(
                 cast = anime.cast,
                 backgroundLastModified = anime.backgroundLastModified,
                 memo = anime.memo,
+                audioLanguage = anime.audioLanguage,
             )
         }
     }

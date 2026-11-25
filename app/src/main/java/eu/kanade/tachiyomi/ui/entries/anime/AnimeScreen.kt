@@ -35,6 +35,7 @@ import eu.kanade.presentation.browse.RemoveEntryDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
 import eu.kanade.presentation.entries.EditCoverAction
+import eu.kanade.presentation.entries.anime.AnimeAudioLanguageDialog
 import eu.kanade.presentation.entries.anime.AnimeScreen
 import eu.kanade.presentation.entries.anime.DuplicateAnimeDialog
 import eu.kanade.presentation.entries.anime.EpisodeOptionsDialogScreen
@@ -68,6 +69,7 @@ import eu.kanade.tachiyomi.ui.entries.anime.track.AnimeTrackInfoDialogHomeScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.library.anime.AnimeLibraryTab
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.player.utils.LanguageTags
 import eu.kanade.tachiyomi.ui.setting.SettingsScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.copyToClipboard
@@ -287,6 +289,8 @@ class AnimeScreen(
             },
             changeAnimeSkipIntro = viewModel::showAnimeSkipIntroDialog
                 .takeIf { successState.anime.favorite && successState.anime.fetchType == FetchType.Episodes },
+            changeAnimeAudioLanguage = viewModel::showAnimeAudioLanguageDialog
+                .takeIf { !successState.source.isLocalOrStub() },
             onMultiBookmarkClicked = viewModel::bookmarkEpisodes,
             onMultiFillermarkClicked = viewModel::fillermarkEpisodes,
             onMultiMarkAsSeenClicked = viewModel::markEpisodesSeen,
@@ -540,6 +544,19 @@ class AnimeScreen(
                         updateSkipIntroLength(it.toLong())
                         onDismissRequest()
                     },
+                )
+            }
+
+            is AnimeViewModel.Dialog.ChangeAnimeAudioLanguage -> {
+                AnimeAudioLanguageDialog(
+                    current = successState.anime.audioLanguage,
+                    originalLanguage = dialog.originalLanguage,
+                    globalDefault = remember { viewModel.audioPreferences.defaultAudioLanguage().get() },
+                    preferredLanguages = remember {
+                        LanguageTags.parseList(viewModel.audioPreferences.preferredAudioLanguages().get())
+                    },
+                    onValueChanged = viewModel::setAnimeAudioLanguage,
+                    onDismissRequest = onDismissRequest,
                 )
             }
 
