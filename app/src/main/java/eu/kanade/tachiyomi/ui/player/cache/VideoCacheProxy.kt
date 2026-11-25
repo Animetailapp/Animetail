@@ -243,6 +243,7 @@ class VideoCacheProxy(
     }
 
     private fun warmUp(url: HttpUrl, headers: Headers, isVariant: Boolean) {
+        if (store.resource(url.toString()).hasStart(WARM_UP_BYTES)) return
         val response = client.newCall(upstreamRequest(url, headers, 0)).execute()
         val contentType = response.header("Content-Type")
         val finalUrl = response.request.url
@@ -260,6 +261,7 @@ class VideoCacheProxy(
 
             else -> HlsPlaylist.mediaSegments(playlist.body, finalUrl)
                 .take(WARM_UP_SEGMENTS)
+                .filterNot { store.resource(it.toString()).isComplete() }
                 .forEach { downloadToCache(it, headers) }
         }
     }

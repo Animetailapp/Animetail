@@ -108,4 +108,15 @@ class CachedRangeStreamTest {
         CachedRangeStream(resource, 25, 0, 24, ::upstream, onEndReached = { ends++ }).use { it.readBytes() }
         assertEquals(1, ends)
     }
+
+    @Test
+    fun `the start of a resource counts as cached once its blocks are stored`() {
+        val resource = store().resource("https://cdn.example/video.mp4")
+        resource.writeInfo(CachedResourceInfo(25, "video/mp4"))
+        read(resource, 0, 9)
+
+        assertEquals(true, resource.hasStart(10))
+        assertEquals(false, resource.hasStart(11))
+        assertEquals(false, resource.isComplete())
+    }
 }

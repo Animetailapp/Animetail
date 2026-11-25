@@ -121,9 +121,13 @@ class VideoCacheStore(
         fun hasBlock(index: Long, length: Long): Boolean =
             File(resourceDir, index.toString()).length() == blockLength(index, length).toLong()
 
-        fun isComplete(): Boolean {
+        fun isComplete(): Boolean = hasStart(Long.MAX_VALUE)
+
+        /** Whether the first [bytes] of the resource, or all of it if shorter, are cached. */
+        fun hasStart(bytes: Long): Boolean {
             val length = readInfo()?.length ?: return false
-            val blocks = (length + blockSize - 1) / blockSize
+            val end = minOf(length, bytes)
+            val blocks = (end + blockSize - 1) / blockSize
             return (0 until blocks).all { hasBlock(it, length) }
         }
 
