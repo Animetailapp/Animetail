@@ -386,7 +386,8 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                 BuildConfig.DEBUG -> LogPriority.DEBUG
                 else -> LogPriority.INFO
             }
-            AndroidLogcatLogger.installOnDebuggableApp(this, minLogPriority)
+            LogcatLogger.install()
+            LogcatLogger.loggers += AndroidLogcatLogger(minLogPriority)
         }
 
         initializeMigrator()
