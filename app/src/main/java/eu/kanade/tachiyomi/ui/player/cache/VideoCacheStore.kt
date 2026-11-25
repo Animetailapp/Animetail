@@ -11,7 +11,7 @@ import java.util.UUID
 
 /** Size and type of a cached resource, used to answer range requests without the network. */
 @Serializable
-data class CachedResourceInfo(val length: Long, val contentType: String?)
+data class CachedResourceInfo(val length: Long, val contentType: String?, val url: String? = null)
 
 /** HLS playlist as last received, with the URL it was finally served from after redirects. */
 @Serializable
@@ -84,7 +84,7 @@ class VideoCacheStore(
         fun writeInfo(info: CachedResourceInfo) {
             val current = readInfo()
             if (current == info) return
-            if (current != null) delete()
+            if (current != null && current.length != info.length) delete()
             writeAtomically(infoFile, json.encodeToString(CachedResourceInfo.serializer(), info).toByteArray())
         }
 

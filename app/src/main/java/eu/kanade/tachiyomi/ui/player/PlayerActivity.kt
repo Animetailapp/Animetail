@@ -1306,7 +1306,7 @@ class PlayerActivity : BaseActivity() {
                     videoUrl = newVideo.videoUrl
                     viewModel.updateVideo(newVideo)
                 } else if (useVideoCache && videoUrl.startsWith("http")) {
-                    VideoCacheProxy.shared?.proxyUrl(videoUrl)?.let {
+                    VideoCacheProxy.shared?.proxyUrl(videoUrl, viewModel.videoCacheKey(video))?.let {
                         videoUrl = it
                         videoCachePlaybackId = viewModel.playbackId
                     }

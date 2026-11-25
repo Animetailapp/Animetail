@@ -17,7 +17,8 @@ object NextEpisodePreloader {
     suspend fun preload(episode: Episode, anime: Anime, source: AnimeSource) {
         if (source !is AnimeHttpSource || EpisodeLoader.isDownload(episode, anime)) return
         val hosters = EpisodeLoader.getHosters(episode, anime, source)
-        val (_, video) = HosterLoader.getBestHosterVideo(source, hosters) ?: return
-        VideoCacheProxy.shared?.warmUp(video.videoUrl, video.headers ?: source.headers)
+        val (hoster, video) = HosterLoader.getBestHosterVideo(source, hosters) ?: return
+        val cacheKey = VideoCacheProxy.cacheKey(source.id, episode.url, hoster.hosterName, video.videoTitle)
+        VideoCacheProxy.shared?.warmUp(video.videoUrl, video.headers ?: source.headers, cacheKey)
     }
 }

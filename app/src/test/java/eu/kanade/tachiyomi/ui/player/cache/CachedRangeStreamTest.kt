@@ -135,4 +135,15 @@ class CachedRangeStreamTest {
         assertArrayEquals(content.copyOfRange(10, 25), read(resource, 10, 24))
         assertEquals(listOf(15L), openedAt)
     }
+
+    @Test
+    fun `a new url for a file of the same size keeps its blocks`() {
+        val resource = store().resource("source|episode|SUB Mega|Mega")
+        resource.writeInfo(CachedResourceInfo(25, "video/mp4", "http://127.0.0.1:1000/a.mp4"))
+        read(resource, 0, 24)
+
+        resource.writeInfo(CachedResourceInfo(25, "video/mp4", "http://127.0.0.1:2000/b.mp4"))
+
+        assertArrayEquals(content.copyOfRange(0, 10), resource.readBlock(0, 25))
+    }
 }

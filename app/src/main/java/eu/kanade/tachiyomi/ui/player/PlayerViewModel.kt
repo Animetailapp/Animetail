@@ -84,6 +84,7 @@ import eu.kanade.tachiyomi.data.saver.Location
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
+import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
 import eu.kanade.tachiyomi.ui.player.controls.components.IndexedSegment
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.VideoDownloadState
@@ -1885,6 +1886,14 @@ class PlayerViewModel(
 
     fun updateVideo(video: Video) {
         _currentVideo.update { _ -> video }
+    }
+
+    /** Key under which the video cache stores [video], stable when its URL changes. */
+    fun videoCacheKey(video: Video): String? {
+        val source = currentSource.value as? AnimeHttpSource ?: return null
+        val episodeUrl = currentEpisode.value?.url ?: return null
+        val hoster = _hosterState.value.getOrNull(_selectedHosterVideoIndex.value.first) ?: return null
+        return VideoCacheProxy.cacheKey(source.id, episodeUrl, hoster.name, video.videoTitle)
     }
 
     /** Called once mpv opened the current video, which is then remembered for the episode. */
