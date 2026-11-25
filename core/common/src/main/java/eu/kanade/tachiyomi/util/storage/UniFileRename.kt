@@ -6,10 +6,17 @@ import tachiyomi.core.common.util.system.logcat
 
 /**
  * Renames this file, falling back to copy and delete for providers that reject renames
- * (e.g. HarmonyOS). Returns the renamed file, or null on failure.
+ * (e.g. HarmonyOS), whether they return false or throw. Returns the renamed file, or null on
+ * failure, in which case the original is left in place.
  */
 fun UniFile.renameToOrCopy(displayName: String): UniFile? {
-    if (renameTo(displayName)) return this
+    val renamed = try {
+        renameTo(displayName)
+    } catch (e: Exception) {
+        logcat(LogPriority.WARN, e) { "Failed to rename $name to $displayName, copying instead" }
+        false
+    }
+    if (renamed) return this
     val parent = parentFile ?: return null
     if (parent.findFile(displayName) != null) return null
 
