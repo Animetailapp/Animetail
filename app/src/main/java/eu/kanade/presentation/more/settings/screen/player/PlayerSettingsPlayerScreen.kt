@@ -2,7 +2,6 @@ package eu.kanade.presentation.more.settings.screen.player
 
 import android.content.Context
 import android.os.Build
-import android.text.format.Formatter
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
@@ -56,6 +55,7 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import java.text.NumberFormat
+import java.util.Locale
 
 @Serializable
 data object PlayerSettingsPlayerScreen : SearchableSettings {
@@ -268,7 +268,7 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                             if (megabytes == 0) {
                                 context.stringResource(AYMR.strings.pref_player_buffer_auto)
                             } else {
-                                Formatter.formatShortFileSize(context, megabytes * 1024L * 1024L)
+                                formatBinarySize(megabytes * 1024L * 1024L)
                             }
                         }
                         .toImmutableMap(),
@@ -287,7 +287,7 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                             if (megabytes == 0) {
                                 context.stringResource(AYMR.strings.pref_video_cache_off)
                             } else {
-                                Formatter.formatShortFileSize(context, megabytes * 1024L * 1024L)
+                                formatBinarySize(megabytes * 1024L * 1024L)
                             }
                         }
                         .toImmutableMap(),
@@ -304,7 +304,7 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                     title = stringResource(AYMR.strings.pref_video_cache_clear),
                     subtitle = stringResource(
                         AYMR.strings.pref_video_cache_clear_summary,
-                        Formatter.formatShortFileSize(context, usedBytes),
+                        formatBinarySize(usedBytes),
                     ),
                     onClick = {
                         scope.launchIO {
@@ -576,3 +576,23 @@ val externalPlayers = listOf(
 
 private val VIDEO_CACHE_SIZES_MB = listOf(0, 256, 512, 1024, 2048, 4096)
 private val PLAYER_BUFFER_SIZES_MB = listOf(0, 32, 64, 128, 256)
+
+// The cache and buffer sizes are binary (1 GB = 1024 MB). Android's formatter uses decimal units,
+// which shows 4096 MB as "4.3 GB" and 256 MB as "268 MB".
+private fun formatBinarySize(bytes: Long): String {
+    val units = listOf("B", "KB", "MB", "GB")
+    var value = bytes.toDouble()
+    var unit = 0
+    while (value >= 1024 && unit < units.lastIndex) {
+        value /= 1024
+        unit++
+    }
+    val number = if (value % 1.0 ==
+        0.0
+    ) {
+        value.toLong().toString()
+    } else {
+        String.format(Locale.getDefault(), "%.1f", value)
+    }
+    return "$number ${units[unit]}"
+}
