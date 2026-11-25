@@ -346,7 +346,7 @@ class VideoCacheProxy(
     ): CachedResourceInfo? {
         if (info.url == url.toString()) return info
         val length = try {
-            client.newCall(upstreamRequest(url, headers, 0, 0)).execute().use { response ->
+            headLength(url, headers) ?: client.newCall(upstreamRequest(url, headers, 0, 0)).execute().use { response ->
                 if (response.code == PARTIAL_CONTENT) ByteRange.totalLength(response.header("Content-Range")) else null
             }
         } catch (_: IOException) {
@@ -358,6 +358,15 @@ class VideoCacheProxy(
             return null
         }
         return info.copy(url = url.toString()).also(resource::writeInfo)
+    }
+
+    // Tried first: the local server of Mega answers it without contacting MEGA, while the
+    // one-byte request has to fetch and decrypt data.
+    private fun headLength(url: HttpUrl, headers: Headers): Long? {
+        val request = Request.Builder().url(url).headers(headers).head().build()
+        return client.newCall(request).execute().use { response ->
+            response.header("Content-Length")?.toLongOrNull()?.takeIf { response.isSuccessful && it > 0 }
+        }
     }
 
     private fun upstreamRequest(url: HttpUrl, headers: Headers, offset: Long, end: Long? = null): Request =
