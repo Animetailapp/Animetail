@@ -249,6 +249,7 @@
     <string name="action_mark_previous_as_seen">Marcar anteriores como vistos</string>
     <string name="action_play_internally">Reproducir internamente</string>
     <string name="action_play_externally">Reproducir externamente</string>
+    <string name="opening_external_player">Abriendo en el reproductor externo…</string>
     <string name="action_download_unread">Descargar capítulos sin leer</string>
     <string name="action_download_unseen">Descargar episodios sin ver</string>
     <string name="action_bookmark_episode">Agregar episodio a marcadores</string>

@@ -481,6 +481,7 @@
     <string name="action_mark_previous_as_seen">Mark previous as seen</string>
     <string name="action_play_internally">Play internally</string>
     <string name="action_play_externally">Play externally</string>
+    <string name="opening_external_player">Opening in external player…</string>
     <string name="action_download_unread">Download unread chapters</string>
     <string name="action_download_unseen">Download unseen episodes</string>
     <string name="action_bookmark_episode">Bookmark episode</string>
