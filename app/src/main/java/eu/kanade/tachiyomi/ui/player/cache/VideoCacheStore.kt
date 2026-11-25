@@ -145,11 +145,36 @@ class VideoCacheStore(
         fun writeBlock(index: Long, data: ByteArray, size: Int) {
             try {
                 writeAtomically(File(resourceDir, index.toString()), data, size)
+                partialBlockFile(index).delete()
                 onBlockWritten(size.toLong())
             } catch (e: IOException) {
                 logcat(LogPriority.WARN, e) { "Couldn't store video block" }
             }
         }
+
+        fun hasPartialBlock(index: Long): Boolean = partialBlockFile(index).length() > 0
+
+        /** Start of a block that was being downloaded when playback stopped, or null. */
+        fun readPartialBlock(index: Long, length: Long): ByteArray? {
+            return try {
+                partialBlockFile(index).readBytes().takeIf { it.isNotEmpty() && it.size < blockLength(index, length) }
+            } catch (_: IOException) {
+                null
+            }
+        }
+
+        /** Keeps the first [size] bytes of a block so closing the player early doesn't lose them. */
+        fun writePartialBlock(index: Long, data: ByteArray, size: Int) {
+            if (size <= (readPartialBlock(index, Long.MAX_VALUE)?.size ?: 0)) return
+            try {
+                writeAtomically(partialBlockFile(index), data, size)
+                onBlockWritten(size.toLong())
+            } catch (e: IOException) {
+                logcat(LogPriority.WARN, e) { "Couldn't store partial video block" }
+            }
+        }
+
+        private fun partialBlockFile(index: Long) = File(resourceDir, "$index$PARTIAL_SUFFIX")
 
         fun delete() {
             resourceDir.deleteRecursively()
@@ -173,6 +198,7 @@ class VideoCacheStore(
     companion object {
         const val DEFAULT_BLOCK_SIZE = 1024 * 1024
         private const val INFO_FILE = "info.json"
+        private const val PARTIAL_SUFFIX = ".part"
         private const val PLAYLIST_FILE = "playlist.json"
     }
 }

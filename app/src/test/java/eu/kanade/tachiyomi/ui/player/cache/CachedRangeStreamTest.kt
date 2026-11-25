@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.io.FilterInputStream
 import java.io.IOException
 
 class CachedRangeStreamTest {
@@ -19,11 +20,15 @@ class CachedRangeStreamTest {
 
     private fun store(maxBytes: Long = Long.MAX_VALUE) = VideoCacheStore(dir, { maxBytes }, blockSize = 10)
 
-    private fun upstream(offset: Long) = UpstreamBody(
-        content.copyOfRange(offset.toInt(), content.size).inputStream(),
-        offset,
-    )
-        .also { openedAt += offset }
+    // Delivers a few bytes per read, as a network stream does, so blocks can be left halfway.
+    private fun upstream(offset: Long): UpstreamBody {
+        openedAt += offset
+        val bytes = content.copyOfRange(offset.toInt(), content.size).inputStream()
+        val chunked = object : FilterInputStream(bytes) {
+            override fun read(buffer: ByteArray, off: Int, len: Int) = super.read(buffer, off, minOf(len, 5))
+        }
+        return UpstreamBody(chunked, offset)
+    }
 
     private fun read(resource: VideoCacheStore.Resource, start: Long, end: Long): ByteArray =
         CachedRangeStream(resource, content.size.toLong(), start, end, ::upstream).use { it.readBytes() }
@@ -118,5 +123,16 @@ class CachedRangeStreamTest {
         assertEquals(true, resource.hasStart(10))
         assertEquals(false, resource.hasStart(11))
         assertEquals(false, resource.isComplete())
+    }
+
+    @Test
+    fun `a block left halfway is kept and the download resumes after it`() {
+        val resource = store().resource("https://cdn.example/video.mp4")
+        resource.writeInfo(CachedResourceInfo(25, "video/mp4"))
+        read(resource, 0, 14)
+        openedAt.clear()
+
+        assertArrayEquals(content.copyOfRange(10, 25), read(resource, 10, 24))
+        assertEquals(listOf(15L), openedAt)
     }
 }

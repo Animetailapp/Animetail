@@ -192,6 +192,11 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                     title = stringResource(AYMR.strings.pref_hosters_show_empty),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.rememberLastVideo(),
+                    title = stringResource(AYMR.strings.pref_remember_last_video),
+                    subtitle = stringResource(AYMR.strings.pref_remember_last_video_summary),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
                     preference = switchOnFailure,
                     title = stringResource(AYMR.strings.pref_hosters_switch_on_error),
                     subtitle = stringResource(AYMR.strings.pref_hosters_switch_on_error_summary),

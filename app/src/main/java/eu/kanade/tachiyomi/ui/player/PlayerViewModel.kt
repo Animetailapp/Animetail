@@ -91,6 +91,8 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.getChangedAt
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterPriority
+import eu.kanade.tachiyomi.ui.player.loader.LastPlayedVideo
+import eu.kanade.tachiyomi.ui.player.loader.LastPlayedVideoStore
 import eu.kanade.tachiyomi.ui.player.loader.NextEpisodePreloader
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamSource
@@ -177,6 +179,9 @@ private const val NETWORK_STREAM_EPISODE_ID = Long.MIN_VALUE + 102
 
 // Hosters extracted at once: the one about to play plus one backup for a quick fallback.
 private const val EXTRACTION_PERMITS = 2
+
+// Video index of a remembered video, resolved by title once its hoster is loaded.
+private const val REMEMBERED_VIDEO = -2
 
 // Leaves several minutes of a regular episode to get the next one ready.
 private const val PRELOAD_NEXT_EPISODE_PROGRESS = 0.75
@@ -1634,6 +1639,7 @@ class PlayerViewModel(
         autoPlay: Boolean = true,
     ) {
         val requestedVideo = (hosterIndex to videoIndex).takeIf { hosterIndex != -1 }
+            ?: lastPlayedVideo(source, hosterList).takeIf { autoPlay }
 
         _hosterList.update { _ -> hosterList }
         _hosterExpandedList.update { _ ->
@@ -1747,12 +1753,32 @@ class PlayerViewModel(
     // error they get one fresh extraction before moving on to the next hoster.
     private val cachedHosterIndices = ConcurrentHashMap.newKeySet<Int>()
 
+    // The video is matched by title once its hoster is loaded, since indices change between loads.
+    // A hoster disabled since then is left to the usual order.
+    private fun lastPlayedVideo(source: AnimeSource, hosterList: List<Hoster>): Pair<Int, Int>? {
+        if (!playerPreferences.rememberLastVideo().get()) return null
+        val episodeUrl = currentEpisode.value?.url ?: return null
+        val lastPlayed = LastPlayedVideoStore.shared.get(source.id, episodeUrl) ?: return null
+        val hosterIdx = hosterList.indexOfFirst { it.hosterName == lastPlayed.hosterName && !it.lazy }
+        if (hosterIdx == -1) return null
+        rememberedVideoTitle = lastPlayed.videoTitle
+        return hosterIdx to REMEMBERED_VIDEO
+    }
+
+    private var rememberedVideoTitle: String? = null
+
+    private fun resolveRememberedVideo(requested: Pair<Int, Int>): Pair<Int, Int> {
+        if (requested.second != REMEMBERED_VIDEO) return requested
+        val hoster = _hosterState.value.getOrNull(requested.first) as? HosterState.Ready ?: return requested
+        return requested.first to hoster.videoList.indexOfFirst { it.videoTitle == rememberedVideoTitle }
+    }
+
     private suspend fun startPlaybackIfReady(source: AnimeSource, requestedVideo: Pair<Int, Int>?) {
         videoSelectionMutex.withLock {
             if (_selectedHosterVideoIndex.value.first != -1) return
             if (requestedVideo != null && isHosterUnsettled(requestedVideo.first)) return
 
-            val next = requestedVideo?.takeIf { isPlayable(it) }
+            val next = requestedVideo?.let(::resolveRememberedVideo)?.takeIf { isPlayable(it) }
                 ?: HosterLoader.selectNextInOrder(_hosterState.value)
                 ?: return
             playInOrder(source, next)
@@ -1837,6 +1863,17 @@ class PlayerViewModel(
 
     fun updateVideo(video: Video) {
         _currentVideo.update { _ -> video }
+    }
+
+    /** Called once mpv opened the current video, which is then remembered for the episode. */
+    fun onFileLoaded() {
+        if (!playerPreferences.rememberLastVideo().get()) return
+        val source = currentSource.value as? AnimeHttpSource ?: return
+        val episodeUrl = currentEpisode.value?.url ?: return
+        val (hosterIdx, videoIdx) = _selectedHosterVideoIndex.value
+        val hoster = _hosterState.value.getOrNull(hosterIdx) as? HosterState.Ready ?: return
+        val video = hoster.videoList.getOrNull(videoIdx) ?: return
+        LastPlayedVideoStore.shared.put(source.id, episodeUrl, LastPlayedVideo(hoster.name, video.videoTitle))
     }
 
     // Reads the latest state inside the update: hosters finish loading concurrently, so a snapshot
@@ -2053,12 +2090,9 @@ class PlayerViewModel(
     }
 
     fun onHosterClicked(index: Int) {
-        when (hosterState.value[index]) {
-            is HosterState.Ready -> {
-                _hosterExpandedList.updateAt(index, !_hosterExpandedList.value[index])
-            }
-
-            is HosterState.Idle, is HosterState.Error -> {
+        val state = hosterState.value[index]
+        when {
+            state.canReload -> {
                 pendingHosterIndices.remove(index)
                 val hoster = hosterList.value[index]
                 _hosterState.updateAt(index, HosterState.Loading(hoster.hosterName))
@@ -2074,7 +2108,9 @@ class PlayerViewModel(
                 }
             }
 
-            is HosterState.Loading -> {}
+            state is HosterState.Ready -> {
+                _hosterExpandedList.updateAt(index, !_hosterExpandedList.value[index])
+            }
         }
     }
 

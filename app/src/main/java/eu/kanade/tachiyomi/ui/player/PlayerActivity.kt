@@ -1488,6 +1488,7 @@ class PlayerActivity : BaseActivity() {
     // at void is.xyz.mpv.MPV.event(int, MPVNode) (MPV.java)
     private suspend fun fileLoaded() {
         if (player.isExiting) return
+        viewModel.onFileLoaded()
         setMpvOptions()
         setMpvMediaTitle()
         runOnUiThread { setupPlayerOrientation() }

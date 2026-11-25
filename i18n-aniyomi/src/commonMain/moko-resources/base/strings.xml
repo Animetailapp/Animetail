@@ -85,6 +85,8 @@
     <string name="pref_hoster_cache_clear_source_summary">Removes the cached links of this source</string>
     <string name="pref_hoster_cache_duration_all_sources_summary">%s. Applies to all sources</string>
     <string name="pref_hoster_cache_cleared">Link cache cleared</string>
+    <string name="pref_remember_last_video">Remember the last server of each episode</string>
+    <string name="pref_remember_last_video_summary">Reopening an episode starts on the server and quality you were watching, so its cached video is reused</string>
     <string name="pref_video_cache">Video loading and cache</string>
     <string name="pref_video_cache_size">Video cache size</string>
     <string name="pref_video_cache_size_summary">Keeps what you watched on the device so it starts instantly next time. If it fails, the video is played without it. Current: %s</string>

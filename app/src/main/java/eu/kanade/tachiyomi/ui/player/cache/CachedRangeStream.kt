@@ -63,33 +63,46 @@ class CachedRangeStream(
     }
 
     override fun close() {
+        // The player stops reading mid-block when closed or seeking; what arrived is kept.
+        if (upstream != null && blockFilled in 1 until block.size) {
+            resource.writePartialBlock(blockIndex, block, blockFilled)
+        }
         upstream?.close()
         upstream = null
     }
 
     private fun moveToBlock(index: Long) {
         blockIndex = index
+        val blockStart = index * blockSize
+        block = ByteArray(resource.blockLength(index, length))
+        blockFilled = 0
         // Once downloading, keep reading the same connection instead of reopening one per block.
-        val cached = if (upstream == null) resource.readBlock(index, length) else null
+        if (upstream != null && upstreamPosition == blockStart) return
+
+        val cached = resource.readBlock(index, length)
         if (cached != null) {
             block = cached
             blockFilled = cached.size
             return
         }
 
-        val blockStart = index * blockSize
-        if (upstreamPosition != blockStart) {
-            upstream?.close()
-            val body = openUpstream(blockStart)
-            if (body.offset != blockStart) {
-                body.close()
-                throw IOException("Expected the resource at $blockStart, got ${body.offset}")
-            }
-            upstream = body
-            upstreamPosition = blockStart
+        resource.readPartialBlock(index, length)?.let { partial ->
+            partial.copyInto(block)
+            blockFilled = partial.size
         }
-        block = ByteArray(resource.blockLength(index, length))
-        blockFilled = 0
+        openUpstreamAt(blockStart + blockFilled)
+    }
+
+    private fun openUpstreamAt(offset: Long) {
+        upstream?.close()
+        upstream = null
+        val body = openUpstream(offset)
+        if (body.offset != offset) {
+            body.close()
+            throw IOException("Expected the resource at $offset, got ${body.offset}")
+        }
+        upstream = body
+        upstreamPosition = offset
     }
 
     private fun fillBlock(minFilled: Int) {

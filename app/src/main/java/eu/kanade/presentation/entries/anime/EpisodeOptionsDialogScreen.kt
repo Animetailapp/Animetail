@@ -103,6 +103,7 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
+import tachiyomi.presentation.core.util.collectAsState
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -365,16 +366,8 @@ class EpisodeOptionsDialogScreenModel(
     fun onClickHoster(hosterIndex: Int) {
         val hosterState = hosterState.value?.getOrNull()?.getOrNull(hosterIndex) ?: return
 
-        when (hosterState) {
-            is HosterState.Ready -> {
-                _hosterExpandedList.update { values ->
-                    values.toMutableList().apply {
-                        this[hosterIndex] = !hosterExpandedList.value[hosterIndex]
-                    }
-                }
-            }
-
-            is HosterState.Error, is HosterState.Idle -> {
+        when {
+            hosterState.canReload -> {
                 val hosterName = hosterState.name
                 _hosterState.updateAt(hosterIndex, HosterState.Loading(hosterName))
 
@@ -383,12 +376,19 @@ class EpisodeOptionsDialogScreenModel(
                         context,
                         _source.value!!,
                         _hosterList.value[hosterIndex],
+                        force = true,
                     )
                     _hosterState.updateAt(hosterIndex, newHosterState)
                 }
             }
 
-            is HosterState.Loading -> {}
+            hosterState is HosterState.Ready -> {
+                _hosterExpandedList.update { values ->
+                    values.toMutableList().apply {
+                        this[hosterIndex] = !hosterExpandedList.value[hosterIndex]
+                    }
+                }
+            }
         }
     }
 
@@ -525,6 +525,10 @@ private fun VideoList(
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val copiedString = stringResource(AYMR.strings.copied_video_link_to_clipboard)
+    // Same as the player's qualities sheet, so both list the same hosters.
+    val playerPreferences = context.appGraph.playerPreferences
+    val showFailedHosters by playerPreferences.showFailedHosters().collectAsState()
+    val showEmptyHosters by playerPreferences.showEmptyHosters().collectAsState()
 
     AnimatedVisibility(
         visible = !showAllQualities,
@@ -651,7 +655,7 @@ private fun VideoList(
                         selectedVideoIndex = selectedHosterVideoIndex,
                         onClickHoster = onClickHoster,
                         onClickVideo = onClickVideo,
-                        displayHosters = Pair(false, false),
+                        displayHosters = Pair(showFailedHosters, showEmptyHosters),
                     )
                 }
             }

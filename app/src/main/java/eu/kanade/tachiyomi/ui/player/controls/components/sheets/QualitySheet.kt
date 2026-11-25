@@ -57,6 +57,10 @@ sealed class HosterState(open val name: String) {
         val videoList: List<Video>,
         val videoState: List<Video.State>,
     ) : HosterState(name)
+
+    /** Whether tapping the hoster extracts it again; a hoster that returned no videos is worth retrying. */
+    val canReload: Boolean
+        get() = this is Idle || this is Error || (this is Ready && videoList.isEmpty())
 }
 
 fun HosterState.Ready.getChangedAt(index: Int, newVideo: Video, newState: Video.State): HosterState.Ready {
@@ -421,14 +425,14 @@ fun HosterTrack(
         }
 
         Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-            val icon = when (hoster) {
-                is HosterState.Idle, is HosterState.Error -> Icons.Default.Refresh
+            val icon = when {
+                hoster.canReload -> Icons.Default.Refresh
 
-                is HosterState.Ready -> {
+                hoster is HosterState.Ready -> {
                     if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
                 }
 
-                is HosterState.Loading -> null
+                else -> null
             }
             if (icon != null) {
                 Icon(

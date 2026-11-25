@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.SerializableHoster.Companion.toHosterList
 import eu.kanade.tachiyomi.animesource.model.SerializableVideo.Companion.toVideoList
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.ui.player.cache.isLoopbackUrl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -101,15 +102,17 @@ class HosterCache(
         }
     }
 
+    // Videos served from the device itself (e.g. Mega) point to a server that is gone after a
+    // restart, so their links would always fail.
     fun toSnapshot(): HosterCacheSnapshot = synchronized(this) {
         restoreIfNeeded()
         HosterCacheSnapshot(
-            hosters = hosters.map { (key, entry) ->
-                HosterCacheSnapshot.Entry(key, entry.value.serializeHosters(), entry.storedAt)
-            },
-            videos = videos.map { (key, entry) ->
-                HosterCacheSnapshot.Entry(key, entry.value.serializeVideos(), entry.storedAt)
-            },
+            hosters = hosters
+                .filterValues { entry -> entry.value.none { it.videoList.orEmpty().any(Video::isServedLocally) } }
+                .map { (key, entry) -> HosterCacheSnapshot.Entry(key, entry.value.serializeHosters(), entry.storedAt) },
+            videos = videos
+                .filterValues { entry -> entry.value.none(Video::isServedLocally) }
+                .map { (key, entry) -> HosterCacheSnapshot.Entry(key, entry.value.serializeVideos(), entry.storedAt) },
         )
     }
 
@@ -208,3 +211,5 @@ class HosterCache(
         }
     }
 }
+
+private fun Video.isServedLocally() = videoUrl.isLoopbackUrl()

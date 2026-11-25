@@ -50,6 +50,7 @@ class VideoCacheProxy(
      */
     @Synchronized
     fun proxyUrl(url: String): String? {
+        if (url.isLoopbackUrl()) return null
         val httpUrl = url.toHttpUrlOrNull() ?: return null
         val port = startedPort() ?: return null
         return proxyUrl(port, httpUrl)
@@ -109,7 +110,9 @@ class VideoCacheProxy(
 
             val cachedInfo = resource.readInfo()
             val firstBlock = start / store.blockSize
-            if (cachedInfo != null && start < cachedInfo.length && resource.hasBlock(firstBlock, cachedInfo.length)) {
+            val firstBlockCached = cachedInfo != null &&
+                (resource.hasBlock(firstBlock, cachedInfo.length) || resource.hasPartialBlock(firstBlock))
+            if (cachedInfo != null && start < cachedInfo.length && firstBlockCached) {
                 val stream = CachedRangeStream(
                     resource = resource,
                     length = cachedInfo.length,
@@ -237,6 +240,7 @@ class VideoCacheProxy(
      * HLS stream, in its highest quality as mpv picks by default, or the first blocks of a file.
      */
     fun warmUp(url: String, headers: Headers) {
+        if (url.isLoopbackUrl()) return
         val httpUrl = url.toHttpUrlOrNull() ?: return
         val requestHeaders = forwardedHeaders(headers.associate { (name, value) -> name to value })
         warmUp(httpUrl, requestHeaders, isVariant = false)

@@ -50,6 +50,7 @@ class PlayerPreferences(
 
     // 0 picks a size from the Android version.
     fun playerBufferMegabytes() = preferenceStore.getInt("pref_player_buffer_megabytes", 0)
+    fun rememberLastVideo() = preferenceStore.getBoolean("pref_remember_last_video", true)
     fun preloadNextEpisode() = preferenceStore.getBoolean("pref_preload_next_episode", true)
     fun fastVideoStart() = preferenceStore.getBoolean("pref_fast_video_start", true)
 
