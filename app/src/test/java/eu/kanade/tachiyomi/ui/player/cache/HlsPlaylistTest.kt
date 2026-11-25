@@ -74,4 +74,20 @@ class HlsPlaylistTest {
         )
         assertEquals(emptyList<Any>(), HlsPlaylist.mediaSegments(master, base))
     }
+
+    @Test
+    fun `the variant with the highest bandwidth is picked`() {
+        val master = """
+            #EXTM3U
+            #EXT-X-STREAM-INF:AVERAGE-BANDWIDTH=9000000,BANDWIDTH=800000,RESOLUTION=640x360
+            360.m3u8
+            #EXT-X-STREAM-INF:BANDWIDTH=2800000,RESOLUTION=1280x720
+            720.m3u8
+            #EXT-X-STREAM-INF:BANDWIDTH=1400000,RESOLUTION=854x480
+            480.m3u8
+        """.trimIndent()
+
+        assertEquals("https://cdn.example/hls/720/720.m3u8", HlsPlaylist.highestVariant(master, base).toString())
+        assertEquals(null, HlsPlaylist.highestVariant("#EXTM3U\n#EXTINF:10,\nseg-1.ts", base))
+    }
 }

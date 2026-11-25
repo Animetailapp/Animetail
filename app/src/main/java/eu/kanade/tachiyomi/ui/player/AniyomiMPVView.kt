@@ -119,7 +119,8 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         resetTrackSelection()
 
         // Limit demuxer cache since the defaults are too high for mobile devices
-        val cacheMegs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) 64 else 32
+        val cacheMegs = playerPreferences.playerBufferMegabytes().get().takeIf { it > 0 }
+            ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) 64 else 32
         setSafeOptionString("demuxer-max-bytes", "${cacheMegs * 1024 * 1024}")
         setSafeOptionString("demuxer-max-back-bytes", "${cacheMegs * 1024 * 1024}")
 

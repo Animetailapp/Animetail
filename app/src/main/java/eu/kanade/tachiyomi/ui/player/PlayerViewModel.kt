@@ -91,6 +91,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.getChangedAt
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterPriority
+import eu.kanade.tachiyomi.ui.player.loader.NextEpisodePreloader
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamSource
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
@@ -176,6 +177,9 @@ private const val NETWORK_STREAM_EPISODE_ID = Long.MIN_VALUE + 102
 
 // Hosters extracted at once: the one about to play plus one backup for a quick fallback.
 private const val EXTRACTION_PERMITS = 2
+
+// Leaves several minutes of a regular episode to get the next one ready.
+private const val PRELOAD_NEXT_EPISODE_PROGRESS = 0.75
 
 @AssistedInject
 class PlayerViewModel(
@@ -2183,6 +2187,30 @@ class PlayerViewModel(
         val inDownloadRange = seconds.toDouble() / totalSeconds > 0.35
         if (inDownloadRange) {
             downloadNextEpisodes()
+        }
+        if (seconds.toDouble() / totalSeconds > PRELOAD_NEXT_EPISODE_PROGRESS) {
+            preloadNextEpisode()
+        }
+    }
+
+    private var preloadedEpisodeId = -1L
+
+    private fun preloadNextEpisode() {
+        if (!playerPreferences.preloadNextEpisode().get()) return
+        val nextId = getAdjacentEpisodeId(previous = false).takeIf { it != -1L } ?: return
+        if (nextId == preloadedEpisodeId) return
+        preloadedEpisodeId = nextId
+
+        val nextEpisode = currentPlaylist.value.firstOrNull { it.id == nextId }?.toDomainEpisode() ?: return
+        val anime = currentAnime.value ?: return
+        val source = currentSource.value ?: return
+        viewModelScope.launchIO {
+            try {
+                NextEpisodePreloader.preload(nextEpisode, anime, source)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.WARN, e) { "Couldn't preload the next episode" }
+            }
         }
     }
 

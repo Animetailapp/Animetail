@@ -7,6 +7,7 @@ object HlsPlaylist {
 
     private const val HEADER = "#EXTM3U"
     private val URI_ATTRIBUTE = Regex("""URI="([^"]+)"""")
+    private val BANDWIDTH = Regex("""[:,]BANDWIDTH=(\d+)""")
 
     fun isPlaylist(contentType: String?, url: HttpUrl): Boolean {
         val type = contentType?.lowercase().orEmpty()
@@ -20,6 +21,33 @@ object HlsPlaylist {
      */
     fun isStatic(playlist: String): Boolean =
         "#EXT-X-ENDLIST" in playlist || "#EXT-X-STREAM-INF" in playlist
+
+    /** Variant with the highest bandwidth of a master playlist, null for media playlists. */
+    fun highestVariant(playlist: String, baseUrl: HttpUrl): HttpUrl? {
+        var bestBandwidth = -1L
+        var best: HttpUrl? = null
+        var pendingBandwidth: Long? = null
+        playlist.lineSequence().map { it.trim() }.forEach { line ->
+            when {
+                line.startsWith("#EXT-X-STREAM-INF") ->
+                    pendingBandwidth = BANDWIDTH.find(line)?.groupValues?.get(1)?.toLongOrNull() ?: 0
+
+                line.isEmpty() || line.startsWith("#") -> Unit
+
+                else -> {
+                    val bandwidth = pendingBandwidth ?: return@forEach
+                    pendingBandwidth = null
+                    if (bandwidth > bestBandwidth) {
+                        baseUrl.resolve(line)?.let {
+                            best = it
+                            bestBandwidth = bandwidth
+                        }
+                    }
+                }
+            }
+        }
+        return best
+    }
 
     /** Segment URLs of a media playlist in playback order; empty for master playlists. */
     fun mediaSegments(playlist: String, baseUrl: HttpUrl): List<HttpUrl> {

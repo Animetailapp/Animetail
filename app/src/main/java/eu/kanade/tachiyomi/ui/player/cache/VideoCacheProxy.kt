@@ -198,10 +198,6 @@ class VideoCacheProxy(
             return newFixedLengthResponse(Response.Status.OK, playlist.contentType ?: HLS_MIME_TYPE, rewritten)
         }
 
-        private fun isPlaylist(upstream: okhttp3.Response, contentType: String?, url: HttpUrl): Boolean =
-            HlsPlaylist.isPlaylist(contentType, url) ||
-                HlsPlaylist.startsLikePlaylist(upstream.peekBody(PLAYLIST_PEEK_BYTES).string())
-
         private fun rangeResponse(
             stream: CachedRangeStream,
             info: CachedResourceInfo,
@@ -236,7 +232,43 @@ class VideoCacheProxy(
         }
     }
 
-    private fun downloadToCache(url: HttpUrl, headers: Headers) {
+    /**
+     * Downloads the start of [url] into the cache before it's played: the first segments of an
+     * HLS stream, in its highest quality as mpv picks by default, or the first blocks of a file.
+     */
+    fun warmUp(url: String, headers: Headers) {
+        val httpUrl = url.toHttpUrlOrNull() ?: return
+        val requestHeaders = forwardedHeaders(headers.associate { (name, value) -> name to value })
+        warmUp(httpUrl, requestHeaders, isVariant = false)
+    }
+
+    private fun warmUp(url: HttpUrl, headers: Headers, isVariant: Boolean) {
+        val response = client.newCall(upstreamRequest(url, headers, 0)).execute()
+        val contentType = response.header("Content-Type")
+        val finalUrl = response.request.url
+        if (!response.isSuccessful || !isPlaylist(response, contentType, finalUrl)) {
+            response.close()
+            if (response.isSuccessful) downloadToCache(url, headers, maxBytes = WARM_UP_BYTES)
+            return
+        }
+
+        val playlist = CachedPlaylist(finalUrl.toString(), contentType, response.body.string())
+        if (HlsPlaylist.isStatic(playlist.body)) store.resource(url.toString()).writePlaylist(playlist)
+        val variant = HlsPlaylist.highestVariant(playlist.body, finalUrl)
+        when {
+            variant != null -> if (!isVariant) warmUp(variant, headers, isVariant = true)
+
+            else -> HlsPlaylist.mediaSegments(playlist.body, finalUrl)
+                .take(WARM_UP_SEGMENTS)
+                .forEach { downloadToCache(it, headers) }
+        }
+    }
+
+    private fun isPlaylist(upstream: okhttp3.Response, contentType: String?, url: HttpUrl): Boolean =
+        HlsPlaylist.isPlaylist(contentType, url) ||
+            HlsPlaylist.startsLikePlaylist(upstream.peekBody(PLAYLIST_PEEK_BYTES).string())
+
+    private fun downloadToCache(url: HttpUrl, headers: Headers, maxBytes: Long = Long.MAX_VALUE) {
         val response = client.newCall(upstreamRequest(url, headers, 0)).execute()
         val length = when (response.code) {
             PARTIAL_CONTENT -> ByteRange.totalLength(response.header("Content-Range"))
@@ -250,7 +282,8 @@ class VideoCacheProxy(
         val resource = store.resource(url.toString())
         resource.writeInfo(CachedResourceInfo(length, response.header("Content-Type")))
         val upstream = UpstreamBody(response.body.byteStream(), 0)
-        CachedRangeStream(resource, length, 0, length - 1, { openUpstream(url, headers, it, length) }, upstream)
+        val end = minOf(length, maxBytes) - 1
+        CachedRangeStream(resource, length, 0, end, { openUpstream(url, headers, it, length) }, upstream)
             .use { stream ->
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                 while (stream.read(buffer) != -1) Unit
@@ -309,6 +342,8 @@ class VideoCacheProxy(
         private const val OK = 200
         private const val PARTIAL_CONTENT = 206
         private const val PLAYLIST_PEEK_BYTES = 16L
+        private const val WARM_UP_SEGMENTS = 2
+        private const val WARM_UP_BYTES = 4L * 1024 * 1024
         private const val HLS_MIME_TYPE = "application/vnd.apple.mpegurl"
         private const val DEFAULT_MIME_TYPE = "application/octet-stream"
         private val UNSAFE_FILE_NAME_CHARS = Regex("[^A-Za-z0-9._-]")

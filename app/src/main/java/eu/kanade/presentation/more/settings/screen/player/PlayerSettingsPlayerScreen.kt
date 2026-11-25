@@ -252,6 +252,25 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
             title = stringResource(AYMR.strings.pref_video_cache),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.preloadNextEpisode(),
+                    title = stringResource(AYMR.strings.pref_preload_next_episode),
+                    subtitle = stringResource(AYMR.strings.pref_preload_next_episode_summary),
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = playerPreferences.playerBufferMegabytes(),
+                    entries = PLAYER_BUFFER_SIZES_MB
+                        .associateWith { megabytes ->
+                            if (megabytes == 0) {
+                                context.stringResource(AYMR.strings.pref_player_buffer_auto)
+                            } else {
+                                Formatter.formatShortFileSize(context, megabytes * 1024L * 1024L)
+                            }
+                        }
+                        .toImmutableMap(),
+                    title = stringResource(AYMR.strings.pref_player_buffer),
+                    subtitle = stringResource(AYMR.strings.pref_player_buffer_summary),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
                     preference = playerPreferences.fastVideoStart(),
                     title = stringResource(AYMR.strings.pref_fast_video_start),
                     subtitle = stringResource(AYMR.strings.pref_fast_video_start_summary),
@@ -551,3 +570,4 @@ val externalPlayers = listOf(
 )
 
 private val VIDEO_CACHE_SIZES_MB = listOf(0, 256, 512, 1024, 2048, 4096)
+private val PLAYER_BUFFER_SIZES_MB = listOf(0, 32, 64, 128, 256)
