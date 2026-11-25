@@ -34,6 +34,7 @@ import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.util.storage.DiskUtil
+import eu.kanade.tachiyomi.util.storage.renameToOrCopy
 import eu.kanade.tachiyomi.util.storage.toFFmpegString
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.coroutines.CancellationException
@@ -71,6 +72,7 @@ import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.aniyomi.AYMR
 import java.io.File
+import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -386,11 +388,12 @@ class AnimeDownloader(
 
             val filename = DiskUtil.buildValidFilename("${download.anime.title} - ${download.episode.name}")
             tmpDir.findFile("${filename}_tmp.mkv")?.delete()
-            tmpDir.renameTo(episodeDirname)
+            val episodeDir = tmpDir.renameToOrCopy(episodeDirname)
+                ?: throw IOException("Failed to move ${tmpDir.name} to $episodeDirname")
 
             cache.addEpisode(episodeDirname, animeDir, download.anime)
 
-            DiskUtil.createNoMediaFile(tmpDir, context)
+            DiskUtil.createNoMediaFile(episodeDir, context)
 
             download.status = AnimeDownload.State.DOWNLOADED
         } catch (error: Throwable) {
@@ -686,7 +689,8 @@ class AnimeDownloader(
                 throw Exception("Downloaded video is incomplete")
             }
         }
-        output.renameTo("$filename.mkv")
+        output.renameToOrCopy("$filename.mkv")
+            ?: throw IOException("Failed to move ${output.name} to $filename.mkv")
     }
 
     private fun getFFmpegOptions(video: Video, headerOptions: String, ffmpegFilename: String): Array<String> {
@@ -908,11 +912,12 @@ class AnimeDownloader(
             // Only rename the directory if it's downloaded
             val filename = DiskUtil.buildValidFilename("${download.anime.title} - ${download.episode.name}")
             tmpDir.findFile("${filename}_tmp.mkv")?.delete()
-            tmpDir.renameTo(dirname)
+            val episodeDir = tmpDir.renameToOrCopy(dirname)
+                ?: throw IOException("Failed to move ${tmpDir.name} to $dirname")
 
             cache.addEpisode(dirname, animeDir, download.anime)
 
-            DiskUtil.createNoMediaFile(tmpDir, context)
+            DiskUtil.createNoMediaFile(episodeDir, context)
             AnimeDownload.State.DOWNLOADED
         } else {
             throw Exception("Unable to finalize download")
