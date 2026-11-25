@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit
 class VideoCacheProxy(
     private val client: OkHttpClient,
     val store: VideoCacheStore,
+    private val prefetchEnabled: () -> Boolean = { true },
 ) {
     // Only URLs carrying this token are served, other apps can't use the proxy as a relay.
     private val token = UUID.randomUUID().toString().replace("-", "")
@@ -102,7 +103,7 @@ class VideoCacheProxy(
             val range = rangeHeader?.let { ByteRange.parse(it) ?: return passThrough(url, forwardedHeaders, it) }
             val start = range?.start ?: 0L
             prefetcher.awaitPrefetch(url)
-            val onEndReached = { prefetcher.onSegmentPlayed(url, forwardedHeaders) }
+            val onEndReached = { if (prefetchEnabled()) prefetcher.onSegmentPlayed(url, forwardedHeaders) }
             val resource = store.resource(url.toString())
             resource.touch()
 
@@ -336,7 +337,7 @@ class VideoCacheProxy(
                 dir = File(Injekt.get<Application>().cacheDir, "video_cache"),
                 maxBytes = { preferences.videoCacheMaxMegabytes().get() * BYTES_PER_MEGABYTE },
             )
-            VideoCacheProxy(client, store)
+            VideoCacheProxy(client, store, prefetchEnabled = { preferences.prefetchVideoSegments().get() })
         }
 
         /** Store of the shared proxy, also available while the cache is off so it can be cleared. */

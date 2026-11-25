@@ -92,6 +92,10 @@
     <string name="pref_video_cache_clear">Clear video cache</string>
     <string name="pref_video_cache_clear_summary">In use: %s</string>
     <string name="pref_video_cache_cleared">Video cache cleared</string>
+    <string name="pref_prefetch_video_segments">Download ahead</string>
+    <string name="pref_prefetch_video_segments_summary">While watching HLS videos, downloads the next 40 seconds or so in parallel to avoid pauses on slow servers. Uses more data if you stop watching early</string>
+    <string name="pref_fast_video_start">Fast video start</string>
+    <string name="pref_fast_video_start_summary">Analyzes less of the video before playing it. Turn it off if some videos open without audio or with the wrong size. Applies the next time the player opens</string>
     <string name="pref_player_fullscreen">Show content in display cutout</string>
     <string name="pref_player_hide_controls">Hide player controls when opening the player</string>
     <string name="pref_show_system_bar">Show system status bar with controls</string>

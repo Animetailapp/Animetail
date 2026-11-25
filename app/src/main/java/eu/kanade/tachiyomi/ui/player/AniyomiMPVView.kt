@@ -133,6 +133,13 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
             "reconnect=1,reconnect_on_network_error=1,reconnect_delay_max=5",
         )
 
+        // By default ffmpeg analyzes up to 5 MB or 5 seconds before playing. On HLS that downloads
+        // the first segments of the video even when playback resumes much later in it.
+        if (playerPreferences.fastVideoStart().get()) {
+            setSafeOptionString("demuxer-lavf-probesize", "${FAST_START_PROBE_BYTES}")
+            setSafeOptionString("demuxer-lavf-analyzeduration", "$FAST_START_ANALYZE_SECONDS")
+        }
+
         val screenshotDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
         screenshotDir.mkdirs()
         mpv?.setOptionString("screenshot-directory", screenshotDir.path)
@@ -307,3 +314,7 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         mpv?.setOptionString("sub-scale", subtitlePreferences.subtitleFontScale().get().toString())
     }
 }
+
+// Enough to read the codec setup of a couple of seconds of 1080p video.
+private const val FAST_START_PROBE_BYTES = 2 * 1024 * 1024
+private const val FAST_START_ANALYZE_SECONDS = 2

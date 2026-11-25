@@ -242,6 +242,7 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         val maxMegabytes = playerPreferences.videoCacheMaxMegabytes()
+        val videoCacheEnabled = maxMegabytes.collectAsState().value > 0
         var usedBytes by remember { mutableLongStateOf(0L) }
         LaunchedEffect(Unit) {
             usedBytes = withIOContext { VideoCacheProxy.sharedStore.sizeBytes() }
@@ -250,6 +251,11 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
         return Preference.PreferenceGroup(
             title = stringResource(AYMR.strings.pref_video_cache),
             preferenceItems = persistentListOf(
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.fastVideoStart(),
+                    title = stringResource(AYMR.strings.pref_fast_video_start),
+                    subtitle = stringResource(AYMR.strings.pref_fast_video_start_summary),
+                ),
                 Preference.PreferenceItem.ListPreference(
                     preference = maxMegabytes,
                     entries = VIDEO_CACHE_SIZES_MB
@@ -263,6 +269,12 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                         .toImmutableMap(),
                     title = stringResource(AYMR.strings.pref_video_cache_size),
                     subtitle = stringResource(AYMR.strings.pref_video_cache_size_summary),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.prefetchVideoSegments(),
+                    title = stringResource(AYMR.strings.pref_prefetch_video_segments),
+                    subtitle = stringResource(AYMR.strings.pref_prefetch_video_segments_summary),
+                    enabled = videoCacheEnabled,
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(AYMR.strings.pref_video_cache_clear),

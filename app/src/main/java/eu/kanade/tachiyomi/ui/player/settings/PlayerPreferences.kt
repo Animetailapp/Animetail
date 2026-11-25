@@ -46,6 +46,8 @@ class PlayerPreferences(
     fun hosterCacheMinutes() = preferenceStore.getInt("pref_hoster_cache_minutes", 120)
     fun hosterListCacheMinutes() = preferenceStore.getInt("pref_hoster_list_cache_minutes", 1440)
     fun videoCacheMaxMegabytes() = preferenceStore.getInt("pref_video_cache_max_megabytes", 512)
+    fun prefetchVideoSegments() = preferenceStore.getBoolean("pref_prefetch_video_segments", true)
+    fun fastVideoStart() = preferenceStore.getBoolean("pref_fast_video_start", true)
 
     // Display
 
