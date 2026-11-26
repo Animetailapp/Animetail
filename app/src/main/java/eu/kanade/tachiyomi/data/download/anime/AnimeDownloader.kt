@@ -120,11 +120,19 @@ class AnimeDownloader(
     val isRunning: Boolean
         get() = downloaderJob?.isActive ?: false
 
-    init {
-        scope.launch {
-            val episodes = async { store.restore() }
-            addAllToQueue(episodes.await())
-        }
+    /**
+     * Restores the queue saved by [store] when the app last ran.
+     */
+    private val restoreJob = scope.launch {
+        val episodes = async { store.restore() }
+        addAllToQueue(episodes.await())
+    }
+
+    /**
+     * Suspends until the saved queue has been restored, which waits for the sources to load.
+     */
+    suspend fun awaitQueueRestored() {
+        restoreJob.join()
     }
 
     /**
