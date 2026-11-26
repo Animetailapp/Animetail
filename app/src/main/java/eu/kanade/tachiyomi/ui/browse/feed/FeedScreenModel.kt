@@ -33,6 +33,7 @@ import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
+import tachiyomi.domain.entries.anime.model.withSourceCover
 import tachiyomi.domain.source.anime.interactor.CountFeedSavedSearchGlobal
 import tachiyomi.domain.source.anime.interactor.DeleteFeedSavedSearchById
 import tachiyomi.domain.source.anime.interactor.GetFeedSavedSearchGlobal
@@ -362,6 +363,7 @@ open class FeedScreenModel(
             getAnime.subscribe(initialanime.url, initialanime.source)
                 .collectLatest { anime ->
                     value = anime
+                        ?.withSourceCover(initialanime)
                         // KMK -->
                         ?: initialanime
                     // KMK <--

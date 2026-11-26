@@ -404,3 +404,15 @@ data class Anime(
         }
     }
 }
+
+/**
+ * This entry with the cover URL from [fromSource], a fresh copy from the source, when this entry
+ * isn't in the library and the source reports a cover. Entries outside the library otherwise keep
+ * the cover URL from the first time they were seen, so a source that moves or fixes its covers
+ * keeps showing the old ones. Returns this same instance when nothing changes.
+ */
+fun Anime.withSourceCover(fromSource: Anime): Anime {
+    val sourceCover = fromSource.thumbnailUrl
+    if (favorite || sourceCover.isNullOrBlank() || sourceCover == thumbnailUrl) return this
+    return copy(thumbnailUrl = sourceCover)
+}
