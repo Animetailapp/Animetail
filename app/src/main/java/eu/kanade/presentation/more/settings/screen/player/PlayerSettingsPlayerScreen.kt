@@ -39,6 +39,7 @@ import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.hosterCacheDurationLabel
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import eu.kanade.tachiyomi.util.LocalHttpServerService
+import eu.kanade.tachiyomi.util.formatBinarySize
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -166,6 +167,10 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
         }
         val disabledHosters = remember(disabled) { HosterPriority.parseNames(disabled).toSet() }
         var showPriorityDialog by remember { mutableStateOf(false) }
+        var linkCacheBytes by remember { mutableLongStateOf(0L) }
+        LaunchedEffect(Unit) {
+            linkCacheBytes = withIOContext { HosterCache.shared.sizeBytes() }
+        }
 
         if (showPriorityDialog) {
             HosterPriorityDialog(
@@ -233,8 +238,13 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(AYMR.strings.pref_hoster_cache_clear),
+                    subtitle = stringResource(
+                        AYMR.strings.pref_video_cache_clear_summary,
+                        formatBinarySize(linkCacheBytes),
+                    ),
                     onClick = {
                         HosterCache.shared(context).clear()
+                        linkCacheBytes = 0L
                         context.toast(AYMR.strings.pref_hoster_cache_cleared)
                     },
                 ),
@@ -581,23 +591,3 @@ val externalPlayers = listOf(
 
 private val VIDEO_CACHE_SIZES_MB = listOf(0, 256, 512, 1024, 2048, 4096)
 private val PLAYER_BUFFER_SIZES_MB = listOf(0, 32, 64, 128, 256)
-
-// The cache and buffer sizes are binary (1 GB = 1024 MB). Android's formatter uses decimal units,
-// which shows 4096 MB as "4.3 GB" and 256 MB as "268 MB".
-private fun formatBinarySize(bytes: Long): String {
-    val units = listOf("B", "KB", "MB", "GB")
-    var value = bytes.toDouble()
-    var unit = 0
-    while (value >= 1024 && unit < units.lastIndex) {
-        value /= 1024
-        unit++
-    }
-    val number = if (value % 1.0 ==
-        0.0
-    ) {
-        value.toLong().toString()
-    } else {
-        String.format(Locale.getDefault(), "%.1f", value)
-    }
-    return "$number ${units[unit]}"
-}

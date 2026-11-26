@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.browse.anime.extension.details
 
+import android.content.Context
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
@@ -9,6 +10,7 @@ import eu.kanade.tachiyomi.ui.player.loader.HosterCache
 import eu.kanade.tachiyomi.ui.player.settings.HOSTER_CACHE_DURATIONS
 import eu.kanade.tachiyomi.ui.player.settings.HOSTER_LIST_CACHE_DURATIONS
 import eu.kanade.tachiyomi.ui.player.settings.hosterCacheDurationLabel
+import eu.kanade.tachiyomi.util.formatBinarySize
 import eu.kanade.tachiyomi.util.system.toast
 import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
@@ -22,12 +24,17 @@ import tachiyomi.core.common.preference.Preference as AppPreference
  * screen was opened from one.
  *
  * @param isForAnime whether [onClearVideoCache] clears only the anime the screen was opened from.
+ * @param linkCacheBytes space taken by the links saved for the source.
+ * @param videoCacheBytes space taken by the videos [onClearVideoCache] would clear.
+ * @param onClearVideoCache clears the videos off the main thread and then runs its callback.
  */
 fun PreferenceScreen.addHosterCachePreferences(
     sourceId: Long,
     isForAnime: Boolean,
+    linkCacheBytes: Long,
+    videoCacheBytes: Long,
     onHosterPriorityClick: () -> Unit,
-    onClearVideoCache: () -> Unit,
+    onClearVideoCache: (onCleared: () -> Unit) -> Unit,
 ) {
     val preferences = context.appGraph.playerPreferences
 
@@ -69,10 +76,12 @@ fun PreferenceScreen.addHosterCachePreferences(
         Preference(context).apply {
             key = "app_hoster_cache_clear"
             title = context.stringResource(AYMR.strings.pref_hoster_cache_clear)
-            summary = context.stringResource(AYMR.strings.pref_hoster_cache_clear_source_summary)
+            val description = context.stringResource(AYMR.strings.pref_hoster_cache_clear_source_summary)
+            summary = context.summaryWithSize(description, linkCacheBytes)
             isIconSpaceReserved = false
             setOnPreferenceClickListener {
                 HosterCache.shared(context).clearSource(sourceId)
+                summary = context.summaryWithSize(description, 0L)
                 context.toast(AYMR.strings.pref_hoster_cache_cleared)
                 true
             }
@@ -83,16 +92,17 @@ fun PreferenceScreen.addHosterCachePreferences(
         Preference(context).apply {
             key = "app_video_cache_clear"
             title = context.stringResource(AYMR.strings.pref_video_cache_clear)
-            summary = context.stringResource(
+            val description = context.stringResource(
                 if (isForAnime) {
                     AYMR.strings.pref_video_cache_clear_anime_summary
                 } else {
                     AYMR.strings.pref_video_cache_clear_source_summary
                 },
             )
+            summary = context.summaryWithSize(description, videoCacheBytes)
             isIconSpaceReserved = false
             setOnPreferenceClickListener {
-                onClearVideoCache()
+                onClearVideoCache { summary = context.summaryWithSize(description, 0L) }
                 true
             }
         },
@@ -122,3 +132,6 @@ private fun PreferenceScreen.durationPreference(
         true
     }
 }
+
+private fun Context.summaryWithSize(description: String, bytes: Long) =
+    "$description\n${stringResource(AYMR.strings.pref_video_cache_clear_summary, formatBinarySize(bytes))}"

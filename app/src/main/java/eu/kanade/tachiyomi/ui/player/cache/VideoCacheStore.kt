@@ -60,6 +60,13 @@ class VideoCacheStore(
         }
     }
 
+    fun ownedSizeBytes(isOwnedBy: (String) -> Boolean): Long = synchronized(this) {
+        dir.listFiles()
+            ?.filter { resourceDir -> File(resourceDir, OWNER_FILE).readOwner()?.let(isOwnedBy) == true }
+            ?.sumOf { it.diskUsage() }
+            ?: 0L
+    }
+
     private fun File.readOwner(): String? = if (exists()) runCatching { readText() }.getOrNull() else null
 
     private fun onBlockWritten(bytes: Long) {

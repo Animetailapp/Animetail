@@ -125,6 +125,14 @@ class HosterCache(
         )
     }
 
+    /** Approximate space taken by the saved links, of one source or of all when [sourceId] is null. */
+    fun sizeBytes(sourceId: Long? = null): Long {
+        val snapshot = toSnapshot()
+        return (snapshot.hosters + snapshot.videos)
+            .filter { sourceId == null || it.key.startsWith("$sourceId|") }
+            .sumOf { it.key.length + it.list.length.toLong() }
+    }
+
     /** Adds the unexpired entries of [snapshot], skipping any list that no longer parses. */
     fun restore(snapshot: HosterCacheSnapshot) = synchronized(this) {
         snapshot.hosters.restoreInto(hosters, hosterTtl()) { it.toHosterList() }

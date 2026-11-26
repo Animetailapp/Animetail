@@ -468,9 +468,20 @@ class VideoCacheProxy(
 
         /** Deletes what was cached for these episodes, whatever hoster played them. */
         fun clearEpisodes(sourceId: Long, episodeUrls: Collection<String>) {
-            val prefixes = episodeUrls.map { episodePrefix(sourceId, it) }
-            sharedStore.clearOwned { owner -> prefixes.any(owner::startsWith) }
+            sharedStore.clearOwned(ownedByEpisodes(sourceId, episodeUrls))
         }
+
+        fun episodesSizeBytes(sourceId: Long, episodeUrls: Collection<String>): Long =
+            sharedStore.ownedSizeBytes(ownedByEpisodes(sourceId, episodeUrls))
+
+        fun sourceSizeBytes(sourceId: Long): Long = sharedStore.ownedSizeBytes(ownedBySource(sourceId))
+
+        private fun ownedByEpisodes(sourceId: Long, episodeUrls: Collection<String>): (String) -> Boolean {
+            val prefixes = episodeUrls.map { episodePrefix(sourceId, it) }
+            return { owner -> prefixes.any(owner::startsWith) }
+        }
+
+        private fun ownedBySource(sourceId: Long): (String) -> Boolean = { owner -> owner.startsWith("$sourceId|") }
 
         /** Clears the episodes once they're seen or downloaded, unless the user turned it off. */
         fun clearFinishedEpisodes(sourceId: Long, episodeUrls: Collection<String>) {
@@ -479,7 +490,7 @@ class VideoCacheProxy(
         }
 
         fun clearSource(sourceId: Long) {
-            sharedStore.clearOwned { owner -> owner.startsWith("$sourceId|") }
+            sharedStore.clearOwned(ownedBySource(sourceId))
         }
 
         /** Proxy used by the player; null when the video cache is turned off. */
