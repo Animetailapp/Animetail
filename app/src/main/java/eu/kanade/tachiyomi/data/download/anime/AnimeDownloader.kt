@@ -390,7 +390,7 @@ class AnimeDownloader(
 
             val filename = DiskUtil.buildValidFilename("${download.anime.title} - ${download.episode.name}")
             tmpDir.findFile("${filename}_tmp.mkv")?.delete()
-            val episodeDir = tmpDir.renameToOrCopy(episodeDirname)
+            val episodeDir = finalizeEpisodeDir(animeDir, tmpDir, episodeDirname)
                 ?: throw IOException("Failed to move ${tmpDir.name} to $episodeDirname")
 
             cache.addEpisode(episodeDirname, animeDir, download.anime)
@@ -937,37 +937,6 @@ class AnimeDownloader(
     }
 
     /**
-     * Checks if the download was successful.
-     *
-     * @param download the download to check.
-     * @param animeDir the anime directory of the download.
-     * @param tmpDir the directory where the download is currently stored.
-     * @param dirname the real (non temporary) directory name of the download.
-     */
-    private suspend fun ensureSuccessfulAnimeDownload(
-        download: AnimeDownload,
-        animeDir: UniFile,
-        tmpDir: UniFile,
-        dirname: String,
-    ) {
-        // Ensure that the episode folder has the full video
-        download.status = if (tmpDir.hasSingleFinishedVideo()) {
-            // Only rename the directory if it's downloaded
-            val filename = DiskUtil.buildValidFilename("${download.anime.title} - ${download.episode.name}")
-            tmpDir.findFile("${filename}_tmp.mkv")?.delete()
-            val episodeDir = tmpDir.renameToOrCopy(dirname)
-                ?: throw IOException("Failed to move ${tmpDir.name} to $dirname")
-
-            cache.addEpisode(dirname, animeDir, download.anime)
-
-            DiskUtil.createNoMediaFile(episodeDir, context)
-            AnimeDownload.State.DOWNLOADED
-        } else {
-            throw Exception("Unable to finalize download")
-        }
-    }
-
-    /**
      * Returns true if all the queued downloads are in DOWNLOADED or ERROR state.
      */
     private fun areAllAnimeDownloadsFinished(): Boolean {
@@ -1071,6 +1040,23 @@ private const val MIN_DURATION_RATIO = 0.9f
  */
 internal fun UniFile.hasSingleFinishedVideo(): Boolean {
     return listFiles().orEmpty().count { it.extension != "tmp" } == 1
+}
+
+/**
+ * Moves the finished temporary episode directory [tmpDir] to [dirname] in [animeDir], copying it
+ * where the document provider rejects renames (see [renameToOrCopy]).
+ *
+ * A move that failed halfway, for example a copy that failed and could not be cleaned up, leaves a
+ * [dirname] behind, and every retry would then fail on it. [tmpDir] holds the finished video, so it
+ * replaces that directory.
+ *
+ * @return the episode directory, or null if it could not be moved; [tmpDir] is then kept.
+ */
+internal fun finalizeEpisodeDir(animeDir: UniFile, tmpDir: UniFile, dirname: String): UniFile? {
+    animeDir.findFile(dirname)?.let { leftover ->
+        if (!leftover.delete()) return null
+    }
+    return tmpDir.renameToOrCopy(dirname)
 }
 
 // libavformat has no network read timeout by default, so a server that stops sending blocks FFmpeg

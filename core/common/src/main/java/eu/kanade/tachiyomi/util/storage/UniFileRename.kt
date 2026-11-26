@@ -18,7 +18,12 @@ fun UniFile.renameToOrCopy(displayName: String): UniFile? {
     }
     if (renamed) return this
     val parent = parentFile ?: return null
-    if (parent.findFile(displayName) != null) return null
+    parent.findFile(displayName)?.let { target ->
+        // Some providers rename and still report a failure; the original is gone then
+        if (exists()) return null
+        logcat(LogPriority.WARN) { "Rename of $name to $displayName reported a failure but happened" }
+        return target
+    }
 
     val copy = try {
         copyInto(parent, displayName)
