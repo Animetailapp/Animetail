@@ -13,7 +13,12 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-data class AnimeDownload(
+/**
+ * One entry of the download queue. Entries are compared by identity: [video] and the other state
+ * change while it downloads, and the downloader keys its running jobs by entry, so a value-based
+ * equality made a download with a newly picked video look like another one and start it again.
+ */
+class AnimeDownload(
     val source: AnimeHttpSource,
     val anime: Anime,
     val episode: Episode,

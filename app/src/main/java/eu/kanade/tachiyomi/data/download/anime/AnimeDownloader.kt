@@ -60,6 +60,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
@@ -74,6 +76,7 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.aniyomi.AYMR
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.time.Duration.Companion.minutes
@@ -108,6 +111,9 @@ class AnimeDownloader(
     val queueState = _queueState.asStateFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Held while an episode downloads, see [launchDownloadJob]. */
+    private val episodeLocks = ConcurrentHashMap<Long, Mutex>()
 
     /**
      * Job object for download queue management
@@ -254,7 +260,12 @@ class AnimeDownloader(
     private fun CoroutineScope.launchDownloadJob(download: AnimeDownload) = launchIO {
         // This try-catch manages the job cancellation
         try {
-            downloadEpisode(download)
+            // A cancelled job (paused, moved down the queue) can still be stopping FFmpeg or saving
+            // its video when the episode starts again; the new job waits for it instead of sharing
+            // the episode's files with it.
+            episodeLocks.computeIfAbsent(download.episode.id) { Mutex() }.withLock {
+                downloadEpisode(download)
+            }
 
             // Remove successful download from queue
             if (download.status == AnimeDownload.State.DOWNLOADED) {
