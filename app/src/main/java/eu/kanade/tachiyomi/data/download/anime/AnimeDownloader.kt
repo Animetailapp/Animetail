@@ -38,6 +38,7 @@ import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.renameToOrCopy
 import eu.kanade.tachiyomi.util.storage.toFFmpegString
 import eu.kanade.tachiyomi.util.system.copyToClipboard
+import eu.kanade.tachiyomi.util.system.networkStateFlow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +55,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
@@ -80,6 +82,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * This class is the one in charge of downloading episodes.
@@ -145,6 +148,30 @@ class AnimeDownloader(
      */
     suspend fun awaitQueueRestored() {
         restoreJob.join()
+    }
+
+    init {
+        resumeWhenNetworkReturns()
+    }
+
+    /**
+     * Resumes held downloads as soon as a network they may use is back. The download job is also
+     * scheduled to resume with WorkManager constraints, but WorkManager can run it minutes late,
+     * e.g. under battery optimizations, so a short Wi-Fi drop left the queue paused for a while.
+     * [AnimeDownloadJob.retryHeld] does nothing unless downloads are waiting and none is running.
+     */
+    private fun resumeWhenNetworkReturns() {
+        scope.launchIO {
+            context.networkStateFlow()
+                .map { it.isOnline && (it.isWifi || !preferences.downloadOnlyOverWifi.get()) }
+                .distinctUntilChanged()
+                .collectLatest { usable ->
+                    if (!usable) return@collectLatest
+                    // A network that comes and goes is waited out: collectLatest cancels this delay
+                    delay(NETWORK_RESUME_DELAY)
+                    if (!isRunning && pendingDownloads().isNotEmpty()) AnimeDownloadJob.retryHeld(context)
+                }
+        }
     }
 
     /**
@@ -1091,6 +1118,9 @@ class AnimeDownloader(
         const val WARNING_NOTIF_TIMEOUT_MS = 30_000L
         const val EPISODES_PER_SOURCE_QUEUE_WARNING_THRESHOLD = 10
         private const val DOWNLOADS_QUEUED_WARNING_THRESHOLD = 20
+
+        /** How long a usable network must stay before held downloads are resumed. */
+        private val NETWORK_RESUME_DELAY = 5.seconds
     }
 }
 
