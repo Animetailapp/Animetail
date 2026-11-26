@@ -120,11 +120,19 @@ class AnimeDownloader(
     val isRunning: Boolean
         get() = downloaderJob?.isActive ?: false
 
-    init {
-        scope.launch {
-            val episodes = async { store.restore() }
-            addAllToQueue(episodes.await())
-        }
+    /**
+     * Restores the queue saved by [store] when the app last ran.
+     */
+    private val restoreJob = scope.launch {
+        val episodes = async { store.restore() }
+        addAllToQueue(episodes.await())
+    }
+
+    /**
+     * Suspends until the saved queue has been restored, which waits for the sources to load.
+     */
+    suspend fun awaitQueueRestored() {
+        restoreJob.join()
     }
 
     /**
@@ -390,7 +398,7 @@ class AnimeDownloader(
 
             val filename = DiskUtil.buildValidFilename("${download.anime.title} - ${download.episode.name}")
             tmpDir.findFile("${filename}_tmp.mkv")?.delete()
-            val episodeDir = tmpDir.renameToOrCopy(episodeDirname)
+            val episodeDir = finalizeEpisodeDir(animeDir, tmpDir, episodeDirname)
                 ?: throw IOException("Failed to move ${tmpDir.name} to $episodeDirname")
 
             cache.addEpisode(episodeDirname, animeDir, download.anime)
@@ -615,7 +623,6 @@ class AnimeDownloader(
         }
 
         FFmpegKitConfig.setLogRedirectionStrategy(LogRedirectionStrategy.ALWAYS_PRINT_LOGS)
-        val ffmpegOptions = getFFmpegOptions(video, headerOptions, ffmpegFilename())
         val ffprobeCommand = { file: String, ffprobeHeaders: String? ->
             FFmpegKitConfig.parseArguments(
                 "${ffprobeHeaders?.plus(" ") ?: ""}-v quiet -show_entries " +
@@ -638,7 +645,10 @@ class AnimeDownloader(
         } else {
             headerOptions
         }
-        duration = getDuration(ffprobeCommand(video.videoUrl, ffprobeOptions))?.toLong() ?: 0L
+        val probeCommand = "$ffprobeOptions ${SourceProbe.FFPROBE_ARGS} \"${video.videoUrl}\""
+        val probe = SourceProbe.parse(runFFprobe(FFmpegKitConfig.parseArguments(probeCommand)))
+        duration = probe.durationSeconds?.toLong() ?: 0L
+        val ffmpegOptions = getFFmpegOptions(video, headerOptions, ffmpegFilename(), probe.variantProgramId)
 
         // FFmpeg keeps running while a source stalls (reconnects retry, HLS skips failing segments),
         // so an attempt that writes nothing for STALL_TIMEOUT fails and is retried instead of holding
@@ -710,7 +720,16 @@ class AnimeDownloader(
             ?: throw IOException("Failed to move ${output.name} to $filename.mkv")
     }
 
-    private fun getFFmpegOptions(video: Video, headerOptions: String, ffmpegFilename: String): Array<String> {
+    /**
+     * @param variantProgramId the program of the HLS variant to download (see [SourceProbe]), or null
+     *   to download all video and audio of the input.
+     */
+    private fun getFFmpegOptions(
+        video: Video,
+        headerOptions: String,
+        ffmpegFilename: String,
+        variantProgramId: Int?,
+    ): Array<String> {
         fun formatInputs(tracks: List<Track>) = tracks.joinToString(" ", postfix = " ") {
             buildList {
                 if (it.url.startsWith("http")) {
@@ -758,9 +777,10 @@ class AnimeDownloader(
             add("\"${video.videoUrl}\"")
         }.joinToString(" ")
 
+        val videoSource = variantProgramId?.let { "0:p:$it" } ?: "0"
         val command = listOf(
             videoInput, subtitleInputs, audioInputs,
-            "-map 0:v", audioMaps, "-map 0:a?", subtitleMaps, "-map 0:s? -map 0:t?",
+            "-map $videoSource:v", audioMaps, "-map $videoSource:a?", subtitleMaps, "-map 0:s? -map 0:t?",
             "-f matroska -c:a copy -c:v copy -c:s copy",
             subtitleMetadata, audioMetadata, sourceVideoOptions,
             "\"$ffmpegFilename\" -y",
@@ -772,6 +792,10 @@ class AnimeDownloader(
     }
 
     private suspend fun getDuration(ffprobeCommand: Array<String>): Float? {
+        return runFFprobe(ffprobeCommand).toFloatOrNull()
+    }
+
+    private suspend fun runFFprobe(ffprobeCommand: Array<String>): String {
         return suspendCancellableCoroutine { continuation ->
             val session = FFprobeKit.executeWithArgumentsAsync(ffprobeCommand) {
                 if (it.returnCode.isValueSuccess) {
@@ -781,7 +805,7 @@ class AnimeDownloader(
                 }
             }
             continuation.invokeOnCancellation { session.cancel() }
-        }.output.toFloatOrNull()
+        }.output
     }
 
     /**
@@ -921,37 +945,6 @@ class AnimeDownloader(
     }
 
     /**
-     * Checks if the download was successful.
-     *
-     * @param download the download to check.
-     * @param animeDir the anime directory of the download.
-     * @param tmpDir the directory where the download is currently stored.
-     * @param dirname the real (non temporary) directory name of the download.
-     */
-    private suspend fun ensureSuccessfulAnimeDownload(
-        download: AnimeDownload,
-        animeDir: UniFile,
-        tmpDir: UniFile,
-        dirname: String,
-    ) {
-        // Ensure that the episode folder has the full video
-        download.status = if (tmpDir.hasSingleFinishedVideo()) {
-            // Only rename the directory if it's downloaded
-            val filename = DiskUtil.buildValidFilename("${download.anime.title} - ${download.episode.name}")
-            tmpDir.findFile("${filename}_tmp.mkv")?.delete()
-            val episodeDir = tmpDir.renameToOrCopy(dirname)
-                ?: throw IOException("Failed to move ${tmpDir.name} to $dirname")
-
-            cache.addEpisode(dirname, animeDir, download.anime)
-
-            DiskUtil.createNoMediaFile(episodeDir, context)
-            AnimeDownload.State.DOWNLOADED
-        } else {
-            throw Exception("Unable to finalize download")
-        }
-    }
-
-    /**
      * Returns true if all the queued downloads are in DOWNLOADED or ERROR state.
      */
     private fun areAllAnimeDownloadsFinished(): Boolean {
@@ -1055,6 +1048,23 @@ private const val MIN_DURATION_RATIO = 0.9f
  */
 internal fun UniFile.hasSingleFinishedVideo(): Boolean {
     return listFiles().orEmpty().count { it.extension != "tmp" } == 1
+}
+
+/**
+ * Moves the finished temporary episode directory [tmpDir] to [dirname] in [animeDir], copying it
+ * where the document provider rejects renames (see [renameToOrCopy]).
+ *
+ * A move that failed halfway, for example a copy that failed and could not be cleaned up, leaves a
+ * [dirname] behind, and every retry would then fail on it. [tmpDir] holds the finished video, so it
+ * replaces that directory.
+ *
+ * @return the episode directory, or null if it could not be moved; [tmpDir] is then kept.
+ */
+internal fun finalizeEpisodeDir(animeDir: UniFile, tmpDir: UniFile, dirname: String): UniFile? {
+    animeDir.findFile(dirname)?.let { leftover ->
+        if (!leftover.delete()) return null
+    }
+    return tmpDir.renameToOrCopy(dirname)
 }
 
 // libavformat has no network read timeout by default, so a server that stops sending blocks FFmpeg

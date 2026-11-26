@@ -26,13 +26,15 @@ class AnimeDatabaseMemoMigrationTest {
 
         driver.ensureAnimeMemoColumnsAndViews()
 
-        executedSql shouldHaveSize 6
+        executedSql shouldHaveSize 8
         executedSql[0] shouldBe "ALTER TABLE animes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d'"
         executedSql[1] shouldBe "ALTER TABLE episodes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d'"
-        executedSql[2] shouldBe "DROP VIEW IF EXISTS animelibView"
-        executedSql[3] shouldContain "CREATE VIEW animelibView AS"
-        executedSql[4] shouldBe "DROP VIEW IF EXISTS animeseasonsView"
-        executedSql[5] shouldContain "CREATE VIEW animeseasonsView AS"
+        executedSql[2] shouldBe BEGIN
+        executedSql[3] shouldBe "DROP VIEW IF EXISTS animelibView"
+        executedSql[4] shouldContain "CREATE VIEW animelibView AS"
+        executedSql[5] shouldBe "DROP VIEW IF EXISTS animeseasonsView"
+        executedSql[6] shouldContain "CREATE VIEW animeseasonsView AS"
+        executedSql[7] shouldBe COMMIT
     }
 
     @Test
@@ -47,16 +49,20 @@ class AnimeDatabaseMemoMigrationTest {
 
         driver.ensureAnimeMemoColumnsAndViews()
 
-        executedSql shouldHaveSize 6
-        executedSql[2] shouldBe "DROP VIEW IF EXISTS animelibView"
-        executedSql[3] shouldContain "CREATE VIEW animelibView AS"
-        executedSql[4] shouldBe "DROP VIEW IF EXISTS animeseasonsView"
-        executedSql[5] shouldContain "CREATE VIEW animeseasonsView AS"
+        executedSql shouldHaveSize 8
+        executedSql[2] shouldBe BEGIN
+        executedSql[3] shouldBe "DROP VIEW IF EXISTS animelibView"
+        executedSql[4] shouldContain "CREATE VIEW animelibView AS"
+        executedSql[5] shouldBe "DROP VIEW IF EXISTS animeseasonsView"
+        executedSql[6] shouldContain "CREATE VIEW animeseasonsView AS"
+        executedSql[7] shouldBe COMMIT
     }
 
     @Test
     fun `ensureAnimeMemoColumnsAndViews propagates view recreation failures`() = runTest {
+        val executedSql = mutableListOf<String>()
         val driver = ColdAsyncSqlDriver { sql ->
+            executedSql += sql
             if (sql.contains("CREATE VIEW animelibView AS")) {
                 throw mockk<SQLException>()
             }
@@ -65,6 +71,8 @@ class AnimeDatabaseMemoMigrationTest {
         shouldThrow<SQLException> {
             driver.ensureAnimeMemoColumnsAndViews()
         }
+        // The dropped view is restored by the rollback instead of being left missing.
+        executedSql.last() shouldBe ROLLBACK
     }
 
     /**
@@ -74,6 +82,8 @@ class AnimeDatabaseMemoMigrationTest {
     private class ColdAsyncSqlDriver(
         private val onAwaitExecute: suspend (String) -> Unit,
     ) : SqlDriver {
+        private var transaction: Transacter.Transaction? = null
+
         override fun execute(
             identifier: Int?,
             sql: String,
@@ -92,9 +102,20 @@ class AnimeDatabaseMemoMigrationTest {
             binders: (SqlPreparedStatement.() -> Unit)?,
         ): QueryResult<R> = throw UnsupportedOperationException()
 
-        override fun newTransaction(): QueryResult<Transacter.Transaction> = throw UnsupportedOperationException()
+        override fun newTransaction(): QueryResult<Transacter.Transaction> = QueryResult.AsyncValue {
+            onAwaitExecute(BEGIN)
+            val enclosing = transaction
+            object : Transacter.Transaction() {
+                override val enclosingTransaction = enclosing
 
-        override fun currentTransaction(): Transacter.Transaction? = null
+                override fun endTransaction(successful: Boolean): QueryResult<Unit> = QueryResult.AsyncValue {
+                    transaction = enclosing
+                    onAwaitExecute(if (successful) COMMIT else ROLLBACK)
+                }
+            }.also { transaction = it }
+        }
+
+        override fun currentTransaction(): Transacter.Transaction? = transaction
 
         override fun addListener(vararg queryKeys: String, listener: Query.Listener) = Unit
 
@@ -103,5 +124,11 @@ class AnimeDatabaseMemoMigrationTest {
         override fun notifyListeners(vararg queryKeys: String) = Unit
 
         override fun close() = Unit
+    }
+
+    private companion object {
+        const val BEGIN = "BEGIN IMMEDIATE"
+        const val COMMIT = "COMMIT"
+        const val ROLLBACK = "ROLLBACK"
     }
 }

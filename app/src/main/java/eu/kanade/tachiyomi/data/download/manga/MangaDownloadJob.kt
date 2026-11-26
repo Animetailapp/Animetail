@@ -58,6 +58,10 @@ class MangaDownloadJob(context: Context, workerParams: WorkerParameters) : Corou
     }
 
     override suspend fun doWork(): Result {
+        // After the app is updated or killed, WorkManager runs this job again before the queue is
+        // restored. Starting with the queue still empty would end the job and leave it paused.
+        downloader.awaitQueueRestored()
+
         var networkIssue = networkIssue()
         if (networkIssue != null) {
             downloader.stop(networkIssue)

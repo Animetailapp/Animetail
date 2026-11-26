@@ -240,6 +240,9 @@ class PlayerViewModel(
         it.setOptionString("keep-open", "yes")
     }
 
+    /** Whether a player view has set up [mpv]; a recreated activity only attaches to it. */
+    var isMpvSetUp = false
+
     private val eventChannel = Channel<Event>(Channel.UNLIMITED)
     val eventFlow = eventChannel.receiveAsFlow()
 

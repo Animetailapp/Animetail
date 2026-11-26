@@ -131,6 +131,23 @@ class UniFileRenameTest {
         File(root, "page.jpg").readText() shouldBe "existing"
     }
 
+    @Test
+    fun `Rename that happened despite reporting a failure returns the renamed file`() {
+        File(root, "episode_tmp").mkdir()
+        File(root, "episode_tmp/episode.mkv").writeText("video")
+        val dir = spyk(child("episode_tmp"))
+        every { dir.renameTo(any()) } answers {
+            File(root, "episode_tmp").renameTo(File(root, "episode"))
+            false
+        }
+
+        val result = dir.renameToOrCopy("episode")
+
+        result.shouldNotBeNull().name shouldBe "episode"
+        File(root, "episode/episode.mkv").readText() shouldBe "video"
+        File(root, "episode_tmp").exists() shouldBe false
+    }
+
     private fun createFile(name: String, content: String): UniFile {
         File(root, name).writeText(content)
         return child(name)

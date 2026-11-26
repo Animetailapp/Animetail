@@ -1,10 +1,12 @@
 package eu.kanade.tachiyomi.util.storage
 
+import android.content.ContentResolver
 import android.content.Context
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Environment
 import android.os.StatFs
+import android.provider.DocumentsContract
 import androidx.core.content.ContextCompat
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.util.lang.Hash
@@ -73,14 +75,60 @@ object DiskUtil {
     }
 
     /**
-     * Gets the available space for the disk that a file path points to, in bytes.
+     * Gets the available space for the disk that a file or document points to, in bytes, or -1
+     * when it can't be found out.
      */
     fun getAvailableStorageSpace(f: UniFile): Long {
-        return try {
-            val stat = StatFs(f.uri.path)
-            stat.availableBlocksLong * stat.blockSizeLong
-        } catch (_: Exception) {
-            -1L
+        return getStorageVolume(f)?.let { getAvailableStorageSpace(it) } ?: -1L
+    }
+
+    /**
+     * Returns a folder on the same disk as [f]: its own path for a file, or the root of its storage
+     * volume for a document of the external storage provider, which is what folders picked with
+     * the system picker are. Null for documents of other providers.
+     *
+     * [StatFs] needs a path on the device, and the path of a document URI
+     * (e.g. /tree/primary:Animetail/document/...) isn't one.
+     */
+    private fun getStorageVolume(f: UniFile): File? {
+        val uri = f.uri
+        return when (uri.scheme) {
+            ContentResolver.SCHEME_FILE -> uri.path?.let(::File)
+
+            ContentResolver.SCHEME_CONTENT -> {
+                if (uri.authority != EXTERNAL_STORAGE_PROVIDER_AUTHORITY) return null
+                val documentId = try {
+                    if (DocumentsContract.isTreeUri(uri)) {
+                        DocumentsContract.getTreeDocumentId(uri)
+                    } else {
+                        DocumentsContract.getDocumentId(uri)
+                    }
+                } catch (_: IllegalArgumentException) {
+                    return null
+                }
+                getVolumePath(documentId, Environment.getExternalStorageDirectory().absolutePath)?.let(::File)
+            }
+
+            else -> null
+        }
+    }
+
+    /**
+     * Returns the root of the storage volume of a document of the external storage provider from
+     * its id, e.g. "primary:Animetail/downloads" (the shared storage, [primaryPath]) or
+     * "1A2B-3C4D:Animetail" (an SD card or USB drive, mounted in /storage).
+     */
+    internal fun getVolumePath(documentId: String, primaryPath: String): String? {
+        val volume = documentId.substringBefore(':', missingDelimiterValue = "")
+        return when {
+            volume.isEmpty() -> null
+
+            // "home" is the Documents folder of the shared storage
+            volume == "primary" || volume == "home" -> primaryPath
+
+            volume.all { it.isLetterOrDigit() || it == '-' } -> "/storage/$volume"
+
+            else -> null
         }
     }
 
@@ -197,6 +245,8 @@ object DiskUtil {
             else -> true
         }
     }
+
+    private const val EXTERNAL_STORAGE_PROVIDER_AUTHORITY = "com.android.externalstorage.documents"
 
     const val NOMEDIA_FILE = ".nomedia"
 
