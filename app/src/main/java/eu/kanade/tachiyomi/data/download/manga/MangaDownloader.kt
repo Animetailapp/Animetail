@@ -132,11 +132,19 @@ class MangaDownloader(
     @Volatile
     var isPaused: Boolean = false
 
-    init {
-        scope.launch {
-            val chapters = async { store.restore() }
-            addAllToQueue(chapters.await())
-        }
+    /**
+     * Restores the queue saved by [store] when the app last ran.
+     */
+    private val restoreJob = scope.launch {
+        val chapters = async { store.restore() }
+        addAllToQueue(chapters.await())
+    }
+
+    /**
+     * Suspends until the saved queue has been restored, which waits for the sources to load.
+     */
+    suspend fun awaitQueueRestored() {
+        restoreJob.join()
     }
 
     /**
