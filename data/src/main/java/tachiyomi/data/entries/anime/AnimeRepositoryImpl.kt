@@ -156,6 +156,7 @@ class AnimeRepositoryImpl(
                 cast = anime.cast,
                 memo = anime.memo,
                 audioLanguage = anime.audioLanguage,
+                autoDownload = anime.autoDownload,
             )
         }
     }
@@ -246,6 +247,7 @@ class AnimeRepositoryImpl(
                     memo = value.memo,
                     audioLanguage = value.audioLanguage,
                     originalLanguage = value.originalLanguage,
+                    autoDownload = value.autoDownload,
                 )
             }
         }

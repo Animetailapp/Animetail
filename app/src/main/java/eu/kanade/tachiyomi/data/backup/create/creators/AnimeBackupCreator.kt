@@ -115,4 +115,5 @@ private fun Anime.toBackupAnime() =
         seasonSourceOrder = this.seasonSourceOrder,
         memo = MemoColumnAdapter.encode(this.memo),
         audioLanguage = this.audioLanguage,
+        autoDownload = this.autoDownload,
     )

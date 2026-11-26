@@ -457,4 +457,12 @@
     <string name="audio_language_original">Original language</string>
     <string name="audio_language_original_detected">Original language (%s)</string>
     <string name="audio_language_dialog_message">Used for this show when picking the audio track. Picking an audio track in the player also changes it.</string>
+
+    <!-- Auto-download new episodes -->
+    <string name="action_auto_download_new_episodes">Auto-download new episodes</string>
+    <string name="auto_download_dialog_message">Whether the library update downloads this show\'s new episodes. Default follows Settings > Downloads > Download new episodes and its categories.</string>
+    <string name="auto_download_dialog_message_season">Whether the library update downloads this season\'s new episodes. Default follows the show, then Settings > Downloads > Download new episodes and its categories.</string>
+    <string name="auto_download_default">Default</string>
+    <string name="auto_download_always">Always</string>
+    <string name="auto_download_never">Never</string>
 </resources>

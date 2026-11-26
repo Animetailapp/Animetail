@@ -72,6 +72,7 @@ data class BackupAnime(
 
     // Animetail specific values
     @ProtoNumber(1000) var audioLanguage: String = "",
+    @ProtoNumber(1001) var autoDownload: Long = 0,
 ) {
     fun getAnimeImpl(): Anime {
         return Anime.create().copy(
@@ -103,6 +104,7 @@ data class BackupAnime(
             seasonSourceOrder = this@BackupAnime.seasonSourceOrder,
             memo = MemoColumnAdapter.decode(this@BackupAnime.memo),
             audioLanguage = this@BackupAnime.audioLanguage,
+            autoDownload = this@BackupAnime.autoDownload,
         )
     }
 

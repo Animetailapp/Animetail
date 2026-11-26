@@ -35,6 +35,7 @@ import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.entries.anime.interactor.GetAnimeAudioLanguage
 import eu.kanade.domain.entries.anime.interactor.SetAnimeAudioLanguage
+import eu.kanade.domain.entries.anime.interactor.SetAnimeAutoDownload
 import eu.kanade.domain.entries.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.entries.anime.interactor.SyncRelatedAnimeWithSource
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
@@ -209,6 +210,7 @@ class AnimeViewModel(
     internal val setAnimeViewerFlags: SetAnimeViewerFlags,
     private val getAnimeAudioLanguage: GetAnimeAudioLanguage,
     private val setAnimeAudioLanguage: SetAnimeAudioLanguage,
+    private val setAnimeAutoDownload: SetAnimeAutoDownload,
     internal val audioPreferences: AudioPreferences,
     // AM (FILE_SIZE) -->
     private val storagePreferences: StoragePreferences,
@@ -1933,6 +1935,7 @@ class AnimeViewModel(
         data object RemoveFromLibrary : Dialog
         data object ChangeAnimeSkipIntro : Dialog
         data class ChangeAnimeAudioLanguage(val originalLanguage: String?) : Dialog
+        data object ChangeAnimeAutoDownload : Dialog
         data object EpisodeSettingsSheet : Dialog
         data object SeasonSettingsSheet : Dialog
         data object TrackSheet : Dialog
@@ -2000,6 +2003,17 @@ class AnimeViewModel(
         val anime = successState?.anime ?: return
         viewModelScope.launchIO {
             setAnimeAudioLanguage.await(anime.id, value)
+        }
+    }
+
+    fun showAnimeAutoDownloadDialog() {
+        updateSuccessState { it.copy(dialog = Dialog.ChangeAnimeAutoDownload) }
+    }
+
+    fun setAnimeAutoDownload(value: Long) {
+        val anime = successState?.anime ?: return
+        viewModelScope.launchIO {
+            setAnimeAutoDownload.await(anime.id, value)
         }
     }
 

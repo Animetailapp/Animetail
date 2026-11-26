@@ -1,0 +1,3 @@
+-- Per-anime "Auto-download new episodes": 0 follows the download settings, 1 always, 2 never.
+ALTER TABLE animes
+ADD auto_download INTEGER NOT NULL DEFAULT 0;

@@ -47,6 +47,7 @@ object AnimeMapper {
         notes: String,
         audioLanguage: String,
         originalLanguage: String,
+        autoDownload: Long,
     ): Anime = Anime(
         id = id,
         source = source,
@@ -85,6 +86,7 @@ object AnimeMapper {
         memo = memo,
         audioLanguage = audioLanguage,
         originalLanguage = originalLanguage,
+        autoDownload = autoDownload,
     )
 
     fun mapLibraryAnime(
@@ -124,6 +126,7 @@ object AnimeMapper {
         notes: String,
         audioLanguage: String,
         originalLanguage: String,
+        autoDownload: Long,
         totalCount: Long,
         seenCount: Double,
         latestUpload: Long,
@@ -170,6 +173,7 @@ object AnimeMapper {
             notes,
             audioLanguage,
             originalLanguage,
+            autoDownload,
         ),
         category = category,
         totalCount = totalCount,
@@ -218,6 +222,7 @@ object AnimeMapper {
         notes: String,
         audioLanguage: String,
         originalLanguage: String,
+        autoDownload: Long,
         totalCount: Long,
         seenCount: Double,
         latestUpload: Long,
@@ -263,6 +268,7 @@ object AnimeMapper {
             notes,
             audioLanguage,
             originalLanguage,
+            autoDownload,
         ),
         totalCount = totalCount,
         seenCount = seenCount.toLong(),
@@ -310,6 +316,7 @@ object AnimeMapper {
         notes: String,
         audioLanguage: String,
         originalLanguage: String,
+        autoDownload: Long,
         name: String,
     ): Pair<String, Anime> = name to mapAnime(
         id,
@@ -348,6 +355,7 @@ object AnimeMapper {
         notes,
         audioLanguage,
         originalLanguage,
+        autoDownload,
     )
 
     fun mapDeletableAnime(
