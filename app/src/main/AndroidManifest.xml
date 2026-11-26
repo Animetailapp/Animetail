@@ -215,7 +215,7 @@
         <activity
             android:name=".ui.player.PlayerActivity"
             android:autoRemoveFromRecents="true"
-            android:configChanges="orientation|screenLayout|screenSize|smallestScreenSize|keyboardHidden|keyboard|uiMode"
+            android:configChanges="orientation|screenLayout|screenSize|smallestScreenSize|keyboardHidden|keyboard|uiMode|density"
             android:exported="false"
             android:launchMode="singleTask"
             android:resizeableActivity="true"

@@ -100,6 +100,7 @@ import eu.kanade.tachiyomi.ui.player.utils.AudioLanguageTarget
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
 import eu.kanade.tachiyomi.ui.player.utils.LanguageTags
 import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
+import eu.kanade.tachiyomi.ui.player.utils.applyVideoAspect
 import eu.kanade.tachiyomi.ui.reader.SaveImageNotifier
 import eu.kanade.tachiyomi.util.editBackground
 import eu.kanade.tachiyomi.util.editCover
@@ -931,28 +932,18 @@ class PlayerViewModel(
 
     @Suppress("DEPRECATION")
     fun changeVideoAspect(aspect: VideoAspect) {
-        var ratio = -1.0
-        var pan = 1.0
-        when (aspect) {
-            VideoAspect.Crop -> {
-                pan = 1.0
-            }
-
-            VideoAspect.Fit -> {
-                pan = 0.0
-                mpv.setPropertyDouble("panscan", 0.0)
-            }
-
-            VideoAspect.Stretch -> {
-                val dm = context.resources.displayMetrics
-                ratio = dm.widthPixels / dm.heightPixels.toDouble()
-                pan = 0.0
-            }
-        }
-        mpv.setPropertyDouble("panscan", pan)
-        mpv.setPropertyDouble("video-aspect-override", ratio)
+        mpv.applyVideoAspect(aspect, videoSurfaceAspect())
         playerPreferences.aspectState().set(aspect)
         playerUpdate.update { PlayerUpdates.AspectRatio }
+    }
+
+    /** Aspect ratio of the surface mpv renders into, which is smaller than the screen in tabletop mode. */
+    private fun videoSurfaceAspect(): Double {
+        val width = mpv.getPropertyInt("osd-width") ?: 0
+        val height = mpv.getPropertyInt("osd-height") ?: 0
+        if (width > 0 && height > 0) return width / height.toDouble()
+        val dm = context.resources.displayMetrics
+        return dm.widthPixels / dm.heightPixels.toDouble()
     }
 
     fun cycleScreenRotations() {
