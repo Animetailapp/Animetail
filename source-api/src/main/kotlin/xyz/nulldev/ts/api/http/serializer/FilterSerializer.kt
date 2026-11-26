@@ -17,6 +17,7 @@ import kotlinx.serialization.json.putJsonObject
 import logcat.LogPriority
 import logcat.asLog
 import tachiyomi.core.common.util.system.logcat
+import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.isSubclassOf
 import eu.kanade.tachiyomi.animesource.model.AnimeFilter as Filter
@@ -96,16 +97,19 @@ class FilterSerializer {
         serializer.mappings().forEach {
             if (it.second is KMutableProperty1) {
                 val obj = json[it.first]!!.jsonPrimitive
+                // serialize() records the runtime class of the boxed value ("java.lang.Boolean"),
+                // while `Boolean::class.java` is the primitive ("boolean"), so compare against
+                // both spellings or every Boolean/Int-state filter fails to restore.
                 val res: Any? = when (json[CLASS_MAPPINGS]!!.jsonObject[it.first]!!.jsonPrimitive.content) {
-                    Int::class.java.name -> obj.int
-                    Long::class.java.name -> obj.long
-                    Float::class.java.name -> obj.float
-                    Double::class.java.name -> obj.double
-                    String::class.java.name -> obj.content
-                    Boolean::class.java.name -> obj.boolean
-                    Byte::class.java.name -> obj.content.toByte()
-                    Short::class.java.name -> obj.content.toShort()
-                    Char::class.java.name -> obj.content[0]
+                    in Int::class.classNames() -> obj.int
+                    in Long::class.classNames() -> obj.long
+                    in Float::class.classNames() -> obj.float
+                    in Double::class.classNames() -> obj.double
+                    in String::class.classNames() -> obj.content
+                    in Boolean::class.classNames() -> obj.boolean
+                    in Byte::class.classNames() -> obj.content.toByte()
+                    in Short::class.classNames() -> obj.content.toShort()
+                    in Char::class.classNames() -> obj.content[0]
                     "null" -> null
                     else -> throw IllegalArgumentException("Cannot deserialize this type!")
                 }
@@ -114,6 +118,8 @@ class FilterSerializer {
             }
         }
     }
+
+    private fun KClass<*>.classNames() = setOf(java.name, javaObjectType.name)
 
     companion object {
         const val TYPE = "_type"
