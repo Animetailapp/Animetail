@@ -1414,8 +1414,11 @@ private fun LazyGridScope.sharedEpisodeItems(
 
             is EpisodeList.Item -> {
                 // AM (FILE_SIZE) -->
-                var fileSizeAsync: Long? by remember { mutableStateOf(episodeItem.fileSize) }
                 val isEpisodeDownloaded = episodeItem.downloadState == AnimeDownload.State.DOWNLOADED
+                // Keyed on the download state: a deleted or re-downloaded episode has a different file
+                var fileSizeAsync: Long? by remember(episodeItem.id, episodeItem.downloadState) {
+                    mutableStateOf(episodeItem.fileSize)
+                }
                 if (isEpisodeDownloaded && showFileSize && fileSizeAsync == null) {
                     LaunchedEffect(episodeItem, Unit) {
                         fileSizeAsync = withIOContext {

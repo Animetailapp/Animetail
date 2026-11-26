@@ -265,8 +265,12 @@ private fun AnimeUpdatesUiItem(
             }
         }
 // AM (FILE_SIZE) -->
-        var fileSizeAsync: Long? by remember { mutableStateOf(updatesItem.fileSize) }
-        if (downloadStateProvider() == AnimeDownload.State.DOWNLOADED &&
+        val downloadState = downloadStateProvider()
+        // Keyed on the download state: a deleted or re-downloaded episode has a different file
+        var fileSizeAsync: Long? by remember(update.episodeId, downloadState) {
+            mutableStateOf(updatesItem.fileSize)
+        }
+        if (downloadState == AnimeDownload.State.DOWNLOADED &&
             storagePreferences.showEpisodeFileSize.get() &&
             fileSizeAsync == null
         ) {

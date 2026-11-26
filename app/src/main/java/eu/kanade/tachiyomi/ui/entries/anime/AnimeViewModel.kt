@@ -816,8 +816,9 @@ class AnimeViewModel(
             if (modifiedIndex < 0) return@updateSuccessState successState
 
             val newEpisodes = successState.episodes.toMutableList().apply {
+                // The file size is measured again once the episode is downloaded (again)
                 val item = removeAt(modifiedIndex)
-                    .copy(downloadState = download.status)
+                    .copy(downloadState = download.status, fileSize = null)
                 add(modifiedIndex, item)
             }
             successState.copy(episodes = newEpisodes)

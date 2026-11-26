@@ -157,6 +157,8 @@ class AnimeUpdatesViewModel(
                     } else {
                         item.downloadStateProvider
                     },
+                    // A downloaded, deleted or re-downloaded episode's file size is measured again
+                    fileSize = if (downloadState != null) null else item.fileSize,
                 )
             },
             dialog = dialog,
