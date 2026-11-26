@@ -10,6 +10,7 @@ import aniyomi.core.common.torrent.TorrentServerApi
 import aniyomi.core.common.torrent.TorrentServerUtils
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegKitConfig
+import com.arthenica.ffmpegkit.FFmpegSession
 import com.arthenica.ffmpegkit.FFprobeKit
 import com.arthenica.ffmpegkit.Level
 import com.arthenica.ffmpegkit.LogCallback
@@ -657,7 +658,7 @@ class AnimeDownloader(
                         continuation.resume(it)
                     } else {
                         localTmpFile?.delete()
-                        continuation.resumeWithException(Exception("Error in ffmpeg!"))
+                        continuation.resumeWithException(Exception("Error in ffmpeg: ${it.failureReason()}"))
                     }
                 },
                 logCallback,
@@ -763,6 +764,17 @@ class AnimeDownloader(
             }
             continuation.invokeOnCancellation { session.cancel() }
         }.output.toFloatOrNull()
+    }
+
+    /**
+     * The first error FFmpeg logged, which is usually the cause (e.g. "Server returned 403 Forbidden"),
+     * or the return code if it logged none.
+     */
+    private fun FFmpegSession.failureReason(): String {
+        return allLogs
+            .filter { it.level <= Level.AV_LOG_ERROR }
+            .firstNotNullOfOrNull { it.message?.trim()?.takeIf(String::isNotEmpty) }
+            ?: "exit code $returnCode"
     }
 
     private fun stopHttpServer(download: AnimeDownload) {
@@ -887,8 +899,7 @@ class AnimeDownloader(
         download: AnimeDownload,
         tmpDir: UniFile,
     ): Boolean {
-        val downloadedVideo = tmpDir.listFiles().orEmpty().filterNot { it.extension == ".tmp" }
-        return downloadedVideo.size == 1
+        return tmpDir.hasSingleFinishedVideo()
     }
 
     /**
@@ -906,9 +917,7 @@ class AnimeDownloader(
         dirname: String,
     ) {
         // Ensure that the episode folder has the full video
-        val downloadedVideo = tmpDir.listFiles().orEmpty().filterNot { it.extension == ".tmp" }
-
-        download.status = if (downloadedVideo.size == 1) {
+        download.status = if (tmpDir.hasSingleFinishedVideo()) {
             // Only rename the directory if it's downloaded
             val filename = DiskUtil.buildValidFilename("${download.anime.title} - ${download.episode.name}")
             tmpDir.findFile("${filename}_tmp.mkv")?.delete()
@@ -1021,3 +1030,11 @@ class AnimeDownloader(
 private const val MIN_DISK_SPACE = 200L * 1024 * 1024
 private const val MIN_VIDEO_SIZE = 512L * 1024
 private const val MIN_DURATION_RATIO = 0.9f
+
+/**
+ * Whether this episode directory holds exactly one finished video. A `.tmp` file is a download that
+ * has not finished, or one whose last attempt failed, and must not be finalized as the episode.
+ */
+internal fun UniFile.hasSingleFinishedVideo(): Boolean {
+    return listFiles().orEmpty().count { it.extension != "tmp" } == 1
+}
