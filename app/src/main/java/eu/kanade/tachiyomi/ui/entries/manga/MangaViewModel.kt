@@ -204,6 +204,10 @@ class MangaViewModel(
     private val selectedPositions: Array<Int> = arrayOf(-1, -1) // first and last selected index in list
     private val selectedChapterIds: HashSet<Long> = HashSet()
 
+    // Declared before init: observeDownloads() is called from init and its collectors run on
+    // another thread, so they can write to it before the rest of the constructor has run.
+    private val downloadProgress = mutableStateMapOf<Long, Int>()
+
     internal var isFromChangeCategory: Boolean = false
 
     internal val autoOpenTrack: Boolean
@@ -741,8 +745,6 @@ class MangaViewModel(
     // Manga info - end
 
     // Chapters list - start
-
-    private val downloadProgress = mutableStateMapOf<Long, Int>()
 
     fun getDownloadProgress(chapterId: Long): Int {
         return downloadProgress[chapterId] ?: 0
