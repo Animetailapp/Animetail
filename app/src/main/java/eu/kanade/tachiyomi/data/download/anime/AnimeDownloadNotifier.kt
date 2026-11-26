@@ -15,9 +15,11 @@ import eu.kanade.tachiyomi.util.lang.chop
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.notify
+import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import java.util.regex.Pattern
 
 /**
@@ -169,6 +171,45 @@ class AnimeDownloadNotifier(
     }
 
     /**
+     * Lists the new episodes the library update queued once they have downloaded.
+     *
+     * @param downloads the downloaded episodes, in the order they finished.
+     */
+    fun onAutomaticDownloadsFinished(downloads: List<AnimeDownload>) {
+        if (downloads.isEmpty()) return
+        val hideContent = preferences.hideNotificationContent().get()
+        val title = context.pluralStringResource(
+            TLMR.plurals.notification_new_episodes_downloaded,
+            downloads.size,
+            downloads.size,
+        )
+        val lines = downloads.map {
+            "${it.anime.title.chop(NOTIF_TITLE_MAX_LEN)} - ${it.episode.name.chop(NOTIF_EPISODE_MAX_LEN)}"
+        }
+        val anime = downloads.map { it.anime.id }.distinct().singleOrNull()
+
+        context.notify(
+            Notifications.ID_DOWNLOAD_EPISODE_AUTOMATIC_COMPLETE,
+            Notifications.CHANNEL_NEW_CHAPTERS_EPISODES,
+        ) {
+            setContentTitle(title)
+            setSmallIcon(android.R.drawable.stat_sys_download_done)
+            if (!hideContent) {
+                setContentText(lines.joinToString())
+                setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n")))
+            }
+            setContentIntent(
+                if (anime != null && !hideContent) {
+                    NotificationReceiver.openAnimeEntryPendingActivity(context, anime)
+                } else {
+                    NotificationHandler.openAnimeDownloadManagerPendingActivity(context)
+                },
+            )
+            setAutoCancel(true)
+        }
+    }
+
+    /**
      * Called when the downloader receives a warning.
      *
      * @param reason the text to show.
@@ -237,3 +278,6 @@ class AnimeDownloadNotifier(
         isDownloading = false
     }
 }
+
+private const val NOTIF_TITLE_MAX_LEN = 45
+private const val NOTIF_EPISODE_MAX_LEN = 30

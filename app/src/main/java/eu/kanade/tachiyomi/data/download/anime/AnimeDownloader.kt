@@ -121,6 +121,9 @@ class AnimeDownloader(
      */
     private val holds = MutableStateFlow(AnimeDownloadConditions.Holds.NONE)
 
+    /** Episodes the library update queued that downloaded since the last summary notification. */
+    private val automaticDownloaded = mutableListOf<AnimeDownload>()
+
     /**
      * Job object for download queue management
      */
@@ -289,6 +292,7 @@ class AnimeDownloader(
 
             // Remove successful download from queue
             if (download.status == AnimeDownload.State.DOWNLOADED) {
+                if (download.automatic) synchronized(automaticDownloaded) { automaticDownloaded += download }
                 removeFromQueue(download)
             }
         } catch (e: Throwable) {
@@ -298,6 +302,7 @@ class AnimeDownloader(
             download.status = AnimeDownload.State.ERROR
             notifier.onError(e.message, download.episode.name, download.anime.title, download.anime.id)
         }
+        if (download.automatic) notifyAutomaticDownloadsIfDone()
     }
 
     /**
@@ -1046,10 +1051,24 @@ class AnimeDownloader(
     fun removeFromQueue(episodes: List<Episode>) {
         val episodeIds = episodes.map { it.id }
         removeFromQueueIf { it.episode.id in episodeIds }
+        notifyAutomaticDownloadsIfDone()
     }
 
     fun removeFromQueue(anime: Anime) {
         removeFromQueueIf { it.anime.id == anime.id }
+        notifyAutomaticDownloadsIfDone()
+    }
+
+    /**
+     * Shows which new episodes downloaded once none of those the library update queued is left to
+     * download (the others failed, or were removed from the queue).
+     */
+    private fun notifyAutomaticDownloadsIfDone() {
+        val downloaded = synchronized(automaticDownloaded) {
+            if (automaticDownloaded.isEmpty() || pendingDownloads().any { it.automatic }) return
+            automaticDownloaded.toList().also { automaticDownloaded.clear() }
+        }
+        notifier.onAutomaticDownloadsFinished(downloaded)
     }
 
     private fun internalClearQueue() {
