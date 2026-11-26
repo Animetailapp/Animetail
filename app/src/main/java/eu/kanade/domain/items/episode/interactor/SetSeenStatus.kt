@@ -2,10 +2,11 @@ package eu.kanade.domain.items.episode.interactor
 
 import dev.zacsweers.metro.Inject
 import eu.kanade.domain.download.anime.interactor.DeleteEpisodeDownload
+import eu.kanade.tachiyomi.data.download.anime.AnimeStorageCleaner
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.download.service.DownloadPreferences
+import tachiyomi.domain.download.anime.interactor.GetAnimeDownloadPolicy
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.anime.repository.AnimeRepository
 import tachiyomi.domain.items.episode.model.Episode
@@ -14,10 +15,11 @@ import tachiyomi.domain.items.episode.repository.EpisodeRepository
 
 @Inject
 class SetSeenStatus(
-    private val downloadPreferences: DownloadPreferences,
     private val deleteDownload: DeleteEpisodeDownload,
     private val animeRepository: AnimeRepository,
     private val episodeRepository: EpisodeRepository,
+    private val getAnimeDownloadPolicy: GetAnimeDownloadPolicy,
+    private val storageCleaner: AnimeStorageCleaner,
 ) {
 
     private val mapper = { episode: Episode, read: Boolean ->
@@ -48,14 +50,18 @@ class SetSeenStatus(
             return@withNonCancellableContext Result.InternalError(e)
         }
 
-        if (seen && downloadPreferences.removeAfterMarkedAsRead.get()) {
+        if (seen) {
             episodesToUpdate
                 .groupBy { it.animeId }
                 .forEach { (animeId, episodes) ->
-                    deleteDownload.awaitAll(
-                        anime = animeRepository.getAnimeById(animeId),
-                        episodes = episodes.toTypedArray(),
-                    )
+                    // The show's own "delete after watching", or the global "after marked as seen"
+                    if (getAnimeDownloadPolicy.await(animeId).deleteOnMarkedSeen) {
+                        deleteDownload.awaitAll(
+                            anime = animeRepository.getAnimeById(animeId),
+                            episodes = episodes.toTypedArray(),
+                        )
+                    }
+                    storageCleaner.onEpisodesSeen(animeId)
                 }
         }
 

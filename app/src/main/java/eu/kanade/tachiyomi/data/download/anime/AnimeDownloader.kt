@@ -289,6 +289,7 @@ class AnimeDownloader(
             // Remove successful download from queue
             if (download.status == AnimeDownload.State.DOWNLOADED) {
                 removeFromQueue(download)
+                AnimeStorageLimitJob.onEpisodeDownloaded(context)
             }
         } catch (e: Throwable) {
             if (e is CancellationException) throw e

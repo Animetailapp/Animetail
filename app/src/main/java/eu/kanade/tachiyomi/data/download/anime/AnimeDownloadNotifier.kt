@@ -235,6 +235,30 @@ class AnimeDownloadNotifier(
     }
 
     /**
+     * Called when the anime downloads are over the storage limit.
+     *
+     * @param needsReview whether the limit hasn't been applied from the storage screen yet, so
+     * nothing was deleted. Otherwise, there weren't enough watched episodes to delete.
+     */
+    fun onStorageLimitExceeded(usedBytes: Long, limitBytes: Long, needsReview: Boolean) {
+        val text = context.stringResource(
+            if (needsReview) TLMR.strings.storage_limit_review else TLMR.strings.storage_limit_still_over,
+            usedBytes.toSize(),
+            limitBytes.toSize(),
+        )
+        with(context.notificationBuilder(Notifications.CHANNEL_DOWNLOADER_ERROR)) {
+            setContentTitle(context.stringResource(TLMR.strings.storage_limit_exceeded_title))
+            setContentText(text)
+            setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            setSmallIcon(R.drawable.ic_warning_white_24dp)
+            setAutoCancel(true)
+            setContentIntent(NotificationHandler.openAnimeStoragePendingActivity(context))
+
+            show(Notifications.ID_ANIME_DOWNLOAD_STORAGE)
+        }
+    }
+
+    /**
      * Called when the downloader receives an error. It's shown as a separate notification to avoid
      * being overwritten.
      *

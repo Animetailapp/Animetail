@@ -81,6 +81,8 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadJob
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadProvider
+import eu.kanade.tachiyomi.data.download.anime.AnimeStorageCleaner
+import eu.kanade.tachiyomi.data.download.anime.AnimeStorageLimitJob
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadJob
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
@@ -157,6 +159,7 @@ import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
 import tachiyomi.domain.custombuttons.interactor.ReorderCustomButton
 import tachiyomi.domain.custombuttons.interactor.ToggleFavoriteCustomButton
 import tachiyomi.domain.custombuttons.interactor.UpdateCustomButton
+import tachiyomi.domain.download.anime.interactor.GetAnimeDownloadPolicy
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.anime.interactor.AnimeFetchInterval
 import tachiyomi.domain.entries.anime.interactor.GetAnime
@@ -264,6 +267,7 @@ interface AppGraph : ViewModelGraph {
     fun inject(mangaExtensionInstallActivity: MangaExtensionInstallActivity)
     fun inject(animeExtensionInstallActivity: AnimeExtensionInstallActivity)
     fun inject(syncDataJob: SyncDataJob)
+    fun inject(animeStorageLimitJob: AnimeStorageLimitJob)
 
     val context: Context
 
@@ -301,6 +305,7 @@ interface AppGraph : ViewModelGraph {
 
     val mangaDownloadManager: MangaDownloadManager
     val animeDownloadManager: AnimeDownloadManager
+    val animeStorageCleaner: AnimeStorageCleaner
 
     val mangaDownloadProvider: MangaDownloadProvider
     val animeDownloadProvider: AnimeDownloadProvider
@@ -439,6 +444,7 @@ interface AppGraph : ViewModelGraph {
     val imageSaver: ImageSaver
     val setAnimeViewerFlags: SetAnimeViewerFlags
     val getAnimeAudioLanguage: GetAnimeAudioLanguage
+    val getAnimeDownloadPolicy: GetAnimeDownloadPolicy
     val setAnimeAudioLanguage: SetAnimeAudioLanguage
     val setMangaViewerFlags: SetMangaViewerFlags
     val setAnimeEpisodeFlags: SetAnimeEpisodeFlags

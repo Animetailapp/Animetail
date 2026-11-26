@@ -461,4 +461,7 @@
     <!-- Download storage -->
     <string name="download_low_storage_title">Downloads paused: storage almost full</string>
     <string name="download_low_storage">Only %1$s left on the download storage. Free up space, then resume the downloads.</string>
+    <string name="storage_limit_exceeded_title">Anime downloads are over the storage limit</string>
+    <string name="storage_limit_review">%1$s used of %2$s. Open Storage to review what would be deleted.</string>
+    <string name="storage_limit_still_over">%1$s used of %2$s, and there are no more watched episodes to delete.</string>
 </resources>

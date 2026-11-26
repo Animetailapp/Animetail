@@ -77,6 +77,7 @@ import eu.kanade.tachiyomi.data.database.models.anime.isRecognizedNumber
 import eu.kanade.tachiyomi.data.database.models.anime.toDomainEpisode
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
+import eu.kanade.tachiyomi.data.download.anime.AnimeStorageCleaner
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.saver.Image
 import eu.kanade.tachiyomi.data.saver.ImageSaver
@@ -146,6 +147,7 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
 import tachiyomi.domain.custombuttons.model.CustomButton
+import tachiyomi.domain.download.anime.interactor.GetAnimeDownloadPolicy
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.model.Anime
@@ -214,6 +216,8 @@ class PlayerViewModel(
     private val localEpisodeThumbnailManager: LocalEpisodeThumbnailManager,
     private val trackerManager: TrackerManager,
     private val json: Json,
+    private val getAnimeDownloadPolicy: GetAnimeDownloadPolicy,
+    private val storageCleaner: AnimeStorageCleaner,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -2241,18 +2245,25 @@ class PlayerViewModel(
      */
     private fun deleteEpisodeIfNeeded(chosenEpisode: Episode) {
         if (isNetworkStreamSession) return
-        // Determine which episode should be deleted and enqueue
-        val currentEpisodePosition = currentPlaylist.value.indexOf(chosenEpisode)
-        val removeAfterSeenSlots = downloadPreferences.removeAfterReadSlots.get()
-        val episodeToDelete = currentPlaylist.value.getOrNull(
-            currentEpisodePosition - removeAfterSeenSlots,
-        )
         // If episode is completely seen no need to download it
         episodeToDownload = null
 
-        // Check if deleting option is enabled and episode exists
-        if (removeAfterSeenSlots != -1 && episodeToDelete != null) {
-            enqueueDeleteSeenEpisodes(episodeToDelete)
+        val anime = currentAnime.value ?: return
+        // Determine which episode should be deleted and enqueue
+        val playlist = currentPlaylist.value
+        val currentEpisodePosition = playlist.indexOf(chosenEpisode)
+        viewModelScope.launchIO {
+            // The show's own "delete after watching", or the global one
+            val removeAfterSeenSlots = getAnimeDownloadPolicy.await(anime.id).playerRemoveAfterSeenSlots
+            val episodeToDelete = playlist.getOrNull(
+                currentEpisodePosition - removeAfterSeenSlots,
+            )
+
+            // Check if deleting option is enabled and episode exists
+            if (removeAfterSeenSlots != -1 && episodeToDelete != null) {
+                enqueueDeleteSeenEpisodes(episodeToDelete)
+            }
+            storageCleaner.onEpisodesSeen(anime.id, setOfNotNull(chosenEpisode.id))
         }
     }
 
