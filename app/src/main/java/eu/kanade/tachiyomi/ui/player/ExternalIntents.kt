@@ -27,6 +27,7 @@ import eu.kanade.tachiyomi.source.anime.isNsfw
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
 import eu.kanade.tachiyomi.ui.player.cache.isLoopbackUrl
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
@@ -40,6 +41,8 @@ import kotlinx.coroutines.awaitAll
 import logcat.LogPriority
 import mihon.app.di.appGraph
 import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.Request
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withIOContext
@@ -61,6 +64,7 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 import java.io.File
+import java.io.IOException
 import java.util.Date
 
 class ExternalIntents(context: Context) {
@@ -96,9 +100,10 @@ class ExternalIntents(context: Context) {
         if (!initAnime(animeId, episodeId)) return null
         val hosters = EpisodeLoader.getHosters(context, episode, anime, source)
 
-        val video = chosenVideo
+        val selectedVideo = chosenVideo
             ?: HosterLoader.getBestVideo(context, source, hosters)
             ?: throw Exception("Video list is empty")
+        val video = withIOContext { refreshedIfExpired(selectedVideo) }
 
         var videoUrl = getVideoUrl(source, context, video) ?: return null
 
@@ -114,9 +119,10 @@ class ExternalIntents(context: Context) {
             videoUrl = getVideoUrl(source, context, video.copyHttpServer(port)) ?: return null
         }
 
-        videoUrl = proxiedWithHeaders(videoUrl, video) ?: videoUrl
-
         val pkgName = playerPreferences.externalPlayerPreference().get()
+        // Web Video Caster reads the headers from the intent and has to see the real link to
+        // play it in its own player or cast it.
+        if (pkgName != WEB_VIDEO_CASTER) videoUrl = proxiedWithHeaders(videoUrl, video) ?: videoUrl
 
         // AM (DISCORD) -->
         withIOContext {
@@ -355,6 +361,34 @@ class ExternalIntents(context: Context) {
             if (!isSupportedPlayer) {
                 putExtra("http-header-fields", headers.joinToString(",") { (name, value) -> "$name: $value" })
             }
+        }
+    }
+
+    // A cached link may have expired, the player would only get an error from the host
+    // (mp4upload answers 403), so it's checked first and the same video is loaded again.
+    private suspend fun refreshedIfExpired(video: Video): Video {
+        val url = video.videoUrl.toHttpUrlOrNull() ?: return video
+        if (url.toString().isLoopbackUrl() || video.usesHttpServer()) return video
+        val request = Request.Builder()
+            .url(url)
+            .headers(video.headers ?: Headers.headersOf())
+            .header("Range", "bytes=0-0")
+            .build()
+        val expired = try {
+            appGraph.networkHelper.client.newCall(request).execute().use { it.code in 400..499 }
+        } catch (e: IOException) {
+            logcat(LogPriority.WARN, e) { "Couldn't check the video link before opening it" }
+            false
+        }
+        if (!expired) return video
+        return reloadedVideo(video.videoTitle) ?: video
+    }
+
+    private suspend fun reloadedVideo(videoTitle: String): Video? {
+        EpisodeLoader.invalidateCache(appContext, episode, source)
+        return EpisodeLoader.getHosters(appContext, episode, anime, source, useCache = false).firstNotNullOfOrNull { hoster ->
+            val state = EpisodeLoader.loadHosterVideos(appContext, source, hoster, force = true, useCache = false)
+            (state as? HosterState.Ready)?.videoList?.find { it.videoTitle == videoTitle }
         }
     }
 
