@@ -8,6 +8,7 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.SQLiteDriver
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
+import app.cash.sqldelight.SuspendingTransacterImpl
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteAfterVersion
@@ -158,6 +159,16 @@ internal suspend fun SqlDriver.ensureAnimeMemoColumnsAndViews() {
         execute(null, "ALTER TABLE episodes ADD COLUMN memo BLOB NOT NULL DEFAULT x'7b7d'", 0).await()
     } catch (_: SQLException) {
     }
+    // Every process of the app (main, :error_handler) runs this when it opens the database. Two
+    // processes starting together could both drop the views and then both create them, and the
+    // second CREATE failed with "view animelibView already exists". Recreating them in one
+    // BEGIN IMMEDIATE transaction makes the other process wait until the views are back.
+    object : SuspendingTransacterImpl(this) {}.transaction {
+        recreateAnimeLibraryViews()
+    }
+}
+
+private suspend fun SqlDriver.recreateAnimeLibraryViews() {
     execute(null, "DROP VIEW IF EXISTS animelibView", 0).await()
     execute(
         null,
