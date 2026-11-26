@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.entries.manga.model.readingMode
+import eu.kanade.domain.entries.manga.model.webtoonVerdict
 import eu.kanade.tachiyomi.ui.reader.ReaderViewModel
 import eu.kanade.tachiyomi.ui.reader.viewer.LongStripSettings
 import eu.kanade.tachiyomi.ui.reader.viewer.NavigationSettings
@@ -51,10 +52,17 @@ class ReaderSettingsViewModel(
     /**
      * The reading mode the viewer is made for, with the default resolved.
      */
-    val readingMode = combine(mangaFlow, preferences.defaultReadingMode.changes()) { manga, default ->
-        ReadingMode.fromPreference(manga?.readingMode?.toInt())
-            .takeIf { it != ReadingMode.DEFAULT }
-            ?: ReadingMode.fromPreference(default)
+    val readingMode = combine(
+        mangaFlow,
+        preferences.defaultReadingMode.changes(),
+        preferences.detectWebtoons.changes(),
+    ) { manga, default, detectWebtoons ->
+        WebtoonDetection.resolveReadingMode(
+            seriesMode = ReadingMode.fromPreference(manga?.readingMode?.toInt()),
+            appDefault = ReadingMode.fromPreference(default),
+            detectEnabled = detectWebtoons,
+            verdict = manga?.webtoonVerdict ?: WebtoonVerdict.UNDECIDED,
+        )
     }
         .stateIn(
             viewModelScope,

@@ -457,4 +457,7 @@
     <string name="audio_language_original">Original language</string>
     <string name="audio_language_original_detected">Original language (%s)</string>
     <string name="audio_language_dialog_message">Used for this show when picking the audio track. Picking an audio track in the player also changes it.</string>
+    <!-- Webtoon detection -->
+    <string name="pref_detect_webtoons">Detect webtoons automatically</string>
+    <string name="pref_detect_webtoons_summary">Open series tagged as webtoon, manhwa or manhua, or with very tall pages, in long strip without gaps. A reading mode set on a series always wins.</string>
 </resources>

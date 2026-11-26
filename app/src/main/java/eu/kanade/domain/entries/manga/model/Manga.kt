@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
+import eu.kanade.tachiyomi.ui.reader.setting.WebtoonVerdict
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
@@ -21,6 +22,9 @@ import kotlin.time.Instant
 // TODO: move these into the domain model
 val Manga.readingMode: Long
     get() = viewerFlags and ReadingMode.MASK.toLong()
+
+val Manga.webtoonVerdict: WebtoonVerdict
+    get() = WebtoonVerdict.fromFlags(viewerFlags)
 
 val Manga.readerOrientation: Long
     get() = viewerFlags and ReaderOrientation.MASK.toLong()
