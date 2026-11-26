@@ -3,7 +3,8 @@ CREATE TABLE category(
     name TEXT NOT NULL,
     `order` INTEGER NOT NULL UNIQUE,
     flags INTEGER NOT NULL,
-    hidden INTEGER NOT NULL DEFAULT 0
+    hidden INTEGER NOT NULL DEFAULT 0,
+    secret INTEGER NOT NULL DEFAULT 0
 );
 
 -- Insert system category
@@ -18,23 +19,23 @@ BEGIN SELECT CASE
 END;
 
 getCategory:
-SELECT id, name, `order`, flags, hidden
+SELECT id, name, `order`, flags, hidden, secret
 FROM category
 WHERE id = :id;
 
 getCategories:
-SELECT id, name, `order`, flags, hidden
+SELECT id, name, `order`, flags, hidden, secret
 FROM category
 ORDER BY `order`;
 
 getVisibleCategories:
-SELECT id, name, `order`, flags, hidden
+SELECT id, name, `order`, flags, hidden, secret
 FROM category
 WHERE hidden = 0
 ORDER BY `order`;
 
 getCategoriesByMangaId:
-SELECT C.id, C.name, C.`order`, C.flags, C.hidden
+SELECT C.id, C.name, C.`order`, C.flags, C.hidden, C.secret
 FROM category C
 JOIN manga_category MC
 ON C.id = MC.category_id
@@ -42,7 +43,7 @@ WHERE MC.manga_id = :mangaId
 ORDER BY C.`order`;
 
 getCategoriesByMangaIds:
-SELECT MC.manga_id, C.id, C.name, C.`order`, C.flags, C.hidden
+SELECT MC.manga_id, C.id, C.name, C.`order`, C.flags, C.hidden, C.secret
 FROM category C
 JOIN manga_category MC
 ON C.id = MC.category_id
@@ -50,7 +51,7 @@ WHERE MC.manga_id IN :mangaIds
 ORDER BY MC.manga_id, C.`order`;
 
 getVisibleCategoriesByMangaId:
-SELECT C.id, C.name, C.`order`, C.flags, C.hidden
+SELECT C.id, C.name, C.`order`, C.flags, C.hidden, C.secret
 FROM category C
 JOIN manga_category MC
 ON C.id = MC.category_id
@@ -91,6 +92,11 @@ WHERE id = :id;
 updateHidden:
 UPDATE category
 SET hidden = :hidden
+WHERE id = :id;
+
+updateSecret:
+UPDATE category
+SET secret = :secret
 WHERE id = :id;
 
 updateAllFlags:

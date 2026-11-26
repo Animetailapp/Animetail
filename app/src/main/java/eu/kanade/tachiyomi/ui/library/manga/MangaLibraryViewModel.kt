@@ -33,6 +33,8 @@ import eu.kanade.tachiyomi.data.track.TrackStatus
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.ui.library.SecretCategoryFilter
+import eu.kanade.tachiyomi.ui.library.SecretCategoryLock
 import eu.kanade.tachiyomi.util.chapter.getNextUnread
 import eu.kanade.tachiyomi.util.removeCovers
 import kotlinx.collections.immutable.ImmutableList
@@ -63,6 +65,7 @@ import tachiyomi.core.common.util.lang.compareToWithCollator
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
+import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.manga.interactor.GetVisibleMangaCategories
 import tachiyomi.domain.category.manga.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
@@ -101,6 +104,7 @@ typealias MangaLibraryMap = Map<Category, List<MangaLibraryItem>>
 class MangaLibraryViewModel(
     private val getLibraryManga: GetLibraryManga,
     private val getCategories: GetVisibleMangaCategories,
+    private val getAllCategories: GetMangaCategories,
     private val getTracksPerManga: GetTracksPerManga,
     private val getNextChapters: GetNextChapters,
     private val getChaptersByMangaId: GetChaptersByMangaId,
@@ -161,10 +165,13 @@ class MangaLibraryViewModel(
                     }
             }
                 .collectLatest {
+                    val secretCategoriesShown = it.keys.any(Category::secret)
+                    onSecretCategoriesShown(it.keys.toList(), secretCategoriesShown)
                     state.update { state ->
                         state.copy(
                             isLoading = false,
                             library = it,
+                            secretCategoriesShown = secretCategoriesShown,
                         )
                     }
                 }
@@ -473,7 +480,17 @@ class MangaLibraryViewModel(
                 .groupBy { it.libraryManga.category }
         }
 
-        return combine(getCategories.subscribe(), libraryMangasFlow) { categories, libraryManga ->
+        return combine(
+            getAllCategories.subscribe(),
+            libraryMangasFlow,
+            SecretCategoryLock.unlocked,
+        ) { allCategories, allLibraryManga, secretUnlocked ->
+            val (categories, libraryManga) = SecretCategoryFilter.apply(
+                allCategories = allCategories,
+                entriesByCategoryId = allLibraryManga,
+                entryId = { it.libraryManga.manga.id },
+                unlocked = secretUnlocked,
+            )
             val displayCategories = if (libraryManga.isNotEmpty() && !libraryManga.containsKey(0)) {
                 categories.fastFilterNot { it.isSystemCategory }
             } else {
@@ -725,6 +742,32 @@ class MangaLibraryViewModel(
             state.value
                 .getLibraryItemsByCategoryId(state.value.categories[activeCategoryIndex].id)
                 ?.randomOrNull()
+        }
+    }
+
+    /** Page to come back to when the secret categories lock again, set while they are being unlocked. */
+    private var pageBeforeSecretUnlock: Int? = null
+
+    suspend fun hasSecretCategories(): Boolean {
+        return getAllCategories.await().any(Category::secret)
+    }
+
+    fun unlockSecretCategories() {
+        if (!state.value.secretCategoriesShown) pageBeforeSecretUnlock = activeCategoryIndex
+        SecretCategoryLock.unlock()
+    }
+
+    /**
+     * Runs before the library with or without the secret categories is published, so the page matches it: the first
+     * secret category when they appear, the page from before the unlock once they're gone.
+     */
+    private fun onSecretCategoriesShown(categories: List<Category>, shown: Boolean) {
+        if (shown == state.value.secretCategoriesShown) return
+        if (shown) {
+            categories.indexOfFirst(Category::secret).takeIf { it >= 0 }?.let { activeCategoryIndex = it }
+        } else {
+            pageBeforeSecretUnlock?.let { activeCategoryIndex = it }
+            pageBeforeSecretUnlock = null
         }
     }
 
@@ -1023,6 +1066,7 @@ class MangaLibraryViewModel(
         // SY -->
         val groupType: Int = MangaLibraryGroup.BY_DEFAULT,
         // SY <--
+        val secretCategoriesShown: Boolean = false,
     ) {
         private val libraryCount by lazy {
             library.values

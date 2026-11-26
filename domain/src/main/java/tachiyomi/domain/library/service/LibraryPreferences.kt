@@ -91,6 +91,12 @@ class LibraryPreferences(
 
     val hideHiddenCategoriesSettings = preferenceStore.getBoolean("hidden_categories", false)
 
+    // Animetail: ask for the screen lock after the secret category unlock gesture
+    val secretCategoriesRequireAuth: Preference<Boolean> = preferenceStore.getBoolean(
+        "secret_categories_require_auth",
+        false,
+    )
+
     val filterIntervalCustom: Preference<TriState> = preferenceStore.getEnum(
         "pref_filter_library_interval_custom",
         TriState.DISABLED,

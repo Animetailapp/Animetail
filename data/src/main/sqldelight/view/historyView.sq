@@ -44,6 +44,12 @@ FROM historyView
 WHERE historyView.readAt > 0
 AND maxReadAtChapterId = historyView.chapterId
 AND lower(historyView.title) LIKE ('%' || :query || '%')
+-- Entries in a secret category stay out of history so they only show in the unlocked library
+AND mangaId NOT IN (
+    SELECT MC.manga_id FROM manga_category MC
+    JOIN category C ON C.id = MC.category_id
+    WHERE C.secret = 1
+)
 ORDER BY readAt DESC;
 
 getLatestHistory:
@@ -66,5 +72,11 @@ ON manga.id = history.manga_id
 JOIN chapter
 ON chapter.id = history.chapter_id
 WHERE history.read_at > 0
+-- Entries in a secret category stay out of history so they only show in the unlocked library
+AND manga.id NOT IN (
+    SELECT MC.manga_id FROM manga_category MC
+    JOIN category C ON C.id = MC.category_id
+    WHERE C.secret = 1
+)
 ORDER BY history.read_at DESC
 LIMIT 1;

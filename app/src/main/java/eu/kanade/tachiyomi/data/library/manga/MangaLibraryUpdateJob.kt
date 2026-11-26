@@ -34,6 +34,7 @@ import eu.kanade.tachiyomi.data.track.TrackStatus
 import eu.kanade.tachiyomi.source.UnmeteredSource
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
+import eu.kanade.tachiyomi.ui.library.SecretCategoryFilter
 import eu.kanade.tachiyomi.util.storage.getUriCompat
 import eu.kanade.tachiyomi.util.system.createFileInCacheDir
 import eu.kanade.tachiyomi.util.system.isConnectedToWifi
@@ -58,6 +59,7 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.entries.manga.interactor.GetLibraryManga
 import tachiyomi.domain.entries.manga.interactor.GetManga
@@ -102,6 +104,8 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
     @Inject private lateinit var coverCache: MangaCoverCache
 
     @Inject private lateinit var getLibraryManga: GetLibraryManga
+
+    @Inject private lateinit var getMangaCategories: GetMangaCategories
 
     @Inject private lateinit var getManga: GetManga
 
@@ -181,6 +185,17 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                 0
             },
         )
+    }
+
+    private suspend fun secretEntryIds(): Set<Long> {
+        val rows = getLibraryManga.await()
+        val visibleIds = SecretCategoryFilter.withoutSecretEntries(
+            allCategories = getMangaCategories.await(),
+            rows = rows,
+            entryId = { it.id },
+            categoryId = { it.category },
+        ).mapTo(HashSet()) { it.id }
+        return rows.mapTo(HashSet()) { it.id } - visibleIds
     }
 
     /**
@@ -423,7 +438,11 @@ class MangaLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         notifier.cancelProgressNotification()
 
         if (newUpdates.isNotEmpty()) {
-            notifier.showUpdateNotifications(newUpdates)
+            // Entries in a secret category update quietly, their titles and covers would give them away
+            val secretIds = secretEntryIds()
+            newUpdates.filterNot { it.first.id in secretIds }
+                .takeIf { it.isNotEmpty() }
+                ?.let { notifier.showUpdateNotifications(it) }
             if (hasDownloads.get()) {
                 downloadManager.startDownloads()
             }

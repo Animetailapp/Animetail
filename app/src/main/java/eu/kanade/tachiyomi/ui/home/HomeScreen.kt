@@ -56,6 +56,7 @@ import eu.kanade.tachiyomi.ui.download.DownloadsTab
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.history.HistoriesTab
+import eu.kanade.tachiyomi.ui.library.SecretCategoryLock
 import eu.kanade.tachiyomi.ui.library.anime.AnimeLibraryTab
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibraryTab
 import eu.kanade.tachiyomi.ui.more.MoreTab
@@ -206,6 +207,11 @@ object HomeScreen : Screen() {
                     tabNavigator.current = if (showHomeTab) HomeTab else AnimeLibraryTab
                 }
             }
+            // Leaving the library for another tab locks its secret categories again
+            LaunchedEffect(tabNavigator.current) {
+                SecretCategoryLock.onHomeTabShown(tabNavigator.current.key)
+            }
+
             BackHandler(
                 enabled = (tabNavigator.current == navStyle.moreTab || tabNavigator.current != effectiveStartTab) &&
                     (tabNavigator.current != AnimeLibraryTab || effectiveStartTab != navStyle.moreTab),

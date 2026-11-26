@@ -34,6 +34,8 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.track.TrackStatus
 import eu.kanade.tachiyomi.data.track.TrackerManager
+import eu.kanade.tachiyomi.ui.library.SecretCategoryFilter
+import eu.kanade.tachiyomi.ui.library.SecretCategoryLock
 import eu.kanade.tachiyomi.util.episode.getNextUnseen
 import eu.kanade.tachiyomi.util.removeBackgrounds
 import eu.kanade.tachiyomi.util.removeCovers
@@ -66,6 +68,7 @@ import tachiyomi.core.common.util.lang.compareToWithCollator
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
+import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.anime.interactor.GetVisibleAnimeCategories
 import tachiyomi.domain.category.anime.interactor.SetAnimeCategories
 import tachiyomi.domain.category.model.Category
@@ -104,6 +107,7 @@ typealias AnimeLibraryMap = Map<Category, List<AnimeLibraryItem>>
 class AnimeLibraryViewModel(
     private val getLibraryAnime: GetLibraryAnime,
     private val getCategories: GetVisibleAnimeCategories,
+    private val getAllCategories: GetAnimeCategories,
     private val getTracksPerAnime: GetTracksPerAnime,
     private val getNextEpisodes: GetNextEpisodes,
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
@@ -172,10 +176,13 @@ class AnimeLibraryViewModel(
                     }
             }
                 .collectLatest {
+                    val secretCategoriesShown = it.keys.any(Category::secret)
+                    onSecretCategoriesShown(it.keys.toList(), secretCategoriesShown)
                     state.update { state ->
                         state.copy(
                             isLoading = false,
                             library = it,
+                            secretCategoriesShown = secretCategoriesShown,
                         )
                     }
                 }
@@ -502,10 +509,17 @@ class AnimeLibraryViewModel(
                 .groupBy { it.libraryAnime.category }
         }
 
-        return combine<List<Category>, Map<Long, List<AnimeLibraryItem>>, AnimeLibraryMap>(
-            getCategories.subscribe(),
+        return combine(
+            getAllCategories.subscribe(),
             animelibAnimesFlow,
-        ) { categories, animelibAnime ->
+            SecretCategoryLock.unlocked,
+        ) { allCategories, allAnimelibAnime, secretUnlocked ->
+            val (categories, animelibAnime) = SecretCategoryFilter.apply(
+                allCategories = allCategories,
+                entriesByCategoryId = allAnimelibAnime,
+                entryId = { it.libraryAnime.anime.id },
+                unlocked = secretUnlocked,
+            )
             val displayCategories = if (animelibAnime.isNotEmpty() && !animelibAnime.containsKey(0)) {
                 categories.fastFilterNot { it.isSystemCategory }
             } else {
@@ -752,6 +766,32 @@ class AnimeLibraryViewModel(
             state.value
                 .getAnimelibItemsByCategoryId(state.value.categories[activeCategoryIndex].id)
                 ?.randomOrNull()
+        }
+    }
+
+    /** Page to come back to when the secret categories lock again, set while they are being unlocked. */
+    private var pageBeforeSecretUnlock: Int? = null
+
+    suspend fun hasSecretCategories(): Boolean {
+        return getAllCategories.await().any(Category::secret)
+    }
+
+    fun unlockSecretCategories() {
+        if (!state.value.secretCategoriesShown) pageBeforeSecretUnlock = activeCategoryIndex
+        SecretCategoryLock.unlock()
+    }
+
+    /**
+     * Runs before the library with or without the secret categories is published, so the page matches it: the first
+     * secret category when they appear, the page from before the unlock once they're gone.
+     */
+    private fun onSecretCategoriesShown(categories: List<Category>, shown: Boolean) {
+        if (shown == state.value.secretCategoriesShown) return
+        if (shown) {
+            categories.indexOfFirst(Category::secret).takeIf { it >= 0 }?.let { activeCategoryIndex = it }
+        } else {
+            pageBeforeSecretUnlock?.let { activeCategoryIndex = it }
+            pageBeforeSecretUnlock = null
         }
     }
 
@@ -1055,6 +1095,7 @@ class AnimeLibraryViewModel(
         // SY -->
         val groupType: Int = AnimeLibraryGroup.BY_DEFAULT,
         // SY <--
+        val secretCategoriesShown: Boolean = false,
     ) {
         private val libraryCount by lazy {
             library.values

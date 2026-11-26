@@ -58,8 +58,8 @@ class MangaCategoryRepositoryImpl(
 
     override suspend fun getCategoriesByMangaIds(mangaIds: List<Long>): Map<Long, List<Category>> {
         return database.categoryQueries
-            .getCategoriesByMangaIds(mangaIds) { mangaId, id, name, order, flags, hidden ->
-                mangaId to mapCategory(id, name, order, flags, hidden)
+            .getCategoriesByMangaIds(mangaIds) { mangaId, id, name, order, flags, hidden, secret ->
+                mangaId to mapCategory(id, name, order, flags, hidden, secret)
             }
             .awaitAsList()
             .groupBy({ it.first }, { it.second })
@@ -108,6 +108,10 @@ class MangaCategoryRepositoryImpl(
         database.categoryQueries.updateHidden(hidden = if (hidden) 1L else 0L, id = categoryId)
     }
 
+    override suspend fun updateMangaCategorySecret(categoryId: Long, secret: Boolean) {
+        database.categoryQueries.updateSecret(secret = if (secret) 1L else 0L, id = categoryId)
+    }
+
     override suspend fun updateAllMangaCategoryFlags(flags: Long) {
         database.categoryQueries.updateAllFlags(flags = flags)
     }
@@ -135,6 +139,7 @@ class MangaCategoryRepositoryImpl(
         order: Long,
         flags: Long,
         hidden: Long,
+        secret: Long,
     ): Category {
         return Category(
             id = id,
@@ -142,6 +147,7 @@ class MangaCategoryRepositoryImpl(
             order = order,
             flags = flags,
             hidden = hidden == 1L,
+            secret = secret == 1L,
         )
     }
 }

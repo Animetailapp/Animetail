@@ -38,6 +38,8 @@ interface AnimeCategoryRepository {
 
     suspend fun updateAnimeCategoryHidden(categoryId: Long, hidden: Boolean)
 
+    suspend fun updateAnimeCategorySecret(categoryId: Long, secret: Boolean)
+
     suspend fun updateAllAnimeCategoryFlags(flags: Long?)
 
     suspend fun updateAnimeCategoryAllOrders(orderedIds: List<Long>)

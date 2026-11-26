@@ -13,6 +13,7 @@ import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.home.HomeItemData
 import eu.kanade.presentation.home.MediaType
 import eu.kanade.tachiyomi.data.track.TrackerManager
+import eu.kanade.tachiyomi.ui.library.SecretCategoryFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
+import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.GetLibraryAnime
 import tachiyomi.domain.entries.anime.model.asAnimeCover
@@ -68,6 +71,8 @@ class HomeFeedScreenModel(
     private val getMangaHistory: GetMangaHistory,
     private val getLibraryAnime: GetLibraryAnime,
     private val getLibraryManga: GetLibraryManga,
+    private val getAnimeCategories: GetAnimeCategories,
+    private val getMangaCategories: GetMangaCategories,
     private val getAnime: GetAnime,
     private val getEpisode: GetEpisode,
     private val getChapter: GetChapter,
@@ -400,7 +405,14 @@ class HomeFeedScreenModel(
         // Observe library anime
         viewModelScope.launch {
             try {
-                getLibraryAnime.subscribe()
+                combine(getLibraryAnime.subscribe(), getAnimeCategories.subscribe()) { libraryAnime, categories ->
+                    SecretCategoryFilter.withoutSecretEntries(
+                        allCategories = categories,
+                        rows = libraryAnime,
+                        entryId = { it.id },
+                        categoryId = { it.category },
+                    )
+                }
                     .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing library anime", e) }
                     .collect { libraryAnimeList ->
                         android.util.Log.d("HomeFeedDebug", "Library anime collected: size=${libraryAnimeList.size}")
@@ -414,7 +426,14 @@ class HomeFeedScreenModel(
         // Observe library manga
         viewModelScope.launch {
             try {
-                getLibraryManga.subscribe()
+                combine(getLibraryManga.subscribe(), getMangaCategories.subscribe()) { libraryManga, categories ->
+                    SecretCategoryFilter.withoutSecretEntries(
+                        allCategories = categories,
+                        rows = libraryManga,
+                        entryId = { it.id },
+                        categoryId = { it.category },
+                    )
+                }
                     .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing library manga", e) }
                     .collect { libraryMangaList ->
                         android.util.Log.d("HomeFeedDebug", "Library manga collected: size=${libraryMangaList.size}")
