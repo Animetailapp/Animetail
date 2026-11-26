@@ -77,9 +77,12 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         }
     }
 
+    private val videoOutput: String
+        get() = if (decoderPreferences.gpuNext().get()) "gpu-next" else "gpu"
+
     fun init(mpvInst: MPV) {
         this.mpv = mpvInst
-        setVo(if (decoderPreferences.gpuNext().get()) "gpu-next" else "gpu")
+        setVo(videoOutput)
         mpv?.setPropertyBoolean("pause", true)
         setSafeOptionString("profile", "fast")
         mpv?.setOptionString("hwdec", if (decoderPreferences.tryHWDecoding().get()) "auto" else "no")
@@ -120,6 +123,17 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         setupSubtitlesOptions()
         setupAudioOptions()
         observeProperties()
+    }
+
+    /**
+     * Shows [mpvInst], which [init] already set up for the view of an activity that was recreated.
+     * Setting it up again would restart its video output while no surface is attached, which
+     * leaves the video black.
+     */
+    fun attach(mpvInst: MPV) {
+        // Before mpv is set, this only picks the video output to start once the surface is attached
+        setVo(videoOutput)
+        this.mpv = mpvInst
     }
 
     fun observeProperties() {

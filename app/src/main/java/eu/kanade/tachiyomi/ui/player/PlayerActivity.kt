@@ -310,7 +310,11 @@ class PlayerActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
-        setupPlayerMPV()
+        // A configuration change recreates the activity but keeps the view model, and with it the mpv
+        // instance and the episode it has loaded
+        val isRecreated = viewModel.isMpvSetUp
+
+        setupPlayerMPV(isRecreated)
         setupPlayerAudio()
         setupMediaSession()
         setupPlayerOrientation()
@@ -433,7 +437,9 @@ class PlayerActivity : BaseActivity() {
             }
         }
 
-        onNewIntent(this.intent)
+        if (!isRecreated) {
+            onNewIntent(this.intent)
+        }
     }
 
     override fun onDestroy() {
@@ -459,7 +465,10 @@ class PlayerActivity : BaseActivity() {
 
         mpv.removeLogObserver(playerObserver)
         mpv.removeObserver(playerObserver)
-        Thread { runCatching { mpv.close() } }.start()
+        // On a configuration change the view model, and its mpv, are kept for the recreated activity
+        if (!isChangingConfigurations) {
+            Thread { runCatching { mpv.close() } }.start()
+        }
         castManager.cleanup()
         viewModel.stopHttpServer()
 
@@ -582,7 +591,7 @@ class PlayerActivity : BaseActivity() {
         }
     }
 
-    private fun setupPlayerMPV() {
+    private fun setupPlayerMPV(isRecreated: Boolean) {
         val mpvDir = UniFile.fromFile(applicationContext.filesDir)!!.createDirectory(MPV_DIR)!!
 
         val mpvConfFile = mpvDir.createFile("mpv.conf")!!
@@ -596,7 +605,12 @@ class PlayerActivity : BaseActivity() {
         mpv.setOptionString("sub-ass-force-margins", showBlackBars)
         mpv.setOptionString("sub-use-margins", showBlackBars)
 
-        player.init(mpv)
+        if (isRecreated) {
+            player.attach(mpv)
+        } else {
+            player.init(mpv)
+            viewModel.isMpvSetUp = true
+        }
 
         mpv.addLogObserver(playerObserver)
         mpv.addObserver(playerObserver)
