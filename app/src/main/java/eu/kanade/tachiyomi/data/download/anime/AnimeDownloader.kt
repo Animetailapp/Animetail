@@ -315,6 +315,7 @@ class AnimeDownloader(
      * @param episodes the list of episodes to download.
      * @param autoStart whether to start the downloader after enqueing the episodes.
      * @param automatic whether the library update queued them, see [AnimeDownload.automatic].
+     * @param priority where to insert them in the queue, or null to add them at the end.
      */
     fun queueEpisodes(
         anime: Anime,
@@ -323,6 +324,7 @@ class AnimeDownloader(
         changeDownloader: Boolean = false,
         video: Video? = null,
         automatic: Boolean = false,
+        priority: AnimeDownloadPriority? = null,
     ) {
         if (episodes.isEmpty()) return
 
@@ -343,7 +345,7 @@ class AnimeDownloader(
             .toList()
 
         if (episodesToQueue.isNotEmpty()) {
-            addAllToQueue(episodesToQueue)
+            if (priority != null) insertIntoQueue(episodesToQueue, priority) else addAllToQueue(episodesToQueue)
 
             // Start downloader if needed
             if (autoStart && wasEmpty && !isRunning) {
@@ -1015,6 +1017,24 @@ class AnimeDownloader(
             }
             store.addAll(downloads)
             it + downloads
+        }
+    }
+
+    private fun insertIntoQueue(downloads: List<AnimeDownload>, priority: AnimeDownloadPriority) {
+        _queueState.update { queue ->
+            downloads.forEach { download ->
+                download.status = AnimeDownload.State.QUEUE
+            }
+            val newQueue = priority.insert(
+                queue = queue,
+                added = downloads,
+                item = { AnimeDownloadPriority.Item(it.anime.id, it.episode.id) },
+                isDownloading = { it.status == AnimeDownload.State.DOWNLOADING },
+            )
+            // Rewritten so that a restored queue keeps the new order
+            store.clear()
+            store.addAll(newQueue)
+            newQueue
         }
     }
 

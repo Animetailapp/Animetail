@@ -28,6 +28,8 @@ import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.model.Anime
+import tachiyomi.domain.history.anime.interactor.GetNextEpisodes
+import tachiyomi.domain.history.anime.repository.AnimeHistoryRepository
 import tachiyomi.domain.items.episode.interactor.GetEpisode
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
@@ -56,6 +58,8 @@ class AnimeDownloadManager(
     private val downloadPreferences: DownloadPreferences,
     private val downloader: AnimeDownloader,
     private val pendingDeleter: AnimeDownloadPendingDeleter,
+    private val historyRepository: AnimeHistoryRepository,
+    private val getNextEpisodes: GetNextEpisodes,
 ) {
 
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -163,6 +167,46 @@ class AnimeDownloadManager(
     ) {
         val filteredEpisodes = getEpisodesToDownload(episodes)
         downloader.queueEpisodes(anime, filteredEpisodes, autoStart, alt, video, automatic)
+    }
+
+    /**
+     * Queues episodes the app downloads on the user's behalf, ahead of the backlog when the user is
+     * watching the show, see [AnimeDownloadPriority].
+     *
+     * @param automatic whether the library update queues them, see [AnimeDownload.automatic].
+     */
+    suspend fun downloadEpisodesByPriority(
+        anime: Anime,
+        episodes: List<Episode>,
+        autoStart: Boolean,
+        automatic: Boolean,
+    ) {
+        val queued = queueState.value.mapTo(HashSet()) { it.episode.id }
+        // Download-ahead asks every second while watching: skip the history lookups for nothing new
+        val filteredEpisodes = getEpisodesToDownload(episodes).filterNot {
+            it.id in queued || isEpisodeDownloaded(it.name, it.scanlator, it.url, anime.title, anime.source)
+        }
+        if (filteredEpisodes.isEmpty()) return
+        val priority = downloadPriority(queueState.value.map { it.anime.id }.toSet() + anime.id)
+        downloader.queueEpisodes(anime, filteredEpisodes, autoStart, automatic = automatic, priority = priority)
+    }
+
+    private suspend fun downloadPriority(animeIds: Set<Long>): AnimeDownloadPriority {
+        val now = System.currentTimeMillis()
+        val activity = historyRepository.getHistoryByAnimeIds(animeIds.toList())
+            .mapNotNull { (animeId, history) ->
+                val last = history.filter { it.seenAt != null }.maxByOrNull { it.seenAt!! } ?: return@mapNotNull null
+                val lastWatchedAt = last.seenAt!!.time
+                // The next episode only matters for the shows being watched
+                val upNext = if (now - lastWatchedAt <= AnimeDownloadPriority.ACTIVE_WINDOW.inWholeMilliseconds) {
+                    getNextEpisodes.await(animeId, last.episodeId, onlyUnseen = false).firstOrNull()?.id
+                } else {
+                    null
+                }
+                animeId to AnimeDownloadPriority.WatchActivity(lastWatchedAt, upNext)
+            }
+            .toMap()
+        return AnimeDownloadPriority(activity, now)
     }
 
     /**
