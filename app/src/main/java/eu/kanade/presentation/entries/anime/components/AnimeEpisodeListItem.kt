@@ -3,6 +3,7 @@ package eu.kanade.presentation.entries.anime.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -40,7 +41,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -373,17 +373,20 @@ private val swipeActionThreshold = 56.dp
 private fun EpisodeThumbnail(
     previewUrl: String?,
 ) {
-    val targetWidth = ((LocalConfiguration.current.screenWidthDp * 0.4f).coerceAtMost(250f))
     if (previewUrl != null) {
-        ItemCover.Thumb(
-            modifier = Modifier
-                .width(targetWidth.dp)
-                .padding(end = 8.dp),
-            data = ImageRequest.Builder(LocalContext.current)
-                .data(previewUrl)
-                .crossfade(true)
-                .build(),
-        )
+        // Size from the row, not the screen: in the two-pane layout the episode list only gets
+        // part of the screen, and a screen-based width leaves little room for the title and summary.
+        BoxWithConstraints {
+            ItemCover.Thumb(
+                modifier = Modifier
+                    .width(minOf(maxWidth * 0.4f, 250.dp))
+                    .padding(end = 8.dp),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(previewUrl)
+                    .crossfade(true)
+                    .build(),
+            )
+        }
     }
 }
 
