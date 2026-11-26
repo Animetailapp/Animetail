@@ -615,7 +615,6 @@ class AnimeDownloader(
         }
 
         FFmpegKitConfig.setLogRedirectionStrategy(LogRedirectionStrategy.ALWAYS_PRINT_LOGS)
-        val ffmpegOptions = getFFmpegOptions(video, headerOptions, ffmpegFilename())
         val ffprobeCommand = { file: String, ffprobeHeaders: String? ->
             FFmpegKitConfig.parseArguments(
                 "${ffprobeHeaders?.plus(" ") ?: ""}-v quiet -show_entries " +
@@ -638,7 +637,10 @@ class AnimeDownloader(
         } else {
             headerOptions
         }
-        duration = getDuration(ffprobeCommand(video.videoUrl, ffprobeOptions))?.toLong() ?: 0L
+        val probeCommand = "$ffprobeOptions ${SourceProbe.FFPROBE_ARGS} \"${video.videoUrl}\""
+        val probe = SourceProbe.parse(runFFprobe(FFmpegKitConfig.parseArguments(probeCommand)))
+        duration = probe.durationSeconds?.toLong() ?: 0L
+        val ffmpegOptions = getFFmpegOptions(video, headerOptions, ffmpegFilename(), probe.variantProgramId)
 
         // FFmpeg keeps running while a source stalls (reconnects retry, HLS skips failing segments),
         // so an attempt that writes nothing for STALL_TIMEOUT fails and is retried instead of holding
@@ -710,7 +712,16 @@ class AnimeDownloader(
             ?: throw IOException("Failed to move ${output.name} to $filename.mkv")
     }
 
-    private fun getFFmpegOptions(video: Video, headerOptions: String, ffmpegFilename: String): Array<String> {
+    /**
+     * @param variantProgramId the program of the HLS variant to download (see [SourceProbe]), or null
+     *   to download all video and audio of the input.
+     */
+    private fun getFFmpegOptions(
+        video: Video,
+        headerOptions: String,
+        ffmpegFilename: String,
+        variantProgramId: Int?,
+    ): Array<String> {
         fun formatInputs(tracks: List<Track>) = tracks.joinToString(" ", postfix = " ") {
             buildList {
                 if (it.url.startsWith("http")) {
@@ -758,9 +769,10 @@ class AnimeDownloader(
             add("\"${video.videoUrl}\"")
         }.joinToString(" ")
 
+        val videoSource = variantProgramId?.let { "0:p:$it" } ?: "0"
         val command = listOf(
             videoInput, subtitleInputs, audioInputs,
-            "-map 0:v", audioMaps, "-map 0:a?", subtitleMaps, "-map 0:s? -map 0:t?",
+            "-map $videoSource:v", audioMaps, "-map $videoSource:a?", subtitleMaps, "-map 0:s? -map 0:t?",
             "-f matroska -c:a copy -c:v copy -c:s copy",
             subtitleMetadata, audioMetadata, sourceVideoOptions,
             "\"$ffmpegFilename\" -y",
@@ -772,6 +784,10 @@ class AnimeDownloader(
     }
 
     private suspend fun getDuration(ffprobeCommand: Array<String>): Float? {
+        return runFFprobe(ffprobeCommand).toFloatOrNull()
+    }
+
+    private suspend fun runFFprobe(ffprobeCommand: Array<String>): String {
         return suspendCancellableCoroutine { continuation ->
             val session = FFprobeKit.executeWithArgumentsAsync(ffprobeCommand) {
                 if (it.returnCode.isValueSuccess) {
@@ -781,7 +797,7 @@ class AnimeDownloader(
                 }
             }
             continuation.invokeOnCancellation { session.cancel() }
-        }.output.toFloatOrNull()
+        }.output
     }
 
     /**
