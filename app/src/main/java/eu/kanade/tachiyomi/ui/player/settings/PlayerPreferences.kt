@@ -52,6 +52,7 @@ class PlayerPreferences(
     fun playerBufferMegabytes() = preferenceStore.getInt("pref_player_buffer_megabytes", 0)
     fun rememberLastVideo() = preferenceStore.getBoolean("pref_remember_last_video", true)
     fun preloadNextEpisode() = preferenceStore.getBoolean("pref_preload_next_episode", true)
+    fun clearVideoCacheWhenDone() = preferenceStore.getBoolean("pref_clear_video_cache_when_done", true)
     fun fastVideoStart() = preferenceStore.getBoolean("pref_fast_video_start", true)
 
     // Display

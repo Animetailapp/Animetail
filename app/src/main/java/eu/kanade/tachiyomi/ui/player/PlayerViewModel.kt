@@ -34,9 +34,11 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import animetail.feature.mpvfiles.MpvConfig
@@ -1239,9 +1241,20 @@ class PlayerViewModel(
     override fun onCleared() {
         if (currentEpisode.value != null) {
             saveWatchingProgress(currentEpisode.value!!)
+            clearVideoCacheIfSeen(currentEpisode.value!!)
             episodeToDownload?.let {
                 downloadManager.addDownloadsToStartOfQueue(listOf(it))
             }
+        }
+    }
+
+    // Waits until the player leaves the episode, its cache is still being read while it plays.
+    private fun clearVideoCacheIfSeen(episode: Episode) {
+        val sourceId = currentAnime.value?.source ?: return
+        if (!episode.seen) return
+        // Not viewModelScope, it's already cancelled when called from onCleared.
+        ProcessLifecycleOwner.get().lifecycleScope.launchIO {
+            VideoCacheProxy.clearFinishedEpisodes(sourceId, listOf(episode.url))
         }
     }
 
@@ -2191,6 +2204,7 @@ class PlayerViewModel(
 
         val chosenEpisode = currentPlaylist.value.firstOrNull { ep -> ep.id == episodeId } ?: return null
 
+        currentEpisode.value?.takeIf { it.id != chosenEpisode.id }?.let(::clearVideoCacheIfSeen)
         _currentEpisode.update { _ -> chosenEpisode }
         updateEpisode(chosenEpisode)
 

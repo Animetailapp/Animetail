@@ -261,6 +261,11 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                     title = stringResource(AYMR.strings.pref_preload_next_episode),
                     subtitle = stringResource(AYMR.strings.pref_preload_next_episode_summary),
                 ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.clearVideoCacheWhenDone(),
+                    title = stringResource(AYMR.strings.pref_clear_video_cache_when_done),
+                    subtitle = stringResource(AYMR.strings.pref_clear_video_cache_when_done_summary),
+                ),
                 Preference.PreferenceItem.ListPreference(
                     preference = playerPreferences.playerBufferMegabytes(),
                     entries = PLAYER_BUFFER_SIZES_MB

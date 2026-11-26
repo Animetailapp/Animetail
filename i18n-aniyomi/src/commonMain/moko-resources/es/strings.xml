@@ -430,6 +430,7 @@
     <string name="pref_hosters_switch_on_error">Cambiar de servidor si falla la reproducción</string>
     <string name="pref_hosters_switch_on_error_summary">Prueba automáticamente el siguiente video disponible cuando el actual no se puede reproducir</string>
     <string name="pref_hosters_priority">Prioridad de servidores</string>
+    <string name="pref_hosters_priority_source_summary">Compartida por todas las extensiones, solo se listan los servidores vistos en esta</string>
     <string name="pref_hosters_priority_summary">%1$s · %2$d desactivados</string>
     <string name="pref_hosters_priority_empty">Configúrala desde la hoja de calidades del reproductor</string>
     <string name="pref_hosters_priority_reset">Restablecer prioridad de servidores</string>
@@ -451,6 +452,10 @@
     <string name="pref_video_cache_clear">Limpiar caché de video</string>
     <string name="pref_video_cache_clear_summary">En uso: %s</string>
     <string name="pref_video_cache_cleared">Caché de video limpiada</string>
+    <string name="pref_video_cache_clear_source_summary">Borra el buffer de video guardado de los episodios de esta extensión</string>
+    <string name="pref_video_cache_clear_anime_summary">Borra el buffer de video guardado de los episodios de este anime</string>
+    <string name="pref_clear_video_cache_when_done">Limpiar la caché de video de un episodio al terminarlo</string>
+    <string name="pref_clear_video_cache_when_done_summary">Al marcarlo como visto o descargarlo, ya no se necesita el buffer guardado</string>
     <string name="pref_preload_next_episode">Precargar el siguiente episodio</string>
     <string name="pref_preload_next_episode_summary">Cerca del final de un episodio obtiene los enlaces del siguiente y descarga sus primeros segundos para que abra al instante</string>
     <string name="pref_player_buffer">Buffer en memoria</string>

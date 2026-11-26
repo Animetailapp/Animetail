@@ -42,6 +42,12 @@ class VideoCacheProxy(
 
     // External players can drop the headers a host requires (mp4upload answers 403 without its
     // Referer), so the ones given in proxyUrl are added to every request made to that host.
+    // Variant playlists and segments are cached by URL; they're tagged with the video they were
+    // listed for, so clearing an episode also clears them.
+    private val resourceOwners = object : LinkedHashMap<String, String>() {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>) = size > MAX_RESOURCE_OWNERS
+    }
+
     private val hostHeaders = object : LinkedHashMap<String, Headers>() {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Headers>) = size > MAX_HOST_HEADERS
     }
@@ -117,6 +123,8 @@ class VideoCacheProxy(
             val onEndReached = { if (prefetchEnabled()) prefetcher.onSegmentPlayed(url, forwardedHeaders) }
             val resource = store.resource(cacheKey ?: url.toString())
             resource.touch()
+            val owner = cacheKey ?: ownerOf(url)
+            owner?.let(resource::setOwner)
 
             val cachedInfo = resource.readInfo()?.let { checkedInfo(resource, it, url, forwardedHeaders) }
             val firstBlock = start / store.blockSize
@@ -142,10 +150,10 @@ class VideoCacheProxy(
             } catch (e: IOException) {
                 // Lets a cached video start without a connection; its segments are on disk already.
                 val playlist = resource.readPlaylist() ?: throw e
-                return playlistResponse(playlist)
+                return playlistResponse(playlist, owner)
             }
             return try {
-                serveUpstream(url, upstream, resource, blockStart, start, range, forwardedHeaders, onEndReached)
+                serveUpstream(url, upstream, resource, owner, blockStart, start, range, forwardedHeaders, onEndReached)
             } catch (e: Exception) {
                 upstream.close()
                 throw e
@@ -156,6 +164,7 @@ class VideoCacheProxy(
             url: HttpUrl,
             upstream: okhttp3.Response,
             resource: VideoCacheStore.Resource,
+            owner: String?,
             blockStart: Long,
             start: Long,
             range: ByteRange?,
@@ -165,7 +174,7 @@ class VideoCacheProxy(
             if (!upstream.isSuccessful) {
                 upstream.close()
                 // Signed playlist links expire, while the segments they list may be cached.
-                resource.readPlaylist()?.let { return playlistResponse(it) }
+                resource.readPlaylist()?.let { return playlistResponse(it, owner) }
                 return newFixedLengthResponse(status(upstream.code), MIME_PLAINTEXT, "")
             }
 
@@ -174,7 +183,7 @@ class VideoCacheProxy(
             if (blockStart == 0L && isPlaylist(upstream, contentType, finalUrl)) {
                 val playlist = CachedPlaylist(finalUrl.toString(), contentType, upstream.body.string())
                 if (HlsPlaylist.isStatic(playlist.body)) resource.writePlaylist(playlist)
-                return playlistResponse(playlist)
+                return playlistResponse(playlist, owner)
             }
 
             val length = when {
@@ -206,10 +215,13 @@ class VideoCacheProxy(
             return rangeResponse(stream, info, start, range)
         }
 
-        private fun playlistResponse(playlist: CachedPlaylist): Response {
+        private fun playlistResponse(playlist: CachedPlaylist, owner: String?): Response {
             val baseUrl = playlist.url.toHttpUrl()
             prefetcher.registerPlaylist(HlsPlaylist.mediaSegments(playlist.body, baseUrl))
-            val rewritten = HlsPlaylist.rewrite(playlist.body, baseUrl) { proxyUrl(listeningPort, it) }
+            val rewritten = HlsPlaylist.rewrite(playlist.body, baseUrl) { listedUrl ->
+                owner?.let { registerOwner(listedUrl, it) }
+                proxyUrl(listeningPort, listedUrl)
+            }
             return newFixedLengthResponse(Response.Status.OK, playlist.contentType ?: HLS_MIME_TYPE, rewritten)
         }
 
@@ -254,11 +266,18 @@ class VideoCacheProxy(
     fun warmUp(url: String, headers: Headers, cacheKey: String? = null) {
         val httpUrl = url.toHttpUrlOrNull() ?: return
         val requestHeaders = forwardedHeaders(headers.associate { (name, value) -> name to value })
-        warmUp(httpUrl, requestHeaders, store.resource(cacheKey ?: url), isVariant = false)
+        warmUp(httpUrl, requestHeaders, store.resource(cacheKey ?: url), cacheKey, isVariant = false)
     }
 
-    private fun warmUp(url: HttpUrl, headers: Headers, resource: VideoCacheStore.Resource, isVariant: Boolean) {
+    private fun warmUp(
+        url: HttpUrl,
+        headers: Headers,
+        resource: VideoCacheStore.Resource,
+        owner: String?,
+        isVariant: Boolean,
+    ) {
         if (resource.hasStart(WARM_UP_BYTES)) return
+        owner?.let(resource::setOwner)
         val response = client.newCall(upstreamRequest(url, headers, 0)).execute()
         val contentType = response.header("Content-Type")
         val finalUrl = response.request.url
@@ -273,20 +292,24 @@ class VideoCacheProxy(
         val variant = HlsPlaylist.highestVariant(playlist.body, finalUrl)
         when {
             variant != null -> if (!isVariant) {
-                warmUp(
-                    variant,
-                    headers,
-                    store.resource(variant.toString()),
-                    isVariant = true,
-                )
+                owner?.let { registerOwner(variant, it) }
+                warmUp(variant, headers, store.resource(variant.toString()), owner, isVariant = true)
             }
 
             else -> HlsPlaylist.mediaSegments(playlist.body, finalUrl)
                 .take(WARM_UP_SEGMENTS)
+                .onEach { segment -> owner?.let { registerOwner(segment, it) } }
                 .filterNot { store.resource(it.toString()).isComplete() }
                 .forEach { downloadToCache(it, headers, store.resource(it.toString())) }
         }
     }
+
+    // Only remembered here: a playlist lists many segments that may never be cached.
+    private fun registerOwner(url: HttpUrl, owner: String) {
+        synchronized(resourceOwners) { resourceOwners[url.toString()] = owner }
+    }
+
+    private fun ownerOf(url: HttpUrl): String? = synchronized(resourceOwners) { resourceOwners[url.toString()] }
 
     private fun isPlaylist(upstream: okhttp3.Response, contentType: String?, url: HttpUrl): Boolean =
         HlsPlaylist.isPlaylist(contentType, url) ||
@@ -298,6 +321,7 @@ class VideoCacheProxy(
         resource: VideoCacheStore.Resource = store.resource(url.toString()),
         maxBytes: Long = Long.MAX_VALUE,
     ) {
+        ownerOf(url)?.let(resource::setOwner)
         val response = client.newCall(upstreamRequest(url, headers, 0)).execute()
         val length = when (response.code) {
             PARTIAL_CONTENT -> ByteRange.totalLength(response.header("Content-Range"))
@@ -415,6 +439,7 @@ class VideoCacheProxy(
     companion object {
         private const val LOCALHOST = "127.0.0.1"
         private const val MAX_HOST_HEADERS = 32
+        private const val MAX_RESOURCE_OWNERS = 5000
         private const val OK = 200
         private const val PARTIAL_CONTENT = 206
         private const val PLAYLIST_PEEK_BYTES = 16L
@@ -437,7 +462,25 @@ class VideoCacheProxy(
          * the same key are told apart by their size, see [checkedInfo].
          */
         fun cacheKey(sourceId: Long, episodeUrl: String, hosterName: String, videoTitle: String): String =
-            "$sourceId|$episodeUrl|$hosterName|$videoTitle"
+            "${episodePrefix(sourceId, episodeUrl)}$hosterName|$videoTitle"
+
+        private fun episodePrefix(sourceId: Long, episodeUrl: String) = "$sourceId|$episodeUrl|"
+
+        /** Deletes what was cached for these episodes, whatever hoster played them. */
+        fun clearEpisodes(sourceId: Long, episodeUrls: Collection<String>) {
+            val prefixes = episodeUrls.map { episodePrefix(sourceId, it) }
+            sharedStore.clearOwned { owner -> prefixes.any(owner::startsWith) }
+        }
+
+        /** Clears the episodes once they're seen or downloaded, unless the user turned it off. */
+        fun clearFinishedEpisodes(sourceId: Long, episodeUrls: Collection<String>) {
+            if (episodeUrls.isEmpty() || !Injekt.get<PlayerPreferences>().clearVideoCacheWhenDone().get()) return
+            clearEpisodes(sourceId, episodeUrls)
+        }
+
+        fun clearSource(sourceId: Long) {
+            sharedStore.clearOwned { owner -> owner.startsWith("$sourceId|") }
+        }
 
         /** Proxy used by the player; null when the video cache is turned off. */
         val shared: VideoCacheProxy? get() {

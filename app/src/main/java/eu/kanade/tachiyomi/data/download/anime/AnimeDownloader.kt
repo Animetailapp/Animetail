@@ -32,6 +32,7 @@ import eu.kanade.tachiyomi.data.notification.NotificationHandler
 import eu.kanade.tachiyomi.data.torrent.service.TorrentServerService
 import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.util.storage.DiskUtil
@@ -418,6 +419,7 @@ class AnimeDownloader(
             DiskUtil.createNoMediaFile(episodeDir, context)
 
             download.status = AnimeDownload.State.DOWNLOADED
+            VideoCacheProxy.clearFinishedEpisodes(download.source.id, listOf(download.episode.url))
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
             // If the video threw, it will resume here

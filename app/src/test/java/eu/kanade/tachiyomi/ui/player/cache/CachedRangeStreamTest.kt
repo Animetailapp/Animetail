@@ -146,4 +146,25 @@ class CachedRangeStreamTest {
 
         assertArrayEquals(content.copyOfRange(0, 10), resource.readBlock(0, 25))
     }
+
+    @Test
+    fun `clearing an owner keeps the resources of other owners`() {
+        val store = store()
+        val watched = store.resource("source|episode-1|SUB Mega|Mega").apply {
+            setOwner("source|episode-1|SUB Mega|Mega")
+        }
+        val segment = store.resource("https://cdn.example/seg-1.ts").apply {
+            setOwner("source|episode-1|SUB Mega|Mega")
+        }
+        val other = store.resource("source|episode-2|SUB Mega|Mega").apply {
+            setOwner("source|episode-2|SUB Mega|Mega")
+        }
+        listOf(watched, segment, other).forEach { read(it, 0, 9) }
+
+        store.clearOwned { it.startsWith("source|episode-1|") }
+
+        assertNull(watched.readBlock(0, 25))
+        assertNull(segment.readBlock(0, 25))
+        assertArrayEquals(content.copyOfRange(0, 10), other.readBlock(0, 25))
+    }
 }

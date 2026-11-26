@@ -73,6 +73,7 @@
     <string name="pref_hosters_switch_on_error">Switch hoster on playback error</string>
     <string name="pref_hosters_switch_on_error_summary">Automatically try the next available video when the current one fails to play</string>
     <string name="pref_hosters_priority">Hoster priority</string>
+    <string name="pref_hosters_priority_source_summary">Shared by every extension, only the servers seen in this one are listed</string>
     <string name="pref_hosters_priority_summary">%1$s · %2$d disabled</string>
     <string name="pref_hosters_priority_empty">Set it from the qualities sheet in the player</string>
     <string name="pref_hosters_priority_reset">Reset hoster priority</string>
@@ -94,6 +95,10 @@
     <string name="pref_video_cache_clear">Clear video cache</string>
     <string name="pref_video_cache_clear_summary">In use: %s</string>
     <string name="pref_video_cache_cleared">Video cache cleared</string>
+    <string name="pref_video_cache_clear_source_summary">Removes the video buffer saved for the episodes of this extension</string>
+    <string name="pref_video_cache_clear_anime_summary">Removes the video buffer saved for the episodes of this anime</string>
+    <string name="pref_clear_video_cache_when_done">Clear an episode\'s video cache when it\'s done</string>
+    <string name="pref_clear_video_cache_when_done_summary">When it\'s marked as seen or downloaded, the buffer saved for it is no longer needed</string>
     <string name="pref_preload_next_episode">Preload next episode</string>
     <string name="pref_preload_next_episode_summary">Near the end of an episode, gets the links of the next one and downloads its first seconds so it opens right away</string>
     <string name="pref_player_buffer">Memory buffer</string>

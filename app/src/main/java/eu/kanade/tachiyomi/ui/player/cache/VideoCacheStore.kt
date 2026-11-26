@@ -47,6 +47,21 @@ class VideoCacheStore(
         }
     }
 
+    /**
+     * Deletes the resources whose owner, set with [Resource.setOwner], matches [isOwnedBy].
+     * Resources cached without an owner are kept.
+     */
+    fun clearOwned(isOwnedBy: (String) -> Boolean) {
+        synchronized(this) {
+            dir.listFiles()
+                ?.filter { resourceDir -> File(resourceDir, OWNER_FILE).readOwner()?.let(isOwnedBy) == true }
+                ?.forEach { it.deleteRecursively() }
+            usedBytes = -1
+        }
+    }
+
+    private fun File.readOwner(): String? = if (exists()) runCatching { readText() }.getOrNull() else null
+
     private fun onBlockWritten(bytes: Long) {
         synchronized(this) {
             if (usedBytes < 0) usedBytes = dir.diskUsage() else usedBytes += bytes
@@ -68,6 +83,7 @@ class VideoCacheStore(
 
         private val infoFile = File(resourceDir, INFO_FILE)
         private val playlistFile = File(resourceDir, PLAYLIST_FILE)
+        private val ownerFile = File(resourceDir, OWNER_FILE)
 
         fun readInfo(): CachedResourceInfo? {
             if (!infoFile.exists()) return null
@@ -104,6 +120,16 @@ class VideoCacheStore(
                 writeAtomically(playlistFile, json.encodeToString(CachedPlaylist.serializer(), playlist).toByteArray())
             } catch (e: IOException) {
                 logcat(LogPriority.WARN, e) { "Couldn't store playlist" }
+            }
+        }
+
+        /** Records what the resource belongs to, such as an episode, so it can be cleared with it. */
+        fun setOwner(owner: String) {
+            if (ownerFile.readOwner() == owner) return
+            try {
+                writeAtomically(ownerFile, owner.toByteArray())
+            } catch (e: IOException) {
+                logcat(LogPriority.WARN, e) { "Couldn't store video cache owner" }
             }
         }
 
@@ -198,6 +224,7 @@ class VideoCacheStore(
     companion object {
         const val DEFAULT_BLOCK_SIZE = 1024 * 1024
         private const val INFO_FILE = "info.json"
+        private const val OWNER_FILE = "owner"
         private const val PARTIAL_SUFFIX = ".part"
         private const val PLAYLIST_FILE = "playlist.json"
     }

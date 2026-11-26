@@ -34,6 +34,7 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.track.TrackStatus
 import eu.kanade.tachiyomi.data.track.TrackerManager
+import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
 import eu.kanade.tachiyomi.util.episode.getNextUnseen
 import eu.kanade.tachiyomi.util.removeBackgrounds
 import eu.kanade.tachiyomi.util.removeCovers
@@ -666,6 +667,10 @@ class AnimeLibraryViewModel(
                     anime = anime.anime,
                     seen = seen,
                 )
+                if (seen) {
+                    val episodeUrls = getEpisodesByAnimeId.await(anime.anime.id).map { it.url }
+                    VideoCacheProxy.clearFinishedEpisodes(anime.anime.source, episodeUrls)
+                }
             }
         }
         clearSelection()
