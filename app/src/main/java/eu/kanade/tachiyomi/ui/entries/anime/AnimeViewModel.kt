@@ -258,6 +258,10 @@ class AnimeViewModel(
     private val selectedPositions: Array<Int> = arrayOf(-1, -1) // first and last selected index in list
     private val selectedEpisodeIds: HashSet<Long> = HashSet()
 
+    // Declared before init: observeDownloads() is called from init and its collectors run on
+    // another thread, so they can write to it before the rest of the constructor has run.
+    private val downloadProgress = mutableStateMapOf<Long, Int>()
+
     internal var isFromChangeCategory: Boolean = false
 
     internal val autoOpenTrack: Boolean
@@ -774,8 +778,6 @@ class AnimeViewModel(
     // Anime info - end
 
     // Episodes list - start
-
-    private val downloadProgress = mutableStateMapOf<Long, Int>()
 
     fun getDownloadProgress(episodeId: Long): Int {
         return downloadProgress[episodeId] ?: 0
