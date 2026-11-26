@@ -56,10 +56,10 @@ class TrackSelect(
     private fun containsLang(track: VideoTrack, locale: Locale): Boolean {
         val localName = locale.getDisplayName(locale)
         val englishName = locale.getDisplayName(Locale.ENGLISH).substringBefore(" (")
-        val langRegex = Regex("""\b${locale.isO3Language}|${locale.language}\b""", RegexOption.IGNORE_CASE)
+        val language = LanguageTags.normalize(locale.language)
 
         return track.name.contains(localName, true) ||
             track.name.contains(englishName, true) ||
-            track.language?.let { langRegex.find(it) != null } == true
+            (language != null && LanguageTags.normalize(track.language) == language)
     }
 }
