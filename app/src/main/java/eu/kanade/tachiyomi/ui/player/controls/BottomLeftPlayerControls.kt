@@ -20,19 +20,24 @@ package eu.kanade.tachiyomi.ui.player.controls
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import dev.vivvvek.seeker.Segment
 import eu.kanade.tachiyomi.ui.player.Sheets
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
 import eu.kanade.tachiyomi.ui.player.controls.components.CurrentChapter
+import eu.kanade.tachiyomi.ui.player.controls.components.PlaybackSpeedDropdown
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -63,15 +68,23 @@ fun BottomLeftPlayerControls(
             icon = Icons.Default.ScreenRotation,
             onClick = onCycleRotation,
         )
-        ControlsButton(
-            text = stringResource(AYMR.strings.player_speed, playbackSpeed),
-            onClick = {
-                val newSpeed = if (playbackSpeed >= 2) 0.25f else playbackSpeed + 0.25f
-                onPlaybackSpeedChange(newSpeed)
-                playerPreferences.playerSpeed().set(newSpeed)
-            },
-            onLongClick = { onOpenSheet(Sheets.PlaybackSpeed) },
-        )
+        var speedMenuExpanded by remember { mutableStateOf(false) }
+        Box {
+            ControlsButton(
+                text = stringResource(AYMR.strings.player_speed, playbackSpeed),
+                onClick = { speedMenuExpanded = true },
+                onLongClick = { onOpenSheet(Sheets.PlaybackSpeed) },
+            )
+            PlaybackSpeedDropdown(
+                expanded = speedMenuExpanded,
+                speed = playbackSpeed,
+                onSpeedChange = {
+                    onPlaybackSpeedChange(it)
+                    playerPreferences.playerSpeed().set(it)
+                },
+                onDismissRequest = { speedMenuExpanded = false },
+            )
+        }
         AnimatedVisibility(
             currentChapter != null && playerPreferences.showCurrentChapter().get(),
             enter = fadeIn(),
