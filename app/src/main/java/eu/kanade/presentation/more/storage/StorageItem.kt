@@ -1,6 +1,7 @@
 package eu.kanade.presentation.more.storage
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,7 @@ fun StorageItem(
     item: StorageItem,
     isManga: Boolean,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     onDelete: (Long) -> Unit,
 ) {
     val pluralCount = if (isManga) MR.plurals.manga_num_chapters else AYMR.plurals.anime_num_episodes
@@ -61,7 +63,7 @@ fun StorageItem(
     }
 
     Row(
-        modifier = modifier,
+        modifier = if (onClick != null) Modifier.clickable(onClick = onClick).then(modifier) else modifier,
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.medium),
         verticalAlignment = Alignment.CenterVertically,
         content = {

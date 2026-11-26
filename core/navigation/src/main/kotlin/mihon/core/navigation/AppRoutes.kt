@@ -25,6 +25,13 @@ data object StatsRoute : NavKey
 @Serializable
 data object StorageRoute : NavKey
 
+/** The downloaded episodes of an anime directory, see AnimeDownloadSizes.Show. */
+@Serializable
+data class AnimeStorageDetailRoute(
+    val sourceIds: List<Long>,
+    val dirName: String,
+) : NavKey
+
 @Serializable
 data object NetworkStreamRoute : NavKey
 

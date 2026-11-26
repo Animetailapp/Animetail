@@ -26,14 +26,18 @@ import eu.kanade.domain.base.BasePreferences
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.widget.TriStateListDialog
+import eu.kanade.presentation.more.storage.KEEP_UNSEEN_CHOICES
 import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.StorageRoute
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.OutlinedNumericChooser
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
@@ -125,6 +129,7 @@ data object SettingsDownloadScreen : SearchableSettings {
         animeCategories: List<Category>,
         mangaCategories: List<Category>,
     ): Preference.PreferenceGroup {
+        val navigator = LocalNavigator.current
         return Preference.PreferenceGroup(
             title = stringResource(AYMR.strings.pref_category_delete_chapters),
             preferenceItems = listOf(
@@ -159,6 +164,24 @@ data object SettingsDownloadScreen : SearchableSettings {
                 getExcludedCategoriesPreference(
                     downloadPreferences = downloadPreferences,
                     categories = { mangaCategories },
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = downloadPreferences.animeDownloadStorageLimitGb,
+                    entries = STORAGE_LIMIT_CHOICES_GB
+                        .associateWith {
+                            if (it == 0) {
+                                stringResource(MR.strings.disabled)
+                            } else {
+                                stringResource(TLMR.strings.pref_storage_limit_gb, it)
+                            }
+                        }
+                        .toMap(),
+                    title = stringResource(TLMR.strings.pref_storage_limit),
+                ),
+                Preference.PreferenceItem.InfoPreference(stringResource(TLMR.strings.pref_storage_limit_summary)),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(TLMR.strings.pref_manage_storage),
+                    onClick = { navigator.push(StorageRoute) },
                 ),
             ),
         )
@@ -326,6 +349,20 @@ data object SettingsDownloadScreen : SearchableSettings {
                     title = stringResource(AYMR.strings.auto_download_while_watching),
                 ),
                 Preference.PreferenceItem.ListPreference(
+                    preference = downloadPreferences.keepUnseenEpisodesDownloaded,
+                    entries = KEEP_UNSEEN_CHOICES
+                        .associateWith {
+                            if (it == 0) {
+                                stringResource(MR.strings.disabled)
+                            } else {
+                                pluralStringResource(AYMR.plurals.next_unseen_episodes, count = it, it)
+                            }
+                        }
+                        .toMap(),
+                    title = stringResource(TLMR.strings.policy_keep_unseen),
+                ),
+                Preference.PreferenceItem.InfoPreference(stringResource(TLMR.strings.pref_keep_unseen_summary)),
+                Preference.PreferenceItem.ListPreference(
                     preference = downloadPreferences.autoDownloadWhileReading,
                     entries = listOf(0, 2, 3, 5, 10)
                         .associateWith {
@@ -435,4 +472,6 @@ data object SettingsDownloadScreen : SearchableSettings {
             },
         )
     }
+
+    private val STORAGE_LIMIT_CHOICES_GB = listOf(0, 5, 10, 20, 50, 100, 200, 500)
 }

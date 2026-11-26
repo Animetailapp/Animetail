@@ -82,6 +82,7 @@ import eu.kanade.tachiyomi.ui.more.NewUpdateScreen
 import eu.kanade.tachiyomi.ui.more.OnboardingScreen
 import eu.kanade.tachiyomi.ui.stats.StatsTab
 import eu.kanade.tachiyomi.ui.storage.StorageTab
+import eu.kanade.tachiyomi.ui.storage.anime.AnimeStorageDetailScreen
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import mihon.feature.migration.config.AnimeMigrationConfigScreen
@@ -276,6 +277,9 @@ fun EntryProviderScope<NavKey>.appEntries() {
     }
     entry<StorageRoute> {
         StorageTab()
+    }
+    entry<AnimeStorageDetailRoute> { route ->
+        AnimeStorageDetailScreen(route.sourceIds, route.dirName)
     }
     entry<NetworkStreamRoute> {
         NetworkStreamScreen()
