@@ -76,6 +76,7 @@ import java.io.File
 import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * This class is the one in charge of downloading episodes.
@@ -632,41 +633,56 @@ class AnimeDownloader(
             }
         }
 
-        val statCallback = StatisticsCallback { s ->
-            val outTime = (s.time / 1000.0).toLong()
-
-            if (duration != 0L && outTime > 0) {
-                download.progress = (100 * outTime / duration).toInt()
-            }
+        val ffprobeOptions = if (video.videoUrl.startsWith("http")) {
+            "$FFMPEG_NETWORK_INPUT_OPTIONS $headerOptions"
+        } else {
+            headerOptions
         }
+        duration = getDuration(ffprobeCommand(video.videoUrl, ffprobeOptions))?.toLong() ?: 0L
 
-        duration = getDuration(ffprobeCommand(video.videoUrl, headerOptions))?.toLong() ?: 0L
+        // FFmpeg keeps running while a source stalls (reconnects retry, HLS skips failing segments),
+        // so an attempt that writes nothing for STALL_TIMEOUT fails and is retried instead of holding
+        // the download queue indefinitely.
+        withProgressTimeout(STALL_TIMEOUT) { onProgress ->
+            var lastTime = 0.0
+            var lastSize = 0L
+            val statCallback = StatisticsCallback { s ->
+                if (s.time > lastTime || s.size > lastSize) onProgress()
+                lastTime = maxOf(lastTime, s.time)
+                lastSize = maxOf(lastSize, s.size)
 
-        suspendCancellableCoroutine { continuation ->
-            val session = FFmpegKit.executeWithArgumentsAsync(
-                ffmpegOptions,
-                {
-                    if (it.returnCode.isValueSuccess) {
-                        if (localTmpFile != null && isSaf) {
-                            localTmpFile.inputStream().buffered().use { input ->
-                                videoFile.openOutputStream().buffered().use { output ->
-                                    input.copyTo(output)
+                val outTime = (s.time / 1000.0).toLong()
+                if (duration != 0L && outTime > 0) {
+                    download.progress = (100 * outTime / duration).toInt()
+                }
+            }
+
+            suspendCancellableCoroutine { continuation ->
+                val session = FFmpegKit.executeWithArgumentsAsync(
+                    ffmpegOptions,
+                    {
+                        if (it.returnCode.isValueSuccess) {
+                            if (localTmpFile != null && isSaf) {
+                                localTmpFile.inputStream().buffered().use { input ->
+                                    videoFile.openOutputStream().buffered().use { output ->
+                                        input.copyTo(output)
+                                    }
                                 }
+                                localTmpFile.delete()
                             }
-                            localTmpFile.delete()
+                            continuation.resume(it)
+                        } else {
+                            localTmpFile?.delete()
+                            continuation.resumeWithException(Exception("Error in ffmpeg: ${it.failureReason()}"))
                         }
-                        continuation.resume(it)
-                    } else {
-                        localTmpFile?.delete()
-                        continuation.resumeWithException(Exception("Error in ffmpeg: ${it.failureReason()}"))
-                    }
-                },
-                logCallback,
-                statCallback,
-            )
-            continuation.invokeOnCancellation {
-                session.cancel()
-                localTmpFile?.delete()
+                    },
+                    logCallback,
+                    statCallback,
+                )
+                continuation.invokeOnCancellation {
+                    session.cancel()
+                    localTmpFile?.delete()
+                }
             }
         }
 
@@ -698,6 +714,7 @@ class AnimeDownloader(
         fun formatInputs(tracks: List<Track>) = tracks.joinToString(" ", postfix = " ") {
             buildList {
                 if (it.url.startsWith("http")) {
+                    add(FFMPEG_NETWORK_INPUT_OPTIONS)
                     add(headerOptions)
                 }
                 add("-i")
@@ -733,6 +750,7 @@ class AnimeDownloader(
                 // Note: `-reconnect_at_eof` must NOT be used here. It treats a normal EOF as an error,
                 // which makes FFmpeg re-download finite HLS/VOD playlists forever (see #488).
                 add("-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 2")
+                add(FFMPEG_NETWORK_INPUT_OPTIONS)
                 add(headerOptions)
             }
             add(sourceStreamOptions)
@@ -1038,3 +1056,11 @@ private const val MIN_DURATION_RATIO = 0.9f
 internal fun UniFile.hasSingleFinishedVideo(): Boolean {
     return listFiles().orEmpty().count { it.extension != "tmp" } == 1
 }
+
+// libavformat has no network read timeout by default, so a server that stops sending blocks FFmpeg
+// or FFprobe forever. rw_timeout is in microseconds, and the HLS demuxer passes it on to every
+// playlist and segment request.
+private const val FFMPEG_NETWORK_INPUT_OPTIONS = "-rw_timeout 30000000"
+
+// An FFmpeg attempt that makes no progress for this long fails and is retried.
+private val STALL_TIMEOUT = 3.minutes
