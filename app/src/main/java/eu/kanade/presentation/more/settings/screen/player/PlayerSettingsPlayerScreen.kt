@@ -90,6 +90,11 @@ object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
                 }.toPersistentMap(),
                 title = stringResource(AYMR.strings.pref_category_player_orientation),
             ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = playerPreferences.keepOrientationOnNearSquareScreens(),
+                title = stringResource(TLMR.strings.pref_keep_orientation_near_square),
+                subtitle = stringResource(TLMR.strings.pref_keep_orientation_near_square_summary),
+            ),
             getControlsGroup(playerPreferences = playerPreferences),
             getHosterGroup(playerPreferences = playerPreferences),
             getDisplayGroup(playerPreferences = playerPreferences),

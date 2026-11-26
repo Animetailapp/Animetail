@@ -23,6 +23,12 @@ class PlayerPreferences(
         PlayerOrientation.SensorLandscape,
     )
 
+    /** Skip the forced rotation on near-square screens, like an unfolded foldable. */
+    fun keepOrientationOnNearSquareScreens() = preferenceStore.getBoolean(
+        "pref_keep_orientation_near_square",
+        true,
+    )
+
     // Controls
 
     fun allowGestures() = preferenceStore.getBoolean("pref_allow_gestures_in_panels", false)

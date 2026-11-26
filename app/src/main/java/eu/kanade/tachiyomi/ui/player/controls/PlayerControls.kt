@@ -34,6 +34,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.LocalContentColor
@@ -52,8 +54,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import eu.kanade.presentation.more.settings.screen.player.custombutton.getButtons
@@ -80,9 +85,11 @@ import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
+import eu.kanade.tachiyomi.ui.player.utils.PlayerWindowLayout
 import `is`.xyz.mpv.MPV
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -98,9 +105,11 @@ val LocalPlayerButtonsClickEvent = staticCompositionLocalOf { {} }
 fun PlayerControls(
     viewModel: PlayerViewModel,
     castManager: CastManager,
+    windowLayout: StateFlow<PlayerWindowLayout>,
     onBackPress: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val layout by windowLayout.collectAsState()
     var showCastSheet by remember { mutableStateOf(false) }
     val castState by castManager.castState.collectAsState()
 
@@ -177,9 +186,12 @@ fun PlayerControls(
         CompositionLocalProvider(
             LocalLayoutDirection provides LayoutDirection.Ltr,
         ) {
+            // In tabletop the controls take the pane below the hinge; the video stays above it.
+            val controlsTop = with(LocalDensity.current) { layout.tabletop?.controlsTopPx?.toDp() } ?: 0.dp
             ConstraintLayout(
                 modifier = modifier
                     .fillMaxSize()
+                    .padding(top = controlsTop)
                     .background(
                         Brush.verticalGradient(
                             Pair(0f, Color.Black),
@@ -189,6 +201,10 @@ fun PlayerControls(
                         ),
                         alpha = transparentOverlay,
                     )
+                    // Keep the seek bar and button rows readable on very wide or unfolded screens.
+                    .wrapContentWidth()
+                    .widthIn(max = layout.controlsMaxWidthDp?.dp ?: Dp.Unspecified)
+                    .fillMaxSize()
                     .padding(horizontal = MaterialTheme.padding.medium),
             ) {
                 val (
