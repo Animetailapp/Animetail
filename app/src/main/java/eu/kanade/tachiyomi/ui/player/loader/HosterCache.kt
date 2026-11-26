@@ -58,6 +58,15 @@ class HosterCache(
         hosters.freshValue(episodeKey(sourceId, episodeUrl), hosterTtl())
     }
 
+    /** Names of the hosters cached for any episode of the source, even expired ones. */
+    fun hosterNames(sourceId: Long): List<String> = synchronized(this) {
+        restoreIfNeeded()
+        val prefix = "$sourceId|"
+        hosters.filterKeys { it.startsWith(prefix) }.values
+            .flatMap { entry -> entry.value.map { it.hosterName } }
+            .distinct()
+    }
+
     fun putHosters(sourceId: Long, episodeUrl: String, hosterList: List<Hoster>) {
         if (hosterList.isEmpty() || hosterTtl() == Duration.ZERO) return
         update { hosters[episodeKey(sourceId, episodeUrl)] = Entry(hosterList, clock()) }

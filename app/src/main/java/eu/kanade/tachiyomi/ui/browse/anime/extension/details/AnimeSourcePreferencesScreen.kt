@@ -1,22 +1,43 @@
 package eu.kanade.tachiyomi.ui.browse.anime.extension.details
 
+import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import eu.kanade.core.util.ifAnimeSourcesLoaded
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.animesource.sourcePreferences
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.ExtensionPreferencesSource
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.ExtensionSourcePreferencesContent
+import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
+import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mihon.app.di.appGraph
+import tachiyomi.core.common.util.lang.launchIO
+import tachiyomi.core.common.util.lang.withUIContext
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * @param animeId the anime the screen was opened from, whose cached videos are the only ones
+ * cleared here; null clears those of the whole source.
+ */
 @Composable
-fun AnimeSourcePreferencesScreen(sourceId: Long) {
+fun AnimeSourcePreferencesScreen(sourceId: Long, animeId: Long? = null) {
     if (!ifAnimeSourcesLoaded()) {
         LoadingScreen()
         return
+    }
+
+    val scope = rememberCoroutineScope()
+    var showHosterPriority by remember { mutableStateOf(false) }
+    if (showHosterPriority) {
+        SourceHosterPriorityDialog(sourceId, onDismissRequest = { showHosterPriority = false })
     }
 
     ExtensionSourcePreferencesContent(sourceId) { context ->
@@ -27,7 +48,24 @@ fun AnimeSourcePreferencesScreen(sourceId: Long) {
         }
         ExtensionPreferencesSource(source.toString(), preferences) { screen ->
             configurable?.setupPreferenceScreen(screen)
-            if (source is AnimeHttpSource) screen.addHosterCachePreferences(sourceId)
+            if (source is AnimeHttpSource) {
+                screen.addHosterCachePreferences(
+                    sourceId = sourceId,
+                    isForAnime = animeId != null,
+                    onHosterPriorityClick = { showHosterPriority = true },
+                    onClearVideoCache = { scope.launchIO { clearVideoCache(context, sourceId, animeId) } },
+                )
+            }
         }
     }
+}
+
+private suspend fun clearVideoCache(context: Context, sourceId: Long, animeId: Long?) {
+    if (animeId != null) {
+        val episodeUrls = context.appGraph.getEpisodesByAnimeId.await(animeId).map { it.url }
+        VideoCacheProxy.clearEpisodes(sourceId, episodeUrls)
+    } else {
+        VideoCacheProxy.clearSource(sourceId)
+    }
+    withUIContext { context.toast(AYMR.strings.pref_video_cache_cleared) }
 }

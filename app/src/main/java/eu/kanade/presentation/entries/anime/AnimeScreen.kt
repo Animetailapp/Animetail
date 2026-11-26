@@ -91,7 +91,6 @@ import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadProvider
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.source.anime.getNameForAnimeInfo
-import eu.kanade.tachiyomi.ui.browse.anime.extension.details.AnimeSourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeSeasonItem
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeViewModel
 import eu.kanade.tachiyomi.ui.entries.anime.EpisodeList
@@ -209,7 +208,7 @@ fun AnimeScreen(
 
     val navigator = LocalNavigator.current
     val onSettingsClicked: (() -> Unit)? = {
-        navigator.push(AnimeSourcePreferencesRoute(state.source.id))
+        navigator.push(AnimeSourcePreferencesRoute(state.source.id, state.anime.id))
     }.takeIf { state.source is ConfigurableAnimeSource }
 
     if (!isTabletUi) {

@@ -175,7 +175,7 @@ data object AnimeExtensionFilterRoute : NavKey
 data object AnimeSourcesFilterRoute : NavKey
 
 @Serializable
-data class AnimeSourcePreferencesRoute(val sourceId: Long) : NavKey
+data class AnimeSourcePreferencesRoute(val sourceId: Long, val animeId: Long? = null) : NavKey
 
 @Serializable
 data class MigrateAnimeRoute(val sourceId: Long) : NavKey

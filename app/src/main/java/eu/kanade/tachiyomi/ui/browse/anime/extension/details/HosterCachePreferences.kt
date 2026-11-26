@@ -16,11 +16,19 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.core.common.preference.Preference as AppPreference
 
 /**
- * Appends the link cache settings to a source's preference screen. The durations are the app-wide
- * player settings, so they're kept out of the source's own preference store and say so in their
- * summary; only clearing the cache is per source.
+ * Appends the hoster and cache settings to a source's preference screen. The durations and the
+ * hoster priority are app-wide player settings, so they're kept out of the source's own preference
+ * store and say so in their summary; clearing the caches is per source, or per anime when the
+ * screen was opened from one.
+ *
+ * @param isForAnime whether [onClearVideoCache] clears only the anime the screen was opened from.
  */
-fun PreferenceScreen.addHosterCachePreferences(sourceId: Long) {
+fun PreferenceScreen.addHosterCachePreferences(
+    sourceId: Long,
+    isForAnime: Boolean,
+    onHosterPriorityClick: () -> Unit,
+    onClearVideoCache: () -> Unit,
+) {
     val preferences = context.appGraph.playerPreferences
 
     val category = PreferenceCategory(context).apply {
@@ -28,6 +36,19 @@ fun PreferenceScreen.addHosterCachePreferences(sourceId: Long) {
         isIconSpaceReserved = false
     }
     addPreference(category)
+
+    category.addPreference(
+        Preference(context).apply {
+            key = "app_hoster_priority"
+            title = context.stringResource(AYMR.strings.pref_hosters_priority)
+            summary = context.stringResource(AYMR.strings.pref_hosters_priority_source_summary)
+            isIconSpaceReserved = false
+            setOnPreferenceClickListener {
+                onHosterPriorityClick()
+                true
+            }
+        },
+    )
 
     category.addPreference(
         durationPreference(
@@ -57,6 +78,25 @@ fun PreferenceScreen.addHosterCachePreferences(sourceId: Long) {
             }
         },
     )
+
+    category.addPreference(
+        Preference(context).apply {
+            key = "app_video_cache_clear"
+            title = context.stringResource(AYMR.strings.pref_video_cache_clear)
+            summary = context.stringResource(
+                if (isForAnime) {
+                    AYMR.strings.pref_video_cache_clear_anime_summary
+                } else {
+                    AYMR.strings.pref_video_cache_clear_source_summary
+                },
+            )
+            isIconSpaceReserved = false
+            setOnPreferenceClickListener {
+                onClearVideoCache()
+                true
+            }
+        },
+    )
 }
 
 private fun PreferenceScreen.durationPreference(
@@ -70,6 +110,8 @@ private fun PreferenceScreen.durationPreference(
     entries = durations.map { context.hosterCacheDurationLabel(it) }.toTypedArray()
     entryValues = durations.map { it.toString() }.toTypedArray()
     isPersistent = false
+    // Attaching a non-persistent preference resets its value to the default, so set both.
+    setDefaultValue(preference.get().toString())
     value = preference.get().toString()
     summaryProvider = Preference.SummaryProvider<ListPreference> {
         context.stringResource(AYMR.strings.pref_hoster_cache_duration_all_sources_summary, it.entry.toString())

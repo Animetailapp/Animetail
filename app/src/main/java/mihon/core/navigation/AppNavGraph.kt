@@ -260,7 +260,7 @@ fun EntryProviderScope<NavKey>.appEntries() {
         AnimeSourcesFilterScreen()
     }
     entry<AnimeSourcePreferencesRoute> { route ->
-        AnimeSourcePreferencesScreen(route.sourceId)
+        AnimeSourcePreferencesScreen(route.sourceId, route.animeId)
     }
 
     // Shared More / Tool routes
