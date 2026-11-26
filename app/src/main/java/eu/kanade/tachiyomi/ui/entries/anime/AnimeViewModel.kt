@@ -32,6 +32,8 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
+import eu.kanade.domain.entries.anime.interactor.GetAnimeAudioLanguage
+import eu.kanade.domain.entries.anime.interactor.SetAnimeAudioLanguage
 import eu.kanade.domain.entries.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.entries.anime.interactor.SyncRelatedAnimeWithSource
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
@@ -72,6 +74,7 @@ import eu.kanade.tachiyomi.ui.entries.anime.RelatedAnime.Companion.isLoading
 import eu.kanade.tachiyomi.ui.entries.anime.RelatedAnime.Companion.removeDuplicates
 import eu.kanade.tachiyomi.ui.entries.anime.RelatedAnime.Companion.sorted
 import eu.kanade.tachiyomi.ui.entries.anime.track.AnimeTrackItem
+import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.AniChartApi
@@ -200,6 +203,9 @@ class AnimeViewModel(
     private val updateAnimeFromRemote: UpdateAnimeFromRemote,
     private val torrentServerUtils: TorrentServerUtils,
     internal val setAnimeViewerFlags: SetAnimeViewerFlags,
+    private val getAnimeAudioLanguage: GetAnimeAudioLanguage,
+    private val setAnimeAudioLanguage: SetAnimeAudioLanguage,
+    internal val audioPreferences: AudioPreferences,
     // AM (FILE_SIZE) -->
     private val storagePreferences: StoragePreferences,
     // <-- AM (FILE_SIZE)
@@ -1920,6 +1926,7 @@ class AnimeViewModel(
         data class SetEpisodeDate(val episodes: List<Episode>) : Dialog
         data object RemoveFromLibrary : Dialog
         data object ChangeAnimeSkipIntro : Dialog
+        data class ChangeAnimeAudioLanguage(val originalLanguage: String?) : Dialog
         data object EpisodeSettingsSheet : Dialog
         data object SeasonSettingsSheet : Dialog
         data object TrackSheet : Dialog
@@ -1972,6 +1979,22 @@ class AnimeViewModel(
 
     fun showAnimeSkipIntroDialog() {
         updateSuccessState { it.copy(dialog = Dialog.ChangeAnimeSkipIntro) }
+    }
+
+    fun showAnimeAudioLanguageDialog() {
+        val anime = successState?.anime ?: return
+        viewModelScope.launchIO {
+            val parent = anime.parentId?.let { getAnime.await(it) }
+            val original = getAnimeAudioLanguage.originalLanguage(anime, parent)
+            updateSuccessState { it.copy(dialog = Dialog.ChangeAnimeAudioLanguage(original)) }
+        }
+    }
+
+    fun setAnimeAudioLanguage(value: String) {
+        val anime = successState?.anime ?: return
+        viewModelScope.launchIO {
+            setAnimeAudioLanguage.await(anime.id, value)
+        }
     }
 
     private fun showQualitiesDialog(episode: Episode) {

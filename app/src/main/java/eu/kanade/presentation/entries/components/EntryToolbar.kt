@@ -49,6 +49,7 @@ fun EntryToolbar(
     onClickSettings: (() -> Unit)?,
     // Anime only
     changeAnimeSkipIntro: (() -> Unit)?,
+    changeAnimeAudioLanguage: (() -> Unit)?,
     // SY -->
     onClickEditInfo: (() -> Unit)?,
     // KMK -->
@@ -166,6 +167,14 @@ fun EntryToolbar(
                             AppBar.OverflowAction(
                                 title = stringResource(AYMR.strings.action_change_intro_length),
                                 onClick = changeAnimeSkipIntro,
+                            ),
+                        )
+                    }
+                    if (changeAnimeAudioLanguage != null) {
+                        add(
+                            AppBar.OverflowAction(
+                                title = stringResource(TLMR.strings.action_audio_language),
+                                onClick = changeAnimeAudioLanguage,
                             ),
                         )
                     }

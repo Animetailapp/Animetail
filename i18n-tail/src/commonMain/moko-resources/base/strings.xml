@@ -446,4 +446,15 @@
     <!-- Top align cover -->
     <string name="pref_top_align_cover">Align cover to top</string>
     <string name="pref_top_align_cover_summary">Align the cover image to the top instead of center</string>
+
+    <!-- Audio language -->
+    <string name="pref_player_audio_default_language">Default audio language</string>
+    <string name="pref_player_audio_default_language_original">Original language</string>
+    <string name="pref_player_audio_default_language_preferred">Preferred languages list</string>
+    <string name="pref_player_audio_default_language_summary">Original language uses the language the show was made in, from the extension, tracker or title. The preferred languages list below is the fallback when it is unknown or not available.</string>
+    <string name="action_audio_language">Audio language</string>
+    <string name="audio_language_default">Default (%s)</string>
+    <string name="audio_language_original">Original language</string>
+    <string name="audio_language_original_detected">Original language (%s)</string>
+    <string name="audio_language_dialog_message">Used for this show when picking the audio track. Picking an audio track in the player also changes it.</string>
 </resources>

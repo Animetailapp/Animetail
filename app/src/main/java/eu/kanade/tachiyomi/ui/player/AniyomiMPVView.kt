@@ -32,6 +32,7 @@ import eu.kanade.tachiyomi.ui.player.settings.DecoderPreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitleAssOverride
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
+import eu.kanade.tachiyomi.ui.player.utils.LanguageTags
 import `is`.xyz.mpv.BaseMPVView
 import `is`.xyz.mpv.KeyMapping
 import `is`.xyz.mpv.MPV
@@ -218,7 +219,10 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
     )
 
     private fun setupAudioOptions() {
-        mpv?.setOptionString("alang", audioPreferences.preferredAudioLanguages().get())
+        mpv?.setOptionString(
+            "alang",
+            LanguageTags.toMpvAlang(audioPreferences.preferredAudioLanguages().get().split(",")),
+        )
         mpv?.setOptionString("audio-delay", (audioPreferences.audioDelay().get() / 1000.0).toString())
         mpv?.setOptionString("audio-pitch-correction", audioPreferences.enablePitchCorrection().get().toString())
         mpv?.setOptionString("volume-max", (audioPreferences.volumeBoostCap().get() + 100).toString())

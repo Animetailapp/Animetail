@@ -396,6 +396,7 @@ private fun MangaScreenSmallImpl(
                 // SY <--
                 onClickSettings = onSettingsClicked,
                 changeAnimeSkipIntro = null,
+                changeAnimeAudioLanguage = null,
                 actionModeCounter = selectedChapterCount,
                 onCancelActionMode = { onAllChapterSelected(false) },
                 onSelectAll = { onAllChapterSelected(true) },
@@ -720,6 +721,7 @@ fun MangaScreenLargeImpl(
                 // SY <--
                 onClickSettings = onSettingsClicked,
                 changeAnimeSkipIntro = null,
+                changeAnimeAudioLanguage = null,
                 actionModeCounter = selectedChapterCount,
                 onSelectAll = { onAllChapterSelected(true) },
                 onInvertSelection = { onInvertSelection() },

@@ -49,6 +49,8 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactoryKey
 import eu.kanade.domain.base.BasePreferences
+import eu.kanade.domain.entries.anime.interactor.GetAnimeAudioLanguage
+import eu.kanade.domain.entries.anime.interactor.SetAnimeAudioLanguage
 import eu.kanade.domain.entries.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.items.episode.model.toDbEpisode
@@ -94,7 +96,9 @@ import eu.kanade.tachiyomi.ui.player.network.NetworkStreamSource
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.utils.AniSkipApi
+import eu.kanade.tachiyomi.ui.player.utils.AudioLanguageTarget
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
+import eu.kanade.tachiyomi.ui.player.utils.LanguageTags
 import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
 import eu.kanade.tachiyomi.ui.reader.SaveImageNotifier
 import eu.kanade.tachiyomi.util.editBackground
@@ -189,6 +193,8 @@ class PlayerViewModel(
     private val upsertHistory: UpsertAnimeHistory,
     private val updateEpisode: UpdateEpisode,
     private val setAnimeViewerFlags: SetAnimeViewerFlags,
+    private val getAnimeAudioLanguage: GetAnimeAudioLanguage,
+    private val setAnimeAudioLanguage: SetAnimeAudioLanguage,
     internal val playerPreferences: PlayerPreferences,
     internal val gesturePreferences: GesturePreferences,
     private val basePreferences: BasePreferences,
@@ -255,6 +261,11 @@ class PlayerViewModel(
 
     private val _currentAnime = MutableStateFlow<Anime?>(null)
     val currentAnime = _currentAnime.asStateFlow()
+
+    /** The current anime's audio language; null until it is resolved, or for network streams. */
+    @Volatile
+    var audioTarget: AudioLanguageTarget? = null
+        private set
 
     private val _currentSource = MutableStateFlow<AnimeSource?>(null)
     val currentSource = _currentSource.asStateFlow()
@@ -538,7 +549,11 @@ class PlayerViewModel(
             mpv.setPropertyBoolean("secondary-sid", false)
         }
 
-        val preferredAudio = trackSelect.getPreferredTrackIndex(audioTracks.value, subtitle = false)
+        val preferredAudio = trackSelect.getPreferredTrackIndex(
+            audioTracks.value,
+            subtitle = false,
+            audioLanguages = audioTarget?.languages,
+        )
         (preferredAudio ?: audioTracks.value.getOrNull(1))?.let {
             if (mpv.getPropertyInt("aid") != it.id) {
                 mpv.setPropertyInt("aid", it.id)
@@ -603,8 +618,25 @@ class PlayerViewModel(
         }
     }
 
+    /** Called when the user picks an audio track; remembers its language for this anime. */
     fun selectAudio(id: Int) {
         mpv.setPropertyInt("aid", id)
+        val track = audioTracks.value.firstOrNull { it.id == id }?.takeIf { it.id != -1 } ?: return
+        val target = audioTarget ?: return
+        val setting = LanguageTags.normalize(track.language)?.let(target::settingForLanguage)
+            ?: target.settingForLabel(track.name)
+            ?: return
+        saveAudioLanguage(setting)
+    }
+
+    private fun saveAudioLanguage(setting: String) {
+        val anime = currentAnime.value?.takeIf { it.id >= 0 } ?: return
+        viewModelScope.launchIO {
+            val current = getAnime.await(anime.id) ?: return@launchIO
+            if (current.audioLanguage == setting) return@launchIO
+            setAnimeAudioLanguage.await(anime.id, setting)
+            audioTarget = getAnimeAudioLanguage.await(current.copy(audioLanguage = setting))
+        }
     }
 
     fun updateAudio(id: Int) {
@@ -1421,6 +1453,7 @@ class PlayerViewModel(
 
                 _currentEpisode.update { _ -> episode }
                 _currentSource.update { _ -> source }
+                audioTarget = resolveAudioTarget(anime)
 
                 updateEpisode(episode)
 
@@ -1476,9 +1509,20 @@ class PlayerViewModel(
         }
     }
 
+    private suspend fun resolveAudioTarget(anime: Anime): AudioLanguageTarget? {
+        return try {
+            getAnimeAudioLanguage.await(anime)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            logcat(LogPriority.WARN, e) { "Could not resolve the audio language of ${anime.title}" }
+            null
+        }
+    }
+
     suspend fun prepareNetworkStream(request: NetworkStreamRequest) {
         cancelHosterVideoLinksJob()
         isNetworkStreamSession = true
+        audioTarget = null
         isLoading.update { false }
         updateIsLoadingEpisode(false)
         updateIsLoadingHosters(false)

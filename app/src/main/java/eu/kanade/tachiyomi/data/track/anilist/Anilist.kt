@@ -410,6 +410,10 @@ class Anilist(id: Long) :
     override suspend fun getMangaMetadata(track: DomainMangaTrack): TrackMangaMetadata? {
         return api.getMangaMetadata(track)
     }
+    suspend fun getAnimeCountryOfOrigin(remoteId: Long): String? {
+        return api.getAnimeCountryOfOrigin(remoteId)
+    }
+
     override suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? {
         return api.getAnimeMetadata(track)
     }

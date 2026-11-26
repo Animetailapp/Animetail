@@ -58,6 +58,10 @@ data class Anime(
     val seasonNumber: Double,
     val seasonSourceOrder: Long,
     val memo: JsonObject,
+    /** Per-anime audio language, see [AUDIO_LANGUAGE_DEFAULT] and [AUDIO_LANGUAGE_ORIGINAL]. */
+    val audioLanguage: String = AUDIO_LANGUAGE_DEFAULT,
+    /** Cached original language of the show, `"<tag>:<origin>"`, or empty when not resolved yet. */
+    val originalLanguage: String = "",
 ) : JavaSerializable {
 
     // SY -->
@@ -345,6 +349,12 @@ data class Anime(
         const val ANIME_AIRING_EPISODE_MASK = 0x000000000FFFF00L
         const val ANIME_AIRING_TIME_MASK = 0x0FFFFFFFF000000L
         const val ANIME_INTRO_DISABLE_MASK = 0x100000000000000L
+
+        /** [audioLanguage] value that follows the global "Default audio language" setting. */
+        const val AUDIO_LANGUAGE_DEFAULT = ""
+
+        /** [audioLanguage] value that picks the show's original language. */
+        const val AUDIO_LANGUAGE_ORIGINAL = "original"
 
         fun create() = Anime(
             id = -1L,

@@ -4,6 +4,7 @@ import eu.kanade.tachiyomi.ui.player.PlayerViewModel.VideoTrack
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import tachiyomi.core.common.preference.InMemoryPreferenceStore
@@ -44,6 +45,26 @@ class TrackSelectTest {
         val chosen = trackSelect.getPreferredTrackIndex(listOf(OFF) + case.tracks)
 
         assertEquals(case.expectedId, chosen?.id, case.description)
+    }
+
+    @Test
+    fun `the show's audio languages replace the preferred languages`() {
+        val trackSelect = TrackSelect(
+            SubtitlePreferences(storeWith("pref_audio_lang", "en")),
+            AudioPreferences(storeWith("pref_audio_lang", "en")),
+        )
+        val tracks = listOf(OFF, VideoTrack(1, "", "eng"), VideoTrack(2, "", "kor"), VideoTrack(3, "", "jpn"))
+
+        assertEquals(
+            2,
+            trackSelect.getPreferredTrackIndex(tracks, subtitle = false, audioLanguages = listOf("ko", "en"))?.id,
+        )
+        // Falls through the show's list in order when its first language has no track
+        assertEquals(
+            3,
+            trackSelect.getPreferredTrackIndex(tracks, subtitle = false, audioLanguages = listOf("zh", "ja"))?.id,
+        )
+        assertEquals(1, trackSelect.getPreferredTrackIndex(tracks, subtitle = false)?.id)
     }
 
     private fun storeWith(key: String, value: String) =

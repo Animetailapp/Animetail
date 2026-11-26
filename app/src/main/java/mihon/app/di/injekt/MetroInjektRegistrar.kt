@@ -8,6 +8,8 @@ import aniyomi.core.common.torrent.TorrentServerApi
 import aniyomi.core.common.torrent.TorrentServerUtils
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
+import eu.kanade.domain.entries.anime.interactor.GetAnimeAudioLanguage
+import eu.kanade.domain.entries.anime.interactor.SetAnimeAudioLanguage
 import eu.kanade.domain.entries.anime.interactor.SetAnimeViewerFlags
 import eu.kanade.domain.entries.anime.interactor.SyncSeasonsWithSource
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
@@ -399,6 +401,8 @@ class MetroInjektRegistrar(
         UpdateAnimeFromRemote::class.java to { graph.updateAnimeFromRemote },
         ImageSaver::class.java to { graph.imageSaver },
         SetAnimeViewerFlags::class.java to { graph.setAnimeViewerFlags },
+        GetAnimeAudioLanguage::class.java to { graph.getAnimeAudioLanguage },
+        SetAnimeAudioLanguage::class.java to { graph.setAnimeAudioLanguage },
         SetMangaViewerFlags::class.java to { graph.setMangaViewerFlags },
         SetAnimeEpisodeFlags::class.java to { graph.setAnimeEpisodeFlags },
         SetMangaChapterFlags::class.java to { graph.setMangaChapterFlags },

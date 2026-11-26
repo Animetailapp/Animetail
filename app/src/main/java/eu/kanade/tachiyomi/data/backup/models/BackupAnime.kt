@@ -69,6 +69,9 @@ data class BackupAnime(
     // skipping 803 due to using duplicate value in previous builds
     @ProtoNumber(804) var customDescription: String? = null,
     @ProtoNumber(805) var customGenre: List<String>? = null,
+
+    // Animetail specific values
+    @ProtoNumber(1000) var audioLanguage: String = "",
 ) {
     fun getAnimeImpl(): Anime {
         return Anime.create().copy(
@@ -99,6 +102,7 @@ data class BackupAnime(
             seasonNumber = this@BackupAnime.seasonNumber,
             seasonSourceOrder = this@BackupAnime.seasonSourceOrder,
             memo = MemoColumnAdapter.decode(this@BackupAnime.memo),
+            audioLanguage = this@BackupAnime.audioLanguage,
         )
     }
 

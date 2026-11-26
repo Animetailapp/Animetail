@@ -1,0 +1,8 @@
+-- Per-anime audio language: "" follows the global setting, "original" picks the show's original
+-- language, anything else is a BCP 47 language tag.
+ALTER TABLE animes
+ADD audio_language TEXT NOT NULL DEFAULT "";
+
+-- Cached original language of the show, as "<tag>:<origin>" (see AudioLanguageResolver).
+ALTER TABLE animes
+ADD original_language TEXT NOT NULL DEFAULT "";
