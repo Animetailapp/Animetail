@@ -43,6 +43,21 @@ class DownloadPreferences(
 
     val removeBookmarkedChapters: Preference<Boolean> = preferenceStore.getBoolean("pref_remove_bookmarked", false)
 
+    /** How many of the next unseen episodes of a show to keep downloaded, 0 for off. */
+    val keepUnseenEpisodesDownloaded: Preference<Int> = preferenceStore.getInt("download_keep_unseen_episodes", 0)
+
+    /** Keep anime downloads under this many GB by deleting the oldest watched episodes, 0 for no limit. */
+    val animeDownloadStorageLimitGb: Preference<Int> = preferenceStore.getInt("anime_download_storage_limit_gb", 0)
+
+    /**
+     * The storage limit the user reviewed the cleanup of and applied. The limit is only enforced
+     * automatically once it has been applied, so nothing is deleted before its first preview.
+     */
+    val animeDownloadStorageLimitAppliedGb: Preference<Int> = preferenceStore.getInt(
+        "anime_download_storage_limit_applied_gb",
+        0,
+    )
+
     val downloadFillermarkedItems: Preference<Boolean> = preferenceStore.getBoolean("pref_download_fillermarked", false)
 
     val removeExcludeCategories: Preference<Set<String>> = preferenceStore.getStringSet(

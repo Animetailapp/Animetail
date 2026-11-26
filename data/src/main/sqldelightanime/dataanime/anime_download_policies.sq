@@ -1,0 +1,30 @@
+import kotlin.Boolean;
+
+-- A show's own download cleanup settings (see AnimeDownloadPolicyOverride). A NULL column follows
+-- the global setting in Settings > Downloads; a show following all of them has no row.
+CREATE TABLE anime_download_policies(
+    anime_id INTEGER NOT NULL PRIMARY KEY,
+    -- 1 deletes episodes once seen, 0 never deletes them automatically
+    delete_after_seen INTEGER AS Boolean,
+    -- How many of the next unseen episodes to keep downloaded
+    keep_unseen INTEGER,
+    FOREIGN KEY(anime_id) REFERENCES animes (_id)
+    ON DELETE CASCADE
+);
+
+getByAnimeId:
+SELECT *
+FROM anime_download_policies
+WHERE anime_id = :animeId;
+
+getAll:
+SELECT *
+FROM anime_download_policies;
+
+upsert:
+INSERT OR REPLACE INTO anime_download_policies(anime_id, delete_after_seen, keep_unseen)
+VALUES (:animeId, :deleteAfterSeen, :keepUnseen);
+
+deleteByAnimeId:
+DELETE FROM anime_download_policies
+WHERE anime_id = :animeId;
