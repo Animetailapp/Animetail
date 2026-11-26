@@ -155,6 +155,7 @@ import mihon.core.navigation.NavigatorDisplay
 import mihon.core.navigation.NewUpdateRoute
 import mihon.core.navigation.OnboardingRoute
 import mihon.core.navigation.RestoreBackupRoute
+import mihon.core.navigation.StorageRoute
 import mihon.core.navigation.SupportUsRoute
 import mihon.core.navigation.appEntries
 import mihon.core.navigation.rememberNavigator
@@ -805,6 +806,12 @@ class MainActivity : BaseActivity() {
             Constants.SHORTCUT_ANIME_DOWNLOADS -> {
                 navigator.popToRoot()
                 TabEvent.More(toDownloads = true)
+            }
+
+            Constants.SHORTCUT_ANIME_STORAGE -> {
+                navigator.popToRoot()
+                navigator.push(StorageRoute)
+                null
             }
 
             Intent.ACTION_APPLICATION_PREFERENCES -> {
