@@ -27,7 +27,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.AssetManager
 import android.content.res.Configuration
@@ -57,6 +56,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
 import androidx.media.AudioManagerCompat
+import androidx.window.layout.WindowMetricsCalculator
 import aniyomi.core.common.torrent.TorrentPreferences
 import aniyomi.core.common.torrent.TorrentServerApi
 import aniyomi.core.common.torrent.TorrentServerUtils
@@ -89,6 +89,8 @@ import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
 import eu.kanade.tachiyomi.ui.player.utils.LanguageTags
+import eu.kanade.tachiyomi.ui.player.utils.isNearSquare
+import eu.kanade.tachiyomi.ui.player.utils.toRequestedOrientation
 import eu.kanade.tachiyomi.util.system.powerManager
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
@@ -132,6 +134,11 @@ class PlayerActivity : BaseActivity() {
     private val binding by lazy { PlayerLayoutBinding.inflate(layoutInflater) }
     private val playerObserver by lazy { PlayerObserver(this, viewModel) }
     val player by lazy { binding.player }
+
+    private val windowLayoutObserver by lazy { PlayerWindowLayoutObserver(this, binding.root, binding.player) }
+
+    /** Set once the user picks a rotation in the player; it then applies even on near-square screens. */
+    private var orientationChosenInPlayer = false
     private val mpv by lazy { viewModel.mpv }
     val windowInsetsController by lazy { WindowCompat.getInsetsController(window, window.decorView) }
     val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
@@ -318,6 +325,7 @@ class PlayerActivity : BaseActivity() {
         setupPlayerAudio()
         setupMediaSession()
         setupPlayerOrientation()
+        windowLayoutObserver.start()
 
         Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
             runOnUiThread {
@@ -395,7 +403,10 @@ class PlayerActivity : BaseActivity() {
 
         playerPreferences.defaultPlayerOrientationType().changes()
             .drop(1)
-            .onEach { setupPlayerOrientation() }
+            .onEach {
+                orientationChosenInPlayer = true
+                setupPlayerOrientation()
+            }
             .launchIn(lifecycleScope)
 
         viewModel.viewModelScope.launchIO {
@@ -413,6 +424,7 @@ class PlayerActivity : BaseActivity() {
                 PlayerControls(
                     viewModel = viewModel,
                     castManager = castManager, // Pass the castManager instance
+                    windowLayout = windowLayoutObserver.layout,
                     onBackPress = {
                         if (isPipSupportedAndEnabled && mpv.getPropertyBoolean("pause") == false &&
                             playerPreferences.pipOnExit().get()
@@ -715,10 +727,13 @@ class PlayerActivity : BaseActivity() {
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
-        if (!isInPictureInPictureMode) {
-            viewModel.changeVideoAspect(playerPreferences.aspectState().get())
-        } else {
+        // Folding, unfolding and rotating land here instead of recreating the activity. mpv follows its
+        // surface size on its own (see AniyomiMPVView.surfaceChanged); only the orientation request
+        // depends on the screen shape.
+        if (isInPictureInPictureMode) {
             viewModel.hideControls()
+        } else {
+            setupPlayerOrientation()
         }
         super.onConfigurationChanged(newConfig)
     }
@@ -949,32 +964,25 @@ class PlayerActivity : BaseActivity() {
             }
         }
 
+        windowLayoutObserver.update()
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
     }
 
     private fun setupPlayerOrientation() {
         if (player.isExiting) return
-        requestedOrientation = when (playerPreferences.defaultPlayerOrientationType().get()) {
-            PlayerOrientation.Free -> ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        val orientation = playerPreferences.defaultPlayerOrientationType().get().toRequestedOrientation(
+            videoAspect = player.getVideoOutAspect(),
+            keepScreenOrientation = !orientationChosenInPlayer &&
+                playerPreferences.keepOrientationOnNearSquareScreens().get() &&
+                isNearSquareScreen(),
+        )
+        if (requestedOrientation != orientation) requestedOrientation = orientation
+    }
 
-            PlayerOrientation.Video -> if ((player.getVideoOutAspect() ?: 0.0) > 1.0) {
-                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            } else {
-                ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-            }
-
-            PlayerOrientation.Portrait -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-
-            PlayerOrientation.ReversePortrait -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
-
-            PlayerOrientation.SensorPortrait -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-
-            PlayerOrientation.Landscape -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-
-            PlayerOrientation.ReverseLandscape -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
-
-            PlayerOrientation.SensorLandscape -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        }
+    /** The whole screen's shape (not this window's, which a forced orientation may letterbox). */
+    private fun isNearSquareScreen(): Boolean {
+        val bounds = WindowMetricsCalculator.getOrCreate().computeMaximumWindowMetrics(this).bounds
+        return isNearSquare(bounds.width(), bounds.height())
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

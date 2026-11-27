@@ -253,6 +253,7 @@ dependencies {
     implementation(libs.androidx.coreSplashScreen)
     implementation(libs.androidx.recyclerView)
     implementation(libs.androidx.viewPager)
+    implementation(libs.androidx.window)
     implementation(libs.androidx.profileInstaller)
     implementation(aniyomilibs.mediasession)
 

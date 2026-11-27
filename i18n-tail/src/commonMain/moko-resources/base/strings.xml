@@ -457,4 +457,6 @@
     <string name="audio_language_original">Original language</string>
     <string name="audio_language_original_detected">Original language (%s)</string>
     <string name="audio_language_dialog_message">Used for this show when picking the audio track. Picking an audio track in the player also changes it.</string>
+    <string name="pref_keep_orientation_near_square">Don\'t rotate on near-square screens</string>
+    <string name="pref_keep_orientation_near_square_summary">On an unfolded foldable or other almost square screen, keep the screen as you hold it instead of forcing the orientation above</string>
 </resources>
