@@ -660,6 +660,7 @@ class AnimeDownloader(
         val probeCommand = "$ffprobeOptions ${SourceProbe.FFPROBE_ARGS} \"${video.videoUrl}\""
         val probe = SourceProbe.parse(runFFprobe(FFmpegKitConfig.parseArguments(probeCommand)))
         duration = probe.durationSeconds?.toLong() ?: 0L
+        val frameRate = probe.videoFrameRate
         val ffmpegOptions = getFFmpegOptions(video, headerOptions, ffmpegFilename(), probe.variantProgramId)
 
         // FFmpeg keeps running while a source stalls (reconnects retry, HLS skips failing segments),
@@ -673,9 +674,16 @@ class AnimeDownloader(
                 lastTime = maxOf(lastTime, s.time)
                 lastSize = maxOf(lastSize, s.size)
 
-                val outTime = (s.time / 1000.0).toLong()
+                // FFmpeg's time is that of the output stream that got furthest, and a subtitle track
+                // whose first cue is late in the episode gets there right away. The video frames
+                // written tell how far the video is.
+                val outTime = if (frameRate != null && s.videoFrameNumber > 0) {
+                    (s.videoFrameNumber / frameRate).toLong()
+                } else {
+                    (s.time / 1000.0).toLong()
+                }
                 if (duration != 0L && outTime > 0) {
-                    download.progress = (100 * outTime / duration).toInt()
+                    download.progress = (100 * outTime / duration).toInt().coerceAtMost(100)
                 }
             }
 
