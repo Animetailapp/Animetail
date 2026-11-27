@@ -2,15 +2,20 @@ package eu.kanade.tachiyomi.data.track.komga
 
 import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.EnhancedMangaTracker
 import eu.kanade.tachiyomi.data.track.MangaTracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.source.MangaSource
+import kotlinx.serialization.json.Json
 import okhttp3.Dns
 import okhttp3.OkHttpClient
 import tachiyomi.domain.entries.manga.model.Manga
@@ -18,7 +23,14 @@ import tachiyomi.i18n.MR
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
 
-class Komga(id: Long) : BaseTracker(id, "Komga"), EnhancedMangaTracker, MangaTracker {
+@Inject
+@SingleIn(AppScope::class)
+class Komga(
+    dependencies: TrackerDependencies,
+    private val json: Json,
+) : BaseTracker(6L, "Komga", dependencies),
+    EnhancedMangaTracker,
+    MangaTracker {
 
     companion object {
         const val UNREAD = 1L
@@ -32,7 +44,7 @@ class Komga(id: Long) : BaseTracker(id, "Komga"), EnhancedMangaTracker, MangaTra
             .build()
     }
 
-    val api by lazy { KomgaApi(id, client) }
+    val api by lazy { KomgaApi(id, client, json) }
 
     override fun getLogo() = R.drawable.ic_tracker_komga
 

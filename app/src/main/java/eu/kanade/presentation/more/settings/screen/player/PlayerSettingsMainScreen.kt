@@ -32,32 +32,28 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.Navigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.navigation3.runtime.NavKey
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
-import eu.kanade.presentation.more.settings.screen.SettingsSearchScreen
-import eu.kanade.presentation.more.settings.screen.player.custombutton.PlayerSettingsCustomButtonScreen
-import eu.kanade.presentation.more.settings.screen.player.editor.PlayerSettingsEditorScreen
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
-import eu.kanade.presentation.util.LocalBackPress
-import eu.kanade.presentation.util.Screen
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.serialization.Serializable
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.Navigator
+import mihon.core.navigation.PlayerSettingsCustomButtonRoute
+import mihon.core.navigation.PlayerSettingsEditorRoute
+import mihon.core.navigation.SettingsSearchRoute
+import mihon.presentation.core.util.isTabletUi
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.icons.CustomIcons
 import tachiyomi.presentation.core.icons.Magnet
-import cafe.adriel.voyager.core.screen.Screen as VoyagerScreen
 
-class PlayerSettingsMainScreen(private val mainSettings: Boolean) : Screen() {
-    @Composable
-    override fun Content() {
-        Content(twoPane = false)
-    }
+@Serializable
+data class PlayerSettingsMainScreen(val mainSettings: Boolean) : NavKey {
 
     @Composable
     private fun getPalerSurface(): Color {
@@ -76,9 +72,9 @@ class PlayerSettingsMainScreen(private val mainSettings: Boolean) : Screen() {
     }
 
     @Composable
-    fun Content(twoPane: Boolean) {
-        val navigator = LocalNavigator.currentOrThrow
-        val backPress = LocalBackPress.currentOrThrow
+    fun Content() {
+        val navigator = LocalNavigator.current
+        val twoPane = isTabletUi()
         val containerColor = if (twoPane) getPalerSurface() else MaterialTheme.colorScheme.surface
         val topBarState = rememberTopAppBarState()
 
@@ -93,14 +89,17 @@ class PlayerSettingsMainScreen(private val mainSettings: Boolean) : Screen() {
                             AYMR.strings.label_player_settings
                         },
                     ),
-                    navigateUp = backPress::invoke,
+                    navigateUp = {
+                        navigator.popTo { it == this }
+                        navigator.pop()
+                    },
                     actions = {
                         AppBarActions(
                             persistentListOf(
                                 AppBar.Action(
                                     title = stringResource(MR.strings.action_search),
                                     icon = Icons.Outlined.Search,
-                                    onClick = { navigator.navigate(SettingsSearchScreen(true), twoPane) },
+                                    onClick = { navigator.navigate(SettingsSearchRoute(isPlayer = true), twoPane) },
                                 ),
                             ),
                         )
@@ -112,8 +111,10 @@ class PlayerSettingsMainScreen(private val mainSettings: Boolean) : Screen() {
             content = { contentPadding ->
                 val state = rememberLazyListState()
                 val indexSelected = if (twoPane) {
-                    items.indexOfFirst { it.screen::class == navigator.items.first()::class }
-                        .also {
+                    val detail = navigator.routes.takeLastWhile { it != this }.firstOrNull()
+                    items.indexOfFirst { it.screen == detail }
+                        .takeIf { it > -1 }
+                        ?.also {
                             LaunchedEffect(Unit) {
                                 state.animateScrollToItem(it)
                                 if (it > 0) {
@@ -169,8 +170,9 @@ class PlayerSettingsMainScreen(private val mainSettings: Boolean) : Screen() {
         )
     }
 
-    private fun Navigator.navigate(screen: VoyagerScreen, twoPane: Boolean) {
-        if (twoPane) replaceAll(screen) else push(screen)
+    private fun Navigator.navigate(screen: NavKey, twoPane: Boolean) {
+        if (twoPane) popTo { it == this@PlayerSettingsMainScreen }
+        push(screen)
     }
 
     private companion object {
@@ -179,7 +181,7 @@ class PlayerSettingsMainScreen(private val mainSettings: Boolean) : Screen() {
             val subtitleRes: StringResource? = null,
             val formatSubtitle: @Composable () -> String? = { subtitleRes?.let { stringResource(it) } },
             val icon: ImageVector,
-            val screen: VoyagerScreen,
+            val screen: NavKey,
         )
 
         val items = listOf(
@@ -217,13 +219,13 @@ class PlayerSettingsMainScreen(private val mainSettings: Boolean) : Screen() {
                 titleRes = AYMR.strings.pref_player_custom_button,
                 subtitleRes = AYMR.strings.pref_player_custom_button_summary,
                 icon = Icons.Outlined.Terminal,
-                screen = PlayerSettingsCustomButtonScreen,
+                screen = PlayerSettingsCustomButtonRoute,
             ),
             Item(
                 titleRes = AYMR.strings.pref_player_editor,
                 subtitleRes = AYMR.strings.pref_player_editor_summary,
                 icon = Icons.Outlined.EditNote,
-                screen = PlayerSettingsEditorScreen,
+                screen = PlayerSettingsEditorRoute,
             ),
             Item(
                 titleRes = AYMR.strings.pref_player_torrents,
@@ -239,4 +241,18 @@ class PlayerSettingsMainScreen(private val mainSettings: Boolean) : Screen() {
             ),
         )
     }
+}
+
+/**
+ * Opens player settings at [screen], or at the main player settings screen if null. In two panes, reuses open
+ * player settings as the list pane and shows internal player settings when no [screen] is given.
+ */
+fun Navigator.openPlayerSettings(mainSettings: Boolean, screen: NavKey? = null, twoPane: Boolean) {
+    if (!twoPane) {
+        push(screen ?: PlayerSettingsMainScreen(mainSettings))
+        return
+    }
+    val target = PlayerSettingsMainScreen(mainSettings)
+    if (!popTo { it == target }) push(target)
+    push(screen ?: PlayerSettingsPlayerScreen)
 }

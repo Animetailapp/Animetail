@@ -71,14 +71,12 @@ import `is`.xyz.mpv.MPV
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import mihon.app.di.appGraph
 import tachiyomi.core.common.preference.deleteAndGet
-import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @SuppressLint("MutableCollectionMutableState")
 @Composable
@@ -86,8 +84,10 @@ fun SubtitleSettingsTypographyCard(
     mpv: MPV,
     modifier: Modifier = Modifier,
 ) {
-    val preferences = remember { Injekt.get<SubtitlePreferences>() }
-    val storageManager = remember { Injekt.get<StorageManager>() }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val appGraph = remember(context) { context.appGraph }
+    val preferences = remember { appGraph.subtitlePreferences }
+    val storageManager = remember { appGraph.storageManager }
     var isExpanded by remember { mutableStateOf(true) }
 
     val fontsDir = storageManager.getFontsDirectory()

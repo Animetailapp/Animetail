@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateNotifier
 import eu.kanade.tachiyomi.data.notification.NotificationHandler
 import eu.kanade.tachiyomi.network.HttpException
+import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.UnmeteredSource
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.online.HttpSource
@@ -104,6 +105,7 @@ class MangaDownloader(
     private val notifier: MangaDownloadNotifier,
     // SY -->
     private val sourcePreferences: SourcePreferences,
+    private val networkHelper: NetworkHelper,
     // SY <--
 ) {
     /**
@@ -451,7 +453,7 @@ class MangaDownloader(
             }
 
             val dataSaver = if (sourcePreferences.dataSaverDownloader.get()) {
-                DataSaver(download.source, sourcePreferences)
+                DataSaver(download.source, sourcePreferences, networkHelper)
             } else {
                 DataSaver.NoOp
             }

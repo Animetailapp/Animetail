@@ -212,6 +212,7 @@ dependencies {
     implementation(projects.core.archive)
     implementation(projects.core.common)
     implementation(projects.core.metro)
+    implementation(projects.core.navigation)
     implementation(projects.coreMetadata)
     implementation(projects.sourceApi)
     implementation(projects.sourceLocal)
@@ -257,6 +258,7 @@ dependencies {
     implementation(aniyomilibs.mediasession)
 
     implementation(libs.bundles.androidx.lifecycle)
+    implementation(libs.bundles.androidx.navigation3)
 
     // Job scheduling
     implementation(libs.androidx.work)
@@ -314,7 +316,6 @@ dependencies {
     implementation(libs.bundles.richtext)
     implementation(libs.composeRichEditor)
     implementation(libs.aboutLibraries.compose)
-    implementation(libs.bundles.voyager)
     implementation(libs.composeMaterialMotion)
     implementation(libs.swipe)
     implementation(libs.composeWebview)

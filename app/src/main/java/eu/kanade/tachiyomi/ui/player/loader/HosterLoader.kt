@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.player.loader
 
+import android.content.Context
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
@@ -108,8 +109,8 @@ class HosterLoader {
          * @param hosterList the list of hosters
          * @return the video, or null if no valid video was found
          */
-        suspend fun getBestVideo(source: AnimeSource, hosterList: List<Hoster>): Video? =
-            getBestHosterVideo(source, hosterList)?.second
+        suspend fun getBestVideo(context: Context, source: AnimeSource, hosterList: List<Hoster>): Video? =
+            getBestHosterVideo(context, source, hosterList)?.second
 
         /**
          * Like [getBestVideo], but also returns the hoster of the video.
@@ -118,12 +119,13 @@ class HosterLoader {
          * It receives the video before it's resolved.
          */
         suspend fun getBestHosterVideo(
+            context: Context,
             source: AnimeSource,
             hosterList: List<Hoster>,
             isExcluded: (Hoster, Video) -> Boolean = { _, _ -> false },
         ): Pair<Hoster, Video>? {
             hosterList.forEach { hoster ->
-                val hosterState = EpisodeLoader.loadHosterVideos(source, hoster)
+                val hosterState = EpisodeLoader.loadHosterVideos(context, source, hoster)
                     .markExcluded { isExcluded(hoster, it) }
                 if (hosterState !is HosterState.Ready) return@forEach
 

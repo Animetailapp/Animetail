@@ -2,22 +2,34 @@ package eu.kanade.tachiyomi.data.track.mangaupdates
 
 import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableMangaTracker
 import eu.kanade.tachiyomi.data.track.MangaTracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
 import eu.kanade.tachiyomi.data.track.mangaupdates.dto.MUListItem
 import eu.kanade.tachiyomi.data.track.mangaupdates.dto.MURating
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.util.lang.htmlDecode
+import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
 
-class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, DeletableMangaTracker {
+@Inject
+@SingleIn(AppScope::class)
+class MangaUpdates(
+    dependencies: TrackerDependencies,
+    private val json: Json,
+) : BaseTracker(7L, "MangaUpdates", dependencies),
+    MangaTracker,
+    DeletableMangaTracker {
 
     companion object {
         const val READING_LIST = 0L
@@ -45,7 +57,7 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
 
     private val interceptor by lazy { MangaUpdatesInterceptor(this) }
 
-    private val api by lazy { MangaUpdatesApi(client, interceptor) }
+    private val api by lazy { MangaUpdatesApi(client, interceptor, json) }
 
     override fun getLogo(): Int = R.drawable.ic_manga_updates
 

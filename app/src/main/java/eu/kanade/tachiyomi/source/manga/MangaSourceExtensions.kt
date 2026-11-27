@@ -7,17 +7,15 @@ import eu.kanade.tachiyomi.source.MangaSource
 import mihon.domain.extension.model.ContentWarning
 import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.source.local.entries.manga.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
-suspend fun MangaSource.icon(): Drawable? = Injekt.get<MangaExtensionManager>().getAppIconForSource(this.id)
+suspend fun MangaSource.icon(extensionManager: MangaExtensionManager): Drawable? =
+    extensionManager.getAppIconForSource(this.id)
 
 fun MangaSource.getPreferenceKey(): String = "source_$id"
 
 fun MangaSource.toStubSource(): StubMangaSource = StubMangaSource(id = id, lang = lang, name = name)
 
-fun MangaSource.getNameForMangaInfo(): String {
-    val preferences = Injekt.get<SourcePreferences>()
+fun MangaSource.getNameForMangaInfo(preferences: SourcePreferences): String {
     val enabledLanguages = preferences.enabledLanguages.get()
         .filterNot { it in listOf("all", "other") }
     val hasOneActiveLanguages = enabledLanguages.size == 1
@@ -36,9 +34,9 @@ fun MangaSource.getNameForMangaInfo(): String {
 fun MangaSource.isLocalOrStub(): Boolean = isLocal() || this is StubMangaSource
 
 // AM (DISCORD) -->
-fun MangaSource?.isNsfw(): Boolean {
+fun MangaSource?.isNsfw(extensionManager: MangaExtensionManager): Boolean {
     if (this == null || this.isLocalOrStub()) return false
-    val sourceUsed = Injekt.get<MangaExtensionManager>().loadedExtensions
+    val sourceUsed = extensionManager.loadedExtensions
         .find { ext -> ext.sources.any { it.id == this.id } }
     return sourceUsed?.contentWarning == ContentWarning.NSFW
 }

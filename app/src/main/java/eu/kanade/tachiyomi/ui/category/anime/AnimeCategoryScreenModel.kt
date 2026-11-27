@@ -1,9 +1,14 @@
 package eu.kanade.tachiyomi.ui.category.anime
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.channels.Channel
@@ -27,20 +32,21 @@ import tachiyomi.domain.category.anime.interactor.ReorderAnimeCategory
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class AnimeCategoryScreenModel(
-    private val getAllCategories: GetAnimeCategories = Injekt.get(),
-    private val getVisibleCategories: GetVisibleAnimeCategories = Injekt.get(),
-    private val createCategoryWithName: CreateAnimeCategoryWithName = Injekt.get(),
-    private val hideCategory: HideAnimeCategory = Injekt.get(),
-    private val deleteCategory: DeleteAnimeCategory = Injekt.get(),
-    private val reorderCategory: ReorderAnimeCategory = Injekt.get(),
-    private val renameCategory: RenameAnimeCategory = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-) : ScreenModel {
+    private val getAllCategories: GetAnimeCategories,
+    private val getVisibleCategories: GetVisibleAnimeCategories,
+    private val createCategoryWithName: CreateAnimeCategoryWithName,
+    private val hideCategory: HideAnimeCategory,
+    private val deleteCategory: DeleteAnimeCategory,
+    private val reorderCategory: ReorderAnimeCategory,
+    private val renameCategory: RenameAnimeCategory,
+    private val libraryPreferences: LibraryPreferences,
+) : ViewModel() {
 
     private val _events: Channel<AnimeCategoryEvent> = Channel()
     val events = _events.receiveAsFlow()
@@ -62,10 +68,10 @@ class AnimeCategoryScreenModel(
             dialog = dialog,
         )
     }
-        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5.seconds), AnimeCategoryScreenState.Loading)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), AnimeCategoryScreenState.Loading)
 
     fun createCategory(name: String) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             when (createCategoryWithName.await(name)) {
                 is CreateAnimeCategoryWithName.Result.InternalError -> _events.send(
                     AnimeCategoryEvent.InternalError,
@@ -77,7 +83,7 @@ class AnimeCategoryScreenModel(
     }
 
     fun hideCategory(category: Category) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             when (hideCategory.await(category)) {
                 is HideAnimeCategory.Result.InternalError -> _events.send(
                     AnimeCategoryEvent.InternalError,
@@ -89,7 +95,7 @@ class AnimeCategoryScreenModel(
     }
 
     fun deleteCategory(categoryId: Long) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             when (deleteCategory.await(categoryId = categoryId)) {
                 is DeleteAnimeCategory.Result.InternalError -> _events.send(
                     AnimeCategoryEvent.InternalError,
@@ -101,7 +107,7 @@ class AnimeCategoryScreenModel(
     }
 
     fun changeOrder(category: Category, newIndex: Int) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             when (reorderCategory.await(category, newIndex)) {
                 is ReorderAnimeCategory.Result.InternalError -> _events.send(
                     AnimeCategoryEvent.InternalError,
@@ -113,7 +119,7 @@ class AnimeCategoryScreenModel(
     }
 
     fun renameCategory(category: Category, name: String) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             when (renameCategory.await(category, name)) {
                 is RenameAnimeCategory.Result.InternalError -> _events.send(
                     AnimeCategoryEvent.InternalError,

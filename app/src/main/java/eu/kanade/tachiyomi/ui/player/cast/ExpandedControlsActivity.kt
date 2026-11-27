@@ -20,11 +20,10 @@ import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.player.CastManager
 import eu.kanade.tachiyomi.ui.player.cast.components.ExpandedControllerScreen
-import tachiyomi.core.common.preference.PreferenceStore
-import uy.kohesive.injekt.injectLazy
+import mihon.app.di.appGraph
 
 class ExpandedControlsActivity : ComponentActivity() {
-    private val preferences: PreferenceStore by injectLazy()
+    private val preferences by lazy { applicationContext.appGraph.preferenceStore }
     private val castManager by lazy { CastManager(this, preferences) }
     private val castContext by lazy { CastContext.getSharedInstance(this) }
 

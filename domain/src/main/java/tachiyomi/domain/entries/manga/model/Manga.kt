@@ -10,7 +10,6 @@ import kotlinx.serialization.json.JsonObject
 import mihon.core.common.extensions.EMPTY
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.entries.manga.interactor.GetCustomMangaInfo
-import uy.kohesive.injekt.injectLazy
 import java.io.ObjectStreamException
 import kotlin.time.Instant
 import java.io.Serializable as JavaSerializable
@@ -53,7 +52,7 @@ data class Manga(
     // SY -->
     @kotlinx.serialization.Transient
     private val customMangaInfo = if (favorite) {
-        getCustomMangaInfo.get(id)
+        getCustomMangaInfo?.get(id)
     } else {
         null
     }
@@ -174,7 +173,8 @@ data class Manga(
         )
 
         // SY -->
-        private val getCustomMangaInfo: GetCustomMangaInfo by injectLazy()
+        @Volatile
+        var getCustomMangaInfo: GetCustomMangaInfo? = null
         // SY <--
     }
 

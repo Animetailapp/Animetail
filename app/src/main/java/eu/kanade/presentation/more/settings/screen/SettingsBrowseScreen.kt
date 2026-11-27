@@ -8,13 +8,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.fragment.app.FragmentActivity
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.core.preference.asState
 import eu.kanade.presentation.more.settings.Preference
-import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.authenticate
+import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
+import mihon.core.navigation.ExtensionStoresRoute
+import mihon.core.navigation.LocalNavigator
 import mihon.domain.extension.model.ContentWarning
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
@@ -23,7 +23,8 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 
-object SettingsBrowseScreen : SearchableSettings {
+@Serializable
+data object SettingsBrowseScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable
@@ -32,7 +33,7 @@ object SettingsBrowseScreen : SearchableSettings {
     @Composable
     override fun getPreferences(): List<Preference> {
         val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
 
         val sourcePreferences = remember { context.appGraph.sourcePreferences }
         val getMangaExtensionStoreCountAsFlow = remember { context.appGraph.getMangaExtensionStoreCountAsFlow }
@@ -122,7 +123,7 @@ object SettingsBrowseScreen : SearchableSettings {
                             animeReposCount,
                         ),
                         onClick = {
-                            navigator.push(ExtensionStoresScreen(isManga = false))
+                            navigator.push(ExtensionStoresRoute(isManga = false))
                         },
                     ),
                     Preference.PreferenceItem.TextPreference(
@@ -133,7 +134,7 @@ object SettingsBrowseScreen : SearchableSettings {
                             mangaReposCount,
                         ),
                         onClick = {
-                            navigator.push(ExtensionStoresScreen(isManga = true))
+                            navigator.push(ExtensionStoresRoute(isManga = true))
                         },
                     ),
                 ),

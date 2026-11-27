@@ -200,6 +200,7 @@ import tachiyomi.domain.entries.anime.interactor.SetAnimeEpisodeFlags
 import tachiyomi.domain.entries.anime.interactor.SetAnimeSeasonFlags
 import tachiyomi.domain.entries.anime.interactor.SetCustomAnimeInfo
 import tachiyomi.domain.entries.anime.interactor.UpdateAnimeNotes
+import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.manga.interactor.GetCustomMangaInfo
 import tachiyomi.domain.entries.manga.interactor.GetDuplicateLibraryManga
 import tachiyomi.domain.entries.manga.interactor.GetLibraryManga
@@ -213,6 +214,7 @@ import tachiyomi.domain.entries.manga.interactor.ResetMangaViewerFlags
 import tachiyomi.domain.entries.manga.interactor.SetCustomMangaInfo
 import tachiyomi.domain.entries.manga.interactor.SetMangaChapterFlags
 import tachiyomi.domain.entries.manga.interactor.UpdateMangaNotes
+import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.history.anime.interactor.GetAnimeHistory
 import tachiyomi.domain.history.anime.interactor.GetNextEpisodes
 import tachiyomi.domain.history.anime.interactor.RemoveAnimeHistory
@@ -327,6 +329,8 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
 
         Injekt = InjektScope(MetroInjektRegistrar(application = this, graphProvider = this))
         graph.inject(this)
+        Anime.getCustomAnimeInfo = graph.getCustomAnimeInfo
+        Manga.getCustomMangaInfo = graph.getCustomMangaInfo
 
         GlobalExceptionHandler.initialize(applicationContext, CrashActivity::class.java)
 
@@ -446,8 +450,8 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                     ),
                 )
                 // Keyer
-                add(AnimeKeyer())
-                add(MangaKeyer())
+                add(AnimeKeyer(animeCoverCache, animeBackgroundCache))
+                add(MangaKeyer(coverCache))
                 add(AnimeCoverKeyer(animeCoverCache))
                 add(MangaCoverKeyer(coverCache))
                 add(InstalledExtensionIconKeyer())

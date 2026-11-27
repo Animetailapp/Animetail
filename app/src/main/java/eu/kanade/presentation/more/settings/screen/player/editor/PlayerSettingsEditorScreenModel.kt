@@ -2,14 +2,20 @@ package eu.kanade.presentation.more.settings.screen.player.editor
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.tachiyomi.util.size
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.util.toSize
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
@@ -19,16 +25,20 @@ import tachiyomi.domain.storage.service.SCRIPTS_PATH
 import tachiyomi.domain.storage.service.SCRIPT_OPTS_PATH
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class PlayerSettingsEditorScreenModel(
     private val context: Context,
-    private val storageManager: StorageManager = Injekt.get(),
-) : StateScreenModel<EditorScreenState>(EditorScreenState.Loading) {
+    private val storageManager: StorageManager,
+) : ViewModel() {
+    private val mutableState = MutableStateFlow<EditorScreenState>(EditorScreenState.Loading)
+    val state: StateFlow<EditorScreenState> = mutableState.asStateFlow()
+
     private val _selectedType = MutableStateFlow(EditorListType.SCRIPTS)
     val selectedType = _selectedType.asStateFlow()
 
@@ -36,7 +46,7 @@ class PlayerSettingsEditorScreenModel(
     val dialogShown = _dialogShown.asStateFlow()
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             _selectedType.collectLatest { type ->
                 updateItems(type)
             }

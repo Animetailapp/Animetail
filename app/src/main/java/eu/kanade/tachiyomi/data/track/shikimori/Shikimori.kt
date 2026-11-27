@@ -2,6 +2,9 @@ package eu.kanade.tachiyomi.data.track.shikimori
 
 import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
@@ -10,6 +13,7 @@ import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableAnimeTracker
 import eu.kanade.tachiyomi.data.track.DeletableMangaTracker
 import eu.kanade.tachiyomi.data.track.MangaTracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
@@ -18,15 +22,19 @@ import eu.kanade.tachiyomi.data.track.shikimori.dto.SMOAuth
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
-class Shikimori(id: Long) :
-    BaseTracker(
-        id,
-        "Shikimori",
-    ),
+@Inject
+@SingleIn(AppScope::class)
+class Shikimori(
+    dependencies: TrackerDependencies,
+    private val json: Json,
+) : BaseTracker(
+    4L,
+    "Shikimori",
+    dependencies,
+),
     MangaTracker,
     AnimeTracker,
     DeletableMangaTracker,
@@ -46,11 +54,9 @@ class Shikimori(id: Long) :
         private const val SEARCH_ID_PREFIX = "id:"
     }
 
-    private val json: Json by injectLazy()
+    private val interceptor by lazy { ShikimoriInterceptor(this, json) }
 
-    private val interceptor by lazy { ShikimoriInterceptor(this) }
-
-    private val api by lazy { ShikimoriApi(id, client, interceptor) }
+    private val api by lazy { ShikimoriApi(id, client, interceptor, json) }
 
     override fun getScoreList(): List<String> = SCORE_LIST
 

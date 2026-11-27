@@ -50,10 +50,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
-import cafe.adriel.voyager.core.screen.Screen
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
@@ -61,11 +59,19 @@ import com.google.android.gms.cast.MediaQueueItem
 import com.google.android.gms.cast.MediaStatus
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.common.images.WebImage
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import eu.kanade.presentation.components.AdaptiveSheet
 import eu.kanade.presentation.components.TabbedDialogPaddings
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetHosterContent
@@ -73,7 +79,6 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetVide
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.getChangedAt
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -82,6 +87,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withIOContext
@@ -97,38 +103,35 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
-private val playerPreferences = Injekt.get<PlayerPreferences>()
 
-class EpisodeOptionsDialogScreen(
-    private val useExternalDownloader: Boolean,
-    private val episodeTitle: String,
-    private val episodeId: Long,
-    private val animeId: Long,
-    private val sourceId: Long,
-) : Screen {
+@Composable
+fun EpisodeOptionsDialogScreen(
+    useExternalDownloader: Boolean,
+    episodeTitle: String,
+    episodeId: Long,
+    animeId: Long,
+    sourceId: Long,
+    onDismissRequest: () -> Unit,
+) {
+    val sm = assistedMetroViewModel<EpisodeOptionsDialogScreenModel, EpisodeOptionsDialogScreenModel.Factory> {
+        create(
+            episodeId = episodeId,
+            animeId = animeId,
+            sourceId = sourceId,
+        )
+    }
 
-    @Composable
-    override fun Content() {
-        val sm = rememberScreenModel {
-            EpisodeOptionsDialogScreenModel(
-                episodeId = episodeId,
-                animeId = animeId,
-                sourceId = sourceId,
-            )
-        }
+    val episode by sm.episode.collectAsState()
+    val anime by sm.anime.collectAsState()
+    val hosterState by sm.hosterState.collectAsState()
+    val hosterExpandedList by sm.hosterExpandedList.collectAsState()
+    val selectedHosterVideoIndex by sm.selectedHosterVideoIndex.collectAsState()
+    val currentVideo by sm.currentVideo.collectAsState()
+    val showAllQualities by sm.showAllQualities.collectAsState()
 
-        val episode by sm.episode.collectAsState()
-        val anime by sm.anime.collectAsState()
-        val hosterState by sm.hosterState.collectAsState()
-        val hosterExpandedList by sm.hosterExpandedList.collectAsState()
-        val selectedHosterVideoIndex by sm.selectedHosterVideoIndex.collectAsState()
-        val currentVideo by sm.currentVideo.collectAsState()
-        val showAllQualities by sm.showAllQualities.collectAsState()
-
+    AdaptiveSheet(onDismissRequest = onDismissRequest) {
         EpisodeOptionsDialog(
             useExternalDownloader = useExternalDownloader,
             episodeTitle = episodeTitle,
@@ -143,20 +146,32 @@ class EpisodeOptionsDialogScreen(
             onClickHoster = sm::onClickHoster,
             onClickVideo = sm::onClickVideo,
             getHosterList = sm::getHosterList,
+            onDismissRequest = onDismissRequest,
         )
-    }
-
-    companion object {
-        var onDismissDialog: () -> Unit = {}
     }
 }
 
+@AssistedInject
 class EpisodeOptionsDialogScreenModel(
-    episodeId: Long,
-    animeId: Long,
-    sourceId: Long,
-) : ScreenModel {
-    private val sourceManager: AnimeSourceManager = Injekt.get()
+    private val context: Context,
+    @Assisted episodeId: Long,
+    @Assisted animeId: Long,
+    @Assisted sourceId: Long,
+    private val sourceManager: AnimeSourceManager,
+    getEpisode: GetEpisode,
+    getAnime: GetAnime,
+) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(
+            episodeId: Long,
+            animeId: Long,
+            sourceId: Long,
+        ): EpisodeOptionsDialogScreenModel
+    }
 
     private val _hosterState = MutableStateFlow<Result<List<HosterState>>?>(null)
     val hosterState = _hosterState.asStateFlow()
@@ -184,9 +199,9 @@ class EpisodeOptionsDialogScreenModel(
     init {
         val hasFoundPreferredVideo = AtomicBoolean(false)
 
-        screenModelScope.launchIO {
-            val episode = Injekt.get<GetEpisode>().await(episodeId)!!
-            val anime = Injekt.get<GetAnime>().await(animeId)!!
+        viewModelScope.launchIO {
+            val episode = getEpisode.await(episodeId)!!
+            val anime = getAnime.await(animeId)!!
             val source = sourceManager.getOrStub(sourceId)
 
             _episode.update { _ -> episode }
@@ -195,7 +210,7 @@ class EpisodeOptionsDialogScreenModel(
 
             val hosterListResult = withIOContext {
                 try {
-                    Result.success(EpisodeLoader.getHosters(episode, anime, source))
+                    Result.success(EpisodeLoader.getHosters(context, episode, anime, source))
                 } catch (e: Exception) {
                     Result.failure(e)
                 }
@@ -230,7 +245,7 @@ class EpisodeOptionsDialogScreenModel(
             try {
                 hosterList.mapIndexed { hosterIdx, hoster ->
                     async {
-                        val hosterState = EpisodeLoader.loadHosterVideos(source, hoster)
+                        val hosterState = EpisodeLoader.loadHosterVideos(context, source, hoster)
 
                         _hosterState.updateAt(hosterIdx, hosterState)
 
@@ -363,8 +378,9 @@ class EpisodeOptionsDialogScreenModel(
                 val hosterName = hosterState.name
                 _hosterState.updateAt(hosterIndex, HosterState.Loading(hosterName))
 
-                screenModelScope.launchIO {
+                viewModelScope.launchIO {
                     val newHosterState = EpisodeLoader.loadHosterVideos(
+                        context,
                         _source.value!!,
                         _hosterList.value[hosterIndex],
                     )
@@ -382,7 +398,7 @@ class EpisodeOptionsDialogScreenModel(
             ?.getOrNull(videoIndex)
             ?: return
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val success = loadVideo(_source.value!!, video, hosterIndex, videoIndex)
             if (success) {
                 _showAllQualities.update { _ -> false }
@@ -423,6 +439,7 @@ fun EpisodeOptionsDialog(
     onClickHoster: (Int) -> Unit,
     onClickVideo: (Int, Int) -> Unit,
     getHosterList: () -> List<Hoster>?,
+    onDismissRequest: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -454,7 +471,7 @@ fun EpisodeOptionsDialog(
         val onError: () -> Unit = {
             logcat(LogPriority.ERROR) { "Error getting links" }
             scope.launchUI { context.toast("No available videos") }
-            EpisodeOptionsDialogScreen.onDismissDialog()
+            onDismissRequest()
         }
         if (resultList?.isFailure == true) {
             onError()
@@ -478,6 +495,7 @@ fun EpisodeOptionsDialog(
                     onClickHoster = onClickHoster,
                     onClickVideo = onClickVideo,
                     getHosterList = getHosterList,
+                    onDismissRequest = onDismissRequest,
                 )
             } else {
                 onError()
@@ -500,10 +518,11 @@ private fun VideoList(
     onClickHoster: (Int) -> Unit,
     onClickVideo: (Int, Int) -> Unit,
     getHosterList: () -> List<Hoster>?,
+    onDismissRequest: () -> Unit,
 ) {
-    val downloadManager = Injekt.get<AnimeDownloadManager>()
-    val clipboard = LocalClipboard.current
     val context = LocalContext.current
+    val downloadManager = context.appGraph.animeDownloadManager
+    val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val copiedString = stringResource(AYMR.strings.copied_video_link_to_clipboard)
 
@@ -581,7 +600,7 @@ private fun VideoList(
                     // start tail cast
                     onCastClicked = {
                         scope.launch {
-                            if (playerPreferences.enableCast().get()) {
+                            if (context.appGraph.playerPreferences.enableCast().get()) {
                                 sendChaptersToCast(
                                     context,
                                     anime.title,
@@ -596,6 +615,7 @@ private fun VideoList(
                         }
                     },
                     // end tail cast
+                    onDismissRequest = onDismissRequest,
                 )
             }
         }
@@ -647,8 +667,9 @@ private fun QualityOptions(
     onExtPlayerClicked: () -> Unit = {},
     onIntPlayerClicked: () -> Unit = {},
     onCastClicked: () -> Unit = {},
+    onDismissRequest: () -> Unit = {},
 ) {
-    val closeMenu = { EpisodeOptionsDialogScreen.onDismissDialog() }
+    val closeMenu = onDismissRequest
 
     Column {
         ClickableRow(

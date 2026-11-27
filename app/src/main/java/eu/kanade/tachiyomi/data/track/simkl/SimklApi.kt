@@ -27,12 +27,13 @@ import kotlinx.serialization.json.putJsonObject
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
-import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 
-class SimklApi(private val client: OkHttpClient, interceptor: SimklInterceptor) {
-
-    private val json: Json by injectLazy()
+class SimklApi(
+    private val client: OkHttpClient,
+    interceptor: SimklInterceptor,
+    private val json: Json,
+) {
 
     private val authClient = client.newBuilder().addInterceptor(interceptor).build()
 

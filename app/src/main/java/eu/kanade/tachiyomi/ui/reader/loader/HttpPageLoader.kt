@@ -4,6 +4,7 @@ import aniyomi.util.DataSaver
 import aniyomi.util.DataSaver.Companion.getImage
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.data.database.models.manga.toDomainChapter
+import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
@@ -33,6 +34,7 @@ internal class HttpPageLoader(
     private val chapterCache: ChapterCache,
     private val readerPreferences: ReaderPreferences,
     private val sourcePreferences: SourcePreferences,
+    private val networkHelper: NetworkHelper,
     private val canLoadAhead: () -> Boolean,
 ) : PageLoader() {
 
@@ -42,7 +44,7 @@ internal class HttpPageLoader(
     private val downloadJobs = ConcurrentHashMap<Int, Job>()
 
     // SY -->
-    private val dataSaver = DataSaver(source, sourcePreferences)
+    private val dataSaver = DataSaver(source, sourcePreferences, networkHelper)
     // SY <--
 
     override var isLocal: Boolean = false

@@ -38,16 +38,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.core.net.toUri
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import com.hippo.unifile.UniFile
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.presentation.more.settings.Preference
-import eu.kanade.presentation.more.settings.screen.data.CreateBackupScreen
-import eu.kanade.presentation.more.settings.screen.data.RestoreBackupScreen
 import eu.kanade.presentation.more.settings.screen.data.StorageInfo
-import eu.kanade.presentation.more.settings.screen.data.SyncSettingsSelector
-import eu.kanade.presentation.more.settings.screen.data.SyncTriggerOptionsScreen
 import eu.kanade.presentation.more.settings.widget.BasePreferenceWidget
 import eu.kanade.presentation.more.settings.widget.PrefsHorizontalPadding
 import eu.kanade.presentation.util.relativeTimeSpanString
@@ -62,7 +56,6 @@ import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.data.sync.SyncManager
 import eu.kanade.tachiyomi.data.sync.service.GoogleDriveService
 import eu.kanade.tachiyomi.data.sync.service.GoogleDriveSyncService
-import eu.kanade.tachiyomi.ui.storage.StorageTab
 import eu.kanade.tachiyomi.util.system.DeviceUtil
 import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.util.system.workManager
@@ -70,8 +63,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import logcat.LogPriority
 import mihon.app.di.appGraph
+import mihon.core.navigation.CreateBackupRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.RestoreBackupRoute
+import mihon.core.navigation.StorageRoute
+import mihon.core.navigation.SyncSettingsSelectorRoute
+import mihon.core.navigation.SyncTriggerOptionsRoute
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.automirroredrounded.Help
 import mihon.icons.materialsymbols.rounded.Storage
@@ -92,7 +92,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 
 @Suppress("TooManyFunctions")
-object SettingsDataScreen : SearchableSettings {
+@Serializable
+data object SettingsDataScreen : SearchableSettings {
 
     val restorePreferenceKeyString = MR.strings.label_backup
     const val HELP_URL = "https://aniyomi.org/docs/faq/storage"
@@ -204,7 +205,7 @@ object SettingsDataScreen : SearchableSettings {
     @Composable
     private fun getBackupAndRestoreGroup(backupPreferences: BackupPreferences): Preference.PreferenceGroup {
         val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
         val lastAutoBackup by backupPreferences.lastAutoBackupTimestamp.collectAsState()
 
         val chooseBackup = rememberLauncherForActivityResult(
@@ -224,7 +225,7 @@ object SettingsDataScreen : SearchableSettings {
                 logcat(LogPriority.ERROR, e)
             }
 
-            navigator.push(RestoreBackupScreen(it.toString()))
+            navigator.push(RestoreBackupRoute(it.toString()))
         }
 
         return Preference.PreferenceGroup(
@@ -245,7 +246,7 @@ object SettingsDataScreen : SearchableSettings {
                                 SegmentedButton(
                                     modifier = Modifier.fillMaxHeight(),
                                     checked = false,
-                                    onCheckedChange = { navigator.push(CreateBackupScreen()) },
+                                    onCheckedChange = { navigator.push(CreateBackupRoute) },
                                     shape = SegmentedButtonDefaults.itemShape(0, 2),
                                 ) {
                                     Text(stringResource(MR.strings.pref_create_backup))
@@ -301,7 +302,7 @@ object SettingsDataScreen : SearchableSettings {
     @Composable
     private fun getDataGroup(storagePreferences: StoragePreferences): Preference.PreferenceGroup {
         val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
         val scope = rememberCoroutineScope()
         val libraryPreferences = remember { context.appGraph.libraryPreferences }
 
@@ -349,7 +350,7 @@ object SettingsDataScreen : SearchableSettings {
                     title = stringResource(AYMR.strings.label_storage),
                     icon = MaterialSymbols.Rounded.Storage,
                     onClick = {
-                        navigator.push(StorageTab)
+                        navigator.push(StorageRoute)
                     },
                 ),
 
@@ -604,8 +605,10 @@ object SettingsDataScreen : SearchableSettings {
     private fun getGoogleDrivePurge(): Preference.PreferenceItem.TextPreference {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
-        val googleDriveSync =
-            remember { GoogleDriveSyncService(context, context.appGraph.json, context.appGraph.syncPreferences) }
+        val googleDriveSync = remember {
+            val appGraph = context.appGraph
+            GoogleDriveSyncService(context, appGraph.json, appGraph.syncPreferences, appGraph.protoBuf)
+        }
         var showPurgeDialog by remember { mutableStateOf(false) }
 
         if (showPurgeDialog) {
@@ -697,7 +700,7 @@ object SettingsDataScreen : SearchableSettings {
 
     @Composable
     private fun getSyncNowPref(): Preference.PreferenceGroup {
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_sync_now_group_title),
             preferenceItems = listOf(
@@ -706,7 +709,7 @@ object SettingsDataScreen : SearchableSettings {
                     title = stringResource(TLMR.strings.pref_sync_now),
                     subtitle = stringResource(TLMR.strings.pref_sync_now_subtitle),
                     onClick = {
-                        navigator.push(SyncSettingsSelector())
+                        navigator.push(SyncSettingsSelectorRoute)
                     },
                 ),
             ),
@@ -715,11 +718,11 @@ object SettingsDataScreen : SearchableSettings {
 
     @Composable
     private fun getSyncOptionsPref(): Preference.PreferenceItem.TextPreference {
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
         return Preference.PreferenceItem.TextPreference(
             title = stringResource(TLMR.strings.pref_sync_options),
             subtitle = stringResource(TLMR.strings.pref_sync_options_summ),
-            onClick = { navigator.push(SyncTriggerOptionsScreen()) },
+            onClick = { navigator.push(SyncTriggerOptionsRoute) },
         )
     }
 

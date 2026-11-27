@@ -85,7 +85,7 @@ fun EpisodeSettingsDialog(
             when (page) {
                 0 -> {
                     FilterPage(
-                        downloadFilter = anime?.downloadedFilter ?: TriState.DISABLED,
+                        downloadFilter = anime?.downloadedFilter(downloadedOnly) ?: TriState.DISABLED,
                         onDownloadFilterChanged = onDownloadFilterChanged
                             .takeUnless { downloadedOnly },
                         unseenFilter = anime?.unseenFilter ?: TriState.DISABLED,

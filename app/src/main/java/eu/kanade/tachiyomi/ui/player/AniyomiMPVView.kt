@@ -40,16 +40,17 @@ import `is`.xyz.mpv.KeyMapping
 import `is`.xyz.mpv.MPV
 import logcat.LogPriority
 import logcat.logcat
-import uy.kohesive.injekt.injectLazy
+import mihon.app.di.appGraph
 
 class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(context, attributes) {
 
-    private val playerPreferences: PlayerPreferences by injectLazy()
-    private val decoderPreferences: DecoderPreferences by injectLazy()
-    private val subtitlePreferences: SubtitlePreferences by injectLazy()
-    private val audioPreferences: AudioPreferences by injectLazy()
-    private val advancedPreferences: AdvancedPlayerPreferences by injectLazy()
-    private val networkPreferences: NetworkPreferences by injectLazy()
+    private val appGraph by lazy { context.appGraph }
+    private val playerPreferences get() = appGraph.playerPreferences
+    private val decoderPreferences get() = appGraph.decoderPreferences
+    private val subtitlePreferences get() = appGraph.subtitlePreferences
+    private val audioPreferences get() = appGraph.audioPreferences
+    private val advancedPreferences get() = appGraph.advancedPlayerPreferences
+    private val networkPreferences get() = appGraph.networkPreferences
 
     var isExiting = false
 

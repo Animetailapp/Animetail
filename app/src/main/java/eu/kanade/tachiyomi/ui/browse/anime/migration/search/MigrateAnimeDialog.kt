@@ -25,8 +25,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.model.StateScreenModel
+import androidx.lifecycle.ViewModel
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.hasCustomBackground
 import eu.kanade.domain.entries.anime.model.hasCustomCover
@@ -40,8 +46,12 @@ import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.ui.browse.anime.migration.AnimeMigrationFlags
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import mihon.domain.source.interactor.UpdateAnimeFromRemote
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
@@ -64,8 +74,6 @@ import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.time.Instant
 
 @Composable
@@ -78,10 +86,20 @@ internal fun MigrateAnimeDialog(
     onClickSeasons: () -> Unit,
     onPopScreen: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val appGraph = remember(context) { context.appGraph }
     val scope = rememberCoroutineScope()
     val state by screenModel.state.collectAsState()
 
-    val flags = remember { AnimeMigrationFlags.getFlags(oldAnime, screenModel.migrateFlags.get()) }
+    val flags = remember {
+        AnimeMigrationFlags.getFlags(
+            oldAnime,
+            screenModel.migrateFlags.get(),
+            appGraph.animeCoverCache,
+            appGraph.animeBackgroundCache,
+            appGraph.animeDownloadCache,
+        )
+    }
     val selectedFlags = remember { flags.map { it.isDefaultSelected }.toMutableStateList() }
     val canMigrate = remember { oldAnime.fetchType == newAnime.fetchType }
 
@@ -199,28 +217,34 @@ internal fun MigrateAnimeDialog(
     }
 }
 
+@Inject @ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 internal class MigrateAnimeDialogScreenModel(
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val downloadManager: AnimeDownloadManager = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
-    private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
-    private val updateEpisode: UpdateEpisode = Injekt.get(),
-    private val getCategories: GetAnimeCategories = Injekt.get(),
-    private val setAnimeCategories: SetAnimeCategories = Injekt.get(),
-    private val getTracks: GetAnimeTracks = Injekt.get(),
-    private val insertTrack: InsertAnimeTrack = Injekt.get(),
-    private val coverCache: AnimeCoverCache = Injekt.get(),
-    private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
-    private val preferenceStore: PreferenceStore = Injekt.get(),
-    private val updateAnimeFromRemote: UpdateAnimeFromRemote = Injekt.get(),
-) : StateScreenModel<MigrateAnimeDialogScreenModel.State>(State()) {
+    private val sourceManager: AnimeSourceManager,
+    private val downloadManager: AnimeDownloadManager,
+    private val updateAnime: UpdateAnime,
+    private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val updateEpisode: UpdateEpisode,
+    private val getCategories: GetAnimeCategories,
+    private val setAnimeCategories: SetAnimeCategories,
+    private val getTracks: GetAnimeTracks,
+    private val insertTrack: InsertAnimeTrack,
+    private val coverCache: AnimeCoverCache,
+    private val backgroundCache: AnimeBackgroundCache,
+    private val preferenceStore: PreferenceStore,
+    private val updateAnimeFromRemote: UpdateAnimeFromRemote,
+    private val trackerManager: TrackerManager,
+) : ViewModel() {
+
+    private val mutableState = MutableStateFlow(State())
+    val state: StateFlow<State> = mutableState.asStateFlow()
 
     val migrateFlags: Preference<Int> by lazy {
         preferenceStore.getInt("migrate_flags", Int.MAX_VALUE)
     }
 
     private val enhancedServices by lazy {
-        Injekt.get<TrackerManager>().trackers.filterIsInstance<EnhancedAnimeTracker>()
+        trackerManager.trackers.filterIsInstance<EnhancedAnimeTracker>()
     }
 
     suspend fun migrateAnime(
@@ -356,7 +380,7 @@ internal class MigrateAnimeDialogScreenModel(
         }
 
         // Update custom cover (recheck if custom cover exists)
-        if (migrateCustomCover && oldAnime.hasCustomCover()) {
+        if (migrateCustomCover && oldAnime.hasCustomCover(coverCache)) {
             try {
                 coverCache.setCustomCoverToCache(
                     newAnime,
@@ -369,7 +393,7 @@ internal class MigrateAnimeDialogScreenModel(
         }
 
         // Update custom background (recheck if custom background exists)
-        if (migrateCustomBackground && oldAnime.hasCustomBackground()) {
+        if (migrateCustomBackground && oldAnime.hasCustomBackground(backgroundCache)) {
             try {
                 backgroundCache.setCustomBackgroundToCache(
                     newAnime,

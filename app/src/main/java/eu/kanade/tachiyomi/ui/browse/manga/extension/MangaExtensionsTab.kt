@@ -1,9 +1,6 @@
 package eu.kanade.tachiyomi.ui.browse.manga.extension
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,16 +8,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.manga.MangaExtensionScreen
+import eu.kanade.presentation.browse.manga.PrivateMangaExtensionUninstallDialog
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
-import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
-import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaExtensionDetailsScreen
-import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.isPackageInstalled
+import mihon.core.navigation.ExtensionStoresRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MangaExtensionDetailsRoute
+import mihon.core.navigation.MangaExtensionFilterRoute
+import mihon.core.navigation.WebViewRoute
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -29,7 +27,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 fun mangaExtensionsTab(
     extensionsViewModel: MangaExtensionsViewModel,
 ): TabContent {
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
     val context = LocalContext.current
 
     val updatesCount by extensionsViewModel.updatesCount.collectAsStateWithLifecycle()
@@ -42,11 +40,11 @@ fun mangaExtensionsTab(
         actions = listOf(
             AppBar.OverflowAction(
                 title = stringResource(MR.strings.action_filter),
-                onClick = { navigator.push(MangaExtensionFilterScreen()) },
+                onClick = { navigator.push(MangaExtensionFilterRoute) },
             ),
             AppBar.OverflowAction(
                 title = stringResource(MR.strings.extensionStores),
-                onClick = { navigator.push(ExtensionStoresScreen(isManga = true)) },
+                onClick = { navigator.push(ExtensionStoresRoute(isManga = true)) },
             ),
         ),
         content = { contentPadding, _ ->
@@ -78,7 +76,7 @@ fun mangaExtensionsTab(
                 onOpenWebView = { extension ->
                     extension.sources.getOrNull(0)?.let {
                         navigator.push(
-                            WebViewScreen(
+                            WebViewRoute(
                                 url = it.baseUrl,
                                 initialTitle = it.name,
                                 sourceId = it.id,
@@ -87,7 +85,7 @@ fun mangaExtensionsTab(
                     }
                 },
                 onInstallExtension = extensionsViewModel::installExtension,
-                onOpenExtension = { navigator.push(MangaExtensionDetailsScreen(it.pkgName)) },
+                onOpenExtension = { navigator.push(MangaExtensionDetailsRoute(it.pkgName)) },
                 onTrustExtension = { extensionsViewModel.trustExtension(it) },
                 onUninstallExtension = { extensionsViewModel.uninstallExtension(it) },
                 onUpdateExtension = extensionsViewModel::updateExtension,
@@ -95,9 +93,9 @@ fun mangaExtensionsTab(
             )
 
             privateExtensionToUninstall?.let { extension ->
-                MangaExtensionUninstallConfirmation(
-                    extensionName = extension.name,
-                    onClickConfirm = {
+                PrivateMangaExtensionUninstallDialog(
+                    extension = extension,
+                    onConfirm = {
                         extensionsViewModel.uninstallExtension(extension)
                     },
                     onDismissRequest = {
@@ -106,37 +104,5 @@ fun mangaExtensionsTab(
                 )
             }
         },
-    )
-}
-
-@Composable
-private fun MangaExtensionUninstallConfirmation(
-    extensionName: String,
-    onClickConfirm: () -> Unit,
-    onDismissRequest: () -> Unit,
-) {
-    AlertDialog(
-        title = {
-            Text(text = stringResource(MR.strings.ext_confirm_remove))
-        },
-        text = {
-            Text(text = stringResource(MR.strings.remove_private_extension_message, extensionName))
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onClickConfirm()
-                    onDismissRequest()
-                },
-            ) {
-                Text(text = stringResource(MR.strings.ext_remove))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = stringResource(MR.strings.action_cancel))
-            }
-        },
-        onDismissRequest = onDismissRequest,
     )
 }

@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import eu.kanade.presentation.util.isTabletUi
+import mihon.presentation.core.util.isTabletUi
 import tachiyomi.domain.category.model.Category
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.screens.LoadingScreen

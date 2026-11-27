@@ -2,65 +2,106 @@ package eu.kanade.tachiyomi.ui.entries.anime.notes
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.entries.anime.AnimeNotesScreen
-import eu.kanade.presentation.util.Screen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.serialization.Serializable
-import tachiyomi.core.common.util.lang.launchNonCancellable
+import kotlinx.coroutines.launch
+import mihon.core.metro.AppCoroutineScope
+import mihon.core.navigation.AnimeNotesRoute
+import mihon.core.navigation.AnimeRoute
+import mihon.core.navigation.LocalNavigator
+import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.UpdateAnimeNotes
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import tachiyomi.presentation.core.screens.LoadingScreen
 
-@Serializable
-class AnimeNotesScreen(
-    private val animeId: Long,
-    private val animeTitle: String,
-    private val animeNotes: String,
-) : Screen() {
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
+@Composable
+fun AnimeNotesScreen(animeId: Long) {
+    val navigator = LocalNavigator.current
 
-        val screenModel = rememberScreenModel {
-            Model(
-                animeId = animeId,
-                animeTitle = animeTitle,
-                animeNotes = animeNotes,
-            )
+    val viewModel = assistedMetroViewModel<AnimeNotesViewModel, AnimeNotesViewModel.Factory> {
+        create(animeId = animeId)
+    }
+    val animeMissing by viewModel.animeMissing.collectAsState()
+    LaunchedEffect(animeMissing) {
+        if (animeMissing) {
+            navigator.popTo { it != AnimeNotesRoute(animeId) && (it as? AnimeRoute)?.animeId != animeId }
         }
-        val state by screenModel.state.collectAsState()
-
-        AnimeNotesScreen(
-            state = state,
-            navigateUp = navigator::pop,
-            onUpdate = screenModel::updateNotes,
-        )
     }
 
-    private class Model(
-        animeTitle: String,
-        animeNotes: String,
-        private val animeId: Long,
-        private val updateAnimeNotes: UpdateAnimeNotes = Injekt.get(),
-    ) : StateScreenModel<State>(State(animeId, animeTitle, animeNotes)) {
+    val state by viewModel.state.collectAsState()
+    if (state == null) {
+        LoadingScreen()
+        return
+    }
 
-        fun updateNotes(content: String) {
-            if (content == state.value.notes) return
+    AnimeNotesScreen(
+        state = state!!,
+        navigateUp = navigator::pop,
+        onUpdate = viewModel::updateNotes,
+    )
+}
 
-            mutableState.update {
-                it.copy(notes = content)
+@AssistedInject
+class AnimeNotesViewModel(
+    @Assisted private val animeId: Long,
+    @AppCoroutineScope private val appScope: CoroutineScope,
+    private val getAnime: GetAnime,
+    private val updateAnimeNotes: UpdateAnimeNotes,
+) : ViewModel() {
+
+    private val mutableState = MutableStateFlow<State?>(null)
+    val state: StateFlow<State?> = mutableState.asStateFlow()
+
+    private val mutableAnimeMissing = MutableStateFlow(false)
+    val animeMissing: StateFlow<Boolean> = mutableAnimeMissing.asStateFlow()
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(animeId: Long): AnimeNotesViewModel
+    }
+
+    init {
+        viewModelScope.launch {
+            val anime = getAnime.await(animeId) ?: run {
+                mutableAnimeMissing.value = true
+                return@launch
             }
+            mutableState.value = State(
+                animeId = anime.id,
+                animeTitle = anime.title,
+                notes = anime.notes,
+            )
+        }
+    }
 
-            screenModelScope.launchNonCancellable {
-                updateAnimeNotes(animeId, content)
-            }
+    fun updateNotes(content: String) {
+        val current = state.value ?: return
+        if (content == current.notes) return
+
+        mutableState.update {
+            it?.copy(notes = content)
+        }
+
+        appScope.launch {
+            updateAnimeNotes(animeId, content)
         }
     }
 

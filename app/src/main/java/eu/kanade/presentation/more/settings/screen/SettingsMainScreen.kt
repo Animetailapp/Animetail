@@ -25,17 +25,19 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.Navigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.navigation3.runtime.NavKey
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
-import eu.kanade.presentation.more.settings.screen.about.AboutScreen
+import eu.kanade.presentation.more.settings.screen.about.getVersionName
+import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsMainScreen
+import eu.kanade.presentation.more.settings.screen.player.openPlayerSettings
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
-import eu.kanade.presentation.util.LocalBackPress
-import eu.kanade.presentation.util.Screen
-import eu.kanade.tachiyomi.ui.setting.PlayerSettingsScreen
+import kotlinx.serialization.Serializable
+import mihon.core.navigation.AboutRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.Navigator
+import mihon.core.navigation.SettingsSearchRoute
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.automirroredrounded.ChromeReaderMode
 import mihon.icons.materialsymbols.rounded.Code
@@ -48,18 +50,15 @@ import mihon.icons.materialsymbols.rounded.Search
 import mihon.icons.materialsymbols.rounded.Security
 import mihon.icons.materialsymbols.rounded.Storage
 import mihon.icons.materialsymbols.rounded.Sync
+import mihon.presentation.core.util.isTabletUi
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
-import cafe.adriel.voyager.core.screen.Screen as VoyagerScreen
 
-object SettingsMainScreen : Screen() {
-    @Composable
-    override fun Content() {
-        Content(twoPane = false)
-    }
+@Serializable
+data object SettingsMainScreen : NavKey {
 
     @Composable
     private fun getPalerSurface(): Color {
@@ -78,9 +77,9 @@ object SettingsMainScreen : Screen() {
     }
 
     @Composable
-    fun Content(twoPane: Boolean) {
-        val navigator = LocalNavigator.currentOrThrow
-        val backPress = LocalBackPress.currentOrThrow
+    fun Content() {
+        val navigator = LocalNavigator.current
+        val twoPane = isTabletUi()
         val containerColor = if (twoPane) getPalerSurface() else MaterialTheme.colorScheme.surface
         val topBarState = rememberTopAppBarState()
 
@@ -89,14 +88,17 @@ object SettingsMainScreen : Screen() {
             topBar = { scrollBehavior ->
                 AppBar(
                     title = stringResource(MR.strings.label_settings),
-                    navigateUp = backPress::invoke,
+                    navigateUp = {
+                        navigator.popTo { it == SettingsMainScreen }
+                        navigator.pop()
+                    },
                     actions = {
                         AppBarActions(
                             listOf(
                                 AppBar.Action(
                                     title = stringResource(MR.strings.action_search),
                                     icon = MaterialSymbols.Rounded.Search,
-                                    onClick = { navigator.navigate(SettingsSearchScreen(), twoPane) },
+                                    onClick = { navigator.navigate(SettingsSearchRoute(), twoPane) },
                                 ),
                             ),
                         )
@@ -108,8 +110,10 @@ object SettingsMainScreen : Screen() {
             content = { contentPadding ->
                 val state = rememberLazyListState()
                 val indexSelected = if (twoPane) {
-                    items.indexOfFirst { it.screen::class == navigator.items.first()::class }
-                        .also {
+                    val detail = navigator.routes.takeLastWhile { it != SettingsMainScreen }.firstOrNull()
+                    items.indexOfFirst { it.screen == detail }
+                        .takeIf { it > -1 }
+                        ?.also {
                             LaunchedEffect(Unit) {
                                 state.animateScrollToItem(it)
                                 if (it > 0) {
@@ -165,8 +169,13 @@ object SettingsMainScreen : Screen() {
         )
     }
 
-    private fun Navigator.navigate(screen: VoyagerScreen, twoPane: Boolean) {
-        if (twoPane) replaceAll(screen) else push(screen)
+    private fun Navigator.navigate(screen: NavKey, twoPane: Boolean) {
+        if (screen is PlayerSettingsMainScreen) {
+            openPlayerSettings(screen.mainSettings, twoPane = twoPane)
+            return
+        }
+        if (twoPane) popTo { it == SettingsMainScreen }
+        push(screen)
     }
 
     private data class Item(
@@ -174,7 +183,7 @@ object SettingsMainScreen : Screen() {
         val subtitleRes: StringResource? = null,
         val formatSubtitle: @Composable () -> String? = { subtitleRes?.let { stringResource(it) } },
         val icon: ImageVector,
-        val screen: VoyagerScreen,
+        val screen: NavKey,
     )
 
     private val items = listOf(
@@ -200,7 +209,7 @@ object SettingsMainScreen : Screen() {
             titleRes = AYMR.strings.label_player,
             subtitleRes = AYMR.strings.pref_player_settings_summary,
             icon = Icons.Outlined.VideoSettings,
-            screen = PlayerSettingsScreen(mainSettings = true),
+            screen = PlayerSettingsMainScreen(mainSettings = true),
         ),
         Item(
             titleRes = MR.strings.pref_category_downloads,
@@ -249,12 +258,27 @@ object SettingsMainScreen : Screen() {
         Item(
             titleRes = MR.strings.pref_category_about,
             formatSubtitle = {
-                "${stringResource(MR.strings.app_name)} ${AboutScreen.getVersionName(
+                val context = androidx.compose.ui.platform.LocalContext.current
+                "${stringResource(MR.strings.app_name)} ${getVersionName(
+                    context = context,
                     withBuildDate = false,
                 )}"
             },
             icon = MaterialSymbols.Rounded.Info,
-            screen = AboutScreen,
+            screen = AboutRoute,
         ),
     )
+}
+
+/**
+ * Opens settings at [screen], or at the main screen if null. In two panes, reuses open settings as the list pane and
+ * shows Appearance when no [screen] is given.
+ */
+fun Navigator.openSettings(screen: NavKey? = null, twoPane: Boolean) {
+    if (!twoPane) {
+        push(screen ?: SettingsMainScreen)
+        return
+    }
+    if (!popTo { it == SettingsMainScreen }) push(SettingsMainScreen)
+    push(screen ?: SettingsAppearanceScreen)
 }

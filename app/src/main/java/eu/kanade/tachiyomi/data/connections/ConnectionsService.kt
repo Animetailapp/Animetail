@@ -8,12 +8,12 @@ import androidx.annotation.StringRes
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.tachiyomi.network.NetworkHelper
 import okhttp3.OkHttpClient
-import uy.kohesive.injekt.injectLazy
 
-abstract class ConnectionsService(val id: Long) {
-
-    val connectionsPreferences: ConnectionsPreferences by injectLazy()
-    private val networkService: NetworkHelper by injectLazy()
+abstract class ConnectionsService(
+    val id: Long,
+    val connectionsPreferences: ConnectionsPreferences,
+    private val networkService: NetworkHelper,
+) {
 
     open val client: OkHttpClient
         get() = networkService.client

@@ -13,7 +13,6 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import tachiyomi.core.common.preference.Preference
-import uy.kohesive.injekt.injectLazy
 import java.net.URLEncoder
 
 interface DataSaver {
@@ -43,7 +42,7 @@ interface DataSaver {
     }
 }
 
-fun DataSaver(source: MangaSource, preferences: SourcePreferences): DataSaver {
+fun DataSaver(source: MangaSource, preferences: SourcePreferences, network: NetworkHelper): DataSaver {
     val dataSaver = preferences.dataSaver.get()
     if (dataSaver != NONE && source.id.toString() in preferences.dataSaverExcludedSources.get()) {
         return DataSaver.NoOp
@@ -52,7 +51,7 @@ fun DataSaver(source: MangaSource, preferences: SourcePreferences): DataSaver {
         NONE -> DataSaver.NoOp
         BANDWIDTH_HERO -> BandwidthHeroDataSaver(preferences)
         WSRV_NL -> WsrvNlDataSaver(preferences)
-        RESMUSH_IT -> ReSmushItDataSaver(preferences)
+        RESMUSH_IT -> ReSmushItDataSaver(preferences, network)
     }
 }
 
@@ -144,9 +143,10 @@ private class WsrvNlDataSaver(preferences: SourcePreferences) : DataSaver {
     }
 }
 
-private class ReSmushItDataSaver(preferences: SourcePreferences) : DataSaver {
-
-    private val network: NetworkHelper by injectLazy()
+private class ReSmushItDataSaver(
+    preferences: SourcePreferences,
+    private val network: NetworkHelper,
+) : DataSaver {
 
     private val client: OkHttpClient
         get() = network.client

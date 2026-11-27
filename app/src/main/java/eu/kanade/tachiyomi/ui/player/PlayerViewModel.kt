@@ -135,6 +135,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
@@ -212,6 +213,7 @@ class PlayerViewModel(
     private val localAnimeBackgroundManager: LocalAnimeBackgroundManager,
     private val localEpisodeThumbnailManager: LocalEpisodeThumbnailManager,
     private val trackerManager: TrackerManager,
+    private val json: Json,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -452,6 +454,7 @@ class PlayerViewModel(
         val source = currentSource.value ?: return null
         return source is AnimeHttpSource &&
             !EpisodeLoader.isDownload(
+                context,
                 episode.toDomainEpisode()!!,
                 anime,
             )
@@ -1478,7 +1481,7 @@ class PlayerViewModel(
                     }
                     qualityIndex = Pair(hostIndex, vidIndex)
                 } else {
-                    EpisodeLoader.getHosters(currentEp.toDomainEpisode()!!, anime, source)
+                    EpisodeLoader.getHosters(context, currentEp.toDomainEpisode()!!, anime, source)
                         .takeIf { it.isNotEmpty() }
                         ?.also { currentHosterList = it }
                         ?: run {
@@ -1638,7 +1641,7 @@ class PlayerViewModel(
             _hosterState.update { _ -> hosterList.map(::initialHosterState) }
             cachedHosterIndices.clear()
             cachedHosterIndices.addAll(
-                hosterList.indices.filter { EpisodeLoader.hasCachedVideos(hosterList[it], source) },
+                hosterList.indices.filter { EpisodeLoader.hasCachedVideos(context, hosterList[it], source) },
             )
             val requestedHosterIdx = requestedVideo?.first
                 ?.takeIf { _hosterState.value.getOrNull(it) is HosterState.Idle }
@@ -1726,7 +1729,7 @@ class PlayerViewModel(
         if (!pendingHosterIndices.remove(hosterIdx)) return
         val hoster = hosterList.value.getOrNull(hosterIdx) ?: return
         _hosterState.updateAt(hosterIdx, HosterState.Loading(hoster.hosterName))
-        _hosterState.updateAt(hosterIdx, EpisodeLoader.loadHosterVideos(source, hoster))
+        _hosterState.updateAt(hosterIdx, EpisodeLoader.loadHosterVideos(context, source, hoster))
     }
 
     private fun loadAllPendingHosters() {
@@ -1879,7 +1882,7 @@ class PlayerViewModel(
         // Nothing is selected when the list was reloaded under a video that was already playing.
         if (failedVideo != null) {
             updateVideoState(hosterIdx, videoIdx, failedVideo, Video.State.ERROR)
-            hosterList.value.getOrNull(hosterIdx)?.let { EpisodeLoader.invalidateCache(it, source) }
+            hosterList.value.getOrNull(hosterIdx)?.let { EpisodeLoader.invalidateCache(context, it, source) }
         }
 
         if (!playerPreferences.switchOnFailure().get()) {
@@ -1908,7 +1911,7 @@ class PlayerViewModel(
 
     private suspend fun retryWithFreshLinks(source: AnimeSource, hosterIdx: Int, failedVideo: Video): Boolean {
         val hoster = hosterList.value.getOrNull(hosterIdx) ?: return false
-        val refreshed = EpisodeLoader.loadHosterVideos(source, hoster, force = true, useCache = false)
+        val refreshed = EpisodeLoader.loadHosterVideos(context, source, hoster, force = true, useCache = false)
         _hosterState.updateAt(hosterIdx, refreshed)
 
         val videoIdx = (refreshed as? HosterState.Ready)
@@ -1950,13 +1953,13 @@ class PlayerViewModel(
         val source = currentSource.value ?: return
         val keepPlayback = currentVideo.value != null && !isLoadingEpisode.value
 
-        if (!useCache) EpisodeLoader.invalidateCache(episode, source)
+        if (!useCache) EpisodeLoader.invalidateCache(context, episode, source)
         cancelHosterVideoLinksJob()
         updateIsLoadingHosters(true)
 
         viewModelScope.launchIO {
             val hosters = try {
-                EpisodeLoader.getHosters(episode, anime, source, useCache = useCache)
+                EpisodeLoader.getHosters(context, episode, anime, source, useCache = useCache)
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 logcat(LogPriority.ERROR, e) { "Error reloading hosters" }
@@ -2058,6 +2061,7 @@ class PlayerViewModel(
 
                 viewModelScope.launchIO {
                     val hosterState = EpisodeLoader.loadHosterVideos(
+                        context = context,
                         source = currentSource.value!!,
                         hoster = hoster,
                         force = true,
@@ -2126,6 +2130,7 @@ class PlayerViewModel(
                     currentEpisode.value
                         ?: throw ExceptionWithStringResource("No episode loaded", AYMR.strings.no_episode_loaded)
                 currentHosterList = EpisodeLoader.getHosters(
+                    context,
                     currentEpisode.toDomainEpisode()!!,
                     anime,
                     source,
@@ -2216,8 +2221,8 @@ class PlayerViewModel(
 
         val nextEpisode = currentPlaylist.value[getCurrentEpisodeIndex() + 1]
         val episodesAreDownloaded =
-            EpisodeLoader.isDownload(currentEpisode.toDomainEpisode()!!, anime) &&
-                EpisodeLoader.isDownload(nextEpisode.toDomainEpisode()!!, anime)
+            EpisodeLoader.isDownload(context, currentEpisode.toDomainEpisode()!!, anime) &&
+                EpisodeLoader.isDownload(context, nextEpisode.toDomainEpisode()!!, anime)
 
         viewModelScope.launchIO {
             if (!episodesAreDownloaded) {
@@ -2556,12 +2561,12 @@ class PlayerViewModel(
             val tracker = trackerManager.get(track.trackerId)
             malId = when (tracker) {
                 is MyAnimeList -> track.remoteId
-                is Anilist -> AniSkipApi().getMalIdFromAL(track.remoteId)
+                is Anilist -> AniSkipApi(json).getMalIdFromAL(track.remoteId)
                 else -> null
             }
             val duration = playerDuration ?: return null
             return malId?.let {
-                AniSkipApi().getResult(it.toInt(), episodeNumber, duration.toLong())
+                AniSkipApi(json).getResult(it.toInt(), episodeNumber, duration.toLong())
             }
         }
         return null

@@ -339,6 +339,13 @@ class BrowseMangaSourceViewModel(
         setDialog(Dialog.Filter)
     }
 
+    fun showMigrateDialog(currentMangaId: Long, target: Manga) {
+        viewModelScope.launch {
+            val currentManga = getManga.await(currentMangaId) ?: return@launch
+            setDialog(Dialog.Migrate(newManga = target, oldManga = currentManga))
+        }
+    }
+
     fun setDialog(dialog: Dialog?) {
         state.update { it.copy(dialog = dialog) }
     }

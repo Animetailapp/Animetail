@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.data.torrent.service
 
-import android.app.Application
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
@@ -9,35 +8,30 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import aniyomi.core.common.torrent.ProxyMode
-import aniyomi.core.common.torrent.TorrentPreferences
-import aniyomi.core.common.torrent.TorrentServerApi
-import aniyomi.core.common.torrent.TorrentServerUtils
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.notification.Notifications
-import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import xyz.secozzi.torrserver.TorrServer
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration.Companion.seconds
 
 class TorrentServerService : Service() {
     private val serviceScope = CoroutineScope(EmptyCoroutineContext)
-    private val applicationContext = Injekt.get<Application>()
-    private val networkPreferences = Injekt.get<NetworkPreferences>()
-    private val torrentPreferences = Injekt.get<TorrentPreferences>()
-    private val torrentServerUtils = Injekt.get<TorrentServerUtils>()
-    private val api = Injekt.get<TorrentServerApi>()
+    private val appGraph by lazy { applicationContext.appGraph }
+    private val networkPreferences get() = appGraph.networkPreferences
+    private val torrentPreferences get() = appGraph.torrentPreferences
+    private val torrentServerUtils get() = appGraph.torrentServerUtils
+    private val api get() = appGraph.torrentServerApi
 
     override fun onBind(p0: Intent?): IBinder? = null
 
@@ -82,7 +76,7 @@ class TorrentServerService : Service() {
                 )
                 if (port != -1) {
                     api.setPort(port)
-                    wait(20)
+                    wait(this@TorrentServerService, 20)
                     torrentServerUtils.setTrackersList()
                 }
             }
@@ -146,47 +140,51 @@ class TorrentServerService : Service() {
     companion object {
         const val ACTION_START = "start_torrent_server"
         const val ACTION_STOP = "stop_torrent_server"
-        val applicationContext = Injekt.get<Application>()
-        val api = Injekt.get<TorrentServerApi>()
 
-        suspend fun start() {
+        suspend fun start(context: Context) {
             try {
-                val preferredPort = Injekt.get<TorrentPreferences>().torrServerPort().get().toIntOrNull() ?: 8090
+                val appContext = context.applicationContext
+                val appGraph = appContext.appGraph
+                val api = appGraph.torrentServerApi
+                val preferredPort = appGraph.torrentPreferences.torrServerPort().get().toIntOrNull() ?: 8090
                 if (api.getPort() == 0) {
                     api.setPort(preferredPort)
                 }
                 val intent =
-                    Intent(applicationContext, TorrentServerService::class.java).apply {
+                    Intent(appContext, TorrentServerService::class.java).apply {
                         action = ACTION_START
                     }
-                applicationContext.startService(intent)
-                wait(20)
+                appContext.startService(intent)
+                wait(appContext, 20)
             } catch (e: Exception) {
                 logcat(LogPriority.DEBUG, e) { "Failed to start torrent service" }
                 e.printStackTrace()
             }
         }
 
-        fun stop() {
+        fun stop(context: Context) {
             try {
+                val appContext = context.applicationContext
                 val intent =
-                    Intent(applicationContext, TorrentServerService::class.java).apply {
+                    Intent(appContext, TorrentServerService::class.java).apply {
                         action = ACTION_STOP
                     }
-                applicationContext.startService(intent)
+                appContext.startService(intent)
             } catch (e: Exception) {
                 logcat(LogPriority.DEBUG, e) { "Failed to stop torrent service" }
                 e.printStackTrace()
             }
         }
 
-        suspend fun wait(timeout: Int = -1): Boolean {
+        suspend fun wait(context: Context, timeout: Int = -1): Boolean {
             var count = 0
             val timeoutCount = if (timeout < 0) 20 else timeout
+            val appGraph = context.applicationContext.appGraph
+            val api = appGraph.torrentServerApi
 
             // Ensure API has a port set before checking echo
             if (api.getPort() == 0) {
-                val preferredPort = Injekt.get<TorrentPreferences>().torrServerPort().get().toIntOrNull() ?: 8090
+                val preferredPort = appGraph.torrentPreferences.torrServerPort().get().toIntOrNull() ?: 8090
                 api.setPort(preferredPort)
             }
 

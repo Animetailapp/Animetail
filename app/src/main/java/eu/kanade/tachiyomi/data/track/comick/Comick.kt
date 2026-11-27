@@ -2,28 +2,37 @@ package eu.kanade.tachiyomi.data.track.comick
 
 import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableMangaTracker
 import eu.kanade.tachiyomi.data.track.MangaTracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
+import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.comick.dto.ComickOAuth
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.injectLazy
 import kotlin.time.Clock
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
 
-class Comick(id: Long) : BaseTracker(id, "Comick"), MangaTracker, DeletableMangaTracker {
+@Inject
+@SingleIn(AppScope::class)
+class Comick(
+    dependencies: TrackerDependencies,
+    private val json: Json,
+) : BaseTracker(TrackerManager.COMICK, "Comick", dependencies),
+    MangaTracker,
+    DeletableMangaTracker {
 
-    private val json: Json by injectLazy()
-
-    private val interceptor by lazy { ComickInterceptor(this) }
-    private val api by lazy { ComickApi(id, client, interceptor) }
+    private val interceptor by lazy { ComickInterceptor(this, json) }
+    private val api by lazy { ComickApi(id, client, interceptor, json) }
 
     override fun getLogo() = R.drawable.brand_comick
 

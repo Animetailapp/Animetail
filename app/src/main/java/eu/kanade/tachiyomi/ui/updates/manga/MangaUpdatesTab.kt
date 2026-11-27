@@ -13,11 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
@@ -26,15 +23,15 @@ import eu.kanade.presentation.updates.UpdatesFilterDialog
 import eu.kanade.presentation.updates.manga.MangaUpdateScreen
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
-import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
-import eu.kanade.tachiyomi.ui.home.HomeScreen
+import eu.kanade.tachiyomi.ui.home.ShowBottomNavEvent
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.updates.UpdatesSettingsViewModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
-import mihon.feature.upcoming.manga.UpcomingMangaScreen
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MangaRoute
+import mihon.core.navigation.UpcomingMangaRoute
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -42,24 +39,18 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.theme.active
 
 @Composable
-fun Screen.mangaUpdatesTab(
+fun mangaUpdatesTab(
     context: Context,
     fromMore: Boolean,
 ): TabContent {
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
+    val resultEventBus = LocalResultEventBus.current
     val viewModel = metroViewModel<MangaUpdatesViewModel>()
     val settingsViewModel = metroViewModel<UpdatesSettingsViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    val scope = rememberCoroutineScope()
     val navigateUp: (() -> Unit)? = if (fromMore) {
-        {
-            if (navigator.lastItem == HomeScreen) {
-                scope.launch { HomeScreen.openTab(HomeScreen.Tab.AnimeLib()) }
-            } else {
-                navigator.pop()
-            }
-        }
+        { navigator.pop() }
     } else {
         null
     }
@@ -72,7 +63,7 @@ fun Screen.mangaUpdatesTab(
                 state = state,
                 snackbarHostState = viewModel.snackbarHostState,
                 lastUpdated = viewModel.lastUpdated,
-                onClickCover = { item -> navigator.push(MangaScreen(item.update.mangaId)) },
+                onClickCover = { item -> navigator.push(MangaRoute(item.update.mangaId)) },
                 onSelectAll = viewModel::toggleAllSelection,
                 onInvertSelection = viewModel::invertSelection,
                 onUpdateLibrary = viewModel::updateLibrary,
@@ -133,7 +124,7 @@ fun Screen.mangaUpdatesTab(
             }
 
             LaunchedEffect(state.selectionMode) {
-                HomeScreen.showBottomNav(!state.selectionMode)
+                resultEventBus.sendResult(result = ShowBottomNavEvent(!state.selectionMode))
             }
 
             LaunchedEffect(state.isLoading) {
@@ -178,7 +169,7 @@ fun Screen.mangaUpdatesTab(
                 AppBar.Action(
                     title = stringResource(MR.strings.action_view_upcoming),
                     icon = Icons.Outlined.CalendarMonth,
-                    onClick = { navigator.push(UpcomingMangaScreen()) },
+                    onClick = { navigator.push(UpcomingMangaRoute) },
                 ),
                 AppBar.Action(
                     title = stringResource(MR.strings.action_update_library),

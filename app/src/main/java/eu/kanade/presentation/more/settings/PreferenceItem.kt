@@ -33,13 +33,11 @@ import eu.kanade.presentation.more.settings.widget.TrackingPreferenceWidget
 import eu.kanade.tachiyomi.data.track.RefreshResult
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.BaseSliderItem
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 val LocalPreferenceHighlighted = compositionLocalOf(structuralEqualityPolicy()) { false }
 val LocalPreferenceMinHeight = compositionLocalOf(structuralEqualityPolicy()) { 56.dp }
@@ -270,7 +268,7 @@ internal fun PreferenceItem(
 
             // AM (CONNECTIONS) -->
             is Preference.PreferenceItem.ConnectionsPreference -> {
-                val uName by Injekt.get<PreferenceStore>()
+                val uName by LocalContext.current.appGraph.preferenceStore
                     .getString(ConnectionsPreferences.connectionsUsername(item.service.id))
                     .collectAsState()
                 item.service.run {

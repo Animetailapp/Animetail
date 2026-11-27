@@ -14,8 +14,6 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaRemoteUpdate
 import tachiyomi.domain.entries.manga.repository.CustomMangaRepository
 import tachiyomi.domain.entries.manga.repository.MangaRepository
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.addSingleton
 
 /**
  * Browsing a source resolves each listed entry against the stored one. An entry outside the library
@@ -63,7 +61,7 @@ class NetworkToLocalMangaTest {
             // Manga looks up the user's custom info for library entries.
             val customInfo = mockk<CustomMangaRepository>()
             every { customInfo.get(any()) } returns null
-            Injekt.addSingleton(GetCustomMangaInfo(customInfo))
+            Manga.getCustomMangaInfo = GetCustomMangaInfo(customInfo)
         }
 
         @JvmStatic

@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.material3.RichTextEditor
 import com.mohamedrejeb.richeditor.ui.material3.RichTextEditorDefaults.richTextEditorColors
-import eu.kanade.tachiyomi.ui.entries.anime.notes.AnimeNotesScreen
+import eu.kanade.tachiyomi.ui.entries.anime.notes.AnimeNotesViewModel
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
@@ -60,7 +60,7 @@ private val NotesToolbarHeight = 56.dp
 
 @Composable
 fun AnimeNotesTextArea(
-    state: AnimeNotesScreen.State,
+    state: AnimeNotesViewModel.State,
     onUpdate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {

@@ -47,8 +47,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastMap
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.browse.anime.RelatedAnimeTitle
@@ -70,11 +68,12 @@ import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.manga.getNameForMangaInfo
-import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaSourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.entries.manga.ChapterList
 import eu.kanade.tachiyomi.ui.entries.manga.MangaViewModel
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import mihon.app.di.appGraph
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MangaSourcePreferencesRoute
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.roundedfilled.PlayArrow
 import tachiyomi.domain.entries.manga.model.Manga
@@ -165,9 +164,9 @@ fun MangaScreen(
         }
     }
 
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
     val onSettingsClicked: (() -> Unit)? = {
-        navigator.push(MangaSourcePreferencesScreen(state.source.id))
+        navigator.push(MangaSourcePreferencesRoute(state.source.id))
     }.takeIf { state.source is ConfigurableSource }
 
     if (!isTabletUi) {

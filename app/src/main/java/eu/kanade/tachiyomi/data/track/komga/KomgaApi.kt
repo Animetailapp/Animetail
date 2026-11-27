@@ -15,13 +15,13 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.injectLazy
 
 private const val READLIST_API = "/api/v1/readlists"
 
 class KomgaApi(
     private val trackerId: Long,
     private val client: OkHttpClient,
+    private val json: Json,
 ) {
 
     private val headers: Headers by lazy {
@@ -29,8 +29,6 @@ class KomgaApi(
             .add("User-Agent", "Animetail v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
             .build()
     }
-
-    private val json: Json by injectLazy()
 
     suspend fun getTrackSearch(url: String): MangaTrackSearch =
         withIOContext {

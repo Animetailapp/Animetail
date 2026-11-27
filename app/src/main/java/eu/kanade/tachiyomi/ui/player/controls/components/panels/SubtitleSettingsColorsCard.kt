@@ -58,21 +58,21 @@ import eu.kanade.tachiyomi.ui.player.controls.CARDS_MAX_WIDTH
 import eu.kanade.tachiyomi.ui.player.controls.panelCardsColors
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import `is`.xyz.mpv.MPV
+import mihon.app.di.appGraph
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.deleteAndGet
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
 fun SubtitleSettingsColorsCard(
     mpv: MPV,
     modifier: Modifier = Modifier,
 ) {
-    val preferences = remember { Injekt.get<SubtitlePreferences>() }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val preferences = remember { context.appGraph.subtitlePreferences }
     var isExpanded by remember { mutableStateOf(true) }
     ExpandableCard(
         isExpanded = isExpanded,

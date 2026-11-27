@@ -28,15 +28,13 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
-import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
 
 class MangaUpdatesApi(
     private val client: OkHttpClient,
     interceptor: MangaUpdatesInterceptor,
+    private val json: Json,
 ) {
-    private val json: Json by injectLazy()
-
     private val authClient by lazy {
         client.newBuilder()
             .addInterceptor(interceptor)

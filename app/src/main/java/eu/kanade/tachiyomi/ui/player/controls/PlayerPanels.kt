@@ -32,16 +32,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.ui.player.Panels
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.AudioDelayPanel
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.SubtitleDelayPanel
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.SubtitleSettingsPanel
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.VideoFiltersPanel
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import `is`.xyz.mpv.MPV
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import mihon.app.di.appGraph
 
 @Composable
 fun PlayerPanels(
@@ -86,7 +85,8 @@ fun PlayerPanels(
 
 val CARDS_MAX_WIDTH = 420.dp
 val panelCardsColors: @Composable () -> CardColors = {
-    val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
+    val context = LocalContext.current
+    val playerPreferences = remember { context.appGraph.playerPreferences }
 
     val colors = CardDefaults.cardColors()
     colors.copy(

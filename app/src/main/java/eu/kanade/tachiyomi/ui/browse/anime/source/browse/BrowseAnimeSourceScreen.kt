@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -35,9 +36,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.navigation3.runtime.result.ResultEffect
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.core.util.ifAnimeSourcesLoaded
 import eu.kanade.presentation.browse.RemoveEntryDialog
 import eu.kanade.presentation.browse.SavedSearchCreateDialog
@@ -47,23 +48,20 @@ import eu.kanade.presentation.browse.anime.MissingSourceScreen
 import eu.kanade.presentation.browse.anime.components.BrowseAnimeSourceToolbar
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.entries.anime.DuplicateAnimeDialog
-import eu.kanade.presentation.util.AssistContentScreen
-import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.core.common.Constants
-import eu.kanade.tachiyomi.ui.browse.anime.extension.details.AnimeSourcePreferencesScreen
-import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
 import eu.kanade.tachiyomi.ui.browse.anime.migration.search.MigrateAnimeDialog
 import eu.kanade.tachiyomi.ui.browse.anime.migration.search.MigrateAnimeDialogScreenModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceViewModel.Listing
-import eu.kanade.tachiyomi.ui.category.CategoriesTab
-import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
-import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.receiveAsFlow
+import mihon.core.navigation.AnimeRoute
+import mihon.core.navigation.AnimeSourcePreferencesRoute
+import mihon.core.navigation.CategoryRoute
+import mihon.core.navigation.LocalAssistUrl
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MigrateSeasonSelectRoute
+import mihon.core.navigation.WebViewRoute
 import mihon.presentation.core.util.collectAsLazyPagingItems
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.source.anime.model.StubAnimeSource
@@ -75,342 +73,330 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 
-data class BrowseAnimeSourceScreen(
-    val sourceId: Long,
-    private val listingQuery: String?,
+data class BrowseAnimeSearchEvent(
+    val query: String,
+    val genre: Boolean = false,
+)
+
+@Composable
+fun BrowseAnimeSourceScreen(
+    sourceId: Long,
+    listingQuery: String?,
     // SY -->
-    private val filtersJson: String? = null,
-    private val savedSearch: Long? = null,
+    filtersJson: String? = null,
+    savedSearch: Long? = null,
     // SY <--
-) : Screen(), AssistContentScreen {
+) {
+    if (!ifAnimeSourcesLoaded()) {
+        LoadingScreen()
+        return
+    }
 
-    private var assistUrl: String? = null
-
-    override fun onProvideAssistUrl() = assistUrl
-
-    @Composable
-    override fun Content() {
-        if (!ifAnimeSourcesLoaded()) {
-            LoadingScreen()
-            return
-        }
-
-        val viewModel =
-            assistedMetroViewModel<BrowseAnimeSourceViewModel, BrowseAnimeSourceViewModel.Factory> {
-                create(
-                    sourceId = sourceId,
-                    listingQuery = listingQuery,
-                    filtersJson = filtersJson,
-                    savedSearch = savedSearch,
-                )
-            }
-        val state by viewModel.state.collectAsState()
-
-        val navigator = LocalNavigator.currentOrThrow
-        val navigateUp: () -> Unit = {
-            when {
-                !state.isUserQuery && state.toolbarQuery != null -> viewModel.setToolbarQuery(null)
-                else -> navigator.pop()
-            }
-        }
-
-        // SY -->
-        val context = LocalContext.current
-        // SY <--
-
-        // KMK -->
-        viewModel.source.let {
-            // KMK <--
-            if (it is StubAnimeSource) {
-                MissingSourceScreen(
-                    source = it,
-                    navigateUp = navigateUp,
-                )
-                return
-            }
-        }
-
-        val scope = rememberCoroutineScope()
-        val haptic = LocalHapticFeedback.current
-        val uriHandler = LocalUriHandler.current
-        val snackbarHostState = remember { SnackbarHostState() }
-
-        val onHelpClick = { uriHandler.openUri(LocalAnimeSource.HELP_URL) }
-        val onWebViewClick = f@{
-            val source = viewModel.source as? AnimeHttpSource ?: return@f
-            navigator.push(
-                WebViewScreen(
-                    url = source.getHomeUrl(),
-                    initialTitle = source.name,
-                    sourceId = source.id,
-                ),
+    val viewModel =
+        assistedMetroViewModel<BrowseAnimeSourceViewModel, BrowseAnimeSourceViewModel.Factory> {
+            create(
+                sourceId = sourceId,
+                listingQuery = listingQuery,
+                filtersJson = filtersJson,
+                savedSearch = savedSearch,
             )
         }
+    val state by viewModel.state.collectAsState()
 
-        LaunchedEffect(viewModel.source) {
-            assistUrl = (viewModel.source as? AnimeHttpSource)?.getHomeUrl()
+    val navigator = LocalNavigator.current
+    val navigateUp: () -> Unit = {
+        when {
+            !state.isUserQuery && state.toolbarQuery != null -> viewModel.setToolbarQuery(null)
+            else -> navigator.pop()
         }
+    }
 
-        var topBarHeight by remember { mutableIntStateOf(0) }
-        Scaffold(
-            topBar = {
-                Column(
+    // SY -->
+    val context = LocalContext.current
+    // SY <--
+
+    // KMK -->
+    viewModel.source.let {
+        // KMK <--
+        if (it is StubAnimeSource) {
+            MissingSourceScreen(
+                source = it,
+                navigateUp = navigateUp,
+            )
+            return
+        }
+    }
+
+    val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
+    val uriHandler = LocalUriHandler.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val onHelpClick = { uriHandler.openUri(LocalAnimeSource.HELP_URL) }
+    val onWebViewClick = f@{
+        val source = viewModel.source as? AnimeHttpSource ?: return@f
+        navigator.push(
+            WebViewRoute(
+                url = source.getHomeUrl(),
+                initialTitle = source.name,
+                sourceId = source.id,
+            ),
+        )
+    }
+
+    var assistUrl by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(viewModel.source) {
+        assistUrl = (viewModel.source as? AnimeHttpSource)?.getHomeUrl()
+    }
+    LocalAssistUrl.current(assistUrl)
+
+    var topBarHeight by remember { mutableIntStateOf(0) }
+    Scaffold(
+        topBar = {
+            Column(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.surface)
+                    .onSizeChanged { topBarHeight = it.height },
+            ) {
+                BrowseAnimeSourceToolbar(
+                    searchQuery = state.toolbarQuery,
+                    onSearchQueryChange = viewModel::setToolbarQuery,
+                    source = viewModel.source,
+                    displayMode = viewModel.displayMode,
+                    onDisplayModeChange = { viewModel.displayMode = it },
+                    navigateUp = navigateUp,
+                    onWebViewClick = onWebViewClick,
+                    onHelpClick = onHelpClick,
+                    onSettingsClick = { navigator.push(AnimeSourcePreferencesRoute(sourceId)) },
+                    onSearch = viewModel::search,
+                )
+
+                Row(
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surface)
-                        .onSizeChanged { topBarHeight = it.height },
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = MaterialTheme.padding.small),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
                 ) {
-                    BrowseAnimeSourceToolbar(
-                        searchQuery = state.toolbarQuery,
-                        onSearchQueryChange = viewModel::setToolbarQuery,
-                        source = viewModel.source,
-                        displayMode = viewModel.displayMode,
-                        onDisplayModeChange = { viewModel.displayMode = it },
-                        navigateUp = navigateUp,
-                        onWebViewClick = onWebViewClick,
-                        onHelpClick = onHelpClick,
-                        onSettingsClick = { navigator.push(AnimeSourcePreferencesScreen(sourceId)) },
-                        onSearch = viewModel::search,
+                    FilterChip(
+                        selected = state.listing == Listing.Popular,
+                        onClick = {
+                            viewModel.resetFilters()
+                            viewModel.setListing(Listing.Popular)
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Favorite,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(FilterChipDefaults.IconSize),
+                            )
+                        },
+                        label = {
+                            Text(text = stringResource(MR.strings.popular))
+                        },
                     )
-
-                    Row(
-                        modifier = Modifier
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = MaterialTheme.padding.small),
-                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
-                    ) {
+                    if (viewModel.source.supportsLatest) {
                         FilterChip(
-                            selected = state.listing == Listing.Popular,
+                            selected = state.listing == Listing.Latest,
                             onClick = {
                                 viewModel.resetFilters()
-                                viewModel.setListing(Listing.Popular)
+                                viewModel.setListing(Listing.Latest)
                             },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Outlined.Favorite,
+                                    imageVector = Icons.Outlined.NewReleases,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .size(FilterChipDefaults.IconSize),
                                 )
                             },
                             label = {
-                                Text(text = stringResource(MR.strings.popular))
+                                Text(text = stringResource(MR.strings.latest))
                             },
                         )
-                        if (viewModel.source.supportsLatest) {
-                            FilterChip(
-                                selected = state.listing == Listing.Latest,
-                                onClick = {
-                                    viewModel.resetFilters()
-                                    viewModel.setListing(Listing.Latest)
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Outlined.NewReleases,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(FilterChipDefaults.IconSize),
-                                    )
-                                },
-                                label = {
-                                    Text(text = stringResource(MR.strings.latest))
-                                },
-                            )
-                        }
-                        if (state.filterable) {
-                            FilterChip(
-                                selected = state.listing is Listing.Search &&
-                                    // KMK -->
-                                    (state.listing as Listing.Search).savedSearchId == null,
-                                // KMK <--
-                                onClick = viewModel::openFilterSheet,
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Outlined.FilterList,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(FilterChipDefaults.IconSize),
-                                    )
-                                },
-                                label = {
-                                    // SY -->
-                                    Text(
-                                        text = if (state.filters.isNotEmpty()) {
-                                            stringResource(MR.strings.action_filter)
-                                        } else {
-                                            stringResource(MR.strings.action_search)
-                                        },
-                                    )
-                                    // SY <--
-                                },
-                            )
-                        }
-                        // KMK -->
-                        state.savedSearches.forEach { savedSearch ->
-                            FilterChip(
-                                selected = state.listing is Listing.Search &&
-                                    (state.listing as Listing.Search).savedSearchId == savedSearch.id,
-                                onClick = {
-                                    viewModel.onSavedSearch(savedSearch) {
-                                        context.toast(it)
-                                    }
-                                },
-                                label = {
-                                    Text(
-                                        text = savedSearch.name,
-                                    )
-                                },
-                            )
-                        }
-                        // KMK <--
                     }
+                    if (state.filterable) {
+                        FilterChip(
+                            selected = state.listing is Listing.Search &&
+                                // KMK -->
+                                (state.listing as Listing.Search).savedSearchId == null,
+                            // KMK <--
+                            onClick = viewModel::openFilterSheet,
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.FilterList,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(FilterChipDefaults.IconSize),
+                                )
+                            },
+                            label = {
+                                // SY -->
+                                Text(
+                                    text = if (state.filters.isNotEmpty()) {
+                                        stringResource(MR.strings.action_filter)
+                                    } else {
+                                        stringResource(MR.strings.action_search)
+                                    },
+                                )
+                                // SY <--
+                            },
+                        )
+                    }
+                    // KMK -->
+                    state.savedSearches.forEach { savedSearch ->
+                        FilterChip(
+                            selected = state.listing is Listing.Search &&
+                                (state.listing as Listing.Search).savedSearchId == savedSearch.id,
+                            onClick = {
+                                viewModel.onSavedSearch(savedSearch) {
+                                    context.toast(it)
+                                }
+                            },
+                            label = {
+                                Text(
+                                    text = savedSearch.name,
+                                )
+                            },
+                        )
+                    }
+                    // KMK <--
+                }
 
-                    HorizontalDivider()
+                HorizontalDivider()
+            }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+    ) { paddingValues ->
+        BrowseAnimeSourceContent(
+            source = viewModel.source,
+            animeList = viewModel.animePagerFlowFlow.collectAsLazyPagingItems(),
+            columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
+            entries = viewModel.getColumnsPreferenceForCurrentOrientation(LocalConfiguration.current.orientation),
+            topBarHeight = topBarHeight,
+            displayMode = viewModel.displayMode,
+            snackbarHostState = snackbarHostState,
+            contentPadding = paddingValues,
+            onWebViewClick = onWebViewClick,
+            onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
+            onLocalAnimeSourceHelpClick = onHelpClick,
+            onAnimeClick = { navigator.push(AnimeRoute(it.id, true)) },
+            onAnimeLongClick = { anime ->
+                scope.launchIO {
+                    val duplicateAnime = viewModel.getDuplicateAnimelibAnime(anime)
+                    when {
+                        anime.favorite -> viewModel.setDialog(
+                            BrowseAnimeSourceViewModel.Dialog.RemoveAnime(anime),
+                        )
+
+                        duplicateAnime != null -> viewModel.setDialog(
+                            BrowseAnimeSourceViewModel.Dialog.AddDuplicateAnime(
+                                anime,
+                                duplicateAnime,
+                            ),
+                        )
+
+                        else -> viewModel.addFavorite(anime)
+                    }
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 }
             },
-            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        ) { paddingValues ->
-            BrowseAnimeSourceContent(
-                source = viewModel.source,
-                animeList = viewModel.animePagerFlowFlow.collectAsLazyPagingItems(),
-                columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
-                entries = viewModel.getColumnsPreferenceForCurrentOrientation(LocalConfiguration.current.orientation),
-                topBarHeight = topBarHeight,
-                displayMode = viewModel.displayMode,
-                snackbarHostState = snackbarHostState,
-                contentPadding = paddingValues,
-                onWebViewClick = onWebViewClick,
-                onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
-                onLocalAnimeSourceHelpClick = onHelpClick,
-                onAnimeClick = { navigator.push((AnimeScreen(it.id, true))) },
-                onAnimeLongClick = { anime ->
-                    scope.launchIO {
-                        val duplicateAnime = viewModel.getDuplicateAnimelibAnime(anime)
-                        when {
-                            anime.favorite -> viewModel.setDialog(
-                                BrowseAnimeSourceViewModel.Dialog.RemoveAnime(anime),
-                            )
+        )
+    }
 
-                            duplicateAnime != null -> viewModel.setDialog(
-                                BrowseAnimeSourceViewModel.Dialog.AddDuplicateAnime(
-                                    anime,
-                                    duplicateAnime,
-                                ),
-                            )
-
-                            else -> viewModel.addFavorite(anime)
-                        }
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+    val onDismissRequest = { viewModel.setDialog(null) }
+    when (val dialog = state.dialog) {
+        is BrowseAnimeSourceViewModel.Dialog.Filter -> {
+            SourceFilterAnimeDialog(
+                onDismissRequest = onDismissRequest,
+                filters = state.filters,
+                onReset = viewModel::resetFilters,
+                onFilter = { viewModel.search(filters = state.filters) },
+                onUpdate = viewModel::setFilters,
+                // SY -->
+                startExpanded = viewModel.startExpanded,
+                onSave = viewModel::onSaveSearch,
+                savedSearches = state.savedSearches,
+                onSavedSearch = { search ->
+                    viewModel.onSavedSearch(search) {
+                        context.toast(it)
                     }
+                },
+                onSavedSearchPress = viewModel::onSavedSearchPress,
+                // KMK -->
+                onSavedSearchPressDesc = stringResource(TLMR.strings.saved_searches_delete),
+                // KMK <--
+                // SY <--
+            )
+        }
+
+        is BrowseAnimeSourceViewModel.Dialog.AddDuplicateAnime -> {
+            DuplicateAnimeDialog(
+                onDismissRequest = onDismissRequest,
+                onConfirm = { viewModel.changeAnimeFavorite(dialog.anime) },
+                onOpenAnime = { navigator.push(AnimeRoute(dialog.duplicate.id)) },
+                onMigrate = {
+                    viewModel.setDialog(
+                        BrowseAnimeSourceViewModel.Dialog.Migrate(dialog.anime, dialog.duplicate),
+                    )
                 },
             )
         }
 
-        val onDismissRequest = { viewModel.setDialog(null) }
-        when (val dialog = state.dialog) {
-            is BrowseAnimeSourceViewModel.Dialog.Filter -> {
-                SourceFilterAnimeDialog(
-                    onDismissRequest = onDismissRequest,
-                    filters = state.filters,
-                    onReset = viewModel::resetFilters,
-                    onFilter = { viewModel.search(filters = state.filters) },
-                    onUpdate = viewModel::setFilters,
-                    // SY -->
-                    startExpanded = viewModel.startExpanded,
-                    onSave = viewModel::onSaveSearch,
-                    savedSearches = state.savedSearches,
-                    onSavedSearch = { search ->
-                        viewModel.onSavedSearch(search) {
-                            context.toast(it)
-                        }
-                    },
-                    onSavedSearchPress = viewModel::onSavedSearchPress,
-                    // KMK -->
-                    onSavedSearchPressDesc = stringResource(TLMR.strings.saved_searches_delete),
-                    // KMK <--
-                    // SY <--
-                )
-            }
-
-            is BrowseAnimeSourceViewModel.Dialog.AddDuplicateAnime -> {
-                DuplicateAnimeDialog(
-                    onDismissRequest = onDismissRequest,
-                    onConfirm = { viewModel.changeAnimeFavorite(dialog.anime) },
-                    onOpenAnime = { navigator.push(AnimeScreen(dialog.duplicate.id)) },
-                    onMigrate = {
-                        viewModel.setDialog(
-                            BrowseAnimeSourceViewModel.Dialog.Migrate(dialog.anime, dialog.duplicate),
-                        )
-                    },
-                )
-            }
-
-            is BrowseAnimeSourceViewModel.Dialog.Migrate -> {
-                MigrateAnimeDialog(
-                    oldAnime = dialog.oldAnime,
-                    newAnime = dialog.newAnime,
-                    screenModel = MigrateAnimeDialogScreenModel(),
-                    onDismissRequest = onDismissRequest,
-                    onClickTitle = { navigator.push(AnimeScreen(dialog.oldAnime.id)) },
-                    onClickSeasons = { navigator.push(MigrateSeasonSelectScreen(dialog.oldAnime, dialog.newAnime)) },
-                    onPopScreen = navigator::pop,
-                )
-            }
-
-            is BrowseAnimeSourceViewModel.Dialog.RemoveAnime -> {
-                RemoveEntryDialog(
-                    onDismissRequest = onDismissRequest,
-                    onConfirm = { viewModel.changeAnimeFavorite(dialog.anime) },
-                    entryToRemove = dialog.anime.title,
-                )
-            }
-
-            is BrowseAnimeSourceViewModel.Dialog.ChangeAnimeCategory -> {
-                ChangeCategoryDialog(
-                    initialSelection = dialog.initialSelection,
-                    onDismissRequest = onDismissRequest,
-                    onEditCategories = { navigator.push(CategoriesTab) },
-                    onConfirm = { include, _ ->
-                        viewModel.changeAnimeFavorite(dialog.anime)
-                        viewModel.moveAnimeToCategories(dialog.anime, include)
-                    },
-                )
-            }
-
-            is BrowseAnimeSourceViewModel.Dialog.CreateSavedSearch -> SavedSearchCreateDialog(
+        is BrowseAnimeSourceViewModel.Dialog.Migrate -> {
+            MigrateAnimeDialog(
+                oldAnime = dialog.oldAnime,
+                newAnime = dialog.newAnime,
+                screenModel = metroViewModel<MigrateAnimeDialogScreenModel>(),
                 onDismissRequest = onDismissRequest,
-                currentSavedSearches = state.savedSearches.map { it.name }.toImmutableList(),
-                saveSearch = viewModel::saveSearch,
+                onClickTitle = { navigator.push(AnimeRoute(dialog.oldAnime.id)) },
+                onClickSeasons = {
+                    navigator.push(MigrateSeasonSelectRoute(dialog.oldAnime.id, dialog.newAnime.id))
+                },
+                onPopScreen = navigator::pop,
             )
-
-            is BrowseAnimeSourceViewModel.Dialog.DeleteSavedSearch -> SavedSearchDeleteDialog(
-                onDismissRequest = onDismissRequest,
-                name = dialog.name,
-                deleteSavedSearch = { viewModel.deleteSearch(dialog.idToDelete) },
-            )
-
-            else -> {}
         }
 
-        LaunchedEffect(Unit) {
-            queryEvent.receiveAsFlow()
-                .collectLatest {
-                    when (it) {
-                        is SearchType.Genre -> viewModel.searchGenre(it.txt)
-                        is SearchType.Text -> viewModel.search(it.txt)
-                    }
-                }
+        is BrowseAnimeSourceViewModel.Dialog.RemoveAnime -> {
+            RemoveEntryDialog(
+                onDismissRequest = onDismissRequest,
+                onConfirm = { viewModel.changeAnimeFavorite(dialog.anime) },
+                entryToRemove = dialog.anime.title,
+            )
         }
+
+        is BrowseAnimeSourceViewModel.Dialog.ChangeAnimeCategory -> {
+            ChangeCategoryDialog(
+                initialSelection = dialog.initialSelection,
+                onDismissRequest = onDismissRequest,
+                onEditCategories = { navigator.push(CategoryRoute) },
+                onConfirm = { include, _ ->
+                    viewModel.changeAnimeFavorite(dialog.anime)
+                    viewModel.moveAnimeToCategories(dialog.anime, include)
+                },
+            )
+        }
+
+        is BrowseAnimeSourceViewModel.Dialog.CreateSavedSearch -> SavedSearchCreateDialog(
+            onDismissRequest = onDismissRequest,
+            currentSavedSearches = state.savedSearches.map { it.name }.toImmutableList(),
+            saveSearch = viewModel::saveSearch,
+        )
+
+        is BrowseAnimeSourceViewModel.Dialog.DeleteSavedSearch -> SavedSearchDeleteDialog(
+            onDismissRequest = onDismissRequest,
+            name = dialog.name,
+            deleteSavedSearch = { viewModel.deleteSearch(dialog.idToDelete) },
+        )
+
+        else -> {}
     }
 
-    suspend fun search(query: String) = queryEvent.send(SearchType.Text(query))
-    suspend fun searchGenre(name: String) = queryEvent.send(SearchType.Genre(name))
-
-    companion object {
-        private val queryEvent = Channel<SearchType>()
-    }
-
-    sealed class SearchType(val txt: String) {
-        class Text(txt: String) : SearchType(txt)
-        class Genre(txt: String) : SearchType(txt)
+    ResultEffect<BrowseAnimeSearchEvent> {
+        if (it.genre) {
+            viewModel.searchGenre(it.query)
+        } else {
+            viewModel.search(it.query)
+        }
     }
 }

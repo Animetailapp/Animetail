@@ -2,11 +2,16 @@ package eu.kanade.tachiyomi.data.track.trakt
 
 import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableAnimeTracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
+import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
@@ -26,16 +31,20 @@ import kotlinx.serialization.json.jsonPrimitive
 import tachiyomi.domain.track.manga.model.MangaTrack
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.injectLazy
 import kotlin.math.roundToInt
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 
 /**
  * Trakt.tv tracker implementation (anime / shows / movies).
  */
+@Inject
+@SingleIn(AppScope::class)
 class Trakt(
-    id: Long,
-) : BaseTracker(id, "Trakt"), AnimeTracker, DeletableAnimeTracker {
+    dependencies: TrackerDependencies,
+    private val json: Json,
+) : BaseTracker(TrackerManager.TRAKT, "Trakt", dependencies),
+    AnimeTracker,
+    DeletableAnimeTracker {
 
     companion object {
         const val WATCHING = 1L
@@ -53,8 +62,6 @@ class Trakt(
         private const val SEARCH_ID_PREFIX = "id:"
     }
 
-    private val json: Json by injectLazy()
-
     // Interceptor and API built with injected OKHttp client
     private val interceptor by lazy { TraktInterceptor(this, null, CLIENT_ID) }
     private val api by lazy { TraktApi(client, interceptor) }
@@ -62,8 +69,6 @@ class Trakt(
     // In-memory current oauth
     private var oauth: TraktOAuth? = null
 
-    override val name: String = "Trakt"
-    override val id: Long = 201L
     override val supportsReadingDates: Boolean = true
     override val supportsPrivateTracking: Boolean = false
 

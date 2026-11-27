@@ -6,18 +6,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.components.TabContent
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.i18n.aniyomi.AYMR
 
 @Composable
-fun Screen.mangaDownloadTab(
+fun mangaDownloadTab(
     nestedScrollConnection: NestedScrollConnection,
 ): TabContent {
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
     val screenModel = metroViewModel<MangaDownloadQueueViewModel>()
     val downloadList by screenModel.composeState.collectAsStateWithLifecycle()
     val downloadCount by remember {

@@ -3,19 +3,17 @@ package eu.kanade.tachiyomi.ui.stats.anime
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.presentation.more.stats.AnimeStatsScreenContent
 import eu.kanade.presentation.more.stats.StatsScreenState
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 @Composable
-fun Screen.animeStatsTab(): TabContent {
-    val navigator = LocalNavigator.currentOrThrow
+fun animeStatsTab(): TabContent {
+    val navigator = LocalNavigator.current
 
     val viewModel = metroViewModel<AnimeStatsViewModel>()
     val state by viewModel.state.collectAsState()

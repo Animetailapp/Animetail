@@ -2,10 +2,15 @@ package eu.kanade.tachiyomi.data.track.simkl
 
 import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.BaseTracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
+import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
@@ -16,11 +21,16 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
-class Simkl(id: Long) : BaseTracker(id, "Simkl"), AnimeTracker {
+@Inject
+@SingleIn(AppScope::class)
+class Simkl(
+    dependencies: TrackerDependencies,
+    private val json: Json,
+) : BaseTracker(TrackerManager.SIMKL, "Simkl", dependencies),
+    AnimeTracker {
 
     companion object {
         const val WATCHING = 1L
@@ -36,11 +46,9 @@ class Simkl(id: Long) : BaseTracker(id, "Simkl"), AnimeTracker {
         private const val SEARCH_ID_PREFIX = "id:"
     }
 
-    private val json: Json by injectLazy()
-
     private val interceptor by lazy { SimklInterceptor(this) }
 
-    private val api by lazy { SimklApi(client, interceptor) }
+    private val api by lazy { SimklApi(client, interceptor, json) }
 
     override fun getScoreList(): ImmutableList<String> = SCORE_LIST
 

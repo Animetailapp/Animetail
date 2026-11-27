@@ -18,6 +18,8 @@ interface Tracker {
 
     val name: String
 
+    val dependencies: TrackerDependencies
+
     val client: OkHttpClient
 
     // Application and remote support for reading dates

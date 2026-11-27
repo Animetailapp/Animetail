@@ -17,8 +17,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.injectLazy
 
 /**
  * Activity for Discord login using the official Discord Partner SDK.
@@ -27,8 +27,10 @@ import uy.kohesive.injekt.injectLazy
  */
 class DiscordLoginActivity : BaseActivity() {
 
-    private val connectionsManager: ConnectionsManager by injectLazy()
-    private val connectionsPreferences: ConnectionsPreferences by injectLazy()
+    private val connectionsManager: ConnectionsManager by lazy { applicationContext.appGraph.connectionsManager }
+    private val connectionsPreferences: ConnectionsPreferences by lazy {
+        applicationContext.appGraph.connectionsPreferences
+    }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     companion object {

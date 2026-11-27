@@ -1,13 +1,21 @@
 package eu.kanade.presentation.more.settings.screen.player.custombutton
 
 import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import animetail.feature.mpvfiles.MpvConfig
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -23,26 +31,30 @@ import tachiyomi.domain.custombuttons.interactor.UpdateCustomButton
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.domain.custombuttons.model.CustomButtonUpdate
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class PlayerSettingsCustomButtonScreenModel(
-    private val getCustomButtons: GetCustomButtons = Injekt.get(),
-    private val createCustomButton: CreateCustomButton = Injekt.get(),
-    private val deleteCustomButton: DeleteCustomButton = Injekt.get(),
-    private val updateCustomButton: UpdateCustomButton = Injekt.get(),
-    private val reorderCustomButton: ReorderCustomButton = Injekt.get(),
-    private val toggleFavoriteCustomButton: ToggleFavoriteCustomButton = Injekt.get(),
+    private val getCustomButtons: GetCustomButtons,
+    private val createCustomButton: CreateCustomButton,
+    private val deleteCustomButton: DeleteCustomButton,
+    private val updateCustomButton: UpdateCustomButton,
+    private val reorderCustomButton: ReorderCustomButton,
+    private val toggleFavoriteCustomButton: ToggleFavoriteCustomButton,
     // AM -->
-    private val mpvConfig: MpvConfig = Injekt.get(),
+    private val mpvConfig: MpvConfig,
     // <-- AM
-) : StateScreenModel<CustomButtonScreenState>(CustomButtonScreenState.Loading) {
+) : ViewModel() {
+
+    private val mutableState = MutableStateFlow<CustomButtonScreenState>(CustomButtonScreenState.Loading)
+    val state: StateFlow<CustomButtonScreenState> = mutableState.asStateFlow()
 
     private val _events: Channel<CustomButtonEvent> = Channel()
     val events = _events.receiveAsFlow()
 
     init {
-        screenModelScope.launch {
+        viewModelScope.launch {
             getCustomButtons.subscribeAll()
                 .collectLatest { customButtons ->
                     mutableState.update {
@@ -54,7 +66,7 @@ class PlayerSettingsCustomButtonScreenModel(
         }
 
         // AM -->
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             getCustomButtons.subscribeAll()
                 .distinctUntilChanged()
                 .collectLatest { customButtons ->
@@ -65,7 +77,7 @@ class PlayerSettingsCustomButtonScreenModel(
     }
 
     fun createCustomButton(name: String, content: String, longPressContent: String, onStartup: String) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             when (createCustomButton.await(name, content, longPressContent, onStartup)) {
                 is CreateCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
@@ -77,7 +89,7 @@ class PlayerSettingsCustomButtonScreenModel(
     }
 
     fun togglePrimaryButton(customButton: CustomButton) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             when (toggleFavoriteCustomButton.await(customButton)) {
                 is ToggleFavoriteCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
@@ -89,7 +101,7 @@ class PlayerSettingsCustomButtonScreenModel(
     }
 
     fun editCustomButton(customButtonUpdate: CustomButtonUpdate) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             when (updateCustomButton.await(customButtonUpdate)) {
                 is UpdateCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
@@ -101,7 +113,7 @@ class PlayerSettingsCustomButtonScreenModel(
     }
 
     fun deleteCustomButton(customButton: CustomButton) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             when (deleteCustomButton.await(customButton.id)) {
                 is DeleteCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,
@@ -113,7 +125,7 @@ class PlayerSettingsCustomButtonScreenModel(
     }
 
     fun changeOrder(customButton: CustomButton, newIndex: Int) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             when (reorderCustomButton.changeOrder(customButton, newIndex)) {
                 is ReorderCustomButton.Result.InternalError -> _events.send(
                     CustomButtonEvent.InternalError,

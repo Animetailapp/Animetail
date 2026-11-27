@@ -4,6 +4,7 @@ import android.content.Context
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadProvider
+import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
@@ -34,6 +35,7 @@ class ChapterLoader(
     private val source: MangaSource,
     private val readerPreferences: ReaderPreferences,
     private val sourcePreferences: SourcePreferences,
+    private val networkHelper: NetworkHelper,
     private val canLoadAhead: () -> Boolean = { true },
 ) {
 
@@ -95,6 +97,7 @@ class ChapterLoader(
         )
         return when {
             isDownloaded -> DownloadPageLoader(
+                context,
                 chapter,
                 manga,
                 source,
@@ -117,6 +120,7 @@ class ChapterLoader(
                 chapterCache,
                 readerPreferences,
                 sourcePreferences,
+                networkHelper,
                 canLoadAhead,
             )
 

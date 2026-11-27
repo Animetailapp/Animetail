@@ -5,9 +5,9 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import androidx.appcompat.widget.AppCompatButton
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.items
@@ -45,8 +45,6 @@ import androidx.preference.PreferenceScreen
 import androidx.preference.TwoStatePreference
 import androidx.preference.getOnBindEditTextListener
 import androidx.preference.setOnStateChangeListener
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.more.settings.widget.CheckboxPreferenceWidget
 import eu.kanade.presentation.more.settings.widget.ListPreferenceDialog
@@ -55,7 +53,6 @@ import eu.kanade.presentation.more.settings.widget.PreferenceDialogMessage
 import eu.kanade.presentation.more.settings.widget.PreferenceGroupHeader
 import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
-import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.data.preference.SharedPreferencesDataStore
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.sourcePreferences
@@ -63,24 +60,22 @@ import eu.kanade.tachiyomi.util.view.setIncognito
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mihon.app.di.appGraph
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 
-class MangaSourcePreferencesScreen(val sourceId: Long) : Screen() {
-
-    @Composable
-    override fun Content() {
-        ExtensionSourcePreferencesContent(sourceId) { context ->
-            val source = context.appGraph.mangaSourceManager.getOrStub(sourceId)
-            val configurable = source as? ConfigurableSource
-            val preferences = configurable?.let {
-                withContext(Dispatchers.IO) { it.sourcePreferences().apply { all } }
-            }
-            ExtensionPreferencesSource(source.toString(), preferences) { configurable?.setupPreferenceScreen(it) }
+@Composable
+fun MangaSourcePreferencesScreen(sourceId: Long) {
+    ExtensionSourcePreferencesContent(sourceId) { context ->
+        val source = context.appGraph.mangaSourceManager.getOrStub(sourceId)
+        val configurable = source as? ConfigurableSource
+        val preferences = configurable?.let {
+            withContext(Dispatchers.IO) { it.sourcePreferences().apply { all } }
         }
+        ExtensionPreferencesSource(source.toString(), preferences) { configurable?.setupPreferenceScreen(it) }
     }
 }
 
@@ -96,7 +91,7 @@ internal fun ExtensionSourcePreferencesContent(
     load: suspend (Context) -> ExtensionPreferencesSource,
 ) {
     val context = LocalContext.current
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
 
     // The preferences are made anew after a configuration change, so an open dialog is restored by key
     var savedDialogKey by rememberSaveable { mutableStateOf<String?>(null) }
@@ -334,7 +329,7 @@ private fun EditTextPreferenceDialog(
                 AndroidView(
                     factory = { viewContext ->
                         LinearLayout(viewContext).apply {
-                            val confirmButton = object : Button(viewContext) {
+                            val confirmButton = object : AppCompatButton(viewContext) {
                                 init {
                                     id = android.R.id.button1
                                     visibility = GONE

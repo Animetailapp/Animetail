@@ -1,33 +1,23 @@
 package eu.kanade.tachiyomi.data.track
 
-import android.app.Application
 import dev.icerock.moko.resources.StringResource
-import eu.kanade.domain.track.manga.interactor.AddMangaTracks
 import eu.kanade.domain.track.manga.model.toDomainTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.util.system.toast
 import logcat.LogPriority
-import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.track.manga.interactor.UpsertMangaTrack
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
 
-private val appGraph get() = Injekt.get<Application>().appGraph
-private val addTracks: AddMangaTracks by lazy { appGraph.addMangaTracks }
-private val upsertTrack: UpsertMangaTrack by lazy { appGraph.upsertMangaTrack }
-
-interface MangaTracker {
+interface MangaTracker : Tracker {
 
     // Common functions
-    fun getCompletionStatus(): Long
+    override fun getCompletionStatus(): Long
 
-    fun getScoreList(): List<String>
+    override fun getScoreList(): List<String>
 
     fun indexToScore(index: Int): Double {
         return index.toDouble()
@@ -58,9 +48,9 @@ interface MangaTracker {
     suspend fun register(item: MangaTrack, mangaId: Long) {
         item.manga_id = mangaId
         try {
-            addTracks.bind(this, item, mangaId)
+            dependencies.addMangaTracks.value.bind(this, item, mangaId)
         } catch (e: Throwable) {
-            withUIContext { Injekt.get<Application>().toast(e.message) }
+            withUIContext { dependencies.context.toast(e.message) }
         }
     }
 
@@ -109,7 +99,7 @@ interface MangaTracker {
         updateRemote(track)
     }
 
-    suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata? {
+    override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata? {
         throw NotImplementedError("Not implemented.")
     }
 
@@ -117,11 +107,11 @@ interface MangaTracker {
         try {
             update(track)
             track.toDomainTrack(idRequired = false)?.let {
-                upsertTrack.await(it)
+                dependencies.upsertMangaTrack.value.await(it)
             }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Failed to update remote track data id=${track.id}" }
-            withUIContext { Injekt.get<Application>().toast(e.message) }
+            withUIContext { dependencies.context.toast(e.message) }
         }
     }
 

@@ -612,8 +612,10 @@ private fun ColumnScope.MangaContentInfo(
                     tint = MaterialTheme.colorScheme.error,
                 )
             }
+            val context = LocalContext.current
+            val sourcePreferences = remember { context.appGraph.sourcePreferences }
             Text(
-                text = source.getNameForMangaInfo(),
+                text = source.getNameForMangaInfo(sourcePreferences),
                 modifier = Modifier.clickableNoIndication {
                     doSearch(source.query(), false)
                 },

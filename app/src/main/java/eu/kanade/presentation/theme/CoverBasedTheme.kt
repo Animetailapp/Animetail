@@ -17,12 +17,10 @@ import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.toBitmap
-import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.theme.colorscheme.CustomCompatColorScheme
+import mihon.app.di.appGraph
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.manga.model.Manga
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
 fun CoverBasedTheme(
@@ -46,7 +44,8 @@ private fun CoverBasedThemeImpl(
     thumbnailUrl: String?,
     content: @Composable () -> Unit,
 ) {
-    val uiPreferences = Injekt.get<UiPreferences>()
+    val context = LocalContext.current
+    val uiPreferences = remember(context) { context.appGraph.uiPreferences }
     val enabled = uiPreferences.themeCoverBased.get()
 
     if (!enabled) {
@@ -54,7 +53,6 @@ private fun CoverBasedThemeImpl(
         return
     }
 
-    val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
     val isAmoled = uiPreferences.themeDarkAmoled.get()
     val style = uiPreferences.themeCoverBasedStyle.get()

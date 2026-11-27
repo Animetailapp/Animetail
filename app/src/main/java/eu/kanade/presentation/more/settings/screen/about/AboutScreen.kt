@@ -20,19 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.more.LogoHeader
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
-import eu.kanade.presentation.util.LocalBackPress
-import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.util.rememberIs24HourSystem
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.data.updater.RELEASE_URL
-import eu.kanade.tachiyomi.ui.more.NewUpdateScreen
 import eu.kanade.tachiyomi.util.lang.toDateTimestampString
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import eu.kanade.tachiyomi.util.system.isFossBuildType
@@ -44,6 +39,10 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import logcat.LogPriority
 import mihon.app.di.appGraph
+import mihon.core.navigation.LocalBackButtonVisibility
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.NewUpdateRoute
+import mihon.core.navigation.OpenSourceLicensesRoute
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.Public
 import mihon.icons.simpleicons.Discord
@@ -58,241 +57,239 @@ import tachiyomi.presentation.core.components.LinkIcon
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.Locale
 import kotlin.time.Instant
 
-object AboutScreen : Screen() {
+@Composable
+fun AboutScreen() {
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val navigator = LocalNavigator.current
+    val backButtonVisible = LocalBackButtonVisibility.current
+    var isCheckingUpdates by remember { mutableStateOf(false) }
+    val crashLogUtil = remember { context.appGraph.crashLogUtil }
+    val uiPreferences = remember { context.appGraph.uiPreferences }
+    val is24HourSystem = rememberIs24HourSystem()
 
-    @Composable
-    override fun Content() {
-        val scope = rememberCoroutineScope()
-        val context = LocalContext.current
-        val uriHandler = LocalUriHandler.current
-        val handleBack = LocalBackPress.current
-        val navigator = LocalNavigator.currentOrThrow
-        var isCheckingUpdates by remember { mutableStateOf(false) }
-        val crashLogUtil = remember { context.appGraph.crashLogUtil }
-        val uiPreferences = remember { context.appGraph.uiPreferences }
-        val is24HourSystem = rememberIs24HourSystem()
-
-        Scaffold(
-            topBar = { scrollBehavior ->
-                AppBar(
-                    title = stringResource(MR.strings.pref_category_about),
-                    navigateUp = if (handleBack != null) handleBack::invoke else null,
-                    scrollBehavior = scrollBehavior,
+    Scaffold(
+        topBar = { scrollBehavior ->
+            AppBar(
+                title = stringResource(MR.strings.pref_category_about),
+                navigateUp = if (backButtonVisible) {
+                    { navigator.pop() }
+                } else {
+                    null
+                },
+                scrollBehavior = scrollBehavior,
+            )
+        },
+    ) { contentPadding ->
+        ScrollbarLazyColumn(
+            contentPadding = contentPadding,
+        ) {
+            item {
+                LogoHeader(
+                    iconPadding = PaddingValues(vertical = 56.dp),
                 )
-            },
-        ) { contentPadding ->
-            ScrollbarLazyColumn(
-                contentPadding = contentPadding,
-            ) {
-                item {
-                    LogoHeader(
-                        iconPadding = PaddingValues(vertical = 56.dp),
-                    )
-                }
+            }
 
+            item {
+                TextPreferenceWidget(
+                    title = stringResource(MR.strings.version),
+                    subtitle = remember(is24HourSystem) {
+                        getVersionName(context, withBuildDate = true, dateFormat = uiPreferences.dateFormat.get())
+                    },
+                    onPreferenceClick = {
+                        val deviceInfo = crashLogUtil.getDebugInfo()
+                        context.copyToClipboard("Debug information", deviceInfo)
+                    },
+                )
+            }
+
+            if (updaterEnabled) {
                 item {
                     TextPreferenceWidget(
-                        title = stringResource(MR.strings.version),
-                        subtitle = remember(is24HourSystem) {
-                            getVersionName(withBuildDate = true, dateFormat = uiPreferences.dateFormat.get())
+                        title = stringResource(MR.strings.check_for_updates),
+                        widget = {
+                            AnimatedVisibility(visible = isCheckingUpdates) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(28.dp),
+                                    strokeWidth = 3.dp,
+                                )
+                            }
                         },
                         onPreferenceClick = {
-                            val deviceInfo = crashLogUtil.getDebugInfo()
-                            context.copyToClipboard("Debug information", deviceInfo)
-                        },
-                    )
-                }
+                            if (!isCheckingUpdates) {
+                                scope.launch {
+                                    isCheckingUpdates = true
 
-                if (updaterEnabled) {
-                    item {
-                        TextPreferenceWidget(
-                            title = stringResource(MR.strings.check_for_updates),
-                            widget = {
-                                AnimatedVisibility(visible = isCheckingUpdates) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(28.dp),
-                                        strokeWidth = 3.dp,
+                                    checkVersion(
+                                        context = context,
+                                        onAvailableUpdate = { result ->
+                                            val updateScreen = NewUpdateRoute(
+                                                versionName = result.release.version,
+                                                changelogInfo = result.release.info,
+                                                releaseLink = result.release.releaseLink,
+                                                downloadLink = result.release.downloadLink,
+                                            )
+                                            navigator.push(updateScreen)
+                                        },
+                                        onFinish = {
+                                            isCheckingUpdates = false
+                                        },
                                     )
                                 }
-                            },
-                            onPreferenceClick = {
-                                if (!isCheckingUpdates) {
-                                    scope.launch {
-                                        isCheckingUpdates = true
-
-                                        checkVersion(
-                                            context = context,
-                                            onAvailableUpdate = { result ->
-                                                val updateScreen = NewUpdateScreen(
-                                                    versionName = result.release.version,
-                                                    changelogInfo = result.release.info,
-                                                    releaseLink = result.release.releaseLink,
-                                                    downloadLink = result.release.downloadLink,
-                                                )
-                                                navigator.push(updateScreen)
-                                            },
-                                            onFinish = {
-                                                isCheckingUpdates = false
-                                            },
-                                        )
-                                    }
-                                }
-                            },
-                        )
-                    }
-                }
-
-                if (!BuildConfig.DEBUG) {
-                    item {
-                        TextPreferenceWidget(
-                            title = stringResource(MR.strings.whats_new),
-                            onPreferenceClick = { uriHandler.openUri(RELEASE_URL) },
-                        )
-                    }
-                }
-
-                item {
-                    TextPreferenceWidget(
-                        title = stringResource(MR.strings.help_translate),
-                        onPreferenceClick = {
-                            uriHandler.openUri(
-                                "https://aniyomi.org/docs/contribute#translation",
-                            )
+                            }
                         },
                     )
                 }
+            }
 
+            if (!BuildConfig.DEBUG) {
                 item {
                     TextPreferenceWidget(
-                        title = stringResource(MR.strings.licenses),
-                        onPreferenceClick = { navigator.push(OpenSourceLicensesScreen()) },
+                        title = stringResource(MR.strings.whats_new),
+                        onPreferenceClick = { uriHandler.openUri(RELEASE_URL) },
                     )
                 }
+            }
 
-                item {
-                    TextPreferenceWidget(
-                        title = stringResource(MR.strings.privacy_policy),
-                        onPreferenceClick = { uriHandler.openUri("https://aniyomi.org/privacy/") },
-                    )
-                }
-
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        LinkIcon(
-                            label = stringResource(MR.strings.website),
-                            icon = MaterialSymbols.Rounded.Public,
-                            url = "https://akiled.org",
+            item {
+                TextPreferenceWidget(
+                    title = stringResource(MR.strings.help_translate),
+                    onPreferenceClick = {
+                        uriHandler.openUri(
+                            "https://aniyomi.org/docs/contribute#translation",
                         )
-                        LinkIcon(
-                            label = "Discord",
-                            icon = SimpleIcons.Discord,
-                            url = Constants.URL_DISCORD,
-                        )
-                        LinkIcon(
-                            label = "GitHub",
-                            icon = SimpleIcons.Github,
-                            url = "https://github.com/Animetailapp/Animetail",
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Checks version and shows a user prompt if an update is available.
-     */
-    private suspend fun checkVersion(
-        context: Context,
-        onAvailableUpdate: (GetApplicationRelease.Result.NewUpdate) -> Unit,
-        onFinish: () -> Unit,
-    ) {
-        val updateChecker = context.appGraph.updateChecker
-        withUIContext {
-            try {
-                when (val result = withIOContext { updateChecker.checkForUpdate(forceCheck = true) }) {
-                    is GetApplicationRelease.Result.NewUpdate -> {
-                        onAvailableUpdate(result)
-                    }
-
-                    is GetApplicationRelease.Result.NoNewUpdate -> {
-                        context.toast(MR.strings.update_check_no_new_updates)
-                    }
-
-                    is GetApplicationRelease.Result.OsTooOld -> {
-                        context.toast(MR.strings.update_check_eol)
-                    }
-                }
-            } catch (e: Exception) {
-                context.toast(e.message)
-                logcat(LogPriority.ERROR, e)
-            } finally {
-                onFinish()
-            }
-        }
-    }
-
-    fun getVersionName(withBuildDate: Boolean, dateFormat: String? = null): String {
-        return when {
-            BuildConfig.DEBUG -> {
-                "Debug ${BuildConfig.COMMIT_SHA}".let {
-                    if (withBuildDate) {
-                        "$it (${getFormattedBuildTime(dateFormat)})"
-                    } else {
-                        it
-                    }
-                }
-            }
-
-            isNightlyBuildType -> {
-                "Nightly r${BuildConfig.COMMIT_COUNT}".let {
-                    if (withBuildDate) {
-                        "$it (${BuildConfig.COMMIT_SHA}, ${getFormattedBuildTime(dateFormat)})"
-                    } else {
-                        "$it (${BuildConfig.COMMIT_SHA})"
-                    }
-                }
-            }
-
-            else -> {
-                val channel = if (isFossBuildType) "FOSS" else "Stable"
-                "$channel v${BuildConfig.VERSION_NAME}".let {
-                    if (withBuildDate) {
-                        "$it (${getFormattedBuildTime(dateFormat)})"
-                    } else {
-                        it
-                    }
-                }
-            }
-        }
-    }
-
-    internal fun getFormattedBuildTime(dateFormat: String? = null): String {
-        return try {
-            val context = Injekt.get<Context>()
-            val uiPreferences = context.appGraph.uiPreferences
-            Instant.parse(BuildConfig.BUILD_TIME)
-                .toLocalDateTime(TimeZone.currentSystemDefault())
-                .toDateTimestampString(
-                    UiPreferences.dateTimeFormat(
-                        dateFormat ?: uiPreferences.dateFormat.get(),
-                        uiPreferences.timeFormat.get(),
-                        Locale.getDefault(),
-                        DateFormat.is24HourFormat(context),
-                    ),
+                    },
                 )
-        } catch (_: Exception) {
-            BuildConfig.BUILD_TIME
+            }
+
+            item {
+                TextPreferenceWidget(
+                    title = stringResource(MR.strings.licenses),
+                    onPreferenceClick = { navigator.push(OpenSourceLicensesRoute) },
+                )
+            }
+
+            item {
+                TextPreferenceWidget(
+                    title = stringResource(MR.strings.privacy_policy),
+                    onPreferenceClick = { uriHandler.openUri("https://aniyomi.org/privacy/") },
+                )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    LinkIcon(
+                        label = stringResource(MR.strings.website),
+                        icon = MaterialSymbols.Rounded.Public,
+                        url = "https://akiled.org",
+                    )
+                    LinkIcon(
+                        label = "Discord",
+                        icon = SimpleIcons.Discord,
+                        url = Constants.URL_DISCORD,
+                    )
+                    LinkIcon(
+                        label = "GitHub",
+                        icon = SimpleIcons.Github,
+                        url = "https://github.com/Animetailapp/Animetail",
+                    )
+                }
+            }
         }
+    }
+}
+
+/**
+ * Checks version and shows a user prompt if an update is available.
+ */
+private suspend fun checkVersion(
+    context: Context,
+    onAvailableUpdate: (GetApplicationRelease.Result.NewUpdate) -> Unit,
+    onFinish: () -> Unit,
+) {
+    val updateChecker = context.appGraph.updateChecker
+    withUIContext {
+        try {
+            when (val result = withIOContext { updateChecker.checkForUpdate(forceCheck = true) }) {
+                is GetApplicationRelease.Result.NewUpdate -> {
+                    onAvailableUpdate(result)
+                }
+
+                is GetApplicationRelease.Result.NoNewUpdate -> {
+                    context.toast(MR.strings.update_check_no_new_updates)
+                }
+
+                is GetApplicationRelease.Result.OsTooOld -> {
+                    context.toast(MR.strings.update_check_eol)
+                }
+            }
+        } catch (e: Exception) {
+            context.toast(e.message)
+            logcat(LogPriority.ERROR, e)
+        } finally {
+            onFinish()
+        }
+    }
+}
+
+fun getVersionName(context: Context, withBuildDate: Boolean, dateFormat: String? = null): String {
+    return when {
+        BuildConfig.DEBUG -> {
+            "Debug ${BuildConfig.COMMIT_SHA}".let {
+                if (withBuildDate) {
+                    "$it (${getFormattedBuildTime(context, dateFormat)})"
+                } else {
+                    it
+                }
+            }
+        }
+
+        isNightlyBuildType -> {
+            "Nightly r${BuildConfig.COMMIT_COUNT}".let {
+                if (withBuildDate) {
+                    "$it (${BuildConfig.COMMIT_SHA}, ${getFormattedBuildTime(context, dateFormat)})"
+                } else {
+                    "$it (${BuildConfig.COMMIT_SHA})"
+                }
+            }
+        }
+
+        else -> {
+            val channel = if (isFossBuildType) "FOSS" else "Stable"
+            "$channel v${BuildConfig.VERSION_NAME}".let {
+                if (withBuildDate) {
+                    "$it (${getFormattedBuildTime(context, dateFormat)})"
+                } else {
+                    it
+                }
+            }
+        }
+    }
+}
+
+internal fun getFormattedBuildTime(context: Context, dateFormat: String? = null): String {
+    return try {
+        val uiPreferences = context.appGraph.uiPreferences
+        Instant.parse(BuildConfig.BUILD_TIME)
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .toDateTimestampString(
+                UiPreferences.dateTimeFormat(
+                    dateFormat ?: uiPreferences.dateFormat.get(),
+                    uiPreferences.timeFormat.get(),
+                    Locale.getDefault(),
+                    DateFormat.is24HourFormat(context),
+                ),
+            )
+    } catch (_: Exception) {
+        BuildConfig.BUILD_TIME
     }
 }

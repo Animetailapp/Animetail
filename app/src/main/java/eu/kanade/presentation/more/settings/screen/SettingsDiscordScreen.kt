@@ -26,24 +26,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.util.fastMap
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.widget.TriStateListDialog
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.runBlocking
-import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
+import kotlinx.serialization.Serializable
+import mihon.app.di.appGraph
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.SettingsDiscordAccountsRoute
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
-object SettingsDiscordScreen : SearchableSettings {
+@Serializable
+data object SettingsDiscordScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable
@@ -63,9 +62,10 @@ object SettingsDiscordScreen : SearchableSettings {
     @Composable
     override fun getPreferences(): List<Preference> {
         val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
-        val connectionsPreferences = remember { Injekt.get<ConnectionsPreferences>() }
-        val connectionsManager = remember { Injekt.get<ConnectionsManager>() }
+        val navigator = LocalNavigator.current
+        val appGraph = remember(context) { context.appGraph }
+        val connectionsPreferences = remember { appGraph.connectionsPreferences }
+        val connectionsManager = remember { appGraph.connectionsManager }
         val enableDRPCPref = connectionsPreferences.enableDiscordRPC()
         val useChapterTitlesPref = connectionsPreferences.useChapterTitles()
         val discordRPCStatus = connectionsPreferences.discordRPCStatus()
@@ -151,7 +151,7 @@ object SettingsDiscordScreen : SearchableSettings {
         return listOf(
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(R.string.discord_accounts),
-                onClick = { navigator.push(DiscordAccountsScreen) },
+                onClick = { navigator.push(SettingsDiscordAccountsRoute) },
             ),
             Preference.PreferenceGroup(
                 title = stringResource(R.string.connections_discord),
@@ -232,7 +232,8 @@ object SettingsDiscordScreen : SearchableSettings {
         connectionsPreferences: ConnectionsPreferences,
         enabled: Boolean,
     ): Preference.PreferenceGroup {
-        val getAnimeCategories = remember { Injekt.get<GetAnimeCategories>() }
+        val context = LocalContext.current
+        val getAnimeCategories = remember { context.appGraph.getAnimeCategories }
         val allAnimeCategories by getAnimeCategories.subscribe().collectAsState(
             initial = runBlocking { getAnimeCategories.await() },
         )

@@ -49,6 +49,7 @@ import eu.kanade.tachiyomi.widget.materialdialogs.setTextInput
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.manga.model.Manga
@@ -57,8 +58,6 @@ import tachiyomi.domain.track.manga.model.MangaTrack
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.source.local.entries.manga.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
 @Suppress("MagicNumber", "LongMethod")
@@ -74,13 +73,14 @@ fun EditMangaDialog(
         status: Long?,
     ) -> Unit,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
     var binding by remember {
         mutableStateOf<EditMangaDialogBinding?>(null)
     }
     val showTrackerSelectionDialogue = remember { mutableStateOf(false) }
-    val getTracks = remember { Injekt.get<GetMangaTracks>() }
-    val trackerManager = remember { Injekt.get<TrackerManager>() }
+    val getTracks = remember { context.appGraph.getMangaTracks }
+    val trackerManager = remember { context.appGraph.trackerManager }
     val tracks = remember { mutableStateOf(emptyList<Pair<MangaTrack, Tracker>>()) }
 
     AlertDialog(

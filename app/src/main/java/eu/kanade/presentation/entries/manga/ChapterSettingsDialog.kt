@@ -100,7 +100,7 @@ fun ChapterSettingsDialog(
             when (page) {
                 0 -> {
                     FilterPage(
-                        downloadFilter = manga?.downloadedFilter ?: TriState.DISABLED,
+                        downloadFilter = manga?.downloadedFilter(downloadedOnly) ?: TriState.DISABLED,
                         onDownloadFilterChanged = onDownloadFilterChanged
                             .takeUnless { downloadedOnly },
                         unreadFilter = manga?.unreadFilter ?: TriState.DISABLED,

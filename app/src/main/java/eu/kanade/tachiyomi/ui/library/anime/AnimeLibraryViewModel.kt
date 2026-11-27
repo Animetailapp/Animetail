@@ -579,7 +579,8 @@ class AnimeLibraryViewModel(
     }
 
     suspend fun getNextUnseenEpisode(anime: Anime): Episode? {
-        return getEpisodesByAnimeId.await(anime.id).getNextUnseen(anime, downloadManager)
+        return getEpisodesByAnimeId.await(anime.id)
+            .getNextUnseen(anime, preferences.downloadedOnly.get(), downloadManager)
     }
 
     /**

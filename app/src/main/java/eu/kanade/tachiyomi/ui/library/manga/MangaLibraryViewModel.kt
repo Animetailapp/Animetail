@@ -547,7 +547,8 @@ class MangaLibraryViewModel(
     }
 
     suspend fun getNextUnreadChapter(manga: Manga): Chapter? {
-        return getChaptersByMangaId.await(manga.id, applyScanlatorFilter = true).getNextUnread(manga, downloadManager)
+        return getChaptersByMangaId.await(manga.id, applyScanlatorFilter = true)
+            .getNextUnread(manga, preferences.downloadedOnly.get(), downloadManager)
     }
 
     /**

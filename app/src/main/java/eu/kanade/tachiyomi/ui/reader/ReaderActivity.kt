@@ -194,7 +194,7 @@ class ReaderActivity : BaseActivity() {
     private val hasCutout by lazy { hasDisplayCutout() }
     private var menuToggleToast: Toast? = null
     private var readingModeToast: Toast? = null
-    private val displayRefreshHost = DisplayRefreshHost()
+    private val displayRefreshHost by lazy { DisplayRefreshHost(readerPreferences) }
     private val navigationOverlayState = ReaderNavigationOverlayState()
 
     private val windowInsetsController by lazy { WindowInsetsControllerCompat(window, window.decorView) }
@@ -1252,7 +1252,8 @@ class ReaderActivity : BaseActivity() {
                     DiscordRPCService.setReaderActivity(
                         context = this@ReaderActivity,
                         ReaderData(
-                            incognitoMode = viewModel.currentSource?.isNsfw() == true || viewModel.incognitoMode,
+                            incognitoMode = viewModel.currentSource?.isNsfw(graph.mangaExtensionManager) == true ||
+                                viewModel.incognitoMode,
                             mangaId = viewModel.manga?.id,
                             // AM (CU)>
                             mangaTitle = viewModel.manga?.ogTitle,

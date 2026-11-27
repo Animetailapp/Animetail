@@ -1,8 +1,6 @@
 package eu.kanade.tachiyomi.data.track
 
-import android.app.Application
 import dev.icerock.moko.resources.StringResource
-import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
 import eu.kanade.domain.track.anime.model.toDomainTrack
 import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
@@ -10,26 +8,18 @@ import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.util.system.toast
 import logcat.LogPriority
-import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.entries.anime.model.Anime
-import tachiyomi.domain.track.anime.interactor.UpsertAnimeTrack
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 
-private val appGraph get() = Injekt.get<Application>().appGraph
-private val addTracks: AddAnimeTracks by lazy { appGraph.addAnimeTracks }
-private val upsertTrack: UpsertAnimeTrack by lazy { appGraph.upsertAnimeTrack }
-
-interface AnimeTracker {
+interface AnimeTracker : Tracker {
 
     // Common functions
-    fun getCompletionStatus(): Long
+    override fun getCompletionStatus(): Long
 
-    fun getScoreList(): List<String>
+    override fun getScoreList(): List<String>
 
     fun indexToScore(index: Int): Double {
         return index.toDouble()
@@ -62,9 +52,9 @@ interface AnimeTracker {
     suspend fun register(item: AnimeTrack, anime: Anime) {
         item.anime_id = anime.id
         try {
-            addTracks.bind(this, item, anime)
+            dependencies.addAnimeTracks.value.bind(this, item, anime)
         } catch (e: Throwable) {
-            withUIContext { Injekt.get<Application>().toast(e.message) }
+            withUIContext { dependencies.context.toast(e.message) }
         }
     }
     // <-- AM
@@ -112,7 +102,7 @@ interface AnimeTracker {
         updateRemote(track)
     }
 
-    suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? {
+    override suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? {
         throw NotImplementedError("Not implemented.")
     }
 
@@ -131,11 +121,11 @@ interface AnimeTracker {
         try {
             update(track)
             track.toDomainTrack(idRequired = false)?.let {
-                upsertTrack.await(it)
+                dependencies.upsertAnimeTrack.value.await(it)
             }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Failed to update remote track data id=${track.id}" }
-            withUIContext { Injekt.get<Application>().toast(e.message) }
+            withUIContext { dependencies.context.toast(e.message) }
         }
     }
 

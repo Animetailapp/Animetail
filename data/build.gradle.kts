@@ -46,8 +46,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.jsonOkio)
     implementation(libs.kotlinx.serialization.protobuf)
 
-    implementation(libs.injekt)
-
     implementation(libs.kotlinx.datetime)
 
     implementation(libs.androidx.sqlite.bundled)

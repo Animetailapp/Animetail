@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.network.interceptor
 
 import android.webkit.CookieManager
-import eu.kanade.tachiyomi.network.NetworkHelper
+import eu.kanade.tachiyomi.network.AndroidCookieJar
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.awaitSuccess
@@ -16,15 +16,20 @@ import logcat.LogPriority
 import logcat.logcat
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okio.IOException
-import uy.kohesive.injekt.injectLazy
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
-class FlareSolverrInterceptor(private val preferences: NetworkPreferences) : Interceptor {
+class FlareSolverrInterceptor(
+    private val preferences: NetworkPreferences,
+    private val json: Json,
+    private val clientProvider: () -> OkHttpClient,
+    private val cookieJar: AndroidCookieJar,
+) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
 
@@ -48,7 +53,14 @@ class FlareSolverrInterceptor(private val preferences: NetworkPreferences) : Int
 
             val request =
                 runBlocking {
-                    CFClearance.resolveWithFlareSolverr(originalRequest)
+                    CFClearance.resolveWithFlareSolverr(
+                        originalRequest = originalRequest,
+                        client = clientProvider(),
+                        cookieJar = cookieJar,
+                        json = json,
+                        flareSolverrUrl = preferences.flareSolverrUrl().get(),
+                        flareSolverrTimeout = preferences.flareSolverrTimeout().get(),
+                    )
                 }
 
             chain.proceed(request)
@@ -60,12 +72,7 @@ class FlareSolverrInterceptor(private val preferences: NetworkPreferences) : Int
     }
 
     object CFClearance {
-        private val network: NetworkHelper by injectLazy()
-        private val json: Json by injectLazy()
         private val jsonMediaType = "application/json".toMediaType()
-        private val networkPreferences: NetworkPreferences by injectLazy()
-        private val flareSolverrUrl get() = networkPreferences.flareSolverrUrl().get()
-        private val flareSolverrTimeout get() = networkPreferences.flareSolverrTimeout().get()
         private val mutex = Mutex()
 
         @Serializable
@@ -124,6 +131,11 @@ class FlareSolverrInterceptor(private val preferences: NetworkPreferences) : Int
 
         suspend fun resolveWithFlareSolverr(
             originalRequest: Request,
+            client: OkHttpClient,
+            cookieJar: AndroidCookieJar,
+            json: Json,
+            flareSolverrUrl: String,
+            flareSolverrTimeout: Int,
             cookieManager: CookieManager = CookieManager.getInstance(),
         ): Request {
             val flareSolverTag = "FlareSolverr"
@@ -133,7 +145,7 @@ class FlareSolverrInterceptor(private val preferences: NetworkPreferences) : Int
             val flareSolverResponse =
                 with(json) {
                     mutex.withLock {
-                        network.client.newBuilder()
+                        client.newBuilder()
                             .readTimeout(
                                 (flareSolverrTimeout + 10000).toLong(),
                                 java.util.concurrent.TimeUnit.MILLISECONDS,
@@ -156,7 +168,7 @@ class FlareSolverrInterceptor(private val preferences: NetworkPreferences) : Int
                                             "request.get",
                                             originalRequest.url.toString(),
                                             cookies =
-                                            network.cookieJar.get(originalRequest.url).map {
+                                            cookieJar.get(originalRequest.url).map {
                                                 FlareSolverCookie(it.name, it.value)
                                             },
                                             returnOnlyCookies = true,

@@ -30,7 +30,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
-import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
@@ -38,6 +37,7 @@ class HikkaApi(
     private val trackerId: Long,
     private val client: OkHttpClient,
     interceptor: HikkaInterceptor,
+    private val json: Json,
 ) {
     suspend fun getCurrentUser(): HKUser {
         return withIOContext {
@@ -343,7 +343,6 @@ class HikkaApi(
 
     suspend fun updateUserAnime(track: AnimeTrack): AnimeTrack = addUserAnime(track)
 
-    private val json: Json by injectLazy()
     private val authClient = client.newBuilder().addInterceptor(interceptor).build()
 
     companion object {

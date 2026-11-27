@@ -1,6 +1,5 @@
 package eu.kanade.domain.entries.manga.model
 
-import android.content.Context
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
@@ -8,14 +7,11 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
-import mihon.app.di.appGraph
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.metadata.comicinfo.ComicInfo
 import tachiyomi.core.metadata.comicinfo.ComicInfoPublishingStatus
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Instant
 
 // TODO: move these into the domain model
@@ -25,18 +21,18 @@ val Manga.readingMode: Long
 val Manga.readerOrientation: Long
     get() = viewerFlags and ReaderOrientation.MASK.toLong()
 
-val Manga.downloadedFilter: TriState
-    get() {
-        if (Injekt.get<Context>().appGraph.basePreferences.downloadedOnly.get()) return TriState.ENABLED_IS
-        return when (downloadedFilterRaw) {
-            Manga.CHAPTER_SHOW_DOWNLOADED -> TriState.ENABLED_IS
-            Manga.CHAPTER_SHOW_NOT_DOWNLOADED -> TriState.ENABLED_NOT
-            else -> TriState.DISABLED
-        }
+fun Manga.downloadedFilter(downloadedOnly: Boolean): TriState {
+    if (downloadedOnly) return TriState.ENABLED_IS
+    return when (downloadedFilterRaw) {
+        Manga.CHAPTER_SHOW_DOWNLOADED -> TriState.ENABLED_IS
+        Manga.CHAPTER_SHOW_NOT_DOWNLOADED -> TriState.ENABLED_NOT
+        else -> TriState.DISABLED
     }
-fun Manga.chaptersFiltered(): Boolean {
+}
+
+fun Manga.chaptersFiltered(downloadedOnly: Boolean): Boolean {
     return unreadFilter != TriState.DISABLED ||
-        downloadedFilter != TriState.DISABLED ||
+        downloadedFilter(downloadedOnly) != TriState.DISABLED ||
         bookmarkedFilter != TriState.DISABLED
 }
 
@@ -100,7 +96,7 @@ fun SManga.toDomainManga(sourceId: Long): Manga {
     )
 }
 
-fun Manga.hasCustomCover(coverCache: MangaCoverCache = Injekt.get<Context>().appGraph.mangaCoverCache): Boolean {
+fun Manga.hasCustomCover(coverCache: MangaCoverCache): Boolean {
     return coverCache.getCustomCoverFile(id).exists()
 }
 

@@ -6,23 +6,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.anime.MigrateAnimeSourceScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
-import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.MigrateAnimeScreen
 import kotlinx.collections.immutable.persistentListOf
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MigrateAnimeRoute
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
-fun Screen.migrateAnimeSourceTab(): TabContent {
+fun migrateAnimeSourceTab(): TabContent {
     val uriHandler = LocalUriHandler.current
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
     val viewModel = metroViewModel<MigrateAnimeSourceViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -42,7 +40,7 @@ fun Screen.migrateAnimeSourceTab(): TabContent {
                 state = state,
                 contentPadding = contentPadding,
                 onClickItem = { source ->
-                    navigator.push(MigrateAnimeScreen(source.id))
+                    navigator.push(MigrateAnimeRoute(source.id))
                 },
                 onToggleSortingDirection = viewModel::toggleSortingDirection,
                 onToggleSortingMode = viewModel::toggleSortingMode,

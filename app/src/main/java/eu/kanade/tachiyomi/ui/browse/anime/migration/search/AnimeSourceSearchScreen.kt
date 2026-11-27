@@ -11,28 +11,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.core.util.ifAnimeSourcesLoaded
 import eu.kanade.presentation.browse.anime.BrowseAnimeSourceContent
 import eu.kanade.presentation.components.SearchToolbar
-import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.core.common.Constants
-import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceViewModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.SourceFilterAnimeDialog
-import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
-import eu.kanade.tachiyomi.ui.home.HomeScreen
-import eu.kanade.tachiyomi.ui.webview.WebViewScreen
+import eu.kanade.tachiyomi.ui.home.TabEvent
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.coroutines.launch
+import mihon.core.navigation.AnimeMigrationListRoute
+import mihon.core.navigation.AnimeRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MigrateSeasonSelectRoute
+import mihon.core.navigation.WebViewRoute
+import mihon.feature.migration.list.AnimeMatchOverrideEvent
 import mihon.presentation.core.util.collectAsLazyPagingItems
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.MR
@@ -43,128 +42,134 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 
-data class AnimeSourceSearchScreen(
-    private val oldAnime: Anime,
-    private val sourceId: Long,
-    private val query: String?,
-) : Screen() {
+@Composable
+fun AnimeSourceSearchScreen(
+    currentAnimeId: Long,
+    sourceId: Long,
+    query: String?,
+) {
+    if (!ifAnimeSourcesLoaded()) {
+        LoadingScreen()
+        return
+    }
 
-    @Composable
-    override fun Content() {
-        if (!ifAnimeSourcesLoaded()) {
-            LoadingScreen()
-            return
+    val uriHandler = LocalUriHandler.current
+    val navigator = LocalNavigator.current
+    val resultEventBus = LocalResultEventBus.current
+
+    val viewModel =
+        assistedMetroViewModel<BrowseAnimeSourceViewModel, BrowseAnimeSourceViewModel.Factory> {
+            create(sourceId = sourceId, listingQuery = query)
         }
+    val state by viewModel.state.collectAsState()
 
-        val uriHandler = LocalUriHandler.current
-        val navigator = LocalNavigator.currentOrThrow
+    val snackbarHostState = remember { SnackbarHostState() }
+    // KMK -->
+    val context = LocalContext.current
+    // KMK <-
 
-        val viewModel =
-            assistedMetroViewModel<BrowseAnimeSourceViewModel, BrowseAnimeSourceViewModel.Factory> {
-                create(sourceId = sourceId, listingQuery = query)
+    Scaffold(
+        topBar = { scrollBehavior ->
+            SearchToolbar(
+                searchQuery = state.toolbarQuery ?: "",
+                onChangeSearchQuery = viewModel::setToolbarQuery,
+                onClickCloseSearch = navigator::pop,
+                onSearch = viewModel::search,
+                scrollBehavior = scrollBehavior,
+            )
+        },
+        floatingActionButton = {
+            AnimatedVisibility(visible = state.filters.isNotEmpty()) {
+                ExtendedFloatingActionButton(
+                    text = { Text(text = stringResource(MR.strings.action_filter)) },
+                    icon = { Icon(Icons.Outlined.FilterList, contentDescription = "") },
+                    onClick = viewModel::openFilterSheet,
+                )
             }
-        val state by viewModel.state.collectAsState()
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+    ) { paddingValues ->
+        val openMigrateDialog: (Anime) -> Unit = {
+            val migrateListRoute = navigator.routes
+                .filterIsInstance<AnimeMigrationListRoute>()
+                .lastOrNull()
 
-        val snackbarHostState = remember { SnackbarHostState() }
-        // KMK -->
-        val context = LocalContext.current
-        val scope = rememberCoroutineScope()
-        // KMK <-
-
-        Scaffold(
-            topBar = { scrollBehavior ->
-                SearchToolbar(
-                    searchQuery = state.toolbarQuery ?: "",
-                    onChangeSearchQuery = viewModel::setToolbarQuery,
-                    onClickCloseSearch = navigator::pop,
-                    onSearch = viewModel::search,
-                    scrollBehavior = scrollBehavior,
+            if (migrateListRoute == null) {
+                viewModel.showMigrateDialog(currentAnimeId = currentAnimeId, target = it)
+            } else {
+                resultEventBus.sendResult(
+                    result = AnimeMatchOverrideEvent(current = currentAnimeId, target = it.id),
+                )
+                navigator.popTo { route -> route is AnimeMigrationListRoute }
+            }
+        }
+        BrowseAnimeSourceContent(
+            source = viewModel.source,
+            animeList = viewModel.animePagerFlowFlow.collectAsLazyPagingItems(),
+            columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
+            displayMode = viewModel.displayMode,
+            snackbarHostState = snackbarHostState,
+            contentPadding = paddingValues,
+            onWebViewClick = {
+                val source = viewModel.source as? AnimeHttpSource ?: return@BrowseAnimeSourceContent
+                navigator.push(
+                    WebViewRoute(
+                        url = source.getHomeUrl(),
+                        initialTitle = source.name,
+                        sourceId = source.id,
+                    ),
                 )
             },
-            floatingActionButton = {
-                AnimatedVisibility(visible = state.filters.isNotEmpty()) {
-                    ExtendedFloatingActionButton(
-                        text = { Text(text = stringResource(MR.strings.action_filter)) },
-                        icon = { Icon(Icons.Outlined.FilterList, contentDescription = "") },
-                        onClick = viewModel::openFilterSheet,
-                    )
-                }
-            },
-            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        ) { paddingValues ->
-            val openMigrateDialog: (Anime) -> Unit = {
-                viewModel.setDialog(BrowseAnimeSourceViewModel.Dialog.Migrate(newAnime = it, oldAnime = oldAnime))
-            }
-            BrowseAnimeSourceContent(
-                source = viewModel.source,
-                animeList = viewModel.animePagerFlowFlow.collectAsLazyPagingItems(),
-                columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
-                displayMode = viewModel.displayMode,
-                snackbarHostState = snackbarHostState,
-                contentPadding = paddingValues,
-                onWebViewClick = {
-                    val source = viewModel.source as? AnimeHttpSource ?: return@BrowseAnimeSourceContent
-                    navigator.push(
-                        WebViewScreen(
-                            url = source.getHomeUrl(),
-                            initialTitle = source.name,
-                            sourceId = source.id,
-                        ),
-                    )
+            onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
+            onLocalAnimeSourceHelpClick = { uriHandler.openUri(LocalAnimeSource.HELP_URL) },
+            onAnimeClick = openMigrateDialog,
+            onAnimeLongClick = { navigator.push(AnimeRoute(it.id, true)) },
+        )
+    }
+
+    val onDismissRequest = { viewModel.setDialog(null) }
+    when (val dialog = state.dialog) {
+        is BrowseAnimeSourceViewModel.Dialog.Filter -> {
+            SourceFilterAnimeDialog(
+                onDismissRequest = onDismissRequest,
+                filters = state.filters,
+                onReset = viewModel::resetFilters,
+                onFilter = { viewModel.search(filters = state.filters) },
+                onUpdate = viewModel::setFilters,
+                // SY -->
+                startExpanded = viewModel.startExpanded,
+                onSave = {},
+                // KMK -->
+                savedSearches = state.savedSearches,
+                onSavedSearch = { search ->
+                    viewModel.onSavedSearch(search) {
+                        context.toast(it)
+                    }
                 },
-                onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
-                onLocalAnimeSourceHelpClick = { uriHandler.openUri(LocalAnimeSource.HELP_URL) },
-                onAnimeClick = openMigrateDialog,
-                onAnimeLongClick = { navigator.push(AnimeScreen(it.id, true)) },
+                onSavedSearchPressDesc = stringResource(TLMR.strings.saved_searches),
+                shouldShowSavingButton = false,
+                // KMK <--
+                onSavedSearchPress = {},
+                // SY <--
             )
         }
 
-        val onDismissRequest = { viewModel.setDialog(null) }
-        when (val dialog = state.dialog) {
-            is BrowseAnimeSourceViewModel.Dialog.Filter -> {
-                SourceFilterAnimeDialog(
-                    onDismissRequest = onDismissRequest,
-                    filters = state.filters,
-                    onReset = viewModel::resetFilters,
-                    onFilter = { viewModel.search(filters = state.filters) },
-                    onUpdate = viewModel::setFilters,
-                    // SY -->
-                    startExpanded = viewModel.startExpanded,
-                    onSave = {},
-                    // KMK -->
-                    savedSearches = state.savedSearches,
-                    onSavedSearch = { search ->
-                        viewModel.onSavedSearch(search) {
-                            context.toast(it)
-                        }
-                    },
-                    onSavedSearchPressDesc = stringResource(TLMR.strings.saved_searches),
-                    shouldShowSavingButton = false,
-                    // KMK <--
-                    onSavedSearchPress = {},
-                    // SY <--
-                )
-            }
-
-            is BrowseAnimeSourceViewModel.Dialog.Migrate -> {
-                MigrateAnimeDialog(
-                    oldAnime = oldAnime,
-                    newAnime = dialog.newAnime,
-                    screenModel = rememberScreenModel { MigrateAnimeDialogScreenModel() },
-                    onDismissRequest = onDismissRequest,
-                    onClickTitle = { navigator.push(AnimeScreen(dialog.newAnime.id)) },
-                    onClickSeasons = { navigator.push(MigrateSeasonSelectScreen(oldAnime, dialog.newAnime)) },
-                    onPopScreen = {
-                        scope.launch {
-                            navigator.popUntilRoot()
-                            HomeScreen.openTab(HomeScreen.Tab.Browse())
-                            navigator.push(AnimeScreen(dialog.newAnime.id))
-                        }
-                    },
-                )
-            }
-
-            else -> {}
+        is BrowseAnimeSourceViewModel.Dialog.Migrate -> {
+            MigrateAnimeDialog(
+                oldAnime = dialog.oldAnime,
+                newAnime = dialog.newAnime,
+                screenModel = metroViewModel<MigrateAnimeDialogScreenModel>(),
+                onDismissRequest = onDismissRequest,
+                onClickTitle = { navigator.push(AnimeRoute(dialog.newAnime.id)) },
+                onClickSeasons = { navigator.push(MigrateSeasonSelectRoute(dialog.oldAnime.id, dialog.newAnime.id)) },
+                onPopScreen = {
+                    navigator.popToRoot()
+                    resultEventBus.sendResult<TabEvent>(TabEvent.Browse(anime = true))
+                    navigator.push(AnimeRoute(dialog.newAnime.id))
+                },
+            )
         }
+
+        else -> {}
     }
 }

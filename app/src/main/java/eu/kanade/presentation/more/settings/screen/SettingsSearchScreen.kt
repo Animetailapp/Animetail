@@ -45,8 +45,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.navigation3.runtime.NavKey
 import eu.kanade.presentation.components.UpIcon
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsAdvancedScreen
@@ -56,7 +55,8 @@ import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsGestures
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsPlayerScreen
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsSubtitleScreen
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsTorrentScreen
-import eu.kanade.presentation.util.Screen
+import mihon.core.navigation.LocalBackButtonVisibility
+import mihon.core.navigation.LocalNavigator
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.Close
 import tachiyomi.i18n.MR
@@ -65,107 +65,101 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.util.runOnEnterKeyPressed
-import cafe.adriel.voyager.core.screen.Screen as VoyagerScreen
 
-class SettingsSearchScreen(
-    val isPlayer: Boolean = false,
-) : Screen() {
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
-        val softKeyboardController = LocalSoftwareKeyboardController.current
-        val focusManager = LocalFocusManager.current
-        val focusRequester = remember { FocusRequester() }
-        val listState = rememberLazyListState()
+@Composable
+fun SettingsSearchScreen(isPlayer: Boolean = false) {
+    val navigator = LocalNavigator.current
+    val softKeyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val focusRequester = remember { FocusRequester() }
+    val listState = rememberLazyListState()
 
-        // Hide keyboard on change screen
-        DisposableEffect(Unit) {
-            onDispose {
-                softKeyboardController?.hide()
-            }
+    // Hide keyboard on change screen
+    DisposableEffect(Unit) {
+        onDispose {
+            softKeyboardController?.hide()
         }
+    }
 
-        // Hide keyboard on outside text field is touched
-        LaunchedEffect(listState.isScrollInProgress) {
-            if (listState.isScrollInProgress) {
-                focusManager.clearFocus()
-            }
+    // Hide keyboard on outside text field is touched
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress) {
+            focusManager.clearFocus()
         }
+    }
 
-        // Request text field focus on launch
-        LaunchedEffect(focusRequester) {
-            focusRequester.requestFocus()
-        }
+    // Request text field focus on launch
+    LaunchedEffect(focusRequester) {
+        focusRequester.requestFocus()
+    }
 
-        val textFieldState = rememberTextFieldState()
-        Scaffold(
-            topBar = {
-                Column {
-                    TopAppBar(
-                        navigationIcon = {
-                            val canPop = remember { navigator.canPop }
-                            if (canPop) {
-                                IconButton(onClick = navigator::pop) {
-                                    UpIcon()
-                                }
+    val textFieldState = rememberTextFieldState()
+    Scaffold(
+        topBar = {
+            Column {
+                TopAppBar(
+                    navigationIcon = {
+                        if (LocalBackButtonVisibility.current) {
+                            IconButton(onClick = navigator::pop) {
+                                UpIcon()
                             }
-                        },
-                        title = {
-                            BasicTextField(
-                                state = textFieldState,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequester)
-                                    .runOnEnterKeyPressed(action = focusManager::clearFocus),
-                                textStyle = MaterialTheme.typography.bodyLarge
-                                    .copy(color = MaterialTheme.colorScheme.onSurface),
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                onKeyboardAction = { focusManager.clearFocus() },
-                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                                decorator = {
-                                    if (textFieldState.text.isEmpty()) {
-                                        Text(
-                                            text = stringResource(
-                                                resource = if (isPlayer) {
-                                                    AYMR.strings.action_search_player_settings
-                                                } else {
-                                                    MR.strings.action_search_settings
-                                                },
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                        )
-                                    }
-                                    it()
-                                },
-                            )
-                        },
-                        actions = {
-                            if (textFieldState.text.isNotEmpty()) {
-                                IconButton(onClick = { textFieldState.clearText() }) {
-                                    Icon(
-                                        imageVector = MaterialSymbols.Rounded.Close,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        }
+                    },
+                    title = {
+                        BasicTextField(
+                            state = textFieldState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester)
+                                .runOnEnterKeyPressed(action = focusManager::clearFocus),
+                            textStyle = MaterialTheme.typography.bodyLarge
+                                .copy(color = MaterialTheme.colorScheme.onSurface),
+                            lineLimits = TextFieldLineLimits.SingleLine,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            onKeyboardAction = { focusManager.clearFocus() },
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            decorator = {
+                                if (textFieldState.text.isEmpty()) {
+                                    Text(
+                                        text = stringResource(
+                                            resource = if (isPlayer) {
+                                                AYMR.strings.action_search_player_settings
+                                            } else {
+                                                MR.strings.action_search_settings
+                                            },
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.bodyLarge,
                                     )
                                 }
+                                it()
+                            },
+                        )
+                    },
+                    actions = {
+                        if (textFieldState.text.isNotEmpty()) {
+                            IconButton(onClick = { textFieldState.clearText() }) {
+                                Icon(
+                                    imageVector = MaterialSymbols.Rounded.Close,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
-                        },
-                    )
-                    HorizontalDivider()
-                }
-            },
-        ) { contentPadding ->
-            SearchResult(
-                searchKey = textFieldState.text.toString(),
-                isPlayer = isPlayer,
-                listState = listState,
-                contentPadding = contentPadding,
-            ) { result ->
-                SearchableSettings.highlightKey = result.highlightKey
-                navigator.replace(result.route)
+                        }
+                    },
+                )
+                HorizontalDivider()
             }
+        },
+    ) { contentPadding ->
+        SearchResult(
+            searchKey = textFieldState.text.toString(),
+            isPlayer = isPlayer,
+            listState = listState,
+            contentPadding = contentPadding,
+        ) { result ->
+            SearchableSettings.highlightKey = result.highlightKey
+            navigator.replace(result.route)
         }
     }
 }
@@ -348,13 +342,13 @@ private val settingScreens: List<SearchableSettings> = listOf(
 
 private data class SettingsData(
     val title: String,
-    val route: VoyagerScreen,
+    val route: NavKey,
     val contents: List<Preference>,
     val playerSettings: Boolean = false,
 )
 
 private data class SearchResultItem(
-    val route: VoyagerScreen,
+    val route: NavKey,
     val title: String,
     val breadcrumbs: String,
     val highlightKey: String,

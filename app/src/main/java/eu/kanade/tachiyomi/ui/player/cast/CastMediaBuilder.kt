@@ -16,8 +16,8 @@ import eu.kanade.tachiyomi.util.LocalHttpServerService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.injectLazy
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.URLEncoder
@@ -28,10 +28,11 @@ class CastMediaBuilder(
 ) {
 
     private val player by lazy { activity.player }
-    private val prefserver: LocalHttpServerHolder by injectLazy()
-    private val port = prefserver.port().get()
-    private val torrentServerApi: TorrentServerApi by injectLazy()
-    private val torrentServerUtils: TorrentServerUtils by injectLazy()
+    private val appGraph by lazy { activity.applicationContext.appGraph }
+    private val prefserver get() = appGraph.localHttpServerHolder
+    private val port by lazy { prefserver.port().get() }
+    private val torrentServerApi get() = appGraph.torrentServerApi
+    private val torrentServerUtils get() = appGraph.torrentServerUtils
 
     suspend fun buildMediaInfo(video: Video): MediaInfo = withContext(Dispatchers.IO) {
         var videoUrl = video.videoUrl

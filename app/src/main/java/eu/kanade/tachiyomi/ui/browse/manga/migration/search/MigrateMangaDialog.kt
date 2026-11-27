@@ -19,7 +19,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
-import cafe.adriel.voyager.core.model.StateScreenModel
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.entries.manga.model.hasCustomCover
 import eu.kanade.domain.entries.manga.model.toSManga
@@ -32,8 +38,12 @@ import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.ui.browse.manga.migration.MangaMigrationFlags
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.launchIO
@@ -55,8 +65,6 @@ import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.time.Instant
 
 @Composable
@@ -68,10 +76,19 @@ internal fun MigrateMangaDialog(
     onClickTitle: () -> Unit,
     onPopScreen: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val appGraph = remember(context) { context.appGraph }
     val scope = rememberCoroutineScope()
     val state by screenModel.state.collectAsState()
 
-    val flags = remember { MangaMigrationFlags.getFlags(oldManga, screenModel.migrateFlags.get()) }
+    val flags = remember {
+        MangaMigrationFlags.getFlags(
+            oldManga,
+            screenModel.migrateFlags.get(),
+            appGraph.mangaCoverCache,
+            appGraph.mangaDownloadCache,
+        )
+    }
     val selectedFlags = remember { flags.map { it.isDefaultSelected }.toMutableStateList() }
 
     if (state.isMigrating) {
@@ -150,27 +167,34 @@ internal fun MigrateMangaDialog(
     }
 }
 
-internal class MigrateMangaDialogScreenModel(
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val downloadManager: MangaDownloadManager = Injekt.get(),
-    private val updateManga: UpdateManga = Injekt.get(),
-    private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
-    private val syncChaptersWithSource: SyncChaptersWithSource = Injekt.get(),
-    private val updateChapter: UpdateChapter = Injekt.get(),
-    private val getCategories: GetMangaCategories = Injekt.get(),
-    private val setMangaCategories: SetMangaCategories = Injekt.get(),
-    private val getTracks: GetMangaTracks = Injekt.get(),
-    private val insertTrack: InsertMangaTrack = Injekt.get(),
-    private val coverCache: MangaCoverCache = Injekt.get(),
-    private val preferenceStore: PreferenceStore = Injekt.get(),
-) : StateScreenModel<MigrateMangaDialogScreenModel.State>(State()) {
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+class MigrateMangaDialogScreenModel(
+    private val sourceManager: MangaSourceManager,
+    private val downloadManager: MangaDownloadManager,
+    private val updateManga: UpdateManga,
+    private val getChaptersByMangaId: GetChaptersByMangaId,
+    private val syncChaptersWithSource: SyncChaptersWithSource,
+    private val updateChapter: UpdateChapter,
+    private val getCategories: GetMangaCategories,
+    private val setMangaCategories: SetMangaCategories,
+    private val getTracks: GetMangaTracks,
+    private val insertTrack: InsertMangaTrack,
+    private val coverCache: MangaCoverCache,
+    private val preferenceStore: PreferenceStore,
+    private val trackerManager: TrackerManager,
+) : ViewModel() {
+
+    private val mutableState = MutableStateFlow(State())
+    val state: StateFlow<State> = mutableState.asStateFlow()
 
     val migrateFlags: Preference<Int> by lazy {
         preferenceStore.getInt("migrate_flags", Int.MAX_VALUE)
     }
 
     private val enhancedServices by lazy {
-        Injekt.get<TrackerManager>().trackers.filterIsInstance<EnhancedMangaTracker>()
+        trackerManager.trackers.filterIsInstance<EnhancedMangaTracker>()
     }
 
     suspend fun migrateManga(
@@ -315,7 +339,7 @@ internal class MigrateMangaDialogScreenModel(
         }
 
         // Update custom cover (recheck if custom cover exists)
-        if (migrateCustomCover && oldManga.hasCustomCover()) {
+        if (migrateCustomCover && oldManga.hasCustomCover(coverCache)) {
             try {
                 coverCache.setCustomCoverToCache(
                     newManga,

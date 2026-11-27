@@ -3,17 +3,15 @@ package eu.kanade.tachiyomi.ui.storage.manga
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.presentation.more.storage.StorageScreenContent
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.i18n.aniyomi.AYMR
 
 @Composable
-fun Screen.mangaStorageTab(): TabContent {
-    val navigator = LocalNavigator.currentOrThrow
+fun mangaStorageTab(): TabContent {
+    val navigator = LocalNavigator.current
 
     val viewModel = metroViewModel<MangaStorageViewModel>()
     val state by viewModel.state.collectAsState()

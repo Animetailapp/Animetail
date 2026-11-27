@@ -4,18 +4,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.manga.MangaSourceOptionsDialog
 import eu.kanade.presentation.browse.manga.MangaSourcesScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
-import eu.kanade.tachiyomi.ui.browse.manga.source.browse.BrowseMangaSourceScreen
-import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearchScreen
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import mihon.core.navigation.BrowseMangaSourceRoute
+import mihon.core.navigation.GlobalMangaSearchRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MangaSourcesFilterRoute
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.FilterList
 import mihon.icons.materialsymbols.rounded.TravelExplore
@@ -24,8 +23,8 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
-fun Screen.mangaSourcesTab(): TabContent {
-    val navigator = LocalNavigator.currentOrThrow
+fun mangaSourcesTab(): TabContent {
+    val navigator = LocalNavigator.current
     val viewModel = metroViewModel<MangaSourcesViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -35,12 +34,12 @@ fun Screen.mangaSourcesTab(): TabContent {
             AppBar.Action(
                 title = stringResource(MR.strings.action_global_search),
                 icon = MaterialSymbols.Rounded.TravelExplore,
-                onClick = { navigator.push(GlobalMangaSearchScreen()) },
+                onClick = { navigator.push(GlobalMangaSearchRoute()) },
             ),
             AppBar.Action(
                 title = stringResource(MR.strings.action_filter),
                 icon = MaterialSymbols.Rounded.FilterList,
-                onClick = { navigator.push(MangaSourcesFilterScreen()) },
+                onClick = { navigator.push(MangaSourcesFilterRoute) },
             ),
         ),
         content = { contentPadding, snackbarHostState ->
@@ -48,7 +47,7 @@ fun Screen.mangaSourcesTab(): TabContent {
                 state = state,
                 contentPadding = contentPadding,
                 onClickItem = { source, listing ->
-                    navigator.push(BrowseMangaSourceScreen(source.id, listing.query))
+                    navigator.push(BrowseMangaSourceRoute(source.id, listing.query))
                 },
                 onClickPin = viewModel::togglePin,
                 onLongClickItem = viewModel::showSourceDialog,

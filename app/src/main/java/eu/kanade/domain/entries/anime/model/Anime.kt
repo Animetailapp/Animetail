@@ -1,45 +1,39 @@
 package eu.kanade.domain.entries.anime.model
 
-import android.content.Context
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
-import mihon.app.di.appGraph
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.entries.anime.model.Anime
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 // TODO: move these into the domain model
-val Anime.downloadedFilter: TriState
-    get() {
-        if (Injekt.get<Context>().appGraph.basePreferences.downloadedOnly.get()) return TriState.ENABLED_IS
-        return when (downloadedFilterRaw) {
-            Anime.EPISODE_SHOW_DOWNLOADED -> TriState.ENABLED_IS
-            Anime.EPISODE_SHOW_NOT_DOWNLOADED -> TriState.ENABLED_NOT
-            else -> TriState.DISABLED
-        }
+fun Anime.downloadedFilter(downloadedOnly: Boolean): TriState {
+    if (downloadedOnly) return TriState.ENABLED_IS
+    return when (downloadedFilterRaw) {
+        Anime.EPISODE_SHOW_DOWNLOADED -> TriState.ENABLED_IS
+        Anime.EPISODE_SHOW_NOT_DOWNLOADED -> TriState.ENABLED_NOT
+        else -> TriState.DISABLED
     }
+}
 
-val Anime.seasonDownloadedFilter: TriState
-    get() {
-        if (Injekt.get<Context>().appGraph.basePreferences.downloadedOnly.get()) return TriState.ENABLED_IS
-        return when (seasonDownloadedFilterRaw) {
-            Anime.SEASON_SHOW_DOWNLOADED -> TriState.ENABLED_IS
-            Anime.SEASON_SHOW_NOT_DOWNLOADED -> TriState.ENABLED_NOT
-            else -> TriState.DISABLED
-        }
+fun Anime.seasonDownloadedFilter(downloadedOnly: Boolean): TriState {
+    if (downloadedOnly) return TriState.ENABLED_IS
+    return when (seasonDownloadedFilterRaw) {
+        Anime.SEASON_SHOW_DOWNLOADED -> TriState.ENABLED_IS
+        Anime.SEASON_SHOW_NOT_DOWNLOADED -> TriState.ENABLED_NOT
+        else -> TriState.DISABLED
     }
+}
 
-fun Anime.episodesFiltered(): Boolean {
+fun Anime.episodesFiltered(downloadedOnly: Boolean): Boolean {
     return unseenFilter != TriState.DISABLED ||
-        downloadedFilter != TriState.DISABLED ||
+        downloadedFilter(downloadedOnly) != TriState.DISABLED ||
         bookmarkedFilter != TriState.DISABLED ||
         fillermarkedFilter != TriState.DISABLED
 }
 
-fun Anime.seasonsFiltered(): Boolean {
-    return seasonDownloadedFilter != TriState.DISABLED ||
+fun Anime.seasonsFiltered(downloadedOnly: Boolean): Boolean {
+    return seasonDownloadedFilter(downloadedOnly) != TriState.DISABLED ||
         seasonUnseenFilter != TriState.DISABLED ||
         seasonStartedFilter != TriState.DISABLED ||
         seasonCompletedFilter != TriState.DISABLED ||
@@ -120,14 +114,10 @@ fun SAnime.toDomainAnime(sourceId: Long): Anime {
     )
 }
 
-fun Anime.hasCustomCover(
-    coverCache: AnimeCoverCache = Injekt.get<Context>().appGraph.animeCoverCache,
-): Boolean {
+fun Anime.hasCustomCover(coverCache: AnimeCoverCache): Boolean {
     return coverCache.getCustomCoverFile(id).exists()
 }
 
-fun Anime.hasCustomBackground(
-    backgroundCache: AnimeBackgroundCache = Injekt.get<Context>().appGraph.animeBackgroundCache,
-): Boolean {
+fun Anime.hasCustomBackground(backgroundCache: AnimeBackgroundCache): Boolean {
     return backgroundCache.getCustomBackgroundFile(id).exists()
 }

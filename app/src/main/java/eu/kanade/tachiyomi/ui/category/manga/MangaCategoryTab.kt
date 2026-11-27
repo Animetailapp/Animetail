@@ -4,23 +4,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.category.MangaCategoryScreen
 import eu.kanade.presentation.category.components.CategoryCreateDialog
 import eu.kanade.presentation.category.components.CategoryDeleteDialog
 import eu.kanade.presentation.category.components.CategoryRenameDialog
 import eu.kanade.presentation.components.TabContent
 import kotlinx.collections.immutable.toImmutableList
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 @Composable
-fun Screen.mangaCategoryTab(): TabContent {
-    val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { MangaCategoryScreenModel() }
+fun mangaCategoryTab(): TabContent {
+    val navigator = LocalNavigator.current
+    val screenModel = metroViewModel<MangaCategoryScreenModel>()
 
     val state by screenModel.state.collectAsStateWithLifecycle()
 

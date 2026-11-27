@@ -7,8 +7,6 @@ import eu.kanade.tachiyomi.data.sync.service.GoogleDriveService
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.tail.TLMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class GoogleDriveLoginActivity : BaseOAuthLoginActivity() {
     private val googleDriveService by lazy { GoogleDriveService(this) }

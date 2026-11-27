@@ -19,9 +19,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import org.json.JSONObject
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
@@ -71,6 +70,8 @@ object DiscordRpcManager {
     @Volatile private var expiresAt: Long = 0L
 
     @Volatile private var lastAutoRefreshTime = 0L
+
+    @Volatile private var connectionsManager: ConnectionsManager? = null
 
     private val _accessTokenFlow = MutableStateFlow<String?>(null)
     val accessTokenFlow: StateFlow<String?> = _accessTokenFlow
@@ -139,8 +140,7 @@ object DiscordRpcManager {
             return stored
         }
         try {
-            val connectionsManager = Injekt.get<ConnectionsManager>()
-            val activeAccount = connectionsManager.discord.getAccounts().firstOrNull { it.isActive }
+            val activeAccount = connectionsManager?.discord?.getAccounts()?.firstOrNull { it.isActive }
             val rt = activeAccount?.refreshToken
             if (!rt.isNullOrBlank()) {
                 refreshToken = rt
@@ -148,7 +148,7 @@ object DiscordRpcManager {
                 return rt
             }
         } catch (_: Exception) {
-            // Ignore if Injekt is not initialized
+            // Ignore if ConnectionsManager is not initialized
         }
         return null
     }
@@ -161,15 +161,14 @@ object DiscordRpcManager {
             return stored
         }
         try {
-            val connectionsManager = Injekt.get<ConnectionsManager>()
-            val activeAccount = connectionsManager.discord.getAccounts().firstOrNull { it.isActive }
+            val activeAccount = connectionsManager?.discord?.getAccounts()?.firstOrNull { it.isActive }
             if (activeAccount != null && activeAccount.expiresAt > 0L) {
                 expiresAt = activeAccount.expiresAt
                 DiscordTokenStore.storeExpiresAt(activeAccount.expiresAt)
                 return activeAccount.expiresAt
             }
         } catch (_: Exception) {
-            // Ignore if Injekt is not initialized
+            // Ignore if ConnectionsManager is not initialized
         }
         return 0L
     }
@@ -206,7 +205,9 @@ object DiscordRpcManager {
     fun isReady(): Boolean = readyInternal
 
     fun init(context: Context) {
-        DiscordTokenStore.init(context.applicationContext)
+        val appContext = context.applicationContext
+        connectionsManager = appContext.appGraph.connectionsManager
+        DiscordTokenStore.init(appContext)
         if (!initialized.compareAndSet(false, true)) {
             Log.i(TAG, "init: already initialized, skipping")
             return
@@ -242,8 +243,7 @@ object DiscordRpcManager {
             Log.i(TAG, "init: populated accessTokenFlow with stored token (length=${storedToken.length})")
         } else {
             try {
-                val connectionsManager = Injekt.get<ConnectionsManager>()
-                val activeAccount = connectionsManager.discord.getAccounts().firstOrNull { it.isActive }
+                val activeAccount = connectionsManager?.discord?.getAccounts()?.firstOrNull { it.isActive }
                 if (activeAccount != null && activeAccount.token.isNotBlank()) {
                     accessToken = activeAccount.token
                     refreshToken = activeAccount.refreshToken
@@ -578,8 +578,7 @@ object DiscordRpcManager {
                     DiscordTokenStore.store(newAccessToken, newRefreshToken, expiresIn)
 
                     try {
-                        val connectionsManager = Injekt.get<ConnectionsManager>()
-                        connectionsManager.discord.updateToken(newAccessToken, newRefreshToken, newExpiresAt)
+                        connectionsManager?.discord?.updateToken(newAccessToken, newRefreshToken, newExpiresAt)
                     } catch (e: Exception) {
                         Log.w(TAG, "refreshAccessToken: failed to update ConnectionsManager account", e)
                     }

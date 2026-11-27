@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -33,15 +34,13 @@ import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.util.formatEpisodeNumber
 import eu.kanade.tachiyomi.util.lang.toTimestampString
+import mihon.app.di.appGraph
 import tachiyomi.domain.history.anime.model.AnimeHistoryWithRelations
-import tachiyomi.domain.items.episode.interactor.GetEpisode
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.concurrent.TimeUnit
@@ -90,10 +89,11 @@ fun AnimeHistoryItem(
                 history.seenAt?.toTimestampString(timeFormatter) ?: ""
             }
 
+            val context = LocalContext.current
             var lastSecondSeen: Long? by remember { mutableStateOf(null) }
             var totalSeconds: Long? by remember { mutableStateOf(null) }
             LaunchedEffect(history.episodeId) {
-                val getEpisode: GetEpisode = Injekt.get()
+                val getEpisode = context.appGraph.getEpisode
                 val ep = try {
                     getEpisode.await(history.episodeId)
                 } catch (e: Exception) {

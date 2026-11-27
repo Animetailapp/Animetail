@@ -16,17 +16,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.injectLazy
 
 class HttpServerService : Service() {
 
     private var httpServer: HttpServer? = null
-    private val sourceManager: AnimeSourceManager by injectLazy()
+    private val sourceManager by lazy { applicationContext.appGraph.animeSourceManager }
 
     override fun onBind(intent: Intent?) = null
 

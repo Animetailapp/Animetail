@@ -38,6 +38,7 @@ import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.source.anime.model.AnimeSource
@@ -192,6 +193,8 @@ fun FeedAddDialog(
                     source.id == input.toLongOrNull()
             }
         }
+    val context = LocalContext.current
+    val sourcePreferences = remember { context.appGraph.sourcePreferences }
     val composeOptions: List<@Composable () -> Unit> = sourceList
         .map {
             {
@@ -204,7 +207,7 @@ fun FeedAddDialog(
                 )
                 AnimeSourceIcon(source = source)
                 Spacer(modifier = Modifier.width(MaterialTheme.padding.extraSmall))
-                Text(text = it.getNameForAnimeInfo())
+                Text(text = it.getNameForAnimeInfo(sourcePreferences))
             }
         }
     // KMK <--
