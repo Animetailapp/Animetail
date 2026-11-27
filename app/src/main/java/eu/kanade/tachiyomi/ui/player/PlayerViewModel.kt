@@ -99,6 +99,7 @@ import eu.kanade.tachiyomi.ui.player.utils.AniSkipApi
 import eu.kanade.tachiyomi.ui.player.utils.AudioLanguageTarget
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
 import eu.kanade.tachiyomi.ui.player.utils.LanguageTags
+import eu.kanade.tachiyomi.ui.player.utils.SubtitlesForAudio
 import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
 import eu.kanade.tachiyomi.ui.player.utils.applyVideoAspect
 import eu.kanade.tachiyomi.ui.reader.SaveImageNotifier
@@ -567,6 +568,7 @@ class PlayerViewModel(
             } else {
                 updateAudio(it.id)
             }
+            followAudioWithSubtitles(it.id)
         }
 
         isLoadingTracks.update { _ -> true }
@@ -628,12 +630,22 @@ class PlayerViewModel(
     /** Called when the user picks an audio track; remembers its language for this anime. */
     fun selectAudio(id: Int) {
         mpv.setPropertyInt("aid", id)
+        followAudioWithSubtitles(id)
         val track = audioTracks.value.firstOrNull { it.id == id }?.takeIf { it.id != -1 } ?: return
         val target = audioTarget ?: return
         val setting = LanguageTags.normalize(track.language)?.let(target::settingForLanguage)
             ?: target.settingForLabel(track.name)
             ?: return
         saveAudioLanguage(setting)
+    }
+
+    /** Switches to the subtitles made for audio track [audioId], see [SubtitlesForAudio]. */
+    private fun followAudioWithSubtitles(audioId: Int) {
+        val audio = audioTracks.value.firstOrNull { it.id == audioId && it.id != -1 } ?: return
+        val currentSid = mpv.getPropertyInt("sid") ?: return
+        val subtitle = SubtitlesForAudio.subtitleFor(subtitleTracks.value, currentSid, audio) ?: return
+        logcat { "Subtitles follow audio '${audio.name}': '${subtitle.name}'" }
+        mpv.setPropertyInt("sid", subtitle.id)
     }
 
     private fun saveAudioLanguage(setting: String) {
