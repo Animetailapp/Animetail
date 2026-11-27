@@ -33,6 +33,7 @@ import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.OutlinedNumericChooser
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
@@ -98,7 +99,7 @@ object SettingsDownloadScreen : SearchableSettings {
                 entries = (1..5).associateWith { it.toString() }.toMap(),
                 title = stringResource(AYMR.strings.pref_download_slots),
             ),
-            Preference.PreferenceItem.InfoPreference(stringResource(AYMR.strings.download_slots_info)),
+            Preference.PreferenceItem.InfoPreference(stringResource(TLMR.strings.download_slots_anime_info)),
             getDeleteChaptersGroup(
                 downloadPreferences = downloadPreferences,
                 animeCategories = allAnimeCategories.toList(),

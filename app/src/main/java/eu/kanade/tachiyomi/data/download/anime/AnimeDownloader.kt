@@ -210,15 +210,19 @@ class AnimeDownloader(
         if (isRunning) return
 
         downloaderJob = scope.launchIO {
-            val activeDownloadsFlow = queueState.transformLatest { queue ->
+            val activeDownloadsFlow = combine(
+                queueState,
+                // "Maximum downloads": how many sources download at once
+                preferences.numberOfDownloads.changes(),
+            ) { queue, slots -> queue to slots }.transformLatest { (queue, slots) ->
                 while (true) {
-                    val activeDownloads = queue.asSequence()
-                        .filter {
-                            it.status.value <= AnimeDownload.State.DOWNLOADING.value
-                        } // Ignore completed downloads, leave them in the queue
-                        .groupBy { it.source }
-                        .toList().take(3) // Concurrently download from 5 different sources
-                        .map { (_, downloads) -> downloads.first() }
+                    val activeDownloads = selectConcurrentDownloads(
+                        queue = queue,
+                        slots = slots,
+                        // Ignore completed downloads, leave them in the queue
+                        isRunnable = { it.status.value <= AnimeDownload.State.DOWNLOADING.value },
+                        source = { it.source },
+                    )
                     emit(activeDownloads)
 
                     if (activeDownloads.isEmpty()) break
@@ -1047,6 +1051,24 @@ class AnimeDownloader(
         private const val DOWNLOADS_QUEUED_WARNING_THRESHOLD = 20
     }
 }
+
+/**
+ * The downloads that run concurrently: the first runnable download of each source, in queue order,
+ * for at most [slots] sources (at least one). One download per source keeps the load on each host
+ * low; [slots], the "Maximum downloads" preference, bounds the total.
+ */
+internal fun <T> selectConcurrentDownloads(
+    queue: List<T>,
+    slots: Int,
+    isRunnable: (T) -> Boolean,
+    source: (T) -> Any,
+): List<T> =
+    queue.asSequence()
+        .filter(isRunnable)
+        .groupBy(source)
+        .toList()
+        .take(slots.coerceAtLeast(1))
+        .map { (_, downloads) -> downloads.first() }
 
 // Arbitrary minimum required space to start a download: 200 MB
 private const val MIN_DISK_SPACE = 200L * 1024 * 1024
