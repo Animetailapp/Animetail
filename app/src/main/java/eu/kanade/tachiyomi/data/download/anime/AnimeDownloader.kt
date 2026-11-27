@@ -273,9 +273,10 @@ class AnimeDownloader(
             }
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
+            // Only this episode failed: the other downloads go on, as after any failed download.
             logcat(LogPriority.ERROR, e)
-            notifier.onError(e.message)
-            stop()
+            download.status = AnimeDownload.State.ERROR
+            notifier.onError(e.message, download.episode.name, download.anime.title, download.anime.id)
         }
     }
 
