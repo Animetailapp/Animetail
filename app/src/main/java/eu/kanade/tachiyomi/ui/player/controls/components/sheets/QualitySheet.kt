@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.player.components.PlayerSheet
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.ui.player.loader.HosterPriority
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
@@ -61,6 +62,17 @@ sealed class HosterState(open val name: String) {
     /** Whether tapping the hoster extracts it again; a hoster that returned no videos is worth retrying. */
     val canReload: Boolean
         get() = this is Idle || this is Error || (this is Ready && videoList.isEmpty())
+}
+
+/**
+ * Names the hoster priority is edited with: the hosters, or for an extension without hosters the
+ * servers named in its video titles.
+ */
+fun List<HosterState>.priorityNames(): List<String> {
+    val placeholder = singleOrNull()?.takeIf { it.name == Hoster.NO_HOSTER_LIST } ?: return map { it.name }
+    return (placeholder as? HosterState.Ready)?.videoList.orEmpty()
+        .map { HosterPriority.serverName(it.videoTitle) }
+        .distinctBy { it.lowercase() }
 }
 
 fun HosterState.Ready.getChangedAt(index: Int, newVideo: Video, newState: Video.State): HosterState.Ready {
@@ -117,8 +129,7 @@ fun QualitySheet(
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.weight(1f),
                 )
-                val hasHosters = hosterState.isNotEmpty() && hosterState.first().name != Hoster.NO_HOSTER_LIST
-                if (hasHosters) {
+                if (hosterState.priorityNames().isNotEmpty()) {
                     IconButton(onClick = onEditPriority, enabled = !isLoadingHosters) {
                         Icon(
                             imageVector = Icons.Outlined.SwapVert,
