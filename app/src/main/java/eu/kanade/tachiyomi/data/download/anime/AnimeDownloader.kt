@@ -29,6 +29,7 @@ import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateNotifier
 import eu.kanade.tachiyomi.data.notification.NotificationHandler
+import eu.kanade.tachiyomi.data.opdetect.OpeningEndingDetectionJob
 import eu.kanade.tachiyomi.data.torrent.service.TorrentServerService
 import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.ui.main.MainActivity
@@ -275,6 +276,7 @@ class AnimeDownloader(
             // Remove successful download from queue
             if (download.status == AnimeDownload.State.DOWNLOADED) {
                 removeFromQueue(download)
+                OpeningEndingDetectionJob.onEpisodeDownloaded(context, download.anime.id)
             }
         } catch (e: Throwable) {
             if (e is CancellationException) throw e

@@ -1,10 +1,12 @@
--- Opening/ending segments of a downloaded episode that the app keeps itself, such as the source's
--- timestamps for the downloaded video, saved at download time (the file doesn't carry them).
+-- Opening/ending segments of a downloaded episode that the app keeps itself: the source's timestamps
+-- for the downloaded video, saved at download time (the file doesn't carry them), or worked out from
+-- the audio shared between downloaded episodes of a show.
 CREATE TABLE episode_segments(
     episode_id INTEGER NOT NULL,
     -- "opening", "ending", "recap" or "mixed_opening"
     type TEXT NOT NULL,
-    -- Where the segment comes from: "source" (the source's timestamps for the downloaded video)
+    -- Where the segment comes from: "source" (the source's timestamps for the downloaded video) or
+    -- "detected" (audio shared with other episodes)
     source TEXT NOT NULL,
     start_ms INTEGER NOT NULL,
     end_ms INTEGER NOT NULL,

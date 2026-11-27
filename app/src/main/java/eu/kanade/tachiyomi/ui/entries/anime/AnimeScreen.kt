@@ -52,6 +52,7 @@ import eu.kanade.presentation.util.formatEpisodeNumber
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
+import eu.kanade.tachiyomi.data.opdetect.OpeningEndingDetectionJob
 import eu.kanade.tachiyomi.data.torrent.service.TorrentServerService
 import eu.kanade.tachiyomi.source.anime.isLocalOrStub
 import eu.kanade.tachiyomi.source.anime.isSourceForTorrents
@@ -93,6 +94,7 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
+import tachiyomi.presentation.core.util.collectAsState
 
 @Composable
 @Suppress("MagicNumber", "LongMethod", "CyclomaticComplexMethod")
@@ -177,6 +179,7 @@ private fun AnimeDetailContent(
 ) {
     // KMK <--
     val isAnimeHttpSource = remember { successState.source is AnimeHttpSource }
+    val detectOpeningsEndings by viewModel.advancedPlayerPreferences.detectOpeningsEndings().collectAsState()
     var assistUrl by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(successState.anime, viewModel.source) {
@@ -289,6 +292,11 @@ private fun AnimeDetailContent(
             .takeIf { successState.anime.favorite && successState.anime.fetchType == FetchType.Episodes },
         changeAnimeAudioLanguage = viewModel::showAnimeAudioLanguageDialog
             .takeIf { !successState.source.isLocalOrStub() },
+        onDetectOpeningsEndingsClicked = {
+            OpeningEndingDetectionJob.startNow(context, successState.anime.id)
+        }.takeIf {
+            detectOpeningsEndings && successState.episodes.count { it.isDownloaded } >= 2
+        },
         onMultiBookmarkClicked = viewModel::bookmarkEpisodes,
         onMultiFillermarkClicked = viewModel::fillermarkEpisodes,
         onMultiMarkAsSeenClicked = viewModel::markEpisodesSeen,

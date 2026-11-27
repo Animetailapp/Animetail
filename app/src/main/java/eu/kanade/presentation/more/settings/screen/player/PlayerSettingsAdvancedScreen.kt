@@ -10,6 +10,7 @@ import eu.kanade.presentation.more.settings.screen.SearchableSettings
 import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Serializable
@@ -28,6 +29,7 @@ data object PlayerSettingsAdvancedScreen : SearchableSettings {
         val enableUserFiles = advancedPlayerPreferences.mpvUserFiles()
         val mpvConf = advancedPlayerPreferences.mpvConf()
         val mpvInput = advancedPlayerPreferences.mpvInput()
+        val detectOpeningsEndings = advancedPlayerPreferences.detectOpeningsEndings()
 
         return listOf(
             Preference.PreferenceItem.SwitchPreference(
@@ -48,6 +50,11 @@ data object PlayerSettingsAdvancedScreen : SearchableSettings {
                 context = context,
                 fileName = "input.conf",
                 title = stringResource(AYMR.strings.pref_mpv_input),
+            ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = detectOpeningsEndings,
+                title = stringResource(TLMR.strings.pref_detect_op_ed),
+                subtitle = stringResource(TLMR.strings.pref_detect_op_ed_summary),
             ),
         )
     }

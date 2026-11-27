@@ -115,6 +115,7 @@ import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.items.episode.segment.model.EpisodeSegment
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -1472,7 +1473,7 @@ class PlayerActivity : BaseActivity() {
         runOnUiThread { setupPlayerOrientation() }
         setupChapters()
         // A downloaded file has none of the source's timestamps; use the ones saved at download
-        setupDownloadSegments()
+        setupDownloadSegments(EpisodeSegment.Source.Source)
         setupTracks()
 
         // aniSkip stuff
@@ -1493,15 +1494,19 @@ class PlayerActivity : BaseActivity() {
                 viewModel.setChapter(viewModel.pos.value)
             }
         }
+        setupDownloadSegments(EpisodeSegment.Source.Detected)
     }
 
-    /** Adds the openings/endings stored for a downloaded file that the video has none of yet. */
-    private suspend fun setupDownloadSegments() {
+    /**
+     * Adds the openings/endings stored for a downloaded file (saved from the source at download
+     * time, or found by opening/ending detection) that the video has none of yet.
+     */
+    private suspend fun setupDownloadSegments(source: EpisodeSegment.Source) {
         if (player.isExiting) return
         val video = viewModel.currentVideo.value ?: return
         val episodeId = viewModel.currentEpisode.value?.id ?: return
         val existingTypes = video.timestamps.map { it.type }.toSet() + viewModel.chapters.value.map { it.chapterType }
-        val stamps = downloadSegmentStamps.forVideo(episodeId, video, existingTypes)
+        val stamps = downloadSegmentStamps.forVideo(episodeId, video, existingTypes, source)
             .map { it.copy(name = it.type.getStringRes()?.let(::stringResource) ?: "") }
             .takeIf { it.isNotEmpty() }
             ?: return

@@ -457,4 +457,14 @@
     <string name="audio_language_original">Original language</string>
     <string name="audio_language_original_detected">Original language (%s)</string>
     <string name="audio_language_dialog_message">Used for this show when picking the audio track. Picking an audio track in the player also changes it.</string>
+
+    <!-- Opening/ending detection -->
+    <string name="pref_detect_op_ed">Detect openings/endings in downloads (experimental)</string>
+    <string name="pref_detect_op_ed_summary">Finds the opening and ending of downloaded episodes from the audio they share with the other downloaded episodes of the show, so they can be skipped. Needs at least 2 downloaded episodes, and is only used when the source and AniSkip have no opening or ending for the episode.</string>
+    <string name="action_detect_op_ed">Detect openings/endings</string>
+    <string name="op_ed_detection_started">Detecting openings and endings in the downloaded episodes</string>
+    <string name="op_ed_detection_not_enough">Needs at least 2 downloaded episodes</string>
+    <string name="op_ed_detection_result">Found openings in %1$d and endings in %2$d of %3$d downloaded episodes</string>
+    <string name="op_ed_detection_result_some_unreadable">Found openings in %1$d and endings in %2$d of %3$d downloaded episodes; couldn\'t read %4$d of them</string>
+    <string name="op_ed_detection_unreadable">Couldn\'t read %1$d of %2$d downloaded episodes, needs at least 2 readable ones</string>
 </resources>

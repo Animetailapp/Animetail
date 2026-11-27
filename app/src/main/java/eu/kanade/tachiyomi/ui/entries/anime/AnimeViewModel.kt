@@ -76,6 +76,7 @@ import eu.kanade.tachiyomi.ui.entries.anime.RelatedAnime.Companion.isLoading
 import eu.kanade.tachiyomi.ui.entries.anime.RelatedAnime.Companion.removeDuplicates
 import eu.kanade.tachiyomi.ui.entries.anime.RelatedAnime.Companion.sorted
 import eu.kanade.tachiyomi.ui.entries.anime.track.AnimeTrackItem
+import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
@@ -210,6 +211,7 @@ class AnimeViewModel(
     private val getAnimeAudioLanguage: GetAnimeAudioLanguage,
     private val setAnimeAudioLanguage: SetAnimeAudioLanguage,
     internal val audioPreferences: AudioPreferences,
+    internal val advancedPlayerPreferences: AdvancedPlayerPreferences,
     // AM (FILE_SIZE) -->
     private val storagePreferences: StoragePreferences,
     // <-- AM (FILE_SIZE)

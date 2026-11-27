@@ -1,8 +1,9 @@
 package tachiyomi.domain.items.episode.segment.model
 
 /**
- * An opening, ending or recap of a downloaded episode that the app keeps itself, such as the
- * source's timestamps saved when the episode was downloaded (the file doesn't carry them).
+ * An opening, ending or recap of a downloaded episode that the app keeps itself: the source's
+ * timestamps saved when the episode was downloaded (the file doesn't carry them), or found by
+ * opening/ending detection.
  */
 data class EpisodeSegment(
     val episodeId: Long,
@@ -29,6 +30,9 @@ data class EpisodeSegment(
     }
 
     enum class Source(val dbValue: String) {
+        /** Audio shared with other downloaded episodes of the same show. */
+        Detected("detected"),
+
         /** The source's timestamps for the video that was downloaded. */
         Source("source"),
         ;
