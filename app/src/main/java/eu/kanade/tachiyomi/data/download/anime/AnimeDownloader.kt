@@ -112,6 +112,14 @@ class AnimeDownloader(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /**
+     * Where FFmpeg writes downloads to a document tree (see [FFmpegOutputCache]). Not in a cache
+     * directory: the system deletes files there when storage runs low, even while FFmpeg writes them.
+     */
+    private val ffmpegOutputCache by lazy {
+        FFmpegOutputCache(File(context.getExternalFilesDir(null) ?: context.filesDir, "ffmpeg_tmp"))
+    }
+
     /** Held while an episode downloads, see [launchDownloadJob]. */
     private val episodeLocks = ConcurrentHashMap<Long, Mutex>()
 
@@ -210,6 +218,11 @@ class AnimeDownloader(
         if (isRunning) return
 
         downloaderJob = scope.launchIO {
+            // Left by downloads that were removed, or by attempts the app didn't live to clean up
+            ffmpegOutputCache.clean(keepEpisodeIds = queueState.value.mapTo(mutableSetOf()) { it.episode.id })
+            // Where earlier versions wrote them
+            File(context.externalCacheDir ?: context.cacheDir, "ffmpeg_tmp").deleteRecursively()
+
             val activeDownloadsFlow = queueState.transformLatest { queue ->
                 while (true) {
                     val activeDownloads = queue.asSequence()
@@ -619,13 +632,13 @@ class AnimeDownloader(
         val video = download.video!!
 
         val isSaf = videoFile.uri.scheme == "content"
-        val localTmpFile = if (isSaf) {
-            val cacheDir = File(context.externalCacheDir ?: context.cacheDir, "ffmpeg_tmp")
-            cacheDir.mkdirs()
-            File(cacheDir, "${filename}_${System.currentTimeMillis()}.tmp")
-        } else {
-            null
+        val outputCache = if (isSaf) ffmpegOutputCache else null
+        outputCache?.finishedFile(download.episode.id)?.let { cachedVideo ->
+            logcat(LogPriority.INFO) { "${download.episode.name}: saving the video an earlier attempt downloaded" }
+            saveVideo(tmpDir, videoFile, filename, cachedVideo)
+            return
         }
+        val localTmpFile = outputCache?.partialFile(download.episode.id)
 
         val ffmpegFilename = { localTmpFile?.absolutePath ?: videoFile.toFFmpegString(context, "rw") }
 
@@ -692,14 +705,6 @@ class AnimeDownloader(
                     ffmpegOptions,
                     {
                         if (it.returnCode.isValueSuccess) {
-                            if (localTmpFile != null && isSaf) {
-                                localTmpFile.inputStream().buffered().use { input ->
-                                    videoFile.openOutputStream().buffered().use { output ->
-                                        input.copyTo(output)
-                                    }
-                                }
-                                localTmpFile.delete()
-                            }
                             continuation.resume(it)
                         } else {
                             localTmpFile?.delete()
@@ -720,24 +725,43 @@ class AnimeDownloader(
         // rejects them leaves a short or empty file. The size depends on quality and container,
         // so the duration of the result is compared against the source instead.
         val output = tmpDir.findFile("$filename.tmp")
-        if (output == null || output.length() < MIN_VIDEO_SIZE) {
+        fun deleteOutput() {
+            localTmpFile?.delete()
             output?.delete()
+        }
+        if ((localTmpFile?.length() ?: output?.length() ?: 0L) < MIN_VIDEO_SIZE) {
+            deleteOutput()
             throw Exception("Downloaded video is empty")
         }
         if (duration > 0) {
             val downloadedDuration = try {
-                getDuration(ffprobeCommand(output.uri.toFFmpegString(context), null))
+                val outputPath = localTmpFile?.absolutePath ?: output!!.uri.toFFmpegString(context)
+                getDuration(ffprobeCommand(outputPath, null))
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 null
             }
             if (downloadedDuration != null && downloadedDuration < duration * MIN_DURATION_RATIO) {
-                output.delete()
+                deleteOutput()
                 throw Exception("Downloaded video is incomplete")
             }
         }
-        output.renameToOrCopy("$filename.mkv")
-            ?: throw IOException("Failed to move ${output.name} to $filename.mkv")
+        saveVideo(tmpDir, videoFile, filename, outputCache?.finish(download.episode.id))
+    }
+
+    /**
+     * Saves the downloaded video as [filename].mkv in [tmpDir]. When FFmpeg wrote it to [cachedVideo]
+     * (see [FFmpegOutputCache]), it is copied into [videoFile] first. If that fails, [cachedVideo] is
+     * kept, so the next attempt only copies it again instead of downloading the episode again.
+     */
+    private fun saveVideo(tmpDir: UniFile, videoFile: UniFile, filename: String, cachedVideo: File?) {
+        cachedVideo?.inputStream()?.buffered()?.use { input ->
+            videoFile.openOutputStream().buffered().use { output -> input.copyTo(output) }
+        }
+        val output = tmpDir.findFile("$filename.tmp")
+        output?.renameToOrCopy("$filename.mkv")
+            ?: throw IOException("Failed to move ${output?.name} to $filename.mkv")
+        cachedVideo?.delete()
     }
 
     /**
