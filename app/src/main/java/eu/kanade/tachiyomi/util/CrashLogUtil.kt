@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.util.storage.getUriCompat
+import eu.kanade.tachiyomi.util.system.FileLogcatLogger
 import eu.kanade.tachiyomi.util.system.WebViewUtil
 import eu.kanade.tachiyomi.util.system.createFileInCacheDir
 import eu.kanade.tachiyomi.util.system.toShareIntent
@@ -20,6 +21,8 @@ import kotlinx.datetime.offsetAt
 import kotlinx.datetime.toLocalDateTime
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.lang.withUIContext
+import java.io.File
+import java.io.FileOutputStream
 import kotlin.time.Clock
 
 @Inject
@@ -39,6 +42,7 @@ class CrashLogUtil(
             getMangaExtensionsInfo()?.let { file.appendText("$it\n\n") }
             getAnimeExtensionsInfo()?.let { file.appendText("$it\n\n") }
             exception?.let { file.appendText("$it\n\n") }
+            appendAppLogFiles(file)
 
             val logPriority = if (networkPreferences.verboseLogging.get()) "V" else "E"
             Runtime.getRuntime().exec("logcat *:$logPriority -d -v year -v zone -f ${file.absolutePath}").waitFor()
@@ -48,6 +52,15 @@ class CrashLogUtil(
         } catch (_: Throwable) {
             withUIContext { context.toast("Failed to get logs") }
         }
+    }
+
+    private fun appendAppLogFiles(file: File) {
+        val logFiles = FileLogcatLogger.logFiles(context)
+        file.appendText("--- App log (${logFiles.joinToString { it.name }.ifEmpty { "empty" }})\n")
+        logFiles.forEach { logFile ->
+            logFile.inputStream().use { input -> FileOutputStream(file, true).use { input.copyTo(it) } }
+        }
+        file.appendText("\n--- logcat\n")
     }
 
     fun getDebugInfo(): String {
