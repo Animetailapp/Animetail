@@ -49,24 +49,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
-import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
-import cafe.adriel.voyager.navigator.tab.TabOptions
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.components.NestedMenuItem
-import eu.kanade.presentation.util.Tab
-import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.download.anime.AnimeDownloadQueueViewModel
 import eu.kanade.tachiyomi.ui.download.anime.animeDownloadTab
 import eu.kanade.tachiyomi.ui.download.manga.MangaDownloadQueueViewModel
 import eu.kanade.tachiyomi.ui.download.manga.mangaDownloadTab
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.Pill
@@ -74,412 +68,397 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.TabText
 import tachiyomi.presentation.core.i18n.stringResource
 
-data object DownloadsTab : Tab {
+@Composable
+fun DownloadsTab() {
+    val navigator = LocalNavigator.current
+    val scope = rememberCoroutineScope()
+    val animeViewModel = metroViewModel<AnimeDownloadQueueViewModel>()
+    val mangaScreenModel = metroViewModel<MangaDownloadQueueViewModel>()
+    val animeDownloadList by animeViewModel.composeState.collectAsStateWithLifecycle()
+    val mangaDownloadList by mangaScreenModel.composeState.collectAsStateWithLifecycle()
+    val animeDownloadCount by remember {
+        derivedStateOf { animeDownloadList.sumOf { it.downloads.size } }
+    }
+    val mangaDownloadCount by remember {
+        derivedStateOf { mangaDownloadList.sumOf { it.downloads.size } }
+    }
 
-    override val options: TabOptions
-        @Composable
-        get() {
-            val isSelected = LocalTabNavigator.current.current.key == key
-            val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_history_enter)
-            return TabOptions(
-                index = 6u,
-                title = stringResource(MR.strings.label_download_queue),
-                icon = rememberAnimatedVectorPainter(image, isSelected),
-            )
-        }
+    val state = rememberPagerState { 2 }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
-        val scope = rememberCoroutineScope()
-        val animeViewModel = metroViewModel<AnimeDownloadQueueViewModel>()
-        val mangaScreenModel = metroViewModel<MangaDownloadQueueViewModel>()
-        val animeDownloadList by animeViewModel.composeState.collectAsStateWithLifecycle()
-        val mangaDownloadList by mangaScreenModel.composeState.collectAsStateWithLifecycle()
-        val animeDownloadCount by remember {
-            derivedStateOf { animeDownloadList.sumOf { it.downloads.size } }
-        }
-        val mangaDownloadCount by remember {
-            derivedStateOf { mangaDownloadList.sumOf { it.downloads.size } }
-        }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    var fabExpanded by remember { mutableStateOf(true) }
+    val nestedScrollConnection = remember {
+        // All this lines just for fab state :/
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                fabExpanded = available.y >= 0
+                return scrollBehavior.nestedScrollConnection.onPreScroll(available, source)
+            }
 
-        val state = rememberPagerState { 2 }
-        val snackbarHostState = remember { SnackbarHostState() }
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                return scrollBehavior.nestedScrollConnection.onPostScroll(consumed, available, source)
+            }
 
-        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-        var fabExpanded by remember { mutableStateOf(true) }
-        val nestedScrollConnection = remember {
-            // All this lines just for fab state :/
-            object : NestedScrollConnection {
-                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    fabExpanded = available.y >= 0
-                    return scrollBehavior.nestedScrollConnection.onPreScroll(available, source)
-                }
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                return scrollBehavior.nestedScrollConnection.onPreFling(available)
+            }
 
-                override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                    return scrollBehavior.nestedScrollConnection.onPostScroll(consumed, available, source)
-                }
-
-                override suspend fun onPreFling(available: Velocity): Velocity {
-                    return scrollBehavior.nestedScrollConnection.onPreFling(available)
-                }
-
-                override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                    return scrollBehavior.nestedScrollConnection.onPostFling(consumed, available)
-                }
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                return scrollBehavior.nestedScrollConnection.onPostFling(consumed, available)
             }
         }
+    }
 
-        Scaffold(
-            topBar = {
-                AppBar(
-                    titleContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = stringResource(MR.strings.label_download_queue),
-                                maxLines = 1,
-                                modifier = Modifier.weight(1f, false),
-                                overflow = TextOverflow.Ellipsis,
+    Scaffold(
+        topBar = {
+            AppBar(
+                titleContent = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(MR.strings.label_download_queue),
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f, false),
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (animeDownloadCount > 0) {
+                            val pillAlpha = if (isSystemInDarkTheme()) 0.12f else 0.08f
+                            Pill(
+                                text = "$animeDownloadCount",
+                                modifier = Modifier.padding(start = 4.dp),
+                                color = MaterialTheme.colorScheme.onBackground
+                                    .copy(alpha = pillAlpha),
+                                fontSize = 14.sp,
                             )
-                            if (animeDownloadCount > 0) {
-                                val pillAlpha = if (isSystemInDarkTheme()) 0.12f else 0.08f
-                                Pill(
-                                    text = "$animeDownloadCount",
-                                    modifier = Modifier.padding(start = 4.dp),
-                                    color = MaterialTheme.colorScheme.onBackground
-                                        .copy(alpha = pillAlpha),
-                                    fontSize = 14.sp,
-                                )
-                            }
                         }
-                    },
-                    navigateUp = navigator::pop,
-                    actions = {
-                        when (state.currentPage) {
-                            0 -> AnimeActions(animeViewModel, animeDownloadList)
-                            1 -> MangaActions(mangaScreenModel, mangaDownloadList)
-                        }
-                    },
-                    scrollBehavior = scrollBehavior,
-                )
-            },
-            floatingActionButton = {
-                AnimatedVisibility(
-                    visible = when (state.currentPage) {
-                        0 -> animeDownloadList.isNotEmpty()
-                        1 -> mangaDownloadList.isNotEmpty()
-                        else -> false
-                    },
-                    enter = fadeIn(),
-                    exit = fadeOut(),
-                ) {
-                    val animeIsRunning by animeViewModel.isDownloaderRunning.collectAsStateWithLifecycle()
-                    val mangaIsRunning by mangaScreenModel.isDownloaderRunning.collectAsStateWithLifecycle()
-                    ExtendedFloatingActionButton(
-                        text = {
-                            val id = when (state.currentPage) {
-                                0 -> if (animeIsRunning) {
-                                    AYMR.strings.action_stop
-                                } else {
-                                    AYMR.strings.action_continue
-                                }
-
-                                1 -> if (mangaIsRunning) {
-                                    MR.strings.action_pause
-                                } else {
-                                    MR.strings.action_resume
-                                }
-
-                                else -> MR.strings.action_pause
-                            }
-                            Text(text = stringResource(id))
-                        },
-                        icon = {
-                            val icon = when (state.currentPage) {
-                                0 -> if (animeIsRunning) {
-                                    Icons.Outlined.Pause
-                                } else {
-                                    Icons.Filled.PlayArrow
-                                }
-
-                                1 -> if (mangaIsRunning) {
-                                    Icons.Outlined.Pause
-                                } else {
-                                    Icons.Filled.PlayArrow
-                                }
-
-                                else -> Icons.Filled.PlayArrow
-                            }
-                            Icon(imageVector = icon, contentDescription = null)
-                        },
-                        onClick = {
-                            when (state.currentPage) {
-                                0 -> if (animeIsRunning) {
-                                    animeViewModel.pauseDownloads()
-                                } else {
-                                    animeViewModel.startDownloads()
-                                }
-
-                                1 -> if (mangaIsRunning) {
-                                    mangaScreenModel.pauseDownloads()
-                                } else {
-                                    mangaScreenModel.startDownloads()
-                                }
-                            }
-                        },
-                        expanded = fabExpanded,
-                    )
-                }
-            },
-        ) { contentPadding ->
-            Column(
-                modifier = Modifier.padding(
-                    top = contentPadding.calculateTopPadding(),
-                    start = contentPadding.calculateStartPadding(LocalLayoutDirection.current),
-                    end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
-                ),
-            ) {
-                PrimaryTabRow(
-                    selectedTabIndex = state.currentPage,
-                    modifier = Modifier.zIndex(1f),
-                ) {
-                    listOf(
-                        Tab(
-                            selected = state.currentPage == 0,
-                            onClick = { scope.launch { state.animateScrollToPage(0) } },
-                            text = {
-                                TabText(
-                                    text = stringResource(AYMR.strings.label_anime),
-                                    badgeCount = animeDownloadCount,
-                                )
-                            },
-                            unselectedContentColor = MaterialTheme.colorScheme.onSurface,
-                        ),
-                        Tab(
-                            selected = state.currentPage == 1,
-                            onClick = { scope.launch { state.animateScrollToPage(1) } },
-                            text = {
-                                TabText(
-                                    text = stringResource(AYMR.strings.manga),
-                                    badgeCount = mangaDownloadCount,
-                                )
-                            },
-                            unselectedContentColor = MaterialTheme.colorScheme.onSurface,
-                        ),
-                    )
-                }
-
-                HorizontalPager(
-                    modifier = Modifier.fillMaxSize(),
-                    state = state,
-                    verticalAlignment = Alignment.Top,
-                    pageNestedScrollConnection = nestedScrollConnection,
-                ) { page ->
-                    when (page) {
-                        0 -> animeDownloadTab(
-                            nestedScrollConnection,
-                        ).content(
-                            PaddingValues(bottom = contentPadding.calculateBottomPadding()),
-                            snackbarHostState,
-                        )
-
-                        1 -> mangaDownloadTab(
-                            nestedScrollConnection,
-                        ).content(
-                            PaddingValues(bottom = contentPadding.calculateBottomPadding()),
-                            snackbarHostState,
-                        )
                     }
+                },
+                navigateUp = navigator::pop,
+                actions = {
+                    when (state.currentPage) {
+                        0 -> AnimeActions(animeViewModel, animeDownloadList)
+                        1 -> MangaActions(mangaScreenModel, mangaDownloadList)
+                    }
+                },
+                scrollBehavior = scrollBehavior,
+            )
+        },
+        floatingActionButton = {
+            AnimatedVisibility(
+                visible = when (state.currentPage) {
+                    0 -> animeDownloadList.isNotEmpty()
+                    1 -> mangaDownloadList.isNotEmpty()
+                    else -> false
+                },
+                enter = fadeIn(),
+                exit = fadeOut(),
+            ) {
+                val animeIsRunning by animeViewModel.isDownloaderRunning.collectAsStateWithLifecycle()
+                val mangaIsRunning by mangaScreenModel.isDownloaderRunning.collectAsStateWithLifecycle()
+                ExtendedFloatingActionButton(
+                    text = {
+                        val id = when (state.currentPage) {
+                            0 -> if (animeIsRunning) {
+                                AYMR.strings.action_stop
+                            } else {
+                                AYMR.strings.action_continue
+                            }
+
+                            1 -> if (mangaIsRunning) {
+                                MR.strings.action_pause
+                            } else {
+                                MR.strings.action_resume
+                            }
+
+                            else -> MR.strings.action_pause
+                        }
+                        Text(text = stringResource(id))
+                    },
+                    icon = {
+                        val icon = when (state.currentPage) {
+                            0 -> if (animeIsRunning) {
+                                Icons.Outlined.Pause
+                            } else {
+                                Icons.Filled.PlayArrow
+                            }
+
+                            1 -> if (mangaIsRunning) {
+                                Icons.Outlined.Pause
+                            } else {
+                                Icons.Filled.PlayArrow
+                            }
+
+                            else -> Icons.Filled.PlayArrow
+                        }
+                        Icon(imageVector = icon, contentDescription = null)
+                    },
+                    onClick = {
+                        when (state.currentPage) {
+                            0 -> if (animeIsRunning) {
+                                animeViewModel.pauseDownloads()
+                            } else {
+                                animeViewModel.startDownloads()
+                            }
+
+                            1 -> if (mangaIsRunning) {
+                                mangaScreenModel.pauseDownloads()
+                            } else {
+                                mangaScreenModel.startDownloads()
+                            }
+                        }
+                    },
+                    expanded = fabExpanded,
+                )
+            }
+        },
+    ) { contentPadding ->
+        Column(
+            modifier = Modifier.padding(
+                top = contentPadding.calculateTopPadding(),
+                start = contentPadding.calculateStartPadding(LocalLayoutDirection.current),
+                end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
+            ),
+        ) {
+            PrimaryTabRow(
+                selectedTabIndex = state.currentPage,
+                modifier = Modifier.zIndex(1f),
+            ) {
+                listOf(
+                    Tab(
+                        selected = state.currentPage == 0,
+                        onClick = { scope.launch { state.animateScrollToPage(0) } },
+                        text = {
+                            TabText(
+                                text = stringResource(AYMR.strings.label_anime),
+                                badgeCount = animeDownloadCount,
+                            )
+                        },
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    Tab(
+                        selected = state.currentPage == 1,
+                        onClick = { scope.launch { state.animateScrollToPage(1) } },
+                        text = {
+                            TabText(
+                                text = stringResource(AYMR.strings.manga),
+                                badgeCount = mangaDownloadCount,
+                            )
+                        },
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                )
+            }
+
+            HorizontalPager(
+                modifier = Modifier.fillMaxSize(),
+                state = state,
+                verticalAlignment = Alignment.Top,
+                pageNestedScrollConnection = nestedScrollConnection,
+            ) { page ->
+                when (page) {
+                    0 -> animeDownloadTab(
+                        nestedScrollConnection,
+                    ).content(
+                        PaddingValues(bottom = contentPadding.calculateBottomPadding()),
+                        snackbarHostState,
+                    )
+
+                    1 -> mangaDownloadTab(
+                        nestedScrollConnection,
+                    ).content(
+                        PaddingValues(bottom = contentPadding.calculateBottomPadding()),
+                        snackbarHostState,
+                    )
                 }
             }
         }
     }
+}
 
-    @Composable
-    private fun AnimeActions(
-        animeViewModel: AnimeDownloadQueueViewModel,
-        animeDownloadList: List<DownloadQueueSection>,
-    ) {
-        if (animeDownloadList.isNotEmpty()) {
-            var sortExpanded by remember { mutableStateOf(false) }
-            val onDismissRequest = { sortExpanded = false }
-            DropdownMenu(
-                expanded = sortExpanded,
-                onDismissRequest = onDismissRequest,
-            ) {
-                NestedMenuItem(
-                    text = { Text(text = stringResource(MR.strings.action_order_by_upload_date)) },
-                    children = { closeMenu ->
-                        DropdownMenuItem(
-                            text = { Text(text = stringResource(MR.strings.action_newest)) },
-                            onClick = {
-                                animeViewModel.reorderComposeQueue(
-                                    {
-                                        it.episode.let { e ->
-                                            e.dateUploadOverride.takeIf { d -> d > 0 }
-                                                ?: e.dateUpload
-                                        }
-                                    },
-                                    true,
-                                )
-                                closeMenu()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(text = stringResource(MR.strings.action_oldest)) },
-                            onClick = {
-                                animeViewModel.reorderComposeQueue(
-                                    {
-                                        it.episode.let { e ->
-                                            e.dateUploadOverride.takeIf { d -> d > 0 }
-                                                ?: e.dateUpload
-                                        }
-                                    },
-                                    false,
-                                )
-                                closeMenu()
-                            },
-                        )
-                    },
-                )
-                NestedMenuItem(
-                    text = {
-                        Text(
-                            text = stringResource(AYMR.strings.action_order_by_episode_number),
-                        )
-                    },
-                    children = { closeMenu ->
-                        DropdownMenuItem(
-                            text = { Text(text = stringResource(MR.strings.action_asc)) },
-                            onClick = {
-                                animeViewModel.reorderComposeQueue(
-                                    { it.episode.episodeNumber },
-                                    false,
-                                )
-                                closeMenu()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(text = stringResource(MR.strings.action_desc)) },
-                            onClick = {
-                                animeViewModel.reorderComposeQueue(
-                                    { it.episode.episodeNumber },
-                                    true,
-                                )
-                                closeMenu()
-                            },
-                        )
-                    },
-                )
-            }
-
-            AppBarActions(
-                persistentListOf(
-                    AppBar.Action(
-                        title = stringResource(MR.strings.action_sort),
-                        icon = Icons.AutoMirrored.Outlined.Sort,
-                        onClick = { sortExpanded = true },
-                    ),
-                    AppBar.OverflowAction(
-                        title = stringResource(MR.strings.action_cancel_all),
-                        onClick = { animeViewModel.clearQueue() },
-                    ),
-                ),
+@Composable
+private fun AnimeActions(
+    animeViewModel: AnimeDownloadQueueViewModel,
+    animeDownloadList: List<DownloadQueueSection>,
+) {
+    if (animeDownloadList.isNotEmpty()) {
+        var sortExpanded by remember { mutableStateOf(false) }
+        val onDismissRequest = { sortExpanded = false }
+        DropdownMenu(
+            expanded = sortExpanded,
+            onDismissRequest = onDismissRequest,
+        ) {
+            NestedMenuItem(
+                text = { Text(text = stringResource(MR.strings.action_order_by_upload_date)) },
+                children = { closeMenu ->
+                    DropdownMenuItem(
+                        text = { Text(text = stringResource(MR.strings.action_newest)) },
+                        onClick = {
+                            animeViewModel.reorderComposeQueue(
+                                {
+                                    it.episode.let { e ->
+                                        e.dateUploadOverride.takeIf { d -> d > 0 }
+                                            ?: e.dateUpload
+                                    }
+                                },
+                                true,
+                            )
+                            closeMenu()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(text = stringResource(MR.strings.action_oldest)) },
+                        onClick = {
+                            animeViewModel.reorderComposeQueue(
+                                {
+                                    it.episode.let { e ->
+                                        e.dateUploadOverride.takeIf { d -> d > 0 }
+                                            ?: e.dateUpload
+                                    }
+                                },
+                                false,
+                            )
+                            closeMenu()
+                        },
+                    )
+                },
+            )
+            NestedMenuItem(
+                text = {
+                    Text(
+                        text = stringResource(AYMR.strings.action_order_by_episode_number),
+                    )
+                },
+                children = { closeMenu ->
+                    DropdownMenuItem(
+                        text = { Text(text = stringResource(MR.strings.action_asc)) },
+                        onClick = {
+                            animeViewModel.reorderComposeQueue(
+                                { it.episode.episodeNumber },
+                                false,
+                            )
+                            closeMenu()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(text = stringResource(MR.strings.action_desc)) },
+                        onClick = {
+                            animeViewModel.reorderComposeQueue(
+                                { it.episode.episodeNumber },
+                                true,
+                            )
+                            closeMenu()
+                        },
+                    )
+                },
             )
         }
+
+        AppBarActions(
+            persistentListOf(
+                AppBar.Action(
+                    title = stringResource(MR.strings.action_sort),
+                    icon = Icons.AutoMirrored.Outlined.Sort,
+                    onClick = { sortExpanded = true },
+                ),
+                AppBar.OverflowAction(
+                    title = stringResource(MR.strings.action_cancel_all),
+                    onClick = { animeViewModel.clearQueue() },
+                ),
+            ),
+        )
     }
+}
 
-    @Composable
-    private fun MangaActions(
-        mangaScreenModel: MangaDownloadQueueViewModel,
-        mangaDownloadList: List<DownloadQueueSection>,
-    ) {
-        if (mangaDownloadList.isNotEmpty()) {
-            var sortExpanded by remember { mutableStateOf(false) }
-            val onDismissRequest = { sortExpanded = false }
-            DropdownMenu(
-                expanded = sortExpanded,
-                onDismissRequest = onDismissRequest,
-            ) {
-                NestedMenuItem(
-                    text = { Text(text = stringResource(MR.strings.action_order_by_upload_date)) },
-                    children = { closeMenu ->
-                        DropdownMenuItem(
-                            text = { Text(text = stringResource(MR.strings.action_newest)) },
-                            onClick = {
-                                mangaScreenModel.reorderComposeQueue(
-                                    {
-                                        it.chapter.let { c ->
-                                            c.dateUploadOverride.takeIf { d -> d > 0 }
-                                                ?: c.dateUpload
-                                        }
-                                    },
-                                    true,
-                                )
-                                closeMenu()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(text = stringResource(MR.strings.action_oldest)) },
-                            onClick = {
-                                mangaScreenModel.reorderComposeQueue(
-                                    {
-                                        it.chapter.let { c ->
-                                            c.dateUploadOverride.takeIf { d -> d > 0 }
-                                                ?: c.dateUpload
-                                        }
-                                    },
-                                    false,
-                                )
-                                closeMenu()
-                            },
-                        )
-                    },
-                )
-                NestedMenuItem(
-                    text = {
-                        Text(
-                            text = stringResource(MR.strings.action_order_by_chapter_number),
-                        )
-                    },
-                    children = { closeMenu ->
-                        DropdownMenuItem(
-                            text = { Text(text = stringResource(MR.strings.action_asc)) },
-                            onClick = {
-                                mangaScreenModel.reorderComposeQueue(
-                                    { it.chapter.chapterNumber },
-                                    false,
-                                )
-                                closeMenu()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(text = stringResource(MR.strings.action_desc)) },
-                            onClick = {
-                                mangaScreenModel.reorderComposeQueue(
-                                    { it.chapter.chapterNumber },
-                                    true,
-                                )
-                                closeMenu()
-                            },
-                        )
-                    },
-                )
-            }
-
-            AppBarActions(
-                persistentListOf(
-                    AppBar.Action(
-                        title = stringResource(MR.strings.action_sort),
-                        icon = Icons.AutoMirrored.Outlined.Sort,
-                        onClick = { sortExpanded = true },
-                    ),
-                    AppBar.OverflowAction(
-                        title = stringResource(MR.strings.action_cancel_all),
-                        onClick = { mangaScreenModel.clearQueue() },
-                    ),
-                ),
+@Composable
+private fun MangaActions(
+    mangaScreenModel: MangaDownloadQueueViewModel,
+    mangaDownloadList: List<DownloadQueueSection>,
+) {
+    if (mangaDownloadList.isNotEmpty()) {
+        var sortExpanded by remember { mutableStateOf(false) }
+        val onDismissRequest = { sortExpanded = false }
+        DropdownMenu(
+            expanded = sortExpanded,
+            onDismissRequest = onDismissRequest,
+        ) {
+            NestedMenuItem(
+                text = { Text(text = stringResource(MR.strings.action_order_by_upload_date)) },
+                children = { closeMenu ->
+                    DropdownMenuItem(
+                        text = { Text(text = stringResource(MR.strings.action_newest)) },
+                        onClick = {
+                            mangaScreenModel.reorderComposeQueue(
+                                {
+                                    it.chapter.let { c ->
+                                        c.dateUploadOverride.takeIf { d -> d > 0 }
+                                            ?: c.dateUpload
+                                    }
+                                },
+                                true,
+                            )
+                            closeMenu()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(text = stringResource(MR.strings.action_oldest)) },
+                        onClick = {
+                            mangaScreenModel.reorderComposeQueue(
+                                {
+                                    it.chapter.let { c ->
+                                        c.dateUploadOverride.takeIf { d -> d > 0 }
+                                            ?: c.dateUpload
+                                    }
+                                },
+                                false,
+                            )
+                            closeMenu()
+                        },
+                    )
+                },
+            )
+            NestedMenuItem(
+                text = {
+                    Text(
+                        text = stringResource(MR.strings.action_order_by_chapter_number),
+                    )
+                },
+                children = { closeMenu ->
+                    DropdownMenuItem(
+                        text = { Text(text = stringResource(MR.strings.action_asc)) },
+                        onClick = {
+                            mangaScreenModel.reorderComposeQueue(
+                                { it.chapter.chapterNumber },
+                                false,
+                            )
+                            closeMenu()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(text = stringResource(MR.strings.action_desc)) },
+                        onClick = {
+                            mangaScreenModel.reorderComposeQueue(
+                                { it.chapter.chapterNumber },
+                                true,
+                            )
+                            closeMenu()
+                        },
+                    )
+                },
             )
         }
+
+        AppBarActions(
+            persistentListOf(
+                AppBar.Action(
+                    title = stringResource(MR.strings.action_sort),
+                    icon = Icons.AutoMirrored.Outlined.Sort,
+                    onClick = { sortExpanded = true },
+                ),
+                AppBar.OverflowAction(
+                    title = stringResource(MR.strings.action_cancel_all),
+                    onClick = { mangaScreenModel.clearQueue() },
+                ),
+            ),
+        )
     }
 }

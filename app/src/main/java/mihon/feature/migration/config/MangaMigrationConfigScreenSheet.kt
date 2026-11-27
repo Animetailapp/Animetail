@@ -28,12 +28,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.util.fastForEach
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.components.AdaptiveSheet
-import mihon.domain.migration.models.MigrationFlag
-import androidx.compose.ui.platform.LocalContext
 import mihon.app.di.appGraph
+import mihon.domain.migration.models.MigrationFlag
 import mihon.feature.common.utils.getLabel
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.Check

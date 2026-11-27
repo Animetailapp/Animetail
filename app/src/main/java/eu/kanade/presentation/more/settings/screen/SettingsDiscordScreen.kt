@@ -26,8 +26,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.util.fastMap
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
@@ -36,11 +34,15 @@ import eu.kanade.tachiyomi.R
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.SettingsDiscordAccountsRoute
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.util.collectAsState
 
-object SettingsDiscordScreen : SearchableSettings {
+@Serializable
+data object SettingsDiscordScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable
@@ -60,7 +62,7 @@ object SettingsDiscordScreen : SearchableSettings {
     @Composable
     override fun getPreferences(): List<Preference> {
         val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
         val appGraph = remember(context) { context.appGraph }
         val connectionsPreferences = remember { appGraph.connectionsPreferences }
         val connectionsManager = remember { appGraph.connectionsManager }
@@ -149,7 +151,7 @@ object SettingsDiscordScreen : SearchableSettings {
         return listOf(
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(R.string.discord_accounts),
-                onClick = { navigator.push(DiscordAccountsScreen) },
+                onClick = { navigator.push(SettingsDiscordAccountsRoute) },
             ),
             Preference.PreferenceGroup(
                 title = stringResource(R.string.connections_discord),

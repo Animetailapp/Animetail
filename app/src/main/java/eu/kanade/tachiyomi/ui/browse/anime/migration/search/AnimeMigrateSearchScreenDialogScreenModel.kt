@@ -1,20 +1,41 @@
 package eu.kanade.tachiyomi.ui.browse.anime.migration.search
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.model.Anime
 
+@AssistedInject
 class AnimeMigrateSearchScreenDialogScreenModel(
-    val animeId: Long,
+    @Assisted val animeId: Long,
     getAnime: GetAnime,
-) : StateScreenModel<AnimeMigrateSearchScreenDialogScreenModel.State>(State()) {
+) : ViewModel() {
+
+    private val mutableState = MutableStateFlow(State())
+    val state: StateFlow<State> = mutableState.asStateFlow()
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(animeId: Long): AnimeMigrateSearchScreenDialogScreenModel
+    }
 
     init {
-        screenModelScope.launch {
+        viewModelScope.launch {
             val anime = getAnime.await(animeId)!!
 
             mutableState.update {

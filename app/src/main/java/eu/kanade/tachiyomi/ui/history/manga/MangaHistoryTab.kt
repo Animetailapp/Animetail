@@ -7,11 +7,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.AppBar
@@ -24,17 +21,16 @@ import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import eu.kanade.tachiyomi.ui.browse.manga.migration.search.MigrateMangaDialog
 import eu.kanade.tachiyomi.ui.browse.manga.migration.search.MigrateMangaDialogScreenModel
-import eu.kanade.tachiyomi.ui.category.CategoriesTab
-import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
-import eu.kanade.tachiyomi.ui.home.HomeScreen
+import eu.kanade.tachiyomi.ui.category.CategoriesShowMangaEvent
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
-import mihon.app.di.appGraph
+import mihon.core.navigation.CategoryRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MangaRoute
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.i18n.MR
@@ -44,13 +40,14 @@ import tachiyomi.presentation.core.i18n.stringResource
 val resumeLastChapterReadEvent = Channel<Unit>()
 
 @Composable
-fun Screen.mangaHistoryTab(
+fun mangaHistoryTab(
     context: Context,
     fromMore: Boolean,
 ): TabContent {
     val snackbarHostState = SnackbarHostState()
 
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
+    val resultEventBus = LocalResultEventBus.current
     val viewModel = metroViewModel<MangaHistoryViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val searchQuery = state.searchQuery ?: ""
@@ -64,15 +61,8 @@ fun Screen.mangaHistoryTab(
         }
     }
 
-    val scope = rememberCoroutineScope()
     val navigateUp: (() -> Unit)? = if (fromMore) {
-        {
-            if (navigator.lastItem == HomeScreen) {
-                scope.launch { HomeScreen.openTab(HomeScreen.Tab.AnimeLib()) }
-            } else {
-                navigator.pop()
-            }
-        }
+        { navigator.pop() }
     } else {
         null
     }
@@ -85,7 +75,7 @@ fun Screen.mangaHistoryTab(
                 state = state,
                 searchQuery = searchQuery,
                 snackbarHostState = snackbarHostState,
-                onClickCover = { navigator.push(MangaScreen(it)) },
+                onClickCover = { navigator.push(MangaRoute(it)) },
                 onClickResume = viewModel::getNextChapterForManga,
                 onDialogChange = viewModel::setDialog,
                 onClickFavorite = viewModel::addFavorite,
@@ -120,7 +110,7 @@ fun Screen.mangaHistoryTab(
                         onConfirm = {
                             viewModel.addFavorite(dialog.manga)
                         },
-                        onOpenManga = { navigator.push(MangaScreen(dialog.duplicate.id)) },
+                        onOpenManga = { navigator.push(MangaRoute(dialog.duplicate.id)) },
                         onMigrate = {
                             viewModel.showMigrateDialog(dialog.manga, dialog.duplicate)
                         },
@@ -132,8 +122,8 @@ fun Screen.mangaHistoryTab(
                         initialSelection = dialog.initialSelection,
                         onDismissRequest = onDismissRequest,
                         onEditCategories = {
-                            navigator.push(CategoriesTab)
-                            CategoriesTab.showMangaCategory()
+                            navigator.push(CategoryRoute)
+                            resultEventBus.sendResult(result = CategoriesShowMangaEvent)
                         },
                         onConfirm = { include, _ ->
                             viewModel.moveMangaToCategoriesAndAddToLibrary(dialog.manga, include)
@@ -142,14 +132,13 @@ fun Screen.mangaHistoryTab(
                 }
 
                 is MangaHistoryViewModel.Dialog.Migrate -> {
-                    val dialogContext = androidx.compose.ui.platform.LocalContext.current
                     MigrateMangaDialog(
                         oldManga = dialog.oldManga,
                         newManga = dialog.newManga,
-                        screenModel = MigrateMangaDialogScreenModel(dialogContext.appGraph),
+                        screenModel = metroViewModel<MigrateMangaDialogScreenModel>(),
                         onDismissRequest = onDismissRequest,
-                        onClickTitle = { navigator.push(MangaScreen(dialog.oldManga.id)) },
-                        onPopScreen = { navigator.replace(MangaScreen(dialog.newManga.id)) },
+                        onClickTitle = { navigator.push(MangaRoute(dialog.oldManga.id)) },
+                        onPopScreen = { navigator.replace(MangaRoute(dialog.newManga.id)) },
                     )
                 }
 

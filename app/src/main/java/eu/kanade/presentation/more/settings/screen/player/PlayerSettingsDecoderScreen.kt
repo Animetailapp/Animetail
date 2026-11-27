@@ -6,14 +6,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
-import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.player.Debanding
 import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
-object PlayerSettingsDecoderScreen : Screen(), SearchableSettings {
+@Serializable
+data object PlayerSettingsDecoderScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable

@@ -14,7 +14,6 @@ import eu.kanade.core.preference.asState
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
-import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.player.AMNIS
 import eu.kanade.tachiyomi.ui.player.JUST_PLAYER
 import eu.kanade.tachiyomi.ui.player.MPV_KT
@@ -42,6 +41,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toPersistentMap
+import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
@@ -51,7 +51,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import java.text.NumberFormat
 
-object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
+@Serializable
+data object PlayerSettingsPlayerScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable

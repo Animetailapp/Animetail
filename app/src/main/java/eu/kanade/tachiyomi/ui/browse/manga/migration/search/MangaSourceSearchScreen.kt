@@ -10,26 +10,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.manga.BrowseSourceContent
 import eu.kanade.presentation.components.SearchToolbar
-import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.browse.manga.source.browse.BrowseMangaSourceViewModel
 import eu.kanade.tachiyomi.ui.browse.manga.source.browse.SourceFilterMangaDialog
-import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
-import eu.kanade.tachiyomi.ui.home.HomeScreen
-import eu.kanade.tachiyomi.ui.webview.WebViewScreen
-import kotlinx.coroutines.launch
-import mihon.app.di.appGraph
+import eu.kanade.tachiyomi.ui.home.TabEvent
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MangaMigrationListRoute
+import mihon.core.navigation.MangaRoute
+import mihon.core.navigation.WebViewRoute
+import mihon.feature.migration.list.MangaMatchOverrideEvent
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.FilterList
 import mihon.presentation.core.util.collectAsLazyPagingItems
@@ -40,113 +39,118 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.manga.LocalMangaSource
 
-data class MangaSourceSearchScreen(
-    private val oldManga: Manga,
-    private val sourceId: Long,
-    private val query: String?,
-) : Screen() {
+@Composable
+fun MangaSourceSearchScreen(
+    currentMangaId: Long,
+    sourceId: Long,
+    query: String?,
+) {
+    val uriHandler = LocalUriHandler.current
+    val navigator = LocalNavigator.current
+    val resultEventBus = LocalResultEventBus.current
 
-    @Composable
-    override fun Content() {
-        val uriHandler = LocalUriHandler.current
-        val navigator = LocalNavigator.currentOrThrow
-        val scope = rememberCoroutineScope()
-
-        val viewModel =
-            assistedMetroViewModel<BrowseMangaSourceViewModel, BrowseMangaSourceViewModel.Factory> {
-                create(sourceId = sourceId, listingQuery = query)
-            }
-        val state by viewModel.state.collectAsState()
-
-        val source = state.source
-        if (source == null) {
-            LoadingScreen()
-            return
+    val viewModel =
+        assistedMetroViewModel<BrowseMangaSourceViewModel, BrowseMangaSourceViewModel.Factory> {
+            create(sourceId = sourceId, listingQuery = query)
         }
+    val state by viewModel.state.collectAsState()
 
-        val snackbarHostState = remember { SnackbarHostState() }
+    val source = state.source
+    if (source == null) {
+        LoadingScreen()
+        return
+    }
 
-        Scaffold(
-            topBar = { scrollBehavior ->
-                SearchToolbar(
-                    searchQuery = state.toolbarQuery ?: "",
-                    onChangeSearchQuery = viewModel::setToolbarQuery,
-                    onClickCloseSearch = navigator::pop,
-                    onSearch = viewModel::search,
-                    scrollBehavior = scrollBehavior,
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    Scaffold(
+        topBar = { scrollBehavior ->
+            SearchToolbar(
+                searchQuery = state.toolbarQuery ?: "",
+                onChangeSearchQuery = viewModel::setToolbarQuery,
+                onClickCloseSearch = navigator::pop,
+                onSearch = viewModel::search,
+                scrollBehavior = scrollBehavior,
+            )
+        },
+        floatingActionButton = {
+            SmallExtendedFloatingActionButton(
+                text = { Text(text = stringResource(MR.strings.action_filter)) },
+                icon = { Icon(MaterialSymbols.Rounded.FilterList, contentDescription = null) },
+                onClick = viewModel::openFilterSheet,
+                modifier = Modifier.animateFloatingActionButton(
+                    visible = state.filters.isNotEmpty(),
+                    alignment = Alignment.BottomEnd,
+                ),
+            )
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+    ) { paddingValues ->
+        val openMigrateDialog: (Manga) -> Unit = {
+            val migrateListRoute = navigator.routes
+                .filterIsInstance<MangaMigrationListRoute>()
+                .lastOrNull()
+
+            if (migrateListRoute == null) {
+                viewModel.showMigrateDialog(currentMangaId = currentMangaId, target = it)
+            } else {
+                resultEventBus.sendResult(
+                    result = MangaMatchOverrideEvent(current = currentMangaId, target = it.id),
                 )
-            },
-            floatingActionButton = {
-                SmallExtendedFloatingActionButton(
-                    text = { Text(text = stringResource(MR.strings.action_filter)) },
-                    icon = { Icon(MaterialSymbols.Rounded.FilterList, contentDescription = null) },
-                    onClick = viewModel::openFilterSheet,
-                    modifier = Modifier.animateFloatingActionButton(
-                        visible = state.filters.isNotEmpty(),
-                        alignment = Alignment.BottomEnd,
+                navigator.popTo { route -> route is MangaMigrationListRoute }
+            }
+        }
+        BrowseSourceContent(
+            source = source,
+            mangaList = viewModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
+            columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
+            displayMode = viewModel.displayMode,
+            snackbarHostState = snackbarHostState,
+            contentPadding = paddingValues,
+            onWebViewClick = {
+                val httpSource = source as? HttpSource ?: return@BrowseSourceContent
+                navigator.push(
+                    WebViewRoute(
+                        url = httpSource.getHomeUrl(),
+                        initialTitle = httpSource.name,
+                        sourceId = httpSource.id,
                     ),
                 )
             },
-            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        ) { paddingValues ->
-            val openMigrateDialog: (Manga) -> Unit = {
-                viewModel.setDialog(BrowseMangaSourceViewModel.Dialog.Migrate(newManga = it, oldManga = oldManga))
-            }
-            BrowseSourceContent(
-                source = source,
-                mangaList = viewModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
-                columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
-                displayMode = viewModel.displayMode,
-                snackbarHostState = snackbarHostState,
-                contentPadding = paddingValues,
-                onWebViewClick = {
-                    val httpSource = source as? HttpSource ?: return@BrowseSourceContent
-                    navigator.push(
-                        WebViewScreen(
-                            url = httpSource.getHomeUrl(),
-                            initialTitle = httpSource.name,
-                            sourceId = httpSource.id,
-                        ),
-                    )
-                },
-                onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
-                onLocalSourceHelpClick = { uriHandler.openUri(LocalMangaSource.HELP_URL) },
-                onMangaClick = openMigrateDialog,
-                onMangaLongClick = { navigator.push(MangaScreen(it.id, true)) },
+            onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
+            onLocalSourceHelpClick = { uriHandler.openUri(LocalMangaSource.HELP_URL) },
+            onMangaClick = openMigrateDialog,
+            onMangaLongClick = { navigator.push(MangaRoute(it.id, true)) },
+        )
+    }
+
+    val onDismissRequest = { viewModel.setDialog(null) }
+    when (val dialog = state.dialog) {
+        is BrowseMangaSourceViewModel.Dialog.Filter -> {
+            SourceFilterMangaDialog(
+                onDismissRequest = onDismissRequest,
+                filters = state.filters,
+                onReset = viewModel::resetFilters,
+                onFilter = { viewModel.search(filters = state.filters) },
+                onUpdate = viewModel::setFilters,
             )
         }
 
-        val onDismissRequest = { viewModel.setDialog(null) }
-        when (val dialog = state.dialog) {
-            is BrowseMangaSourceViewModel.Dialog.Filter -> {
-                SourceFilterMangaDialog(
-                    onDismissRequest = onDismissRequest,
-                    filters = state.filters,
-                    onReset = viewModel::resetFilters,
-                    onFilter = { viewModel.search(filters = state.filters) },
-                    onUpdate = viewModel::setFilters,
-                )
-            }
-
-            is BrowseMangaSourceViewModel.Dialog.Migrate -> {
-                val context = androidx.compose.ui.platform.LocalContext.current
-                MigrateMangaDialog(
-                    oldManga = oldManga,
-                    newManga = dialog.newManga,
-                    screenModel = MigrateMangaDialogScreenModel(context.appGraph),
-                    onDismissRequest = onDismissRequest,
-                    onClickTitle = { navigator.push(MangaScreen(dialog.newManga.id)) },
-                    onPopScreen = {
-                        scope.launch {
-                            navigator.popUntilRoot()
-                            HomeScreen.openTab(HomeScreen.Tab.Browse())
-                            navigator.push(MangaScreen(dialog.newManga.id))
-                        }
-                    },
-                )
-            }
-
-            else -> {}
+        is BrowseMangaSourceViewModel.Dialog.Migrate -> {
+            MigrateMangaDialog(
+                oldManga = dialog.oldManga,
+                newManga = dialog.newManga,
+                screenModel = metroViewModel<MigrateMangaDialogScreenModel>(),
+                onDismissRequest = onDismissRequest,
+                onClickTitle = { navigator.push(MangaRoute(dialog.newManga.id)) },
+                onPopScreen = {
+                    navigator.popToRoot()
+                    resultEventBus.sendResult<TabEvent>(TabEvent.Browse())
+                    navigator.push(MangaRoute(dialog.newManga.id))
+                },
+            )
         }
+
+        else -> {}
     }
 }

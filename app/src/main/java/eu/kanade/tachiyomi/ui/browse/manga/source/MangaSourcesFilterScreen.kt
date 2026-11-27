@@ -5,44 +5,39 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.manga.MangaSourcesFilterScreen
-import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.util.system.toast
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
-class MangaSourcesFilterScreen : Screen() {
+@Composable
+fun MangaSourcesFilterScreen() {
+    val navigator = LocalNavigator.current
+    val viewModel = metroViewModel<MangaSourcesFilterViewModel>()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
-        val viewModel = metroViewModel<MangaSourcesFilterViewModel>()
-        val state by viewModel.state.collectAsStateWithLifecycle()
-
-        if (state is MangaSourcesFilterViewModel.State.Loading) {
-            LoadingScreen()
-            return
-        }
-
-        if (state is MangaSourcesFilterViewModel.State.Error) {
-            val context = LocalContext.current
-            LaunchedEffect(Unit) {
-                context.toast(MR.strings.internal_error)
-                navigator.pop()
-            }
-            return
-        }
-
-        val successState = state as MangaSourcesFilterViewModel.State.Success
-
-        MangaSourcesFilterScreen(
-            navigateUp = navigator::pop,
-            state = successState,
-            onClickLanguage = viewModel::toggleLanguage,
-            onClickSource = viewModel::toggleSource,
-        )
+    if (state is MangaSourcesFilterViewModel.State.Loading) {
+        LoadingScreen()
+        return
     }
+
+    if (state is MangaSourcesFilterViewModel.State.Error) {
+        val context = LocalContext.current
+        LaunchedEffect(Unit) {
+            context.toast(MR.strings.internal_error)
+            navigator.pop()
+        }
+        return
+    }
+
+    val successState = state as MangaSourcesFilterViewModel.State.Success
+
+    MangaSourcesFilterScreen(
+        navigateUp = navigator::pop,
+        state = successState,
+        onClickLanguage = viewModel::toggleLanguage,
+        onClickSource = viewModel::toggleSource,
+    )
 }

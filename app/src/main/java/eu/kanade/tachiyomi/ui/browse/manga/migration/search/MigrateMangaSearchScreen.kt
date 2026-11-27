@@ -3,89 +3,80 @@ package eu.kanade.tachiyomi.ui.browse.manga.migration.search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.manga.MigrateMangaSearchScreen
-import eu.kanade.presentation.util.Screen
-import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
-import mihon.app.di.appGraph
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MangaMigrationListRoute
+import mihon.core.navigation.MangaRoute
+import mihon.core.navigation.MangaSourceSearchRoute
+import mihon.feature.migration.list.MangaMatchOverrideEvent
 
-class MigrateMangaSearchScreen(private val mangaId: Long) : Screen() {
+@Composable
+fun MigrateMangaSearchScreen(mangaId: Long) {
+    val navigator = LocalNavigator.current
+    val resultEventBus = LocalResultEventBus.current
 
-    @Composable
-    override fun Content() {
-        val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
+    val screenModel = assistedMetroViewModel<MigrateMangaSearchViewModel, MigrateMangaSearchViewModel.Factory> {
+        create(mangaId = mangaId, initialExtensionFilter = null)
+    }
+    val state by screenModel.state.collectAsState()
 
-        val screenModel = assistedMetroViewModel<MigrateMangaSearchViewModel, MigrateMangaSearchViewModel.Factory> {
-            create(mangaId = mangaId, initialExtensionFilter = null)
-        }
-        val state by screenModel.state.collectAsState()
+    val dialogScreenModel = assistedMetroViewModel<
+        MangaMigrateSearchScreenDialogScreenModel,
+        MangaMigrateSearchScreenDialogScreenModel.Factory,
+        > {
+        create(mangaId = mangaId)
+    }
+    val dialogState by dialogScreenModel.state.collectAsState()
 
-        val dialogScreenModel = rememberScreenModel {
-            MangaMigrateSearchScreenDialogScreenModel(
-                mangaId = mangaId,
-                getManga = context.appGraph.getManga,
+    MigrateMangaSearchScreen(
+        state = state,
+        fromSourceId = dialogState.manga?.source,
+        navigateUp = navigator::pop,
+        onChangeSearchQuery = screenModel::updateSearchQuery,
+        onSearch = { screenModel.search() },
+        getManga = { screenModel.getManga(it) },
+        onChangeSearchFilter = screenModel::setSourceFilter,
+        onToggleResults = screenModel::toggleFilterResults,
+        onClickSource = {
+            navigator.push(
+                MangaSourceSearchRoute(dialogState.manga!!.id, it.id, state.searchQuery),
+            )
+        },
+        onClickItem = { targetManga ->
+            val migrationListRoute = navigator.routes
+                .filterIsInstance<MangaMigrationListRoute>()
+                .lastOrNull()
+            if (migrationListRoute == null) {
+                dialogScreenModel.setDialog(
+                    MangaMigrateSearchScreenDialogScreenModel.Dialog.Migrate(targetManga),
+                )
+            } else {
+                resultEventBus.sendResult(
+                    result = MangaMatchOverrideEvent(current = mangaId, target = targetManga.id),
+                )
+                navigator.popTo { route -> route is MangaMigrationListRoute }
+            }
+        },
+        onLongClickItem = { navigator.push(MangaRoute(it.id, true)) },
+    )
+
+    when (val dialog = dialogState.dialog) {
+        is MangaMigrateSearchScreenDialogScreenModel.Dialog.Migrate -> {
+            MigrateMangaDialog(
+                oldManga = dialogState.manga!!,
+                newManga = dialog.manga,
+                screenModel = metroViewModel<MigrateMangaDialogScreenModel>(),
+                onDismissRequest = { dialogScreenModel.setDialog(null) },
+                onClickTitle = {
+                    navigator.push(MangaRoute(dialog.manga.id, true))
+                },
+                onPopScreen = { navigator.replace(MangaRoute(dialog.manga.id)) },
             )
         }
-        val dialogState by dialogScreenModel.state.collectAsState()
 
-        MigrateMangaSearchScreen(
-            state = state,
-            fromSourceId = dialogState.manga?.source,
-            navigateUp = navigator::pop,
-            onChangeSearchQuery = screenModel::updateSearchQuery,
-            onSearch = { screenModel.search() },
-            getManga = { screenModel.getManga(it) },
-            onChangeSearchFilter = screenModel::setSourceFilter,
-            onToggleResults = screenModel::toggleFilterResults,
-            onClickSource = {
-                navigator.push(
-                    MangaSourceSearchScreen(dialogState.manga!!, it.id, state.searchQuery),
-                )
-            },
-            onClickItem = { targetManga ->
-                val migrationListScreen = navigator.items
-                    .filterIsInstance<mihon.feature.migration.list.MangaMigrationListScreen>()
-                    .firstOrNull()
-                if (migrationListScreen != null) {
-                    migrationListScreen.addMatchOverride(mangaId, targetManga.id)
-                    navigator.pop()
-                } else {
-                    dialogScreenModel.setDialog(
-                        MangaMigrateSearchScreenDialogScreenModel.Dialog.Migrate(targetManga),
-                    )
-                }
-            },
-            onLongClickItem = { navigator.push(MangaScreen(it.id, true)) },
-        )
-
-        when (val dialog = dialogState.dialog) {
-            is MangaMigrateSearchScreenDialogScreenModel.Dialog.Migrate -> {
-                MigrateMangaDialog(
-                    oldManga = dialogState.manga!!,
-                    newManga = dialog.manga,
-                    screenModel = rememberScreenModel { MigrateMangaDialogScreenModel(context.appGraph) },
-                    onDismissRequest = { dialogScreenModel.setDialog(null) },
-                    onClickTitle = {
-                        navigator.push(MangaScreen(dialog.manga.id, true))
-                    },
-                    onPopScreen = {
-                        if (navigator.lastItem is MangaScreen) {
-                            val lastItem = navigator.lastItem
-                            navigator.popUntil { navigator.items.contains(lastItem) }
-                            navigator.push(MangaScreen(dialog.manga.id))
-                        } else {
-                            navigator.replace(MangaScreen(dialog.manga.id))
-                        }
-                    },
-                )
-            }
-
-            else -> {}
-        }
+        else -> {}
     }
 }

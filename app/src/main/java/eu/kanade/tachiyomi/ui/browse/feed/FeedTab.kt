@@ -16,9 +16,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalHapticFeedback
-import cafe.adriel.voyager.core.stack.StackEvent
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.FeedAddDialog
 import eu.kanade.presentation.browse.FeedAddSearchDialog
 import eu.kanade.presentation.browse.FeedOrderScreen
@@ -28,11 +25,13 @@ import eu.kanade.presentation.browse.components.FeedSortAlphabeticallyDialog
 import eu.kanade.presentation.browse.components.SourceFeedDeleteDialog
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
-import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
-import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import mihon.core.navigation.AnimeRoute
+import mihon.core.navigation.BrowseAnimeSourceRoute
+import mihon.core.navigation.HomeRoute
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.source.anime.interactor.GetRemoteAnime
 import tachiyomi.i18n.MR
@@ -45,7 +44,7 @@ fun feedTab(
     screenModel: FeedScreenModel,
     // KMK <--
 ): TabContent {
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
     val state by screenModel.state.collectAsState()
 
     // KMK -->
@@ -61,15 +60,15 @@ fun feedTab(
     }
     // KMK <--
 
-    DisposableEffect(navigator.lastEvent) {
-        if (navigator.lastEvent == StackEvent.Push) {
+    DisposableEffect(navigator.current) {
+        if (navigator.current != HomeRoute) {
             screenModel.pushed = true
         } else if (!screenModel.pushed) {
             screenModel.init()
         }
 
         onDispose {
-            if (navigator.lastEvent == StackEvent.Idle && screenModel.pushed) {
+            if (navigator.current == HomeRoute && screenModel.pushed) {
                 screenModel.pushed = false
             }
         }
@@ -132,7 +131,7 @@ fun feedTab(
                         onClickSavedSearch = { savedSearch, source ->
                             screenModel.sourcePreferences.lastUsedSource.set(savedSearch.source)
                             navigator.push(
-                                BrowseAnimeSourceScreen(
+                                BrowseAnimeSourceRoute(
                                     source.id,
                                     listingQuery = null,
                                 ),
@@ -141,7 +140,7 @@ fun feedTab(
                         onClickSource = { source ->
                             screenModel.sourcePreferences.lastUsedSource.set(source.id)
                             navigator.push(
-                                BrowseAnimeSourceScreen(
+                                BrowseAnimeSourceRoute(
                                     source.id,
                                     // KMK -->
                                     listingQuery = if (!source.supportsLatest) {
@@ -161,14 +160,14 @@ fun feedTab(
                             scope.launchIO {
                                 val manga = screenModel.networkToLocalAnime.getLocal(it)
                                 // KMK <--
-                                navigator.push(AnimeScreen(manga.id, true))
+                                navigator.push(AnimeRoute(manga.id, true))
                             }
                         },
                         // KMK -->
                         onLongClickManga = {
                             scope.launchIO {
                                 val manga = screenModel.networkToLocalAnime.getLocal(it)
-                                navigator.push(AnimeScreen(manga.id, true))
+                                navigator.push(AnimeRoute(manga.id, true))
                             }
                         },
                         // KMK <--

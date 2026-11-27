@@ -46,6 +46,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -67,11 +68,14 @@ import androidx.core.util.Consumer
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.interpolator.view.animation.LinearOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.runtime.result.ResultEventBus
+import androidx.navigation3.runtime.result.rememberResultEventBus
+import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import animetail.feature.mpvfiles.MpvConfig
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.Navigator
-import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metro.Inject
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
@@ -83,10 +87,8 @@ import eu.kanade.presentation.components.DownloadedOnlyBannerBackgroundColor
 import eu.kanade.presentation.components.IncognitoModeBannerBackgroundColor
 import eu.kanade.presentation.components.IndexingBannerBackgroundColor
 import eu.kanade.presentation.more.AppMigratingScreen
-import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
-import eu.kanade.presentation.more.settings.screen.data.RestoreBackupScreen
-import eu.kanade.presentation.util.AssistContentScreen
-import eu.kanade.presentation.util.DefaultNavigatorScreenTransition
+import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoreDeepLinkEvent
+import eu.kanade.presentation.more.settings.screen.openSettings
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
@@ -104,18 +106,8 @@ import eu.kanade.tachiyomi.data.updater.RELEASE_URL
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
-import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
-import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
-import eu.kanade.tachiyomi.ui.browse.manga.source.browse.BrowseMangaSourceScreen
-import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearchScreen
 import eu.kanade.tachiyomi.ui.deeplink.DeepLinkScreenType
-import eu.kanade.tachiyomi.ui.deeplink.anime.DeepLinkAnimeScreen
-import eu.kanade.tachiyomi.ui.deeplink.manga.DeepLinkMangaScreen
-import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
-import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
-import eu.kanade.tachiyomi.ui.home.HomeScreen
-import eu.kanade.tachiyomi.ui.more.NewUpdateScreen
-import eu.kanade.tachiyomi.ui.more.OnboardingScreen
+import eu.kanade.tachiyomi.ui.home.TabEvent
 import eu.kanade.tachiyomi.ui.player.ExternalIntents
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
 import eu.kanade.tachiyomi.util.system.dpToPx
@@ -142,12 +134,40 @@ import mihon.app.di.AppGraph
 import mihon.app.di.appGraph
 import mihon.core.metro.metroGraph
 import mihon.core.migration.Migrator
+import mihon.core.navigation.AnimeRoute
+import mihon.core.navigation.AnimeTrackInfoDialogRoute
+import mihon.core.navigation.AssistContentManager
+import mihon.core.navigation.BrowseAnimeSourceRoute
+import mihon.core.navigation.BrowseMangaSourceRoute
+import mihon.core.navigation.DeepLinkAnimeRoute
+import mihon.core.navigation.DeepLinkMangaRoute
+import mihon.core.navigation.EpisodeOptionsDialogRoute
+import mihon.core.navigation.ExtensionStoresRoute
+import mihon.core.navigation.GlobalAnimeSearchRoute
+import mihon.core.navigation.GlobalMangaSearchRoute
+import mihon.core.navigation.HomeRoute
+import mihon.core.navigation.LocalAssistContentManager
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MangaRoute
+import mihon.core.navigation.MangaTrackInfoDialogRoute
+import mihon.core.navigation.Navigator
+import mihon.core.navigation.NavigatorDisplay
+import mihon.core.navigation.NewUpdateRoute
+import mihon.core.navigation.OnboardingRoute
+import mihon.core.navigation.RestoreBackupRoute
+import mihon.core.navigation.SupportUsRoute
+import mihon.core.navigation.appEntries
+import mihon.core.navigation.rememberNavigator
+import mihon.core.navigation.rememberOverlaySheetSceneStrategy
+import mihon.core.navigation.rememberTwoPaneSettingsSceneStrategy
 import mihon.data.cache.ChapterCache
 import mihon.domain.database.repository.DatabaseRepository
-import mihon.feature.support.SupportUsScreen
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.automirroredrounded.OpenInNew
 import mihon.icons.materialsymbols.rounded.VolunteerActivism
+import mihon.presentation.core.util.isTabletUi
+import soup.compose.material.motion.animation.materialSharedAxisX
+import soup.compose.material.motion.animation.rememberSlideDistance
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
@@ -200,6 +220,8 @@ class MainActivity : BaseActivity() {
     var ready = false
 
     private var navigator: Navigator? = null
+
+    private val assistContentManager = AssistContentManager()
 
     // AM (CONNECTIONS) -->
     @Inject lateinit var connectionsPreferences: ConnectionsPreferences
@@ -289,33 +311,39 @@ class MainActivity : BaseActivity() {
                 )
             }
 
-            Navigator(
-                screen = HomeScreen,
-                disposeBehavior = NavigatorDisposeBehavior(
-                    disposeNestedNavigators = false,
-                    disposeSteps = true,
-                ),
-            ) { navigator ->
+            val navigator = rememberNavigator(HomeRoute)
+            val twoPaneStrategy = rememberTwoPaneSettingsSceneStrategy<NavKey>()
+            val overlaySheetSceneStrategy = rememberOverlaySheetSceneStrategy<NavKey>()
+            val resultEventBus = rememberResultEventBus()
+            val resultEventBusNavEntryDecorator = rememberResultEventBusNavEntryDecorator<NavKey>(
+                resultEventBus = resultEventBus,
+            )
 
+            CompositionLocalProvider(
+                LocalNavigator provides navigator,
+                LocalAssistContentManager provides assistContentManager,
+            ) {
                 LaunchedEffect(navigator) {
                     this@MainActivity.navigator = navigator
 
                     if (isLaunch) {
                         // Set start screen
-                        handleIntentAction(intent, navigator)
+                        handleIntentAction(intent, navigator, resultEventBus)
 
                         // Reset Incognito Mode on relaunch
                         preferences.incognitoMode.set(false)
                     }
                 }
-                LaunchedEffect(navigator.lastItem) {
-                    (navigator.lastItem as? BrowseMangaSourceScreen)?.sourceId
+
+                val currentRoute = navigator.current
+                LaunchedEffect(currentRoute) {
+                    (currentRoute as? BrowseMangaSourceRoute)?.sourceId
                         .let(getMangaIncognitoState::subscribe)
                         .collectLatest { incognito = it }
                 }
 
-                LaunchedEffect(navigator.lastItem) {
-                    (navigator.lastItem as? BrowseAnimeSourceScreen)?.sourceId
+                LaunchedEffect(currentRoute) {
+                    (currentRoute as? BrowseAnimeSourceRoute)?.sourceId
                         .let(getAnimeIncognitoState::subscribe)
                         .collectLatest { incognitoAnime = it }
                 }
@@ -334,9 +362,23 @@ class MainActivity : BaseActivity() {
                 ) { contentPadding ->
                     // Consume insets already used by app state banners
                     Box {
-                        // Shows current screen
-                        DefaultNavigatorScreenTransition(
+                        val slideDistance = rememberSlideDistance()
+                        NavigatorDisplay(
                             navigator = navigator,
+                            sceneStrategies = listOf(twoPaneStrategy, overlaySheetSceneStrategy),
+                            transitionSpec = { materialSharedAxisX(forward = true, slideDistance = slideDistance) },
+                            popTransitionSpec = { materialSharedAxisX(forward = false, slideDistance = slideDistance) },
+                            predictivePopTransitionSpec = {
+                                materialSharedAxisX(forward = false, slideDistance = slideDistance)
+                            },
+                            entryDecorators = listOf(
+                                rememberSaveableStateHolderNavEntryDecorator(),
+                                rememberViewModelStoreNavEntryDecorator(),
+                                resultEventBusNavEntryDecorator,
+                            ),
+                            entryProvider = entryProvider {
+                                appEntries()
+                            },
                             modifier = Modifier
                                 .padding(contentPadding)
                                 .consumeWindowInsets(contentPadding),
@@ -355,23 +397,23 @@ class MainActivity : BaseActivity() {
                     }
                 }
 
-                // Pop source-related screens when incognito mode is turned off
+                // Pop source-related routes when incognito mode is turned off
                 LaunchedEffect(Unit) {
                     preferences.incognitoMode.changes()
                         .drop(1)
                         .filter { !it }
                         .onEach {
-                            val currentScreen = navigator.lastItem
+                            val route = navigator.current
                             if ((
-                                    currentScreen is BrowseMangaSourceScreen ||
-                                        (currentScreen is MangaScreen && currentScreen.fromSource)
+                                    route is BrowseMangaSourceRoute ||
+                                        (route is MangaRoute && route.fromSource)
                                     ) ||
                                 (
-                                    currentScreen is BrowseAnimeSourceScreen ||
-                                        (currentScreen is AnimeScreen && currentScreen.fromSource)
+                                    route is BrowseAnimeSourceRoute ||
+                                        (route is AnimeRoute && route.fromSource)
                                     )
                             ) {
-                                navigator.popUntilRoot()
+                                navigator.popToRoot()
                             }
                         }
                         .launchIn(this)
@@ -398,7 +440,11 @@ class MainActivity : BaseActivity() {
                     // <-- AM (DISCORD)
                 }
 
-                HandleOnNewIntent(context = context, navigator = navigator)
+                HandleOnNewIntent(
+                    context = context,
+                    navigator = navigator,
+                    resultEventBus = resultEventBus,
+                )
 
                 if (isLaunch) {
                     CheckForUpdates()
@@ -474,15 +520,21 @@ class MainActivity : BaseActivity() {
 
     override fun onProvideAssistContent(outContent: AssistContent) {
         super.onProvideAssistContent(outContent)
-        when (val screen = navigator?.lastItem) {
-            is AssistContentScreen -> {
-                screen.onProvideAssistUrl()?.let { outContent.webUri = it.toUri() }
-            }
-        }
+        val navigator = navigator ?: return
+        val route = navigator.routes.lastOrNull {
+            it !is MangaTrackInfoDialogRoute &&
+                it !is AnimeTrackInfoDialogRoute &&
+                it !is EpisodeOptionsDialogRoute
+        } ?: return
+        assistContentManager.urlFor(route, navigator.routes)?.let { outContent.webUri = it.toUri() }
     }
 
     @Composable
-    private fun HandleOnNewIntent(context: Context, navigator: Navigator) {
+    private fun HandleOnNewIntent(
+        context: Context,
+        navigator: Navigator,
+        resultEventBus: ResultEventBus,
+    ) {
         LaunchedEffect(Unit) {
             callbackFlow {
                 val componentActivity = context as ComponentActivity
@@ -490,28 +542,31 @@ class MainActivity : BaseActivity() {
                 componentActivity.addOnNewIntentListener(consumer)
                 awaitClose { componentActivity.removeOnNewIntentListener(consumer) }
             }
-                .collectLatest { handleIntentAction(it, navigator) }
+                .collectLatest { handleIntentAction(it, navigator, resultEventBus) }
         }
     }
 
     @Composable
     private fun CheckForUpdates() {
         val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
 
         // App updates
         LaunchedEffect(Unit) {
             if (updaterEnabled) {
                 try {
                     val result = context.appGraph.updateChecker.checkForUpdate()
-                    if (result is GetApplicationRelease.Result.NewUpdate) {
-                        val updateScreen = NewUpdateScreen(
+                    if (
+                        result is GetApplicationRelease.Result.NewUpdate &&
+                        navigator.routes.none { it is NewUpdateRoute }
+                    ) {
+                        val updateRoute = NewUpdateRoute(
                             versionName = result.release.version,
                             changelogInfo = result.release.info,
                             releaseLink = result.release.releaseLink,
                             downloadLink = result.release.downloadLink,
                         )
-                        navigator.push(updateScreen)
+                        navigator.push(updateRoute)
                     }
                 } catch (e: Exception) {
                     logcat(LogPriority.ERROR, e)
@@ -528,18 +583,18 @@ class MainActivity : BaseActivity() {
 
     @Composable
     private fun ShowOnboarding() {
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
 
         LaunchedEffect(Unit) {
-            if (!preferences.shownOnboardingFlow.get() && navigator.lastItem !is OnboardingScreen) {
-                navigator.push(OnboardingScreen())
+            if (!preferences.shownOnboardingFlow.get() && OnboardingRoute !in navigator.routes) {
+                navigator.push(OnboardingRoute)
             }
         }
     }
 
     @Composable
     private fun ShowDonationCampaign() {
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
 
         var showCampaign by remember { mutableStateOf(false) }
         if (showCampaign) {
@@ -589,7 +644,7 @@ class MainActivity : BaseActivity() {
                             .padding(horizontal = MaterialTheme.padding.medium)
                             .fillMaxWidth(),
                         onClick = {
-                            navigator.push(SupportUsScreen())
+                            navigator.push(SupportUsRoute)
                             dismissSupportMessage()
                         },
                     ) {
@@ -701,7 +756,11 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun handleIntentAction(intent: Intent, navigator: Navigator): Boolean {
+    private fun handleIntentAction(
+        intent: Intent,
+        navigator: Navigator,
+        resultEventBus: ResultEventBus,
+    ): Boolean {
         val notificationId = intent.getIntExtra("notificationId", -1)
         if (notificationId > -1) {
             NotificationReceiver.dismissNotification(
@@ -712,40 +771,46 @@ class MainActivity : BaseActivity() {
         }
 
         val tabToOpen = when (intent.action) {
-            Constants.SHORTCUT_ANIMELIB -> HomeScreen.Tab.AnimeLib()
+            Constants.SHORTCUT_ANIMELIB -> TabEvent.AnimeLibrary()
 
-            Constants.SHORTCUT_LIBRARY -> HomeScreen.Tab.Library()
+            Constants.SHORTCUT_LIBRARY -> TabEvent.MangaLibrary()
 
             Constants.SHORTCUT_MANGA -> {
                 val idToOpen = intent.extras?.getLong(Constants.MANGA_EXTRA) ?: return false
-                navigator.popUntilRoot()
-                HomeScreen.Tab.Library(idToOpen)
+                navigator.popToRoot()
+                TabEvent.MangaLibrary(idToOpen)
             }
 
             Constants.SHORTCUT_ANIME -> {
                 val idToOpen = intent.extras?.getLong(Constants.ANIME_EXTRA) ?: return false
-                navigator.popUntilRoot()
-                HomeScreen.Tab.AnimeLib(idToOpen)
+                navigator.popToRoot()
+                TabEvent.AnimeLibrary(idToOpen)
             }
 
-            Constants.SHORTCUT_UPDATES -> HomeScreen.Tab.Updates
+            Constants.SHORTCUT_UPDATES -> TabEvent.Updates
 
-            Constants.SHORTCUT_HISTORY -> HomeScreen.Tab.History
+            Constants.SHORTCUT_HISTORY -> TabEvent.History
 
-            Constants.SHORTCUT_SOURCES -> HomeScreen.Tab.Browse(false)
+            Constants.SHORTCUT_SOURCES -> TabEvent.Browse(false)
 
-            Constants.SHORTCUT_ANIMEEXTENSIONS -> HomeScreen.Tab.Browse(true, true)
+            Constants.SHORTCUT_ANIMEEXTENSIONS -> TabEvent.Browse(true, true)
 
-            Constants.SHORTCUT_EXTENSIONS -> HomeScreen.Tab.Browse(true)
+            Constants.SHORTCUT_EXTENSIONS -> TabEvent.Browse(true)
 
             Constants.SHORTCUT_DOWNLOADS -> {
-                navigator.popUntilRoot()
-                HomeScreen.Tab.More(toDownloads = true)
+                navigator.popToRoot()
+                TabEvent.More(toDownloads = true)
             }
 
             Constants.SHORTCUT_ANIME_DOWNLOADS -> {
-                navigator.popUntilRoot()
-                HomeScreen.Tab.More(toDownloads = true)
+                navigator.popToRoot()
+                TabEvent.More(toDownloads = true)
+            }
+
+            Intent.ACTION_APPLICATION_PREFERENCES -> {
+                navigator.popToRoot()
+                navigator.openSettings(twoPane = resources.configuration.isTabletUi())
+                null
             }
 
             Intent.ACTION_SEARCH, Intent.ACTION_SEND, "com.google.android.gms.actions.SEARCH_ACTION" -> {
@@ -757,21 +822,19 @@ class MainActivity : BaseActivity() {
                     ?: intent.getStringExtra(Intent.EXTRA_TEXT)
 
                 if (!query.isNullOrEmpty()) {
-                    navigator.popUntilRoot()
-
                     val screenType = intent.getStringExtra(INTENT_SEARCH_TYPE).orEmpty()
                         .ifBlank { "ANIME" }
                         .let(DeepLinkScreenType::valueOf)
 
                     when (screenType) {
                         DeepLinkScreenType.MANGA -> {
-                            navigator.push(GlobalMangaSearchScreen(query))
-                            navigator.push(DeepLinkMangaScreen(query))
+                            navigator.replaceAll(GlobalMangaSearchRoute(query))
+                            navigator.push(DeepLinkMangaRoute(query))
                         }
 
                         DeepLinkScreenType.ANIME -> {
-                            navigator.push(GlobalAnimeSearchScreen(query))
-                            navigator.push(DeepLinkAnimeScreen(query))
+                            navigator.replaceAll(GlobalAnimeSearchRoute(query))
+                            navigator.push(DeepLinkAnimeRoute(query))
                         }
                     }
                 }
@@ -782,8 +845,7 @@ class MainActivity : BaseActivity() {
                 val query = intent.getStringExtra(INTENT_SEARCH_QUERY)
                 if (!query.isNullOrEmpty()) {
                     val filter = intent.getStringExtra(INTENT_SEARCH_FILTER)
-                    navigator.popUntilRoot()
-                    navigator.push(GlobalMangaSearchScreen(query, filter))
+                    navigator.replaceAll(GlobalMangaSearchRoute(query, filter))
                 }
                 null
             }
@@ -792,8 +854,7 @@ class MainActivity : BaseActivity() {
                 val query = intent.getStringExtra(INTENT_SEARCH_QUERY)
                 if (!query.isNullOrEmpty()) {
                     val filter = intent.getStringExtra(INTENT_SEARCH_FILTER)
-                    navigator.popUntilRoot()
-                    navigator.push(GlobalAnimeSearchScreen(query, filter))
+                    navigator.replaceAll(GlobalAnimeSearchRoute(query, filter))
                 }
                 null
             }
@@ -801,21 +862,20 @@ class MainActivity : BaseActivity() {
             Intent.ACTION_VIEW -> {
                 // Handling opening of backup files
                 if (intent.data.toString().endsWith(".tachibk")) {
-                    navigator.popUntilRoot()
-                    navigator.push(RestoreBackupScreen(intent.data.toString()))
+                    navigator.replaceAll(RestoreBackupRoute(intent.data.toString()))
                 }
                 // Deep link to add manga extension store
                 else if (intent.isAddMangaExtensionStoreIntent()) {
                     intent.data?.getQueryParameter("url")?.let { repoUrl ->
-                        navigator.popUntilRoot()
-                        navigator.push(ExtensionStoresScreen(isManga = true, url = repoUrl))
+                        navigator.replaceAll(ExtensionStoresRoute(isManga = true))
+                        resultEventBus.sendResult(ExtensionStoreDeepLinkEvent(repoUrl))
                     }
                 }
                 // Deep link to add anime extension store
                 else if (intent.isAddAnimeExtensionStoreIntent()) {
                     intent.data?.getQueryParameter("url")?.let { repoUrl ->
-                        navigator.popUntilRoot()
-                        navigator.push(ExtensionStoresScreen(isManga = false, url = repoUrl))
+                        navigator.replaceAll(ExtensionStoresRoute(isManga = false))
+                        resultEventBus.sendResult(ExtensionStoreDeepLinkEvent(repoUrl))
                     }
                 }
                 null
@@ -825,7 +885,7 @@ class MainActivity : BaseActivity() {
         }
 
         if (tabToOpen != null) {
-            lifecycleScope.launch { HomeScreen.openTab(tabToOpen) }
+            resultEventBus.sendResult<TabEvent>(tabToOpen)
         }
 
         ready = true

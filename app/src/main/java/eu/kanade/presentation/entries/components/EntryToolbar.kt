@@ -12,16 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.navigator.LocalNavigator
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.AppBarTitle
 import eu.kanade.presentation.components.EntryDownloadDropdownMenu
 import eu.kanade.presentation.entries.DownloadAction
-import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
-import eu.kanade.tachiyomi.ui.browse.anime.source.feed.SourceFeedScreen
-import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import mihon.app.di.appGraph
+import mihon.core.navigation.AnimeRoute
+import mihon.core.navigation.BrowseAnimeSourceRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.SourceFeedRoute
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.Download
 import mihon.icons.materialsymbols.rounded.FilterList
@@ -66,8 +66,8 @@ fun EntryToolbar(
     modifier: Modifier = Modifier,
 ) {
     val navigator = LocalNavigator.current
-    fun onHomeClicked() = navigator?.popUntil { screen ->
-        screen is SourceFeedScreen || screen is BrowseAnimeSourceScreen
+    fun onHomeClicked() = navigator.popTo { route ->
+        route is SourceFeedRoute || route is BrowseAnimeSourceRoute
     }
     val context = LocalContext.current
     val isHomeEnabled = remember(context) { context.appGraph.uiPreferences.showHomeOnRelatedAnimes.get() }
@@ -91,12 +91,10 @@ fun EntryToolbar(
             } else {
                 navigateUp()
 
-                if (isHomeEnabled && navigator != null) {
-                    if ((
-                            navigator.size >= 2 &&
-                                navigator.items[navigator.size - 2] is AnimeScreen
-                            ) ||
-                        navigator.size >= 5
+                if (isHomeEnabled) {
+                    val routes = navigator.routes
+                    if ((routes.size >= 2 && routes[routes.size - 2] is AnimeRoute) ||
+                        routes.size >= 5
                     ) {
                         onHomeClicked()
                     }

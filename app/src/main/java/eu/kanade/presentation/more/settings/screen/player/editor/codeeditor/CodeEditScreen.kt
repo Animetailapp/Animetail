@@ -36,15 +36,12 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.more.settings.screen.player.editor.components.UnsavedChangesDialog
-import eu.kanade.presentation.util.Screen
 import kotlinx.collections.immutable.persistentListOf
-import mihon.app.di.appGraph
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -53,81 +50,78 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 
-class CodeEditScreen(private val filePath: String) : Screen() {
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
-        val context = LocalContext.current
-        val screenModel = rememberScreenModel {
-            CodeEditScreenModel(context, filePath, context.appGraph.storageManager)
+@Composable
+fun CodeEditScreen(filePath: String) {
+    val navigator = LocalNavigator.current
+    val screenModel = assistedMetroViewModel<CodeEditScreenModel, CodeEditScreenModel.Factory> {
+        create(filePath)
+    }
+
+    val state by screenModel.state.collectAsState()
+    val dialogShown by screenModel.dialogShown.collectAsState()
+    val hasModified by screenModel.hasModified.collectAsState()
+
+    BackHandler(enabled = hasModified) {
+        screenModel.showDialog(CodeEditDialogs.GoBack)
+    }
+
+    when (dialogShown) {
+        null -> {}
+
+        CodeEditDialogs.GoBack -> {
+            UnsavedChangesDialog(
+                onDismissRequest = screenModel::dismissDialog,
+                onConfirm = { navigator.pop() },
+            )
         }
+    }
 
-        val state by screenModel.state.collectAsState()
-        val dialogShown by screenModel.dialogShown.collectAsState()
-        val hasModified by screenModel.hasModified.collectAsState()
+    Scaffold(
+        topBar = { scrollBehavior ->
+            AppBar(
+                navigateUp = {
+                    if (hasModified) {
+                        screenModel.showDialog(CodeEditDialogs.GoBack)
+                    } else {
+                        navigator.pop()
+                    }
+                },
+                titleContent = {
+                    Text(text = filePath.substringAfter("/"))
+                },
+                actions = {
+                    AppBarActions(
+                        actions = persistentListOf(
+                            AppBar.Action(
+                                title = stringResource(MR.strings.action_save),
+                                icon = Icons.Outlined.Save,
+                                onClick = screenModel::save,
+                                enabled = hasModified,
+                            ),
+                        ),
+                    )
+                },
+                scrollBehavior = scrollBehavior,
+            )
+        },
+    ) { contentPadding ->
+        when (state) {
+            CodeEditScreenState.Loading -> {
+                LoadingScreen()
+            }
 
-        BackHandler(enabled = hasModified) {
-            screenModel.showDialog(CodeEditDialogs.GoBack)
-        }
-
-        when (dialogShown) {
-            null -> {}
-
-            CodeEditDialogs.GoBack -> {
-                UnsavedChangesDialog(
-                    onDismissRequest = screenModel::dismissDialog,
-                    onConfirm = { navigator.pop() },
+            is CodeEditScreenState.Error -> {
+                EmptyScreen(
+                    message = (state as CodeEditScreenState.Error).throwable.message ?: "Unknown exception",
                 )
             }
-        }
 
-        Scaffold(
-            topBar = { scrollBehavior ->
-                AppBar(
-                    navigateUp = {
-                        if (hasModified) {
-                            screenModel.showDialog(CodeEditDialogs.GoBack)
-                        } else {
-                            navigator.pop()
-                        }
-                    },
-                    titleContent = {
-                        Text(text = filePath.substringAfter("/"))
-                    },
-                    actions = {
-                        AppBarActions(
-                            actions = persistentListOf(
-                                AppBar.Action(
-                                    title = stringResource(MR.strings.action_save),
-                                    icon = Icons.Outlined.Save,
-                                    onClick = screenModel::save,
-                                    enabled = hasModified,
-                                ),
-                            ),
-                        )
-                    },
-                    scrollBehavior = scrollBehavior,
+            is CodeEditScreenState.Success -> {
+                CodeEditorContent(
+                    state = state as CodeEditScreenState.Success,
+                    contentPadding = contentPadding,
+                    onEdit = screenModel::onEdit,
                 )
-            },
-        ) { contentPadding ->
-            when (state) {
-                CodeEditScreenState.Loading -> {
-                    LoadingScreen()
-                }
-
-                is CodeEditScreenState.Error -> {
-                    EmptyScreen(
-                        message = (state as CodeEditScreenState.Error).throwable.message ?: "Unknown exception",
-                    )
-                }
-
-                is CodeEditScreenState.Success -> {
-                    CodeEditorContent(
-                        state = state as CodeEditScreenState.Success,
-                        contentPadding = contentPadding,
-                        onEdit = screenModel::onEdit,
-                    )
-                }
             }
         }
     }

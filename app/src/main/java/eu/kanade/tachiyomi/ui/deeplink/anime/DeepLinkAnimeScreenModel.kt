@@ -1,14 +1,24 @@
 package eu.kanade.tachiyomi.ui.deeplink.anime
 
 import androidx.compose.runtime.Immutable
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.domain.entries.anime.model.toDomainAnime
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.online.ResolvableAnimeSource
 import eu.kanade.tachiyomi.animesource.online.UriType
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import mihon.domain.source.interactor.UpdateAnimeFromRemote
 import tachiyomi.core.common.util.lang.launchIO
@@ -19,17 +29,28 @@ import tachiyomi.domain.items.episode.interactor.GetEpisodeByUrlAndAnimeId
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 
+@AssistedInject
 class DeepLinkAnimeScreenModel(
-    query: String = "",
+    @Assisted query: String = "",
     private val sourceManager: AnimeSourceManager,
     private val networkToLocalAnime: NetworkToLocalAnime,
     private val getEpisodeByUrlAndAnimeId: GetEpisodeByUrlAndAnimeId,
     private val getAnimeByUrlAndSourceId: GetAnimeByUrlAndSourceId,
     private val updateAnimeFromRemote: UpdateAnimeFromRemote,
-) : StateScreenModel<DeepLinkAnimeScreenModel.State>(State.Loading) {
+) : ViewModel() {
+
+    private val mutableState = MutableStateFlow<State>(State.Loading)
+    val state: StateFlow<State> = mutableState.asStateFlow()
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(query: String): DeepLinkAnimeScreenModel
+    }
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val source = sourceManager.getAll()
                 .filterIsInstance<ResolvableAnimeSource>()
                 .firstOrNull { it.getUriType(query) != UriType.Unknown }

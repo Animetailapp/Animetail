@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.navigator.Navigator
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.browse.InLibraryBadge
@@ -28,10 +27,12 @@ import eu.kanade.presentation.browse.anime.RelatedAnimesLoadingItem
 import eu.kanade.presentation.browse.anime.components.BrowseSourceSimpleToolbar
 import eu.kanade.presentation.library.components.CommonEntryItemDefaults
 import eu.kanade.presentation.library.components.EntryComfortableGridItem
-import eu.kanade.tachiyomi.ui.browse.manga.source.browse.BrowseMangaSourceScreen
-import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearchScreen
 import kotlinx.coroutines.CoroutineScope
 import mihon.app.di.appGraph
+import mihon.core.navigation.BrowseMangaSourceRoute
+import mihon.core.navigation.GlobalMangaSearchRoute
+import mihon.core.navigation.MangaRoute
+import mihon.core.navigation.Navigator
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaCover
@@ -84,20 +85,20 @@ fun RelatedMangasScreen(
             onMangaClick = {
                 scope.launchIO {
                     val manga = viewModel.networkToLocalManga.getLocal(it)
-                    navigator.push(MangaScreen(manga.id, true))
+                    navigator.push(MangaRoute(manga.id, true))
                 }
             },
             onMangaLongClick = {
                 scope.launchIO {
                     val manga = viewModel.networkToLocalManga.getLocal(it)
-                    navigator.push(MangaScreen(manga.id, true))
+                    navigator.push(MangaRoute(manga.id, true))
                 }
             },
             onKeywordClick = { query ->
-                navigator.push(BrowseMangaSourceScreen(successState.source.id, query))
+                navigator.push(BrowseMangaSourceRoute(successState.source.id, query))
             },
             onKeywordLongClick = { query ->
-                navigator.push(GlobalMangaSearchScreen(query))
+                navigator.push(GlobalMangaSearchRoute(query))
             },
             selection = emptyList(),
         )

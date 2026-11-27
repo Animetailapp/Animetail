@@ -7,38 +7,30 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
-import eu.kanade.presentation.util.AssistContentScreen
-import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.webview.WebViewScreenContent
 import eu.kanade.tachiyomi.util.system.WebViewUtil
 import eu.kanade.tachiyomi.util.system.toast
+import mihon.core.navigation.LocalAssistUrl
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
-class WebViewScreen(
-    private val url: String,
-    private val initialTitle: String? = null,
-    private val sourceId: Long? = null,
-) : Screen(), AssistContentScreen {
-
-    private var assistUrl: String? = null
-
-    override fun onProvideAssistUrl() = assistUrl
-
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
-        WebViewScreenBody(
-            url = url,
-            initialTitle = initialTitle,
-            sourceId = sourceId,
-            onNavigateUp = { navigator.pop() },
-            onUrlChange = { assistUrl = it },
-        )
-    }
+@Composable
+fun WebViewScreen(
+    url: String,
+    initialTitle: String? = null,
+    sourceId: Long? = null,
+) {
+    val navigator = LocalNavigator.current
+    val assistUrl = LocalAssistUrl.current
+    WebViewScreenBody(
+        url = url,
+        initialTitle = initialTitle,
+        sourceId = sourceId,
+        onNavigateUp = { navigator.pop() },
+        onUrlChange = { assistUrl(it) },
+    )
 }
 
 @Composable

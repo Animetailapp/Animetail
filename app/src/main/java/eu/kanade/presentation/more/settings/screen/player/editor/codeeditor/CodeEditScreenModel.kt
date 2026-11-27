@@ -4,12 +4,20 @@ import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import animetail.feature.mpvfiles.MpvConfig.Companion.MPV_DIR
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import logcat.LogPriority
@@ -20,11 +28,22 @@ import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.aniyomi.AYMR
 import java.io.FileOutputStream
 
+@AssistedInject
 class CodeEditScreenModel(
+    @Assisted private val filePath: String,
     private val context: Context,
-    private val filePath: String,
     private val storageManager: StorageManager,
-) : StateScreenModel<CodeEditScreenState>(CodeEditScreenState.Loading) {
+) : ViewModel() {
+    private val mutableState = MutableStateFlow<CodeEditScreenState>(CodeEditScreenState.Loading)
+    val state: StateFlow<CodeEditScreenState> = mutableState.asStateFlow()
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(filePath: String): CodeEditScreenModel
+    }
+
     private val _hasModified = MutableStateFlow(false)
     val hasModified = _hasModified.asStateFlow()
 
@@ -34,7 +53,7 @@ class CodeEditScreenModel(
     private val currentFile = MutableStateFlow<UniFile?>(null)
 
     init {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             try {
                 val file = storageManager.getMPVConfigDirectory()?.findFile(filePath)
                     ?: throw Exception("Unable to read file")

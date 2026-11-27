@@ -5,9 +5,16 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.entries.anime.model.toDomainAnime
 import eu.kanade.domain.source.anime.interactor.GetExhSavedSearch
@@ -24,6 +31,9 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -31,7 +41,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import mihon.app.di.AppGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
@@ -55,8 +64,9 @@ import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 import java.util.concurrent.Executors
 import tachiyomi.domain.entries.anime.model.Anime as DomainAnime
 
+@AssistedInject
 open class SourceFeedScreenModel(
-    val sourceId: Long,
+    @Assisted val sourceId: Long,
     uiPreferences: UiPreferences,
     private val sourceManager: AnimeSourceManager,
     private val getAnime: GetAnime,
@@ -70,31 +80,27 @@ open class SourceFeedScreenModel(
     // KMK -->
     private val reorderFeed: ReorderFeed,
     // KMK <--
-) : StateScreenModel<SourceFeedState>(SourceFeedState()) {
-    constructor(sourceId: Long, appGraph: AppGraph) : this(
-        sourceId = sourceId,
-        uiPreferences = appGraph.uiPreferences,
-        sourceManager = appGraph.animeSourceManager,
-        getAnime = appGraph.getAnime,
-        networkToLocalAnime = appGraph.networkToLocalAnime,
-        getFeedSavedSearchBySourceId = appGraph.getFeedSavedSearchBySourceId,
-        getSavedSearchBySourceIdFeed = appGraph.getSavedSearchBySourceIdFeed,
-        countFeedSavedSearchBySourceId = appGraph.countFeedSavedSearchBySourceId,
-        insertFeedSavedSearch = appGraph.insertFeedSavedSearch,
-        deleteFeedSavedSearchById = appGraph.deleteFeedSavedSearchById,
-        getExhSavedSearch = appGraph.getExhSavedSearch,
-        reorderFeed = appGraph.reorderFeed,
-    )
+) : ViewModel() {
+
+    private val mutableState = MutableStateFlow(SourceFeedState())
+    val state: StateFlow<SourceFeedState> = mutableState.asStateFlow()
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(sourceId: Long): SourceFeedScreenModel
+    }
 
     var source = sourceManager.getOrStub(sourceId)
 
     private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
 
-    val startExpanded by uiPreferences.expandFilters.asState(screenModelScope)
+    val startExpanded by uiPreferences.expandFilters.asState(viewModelScope)
 
     init {
         // KMK -->
-        screenModelScope.launch {
+        viewModelScope.launch {
             var retry = 10
             while (source !is AnimeCatalogueSource && retry-- > 0) {
                 // Sometime source is late to load, so we need to wait a bit
@@ -119,7 +125,7 @@ open class SourceFeedScreenModel(
                     }
                     getFeed(items)
                 }
-                .launchIn(screenModelScope)
+                .launchIn(viewModelScope)
         }
     }
 
@@ -143,7 +149,7 @@ open class SourceFeedScreenModel(
     }
 
     fun createFeed(savedSearchId: Long) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             insertFeedSavedSearch.await(
                 FeedSavedSearch(
                     id = -1,
@@ -157,26 +163,26 @@ open class SourceFeedScreenModel(
     }
 
     fun deleteFeed(feed: FeedSavedSearch) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             deleteFeedSavedSearchById.await(feed.id)
         }
     }
 
     // KMK -->
     fun moveUp(feed: FeedSavedSearch) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             reorderFeed.moveUp(feed, false)
         }
     }
 
     fun moveDown(feed: FeedSavedSearch) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             reorderFeed.moveDown(feed, false)
         }
     }
 
     fun sortAlphabetically() {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             reorderFeed.sortAlphabetically(
                 state.value.items
                     .filterIsInstance<SourceFeedUI.SourceSavedSearch>()
@@ -222,7 +228,7 @@ open class SourceFeedScreenModel(
         val source = source
         // KMK <--
         if (source !is AnimeCatalogueSource) return
-        screenModelScope.launch {
+        viewModelScope.launch {
             feedSavedSearch.map { sourceFeed ->
                 async {
                     val page = try {
@@ -293,7 +299,7 @@ open class SourceFeedScreenModel(
 
     // KMK -->
     private fun reloadSavedSearches() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val searches = loadSearches()
             mutableState.update { it.copy(savedSearches = searches) }
         }
@@ -310,7 +316,7 @@ open class SourceFeedScreenModel(
         val source = source
         // KMK <--
         if (source !is AnimeCatalogueSource) return
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val allDefault = state.value.filters == source.getFilterList()
             dismissDialog()
             if (allDefault) {
@@ -339,7 +345,7 @@ open class SourceFeedScreenModel(
         val source = source
         // KMK <--
         if (source !is AnimeCatalogueSource) return
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             // KMK -->
             val search = getExhSavedSearch.awaitOne(loadedSearch.id, source::getFilterList) ?: loadedSearch
             // KMK <--
@@ -367,7 +373,7 @@ open class SourceFeedScreenModel(
         search: EXHSavedSearch,
         onToast: (StringResource) -> Unit,
     ) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             if (hasTooManyFeeds()) {
                 withUIContext {
                     onToast(TLMR.strings.too_many_in_feed)
@@ -396,7 +402,7 @@ open class SourceFeedScreenModel(
         canMoveUp: Boolean,
         canMoveDown: Boolean,
     ) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             mutableState.update { state ->
                 state.copy(
                     dialog = Dialog.FeedActions(
@@ -442,8 +448,8 @@ open class SourceFeedScreenModel(
         // KMK <--
     }
 
-    override fun onDispose() {
-        super.onDispose()
+    override fun onCleared() {
+        super.onCleared()
         coroutineDispatcher.close()
     }
 }

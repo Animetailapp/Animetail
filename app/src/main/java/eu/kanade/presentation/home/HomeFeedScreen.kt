@@ -49,22 +49,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cafe.adriel.voyager.navigator.LocalNavigator
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import coil3.compose.AsyncImage
 import dev.zacsweers.metrox.viewmodel.metroViewModel
-import eu.kanade.tachiyomi.ui.browse.BrowseTab
-import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
-import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearchScreen
-import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
-import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.home.HomeFeedScreenModel
 import eu.kanade.tachiyomi.ui.home.HomeTab
+import eu.kanade.tachiyomi.ui.home.TabEvent
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
-import eu.kanade.tachiyomi.ui.updates.UpdatesTab
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import mihon.core.navigation.AnimeRoute
+import mihon.core.navigation.GlobalAnimeSearchRoute
+import mihon.core.navigation.GlobalMangaSearchRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MangaRoute
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.i18n.MR
@@ -84,6 +84,7 @@ fun HomeFeedScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val navigator = LocalNavigator.current
+    val resultEventBus = LocalResultEventBus.current
     val model = screenModel
     val state by model.state.collectAsState()
     var selectedMediaType by remember { mutableStateOf(MediaType.ALL) }
@@ -98,15 +99,15 @@ fun HomeFeedScreen(
     val onItemClick: (HomeItemData) -> Unit = { item ->
         if (item.inLibrary) {
             if (item.isAnime) {
-                navigator?.push(AnimeScreen(item.id))
+                navigator.push(AnimeRoute(item.id))
             } else {
-                navigator?.push(MangaScreen(item.id))
+                navigator.push(MangaRoute(item.id))
             }
         } else {
             if (item.isAnime) {
-                navigator?.push(GlobalAnimeSearchScreen(item.title))
+                navigator.push(GlobalAnimeSearchRoute(item.title))
             } else {
-                navigator?.push(GlobalMangaSearchScreen(item.title))
+                navigator.push(GlobalMangaSearchRoute(item.title))
             }
         }
     }
@@ -150,13 +151,13 @@ fun HomeFeedScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = { navigator?.push(BrowseTab) }) {
+                    IconButton(onClick = { resultEventBus.sendResult(result = TabEvent.Browse()) }) {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = stringResource(MR.strings.action_search),
                         )
                     }
-                    IconButton(onClick = { navigator?.push(UpdatesTab) }) {
+                    IconButton(onClick = { resultEventBus.sendResult(result = TabEvent.Updates) }) {
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = stringResource(MR.strings.label_notifications),

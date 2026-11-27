@@ -12,17 +12,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.util.fastMap
 import androidx.core.content.ContextCompat
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.Navigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.widget.TriStateListDialog
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateJob
-import eu.kanade.tachiyomi.ui.category.CategoriesTab
+import eu.kanade.tachiyomi.ui.category.CategoriesShowMangaEvent
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
+import mihon.core.navigation.CategoryRoute
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.manga.interactor.ResetMangaCategoryFlags
@@ -48,7 +49,8 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 
-object SettingsLibraryScreen : SearchableSettings {
+@Serializable
+data object SettingsLibraryScreen : SearchableSettings {
 
     @Composable
     @ReadOnlyComposable
@@ -65,7 +67,6 @@ object SettingsLibraryScreen : SearchableSettings {
 
         return listOf(
             getCategoriesGroup(
-                LocalNavigator.currentOrThrow,
                 allCategories,
                 allAnimeCategories,
                 libraryPreferences,
@@ -79,12 +80,13 @@ object SettingsLibraryScreen : SearchableSettings {
 
     @Composable
     private fun getCategoriesGroup(
-        navigator: Navigator,
         allCategories: List<Category>,
         allAnimeCategories: List<Category>,
         libraryPreferences: LibraryPreferences,
     ): Preference.PreferenceGroup {
         val context = LocalContext.current
+        val navigator = LocalNavigator.current
+        val resultEventBus = LocalResultEventBus.current
         val scope = rememberCoroutineScope()
         val userCategoriesCount = allCategories.filterNot(Category::isSystemCategory).size
         val userAnimeCategoriesCount = allAnimeCategories.filterNot(Category::isSystemCategory).size
@@ -110,7 +112,7 @@ object SettingsLibraryScreen : SearchableSettings {
                         count = userAnimeCategoriesCount,
                         userAnimeCategoriesCount,
                     ),
-                    onClick = { navigator.push(CategoriesTab) },
+                    onClick = { navigator.push(CategoryRoute) },
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.defaultAnimeCategory,
@@ -125,8 +127,8 @@ object SettingsLibraryScreen : SearchableSettings {
                         userCategoriesCount,
                     ),
                     onClick = {
-                        navigator.push(CategoriesTab)
-                        CategoriesTab.showMangaCategory()
+                        navigator.push(CategoryRoute)
+                        resultEventBus.sendResult(CategoriesShowMangaEvent)
                     },
                 ),
                 Preference.PreferenceItem.ListPreference(

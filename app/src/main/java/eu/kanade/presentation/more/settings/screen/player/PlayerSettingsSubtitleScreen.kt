@@ -6,14 +6,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
-import eu.kanade.presentation.util.Screen
+import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import java.util.Locale
 import java.util.MissingResourceException
 
-object PlayerSettingsSubtitleScreen : Screen(), SearchableSettings {
+@Serializable
+data object PlayerSettingsSubtitleScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable

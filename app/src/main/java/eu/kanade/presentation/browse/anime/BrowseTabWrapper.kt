@@ -4,10 +4,10 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import cafe.adriel.voyager.navigator.LocalNavigator
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.TabContent
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -23,7 +23,7 @@ fun BrowseTabWrapper(tab: TabContent) {
                     AppBarActions(tab.actions)
                 },
                 scrollBehavior = scrollBehavior,
-                navigateUp = { navigator?.pop() },
+                navigateUp = navigator::pop,
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },

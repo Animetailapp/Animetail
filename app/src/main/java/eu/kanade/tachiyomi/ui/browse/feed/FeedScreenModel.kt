@@ -3,8 +3,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.util.fastAny
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.domain.entries.anime.model.toDomainAnime
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.browse.FeedItemUI
@@ -18,6 +23,9 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -28,7 +36,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import mihon.app.di.AppGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
@@ -53,6 +60,9 @@ import tachiyomi.domain.entries.anime.model.Anime as DomainAnime
 /**
  * Presenter of [feedTab]
  */
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 open class FeedScreenModel(
     val sourceManager: AnimeSourceManager,
     val sourcePreferences: SourcePreferences,
@@ -67,20 +77,10 @@ open class FeedScreenModel(
     // KMK -->
     private val reorderFeed: ReorderFeed,
     // KMK <--
-) : StateScreenModel<FeedScreenState>(FeedScreenState()) {
-    constructor(appGraph: AppGraph) : this(
-        sourceManager = appGraph.animeSourceManager,
-        sourcePreferences = appGraph.sourcePreferences,
-        getAnime = appGraph.getAnime,
-        networkToLocalAnime = appGraph.networkToLocalAnime,
-        getFeedSavedSearchGlobal = appGraph.getFeedSavedSearchGlobal,
-        getSavedSearchGlobalFeed = appGraph.getSavedSearchGlobalFeed,
-        countFeedSavedSearchGlobal = appGraph.countFeedSavedSearchGlobal,
-        getSavedSearchBySourceId = appGraph.getSavedSearchBySourceId,
-        insertFeedSavedSearch = appGraph.insertFeedSavedSearch,
-        deleteFeedSavedSearchById = appGraph.deleteFeedSavedSearchById,
-        reorderFeed = appGraph.reorderFeed,
-    )
+) : ViewModel() {
+
+    private val mutableState = MutableStateFlow(FeedScreenState())
+    val state: StateFlow<FeedScreenState> = mutableState.asStateFlow()
 
     private val _events = Channel<Event>(Int.MAX_VALUE)
     val events = _events.receiveAsFlow()
@@ -108,12 +108,12 @@ open class FeedScreenModel(
                 getFeed(items)
             }
             .catch { _events.send(Event.FailedFetchingSources) }
-            .launchIn(screenModelScope)
+            .launchIn(viewModelScope)
     }
 
     fun init() {
         pushed = false
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val newItems = state.value.items?.map { it.copy(results = null) } ?: return@launchIO
             mutableState.update { state ->
                 state.copy(
@@ -125,7 +125,7 @@ open class FeedScreenModel(
     }
 
     fun openAddDialog() {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             if (hasTooManyFeeds()) {
                 _events.send(Event.TooManyFeeds)
                 return@launchIO
@@ -139,7 +139,7 @@ open class FeedScreenModel(
     }
 
     fun openAddSearchDialog(source: AnimeCatalogueSource) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             mutableState.update { state ->
                 state.copy(
                     dialog = Dialog.AddFeedSearch(
@@ -158,7 +158,7 @@ open class FeedScreenModel(
     }
 
     fun openDeleteDialog(feed: FeedSavedSearch) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             mutableState.update { state ->
                 state.copy(
                     dialog = Dialog.DeleteFeed(feed),
@@ -173,7 +173,7 @@ open class FeedScreenModel(
         canMoveUp: Boolean,
         canMoveDown: Boolean,
     ) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             mutableState.update { state ->
                 state.copy(
                     dialog = Dialog.FeedActions(
@@ -210,7 +210,7 @@ open class FeedScreenModel(
     }
 
     fun createFeed(source: AnimeCatalogueSource, savedSearch: SavedSearch?) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             insertFeedSavedSearch.await(
                 FeedSavedSearch(
                     id = -1,
@@ -224,26 +224,26 @@ open class FeedScreenModel(
     }
 
     fun deleteFeed(feed: FeedSavedSearch) {
-        screenModelScope.launchNonCancellable {
+        viewModelScope.launchNonCancellable {
             deleteFeedSavedSearchById.await(feed.id)
         }
     }
 
     // KMK -->
     fun moveUp(feed: FeedSavedSearch) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             reorderFeed.moveUp(feed)
         }
     }
 
     fun moveDown(feed: FeedSavedSearch) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             reorderFeed.moveDown(feed)
         }
     }
 
     fun sortAlphabetically() {
-        screenModelScope.launch {
+        viewModelScope.launch {
             reorderFeed.sortAlphabetically(
                 state.value.items
                     ?.sortedBy { feed -> feed.title }
@@ -303,7 +303,7 @@ open class FeedScreenModel(
      * Initiates get manga per feed.
      */
     private fun getFeed(feedSavedSearch: List<FeedItemUI>) {
-        screenModelScope.launch {
+        viewModelScope.launch {
             feedSavedSearch.map { itemUI ->
                 async {
                     val page = try {
@@ -382,8 +382,8 @@ open class FeedScreenModel(
                 }
         }
     }
-    override fun onDispose() {
-        super.onDispose()
+    override fun onCleared() {
+        super.onCleared()
         coroutineDispatcher.close()
     }
 

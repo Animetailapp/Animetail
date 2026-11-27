@@ -7,11 +7,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.AppBar
@@ -22,20 +18,18 @@ import eu.kanade.presentation.history.HistoryDeleteDialog
 import eu.kanade.presentation.history.anime.AnimeHistoryScreen
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
-import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
 import eu.kanade.tachiyomi.ui.browse.anime.migration.search.MigrateAnimeDialog
 import eu.kanade.tachiyomi.ui.browse.anime.migration.search.MigrateAnimeDialogScreenModel
-import eu.kanade.tachiyomi.ui.category.CategoriesTab
-import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
-import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.main.MainActivity
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
 import mihon.app.di.appGraph
+import mihon.core.navigation.AnimeRoute
+import mihon.core.navigation.CategoryRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.MigrateSeasonSelectRoute
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.i18n.MR
@@ -45,13 +39,13 @@ import tachiyomi.presentation.core.i18n.stringResource
 val resumeLastEpisodeSeenEvent = Channel<Unit>()
 
 @Composable
-fun Screen.animeHistoryTab(
+fun animeHistoryTab(
     context: Context,
     fromMore: Boolean,
 ): TabContent {
     val snackbarHostState = SnackbarHostState()
 
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
     val viewModel = metroViewModel<AnimeHistoryViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val searchQuery = state.searchQuery ?: ""
@@ -71,15 +65,8 @@ fun Screen.animeHistoryTab(
         }
     }
 
-    val scope = rememberCoroutineScope()
     val navigateUp: (() -> Unit)? = if (fromMore) {
-        {
-            if (navigator.lastItem == HomeScreen) {
-                scope.launch { HomeScreen.openTab(HomeScreen.Tab.AnimeLib()) }
-            } else {
-                navigator.pop()
-            }
-        }
+        { navigator.pop() }
     } else {
         null
     }
@@ -92,7 +79,7 @@ fun Screen.animeHistoryTab(
                 state = state,
                 searchQuery = searchQuery,
                 snackbarHostState = snackbarHostState,
-                onClickCover = { navigator.push(AnimeScreen(it)) },
+                onClickCover = { navigator.push(AnimeRoute(it)) },
                 onClickResume = viewModel::getNextEpisodeForAnime,
                 onDialogChange = viewModel::setDialog,
                 onClickFavorite = viewModel::addFavorite,
@@ -127,7 +114,7 @@ fun Screen.animeHistoryTab(
                         onConfirm = {
                             viewModel.addFavorite(dialog.anime)
                         },
-                        onOpenAnime = { navigator.push(AnimeScreen(dialog.duplicate.id)) },
+                        onOpenAnime = { navigator.push(AnimeRoute(dialog.duplicate.id)) },
                         onMigrate = {
                             viewModel.showMigrateDialog(dialog.anime, dialog.duplicate)
                         },
@@ -138,7 +125,7 @@ fun Screen.animeHistoryTab(
                     ChangeCategoryDialog(
                         initialSelection = dialog.initialSelection,
                         onDismissRequest = onDismissRequest,
-                        onEditCategories = { navigator.push(CategoriesTab) },
+                        onEditCategories = { navigator.push(CategoryRoute) },
                         onConfirm = { include, _ ->
                             viewModel.moveAnimeToCategoriesAndAddToLibrary(dialog.anime, include)
                         },
@@ -146,17 +133,16 @@ fun Screen.animeHistoryTab(
                 }
 
                 is AnimeHistoryViewModel.Dialog.Migrate -> {
-                    val dialogContext = androidx.compose.ui.platform.LocalContext.current
                     MigrateAnimeDialog(
                         oldAnime = dialog.oldAnime,
                         newAnime = dialog.newAnime,
-                        screenModel = MigrateAnimeDialogScreenModel(dialogContext.appGraph),
+                        screenModel = metroViewModel<MigrateAnimeDialogScreenModel>(),
                         onDismissRequest = onDismissRequest,
-                        onClickTitle = { navigator.push(AnimeScreen(dialog.oldAnime.id)) },
+                        onClickTitle = { navigator.push(AnimeRoute(dialog.oldAnime.id)) },
                         onClickSeasons = {
-                            navigator.push(MigrateSeasonSelectScreen(dialog.oldAnime, dialog.newAnime))
+                            navigator.push(MigrateSeasonSelectRoute(dialog.oldAnime.id, dialog.newAnime.id))
                         },
-                        onPopScreen = { navigator.replace(AnimeScreen(dialog.oldAnime.id)) },
+                        onPopScreen = { navigator.replace(AnimeRoute(dialog.oldAnime.id)) },
                     )
                 }
 

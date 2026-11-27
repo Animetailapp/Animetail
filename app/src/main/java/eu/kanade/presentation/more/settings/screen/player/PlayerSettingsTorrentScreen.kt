@@ -20,9 +20,9 @@ import aniyomi.core.common.torrent.ProxyMode
 import aniyomi.core.common.torrent.TorrentPreferences
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
-import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.data.torrent.service.TorrentServerService
 import kotlinx.collections.immutable.toPersistentMap
+import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -30,7 +30,8 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 
-object PlayerSettingsTorrentScreen : Screen(), SearchableSettings {
+@Serializable
+data object PlayerSettingsTorrentScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable

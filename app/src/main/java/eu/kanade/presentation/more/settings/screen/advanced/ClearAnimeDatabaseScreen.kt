@@ -36,8 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -47,7 +45,6 @@ import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.anime.components.AnimeSourceIcon
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
-import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
@@ -56,6 +53,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.toLong
@@ -75,185 +73,182 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.selectedBackground
 
-class ClearAnimeDatabaseScreen : Screen() {
+@Composable
+fun ClearAnimeDatabaseScreen() {
+    val context = LocalContext.current
+    val navigator = LocalNavigator.current
+    val viewModel = metroViewModel<ClearAnimeDatabaseViewModel>()
+    val state by viewModel.state.collectAsState()
+    val scope = rememberCoroutineScope()
 
-    @Composable
-    override fun Content() {
-        val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
-        val viewModel = metroViewModel<ClearAnimeDatabaseViewModel>()
-        val state by viewModel.state.collectAsState()
-        val scope = rememberCoroutineScope()
+    when (val s = state) {
+        is ClearAnimeDatabaseViewModel.State.Loading -> LoadingScreen()
 
-        when (val s = state) {
-            is ClearAnimeDatabaseViewModel.State.Loading -> LoadingScreen()
-
-            is ClearAnimeDatabaseViewModel.State.Ready -> {
-                if (s.showConfirmation) {
-                    var keepWatchedAnime by remember { mutableStateOf(true) }
-                    AlertDialog(
-                        title = {
-                            Text(text = stringResource(MR.strings.are_you_sure))
-                        },
-                        onDismissRequest = viewModel::hideConfirmation,
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    scope.launchUI {
-                                        viewModel.removeAnimeBySourceId(keepWatchedAnime)
-                                        viewModel.clearSelection()
-                                        viewModel.hideConfirmation()
-                                        context.toast(MR.strings.clear_database_completed)
-                                    }
-                                },
-                            ) {
-                                Text(text = stringResource(MR.strings.action_ok))
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = viewModel::hideConfirmation) {
-                                Text(text = stringResource(MR.strings.action_cancel))
-                            }
-                        },
-                        text = {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Text(text = stringResource(MR.strings.clear_database_text))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(
-                                        text = stringResource(MR.strings.clear_db_exclude_read),
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    Switch(
-                                        checked = keepWatchedAnime,
-                                        onCheckedChange = { keepWatchedAnime = it },
-                                    )
-                                }
-                                if (!keepWatchedAnime) {
-                                    Text(
-                                        text = stringResource(MR.strings.clear_database_history_warning),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.error,
-                                    )
-                                }
-                            }
-                        },
-                    )
-                }
-
-                Scaffold(
-                    topBar = { scrollBehavior ->
-                        AppBar(
-                            title = stringResource(AYMR.strings.pref_clear_anime_database),
-                            navigateUp = navigator::pop,
-                            actions = {
-                                if (s.items.isNotEmpty()) {
-                                    AppBarActions(
-                                        actions = persistentListOf(
-                                            AppBar.Action(
-                                                title = stringResource(MR.strings.action_select_all),
-                                                icon = Icons.Outlined.SelectAll,
-                                                onClick = viewModel::selectAll,
-                                            ),
-                                            AppBar.Action(
-                                                title = stringResource(MR.strings.action_select_all),
-                                                icon = Icons.Outlined.FlipToBack,
-                                                onClick = viewModel::invertSelection,
-                                            ),
-                                        ),
-                                    )
+        is ClearAnimeDatabaseViewModel.State.Ready -> {
+            if (s.showConfirmation) {
+                var keepWatchedAnime by remember { mutableStateOf(true) }
+                AlertDialog(
+                    title = {
+                        Text(text = stringResource(MR.strings.are_you_sure))
+                    },
+                    onDismissRequest = viewModel::hideConfirmation,
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                scope.launchUI {
+                                    viewModel.removeAnimeBySourceId(keepWatchedAnime)
+                                    viewModel.clearSelection()
+                                    viewModel.hideConfirmation()
+                                    context.toast(MR.strings.clear_database_completed)
                                 }
                             },
-                            scrollBehavior = scrollBehavior,
-                        )
-                    },
-                ) { contentPadding ->
-                    if (s.items.isEmpty()) {
-                        EmptyScreen(
-                            message = stringResource(MR.strings.database_clean),
-                            modifier = Modifier.padding(contentPadding),
-                        )
-                    } else {
-                        Column(
-                            modifier = Modifier
-                                .padding(contentPadding)
-                                .fillMaxSize(),
                         ) {
-                            LazyColumn(
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                items(s.items) { sourceWithCount ->
-                                    ClearDatabaseItem(
-                                        source = sourceWithCount.source,
-                                        count = sourceWithCount.count,
-                                        isSelected = s.selection.contains(sourceWithCount.id),
-                                        onClickSelect = {
-                                            viewModel.toggleSelection(
-                                                sourceWithCount.source,
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-
-                            HorizontalDivider()
-
-                            Button(
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .fillMaxWidth(),
-                                onClick = viewModel::showConfirmation,
-                                enabled = s.selection.isNotEmpty(),
+                            Text(text = stringResource(MR.strings.action_ok))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = viewModel::hideConfirmation) {
+                            Text(text = stringResource(MR.strings.action_cancel))
+                        }
+                    },
+                    text = {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(text = stringResource(MR.strings.clear_database_text))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = stringResource(MR.strings.action_delete),
-                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    text = stringResource(MR.strings.clear_db_exclude_read),
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Switch(
+                                    checked = keepWatchedAnime,
+                                    onCheckedChange = { keepWatchedAnime = it },
                                 )
                             }
+                            if (!keepWatchedAnime) {
+                                Text(
+                                    text = stringResource(MR.strings.clear_database_history_warning),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                    },
+                )
+            }
+
+            Scaffold(
+                topBar = { scrollBehavior ->
+                    AppBar(
+                        title = stringResource(AYMR.strings.pref_clear_anime_database),
+                        navigateUp = navigator::pop,
+                        actions = {
+                            if (s.items.isNotEmpty()) {
+                                AppBarActions(
+                                    actions = persistentListOf(
+                                        AppBar.Action(
+                                            title = stringResource(MR.strings.action_select_all),
+                                            icon = Icons.Outlined.SelectAll,
+                                            onClick = viewModel::selectAll,
+                                        ),
+                                        AppBar.Action(
+                                            title = stringResource(MR.strings.action_select_all),
+                                            icon = Icons.Outlined.FlipToBack,
+                                            onClick = viewModel::invertSelection,
+                                        ),
+                                    ),
+                                )
+                            }
+                        },
+                        scrollBehavior = scrollBehavior,
+                    )
+                },
+            ) { contentPadding ->
+                if (s.items.isEmpty()) {
+                    EmptyScreen(
+                        message = stringResource(MR.strings.database_clean),
+                        modifier = Modifier.padding(contentPadding),
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .padding(contentPadding)
+                            .fillMaxSize(),
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            items(s.items) { sourceWithCount ->
+                                ClearDatabaseItem(
+                                    source = sourceWithCount.source,
+                                    count = sourceWithCount.count,
+                                    isSelected = s.selection.contains(sourceWithCount.id),
+                                    onClickSelect = {
+                                        viewModel.toggleSelection(
+                                            sourceWithCount.source,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+
+                        HorizontalDivider()
+
+                        Button(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .fillMaxWidth(),
+                            onClick = viewModel::showConfirmation,
+                            enabled = s.selection.isNotEmpty(),
+                        ) {
+                            Text(
+                                text = stringResource(MR.strings.action_delete),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
                         }
                     }
                 }
             }
         }
     }
+}
 
-    @Composable
-    private fun ClearDatabaseItem(
-        source: AnimeSource,
-        count: Long,
-        isSelected: Boolean,
-        onClickSelect: () -> Unit,
+@Composable
+private fun ClearDatabaseItem(
+    source: AnimeSource,
+    count: Long,
+    isSelected: Boolean,
+    onClickSelect: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .selectedBackground(isSelected)
+            .clickable(onClick = onClickSelect)
+            .padding(horizontal = 8.dp)
+            .height(56.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
+        AnimeSourceIcon(source = source)
+        Column(
             modifier = Modifier
-                .selectedBackground(isSelected)
-                .clickable(onClick = onClickSelect)
-                .padding(horizontal = 8.dp)
-                .height(56.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(start = 8.dp)
+                .weight(1f),
         ) {
-            AnimeSourceIcon(source = source)
-            Column(
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .weight(1f),
-            ) {
-                Text(
-                    text = source.visualName,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Text(text = stringResource(MR.strings.clear_database_source_item_count, count))
-            }
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = { onClickSelect() },
+            Text(
+                text = source.visualName,
+                style = MaterialTheme.typography.bodyMedium,
             )
+            Text(text = stringResource(MR.strings.clear_database_source_item_count, count))
         }
+        Checkbox(
+            checked = isSelected,
+            onCheckedChange = { onClickSelect() },
+        )
     }
 }
 

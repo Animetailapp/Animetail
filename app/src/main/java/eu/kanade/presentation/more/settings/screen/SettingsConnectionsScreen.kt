@@ -39,21 +39,22 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.ConnectionsService
 import eu.kanade.tachiyomi.util.system.openDiscordLoginActivity
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
 
-object SettingsConnectionsScreen : SearchableSettings {
+@Serializable
+data object SettingsConnectionsScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable
@@ -63,7 +64,7 @@ object SettingsConnectionsScreen : SearchableSettings {
     @Composable
     override fun getPreferences(): List<Preference> {
         val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
         val connectionsManager = remember { context.appGraph.connectionsManager }
 
         var dialog by remember { mutableStateOf<Any?>(null) }
@@ -235,7 +236,7 @@ internal fun ConnectionsLogoutDialog(
     onDismissRequest: () -> Unit,
 ) {
     val context = LocalContext.current
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = {

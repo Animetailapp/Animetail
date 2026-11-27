@@ -50,10 +50,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.model.ScreenModel
-import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
-import cafe.adriel.voyager.core.screen.Screen
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
@@ -61,6 +59,15 @@ import com.google.android.gms.cast.MediaQueueItem
 import com.google.android.gms.cast.MediaStatus
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.common.images.WebImage
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import eu.kanade.presentation.components.AdaptiveSheet
 import eu.kanade.presentation.components.TabbedDialogPaddings
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Hoster
@@ -99,38 +106,32 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 
-class EpisodeOptionsDialogScreen(
-    private val useExternalDownloader: Boolean,
-    private val episodeTitle: String,
-    private val episodeId: Long,
-    private val animeId: Long,
-    private val sourceId: Long,
-) : Screen {
+@Composable
+fun EpisodeOptionsDialogScreen(
+    useExternalDownloader: Boolean,
+    episodeTitle: String,
+    episodeId: Long,
+    animeId: Long,
+    sourceId: Long,
+    onDismissRequest: () -> Unit,
+) {
+    val sm = assistedMetroViewModel<EpisodeOptionsDialogScreenModel, EpisodeOptionsDialogScreenModel.Factory> {
+        create(
+            episodeId = episodeId,
+            animeId = animeId,
+            sourceId = sourceId,
+        )
+    }
 
-    @Composable
-    override fun Content() {
-        val context = LocalContext.current
-        val sm = rememberScreenModel {
-            val appGraph = context.appGraph
-            EpisodeOptionsDialogScreenModel(
-                context = context.applicationContext,
-                episodeId = episodeId,
-                animeId = animeId,
-                sourceId = sourceId,
-                sourceManager = appGraph.animeSourceManager,
-                getEpisode = appGraph.getEpisode,
-                getAnime = appGraph.getAnime,
-            )
-        }
+    val episode by sm.episode.collectAsState()
+    val anime by sm.anime.collectAsState()
+    val hosterState by sm.hosterState.collectAsState()
+    val hosterExpandedList by sm.hosterExpandedList.collectAsState()
+    val selectedHosterVideoIndex by sm.selectedHosterVideoIndex.collectAsState()
+    val currentVideo by sm.currentVideo.collectAsState()
+    val showAllQualities by sm.showAllQualities.collectAsState()
 
-        val episode by sm.episode.collectAsState()
-        val anime by sm.anime.collectAsState()
-        val hosterState by sm.hosterState.collectAsState()
-        val hosterExpandedList by sm.hosterExpandedList.collectAsState()
-        val selectedHosterVideoIndex by sm.selectedHosterVideoIndex.collectAsState()
-        val currentVideo by sm.currentVideo.collectAsState()
-        val showAllQualities by sm.showAllQualities.collectAsState()
-
+    AdaptiveSheet(onDismissRequest = onDismissRequest) {
         EpisodeOptionsDialog(
             useExternalDownloader = useExternalDownloader,
             episodeTitle = episodeTitle,
@@ -145,23 +146,32 @@ class EpisodeOptionsDialogScreen(
             onClickHoster = sm::onClickHoster,
             onClickVideo = sm::onClickVideo,
             getHosterList = sm::getHosterList,
+            onDismissRequest = onDismissRequest,
         )
-    }
-
-    companion object {
-        var onDismissDialog: () -> Unit = {}
     }
 }
 
+@AssistedInject
 class EpisodeOptionsDialogScreenModel(
     private val context: Context,
-    episodeId: Long,
-    animeId: Long,
-    sourceId: Long,
+    @Assisted episodeId: Long,
+    @Assisted animeId: Long,
+    @Assisted sourceId: Long,
     private val sourceManager: AnimeSourceManager,
     getEpisode: GetEpisode,
     getAnime: GetAnime,
-) : ScreenModel {
+) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(
+            episodeId: Long,
+            animeId: Long,
+            sourceId: Long,
+        ): EpisodeOptionsDialogScreenModel
+    }
 
     private val _hosterState = MutableStateFlow<Result<List<HosterState>>?>(null)
     val hosterState = _hosterState.asStateFlow()
@@ -189,7 +199,7 @@ class EpisodeOptionsDialogScreenModel(
     init {
         val hasFoundPreferredVideo = AtomicBoolean(false)
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val episode = getEpisode.await(episodeId)!!
             val anime = getAnime.await(animeId)!!
             val source = sourceManager.getOrStub(sourceId)
@@ -368,7 +378,7 @@ class EpisodeOptionsDialogScreenModel(
                 val hosterName = hosterState.name
                 _hosterState.updateAt(hosterIndex, HosterState.Loading(hosterName))
 
-                screenModelScope.launchIO {
+                viewModelScope.launchIO {
                     val newHosterState = EpisodeLoader.loadHosterVideos(
                         context,
                         _source.value!!,
@@ -388,7 +398,7 @@ class EpisodeOptionsDialogScreenModel(
             ?.getOrNull(videoIndex)
             ?: return
 
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             val success = loadVideo(_source.value!!, video, hosterIndex, videoIndex)
             if (success) {
                 _showAllQualities.update { _ -> false }
@@ -429,6 +439,7 @@ fun EpisodeOptionsDialog(
     onClickHoster: (Int) -> Unit,
     onClickVideo: (Int, Int) -> Unit,
     getHosterList: () -> List<Hoster>?,
+    onDismissRequest: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -460,7 +471,7 @@ fun EpisodeOptionsDialog(
         val onError: () -> Unit = {
             logcat(LogPriority.ERROR) { "Error getting links" }
             scope.launchUI { context.toast("No available videos") }
-            EpisodeOptionsDialogScreen.onDismissDialog()
+            onDismissRequest()
         }
         if (resultList?.isFailure == true) {
             onError()
@@ -484,6 +495,7 @@ fun EpisodeOptionsDialog(
                     onClickHoster = onClickHoster,
                     onClickVideo = onClickVideo,
                     getHosterList = getHosterList,
+                    onDismissRequest = onDismissRequest,
                 )
             } else {
                 onError()
@@ -506,6 +518,7 @@ private fun VideoList(
     onClickHoster: (Int) -> Unit,
     onClickVideo: (Int, Int) -> Unit,
     getHosterList: () -> List<Hoster>?,
+    onDismissRequest: () -> Unit,
 ) {
     val context = LocalContext.current
     val downloadManager = context.appGraph.animeDownloadManager
@@ -602,6 +615,7 @@ private fun VideoList(
                         }
                     },
                     // end tail cast
+                    onDismissRequest = onDismissRequest,
                 )
             }
         }
@@ -653,8 +667,9 @@ private fun QualityOptions(
     onExtPlayerClicked: () -> Unit = {},
     onIntPlayerClicked: () -> Unit = {},
     onCastClicked: () -> Unit = {},
+    onDismissRequest: () -> Unit = {},
 ) {
-    val closeMenu = { EpisodeOptionsDialogScreen.onDismissDialog() }
+    val closeMenu = onDismissRequest
 
     Column {
         ClickableRow(

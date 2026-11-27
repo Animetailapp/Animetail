@@ -62,8 +62,6 @@ import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastMap
 import aniyomi.domain.anime.SeasonAnime
 import aniyomi.domain.anime.SeasonDisplayMode
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.entries.anime.model.episodesFiltered
 import eu.kanade.domain.entries.anime.model.seasonsFiltered
 import eu.kanade.domain.source.service.SourcePreferences
@@ -100,6 +98,8 @@ import eu.kanade.tachiyomi.ui.entries.anime.EpisodeList
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.coroutines.delay
 import mihon.app.di.appGraph
+import mihon.core.navigation.AnimeSourcePreferencesRoute
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
@@ -207,9 +207,9 @@ fun AnimeScreen(
         }
     }
 
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
     val onSettingsClicked: (() -> Unit)? = {
-        navigator.push(AnimeSourcePreferencesScreen(state.source.id))
+        navigator.push(AnimeSourcePreferencesRoute(state.source.id))
     }.takeIf { state.source is ConfigurableAnimeSource }
 
     if (!isTabletUi) {

@@ -18,14 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.components.TabbedDialog
 import eu.kanade.presentation.components.TabbedDialogPaddings
-import eu.kanade.presentation.util.Screen
-import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
+import mihon.core.navigation.AnimeRoute
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.SettingsItemsPaddings
@@ -35,33 +33,30 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.collectAsState
 
-class UpcomingAnimeScreen : Screen() {
+@Composable
+fun UpcomingAnimeScreen() {
+    val navigator = LocalNavigator.current
 
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
+    val viewModel = metroViewModel<UpcomingAnimeViewModel>()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
-        val viewModel = metroViewModel<UpcomingAnimeViewModel>()
-        val state by viewModel.state.collectAsStateWithLifecycle()
-
-        when (state.dialog) {
-            is UpcomingAnimeViewModel.Dialog.FilterSheet -> {
-                UpcomingFilterDialog(
-                    viewModel = viewModel,
-                )
-            }
-
-            null -> {}
+    when (state.dialog) {
+        is UpcomingAnimeViewModel.Dialog.FilterSheet -> {
+            UpcomingFilterDialog(
+                viewModel = viewModel,
+            )
         }
 
-        UpcomingAnimeScreenContent(
-            state = state,
-            setSelectedYearMonth = viewModel::setSelectedYearMonth,
-            onClickUpcoming = { navigator.push(AnimeScreen(it.id)) },
-            hasActiveFilters = state.hasActiveFilters,
-            onClickFilter = viewModel::showFilterDialog,
-        )
+        null -> {}
     }
+
+    UpcomingAnimeScreenContent(
+        state = state,
+        setSelectedYearMonth = viewModel::setSelectedYearMonth,
+        onClickUpcoming = { navigator.push(AnimeRoute(it.id)) },
+        hasActiveFilters = state.hasActiveFilters,
+        onClickFilter = viewModel::showFilterDialog,
+    )
 }
 
 @Composable

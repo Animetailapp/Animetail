@@ -8,18 +8,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.anime.AnimeExtensionScreen
 import eu.kanade.presentation.browse.anime.PrivateAnimeExtensionUninstallDialog
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
-import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
-import eu.kanade.tachiyomi.ui.browse.anime.extension.details.AnimeExtensionDetailsScreen
-import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.isPackageInstalled
 import kotlinx.collections.immutable.persistentListOf
+import mihon.core.navigation.AnimeExtensionDetailsRoute
+import mihon.core.navigation.AnimeExtensionFilterRoute
+import mihon.core.navigation.ExtensionStoresRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.WebViewRoute
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -28,7 +28,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 fun animeExtensionsTab(
     extensionsViewModel: AnimeExtensionsViewModel,
 ): TabContent {
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
     val context = LocalContext.current
 
     val updatesCount by extensionsViewModel.updatesCount.collectAsStateWithLifecycle()
@@ -42,14 +42,12 @@ fun animeExtensionsTab(
             AppBar.OverflowAction(
                 title = stringResource(MR.strings.action_filter),
                 onClick = {
-                    navigator.push(
-                        AnimeExtensionFilterScreen(),
-                    )
+                    navigator.push(AnimeExtensionFilterRoute)
                 },
             ),
             AppBar.OverflowAction(
                 title = stringResource(MR.strings.extensionStores),
-                onClick = { navigator.push(ExtensionStoresScreen(isManga = false)) },
+                onClick = { navigator.push(ExtensionStoresRoute(isManga = false)) },
             ),
         ),
         content = { contentPadding, _ ->
@@ -81,7 +79,7 @@ fun animeExtensionsTab(
                 onOpenWebView = { extension ->
                     extension.sources.getOrNull(0)?.let {
                         navigator.push(
-                            WebViewScreen(
+                            WebViewRoute(
                                 url = it.baseUrl,
                                 initialTitle = it.name,
                                 sourceId = it.id,
@@ -90,7 +88,7 @@ fun animeExtensionsTab(
                     }
                 },
                 onInstallExtension = extensionsViewModel::installExtension,
-                onOpenExtension = { navigator.push(AnimeExtensionDetailsScreen(it.pkgName)) },
+                onOpenExtension = { navigator.push(AnimeExtensionDetailsRoute(it.pkgName)) },
                 onTrustExtension = { extensionsViewModel.trustExtension(it) },
                 onUninstallExtension = { extensionsViewModel.uninstallExtension(it) },
                 onUpdateExtension = extensionsViewModel::updateExtension,

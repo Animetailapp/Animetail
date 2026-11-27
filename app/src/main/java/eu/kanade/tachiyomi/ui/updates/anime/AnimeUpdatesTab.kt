@@ -12,27 +12,23 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.components.AppBar
-import eu.kanade.presentation.components.NavigatorAdaptiveSheet
 import eu.kanade.presentation.components.TabContent
-import eu.kanade.presentation.entries.anime.EpisodeOptionsDialogScreen
 import eu.kanade.presentation.updates.UpdatesDeleteConfirmationDialog
 import eu.kanade.presentation.updates.anime.AnimeUpdateScreen
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
-import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
-import eu.kanade.tachiyomi.ui.home.HomeScreen
+import eu.kanade.tachiyomi.ui.home.ShowBottomNavEvent
 import eu.kanade.tachiyomi.ui.main.MainActivity
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import mihon.app.di.appGraph
-import mihon.feature.upcoming.anime.UpcomingAnimeScreen
+import mihon.core.navigation.AnimeRoute
+import mihon.core.navigation.EpisodeOptionsDialogRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.UpcomingAnimeRoute
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.MR
@@ -40,23 +36,18 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
-fun Screen.animeUpdatesTab(
+fun animeUpdatesTab(
     context: Context,
     fromMore: Boolean,
 ): TabContent {
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
+    val resultEventBus = LocalResultEventBus.current
     val viewModel = metroViewModel<AnimeUpdatesViewModel>()
     val scope = rememberCoroutineScope()
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     val navigateUp: (() -> Unit)? = if (fromMore) {
-        {
-            if (navigator.lastItem == HomeScreen) {
-                scope.launch { HomeScreen.openTab(HomeScreen.Tab.AnimeLib()) }
-            } else {
-                navigator.pop()
-            }
-        }
+        { navigator.pop() }
     } else {
         null
     }
@@ -76,7 +67,7 @@ fun Screen.animeUpdatesTab(
                 state = state,
                 snackbarHostState = viewModel.snackbarHostState,
                 lastUpdated = viewModel.lastUpdated,
-                onClickCover = { item -> navigator.push(AnimeScreen(item.update.animeId)) },
+                onClickCover = { item -> navigator.push(AnimeRoute(item.update.animeId)) },
                 onSelectAll = viewModel::toggleAllSelection,
                 onInvertSelection = viewModel::invertSelection,
                 onUpdateLibrary = viewModel::updateLibrary,
@@ -104,17 +95,18 @@ fun Screen.animeUpdatesTab(
                 }
 
                 is AnimeUpdatesViewModel.Dialog.ShowQualities -> {
-                    EpisodeOptionsDialogScreen.onDismissDialog = onDismissDialog
-                    NavigatorAdaptiveSheet(
-                        screen = EpisodeOptionsDialogScreen(
-                            useExternalDownloader = viewModel.useExternalDownloader,
-                            episodeTitle = dialog.episodeTitle,
-                            episodeId = dialog.episodeId,
-                            animeId = dialog.animeId,
-                            sourceId = dialog.sourceId,
-                        ),
-                        onDismissRequest = onDismissDialog,
-                    )
+                    LaunchedEffect(dialog) {
+                        onDismissDialog()
+                        navigator.push(
+                            EpisodeOptionsDialogRoute(
+                                useExternalDownloader = viewModel.useExternalDownloader,
+                                episodeTitle = dialog.episodeTitle,
+                                episodeId = dialog.episodeId,
+                                animeId = dialog.animeId,
+                                sourceId = dialog.sourceId,
+                            ),
+                        )
+                    }
                 }
 
                 null -> {}
@@ -145,7 +137,7 @@ fun Screen.animeUpdatesTab(
             }
 
             LaunchedEffect(state.selectionMode) {
-                HomeScreen.showBottomNav(!state.selectionMode)
+                resultEventBus.sendResult(result = ShowBottomNavEvent(!state.selectionMode))
             }
 
             LaunchedEffect(state.isLoading) {
@@ -180,7 +172,7 @@ fun Screen.animeUpdatesTab(
                 AppBar.Action(
                     title = stringResource(MR.strings.action_view_upcoming),
                     icon = Icons.Outlined.CalendarMonth,
-                    onClick = { navigator.push(UpcomingAnimeScreen()) },
+                    onClick = { navigator.push(UpcomingAnimeRoute) },
                 ),
                 AppBar.Action(
                     title = stringResource(MR.strings.action_update_library),

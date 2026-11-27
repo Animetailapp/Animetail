@@ -20,15 +20,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.core.net.toUri
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.source.service.SourcePreferences.DataSaver
 import eu.kanade.presentation.more.settings.Preference
-import eu.kanade.presentation.more.settings.screen.advanced.ClearAnimeDatabaseScreen
-import eu.kanade.presentation.more.settings.screen.advanced.ClearDatabaseScreen
-import eu.kanade.presentation.more.settings.screen.debug.DebugInfoScreen
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
@@ -65,9 +60,15 @@ import eu.kanade.tachiyomi.util.system.workManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import mihon.app.di.appGraph
+import mihon.core.navigation.ClearAnimeDatabaseRoute
+import mihon.core.navigation.ClearDatabaseRoute
+import mihon.core.navigation.DebugInfoRoute
+import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.OnboardingRoute
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -87,7 +88,8 @@ import java.io.File
 import java.net.InetAddress
 import tachiyomi.core.common.preference.Preference as BasePreference
 
-object SettingsAdvancedScreen : SearchableSettings {
+@Serializable
+data object SettingsAdvancedScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable
@@ -97,7 +99,7 @@ object SettingsAdvancedScreen : SearchableSettings {
     override fun getPreferences(): List<Preference> {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
 
         val graph = remember { context.appGraph }
         val basePreferences = remember { graph.basePreferences }
@@ -135,11 +137,11 @@ object SettingsAdvancedScreen : SearchableSettings {
             ),
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(MR.strings.pref_debug_info),
-                onClick = { navigator.push(DebugInfoScreen()) },
+                onClick = { navigator.push(DebugInfoRoute) },
             ),
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(MR.strings.pref_onboarding_guide),
-                onClick = { navigator.push(OnboardingScreen()) },
+                onClick = { navigator.push(OnboardingRoute) },
             ),
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(MR.strings.pref_manage_notifications),
@@ -204,7 +206,7 @@ object SettingsAdvancedScreen : SearchableSettings {
     @Composable
     private fun getDataGroup(): Preference.PreferenceGroup {
         val context = LocalContext.current
-        val navigator = LocalNavigator.currentOrThrow
+        val navigator = LocalNavigator.current
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_data),
@@ -221,12 +223,12 @@ object SettingsAdvancedScreen : SearchableSettings {
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(AYMR.strings.pref_clear_manga_database),
                     subtitle = stringResource(AYMR.strings.pref_clear_manga_database_summary),
-                    onClick = { navigator.push(ClearDatabaseScreen()) },
+                    onClick = { navigator.push(ClearDatabaseRoute) },
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(AYMR.strings.pref_clear_anime_database),
                     subtitle = stringResource(AYMR.strings.pref_clear_anime_database_summary),
-                    onClick = { navigator.push(ClearAnimeDatabaseScreen()) },
+                    onClick = { navigator.push(ClearAnimeDatabaseRoute) },
                 ),
             ),
         )

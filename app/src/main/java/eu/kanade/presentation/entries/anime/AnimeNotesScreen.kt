@@ -8,14 +8,14 @@ import androidx.compose.ui.Modifier
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarTitle
 import eu.kanade.presentation.entries.anime.components.AnimeNotesTextArea
-import eu.kanade.tachiyomi.ui.entries.anime.notes.AnimeNotesScreen
+import eu.kanade.tachiyomi.ui.entries.anime.notes.AnimeNotesViewModel
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 fun AnimeNotesScreen(
-    state: AnimeNotesScreen.State,
+    state: AnimeNotesViewModel.State,
     navigateUp: () -> Unit,
     onUpdate: (String) -> Unit,
 ) {

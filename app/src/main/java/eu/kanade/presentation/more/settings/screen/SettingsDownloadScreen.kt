@@ -26,6 +26,7 @@ import eu.kanade.domain.base.BasePreferences
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.widget.TriStateListDialog
+import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
@@ -39,7 +40,8 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 
-object SettingsDownloadScreen : SearchableSettings {
+@Serializable
+data object SettingsDownloadScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable

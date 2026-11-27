@@ -29,38 +29,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImage
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.connections.discord.DiscordAccount
 import eu.kanade.tachiyomi.ui.setting.connections.DiscordLoginActivity
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.logcat
-import mihon.app.di.appGraph
-import mihon.core.migration.Migrator.scope
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
-object DiscordAccountsScreen : Screen {
-    private fun readResolve(): Any = DiscordAccountsScreen
-
-    @Composable
-    override fun Content() {
-        DiscordAccountsScreenContent()
-    }
+@Composable
+fun DiscordAccountsScreen() {
+    DiscordAccountsScreenContent()
 }
 
 data class DiscordAccountsScreenState(
@@ -73,14 +74,8 @@ data class DiscordAccountsScreenState(
 @Composable
 private fun DiscordAccountsScreenContent() {
     val context = LocalContext.current
-    val navigator = LocalNavigator.currentOrThrow
-    val screenModel = remember(context) {
-        val appGraph = context.appGraph
-        DiscordAccountsScreenModel(
-            discord = appGraph.connectionsManager.discord,
-            connectionsPreferences = appGraph.connectionsPreferences,
-        )
-    }
+    val navigator = LocalNavigator.current
+    val screenModel = metroViewModel<DiscordAccountsScreenModel>()
     val state by screenModel.state.collectAsState()
 
     val noAccountsFoundString = stringResource(TLMR.strings.no_accounts_found)
@@ -160,14 +155,21 @@ private fun DiscordAccountsScreenContent() {
     }
 }
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class DiscordAccountsScreenModel(
-    private val discord: eu.kanade.tachiyomi.data.connections.discord.Discord,
+    connectionsManager: ConnectionsManager,
     private val connectionsPreferences: ConnectionsPreferences,
-) : StateScreenModel<DiscordAccountsScreenState>(DiscordAccountsScreenState()) {
+) : ViewModel() {
+    private val discord = connectionsManager.discord
+    private val mutableState = MutableStateFlow(DiscordAccountsScreenState())
+    val state: StateFlow<DiscordAccountsScreenState> = mutableState.asStateFlow()
+
     private var noAccountsFoundString: String = ""
 
     init {
-        scope.launch {
+        viewModelScope.launch {
             connectionsPreferences.discordAccounts().changes()
                 .collect { loadAccounts() }
         }
@@ -179,7 +181,7 @@ class DiscordAccountsScreenModel(
     }
 
     private fun loadAccounts() {
-        scope.launch {
+        viewModelScope.launch {
             mutableState.update { it.copy(isLoading = true, error = null) }
             runCatching {
                 val accounts = discord.getAccounts()
@@ -212,7 +214,7 @@ class DiscordAccountsScreenModel(
     }
 
     fun removeAccount(accountId: String) {
-        scope.launch {
+        viewModelScope.launch {
             mutableState.update { it.copy(isLoading = true, error = null) }
             runCatching {
                 discord.removeAccount(accountId)
@@ -224,7 +226,7 @@ class DiscordAccountsScreenModel(
     }
 
     fun setActiveAccount(accountId: String) {
-        scope.launch {
+        viewModelScope.launch {
             mutableState.update { it.copy(isLoading = true, error = null) }
             runCatching {
                 discord.setActiveAccount(accountId)

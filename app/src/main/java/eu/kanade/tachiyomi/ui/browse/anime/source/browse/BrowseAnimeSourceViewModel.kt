@@ -33,7 +33,6 @@ import eu.kanade.domain.source.anime.interactor.InsertSavedSearch
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
 import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.model.FilterList
@@ -452,6 +451,13 @@ class BrowseAnimeSourceViewModel(
 
     fun openFilterSheet() {
         setDialog(Dialog.Filter)
+    }
+
+    fun showMigrateDialog(currentAnimeId: Long, target: Anime) {
+        viewModelScope.launch {
+            val currentAnime = getAnime.await(currentAnimeId) ?: return@launch
+            setDialog(Dialog.Migrate(newAnime = target, oldAnime = currentAnime))
+        }
     }
 
     fun setDialog(dialog: Dialog?) {

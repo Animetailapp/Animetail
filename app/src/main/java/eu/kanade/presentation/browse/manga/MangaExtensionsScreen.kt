@@ -43,8 +43,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.browse.BaseBrowseItem
 import eu.kanade.presentation.browse.components.ExtensionPill
@@ -52,7 +50,6 @@ import eu.kanade.presentation.browse.components.label
 import eu.kanade.presentation.browse.manga.components.MangaExtensionIcon
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.components.WarningBanner
-import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
@@ -61,6 +58,8 @@ import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionsViewModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
+import mihon.core.navigation.ExtensionStoresRoute
+import mihon.core.navigation.LocalNavigator
 import mihon.domain.extension.model.ExtensionStore
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.Close
@@ -99,7 +98,7 @@ fun MangaExtensionScreen(
     onClickUpdateAll: () -> Unit,
     onRefresh: () -> Unit,
 ) {
-    val navigator = LocalNavigator.currentOrThrow
+    val navigator = LocalNavigator.current
 
     PullRefresh(
         refreshing = state.isRefreshing,
@@ -122,7 +121,7 @@ fun MangaExtensionScreen(
                         EmptyScreenAction(
                             stringRes = MR.strings.extensionStores,
                             icon = MaterialSymbols.Rounded.Settings,
-                            onClick = { navigator.push(ExtensionStoresScreen(isManga = true)) },
+                            onClick = { navigator.push(ExtensionStoresRoute(isManga = true)) },
                         ),
                     ),
                 )

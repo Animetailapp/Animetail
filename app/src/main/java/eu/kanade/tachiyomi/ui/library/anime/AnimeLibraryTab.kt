@@ -1,10 +1,6 @@
 package eu.kanade.tachiyomi.ui.library.anime
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
-import androidx.compose.animation.graphics.res.animatedVectorResource
-import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
-import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
@@ -24,11 +20,8 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.Navigator
-import cafe.adriel.voyager.navigator.currentOrThrow
-import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
-import cafe.adriel.voyager.navigator.tab.TabOptions
+import androidx.navigation3.runtime.result.LocalResultEventBus
+import androidx.navigation3.runtime.result.ResultEffect
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.entries.components.LibraryBottomActionMenu
@@ -37,26 +30,22 @@ import eu.kanade.presentation.library.anime.AnimeLibraryContent
 import eu.kanade.presentation.library.anime.AnimeLibrarySettingsDialog
 import eu.kanade.presentation.library.components.LibraryToolbar
 import eu.kanade.presentation.more.onboarding.GETTING_STARTED_URL
-import eu.kanade.presentation.util.Tab
-import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
-import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
-import eu.kanade.tachiyomi.ui.category.CategoriesTab
-import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
-import eu.kanade.tachiyomi.ui.home.HomeScreen
+import eu.kanade.tachiyomi.ui.home.ShowBottomNavEvent
+import eu.kanade.tachiyomi.ui.home.TopLevelRoute
 import eu.kanade.tachiyomi.ui.main.MainActivity
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import mihon.app.di.appGraph
-import mihon.feature.migration.config.AnimeMigrationConfigScreen
+import mihon.core.navigation.AnimeMigrationConfigRoute
+import mihon.core.navigation.AnimeRoute
+import mihon.core.navigation.CategoryRoute
+import mihon.core.navigation.GlobalAnimeSearchRoute
+import mihon.core.navigation.LocalNavigator
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.category.model.Category
@@ -74,302 +63,259 @@ import tachiyomi.presentation.core.screens.EmptyScreenAction
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.anime.isLocal
 
-data object AnimeLibraryTab : Tab {
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AnimeLibraryTab() {
+    val navigator = LocalNavigator.current
+    val context = LocalContext.current
+    val resultEventBus = LocalResultEventBus.current
+    val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
 
-    @OptIn(ExperimentalAnimationGraphicsApi::class)
-    override val options: TabOptions
-        @Composable
-        get() {
-            val title = AYMR.strings.label_anime_library
-            val isSelected = LocalTabNavigator.current.current.key == key
-            val image = AnimatedImageVector.animatedVectorResource(
-                R.drawable.anim_animelibrary_leave,
+    val viewModel = metroViewModel<AnimeLibraryViewModel>()
+    val settingsViewModel = metroViewModel<AnimeLibrarySettingsViewModel>()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val onClickRefresh: (Category?) -> Boolean = { category ->
+        // SY -->
+        val started = AnimeLibraryUpdateJob.startNow(
+            context = context,
+            category = if (state.groupType == AnimeLibraryGroup.BY_DEFAULT) category else null,
+            group = state.groupType,
+            groupExtra = when (state.groupType) {
+                AnimeLibraryGroup.BY_DEFAULT -> null
+
+                AnimeLibraryGroup.BY_SOURCE, AnimeLibraryGroup.BY_TRACK_STATUS,
+                AnimeLibraryGroup.BY_TAG,
+                -> category?.id?.toString()
+
+                AnimeLibraryGroup.BY_STATUS -> category?.id?.minus(1)?.toString()
+
+                else -> null
+            },
+        )
+        // SY <--
+        scope.launch {
+            val msgRes = if (started) MR.strings.updating_category else MR.strings.update_already_running
+            snackbarHostState.showSnackbar(context.stringResource(msgRes))
+        }
+        started
+    }
+
+    suspend fun openEpisode(episode: Episode) {
+        val playerPreferences = context.appGraph.playerPreferences
+        val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
+        MainActivity.startPlayerActivity(
+            context,
+            episode.animeId,
+            episode.id,
+            extPlayer,
+        )
+    }
+
+    val defaultTitle = stringResource(AYMR.strings.label_anime_library)
+
+    Scaffold(
+        topBar = { scrollBehavior ->
+            val title = state.getToolbarTitle(
+                defaultTitle = defaultTitle,
+                defaultCategoryTitle = stringResource(MR.strings.label_default),
+                page = viewModel.activeCategoryIndex,
             )
-            return TabOptions(
-                index = 0u,
-                title = stringResource(title),
-                icon = rememberAnimatedVectorPainter(image, isSelected),
+            val tabVisible = state.showCategoryTabs && state.categories.size > 1
+            LibraryToolbar(
+                hasActiveFilters = state.hasActiveFilters,
+                selectedCount = state.selection.size,
+                title = title,
+                onClickUnselectAll = viewModel::clearSelection,
+                onClickSelectAll = { viewModel.selectAll(viewModel.activeCategoryIndex) },
+                onClickInvertSelection = {
+                    viewModel.invertSelection(
+                        viewModel.activeCategoryIndex,
+                    )
+                },
+                onClickFilter = viewModel::showSettingsDialog,
+                onClickRefresh = {
+                    onClickRefresh(
+                        state.categories[viewModel.activeCategoryIndex],
+                    )
+                },
+                onClickGlobalUpdate = { onClickRefresh(null) },
+                onClickOpenRandomEntry = {
+                    scope.launch {
+                        val randomItem = viewModel.getRandomAnimelibItemForCurrentCategory()
+                        if (randomItem != null) {
+                            navigator.push(AnimeRoute(randomItem.libraryAnime.anime.id))
+                        } else {
+                            snackbarHostState.showSnackbar(
+                                context.stringResource(MR.strings.information_no_entries_found),
+                            )
+                        }
+                    }
+                },
+                onClickSyncNow = {
+                    if (!SyncDataJob.isRunning(context)) {
+                        SyncDataJob.startNow(context)
+                    } else {
+                        context.toast(TLMR.strings.sync_in_progress)
+                    }
+                },
+                searchQuery = state.searchQuery,
+                onSearchQueryChange = viewModel::search,
+                scrollBehavior = scrollBehavior.takeIf { !tabVisible }, // For scroll overlay when no tab
+            )
+        },
+        bottomBar = {
+            LibraryBottomActionMenu(
+                visible = state.selectionMode,
+                onChangeCategoryClicked = viewModel::openChangeCategoryDialog,
+                onMarkAsViewedClicked = { viewModel.markSeenSelection(true) },
+                onMarkAsUnviewedClicked = { viewModel.markSeenSelection(false) },
+                onDownloadClicked = viewModel::runDownloadActionSelection
+                    .takeIf { state.selection.fastAll { !it.anime.isLocal() } },
+                onDeleteClicked = viewModel::openDeleteAnimeDialog,
+                onMigrateClicked = {
+                    val selection = state.selection.map { it.anime.id }
+                    navigator.push(AnimeMigrationConfigRoute(selection))
+                },
+                onClickResetInfo = viewModel::resetInfo.takeIf { state.showResetInfo },
+                isManga = false,
+            )
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+    ) { contentPadding ->
+        when {
+            state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
+
+            state.searchQuery.isNullOrEmpty() && !state.hasActiveFilters && state.isLibraryEmpty -> {
+                val handler = LocalUriHandler.current
+                EmptyScreen(
+                    stringRes = MR.strings.information_empty_library,
+                    modifier = Modifier.padding(contentPadding),
+                    actions = persistentListOf(
+                        EmptyScreenAction(
+                            stringRes = MR.strings.getting_started_guide,
+                            icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                            onClick = { handler.openUri(GETTING_STARTED_URL) },
+                        ),
+                    ),
+                )
+            }
+
+            else -> {
+                AnimeLibraryContent(
+                    categories = state.categories,
+                    searchQuery = state.searchQuery,
+                    selection = state.selection,
+                    contentPadding = contentPadding,
+                    currentPage = { viewModel.activeCategoryIndex },
+                    hasActiveFilters = state.hasActiveFilters,
+                    showPageTabs = state.showCategoryTabs || !state.searchQuery.isNullOrEmpty(),
+                    onChangeCurrentPage = { viewModel.activeCategoryIndex = it },
+                    onAnimeClicked = { navigator.push(AnimeRoute(it)) },
+                    onContinueWatchingClicked = { it: LibraryAnime ->
+                        scope.launchIO {
+                            val episode = viewModel.getNextUnseenEpisode(it.anime)
+                            if (episode != null) openEpisode(episode)
+                        }
+                        Unit
+                    }.takeIf { state.showAnimeContinueButton },
+                    onToggleSelection = viewModel::toggleSelection,
+                    onToggleRangeSelection = {
+                        viewModel.toggleRangeSelection(it)
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    },
+                    onRefresh = onClickRefresh,
+                    onGlobalSearchClicked = {
+                        navigator.push(
+                            GlobalAnimeSearchRoute(viewModel.state.value.searchQuery ?: ""),
+                        )
+                    },
+                    getNumberOfAnimeForCategory = { state.getAnimeCountForCategory(it) },
+                    getDisplayMode = { viewModel.getDisplayMode() },
+                    getColumnsForOrientation = {
+                        viewModel.getColumnsPreferenceForCurrentOrientation(
+                            it,
+                        )
+                    },
+                ) { state.getAnimelibItemsByPage(it) }
+            }
+        }
+    }
+
+    val onDismissRequest = viewModel::closeDialog
+    when (val dialog = state.dialog) {
+        is AnimeLibraryViewModel.Dialog.SettingsSheet -> run {
+            val category = state.categories.getOrNull(viewModel.activeCategoryIndex)
+            AnimeLibrarySettingsDialog(
+                onDismissRequest = onDismissRequest,
+                screenModel = settingsViewModel,
+                category = category,
+                // SY -->
+                hasCategories = state.categories.fastAny { !it.isSystemCategory },
+                // SY <--
             )
         }
 
-    override suspend fun onReselect(navigator: Navigator) {
-        requestOpenSettingsSheet()
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
-        val context = LocalContext.current
-        val scope = rememberCoroutineScope()
-        val haptic = LocalHapticFeedback.current
-
-        val viewModel = metroViewModel<AnimeLibraryViewModel>()
-        val settingsViewModel = metroViewModel<AnimeLibrarySettingsViewModel>()
-        val state by viewModel.state.collectAsStateWithLifecycle()
-
-        val snackbarHostState = remember { SnackbarHostState() }
-
-        val onClickRefresh: (Category?) -> Boolean = { category ->
-            // SY -->
-            val started = AnimeLibraryUpdateJob.startNow(
-                context = context,
-                category = if (state.groupType == AnimeLibraryGroup.BY_DEFAULT) category else null,
-                group = state.groupType,
-                groupExtra = when (state.groupType) {
-                    AnimeLibraryGroup.BY_DEFAULT -> null
-
-                    AnimeLibraryGroup.BY_SOURCE, AnimeLibraryGroup.BY_TRACK_STATUS,
-                    AnimeLibraryGroup.BY_TAG,
-                    -> category?.id?.toString()
-
-                    AnimeLibraryGroup.BY_STATUS -> category?.id?.minus(1)?.toString()
-
-                    else -> null
+        is AnimeLibraryViewModel.Dialog.ChangeCategory -> {
+            ChangeCategoryDialog(
+                initialSelection = dialog.initialSelection,
+                onDismissRequest = onDismissRequest,
+                onEditCategories = {
+                    viewModel.clearSelection()
+                    navigator.push(CategoryRoute)
+                },
+                onConfirm = { include, exclude ->
+                    viewModel.clearSelection()
+                    viewModel.setAnimeCategories(dialog.anime, include, exclude)
                 },
             )
-            // SY <--
-            scope.launch {
-                val msgRes = if (started) MR.strings.updating_category else MR.strings.update_already_running
-                snackbarHostState.showSnackbar(context.stringResource(msgRes))
-            }
-            started
         }
 
-        suspend fun openEpisode(episode: Episode) {
-            val playerPreferences = context.appGraph.playerPreferences
-            val extPlayer = playerPreferences.alwaysUseExternalPlayer().get()
-            MainActivity.startPlayerActivity(
-                context,
-                episode.animeId,
-                episode.id,
-                extPlayer,
+        is AnimeLibraryViewModel.Dialog.DeleteAnime -> {
+            DeleteLibraryEntryDialog(
+                containsLocalEntry = dialog.anime.any(Anime::isLocal),
+                onDismissRequest = onDismissRequest,
+                onConfirm = { deleteAnime, deleteEpisode ->
+                    viewModel.removeAnimes(dialog.anime, deleteAnime, deleteEpisode)
+                    viewModel.clearSelection()
+                },
+                isManga = false,
             )
         }
 
-        val defaultTitle = stringResource(AYMR.strings.label_anime_library)
+        null -> {}
+    }
 
-        Scaffold(
-            topBar = { scrollBehavior ->
-                val title = state.getToolbarTitle(
-                    defaultTitle = defaultTitle,
-                    defaultCategoryTitle = stringResource(MR.strings.label_default),
-                    page = viewModel.activeCategoryIndex,
-                )
-                val tabVisible = state.showCategoryTabs && state.categories.size > 1
-                LibraryToolbar(
-                    hasActiveFilters = state.hasActiveFilters,
-                    selectedCount = state.selection.size,
-                    title = title,
-                    onClickUnselectAll = viewModel::clearSelection,
-                    onClickSelectAll = { viewModel.selectAll(viewModel.activeCategoryIndex) },
-                    onClickInvertSelection = {
-                        viewModel.invertSelection(
-                            viewModel.activeCategoryIndex,
-                        )
-                    },
-                    onClickFilter = viewModel::showSettingsDialog,
-                    onClickRefresh = {
-                        onClickRefresh(
-                            state.categories[viewModel.activeCategoryIndex],
-                        )
-                    },
-                    onClickGlobalUpdate = { onClickRefresh(null) },
-                    onClickOpenRandomEntry = {
-                        scope.launch {
-                            val randomItem = viewModel.getRandomAnimelibItemForCurrentCategory()
-                            if (randomItem != null) {
-                                navigator.push(AnimeScreen(randomItem.libraryAnime.anime.id))
-                            } else {
-                                snackbarHostState.showSnackbar(
-                                    context.stringResource(MR.strings.information_no_entries_found),
-                                )
-                            }
-                        }
-                    },
-                    onClickSyncNow = {
-                        if (!SyncDataJob.isRunning(context)) {
-                            SyncDataJob.startNow(context)
-                        } else {
-                            context.toast(TLMR.strings.sync_in_progress)
-                        }
-                    },
-                    searchQuery = state.searchQuery,
-                    onSearchQueryChange = viewModel::search,
-                    scrollBehavior = scrollBehavior.takeIf { !tabVisible }, // For scroll overlay when no tab
-                )
-            },
-            bottomBar = {
-                LibraryBottomActionMenu(
-                    visible = state.selectionMode,
-                    onChangeCategoryClicked = viewModel::openChangeCategoryDialog,
-                    onMarkAsViewedClicked = { viewModel.markSeenSelection(true) },
-                    onMarkAsUnviewedClicked = { viewModel.markSeenSelection(false) },
-                    onDownloadClicked = viewModel::runDownloadActionSelection
-                        .takeIf { state.selection.fastAll { !it.anime.isLocal() } },
-                    onDeleteClicked = viewModel::openDeleteAnimeDialog,
-                    onMigrateClicked = {
-                        val selection = state.selection.map { it.anime.id }
-                        navigator.push(AnimeMigrationConfigScreen(selection))
-                    },
-                    onClickResetInfo = viewModel::resetInfo.takeIf { state.showResetInfo },
-                    isManga = false,
-                )
-            },
-            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        ) { contentPadding ->
-            when {
-                state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
-
-                state.searchQuery.isNullOrEmpty() && !state.hasActiveFilters && state.isLibraryEmpty -> {
-                    val handler = LocalUriHandler.current
-                    EmptyScreen(
-                        stringRes = MR.strings.information_empty_library,
-                        modifier = Modifier.padding(contentPadding),
-                        actions = persistentListOf(
-                            EmptyScreenAction(
-                                stringRes = MR.strings.getting_started_guide,
-                                icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                                onClick = { handler.openUri(GETTING_STARTED_URL) },
-                            ),
-                        ),
-                    )
-                }
-
-                else -> {
-                    AnimeLibraryContent(
-                        categories = state.categories,
-                        searchQuery = state.searchQuery,
-                        selection = state.selection,
-                        contentPadding = contentPadding,
-                        currentPage = { viewModel.activeCategoryIndex },
-                        hasActiveFilters = state.hasActiveFilters,
-                        showPageTabs = state.showCategoryTabs || !state.searchQuery.isNullOrEmpty(),
-                        onChangeCurrentPage = { viewModel.activeCategoryIndex = it },
-                        onAnimeClicked = { navigator.push(AnimeScreen(it)) },
-                        onContinueWatchingClicked = { it: LibraryAnime ->
-                            scope.launchIO {
-                                val episode = viewModel.getNextUnseenEpisode(it.anime)
-                                if (episode != null) openEpisode(episode)
-                            }
-                            Unit
-                        }.takeIf { state.showAnimeContinueButton },
-                        onToggleSelection = viewModel::toggleSelection,
-                        onToggleRangeSelection = {
-                            viewModel.toggleRangeSelection(it)
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        },
-                        onRefresh = onClickRefresh,
-                        onGlobalSearchClicked = {
-                            navigator.push(
-                                GlobalAnimeSearchScreen(viewModel.state.value.searchQuery ?: ""),
-                            )
-                        },
-                        getNumberOfAnimeForCategory = { state.getAnimeCountForCategory(it) },
-                        getDisplayMode = { viewModel.getDisplayMode() },
-                        getColumnsForOrientation = {
-                            viewModel.getColumnsPreferenceForCurrentOrientation(
-                                it,
-                            )
-                        },
-                    ) { state.getAnimelibItemsByPage(it) }
-                }
-            }
-        }
-
-        val onDismissRequest = viewModel::closeDialog
-        when (val dialog = state.dialog) {
-            is AnimeLibraryViewModel.Dialog.SettingsSheet -> run {
-                val category = state.categories.getOrNull(viewModel.activeCategoryIndex)
-                AnimeLibrarySettingsDialog(
-                    onDismissRequest = onDismissRequest,
-                    screenModel = settingsViewModel,
-                    category = category,
-                    // SY -->
-                    hasCategories = state.categories.fastAny { !it.isSystemCategory },
-                    // SY <--
-                )
-            }
-
-            is AnimeLibraryViewModel.Dialog.ChangeCategory -> {
-                ChangeCategoryDialog(
-                    initialSelection = dialog.initialSelection,
-                    onDismissRequest = onDismissRequest,
-                    onEditCategories = {
-                        viewModel.clearSelection()
-                        navigator.push(CategoriesTab)
-                    },
-                    onConfirm = { include, exclude ->
-                        viewModel.clearSelection()
-                        viewModel.setAnimeCategories(dialog.anime, include, exclude)
-                    },
-                )
-            }
-
-            is AnimeLibraryViewModel.Dialog.DeleteAnime -> {
-                DeleteLibraryEntryDialog(
-                    containsLocalEntry = dialog.anime.any(Anime::isLocal),
-                    onDismissRequest = onDismissRequest,
-                    onConfirm = { deleteAnime, deleteEpisode ->
-                        viewModel.removeAnimes(dialog.anime, deleteAnime, deleteEpisode)
-                        viewModel.clearSelection()
-                    },
-                    isManga = false,
-                )
-            }
-
-            null -> {}
-        }
-
-        BackHandler(enabled = state.selectionMode || state.searchQuery != null) {
-            when {
-                state.selectionMode -> viewModel.clearSelection()
-                state.searchQuery != null -> viewModel.search(null)
-            }
-        }
-
-        LaunchedEffect(state.selectionMode, state.dialog) {
-            HomeScreen.showBottomNav(!state.selectionMode)
-        }
-
-        LaunchedEffect(state.isLoading) {
-            if (!state.isLoading) {
-                (context as? MainActivity)?.ready = true
-                // AM (DISCORD) -->
-                DiscordRPCService.setScreen(context, DiscordScreen.LIBRARY)
-                // <-- AM (DISCORD)
-            }
-        }
-
-        LaunchedEffect(Unit) {
-            launch { queryEvent.receiveAsFlow().collect(viewModel::search) }
-            launch { requestSettingsSheetEvent.receiveAsFlow().collectLatest { viewModel.showSettingsDialog() } }
-        }
-
-        LaunchedEffect(state.selectionMode, state.dialog) {
-            HomeScreen.showBottomNav(!state.selectionMode)
-        }
-
-        LaunchedEffect(state.isLoading) {
-            if (!state.isLoading) {
-                (context as? MainActivity)?.ready = true
-                // AM (DISCORD) -->
-                DiscordRPCService.setScreen(context, DiscordScreen.LIBRARY)
-                // <-- AM (DISCORD)
-            }
-        }
-
-        LaunchedEffect(Unit) {
-            launch { queryEvent.receiveAsFlow().collect(viewModel::search) }
-            launch { requestSettingsSheetEvent.receiveAsFlow().collectLatest { viewModel.showSettingsDialog() } }
+    BackHandler(enabled = state.selectionMode || state.searchQuery != null) {
+        when {
+            state.selectionMode -> viewModel.clearSelection()
+            state.searchQuery != null -> viewModel.search(null)
         }
     }
 
-    // For invoking search from other screen
-    private val queryEvent = Channel<String>()
-    suspend fun search(query: String) = queryEvent.send(query)
+    LaunchedEffect(state.selectionMode, state.dialog) {
+        resultEventBus.sendResult(result = ShowBottomNavEvent(!state.selectionMode))
+    }
 
-    // For opening settings sheet in LibraryController
-    private val requestSettingsSheetEvent = Channel<Unit>()
-    private suspend fun requestOpenSettingsSheet() = requestSettingsSheetEvent.send(Unit)
+    LaunchedEffect(state.isLoading) {
+        if (!state.isLoading) {
+            (context as? MainActivity)?.ready = true
+            // AM (DISCORD) -->
+            DiscordRPCService.setScreen(context, DiscordScreen.LIBRARY)
+            // <-- AM (DISCORD)
+        }
+    }
+
+    ResultEffect<AnimeLibrarySearchEvent> {
+        viewModel.search(it.query)
+    }
+
+    ResultEffect<Unit>(resultKey = TopLevelRoute.AnimeLibrary.reselectEventKey) {
+        viewModel.showSettingsDialog()
+    }
 }
+
+data class AnimeLibrarySearchEvent(val query: String)

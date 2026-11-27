@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.ui.browse.anime.extension.details
 
 import androidx.compose.runtime.Composable
 import eu.kanade.core.util.ifAnimeSourcesLoaded
-import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.animesource.ConfigurableAnimeSource
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.animesource.sourcePreferences
@@ -13,25 +12,22 @@ import kotlinx.coroutines.withContext
 import mihon.app.di.appGraph
 import tachiyomi.presentation.core.screens.LoadingScreen
 
-class AnimeSourcePreferencesScreen(val sourceId: Long) : Screen() {
+@Composable
+fun AnimeSourcePreferencesScreen(sourceId: Long) {
+    if (!ifAnimeSourcesLoaded()) {
+        LoadingScreen()
+        return
+    }
 
-    @Composable
-    override fun Content() {
-        if (!ifAnimeSourcesLoaded()) {
-            LoadingScreen()
-            return
+    ExtensionSourcePreferencesContent(sourceId) { context ->
+        val source = context.appGraph.animeSourceManager.getOrStub(sourceId)
+        val configurable = source as? ConfigurableAnimeSource
+        val preferences = configurable?.let {
+            withContext(Dispatchers.IO) { it.sourcePreferences().apply { all } }
         }
-
-        ExtensionSourcePreferencesContent(sourceId) { context ->
-            val source = context.appGraph.animeSourceManager.getOrStub(sourceId)
-            val configurable = source as? ConfigurableAnimeSource
-            val preferences = configurable?.let {
-                withContext(Dispatchers.IO) { it.sourcePreferences().apply { all } }
-            }
-            ExtensionPreferencesSource(source.toString(), preferences) { screen ->
-                configurable?.setupPreferenceScreen(screen)
-                if (source is AnimeHttpSource) screen.addHosterCachePreferences(sourceId)
-            }
+        ExtensionPreferencesSource(source.toString(), preferences) { screen ->
+            configurable?.setupPreferenceScreen(screen)
+            if (source is AnimeHttpSource) screen.addHosterCachePreferences(sourceId)
         }
     }
 }

@@ -7,10 +7,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
-import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.player.settings.AudioChannels
 import eu.kanade.tachiyomi.ui.player.settings.DefaultAudioLanguage
 import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
@@ -19,7 +19,8 @@ import tachiyomi.presentation.core.util.collectAsState
 import java.util.Locale
 import java.util.MissingResourceException
 
-object PlayerSettingsAudioScreen : Screen(), SearchableSettings {
+@Serializable
+data object PlayerSettingsAudioScreen : SearchableSettings {
 
     @ReadOnlyComposable
     @Composable

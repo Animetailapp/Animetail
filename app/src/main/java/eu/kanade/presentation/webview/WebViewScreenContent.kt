@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -32,7 +33,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import cafe.adriel.voyager.core.stack.mutableStateStackOf
 import com.kevinnzou.web.AccompanistWebChromeClient
 import com.kevinnzou.web.AccompanistWebViewClient
 import com.kevinnzou.web.LoadingState
@@ -107,21 +107,21 @@ fun WebViewScreenContent(
     }
 
     val windowStack = remember {
-        mutableStateStackOf(
+        mutableStateListOf(
             WebViewWindow(
                 WebContent.Url(url = url, additionalHttpHeaders = filteredHeaders),
             ),
         )
     }
 
-    val currentWindow = windowStack.lastItemOrNull!!
+    val currentWindow = windowStack.last()
 
     val popState: (() -> Unit) = remember {
         {
             if (windowStack.size == 1) {
                 onNavigateUp()
             } else {
-                windowStack.pop()
+                windowStack.removeAt(windowStack.lastIndex)
             }
         }
     }
@@ -230,7 +230,7 @@ fun WebViewScreenContent(
             ): Boolean {
                 // if it wasn't initiated by a user gesture, we should ignore it like a normal browser would
                 if (isUserGesture) {
-                    windowStack.push(WebViewWindow(resultMsg))
+                    windowStack.add(WebViewWindow(resultMsg))
                     return true
                 }
                 return false
@@ -387,7 +387,7 @@ fun WebViewScreenContent(
                     webView.setUserAgent(headers["user-agent"] ?: defaultUserAgentProvider())
                 },
                 onDispose = { webView ->
-                    val window = windowStack.items.find { it.webView == webView }
+                    val window = windowStack.find { it.webView == webView }
                     if (window == null) {
                         // If we couldn't find any window on the stack that owns this WebView, it means that we can
                         // safely dispose of it because the window containing it has been closed.
