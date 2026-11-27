@@ -87,9 +87,12 @@ class HosterCache(
 
     private fun episodeKey(sourceId: Long, episodeUrl: String) = "$sourceId|$episodeUrl"
 
-    // The name is part of the key because some sources reuse one URL for several hosters
-    // (e.g. SUB and DUB variants of the same embed).
-    private fun hosterKey(sourceId: Long, hoster: Hoster) = "$sourceId|${hoster.hosterUrl}|${hoster.hosterName}"
+    // A source lists a hoster's videos from the hoster alone, so the key is every field it can read.
+    // URL and name are not enough: some sources reuse one URL for several hosters (e.g. SUB and DUB
+    // variants of the same embed), and others leave the URL empty and keep the episode in
+    // internalData, so every episode has a hoster with the same URL and name.
+    private fun hosterKey(sourceId: Long, hoster: Hoster) =
+        listOf(sourceId, hoster.hosterUrl, hoster.hosterName, hoster.internalData, hoster.memo).joinToString("|")
 
     private class BoundedMap<K, V>(private val maxSize: Int) : LinkedHashMap<K, V>(16, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>?) = size > maxSize

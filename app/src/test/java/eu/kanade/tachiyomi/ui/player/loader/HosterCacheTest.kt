@@ -117,6 +117,18 @@ class HosterCacheTest {
     }
 
     @Test
+    fun `hosters that differ only in their internal data have their own videos`() {
+        // Sources that keep the episode in internalData give every episode a hoster with the
+        // same URL and name; each episode must still get its own videos.
+        val episode1 = Hoster(hosterName = "Server", internalData = "/watch/1")
+        val episode2 = Hoster(hosterName = "Server", internalData = "/watch/2")
+        cache.putVideos(SOURCE, episode1, videos)
+
+        assertNull(cache.getVideos(SOURCE, episode2))
+        assertEquals(videos, cache.getVideos(SOURCE, Hoster(hosterName = "Server", internalData = "/watch/1")))
+    }
+
+    @Test
     fun `entries of different sources do not collide`() {
         cache.putVideos(SOURCE, voe, videos)
 
