@@ -122,6 +122,16 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         setSafeOptionString("demuxer-max-bytes", "${cacheMegs * 1024 * 1024}")
         setSafeOptionString("demuxer-max-back-bytes", "${cacheMegs * 1024 * 1024}")
 
+        // A connection that drops or stalls in the middle of an HLS segment otherwise loses the rest of
+        // that segment, so playback jumps ahead a few seconds (or freezes until mpv's 60s timeout).
+        // FFmpeg's HLS demuxer doesn't pass `reconnect` on to segment requests, but mpv propagates
+        // demuxer-lavf-o to them, so the segment resumes from where it was cut with a Range request.
+        setSafeOptionString("network-timeout", "10")
+        setSafeOptionString(
+            "demuxer-lavf-o",
+            "reconnect=1,reconnect_on_network_error=1,reconnect_delay_max=5",
+        )
+
         val screenshotDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
         screenshotDir.mkdirs()
         mpv?.setOptionString("screenshot-directory", screenshotDir.path)
