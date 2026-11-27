@@ -374,6 +374,18 @@
     <string name="pref_sync_api_key_summ">Enter the API key to synchronize your library</string>
     <string name="login_error">Login error</string>
     <string name="save">Save</string>
+    <!-- Log viewer -->
+    <string name="pref_log_viewer">Log viewer</string>
+    <string name="pref_log_viewer_summary">Read the app log without leaving the app</string>
+    <string name="log_viewer_filter_errors">Errors</string>
+    <string name="log_viewer_filter_downloads">Downloads</string>
+    <string name="log_viewer_filter_cast">Cast</string>
+    <string name="log_viewer_filter_player">Player</string>
+    <string name="log_viewer_filter_network">Network</string>
+    <string name="log_viewer_empty">No log entries</string>
+    <string name="log_viewer_action_clear">Clear log</string>
+    <string name="log_viewer_clear_confirm">Delete all entries from the app log?</string>
+    <string name="log_viewer_scroll_to_bottom">Scroll to newest</string>
     <!-- Doh Custom -->
     <string name="pref_doh_custom_url">Custom DoH URL</string>
     <string name="pref_doh_custom_url_summary">Example: https://dns.example/dns-query</string>

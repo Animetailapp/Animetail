@@ -8,6 +8,7 @@ import logcat.LogcatLogger
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.RandomAccessFile
 import java.io.Writer
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -129,6 +130,16 @@ class FileLogcatLogger(
                 if (older.exists() && !older.renameTo(rotatedFile(current, n + 1))) older.delete()
             }
             if (!current.renameTo(rotatedFile(current, 1))) current.delete()
+        }
+
+        /**
+         * Empties the log. The current file is truncated rather than deleted: the writer keeps it
+         * open in append mode, so its next write lands at the new end.
+         */
+        fun clear(context: Context) {
+            val current = currentFile(context)
+            (1..ROTATED_FILES).forEach { rotatedFile(current, it).delete() }
+            if (current.exists()) RandomAccessFile(current, "rw").use { it.setLength(0) }
         }
     }
 }

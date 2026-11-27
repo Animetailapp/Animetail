@@ -29,6 +29,7 @@ import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.advanced.ClearAnimeDatabaseScreen
 import eu.kanade.presentation.more.settings.screen.advanced.ClearDatabaseScreen
 import eu.kanade.presentation.more.settings.screen.debug.DebugInfoScreen
+import eu.kanade.presentation.more.settings.screen.debug.LogViewerScreen
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
@@ -114,6 +115,11 @@ object SettingsAdvancedScreen : SearchableSettings {
                         crashLogUtil.dumpLogs()
                     }
                 },
+            ),
+            Preference.PreferenceItem.TextPreference(
+                title = stringResource(TLMR.strings.pref_log_viewer),
+                subtitle = stringResource(TLMR.strings.pref_log_viewer_summary),
+                onClick = { navigator.push(LogViewerScreen()) },
             ),
             Preference.PreferenceItem.SwitchPreference(
                 preference = networkPreferences.verboseLogging(),
