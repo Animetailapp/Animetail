@@ -616,6 +616,27 @@ class AnimeDownloader(
         filename: String,
     ) {
         val video = download.video!!
+        val relay = DownloadStreamRelay(download.source.client, video.headers ?: download.source.headers).open()
+        try {
+            ffmpegDownload(download, tmpDir, videoFile, filename, relay)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            // FFmpeg's error is a consequence of the request the relay gave up on.
+            throw relay.failure ?: e
+        } finally {
+            relay.stop()
+        }
+    }
+
+    /** Downloads with FFmpeg, which reads the video's network inputs through [relay]. */
+    private suspend fun ffmpegDownload(
+        download: AnimeDownload,
+        tmpDir: UniFile,
+        videoFile: UniFile,
+        filename: String,
+        relay: DownloadStreamRelay,
+    ) {
+        val video = download.video!!
 
         val isSaf = videoFile.uri.scheme == "content"
         val localTmpFile = if (isSaf) {
@@ -627,11 +648,6 @@ class AnimeDownloader(
         }
 
         val ffmpegFilename = { localTmpFile?.absolutePath ?: videoFile.toFFmpegString(context, "rw") }
-
-        val headers = video.headers ?: download.source.headers
-        val headerOptions = headers.joinToString("", "-headers '", "'") {
-            "${it.first}: ${it.second}\r\n"
-        }
 
         FFmpegKitConfig.setLogRedirectionStrategy(LogRedirectionStrategy.ALWAYS_PRINT_LOGS)
         val ffprobeCommand = { file: String, ffprobeHeaders: String? ->
@@ -651,15 +667,10 @@ class AnimeDownloader(
             }
         }
 
-        val ffprobeOptions = if (video.videoUrl.startsWith("http")) {
-            "$FFMPEG_NETWORK_INPUT_OPTIONS $headerOptions"
-        } else {
-            headerOptions
-        }
-        val probeCommand = "$ffprobeOptions ${SourceProbe.FFPROBE_ARGS} \"${video.videoUrl}\""
+        val probeCommand = "${SourceProbe.FFPROBE_ARGS} \"${relay.relayUrl(video.videoUrl)}\""
         val probe = SourceProbe.parse(runFFprobe(FFmpegKitConfig.parseArguments(probeCommand)))
         duration = probe.durationSeconds?.toLong() ?: 0L
-        val ffmpegOptions = getFFmpegOptions(video, headerOptions, ffmpegFilename(), probe.variantProgramId)
+        val ffmpegOptions = getFFmpegOptions(video, relay, ffmpegFilename(), probe.variantProgramId)
 
         // FFmpeg keeps running while a source stalls (reconnects retry, HLS skips failing segments),
         // so an attempt that writes nothing for STALL_TIMEOUT fails and is retried instead of holding
@@ -707,6 +718,11 @@ class AnimeDownloader(
             }
         }
 
+        relay.failure?.let {
+            tmpDir.findFile("$filename.tmp")?.delete()
+            throw it
+        }
+
         // ffmpeg skips HLS segments it can't fetch and still exits successfully, so a hoster that
         // rejects them leaves a short or empty file. The size depends on quality and container,
         // so the duration of the result is compared against the source instead.
@@ -737,19 +753,12 @@ class AnimeDownloader(
      */
     private fun getFFmpegOptions(
         video: Video,
-        headerOptions: String,
+        relay: DownloadStreamRelay,
         ffmpegFilename: String,
         variantProgramId: Int?,
     ): Array<String> {
         fun formatInputs(tracks: List<Track>) = tracks.joinToString(" ", postfix = " ") {
-            buildList {
-                if (it.url.startsWith("http")) {
-                    add(FFMPEG_NETWORK_INPUT_OPTIONS)
-                    add(headerOptions)
-                }
-                add("-i")
-                add("\"${it.url}\"")
-            }.joinToString(" ")
+            "-i \"${relay.relayUrl(it.url)}\""
         }
 
         fun formatMaps(tracks: List<Track>, type: String, offset: Int = 0) = tracks.indices.joinToString(" ") {
@@ -776,17 +785,10 @@ class AnimeDownloader(
         }
 
         val videoInput = buildList {
-            if (video.videoUrl.startsWith("http")) {
-                // Note: `-reconnect_at_eof` must NOT be used here. It treats a normal EOF as an error,
-                // which makes FFmpeg re-download finite HLS/VOD playlists forever (see #488).
-                add("-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 2")
-                add(FFMPEG_NETWORK_INPUT_OPTIONS)
-                add(headerOptions)
-            }
             add(sourceStreamOptions)
             add("-i")
-            add("\"${video.videoUrl}\"")
-        }.joinToString(" ")
+            add("\"${relay.relayUrl(video.videoUrl)}\"")
+        }.filter(String::isNotBlank).joinToString(" ")
 
         val videoSource = variantProgramId?.let { "0:p:$it" } ?: "0"
         val command = listOf(
@@ -1077,11 +1079,6 @@ internal fun finalizeEpisodeDir(animeDir: UniFile, tmpDir: UniFile, dirname: Str
     }
     return tmpDir.renameToOrCopy(dirname)
 }
-
-// libavformat has no network read timeout by default, so a server that stops sending blocks FFmpeg
-// or FFprobe forever. rw_timeout is in microseconds, and the HLS demuxer passes it on to every
-// playlist and segment request.
-private const val FFMPEG_NETWORK_INPUT_OPTIONS = "-rw_timeout 30000000"
 
 // An FFmpeg attempt that makes no progress for this long fails and is retried.
 private val STALL_TIMEOUT = 3.minutes
