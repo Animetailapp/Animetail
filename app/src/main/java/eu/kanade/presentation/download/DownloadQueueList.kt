@@ -60,6 +60,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import sh.calvin.reorderable.rememberScroller
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.ListGroupHeader
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -75,6 +76,8 @@ fun DownloadQueueList(
     onCancel: (DownloadQueueEntry) -> Unit,
     onCancelSeries: (DownloadQueueEntry) -> Unit,
     modifier: Modifier = Modifier,
+    onRetry: ((DownloadQueueEntry) -> Unit)? = null,
+    onRetryWithOtherVideo: ((DownloadQueueEntry) -> Unit)? = null,
 ) {
     val sectionsState = remember { sections.toMutableStateList() }
     // While a section is dragged its downloads are hidden, so it moves past whole sections
@@ -193,6 +196,8 @@ fun DownloadQueueList(
                             onMoveSeries = { toTop -> onMoveSeries(download, toTop) },
                             onCancel = { onCancel(download) },
                             onCancelSeries = { onCancelSeries(download) },
+                            onRetry = onRetry?.let { retry -> { retry(download) } },
+                            onRetryWithOtherVideo = onRetryWithOtherVideo?.let { retry -> { retry(download) } },
                         )
                     }
                 }
@@ -314,9 +319,12 @@ private fun ReorderableCollectionItemScope.DownloadQueueItem(
     onMoveSeries: (toTop: Boolean) -> Unit,
     onCancel: () -> Unit,
     onCancelSeries: () -> Unit,
+    onRetry: (() -> Unit)?,
+    onRetryWithOtherVideo: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val progress by remember(download) { download.progressFlow() }.collectAsState(null)
+    val failure by remember(download) { download.failureFlow() }.collectAsState(null)
     val animatedProgress by animateFloatAsState(progress?.fraction ?: 0f, label = "progress")
 
     Surface(
@@ -349,7 +357,7 @@ private fun ReorderableCollectionItemScope.DownloadQueueItem(
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodyMedium,
                     )
-                    progress?.let {
+                    progress?.takeIf { failure == null }?.let {
                         Text(
                             text = when (download) {
                                 is DownloadQueueEntry.Manga -> "${it.downloadedPages}/${it.pageCount}"
@@ -377,7 +385,10 @@ private fun ReorderableCollectionItemScope.DownloadQueueItem(
                 val progressModifier = Modifier
                     .fillMaxWidth()
                     .padding(top = MaterialTheme.padding.extraSmall)
-                if (progress?.indeterminate == true) {
+                val currentFailure = failure
+                if (currentFailure != null) {
+                    DownloadFailureText(currentFailure)
+                } else if (progress?.indeterminate == true) {
                     LinearProgressIndicator(modifier = progressModifier)
                 } else {
                     LinearProgressIndicator(progress = { animatedProgress }, modifier = progressModifier)
@@ -390,6 +401,8 @@ private fun ReorderableCollectionItemScope.DownloadQueueItem(
                 onMoveSeries = onMoveSeries,
                 onCancel = onCancel,
                 onCancelSeries = onCancelSeries,
+                onRetry = onRetry.takeIf { failure != null },
+                onRetryWithOtherVideo = onRetryWithOtherVideo.takeIf { failure != null },
             )
         }
     }
@@ -417,6 +430,8 @@ private fun DownloadQueueItemMenu(
     onMoveSeries: (toTop: Boolean) -> Unit,
     onCancel: () -> Unit,
     onCancelSeries: () -> Unit,
+    onRetry: (() -> Unit)?,
+    onRetryWithOtherVideo: (() -> Unit)?,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val closeMenu = { expanded = false }
@@ -428,6 +443,24 @@ private fun DownloadQueueItemMenu(
             )
         }
         DropdownMenu(expanded = expanded, onDismissRequest = closeMenu) {
+            if (onRetry != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(MR.strings.action_retry)) },
+                    onClick = {
+                        closeMenu()
+                        onRetry()
+                    },
+                )
+            }
+            if (onRetryWithOtherVideo != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(TLMR.strings.action_retry_with_other_video)) },
+                    onClick = {
+                        closeMenu()
+                        onRetryWithOtherVideo()
+                    },
+                )
+            }
             if (canMoveToTop) {
                 DropdownMenuItem(
                     text = { Text(stringResource(MR.strings.action_move_to_top)) },
@@ -475,6 +508,35 @@ private fun DownloadQueueItemMenu(
                 },
             )
         }
+    }
+}
+
+@Composable
+private fun DownloadFailureText(failure: AnimeDownload.Failure) {
+    Text(
+        text = failure.reason,
+        color = MaterialTheme.colorScheme.error,
+        maxLines = 3,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.bodySmall,
+    )
+    if (failure.failedVideos.isNotEmpty()) {
+        Text(
+            text = stringResource(TLMR.strings.download_failed_videos, failure.failedVideos.joinToString()),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
+/** Why the download failed, while it's failed. Manga downloads don't record one. */
+private fun DownloadQueueEntry.failureFlow() = when (this) {
+    is DownloadQueueEntry.Manga -> flowOf(null)
+
+    is DownloadQueueEntry.Anime -> combine(download.failureFlow, download.statusFlow) { failure, status ->
+        failure.takeIf { status == AnimeDownload.State.ERROR }
     }
 }
 

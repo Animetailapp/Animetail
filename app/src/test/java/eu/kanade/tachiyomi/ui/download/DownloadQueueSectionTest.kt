@@ -120,7 +120,7 @@ class DownloadQueueSectionTest {
             every { queueState } returns queue
             every { isDownloaderRunning } returns MutableStateFlow(false)
         }
-        val viewModel = AnimeDownloadQueueViewModel(manager)
+        val viewModel = AnimeDownloadQueueViewModel(mockk(), manager)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.composeState.collect {} }
         advanceUntilIdle()
 

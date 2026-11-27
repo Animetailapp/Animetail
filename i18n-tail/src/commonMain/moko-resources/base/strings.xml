@@ -457,4 +457,12 @@
     <string name="audio_language_original">Original language</string>
     <string name="audio_language_original_detected">Original language (%s)</string>
     <string name="audio_language_dialog_message">Used for this show when picking the audio track. Picking an audio track in the player also changes it.</string>
+
+    <!-- Download failures -->
+    <string name="download_failed_videos">Failed: %s</string>
+    <string name="download_no_video_file">The download didn\'t produce a video file</string>
+    <string name="download_video_unreadable">Couldn\'t open the video</string>
+    <string name="download_video_unresolved">Couldn\'t get the video link</string>
+    <string name="action_retry_with_other_video">Retry with another video</string>
+    <string name="download_no_other_videos">No other videos are left for this episode</string>
 </resources>

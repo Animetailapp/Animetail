@@ -45,6 +45,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -54,6 +55,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
@@ -74,6 +76,7 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
@@ -111,6 +114,9 @@ class AnimeDownloader(
     val queueState = _queueState.asStateFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Wakes the running downloader up to pick up retried downloads. */
+    private val retried = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     /** Held while an episode downloads, see [launchDownloadJob]. */
     private val episodeLocks = ConcurrentHashMap<Long, Mutex>()
@@ -152,12 +158,14 @@ class AnimeDownloader(
             return false
         }
 
-        val pending = queueState.value.filter { it.status != AnimeDownload.State.DOWNLOADED }
+        // Failed downloads stay failed, with their reason, until they're retried
+        val pending = queueState.value.filter { it.status != AnimeDownload.State.DOWNLOADED && it.failure == null }
+        if (pending.isEmpty()) return false
         pending.forEach { if (it.status != AnimeDownload.State.QUEUE) it.status = AnimeDownload.State.QUEUE }
 
         launchDownloaderJob()
 
-        return pending.isNotEmpty()
+        return true
     }
 
     /**
@@ -223,12 +231,12 @@ class AnimeDownloader(
 
                     if (activeDownloads.isEmpty()) break
 
-                    // Suspend until a download enters the ERROR state
+                    // Suspend until a download enters the ERROR state, or a failed one is retried
                     val activeDownloadsErroredFlow =
                         combine(activeDownloads.map(AnimeDownload::statusFlow)) { states ->
                             states.contains(AnimeDownload.State.ERROR)
                         }.filter { it }
-                    activeDownloadsErroredFlow.first()
+                    merge(activeDownloadsErroredFlow, retried).first()
                 }
 
                 if (areAllAnimeDownloadsFinished()) stop()
@@ -275,7 +283,7 @@ class AnimeDownloader(
             if (e is CancellationException) throw e
             // Only this episode failed: the other downloads go on, as after any failed download.
             logcat(LogPriority.ERROR, e)
-            download.status = AnimeDownload.State.ERROR
+            fail(download, e.failureReason(), emptyList())
             notifier.onError(e.message, download.episode.name, download.anime.title, download.anime.id)
         }
     }
@@ -359,13 +367,9 @@ class AnimeDownloader(
 
         val availSpace = DiskUtil.getAvailableStorageSpace(animeDir)
         if (availSpace != -1L && availSpace < MIN_DISK_SPACE) {
-            download.status = AnimeDownload.State.ERROR
-            notifier.onError(
-                context.stringResource(AYMR.strings.download_insufficient_space),
-                download.episode.name,
-                download.anime.title,
-                download.anime.id,
-            )
+            val reason = context.stringResource(AYMR.strings.download_insufficient_space)
+            fail(download, reason, emptyList())
+            notifier.onError(reason, download.episode.name, download.anime.title, download.anime.id)
             return
         }
 
@@ -376,35 +380,71 @@ class AnimeDownloader(
         )
         val tmpDir = animeDir.createDirectory(episodeDirname + TMP_DIR_SUFFIX)!!
 
+        // A video chosen by the user is kept; otherwise every failed video is skipped on the
+        // next pick, so the download moves on to the next hoster. Failures are keyed by hoster
+        // too because titles like "1080p" repeat across hosters.
+        val queuedVideo = download.video
+        val canSwitchVideo = queuedVideo == null
+        val failedVideos = mutableSetOf<Pair<String, String>>()
+        fun failedLabels() = if (canSwitchVideo) {
+            failedVideos.map { (hosterName, title) -> videoLabel(hosterName, title) }
+        } else {
+            listOfNotNull(download.video?.videoTitle)
+        }
+
         try {
-            // A video chosen by the user is kept; otherwise every failed video is skipped on the
-            // next pick, so the download moves on to the next hoster. Failures are keyed by hoster
-            // too because titles like "1080p" repeat across hosters.
-            val canSwitchVideo = download.video == null
-            val failedVideos = mutableSetOf<Pair<String, String>>()
             var hosterName = ""
-            suspend fun pickNextVideo() {
-                val (hoster, video) = pickBestVideo(download, failedVideos)
+            suspend fun pickNextVideo(): Boolean {
+                val (hoster, video) = pickBestVideo(download, failedVideos) ?: return false
                 hosterName = hoster.hosterName
                 download.video = video
+                return true
             }
-            if (canSwitchVideo) pickNextVideo()
-
-            withIOContext {
-                getOrDownloadVideoFile(download, tmpDir)
+            if (canSwitchVideo && !pickNextVideo()) {
+                throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
+            }
+            // A video picked from the episode's list to retry with isn't resolved yet
+            if (queuedVideo?.initialized == false) {
+                download.video = HosterLoader.getResolvedVideo(download.source, queuedVideo)
+                    ?.takeIf { it.videoUrl.isNotEmpty() }
+                    ?: throw Exception(context.stringResource(TLMR.strings.download_video_unresolved))
             }
 
+            // A server failure isn't retried while another video is left to try; the last
+            // video left gets the retries instead, in case the failure was temporary.
+            var error = withIOContext {
+                getOrDownloadVideoFile(download, tmpDir, retryVideoFailures = !canSwitchVideo)
+            }
+            var lastVideoRetried = false
             while (canSwitchVideo && !isDownloadSuccessful(download, tmpDir)) {
-                failedVideos += hosterName to download.video!!.videoTitle
-                pickNextVideo()
-                withIOContext {
-                    getOrDownloadVideoFile(download, tmpDir)
+                val failedVideo = hosterName to download.video!!.videoTitle
+                failedVideos += failedVideo
+                val switched = pickNextVideo()
+                if (!switched) {
+                    if (lastVideoRetried || error?.isVideoFailure() != true) break
+                    lastVideoRetried = true
+                    failedVideos -= failedVideo
+                    if (!pickNextVideo()) break
+                }
+                logcat(LogPriority.WARN) {
+                    val failed = videoLabel(failedVideo.first, failedVideo.second)
+                    val next = videoLabel(hosterName, download.video!!.videoTitle)
+                    "${download.episode.name}: $failed failed (${error?.message}), " +
+                        if (switched) "trying $next" else "retrying it"
+                }
+                error = withIOContext {
+                    getOrDownloadVideoFile(download, tmpDir, retryVideoFailures = !switched)
                 }
             }
 
             if (!isDownloadSuccessful(download, tmpDir)) {
                 EpisodeLoader.invalidateCache(context, download.episode, download.source)
-                download.status = AnimeDownload.State.ERROR
+                fail(
+                    download,
+                    error?.failureReason() ?: context.stringResource(TLMR.strings.download_no_video_file),
+                    failedLabels(),
+                )
+                download.video = queuedVideo
                 return
             }
 
@@ -423,7 +463,9 @@ class AnimeDownloader(
             // If the video threw, it will resume here
             logcat(LogPriority.ERROR, error)
             EpisodeLoader.invalidateCache(context, download.episode, download.source)
-            download.status = AnimeDownload.State.ERROR
+            fail(download, error.failureReason(), failedLabels())
+            // A retry starts from the queued video again, or picks one with fresh links
+            download.video = queuedVideo
             notifier.onError(
                 error.message,
                 download.episode.name,
@@ -433,10 +475,30 @@ class AnimeDownloader(
         }
     }
 
+    private fun fail(download: AnimeDownload, reason: String, failedVideos: List<String>) {
+        download.failure = AnimeDownload.Failure(reason, failedVideos)
+        download.status = AnimeDownload.State.ERROR
+    }
+
+    /**
+     * Retries failed [downloads], with [video] (one of the episode's videos, as its hoster listed it)
+     * when given, or else with the video they were queued with, if any.
+     */
+    fun retry(downloads: List<AnimeDownload>, video: Video? = null) {
+        downloads.forEach { download ->
+            if (video != null) download.video = video
+            download.failure = null
+            download.progress = 0
+            download.status = AnimeDownload.State.QUEUE
+        }
+        retried.tryEmit(Unit)
+    }
+
+    /** @return the best video that hasn't failed yet and its hoster, or null if none is left. */
     private suspend fun pickBestVideo(
         download: AnimeDownload,
         failedVideos: Set<Pair<String, String>>,
-    ): Pair<Hoster, Video> {
+    ): Pair<Hoster, Video>? {
         val hosters = EpisodeLoader.getHosters(context, download.episode, download.anime, download.source)
         if (hosters.isEmpty()) {
             throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
@@ -444,7 +506,6 @@ class AnimeDownloader(
         return HosterLoader.getBestHosterVideo(context, download.source, hosters) { hoster, video ->
             (hoster.hosterName to video.videoTitle) in failedVideos
         }
-            ?: throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
     }
 
     /**
@@ -452,11 +513,14 @@ class AnimeDownloader(
      *
      * @param download the download of the video.
      * @param tmpDir the temporary directory of the download.
+     * @param retryVideoFailures whether failures from the video's server are retried too.
+     * @return why the download failed, or null if it didn't.
      */
     private suspend fun getOrDownloadVideoFile(
         download: AnimeDownload,
         tmpDir: UniFile,
-    ) {
+        retryVideoFailures: Boolean,
+    ): Exception? {
         val video = download.video!!
 
         video.status = Video.State.LOAD_VIDEO
@@ -497,7 +561,7 @@ class AnimeDownloader(
                             download.video = download.video?.copyHttpServer(httpServer?.listeningPort ?: 0)
                         }
 
-                        downloadVideo(download, tmpDir, filename)
+                        downloadVideo(download, tmpDir, filename, retryVideoFailures)
                     } else {
                         if (download.video!!.usesHttpServer()) {
                             val (success, port) = MainActivity.startHttpServerService(context, download.source.id)
@@ -523,12 +587,14 @@ class AnimeDownloader(
             video.status = Video.State.READY
             httpServer?.stop()
             progressJob?.cancel()
+            return null
         } catch (e: Exception) {
             httpServer?.stop()
             if (e is CancellationException) throw e
             video.status = Video.State.ERROR
             notifier.onError(e.message, download.episode.name, download.anime.title, download.anime.id)
             progressJob?.cancel()
+            return e
         }
     }
 
@@ -538,11 +604,14 @@ class AnimeDownloader(
      * @param download the download reference
      * @param tmpDir the directory where placing the file
      * @param filename the name to give to download file
+     * @param retryVideoFailures whether failures from the video's server (see [isVideoFailure]) are
+     *   retried, rather than left to the caller to try another video.
      */
     private suspend fun downloadVideo(
         download: AnimeDownload,
         tmpDir: UniFile,
         filename: String,
+        retryVideoFailures: Boolean,
     ): UniFile {
         return flow {
             tmpDir.findFile("$filename.tmp")?.delete()
@@ -563,8 +632,8 @@ class AnimeDownloader(
             emit(videoFile)
         }
             // Retry 3 times, waiting 2, 4 and 8 seconds between attempts.
-            .retryWhen { _, attempt ->
-                if (attempt < 3) {
+            .retryWhen { cause, attempt ->
+                if (attempt < 3 && (retryVideoFailures || !cause.isVideoFailure())) {
                     delay((2L shl attempt.toInt()) * 1000)
                     true
                 } else {
@@ -658,7 +727,15 @@ class AnimeDownloader(
             headerOptions
         }
         val probeCommand = "$ffprobeOptions ${SourceProbe.FFPROBE_ARGS} \"${video.videoUrl}\""
-        val probe = SourceProbe.parse(runFFprobe(FFmpegKitConfig.parseArguments(probeCommand)))
+        val probeOutput = try {
+            runFFprobe(FFmpegKitConfig.parseArguments(probeCommand))
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            logcat(LogPriority.WARN, e) { "${download.episode.name}: ffprobe failed" }
+            // The probe runs quietly, so it has no reason to give
+            throw FFmpegFailedException(context.stringResource(TLMR.strings.download_video_unreadable))
+        }
+        val probe = SourceProbe.parse(probeOutput)
         duration = probe.durationSeconds?.toLong() ?: 0L
         val frameRate = probe.videoFrameRate
         val ffmpegOptions = getFFmpegOptions(video, headerOptions, ffmpegFilename(), probe.variantProgramId)
@@ -703,7 +780,7 @@ class AnimeDownloader(
                             continuation.resume(it)
                         } else {
                             localTmpFile?.delete()
-                            continuation.resumeWithException(Exception("Error in ffmpeg: ${it.failureReason()}"))
+                            continuation.resumeWithException(FFmpegFailedException(it.failureReason()))
                         }
                     },
                     logCallback,
@@ -722,7 +799,7 @@ class AnimeDownloader(
         val output = tmpDir.findFile("$filename.tmp")
         if (output == null || output.length() < MIN_VIDEO_SIZE) {
             output?.delete()
-            throw Exception("Downloaded video is empty")
+            throw IncompleteVideoException("Downloaded video is empty")
         }
         if (duration > 0) {
             val downloadedDuration = try {
@@ -733,7 +810,7 @@ class AnimeDownloader(
             }
             if (downloadedDuration != null && downloadedDuration < duration * MIN_DURATION_RATIO) {
                 output.delete()
-                throw Exception("Downloaded video is incomplete")
+                throw IncompleteVideoException("Downloaded video is incomplete")
             }
         }
         output.renameToOrCopy("$filename.mkv")
@@ -987,7 +1064,7 @@ class AnimeDownloader(
     private fun addAllToQueue(downloads: List<AnimeDownload>) {
         _queueState.update {
             downloads.forEach { download ->
-                download.status = AnimeDownload.State.QUEUE
+                if (download.failure == null) download.status = AnimeDownload.State.QUEUE
             }
             store.addAll(downloads)
             it + downloads

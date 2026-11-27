@@ -36,6 +36,28 @@ class AnimeDownload(
         }
 
     @Transient
+    private val _failureFlow = MutableStateFlow<Failure?>(null)
+
+    /**
+     * Why the download failed. Set along with the ERROR state when the download gave up, and null
+     * when it was only interrupted (paused, network lost), which starts again with the queue. A
+     * failed download stays failed until it's retried.
+     */
+    @Transient
+    val failureFlow = _failureFlow.asStateFlow()
+    var failure: Failure?
+        get() = _failureFlow.value
+        set(value) {
+            _failureFlow.value = value
+        }
+
+    /**
+     * @property reason the last error.
+     * @property failedVideos the videos that failed, in the order they were tried.
+     */
+    data class Failure(val reason: String, val failedVideos: List<String>)
+
+    @Transient
     private val progressStateFlow = MutableStateFlow(0)
 
     @Transient
