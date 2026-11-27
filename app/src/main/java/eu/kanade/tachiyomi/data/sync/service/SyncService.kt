@@ -287,24 +287,8 @@ abstract class SyncService(
     }
 
     /**
-     * Merges two lists of BackupChapter objects, selecting the most recent chapter based on the lastModifiedAt value.
-     * If lastModifiedAt is null for a chapter, it treats that chapter as the oldest possible for comparison purposes.
-     * This function is designed to reconcile local and remote chapter lists,
-     * ensuring the most up-to-date chapter is retained.
-     *
-     * @param localChapters The list of local BackupChapter objects.
-     * @param remoteChapters The list of remote BackupChapter objects.
-     * @return A list of BackupChapter objects,
-     * each representing the most recent version of the chapter from either local or remote sources.
-     *
-     * - This function is used in scenarios where local and remote chapter lists need to be synchronized.
-     * - It iterates over the union of the URLs from both local and remote chapters.
-     * - For each URL, it compares the corresponding local and remote chapters based on the lastModifiedAt value.
-     * - If only one source (local or remote) has the chapter for a URL, that chapter is used.
-     * - If both sources have the chapter, the one with the more recent lastModifiedAt value is chosen.
-     * - If lastModifiedAt is null or missing, the chapter is considered the oldest for safety,
-     * ensuring that any chapter with a valid timestamp is preferred.
-     * - The resulting list contains the most recent chapters from the combined set of local and remote chapters.
+     * Merges matching chapters by version. When neither chapter has a version, advances reading progress
+     * the same way as backup restore.
      */
     private fun mergeChapters(
         localChapters: List<BackupChapter>,
@@ -345,6 +329,16 @@ abstract class SyncService(
                 }
 
                 localChapter != null && remoteChapter != null -> {
+                    if (localChapter.version == 0L && remoteChapter.version == 0L) {
+                        val read = localChapter.read || remoteChapter.read
+                        val lastPageRead = maxOf(localChapter.lastPageRead, remoteChapter.lastPageRead)
+                        return@mapNotNull if (read == localChapter.read && lastPageRead == localChapter.lastPageRead) {
+                            localChapter
+                        } else {
+                            localChapter.copy(read = read, lastPageRead = lastPageRead)
+                        }
+                    }
+
                     // Use version number to decide which chapter to keep
                     val chosenChapter =
                         if (localChapter.version >= remoteChapter.version) localChapter else remoteChapter
