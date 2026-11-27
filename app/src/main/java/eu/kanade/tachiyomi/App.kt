@@ -129,6 +129,7 @@ import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import eu.kanade.tachiyomi.util.system.DeviceUtil
+import eu.kanade.tachiyomi.util.system.FileLogcatLogger
 import eu.kanade.tachiyomi.util.system.WebViewUtil
 import eu.kanade.tachiyomi.util.system.animatorDurationScale
 import eu.kanade.tachiyomi.util.system.cancelNotification
@@ -392,6 +393,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             }
             LogcatLogger.install()
             LogcatLogger.loggers += AndroidLogcatLogger(minLogPriority)
+            LogcatLogger.loggers += FileLogcatLogger(FileLogcatLogger.currentFile(this), minLogPriority)
         }
 
         initializeMigrator()
