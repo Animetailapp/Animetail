@@ -114,7 +114,6 @@ import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.setting.track.BaseOAuthLoginActivity
-import eu.kanade.tachiyomi.ui.webview.WebViewActivity
 import eu.kanade.tachiyomi.util.CrashLogUtil
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import kotlinx.coroutines.CoroutineScope
@@ -249,7 +248,6 @@ interface AppGraph : ViewModelGraph {
     fun inject(mainActivity: MainActivity)
     fun inject(readerActivity: ReaderActivity)
     fun inject(playerActivity: PlayerActivity)
-    fun inject(webViewActivity: WebViewActivity)
     fun inject(baseOAuthLoginActivity: BaseOAuthLoginActivity)
     fun inject(libraryUpdateJob: MangaLibraryUpdateJob)
     fun inject(animeLibraryUpdateJob: AnimeLibraryUpdateJob)
