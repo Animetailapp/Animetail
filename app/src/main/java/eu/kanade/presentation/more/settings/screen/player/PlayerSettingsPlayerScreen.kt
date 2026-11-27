@@ -34,6 +34,7 @@ import eu.kanade.tachiyomi.ui.player.settings.HOSTER_CACHE_DURATIONS
 import eu.kanade.tachiyomi.ui.player.settings.HOSTER_LIST_CACHE_DURATIONS
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.hosterCacheDurationLabel
+import eu.kanade.tachiyomi.ui.player.utils.ChapterSkipMode
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import eu.kanade.tachiyomi.util.LocalHttpServerService
 import eu.kanade.tachiyomi.util.system.toast
@@ -298,11 +299,15 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
 
     @Composable
     private fun getIntroSkipGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
-        val enableSkipIntro = playerPreferences.enableSkipIntro()
-        val isIntroSkipEnabled by enableSkipIntro.collectAsState()
+        val openingSkipMode = playerPreferences.openingSkipMode()
+        val endingSkipMode = playerPreferences.endingSkipMode()
+        val openingMode by openingSkipMode.collectAsState()
+        val endingMode by endingSkipMode.collectAsState()
+        val isIntroSkipEnabled = openingMode != ChapterSkipMode.Off || endingMode != ChapterSkipMode.Off
+        val usesCountdown = openingMode == ChapterSkipMode.Countdown ||
+            endingMode == ChapterSkipMode.Countdown ||
+            endingMode == ChapterSkipMode.PlayNext
 
-        val enableAutoAniSkip = playerPreferences.autoSkipIntro()
-        val enableNetflixAniSkip = playerPreferences.enableNetflixStyleIntroSkip()
         val waitingTimeAniSkip = playerPreferences.waitingTimeIntroSkip()
 
         // AniSkip
@@ -313,19 +318,19 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
         return Preference.PreferenceGroup(
             title = stringResource(AYMR.strings.pref_category_intro_skip),
             preferenceItems = persistentListOf(
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = enableSkipIntro,
-                    title = stringResource(AYMR.strings.pref_enable_intro_skip),
+                Preference.PreferenceItem.ListPreference(
+                    preference = openingSkipMode,
+                    entries = ChapterSkipMode.OpeningModes.associateWith {
+                        stringResource(it.titleRes)
+                    }.toPersistentMap(),
+                    title = stringResource(TLMR.strings.pref_opening_skip_mode),
                 ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = enableAutoAniSkip,
-                    title = stringResource(AYMR.strings.pref_enable_auto_skip_ani_skip),
-                    enabled = isIntroSkipEnabled,
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = enableNetflixAniSkip,
-                    title = stringResource(AYMR.strings.pref_enable_netflix_style_aniskip),
-                    enabled = isIntroSkipEnabled,
+                Preference.PreferenceItem.ListPreference(
+                    preference = endingSkipMode,
+                    entries = ChapterSkipMode.EndingModes.associateWith {
+                        stringResource(it.titleRes)
+                    }.toPersistentMap(),
+                    title = stringResource(TLMR.strings.pref_ending_skip_mode),
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = waitingTimeAniSkip,
@@ -337,8 +342,8 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                         9 to stringResource(AYMR.strings.pref_waiting_time_aniskip_9),
                         10 to stringResource(AYMR.strings.pref_waiting_time_aniskip_10),
                     ),
-                    title = stringResource(AYMR.strings.pref_waiting_time_aniskip),
-                    enabled = isIntroSkipEnabled,
+                    title = stringResource(TLMR.strings.pref_chapter_skip_countdown_time),
+                    enabled = usesCountdown,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = enableAniSkip,
