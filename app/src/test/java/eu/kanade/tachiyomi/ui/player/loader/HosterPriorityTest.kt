@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.player.loader
 
+import eu.kanade.tachiyomi.animesource.model.Video
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -73,5 +74,27 @@ class HosterPriorityTest {
         )
 
         assertEquals(listOf("Okru", "SUB Voe"), merged)
+    }
+
+    @Test
+    fun `server names are taken from the video titles of extensions without hosters`() {
+        assertEquals("Okru", HosterPriority.serverName("Okru:1080p"))
+        assertEquals("StreamWish", HosterPriority.serverName("StreamWish - 720p"))
+        assertEquals("Mp4Upload", HosterPriority.serverName("Mp4Upload 720p"))
+        assertEquals("F1S-TAPE", HosterPriority.serverName("F1S-TAPE"))
+    }
+
+    @Test
+    fun `disabled servers of an extension without hosters go last`() {
+        val videos = listOf("Okru:1080p", "StreamWish - 720p", "Okru:480p", "Uqload").map {
+            Video(videoUrl = "https://cdn.example/$it", videoTitle = it)
+        }
+
+        val sorted = HosterPriority("uqload", rawDisabled = "Okru").sortVideosWithoutHosters(videos)
+
+        assertEquals(
+            listOf("Uqload", "StreamWish - 720p", "Okru:1080p", "Okru:480p"),
+            sorted.map { it.videoTitle },
+        )
     }
 }

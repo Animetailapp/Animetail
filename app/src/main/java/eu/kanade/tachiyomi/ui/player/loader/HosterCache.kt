@@ -58,14 +58,25 @@ class HosterCache(
         hosters.freshValue(episodeKey(sourceId, episodeUrl), hosterTtl())
     }
 
-    /** Names of the hosters cached for any episode of the source, even expired ones. */
+    /**
+     * Names of the hosters cached for any episode of the source, even expired ones, or of the servers
+     * in the video titles for extensions without hosters.
+     */
     fun hosterNames(sourceId: Long): List<String> = synchronized(this) {
         restoreIfNeeded()
         val prefix = "$sourceId|"
         hosters.filterKeys { it.startsWith(prefix) }.values
-            .flatMap { entry -> entry.value.map { it.hosterName } }
-            .distinct()
+            .flatMap { entry -> entry.value.flatMap(::serverNames) }
+            .distinctBy { it.lowercase() }
     }
+
+    // Extensions without hosters send one placeholder hoster whose videos name the servers.
+    private fun serverNames(hoster: Hoster): List<String> =
+        if (hoster.hosterName == Hoster.NO_HOSTER_LIST) {
+            hoster.videoList.orEmpty().map { HosterPriority.serverName(it.videoTitle) }
+        } else {
+            listOf(hoster.hosterName)
+        }
 
     fun putHosters(sourceId: Long, episodeUrl: String, hosterList: List<Hoster>) {
         if (hosterList.isEmpty() || hosterTtl() == Duration.ZERO) return
