@@ -2,23 +2,35 @@ package eu.kanade.tachiyomi.data.track.suwayomi
 
 import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.EnhancedMangaTracker
 import eu.kanade.tachiyomi.data.track.MangaTracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.source.MangaSource
+import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.domain.entries.manga.model.Manga as DomainManga
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
 
-class Suwayomi(id: Long) : BaseTracker(id, "Suwayomi"), EnhancedMangaTracker, MangaTracker {
+@Inject
+@SingleIn(AppScope::class)
+class Suwayomi(
+    dependencies: TrackerDependencies,
+    private val sourceManager: MangaSourceManager,
+) : BaseTracker(9L, "Suwayomi", dependencies),
+    EnhancedMangaTracker,
+    MangaTracker {
 
-    val api by lazy { SuwayomiApi(id, appGraph.mangaSourceManager) }
+    val api by lazy { SuwayomiApi(id, sourceManager) }
 
     override fun getLogo() = R.drawable.ic_tracker_suwayomi
 

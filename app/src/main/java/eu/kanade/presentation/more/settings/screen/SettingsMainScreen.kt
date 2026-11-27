@@ -249,7 +249,9 @@ object SettingsMainScreen : Screen() {
         Item(
             titleRes = MR.strings.pref_category_about,
             formatSubtitle = {
+                val context = androidx.compose.ui.platform.LocalContext.current
                 "${stringResource(MR.strings.app_name)} ${AboutScreen.getVersionName(
+                    context = context,
                     withBuildDate = false,
                 )}"
             },

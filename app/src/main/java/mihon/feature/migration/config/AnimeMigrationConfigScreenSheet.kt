@@ -32,8 +32,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.util.fastForEach
-import eu.kanade.domain.source.service.SourcePreferences
+import androidx.compose.ui.platform.LocalContext
 import eu.kanade.presentation.components.AdaptiveSheet
+import mihon.app.di.appGraph
 import mihon.domain.migration.models.MigrationFlag
 import mihon.feature.common.utils.getLabel
 import tachiyomi.core.common.preference.Preference
@@ -42,15 +43,13 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.theme.active
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
 fun AnimeMigrationConfigScreenSheet(
     onDismissRequest: () -> Unit,
     onStartMigration: (extraSearchQuery: String?) -> Unit,
 ) {
-    val preferences: SourcePreferences = Injekt.get()
+    val preferences = LocalContext.current.appGraph.sourcePreferences
     var extraSearchQuery by rememberSaveable { mutableStateOf("") }
     val migrationFlagsBit by preferences.migrationFlags.collectAsState()
     val migrationFlags = remember(migrationFlagsBit) { MigrationFlag.fromBit(migrationFlagsBit) }

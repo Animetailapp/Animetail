@@ -120,9 +120,6 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.shouldExpandFAB
 import tachiyomi.source.local.entries.anime.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import java.util.concurrent.TimeUnit
 import kotlin.time.Instant
 
@@ -430,8 +427,8 @@ private fun AnimeScreenSmallImpl(
     val listItem = remember(state) { state.episodeListItems }
     val hasFilters = remember(state) {
         when (state.anime.fetchType) {
-            FetchType.Seasons -> state.anime.seasonsFiltered()
-            FetchType.Episodes -> state.anime.episodesFiltered()
+            FetchType.Seasons -> state.anime.seasonsFiltered(state.downloadedOnly)
+            FetchType.Episodes -> state.anime.episodesFiltered(state.downloadedOnly)
         }
     }
 
@@ -932,8 +929,8 @@ fun AnimeScreenLargeImpl(
     val itemListState = rememberLazyGridState()
     val hasFilters = remember(state) {
         when (state.anime.fetchType) {
-            FetchType.Seasons -> state.anime.seasonsFiltered()
-            FetchType.Episodes -> state.anime.episodesFiltered()
+            FetchType.Seasons -> state.anime.seasonsFiltered(state.downloadedOnly)
+            FetchType.Episodes -> state.anime.episodesFiltered(state.downloadedOnly)
         }
     }
 
@@ -1417,9 +1414,10 @@ private fun LazyGridScope.sharedEpisodeItems(
                 var fileSizeAsync: Long? by remember { mutableStateOf(episodeItem.fileSize) }
                 val isEpisodeDownloaded = episodeItem.downloadState == AnimeDownload.State.DOWNLOADED
                 if (isEpisodeDownloaded && showFileSize && fileSizeAsync == null) {
+                    val context = LocalContext.current
                     LaunchedEffect(episodeItem, Unit) {
                         fileSizeAsync = withIOContext {
-                            animeDownloadProvider.getEpisodeFileSize(
+                            context.appGraph.animeDownloadProvider.getEpisodeFileSize(
                                 episodeItem.episode.name,
                                 episodeItem.episode.url,
                                 episodeItem.episode.scanlator,
@@ -1555,7 +1553,3 @@ private fun Modifier.ignorePadding(gridPadding: Int) = layout { measurable, cons
         placeable.placeRelative(0, 0)
     }
 }
-
-// AM (FILE_SIZE) -->
-private val animeDownloadProvider: AnimeDownloadProvider by injectLazy()
-// <-- AM (FILE_SIZE)

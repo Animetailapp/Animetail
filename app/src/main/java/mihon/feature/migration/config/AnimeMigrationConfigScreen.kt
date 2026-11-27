@@ -50,6 +50,8 @@ import mihon.feature.migration.list.AnimeMigrationListScreen
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import androidx.compose.ui.platform.LocalContext
+import mihon.app.di.appGraph
 import tachiyomi.domain.source.anime.model.AnimeSource
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.MR
@@ -60,8 +62,6 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.shouldExpandFAB
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class AnimeMigrationConfigScreen(private val animeIds: Collection<Long>) : Screen() {
 
@@ -69,9 +69,16 @@ class AnimeMigrationConfigScreen(private val animeIds: Collection<Long>) : Scree
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { ScreenModel() }
+        val screenModel = rememberScreenModel {
+            val appGraph = context.appGraph
+            ScreenModel(
+                sourceManager = appGraph.animeSourceManager,
+                sourcePreferences = appGraph.sourcePreferences,
+            )
+        }
         val state by screenModel.state.collectAsState()
 
         var migrationSheetOpen by rememberSaveable { mutableStateOf(false) }
@@ -181,8 +188,8 @@ class AnimeMigrationConfigScreen(private val animeIds: Collection<Long>) : Scree
     }
 
     private class ScreenModel(
-        private val sourceManager: AnimeSourceManager = Injekt.get(),
-        private val sourcePreferences: SourcePreferences = Injekt.get(),
+        private val sourceManager: AnimeSourceManager,
+        private val sourcePreferences: SourcePreferences,
     ) : StateScreenModel<ScreenModel.State>(State()) {
 
         init {

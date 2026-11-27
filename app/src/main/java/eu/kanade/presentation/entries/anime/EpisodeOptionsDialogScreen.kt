@@ -65,7 +65,6 @@ import eu.kanade.presentation.components.TabbedDialogPaddings
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetHosterContent
@@ -73,7 +72,6 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetVide
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.getChangedAt
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -82,6 +80,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withIOContext
@@ -97,11 +96,8 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
-private val playerPreferences = Injekt.get<PlayerPreferences>()
 
 class EpisodeOptionsDialogScreen(
     private val useExternalDownloader: Boolean,
@@ -113,11 +109,17 @@ class EpisodeOptionsDialogScreen(
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val sm = rememberScreenModel {
+            val appGraph = context.appGraph
             EpisodeOptionsDialogScreenModel(
+                context = context.applicationContext,
                 episodeId = episodeId,
                 animeId = animeId,
                 sourceId = sourceId,
+                sourceManager = appGraph.animeSourceManager,
+                getEpisode = appGraph.getEpisode,
+                getAnime = appGraph.getAnime,
             )
         }
 
@@ -152,11 +154,14 @@ class EpisodeOptionsDialogScreen(
 }
 
 class EpisodeOptionsDialogScreenModel(
+    private val context: Context,
     episodeId: Long,
     animeId: Long,
     sourceId: Long,
+    private val sourceManager: AnimeSourceManager,
+    getEpisode: GetEpisode,
+    getAnime: GetAnime,
 ) : ScreenModel {
-    private val sourceManager: AnimeSourceManager = Injekt.get()
 
     private val _hosterState = MutableStateFlow<Result<List<HosterState>>?>(null)
     val hosterState = _hosterState.asStateFlow()
@@ -185,8 +190,8 @@ class EpisodeOptionsDialogScreenModel(
         val hasFoundPreferredVideo = AtomicBoolean(false)
 
         screenModelScope.launchIO {
-            val episode = Injekt.get<GetEpisode>().await(episodeId)!!
-            val anime = Injekt.get<GetAnime>().await(animeId)!!
+            val episode = getEpisode.await(episodeId)!!
+            val anime = getAnime.await(animeId)!!
             val source = sourceManager.getOrStub(sourceId)
 
             _episode.update { _ -> episode }
@@ -195,7 +200,7 @@ class EpisodeOptionsDialogScreenModel(
 
             val hosterListResult = withIOContext {
                 try {
-                    Result.success(EpisodeLoader.getHosters(episode, anime, source))
+                    Result.success(EpisodeLoader.getHosters(context, episode, anime, source))
                 } catch (e: Exception) {
                     Result.failure(e)
                 }
@@ -230,7 +235,7 @@ class EpisodeOptionsDialogScreenModel(
             try {
                 hosterList.mapIndexed { hosterIdx, hoster ->
                     async {
-                        val hosterState = EpisodeLoader.loadHosterVideos(source, hoster)
+                        val hosterState = EpisodeLoader.loadHosterVideos(context, source, hoster)
 
                         _hosterState.updateAt(hosterIdx, hosterState)
 
@@ -365,6 +370,7 @@ class EpisodeOptionsDialogScreenModel(
 
                 screenModelScope.launchIO {
                     val newHosterState = EpisodeLoader.loadHosterVideos(
+                        context,
                         _source.value!!,
                         _hosterList.value[hosterIndex],
                     )
@@ -501,9 +507,9 @@ private fun VideoList(
     onClickVideo: (Int, Int) -> Unit,
     getHosterList: () -> List<Hoster>?,
 ) {
-    val downloadManager = Injekt.get<AnimeDownloadManager>()
-    val clipboard = LocalClipboard.current
     val context = LocalContext.current
+    val downloadManager = context.appGraph.animeDownloadManager
+    val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val copiedString = stringResource(AYMR.strings.copied_video_link_to_clipboard)
 
@@ -581,7 +587,7 @@ private fun VideoList(
                     // start tail cast
                     onCastClicked = {
                         scope.launch {
-                            if (playerPreferences.enableCast().get()) {
+                            if (context.appGraph.playerPreferences.enableCast().get()) {
                                 sendChaptersToCast(
                                     context,
                                     anime.title,

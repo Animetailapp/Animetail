@@ -98,7 +98,7 @@ data object BrowseTab : Tab {
         val mangaExtensionsTabContent = mangaExtensionsTab(mangaExtensionsViewModel)
 
         // KMK -->
-        val feedScreenModel = rememberScreenModel { FeedScreenModel() }
+        val feedScreenModel = rememberScreenModel { FeedScreenModel(context.appGraph) }
         // KMK <--
 
         val tabs = when {

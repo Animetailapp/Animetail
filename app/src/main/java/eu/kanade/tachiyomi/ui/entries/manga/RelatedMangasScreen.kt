@@ -31,6 +31,7 @@ import eu.kanade.presentation.library.components.EntryComfortableGridItem
 import eu.kanade.tachiyomi.ui.browse.manga.source.browse.BrowseMangaSourceScreen
 import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearchScreen
 import kotlinx.coroutines.CoroutineScope
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaCover
@@ -44,8 +45,6 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.plus
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
 fun RelatedMangasScreen(
@@ -55,7 +54,8 @@ fun RelatedMangasScreen(
     scope: CoroutineScope,
     successState: MangaViewModel.State.Success,
 ) {
-    val sourcePreferences: SourcePreferences = Injekt.get()
+    val appGraph = androidx.compose.ui.platform.LocalContext.current.appGraph
+    val sourcePreferences = appGraph.sourcePreferences
     var displayMode by sourcePreferences.sourceDisplayMode.asState(scope)
 
     val haptic = LocalHapticFeedback.current
@@ -79,7 +79,7 @@ fun RelatedMangasScreen(
         RelatedMangasContent(
             relatedMangas = successState.relatedMangasSorted,
             getMangaState = { manga -> viewModel.getManga(initialManga = manga) },
-            columns = getColumnsPreference(LocalConfiguration.current.orientation),
+            columns = getColumnsPreference(LocalConfiguration.current.orientation, appGraph.libraryPreferences),
             contentPadding = paddingValues,
             onMangaClick = {
                 scope.launchIO {
@@ -214,9 +214,7 @@ fun RelatedMangasContent(
     }
 }
 
-private fun getColumnsPreference(orientation: Int): GridCells {
-    val libraryPreferences: LibraryPreferences = Injekt.get()
-
+private fun getColumnsPreference(orientation: Int, libraryPreferences: LibraryPreferences): GridCells {
     val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
     val columns = if (isLandscape) {
         libraryPreferences.mangaLandscapeColumns

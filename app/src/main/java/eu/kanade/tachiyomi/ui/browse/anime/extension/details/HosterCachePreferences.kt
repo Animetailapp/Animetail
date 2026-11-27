@@ -8,13 +8,11 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.ui.player.loader.HosterCache
 import eu.kanade.tachiyomi.ui.player.settings.HOSTER_CACHE_DURATIONS
 import eu.kanade.tachiyomi.ui.player.settings.HOSTER_LIST_CACHE_DURATIONS
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.hosterCacheDurationLabel
 import eu.kanade.tachiyomi.util.system.toast
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import tachiyomi.core.common.preference.Preference as AppPreference
 
 /**
@@ -23,7 +21,7 @@ import tachiyomi.core.common.preference.Preference as AppPreference
  * summary; only clearing the cache is per source.
  */
 fun PreferenceScreen.addHosterCachePreferences(sourceId: Long) {
-    val preferences = Injekt.get<PlayerPreferences>()
+    val preferences = context.appGraph.playerPreferences
 
     val category = PreferenceCategory(context).apply {
         title = context.stringResource(AYMR.strings.pref_hoster_cache)
@@ -53,7 +51,7 @@ fun PreferenceScreen.addHosterCachePreferences(sourceId: Long) {
             summary = context.stringResource(AYMR.strings.pref_hoster_cache_clear_source_summary)
             isIconSpaceReserved = false
             setOnPreferenceClickListener {
-                HosterCache.shared.clearSource(sourceId)
+                HosterCache.shared(context).clearSource(sourceId)
                 context.toast(AYMR.strings.pref_hoster_cache_cleared)
                 true
             }

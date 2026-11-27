@@ -19,11 +19,10 @@ import eu.kanade.presentation.browse.anime.components.BrowseSourceSimpleToolbar
 import eu.kanade.tachiyomi.ui.browse.anime.source.browse.BrowseAnimeSourceScreen
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
 import kotlinx.coroutines.CoroutineScope
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.presentation.core.components.material.Scaffold
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
 fun RelatedAnimesScreen(
@@ -33,7 +32,8 @@ fun RelatedAnimesScreen(
     scope: CoroutineScope,
     successState: AnimeViewModel.State.Success,
 ) {
-    val sourcePreferences: SourcePreferences = Injekt.get()
+    val appGraph = androidx.compose.ui.platform.LocalContext.current.appGraph
+    val sourcePreferences = appGraph.sourcePreferences
     var displayMode by sourcePreferences.sourceDisplayMode.asState(scope)
 
     val haptic = LocalHapticFeedback.current
@@ -57,7 +57,7 @@ fun RelatedAnimesScreen(
         RelatedAnimesContent(
             relatedAnimes = successState.relatedAnimesSorted,
             getMangaState = { manga -> viewModel.getManga(initialManga = manga) },
-            columns = getColumnsPreference(LocalConfiguration.current.orientation),
+            columns = getColumnsPreference(LocalConfiguration.current.orientation, appGraph.libraryPreferences),
             displayMode = displayMode,
             contentPadding = paddingValues,
             onMangaClick = {
@@ -83,9 +83,7 @@ fun RelatedAnimesScreen(
     }
 }
 
-private fun getColumnsPreference(orientation: Int): GridCells {
-    val libraryPreferences: LibraryPreferences = Injekt.get()
-
+private fun getColumnsPreference(orientation: Int, libraryPreferences: LibraryPreferences): GridCells {
     val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
     val columns = if (isLandscape) {
         libraryPreferences.animeLandscapeColumns

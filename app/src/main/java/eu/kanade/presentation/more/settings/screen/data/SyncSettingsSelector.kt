@@ -19,6 +19,7 @@ import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.update
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.LabeledCheckbox
@@ -26,15 +27,13 @@ import tachiyomi.presentation.core.components.LazyColumnWithAction
 import tachiyomi.presentation.core.components.SectionCard
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class SyncSettingsSelector : Screen() {
     @Composable
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val model = rememberScreenModel { SyncSettingsSelectorModel() }
+        val model = rememberScreenModel { SyncSettingsSelectorModel(context.appGraph.syncPreferences) }
         val state by model.state.collectAsState()
 
         Scaffold(
@@ -94,7 +93,7 @@ class SyncSettingsSelector : Screen() {
 }
 
 private class SyncSettingsSelectorModel(
-    val syncPreferences: SyncPreferences = Injekt.get(),
+    val syncPreferences: SyncPreferences,
 ) : StateScreenModel<SyncSettingsSelectorModel.State>(
     State(syncOptionsToBackupOptions(syncPreferences.getSyncSettings())),
 ) {

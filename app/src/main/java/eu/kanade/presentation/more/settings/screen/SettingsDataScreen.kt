@@ -604,8 +604,10 @@ object SettingsDataScreen : SearchableSettings {
     private fun getGoogleDrivePurge(): Preference.PreferenceItem.TextPreference {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
-        val googleDriveSync =
-            remember { GoogleDriveSyncService(context, context.appGraph.json, context.appGraph.syncPreferences) }
+        val googleDriveSync = remember {
+            val appGraph = context.appGraph
+            GoogleDriveSyncService(context, appGraph.json, appGraph.syncPreferences, appGraph.protoBuf)
+        }
         var showPurgeDialog by remember { mutableStateOf(false) }
 
         if (showPurgeDialog) {

@@ -78,6 +78,7 @@ import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import mihon.feature.migration.config.AnimeMigrationConfigScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
@@ -207,8 +208,10 @@ class AnimeScreen(
             navigateUp = navigator::pop,
             onEpisodeClicked = { episode, alt ->
                 scope.launchIO {
-                    if (viewModel.isTorrentEnabled() && successState.source.isSourceForTorrents()) {
-                        TorrentServerService.start()
+                    if (viewModel.isTorrentEnabled() &&
+                        successState.source.isSourceForTorrents(context.appGraph.animeExtensionManager)
+                    ) {
+                        TorrentServerService.start(context)
                     }
                     val extPlayer = viewModel.alwaysUseExternalPlayer != alt
                     openEpisode(context, episode, extPlayer)
@@ -415,7 +418,7 @@ class AnimeScreen(
                 MigrateAnimeDialog(
                     oldAnime = dialog.oldAnime,
                     newAnime = dialog.newAnime,
-                    screenModel = MigrateAnimeDialogScreenModel(),
+                    screenModel = MigrateAnimeDialogScreenModel(context.appGraph),
                     onDismissRequest = onDismissRequest,
                     onClickTitle = { navigator.push(AnimeScreen(dialog.oldAnime.id)) },
                     onClickSeasons = { navigator.push(MigrateSeasonSelectScreen(dialog.oldAnime, dialog.newAnime)) },
@@ -474,7 +477,19 @@ class AnimeScreen(
             }
 
             AnimeViewModel.Dialog.FullImages -> {
-                val sm = rememberScreenModel { AnimeImageScreenModel(successState.anime.id) }
+                val sm = rememberScreenModel {
+                    val appGraph = context.appGraph
+                    AnimeImageScreenModel(
+                        animeId = successState.anime.id,
+                        getAnime = appGraph.getAnime,
+                        imageSaver = appGraph.imageSaver,
+                        coverCache = appGraph.animeCoverCache,
+                        backgroundCache = appGraph.animeBackgroundCache,
+                        updateAnime = appGraph.updateAnime,
+                        coverManager = appGraph.localAnimeCoverManager,
+                        backgroundManager = appGraph.localAnimeBackgroundManager,
+                    )
+                }
                 val anime by sm.state.collectAsStateWithLifecycle()
                 if (anime != null) {
                     val getContent = rememberLauncherForActivityResult(
@@ -487,8 +502,10 @@ class AnimeScreen(
                         anime = anime!!,
                         snackbarHostState = sm.snackbarHostState,
                         pagerState = sm.pagerState,
-                        isCustomCover = remember(anime) { anime!!.hasCustomCover() },
-                        isCustomBackground = remember(anime) { anime!!.hasCustomBackground() },
+                        isCustomCover = remember(anime) { anime!!.hasCustomCover(context.appGraph.animeCoverCache) },
+                        isCustomBackground = remember(anime) {
+                            anime!!.hasCustomBackground(context.appGraph.animeBackgroundCache)
+                        },
                         onShareClick = { sm.shareImage(context) },
                         onSaveClick = { sm.saveImage(context) },
                         onEditClick = {

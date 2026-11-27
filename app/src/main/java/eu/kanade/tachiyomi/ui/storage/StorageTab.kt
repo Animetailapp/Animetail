@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import mihon.app.di.appGraph
 import eu.kanade.presentation.components.TabbedScreen
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
@@ -45,7 +46,7 @@ data object StorageTab : Tab {
         )
         val state = rememberPagerState { tabs.size }
         // KMK -->
-        val feedScreenModel = rememberScreenModel { FeedScreenModel() }
+        val feedScreenModel = rememberScreenModel { FeedScreenModel(context.appGraph) }
         // KMK <--
 
         TabbedScreen(

@@ -103,8 +103,6 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.clickableNoIndication
 import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.presentation.core.util.secondaryItemAlpha
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.math.roundToInt
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -653,8 +651,10 @@ private fun ColumnScope.AnimeContentInfo(
                     tint = MaterialTheme.colorScheme.error,
                 )
             }
+            val context = LocalContext.current
+            val sourcePreferences = remember { context.appGraph.sourcePreferences }
             Text(
-                text = source.getNameForAnimeInfo(),
+                text = source.getNameForAnimeInfo(sourcePreferences),
                 modifier = Modifier.clickableNoIndication {
                     doSearch(
                         source.query(),

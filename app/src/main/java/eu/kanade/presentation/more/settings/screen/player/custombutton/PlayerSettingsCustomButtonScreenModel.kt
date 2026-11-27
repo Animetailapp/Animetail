@@ -23,18 +23,16 @@ import tachiyomi.domain.custombuttons.interactor.UpdateCustomButton
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.domain.custombuttons.model.CustomButtonUpdate
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class PlayerSettingsCustomButtonScreenModel(
-    private val getCustomButtons: GetCustomButtons = Injekt.get(),
-    private val createCustomButton: CreateCustomButton = Injekt.get(),
-    private val deleteCustomButton: DeleteCustomButton = Injekt.get(),
-    private val updateCustomButton: UpdateCustomButton = Injekt.get(),
-    private val reorderCustomButton: ReorderCustomButton = Injekt.get(),
-    private val toggleFavoriteCustomButton: ToggleFavoriteCustomButton = Injekt.get(),
+    private val getCustomButtons: GetCustomButtons,
+    private val createCustomButton: CreateCustomButton,
+    private val deleteCustomButton: DeleteCustomButton,
+    private val updateCustomButton: UpdateCustomButton,
+    private val reorderCustomButton: ReorderCustomButton,
+    private val toggleFavoriteCustomButton: ToggleFavoriteCustomButton,
     // AM -->
-    private val mpvConfig: MpvConfig = Injekt.get(),
+    private val mpvConfig: MpvConfig,
     // <-- AM
 ) : StateScreenModel<CustomButtonScreenState>(CustomButtonScreenState.Loading) {
 

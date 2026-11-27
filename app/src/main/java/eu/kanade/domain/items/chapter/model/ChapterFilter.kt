@@ -13,10 +13,14 @@ import tachiyomi.source.local.entries.manga.isLocal
  * Applies the view filters to the list of chapters obtained from the database.
  * @return an observable of the list of chapters filtered and sorted.
  */
-fun List<Chapter>.applyFilters(manga: Manga, downloadManager: MangaDownloadManager): List<Chapter> {
+fun List<Chapter>.applyFilters(
+    manga: Manga,
+    downloadedOnly: Boolean,
+    downloadManager: MangaDownloadManager,
+): List<Chapter> {
     val isLocalManga = manga.isLocal()
     val unreadFilter = manga.unreadFilter
-    val downloadedFilter = manga.downloadedFilter
+    val downloadedFilter = manga.downloadedFilter(downloadedOnly)
     val bookmarkedFilter = manga.bookmarkedFilter
 
     return filter { chapter -> applyFilter(unreadFilter) { !chapter.read } }
@@ -40,10 +44,10 @@ fun List<Chapter>.applyFilters(manga: Manga, downloadManager: MangaDownloadManag
  * Applies the view filters to the list of chapters obtained from the database.
  * @return an observable of the list of chapters filtered and sorted.
  */
-fun List<ChapterList.Item>.applyFilters(manga: Manga): Sequence<ChapterList.Item> {
+fun List<ChapterList.Item>.applyFilters(manga: Manga, downloadedOnly: Boolean): Sequence<ChapterList.Item> {
     val isLocalManga = manga.isLocal()
     val unreadFilter = manga.unreadFilter
-    val downloadedFilter = manga.downloadedFilter
+    val downloadedFilter = manga.downloadedFilter(downloadedOnly)
     val bookmarkedFilter = manga.bookmarkedFilter
     return asSequence()
         .filter { (chapter) -> applyFilter(unreadFilter) { !chapter.read } }

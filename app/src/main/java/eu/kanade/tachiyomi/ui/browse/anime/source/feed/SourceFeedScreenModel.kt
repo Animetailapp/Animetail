@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import mihon.app.di.AppGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
@@ -50,28 +51,40 @@ import tachiyomi.domain.source.anime.model.FeedSavedSearchUpdate
 import tachiyomi.domain.source.anime.model.SavedSearch
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.tail.TLMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 import java.util.concurrent.Executors
 import tachiyomi.domain.entries.anime.model.Anime as DomainAnime
 
 open class SourceFeedScreenModel(
     val sourceId: Long,
-    uiPreferences: UiPreferences = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
-    private val getFeedSavedSearchBySourceId: GetFeedSavedSearchBySourceId = Injekt.get(),
-    private val getSavedSearchBySourceIdFeed: GetSavedSearchBySourceIdFeed = Injekt.get(),
-    private val countFeedSavedSearchBySourceId: CountFeedSavedSearchBySourceId = Injekt.get(),
-    private val insertFeedSavedSearch: InsertFeedSavedSearch = Injekt.get(),
-    private val deleteFeedSavedSearchById: DeleteFeedSavedSearchById = Injekt.get(),
-    private val getExhSavedSearch: GetExhSavedSearch = Injekt.get(),
+    uiPreferences: UiPreferences,
+    private val sourceManager: AnimeSourceManager,
+    private val getAnime: GetAnime,
+    val networkToLocalAnime: NetworkToLocalAnime,
+    private val getFeedSavedSearchBySourceId: GetFeedSavedSearchBySourceId,
+    private val getSavedSearchBySourceIdFeed: GetSavedSearchBySourceIdFeed,
+    private val countFeedSavedSearchBySourceId: CountFeedSavedSearchBySourceId,
+    private val insertFeedSavedSearch: InsertFeedSavedSearch,
+    private val deleteFeedSavedSearchById: DeleteFeedSavedSearchById,
+    private val getExhSavedSearch: GetExhSavedSearch,
     // KMK -->
-    private val reorderFeed: ReorderFeed = Injekt.get(),
+    private val reorderFeed: ReorderFeed,
     // KMK <--
 ) : StateScreenModel<SourceFeedState>(SourceFeedState()) {
+    constructor(sourceId: Long, appGraph: AppGraph) : this(
+        sourceId = sourceId,
+        uiPreferences = appGraph.uiPreferences,
+        sourceManager = appGraph.animeSourceManager,
+        getAnime = appGraph.getAnime,
+        networkToLocalAnime = appGraph.networkToLocalAnime,
+        getFeedSavedSearchBySourceId = appGraph.getFeedSavedSearchBySourceId,
+        getSavedSearchBySourceIdFeed = appGraph.getSavedSearchBySourceIdFeed,
+        countFeedSavedSearchBySourceId = appGraph.countFeedSavedSearchBySourceId,
+        insertFeedSavedSearch = appGraph.insertFeedSavedSearch,
+        deleteFeedSavedSearchById = appGraph.deleteFeedSavedSearchById,
+        getExhSavedSearch = appGraph.getExhSavedSearch,
+        reorderFeed = appGraph.reorderFeed,
+    )
 
     var source = sourceManager.getOrStub(sourceId)
 

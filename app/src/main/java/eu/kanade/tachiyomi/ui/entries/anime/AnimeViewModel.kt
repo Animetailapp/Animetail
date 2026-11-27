@@ -32,6 +32,7 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
+import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.entries.anime.interactor.GetAnimeAudioLanguage
 import eu.kanade.domain.entries.anime.interactor.SetAnimeAudioLanguage
 import eu.kanade.domain.entries.anime.interactor.SetAnimeViewerFlags
@@ -68,6 +69,7 @@ import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.torrent.service.TorrentServerService
 import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
+import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.source.anime.isSourceForTorrents
 import eu.kanade.tachiyomi.ui.entries.anime.RelatedAnime.Companion.isLoading
@@ -159,7 +161,9 @@ class AnimeViewModel(
     private val context: Context,
     @Assisted private val animeId: Long,
     @Assisted private val isFromSource: Boolean,
+    private val basePreferences: BasePreferences,
     private val downloadPreferences: DownloadPreferences,
+    private val extensionManager: AnimeExtensionManager,
     private val libraryPreferences: LibraryPreferences,
     private val trackPreferences: TrackPreferences,
     internal val playerPreferences: PlayerPreferences,
@@ -285,17 +289,14 @@ class AnimeViewModel(
 
     init {
         viewModelScope.launchIO {
-            combine<
-                Triple<Anime, List<Episode>, List<SeasonAnime>>,
-                Unit,
-                List<AnimeDownload>,
-                Triple<Anime, List<Episode>, List<SeasonAnime>>,
-                >(
+            combine(
                 getAnimeAndEpisodesAndSeasons.subscribe(animeId).distinctUntilChanged(),
                 downloadCache.changes,
                 downloadManager.queueState,
-            ) { animeAndEpisodesAndSeasons, _, _ -> animeAndEpisodesAndSeasons }
-                .collectLatest { (anime, episodes, seasons) ->
+                basePreferences.downloadedOnly.changes(),
+            ) { animeAndEpisodesAndSeasons, _, _, downloadedOnly -> animeAndEpisodesAndSeasons to downloadedOnly }
+                .collectLatest { (animeAndEpisodesAndSeasons, downloadedOnly) ->
+                    val (anime, episodes, seasons) = animeAndEpisodesAndSeasons
                     // Preserve any cast we previously fetched and cached in memory so the UI
                     // doesn't flash when the DB flow emits an anime without cast.
                     val animeWithCast = anime.copy(
@@ -306,6 +307,7 @@ class AnimeViewModel(
                             anime = animeWithCast,
                             episodes = episodes.toEpisodeListItems(animeWithCast),
                             seasons = seasons.toAnimeSeasonItems(),
+                            downloadedOnly = downloadedOnly,
                         )
                     }
                 }
@@ -342,9 +344,9 @@ class AnimeViewModel(
 
             val animeSource = sourceManager.getOrStub(anime.source)
             // --> (Torrent)
-            if (animeSource.isSourceForTorrents()) {
-                TorrentServerService.start()
-                TorrentServerService.wait(10)
+            if (animeSource.isSourceForTorrents(extensionManager)) {
+                TorrentServerService.start(context)
+                TorrentServerService.wait(context, 10)
                 torrentServerUtils.setTrackersList()
             }
             // <-- (Torrent)
@@ -363,6 +365,7 @@ class AnimeViewModel(
                     seasons = seasons,
                     isRefreshingData = needRefreshInfo || needRefreshEpisode || needRefreshSeason,
                     dialog = null,
+                    downloadedOnly = basePreferences.downloadedOnly.get(),
                 )
             }
             // Start observe tracking since it only needs animeId
@@ -876,9 +879,9 @@ class AnimeViewModel(
     }
 
     private suspend fun startTorrentServer(source: AnimeSource?) {
-        if (isTorrentEnabled() && source.isSourceForTorrents()) {
-            TorrentServerService.start()
-            TorrentServerService.wait(10)
+        if (isTorrentEnabled() && source.isSourceForTorrents(extensionManager)) {
+            TorrentServerService.start(context)
+            TorrentServerService.wait(context, 10)
             torrentServerUtils.setTrackersList()
         }
     }
@@ -1039,7 +1042,8 @@ class AnimeViewModel(
     }
 
     suspend fun getNextUnseenEpisode(anime: Anime): Episode? {
-        return getEpisodesByAnimeId.await(anime.id).getNextUnseen(anime, downloadManager)
+        return getEpisodesByAnimeId.await(anime.id)
+            .getNextUnseen(anime, basePreferences.downloadedOnly.get(), downloadManager)
     }
 
     /**
@@ -1047,7 +1051,7 @@ class AnimeViewModel(
      */
     fun getNextUnseenEpisode(): Episode? {
         val successState = successState ?: return null
-        return successState.episodes.getNextUnseen(successState.anime)
+        return successState.episodes.getNextUnseen(successState.anime, successState.downloadedOnly)
     }
 
     private fun getUnseenEpisodes(): List<Episode> {
@@ -2042,6 +2046,7 @@ class AnimeViewModel(
              */
             val relatedAnimeCollection: List<RelatedAnime>? = null,
             // KMK <--
+            val downloadedOnly: Boolean = false,
         ) : State {
 
             val processedSeasons by lazy {
@@ -2116,7 +2121,7 @@ class AnimeViewModel(
             private fun List<EpisodeList.Item>.applyFilters(anime: Anime): Sequence<EpisodeList.Item> {
                 val isLocalAnime = anime.isLocal()
                 val unseenFilter = anime.unseenFilter
-                val downloadedFilter = anime.downloadedFilter
+                val downloadedFilter = anime.downloadedFilter(downloadedOnly)
                 val bookmarkedFilter = anime.bookmarkedFilter
                 val fillermarkedFilter = anime.fillermarkedFilter
                 return asSequence()
@@ -2134,7 +2139,7 @@ class AnimeViewModel(
 
             private fun List<AnimeSeasonItem>.applySeasonFilters(anime: Anime): Sequence<AnimeSeasonItem> {
                 val unseenFilter = anime.seasonUnseenFilter
-                val downloadedFilter = anime.seasonDownloadedFilter
+                val downloadedFilter = anime.seasonDownloadedFilter(downloadedOnly)
                 val startedFilter = anime.seasonStartedFilter
                 val completedFilter = anime.seasonCompletedFilter
                 val bookmarkedFilter = anime.seasonBookmarkedFilter

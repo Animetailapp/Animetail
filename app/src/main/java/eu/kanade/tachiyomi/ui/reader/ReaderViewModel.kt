@@ -35,6 +35,7 @@ import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.data.saver.Image
 import eu.kanade.tachiyomi.data.saver.ImageSaver
 import eu.kanade.tachiyomi.data.saver.Location
+import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.online.HttpSource
@@ -132,6 +133,7 @@ class ReaderViewModel(
     private val coverCache: MangaCoverCache,
     private val chapterCache: ChapterCache,
     private val downloadCache: MangaDownloadCache,
+    private val networkHelper: NetworkHelper,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -376,6 +378,7 @@ class ReaderViewModel(
                     source = source,
                     readerPreferences = readerPreferences,
                     sourcePreferences = sourcePreferences,
+                    networkHelper = networkHelper,
                     canLoadAhead = ::canLoadAhead,
                 )
 

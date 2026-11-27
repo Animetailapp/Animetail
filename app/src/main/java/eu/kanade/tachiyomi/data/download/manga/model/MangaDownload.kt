@@ -15,8 +15,6 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.interactor.GetChapter
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.milliseconds
 
 data class MangaDownload(
@@ -85,9 +83,9 @@ data class MangaDownload(
     companion object {
         suspend fun fromChapterId(
             chapterId: Long,
-            getChapter: GetChapter = Injekt.get(),
-            getManga: GetManga = Injekt.get(),
-            sourceManager: MangaSourceManager = Injekt.get(),
+            getChapter: GetChapter,
+            getManga: GetManga,
+            sourceManager: MangaSourceManager,
         ): MangaDownload? {
             val chapter = getChapter.await(chapterId) ?: return null
             val manga = getManga.await(chapter.mangaId) ?: return null

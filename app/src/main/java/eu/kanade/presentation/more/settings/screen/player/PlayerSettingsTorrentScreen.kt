@@ -23,13 +23,12 @@ import eu.kanade.presentation.more.settings.screen.SearchableSettings
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.data.torrent.service.TorrentServerService
 import kotlinx.collections.immutable.toPersistentMap
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object PlayerSettingsTorrentScreen : Screen(), SearchableSettings {
 
@@ -39,9 +38,10 @@ object PlayerSettingsTorrentScreen : Screen(), SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
+        val context = androidx.compose.ui.platform.LocalContext.current
         var isDialogShown by rememberSaveable { mutableStateOf(false) }
 
-        val torrentPreferences = remember { Injekt.get<TorrentPreferences>() }
+        val torrentPreferences = remember { context.appGraph.torrentPreferences }
 
         val torrentEnablePref = torrentPreferences.torrServerEnable()
         val torrentEnable by torrentEnablePref.collectAsState()
@@ -83,7 +83,7 @@ object PlayerSettingsTorrentScreen : Screen(), SearchableSettings {
                         shownNoticePref.set(true)
                     }
                     if (!it) {
-                        TorrentServerService.stop()
+                        TorrentServerService.stop(context)
                     }
                     true
                 },
@@ -119,7 +119,7 @@ object PlayerSettingsTorrentScreen : Screen(), SearchableSettings {
                         )
                 },
                 onValueChanged = {
-                    TorrentServerService.stop()
+                    TorrentServerService.stop(context)
                     true
                 },
                 enabled = torrentEnable,

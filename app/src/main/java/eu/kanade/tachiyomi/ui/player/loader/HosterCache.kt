@@ -1,10 +1,9 @@
 package eu.kanade.tachiyomi.ui.player.loader
 
+import android.content.Context
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import mihon.app.di.appGraph
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -102,18 +101,25 @@ class HosterCache(
         private const val DEFAULT_MAX_EPISODES = 50
         private const val DEFAULT_MAX_HOSTERS = 300
 
+        @Volatile
+        private var sharedInstance: HosterCache? = null
+
         /**
          * Cache shared by the player, the episode options dialog and the downloader, expiring
          * after the durations set in the player settings.
          */
-        val shared by lazy {
-            val preferences = Injekt.get<PlayerPreferences>()
-            val hosterListMinutes = preferences.hosterListCacheMinutes()
-            val videoMinutes = preferences.hosterCacheMinutes()
-            HosterCache(
-                hosterTtl = { hosterListMinutes.get().minutes },
-                videoTtl = { videoMinutes.get().minutes },
-            )
+        fun shared(context: Context): HosterCache {
+            return sharedInstance ?: synchronized(this) {
+                sharedInstance ?: run {
+                    val preferences = context.applicationContext.appGraph.playerPreferences
+                    val hosterListMinutes = preferences.hosterListCacheMinutes()
+                    val videoMinutes = preferences.hosterCacheMinutes()
+                    HosterCache(
+                        hosterTtl = { hosterListMinutes.get().minutes },
+                        videoTtl = { videoMinutes.get().minutes },
+                    ).also { sharedInstance = it }
+                }
+            }
         }
     }
 }

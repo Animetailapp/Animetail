@@ -402,7 +402,7 @@ class AnimeDownloader(
             }
 
             if (!isDownloadSuccessful(download, tmpDir)) {
-                EpisodeLoader.invalidateCache(download.episode, download.source)
+                EpisodeLoader.invalidateCache(context, download.episode, download.source)
                 download.status = AnimeDownload.State.ERROR
                 return
             }
@@ -421,7 +421,7 @@ class AnimeDownloader(
             if (error is CancellationException) throw error
             // If the video threw, it will resume here
             logcat(LogPriority.ERROR, error)
-            EpisodeLoader.invalidateCache(download.episode, download.source)
+            EpisodeLoader.invalidateCache(context, download.episode, download.source)
             download.status = AnimeDownload.State.ERROR
             notifier.onError(
                 error.message,
@@ -436,11 +436,11 @@ class AnimeDownloader(
         download: AnimeDownload,
         failedVideos: Set<Pair<String, String>>,
     ): Pair<Hoster, Video> {
-        val hosters = EpisodeLoader.getHosters(download.episode, download.anime, download.source)
+        val hosters = EpisodeLoader.getHosters(context, download.episode, download.anime, download.source)
         if (hosters.isEmpty()) {
             throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
         }
-        return HosterLoader.getBestHosterVideo(download.source, hosters) { hoster, video ->
+        return HosterLoader.getBestHosterVideo(context, download.source, hosters) { hoster, video ->
             (hoster.hosterName to video.videoTitle) in failedVideos
         }
             ?: throw Exception(context.stringResource(AYMR.strings.video_list_empty_error))
@@ -586,7 +586,7 @@ class AnimeDownloader(
         filename: String,
     ) {
         val video = download.video!!
-        TorrentServerService.start()
+        TorrentServerService.start(context)
         if (video.videoUrl.startsWith(torrentServerApi.hostUrl)) {
             val hash = video.videoUrl.substringAfter("link=").substringBefore("&")
             val index = video.videoUrl.substringAfter("index=").substringBefore("&").toInt()

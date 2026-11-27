@@ -7,9 +7,11 @@ import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import tachiyomi.domain.entries.manga.model.MangaCover
 import tachiyomi.domain.entries.manga.model.Manga as DomainManga
 
-class MangaKeyer : Keyer<DomainManga> {
+class MangaKeyer(
+    private val coverCache: MangaCoverCache,
+) : Keyer<DomainManga> {
     override fun key(data: DomainManga, options: Options): String {
-        return if (data.favorite && data.hasCustomCover()) {
+        return if (data.favorite && data.hasCustomCover(coverCache)) {
             "manga;${data.id};${data.coverLastModified}"
         } else {
             "manga;${data.thumbnailUrl};${data.coverLastModified}"

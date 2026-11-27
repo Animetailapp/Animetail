@@ -2,12 +2,16 @@ package eu.kanade.tachiyomi.data.track.bangumi
 
 import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.MangaTracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
 import eu.kanade.tachiyomi.data.track.bangumi.dto.BGMOAuth
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
@@ -17,17 +21,21 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
-class Bangumi(id: Long) : BaseTracker(id, "Bangumi"), MangaTracker, AnimeTracker {
+@Inject
+@SingleIn(AppScope::class)
+class Bangumi(
+    dependencies: TrackerDependencies,
+    private val json: Json,
+) : BaseTracker(5L, "Bangumi", dependencies),
+    MangaTracker,
+    AnimeTracker {
 
-    private val json: Json by injectLazy()
+    private val interceptor by lazy { BangumiInterceptor(this, json) }
 
-    private val interceptor by lazy { BangumiInterceptor(this) }
-
-    private val api by lazy { BangumiApi(id, client, interceptor) }
+    private val api by lazy { BangumiApi(id, client, interceptor, json) }
 
     override val supportsPrivateTracking: Boolean = true
 

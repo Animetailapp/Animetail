@@ -43,9 +43,8 @@ import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadProvider
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.ui.updates.anime.AnimeUpdatesItem
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.withIOContext
-import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.domain.updates.anime.model.AnimeUpdatesWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -54,7 +53,6 @@ import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.selectedBackground
-import uy.kohesive.injekt.injectLazy
 import java.util.concurrent.TimeUnit
 
 internal fun LazyListScope.animeUpdatesLastUpdatedItem(
@@ -265,21 +263,23 @@ private fun AnimeUpdatesUiItem(
             }
         }
 // AM (FILE_SIZE) -->
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val appGraph = remember(context) { context.appGraph }
         var fileSizeAsync: Long? by remember { mutableStateOf(updatesItem.fileSize) }
         if (downloadStateProvider() == AnimeDownload.State.DOWNLOADED &&
-            storagePreferences.showEpisodeFileSize.get() &&
+            appGraph.storagePreferences.showEpisodeFileSize.get() &&
             fileSizeAsync == null
         ) {
             LaunchedEffect(update, Unit) {
                 fileSizeAsync = withIOContext {
-                    animeDownloadProvider.getEpisodeFileSize(
+                    appGraph.animeDownloadProvider.getEpisodeFileSize(
                         update.episodeName,
                         null,
                         update.scanlator,
                         // AM (CUSTOM_INFORMATION) -->
                         update.animeTitle,
                         // <-- AM (CUSTOM_INFORMATION)
-                        animeSourceManager.getOrStub(update.sourceId),
+                        appGraph.animeSourceManager.getOrStub(update.sourceId),
                     )
                 }
                 updatesItem.fileSize = fileSizeAsync
@@ -319,9 +319,3 @@ private fun formatProgress(milliseconds: Long): String {
         )
     }
 }
-
-// AM (FILE_SIZE) -->
-private val storagePreferences: StoragePreferences by injectLazy()
-private val animeDownloadProvider: AnimeDownloadProvider by injectLazy()
-private val animeSourceManager: AnimeSourceManager by injectLazy()
-// <-- AM (FILE_SIZE)

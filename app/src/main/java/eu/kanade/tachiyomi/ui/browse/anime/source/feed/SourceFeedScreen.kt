@@ -36,6 +36,7 @@ import eu.kanade.tachiyomi.ui.browse.anime.source.browse.SourceFilterAnimeDialog
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.toast
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.source.anime.interactor.GetRemoteAnime
@@ -55,10 +56,10 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
             return
         }
 
-        val screenModel = rememberScreenModel { SourceFeedScreenModel(sourceId) }
+        val context = LocalContext.current
+        val screenModel = rememberScreenModel { SourceFeedScreenModel(sourceId, context.appGraph) }
         val state by screenModel.state.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
-        val context = LocalContext.current
 
         // KMK -->
         val scope = rememberCoroutineScope()
@@ -148,7 +149,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                             supportsLatest = false,
                             isStub = false,
                         )
-                        dummy.installedExtension?.let {
+                        dummy.installedExtension(context.appGraph.animeExtensionManager)?.let {
                             navigator.push(AnimeExtensionDetailsScreen(it.pkgName))
                         }
                     }.takeIf {

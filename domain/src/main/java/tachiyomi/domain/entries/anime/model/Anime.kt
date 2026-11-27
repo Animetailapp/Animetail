@@ -13,7 +13,6 @@ import kotlinx.serialization.json.JsonObject
 import mihon.core.common.extensions.EMPTY
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.entries.anime.interactor.GetCustomAnimeInfo
-import uy.kohesive.injekt.injectLazy
 import java.io.ObjectStreamException
 import kotlin.math.pow
 import kotlin.time.Instant
@@ -67,7 +66,7 @@ data class Anime(
     // SY -->
     @kotlinx.serialization.Transient
     private val customAnimeInfo = if (favorite) {
-        getCustomAnimeInfo.get(id)
+        getCustomAnimeInfo?.get(id)
     } else {
         null
     }
@@ -397,7 +396,8 @@ data class Anime(
         )
 
         // SY -->
-        private val getCustomAnimeInfo: GetCustomAnimeInfo by injectLazy()
+        @Volatile
+        var getCustomAnimeInfo: GetCustomAnimeInfo? = null
         // SY <--
     }
 

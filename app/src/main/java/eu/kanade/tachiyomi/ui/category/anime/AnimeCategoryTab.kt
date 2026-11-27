@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.ui.category.anime
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.model.rememberScreenModel
@@ -14,13 +15,15 @@ import eu.kanade.presentation.category.components.CategoryDeleteDialog
 import eu.kanade.presentation.category.components.CategoryRenameDialog
 import eu.kanade.presentation.components.TabContent
 import kotlinx.collections.immutable.toImmutableList
+import mihon.app.di.appGraph
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 @Composable
 fun Screen.animeCategoryTab(): TabContent {
+    val context = LocalContext.current
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { AnimeCategoryScreenModel() }
+    val screenModel = rememberScreenModel { AnimeCategoryScreenModel(context.appGraph) }
 
     val state by screenModel.state.collectAsStateWithLifecycle()
 

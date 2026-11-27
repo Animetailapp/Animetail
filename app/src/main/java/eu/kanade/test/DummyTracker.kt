@@ -4,6 +4,7 @@ import android.graphics.Color
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.track.RefreshResult
 import eu.kanade.tachiyomi.data.track.Tracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +34,9 @@ data class DummyTracker(
     val valMangaSearchResults: List<MangaTrackSearch> = listOf(),
     val valAnimeSearchResults: List<AnimeTrackSearch> = listOf(),
 ) : Tracker {
+
+    override val dependencies: TrackerDependencies
+        get() = TODO("Not yet implemented")
 
     override val client: OkHttpClient
         get() = TODO("Not yet implemented")

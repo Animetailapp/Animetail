@@ -34,6 +34,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.i18n.MR
@@ -141,10 +142,11 @@ fun Screen.mangaHistoryTab(
                 }
 
                 is MangaHistoryViewModel.Dialog.Migrate -> {
+                    val dialogContext = androidx.compose.ui.platform.LocalContext.current
                     MigrateMangaDialog(
                         oldManga = dialog.oldManga,
                         newManga = dialog.newManga,
-                        screenModel = MigrateMangaDialogScreenModel(),
+                        screenModel = MigrateMangaDialogScreenModel(dialogContext.appGraph),
                         onDismissRequest = onDismissRequest,
                         onClickTitle = { navigator.push(MangaScreen(dialog.oldManga.id)) },
                         onPopScreen = { navigator.replace(MangaScreen(dialog.newManga.id)) },

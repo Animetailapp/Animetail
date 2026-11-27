@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.ui.browse.anime.migration.search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -11,11 +12,13 @@ import eu.kanade.presentation.browse.anime.MigrateAnimeSearchScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
+import mihon.app.di.appGraph
 
 class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
         val viewModel = assistedMetroViewModel<MigrateAnimeSearchViewModel, MigrateAnimeSearchViewModel.Factory> {
@@ -26,6 +29,7 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
         val dialogScreenModel = rememberScreenModel {
             AnimeMigrateSearchScreenDialogScreenModel(
                 animeId = animeId,
+                getAnime = context.appGraph.getAnime,
             )
         }
         val dialogState by dialogScreenModel.state.collectAsState()
@@ -65,7 +69,7 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
                 MigrateAnimeDialog(
                     oldAnime = dialogState.anime!!,
                     newAnime = dialog.anime,
-                    screenModel = rememberScreenModel { MigrateAnimeDialogScreenModel() },
+                    screenModel = rememberScreenModel { MigrateAnimeDialogScreenModel(context.appGraph) },
                     onDismissRequest = { dialogScreenModel.setDialog(null) },
                     onClickTitle = {
                         navigator.push(AnimeScreen(dialog.anime.id, true))

@@ -3,16 +3,15 @@ package eu.kanade.presentation.more.settings.screen.player
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.player.Debanding
-import eu.kanade.tachiyomi.ui.player.settings.DecoderPreferences
 import kotlinx.collections.immutable.toImmutableMap
+import mihon.app.di.appGraph
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object PlayerSettingsDecoderScreen : Screen(), SearchableSettings {
 
@@ -22,7 +21,8 @@ object PlayerSettingsDecoderScreen : Screen(), SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val decoderPreferences = remember { Injekt.get<DecoderPreferences>() }
+        val context = LocalContext.current
+        val decoderPreferences = remember { context.appGraph.decoderPreferences }
 
         val tryHw = decoderPreferences.tryHWDecoding()
         val useGpuNext = decoderPreferences.gpuNext()

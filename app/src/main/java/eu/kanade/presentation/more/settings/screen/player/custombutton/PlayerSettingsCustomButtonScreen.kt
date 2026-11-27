@@ -18,6 +18,7 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.collectLatest
+import mihon.app.di.appGraph
 import tachiyomi.domain.custombuttons.model.CustomButtonUpdate
 import tachiyomi.presentation.core.screens.LoadingScreen
 
@@ -28,7 +29,18 @@ object PlayerSettingsCustomButtonScreen : Screen() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val uriHandler = LocalUriHandler.current
-        val screenModel = rememberScreenModel { PlayerSettingsCustomButtonScreenModel() }
+        val screenModel = rememberScreenModel {
+            val appGraph = context.appGraph
+            PlayerSettingsCustomButtonScreenModel(
+                getCustomButtons = appGraph.getCustomButtons,
+                createCustomButton = appGraph.createCustomButton,
+                deleteCustomButton = appGraph.deleteCustomButton,
+                updateCustomButton = appGraph.updateCustomButton,
+                reorderCustomButton = appGraph.reorderCustomButton,
+                toggleFavoriteCustomButton = appGraph.toggleFavoriteCustomButton,
+                mpvConfig = appGraph.mpvConfig,
+            )
+        }
 
         val state by screenModel.state.collectAsState()
 

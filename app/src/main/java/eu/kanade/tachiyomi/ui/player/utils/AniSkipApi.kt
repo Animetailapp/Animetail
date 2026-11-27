@@ -12,11 +12,11 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
-import uy.kohesive.injekt.injectLazy
 
-class AniSkipApi {
+class AniSkipApi(
+    private val json: Json,
+) {
     private val client = OkHttpClient()
-    private val json: Json by injectLazy()
 
     // credits: https://github.com/saikou-app/saikou/blob/main/app/src/main/java/ani/saikou/others/AniSkip.kt
     fun getResult(malId: Int, episodeNumber: Int, episodeLength: Long): List<TimeStamp>? {

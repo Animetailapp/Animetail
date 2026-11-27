@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -13,10 +14,9 @@ import eu.kanade.presentation.entries.anime.AnimeNotesScreen
 import eu.kanade.presentation.util.Screen
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.domain.entries.anime.interactor.UpdateAnimeNotes
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Serializable
 class AnimeNotesScreen(
@@ -26,6 +26,7 @@ class AnimeNotesScreen(
 ) : Screen() {
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
         val screenModel = rememberScreenModel {
@@ -33,6 +34,7 @@ class AnimeNotesScreen(
                 animeId = animeId,
                 animeTitle = animeTitle,
                 animeNotes = animeNotes,
+                updateAnimeNotes = context.appGraph.updateAnimeNotes,
             )
         }
         val state by screenModel.state.collectAsState()
@@ -48,7 +50,7 @@ class AnimeNotesScreen(
         animeTitle: String,
         animeNotes: String,
         private val animeId: Long,
-        private val updateAnimeNotes: UpdateAnimeNotes = Injekt.get(),
+        private val updateAnimeNotes: UpdateAnimeNotes,
     ) : StateScreenModel<State>(State(animeId, animeTitle, animeNotes)) {
 
         fun updateNotes(content: String) {

@@ -75,6 +75,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
@@ -91,8 +92,6 @@ import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.components.material.AlertDialogContent
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Clock
 import tachiyomi.domain.track.anime.model.AnimeTrack as DbAnimeTrack
 
@@ -108,11 +107,24 @@ data class AnimeTrackInfoDialogHomeScreen(
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
-        val screenModel = rememberScreenModel { Model(animeId, sourceId, isSeason = isSeason) }
+        val appGraph = remember(context) { context.appGraph }
+        val screenModel = rememberScreenModel {
+            Model(
+                context = context.applicationContext,
+                animeId = animeId,
+                sourceId = sourceId,
+                isSeason = isSeason,
+                getTracks = appGraph.getAnimeTracks,
+                getAnime = appGraph.getAnime,
+                refreshTracks = appGraph.refreshAnimeTracks,
+                trackerManager = appGraph.trackerManager,
+                sourceManager = appGraph.animeSourceManager,
+            )
+        }
 
         val dateFormat = remember {
             UiPreferences.dateFormat(
-                Injekt.get<UiPreferences>().dateFormat.get(),
+                appGraph.uiPreferences.dateFormat.get(),
             )
         }
         val state by screenModel.state.collectAsState()
@@ -212,12 +224,17 @@ data class AnimeTrackInfoDialogHomeScreen(
     }
 
     private class Model(
+        private val context: Context,
         private val animeId: Long,
         private val sourceId: Long,
         // AM -->
         private val isSeason: Boolean = false,
         // <-- AM
-        private val getTracks: GetAnimeTracks = Injekt.get(),
+        private val getTracks: GetAnimeTracks,
+        private val getAnime: GetAnime,
+        private val refreshTracks: RefreshAnimeTracks,
+        private val trackerManager: TrackerManager,
+        private val sourceManager: AnimeSourceManager,
     ) : StateScreenModel<Model.State>(State()) {
 
         init {
@@ -247,7 +264,7 @@ data class AnimeTrackInfoDialogHomeScreen(
         fun registerEnhancedTracking(item: AnimeTrackItem) {
             item.tracker as EnhancedAnimeTracker
             screenModelScope.launchNonCancellable {
-                val anime = Injekt.get<GetAnime>().await(animeId) ?: return@launchNonCancellable
+                val anime = getAnime.await(animeId) ?: return@launchNonCancellable
                 try {
                     // AM -->
                     val matchResult = if (isSeason) {
@@ -258,15 +275,12 @@ data class AnimeTrackInfoDialogHomeScreen(
                     item.tracker.animeService.register(matchResult, anime)
                     // <-- AM
                 } catch (e: Exception) {
-                    withUIContext { Injekt.get<Application>().toast(MR.strings.error_no_match) }
+                    withUIContext { context.toast(MR.strings.error_no_match) }
                 }
             }
         }
 
         private suspend fun refreshTrackers() {
-            val refreshTracks = Injekt.get<RefreshAnimeTracks>()
-            val context = Injekt.get<Application>()
-
             // AM -->
             refreshTracks.await(animeId)
                 .filterIsInstance<RefreshResult.Failure>()
@@ -295,13 +309,12 @@ data class AnimeTrackInfoDialogHomeScreen(
 
         private fun List<AnimeTrack>.mapToTrackItem(): List<AnimeTrackItem> {
             // Include trackers that are either logged in or explicitly available for metadata use
-            val trackerManager: TrackerManager = Injekt.get()
             val loggedInTrackers = trackerManager.trackers
                 .filter { (it as? Tracker)?.isAvailableForUse() == true }
                 .filter {
                     it is AnimeTracker
                 }
-            val source = Injekt.get<AnimeSourceManager>().getOrStub(sourceId)
+            val source = sourceManager.getOrStub(sourceId)
             return loggedInTrackers
                 // Map to TrackItem
                 .map { service -> AnimeTrackItem(find { it.trackerId == service.id }, service) }
@@ -323,11 +336,12 @@ private data class TrackStatusSelectorScreen(
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel {
             Model(
                 track = track,
-                tracker = Injekt.get<TrackerManager>().get(serviceId)!!,
+                tracker = context.appGraph.trackerManager.get(serviceId)!!,
             )
         }
         val state by screenModel.state.collectAsState()
@@ -378,11 +392,12 @@ private data class TrackEpisodeSelectorScreen(
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel {
             Model(
                 track = track,
-                tracker = Injekt.get<TrackerManager>().get(serviceId)!!,
+                tracker = context.appGraph.trackerManager.get(serviceId)!!,
             )
         }
         val state by screenModel.state.collectAsState()
@@ -441,11 +456,12 @@ private data class TrackScoreSelectorScreen(
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel {
             Model(
                 track = track,
-                tracker = Injekt.get<TrackerManager>().get(serviceId)!!,
+                tracker = context.appGraph.trackerManager.get(serviceId)!!,
             )
         }
         val state by screenModel.state.collectAsState()
@@ -547,11 +563,12 @@ private data class TrackDateSelectorScreen(
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel {
             Model(
                 track = track,
-                tracker = Injekt.get<TrackerManager>().get(serviceId)!!,
+                tracker = context.appGraph.trackerManager.get(serviceId)!!,
                 start = start,
             )
         }
@@ -622,11 +639,12 @@ private data class TrackDateRemoverScreen(
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel {
             Model(
                 track = track,
-                tracker = Injekt.get<TrackerManager>().get(serviceId)!!,
+                tracker = context.appGraph.trackerManager.get(serviceId)!!,
                 start = start,
             )
         }
@@ -711,13 +729,16 @@ data class TrackServiceSearchScreen(
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel {
+            val appGraph = context.appGraph
             Model(
                 animeId = animeId,
                 currentUrl = currentUrl,
                 initialQuery = initialQuery,
-                tracker = Injekt.get<TrackerManager>().get(serviceId)!!,
+                tracker = appGraph.trackerManager.get(serviceId)!!,
+                getAnime = appGraph.getAnime,
             )
         }
 
@@ -762,6 +783,7 @@ data class TrackServiceSearchScreen(
         private val currentUrl: String? = null,
         initialQuery: String,
         private val tracker: Tracker,
+        private val getAnime: GetAnime,
     ) : StateScreenModel<Model.State>(State()) {
 
         val supportsPrivateTracking = tracker.supportsPrivateTracking
@@ -798,7 +820,7 @@ data class TrackServiceSearchScreen(
         fun registerTracking(item: AnimeTrackSearch) {
             screenModelScope.launchNonCancellable {
                 // AM -->
-                val anime = Injekt.get<GetAnime>().await(animeId) ?: return@launchNonCancellable
+                val anime = getAnime.await(animeId) ?: return@launchNonCancellable
                 tracker.animeService.register(item, anime)
                 // <-- AM
             }
@@ -894,12 +916,15 @@ private data class TrackerAnimeRemoveScreen(
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel {
+            val appGraph = context.appGraph
             Model(
                 animeId = animeId,
                 track = track,
-                tracker = Injekt.get<TrackerManager>().get(serviceId)!!,
+                tracker = appGraph.trackerManager.get(serviceId)!!,
+                deleteTrack = appGraph.deleteAnimeTrack,
             )
         }
         val serviceName = screenModel.getName()
@@ -967,7 +992,7 @@ private data class TrackerAnimeRemoveScreen(
         private val animeId: Long,
         private val track: AnimeTrack,
         private val tracker: Tracker,
-        private val deleteTrack: DeleteAnimeTrack = Injekt.get(),
+        private val deleteTrack: DeleteAnimeTrack,
     ) : ScreenModel {
 
         fun getName() = tracker.name

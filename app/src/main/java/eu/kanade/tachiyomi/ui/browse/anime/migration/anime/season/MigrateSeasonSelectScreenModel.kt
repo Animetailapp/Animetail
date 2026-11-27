@@ -28,24 +28,32 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import mihon.app.di.AppGraph
 import mihon.domain.source.interactor.UpdateAnimeFromRemote
 import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class MigrateSeasonSelectScreenModel(
     private val anime: Anime,
-    sourceManager: AnimeSourceManager = Injekt.get(),
-    sourcePreferences: SourcePreferences = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val getAnime: GetAnime = Injekt.get(),
-    private val networkToLocalAnime: NetworkToLocalAnime = Injekt.get(),
-    private val updateAnimeFromRemote: UpdateAnimeFromRemote = Injekt.get(),
+    sourceManager: AnimeSourceManager,
+    sourcePreferences: SourcePreferences,
+    private val libraryPreferences: LibraryPreferences,
+    private val getAnime: GetAnime,
+    private val networkToLocalAnime: NetworkToLocalAnime,
+    private val updateAnimeFromRemote: UpdateAnimeFromRemote,
 ) : StateScreenModel<MigrateSeasonSelectScreenModel.State>(State()) {
+    constructor(anime: Anime, appGraph: AppGraph) : this(
+        anime = anime,
+        sourceManager = appGraph.animeSourceManager,
+        sourcePreferences = appGraph.sourcePreferences,
+        libraryPreferences = appGraph.libraryPreferences,
+        getAnime = appGraph.getAnime,
+        networkToLocalAnime = appGraph.networkToLocalAnime,
+        updateAnimeFromRemote = appGraph.updateAnimeFromRemote,
+    )
 
     var displayMode by sourcePreferences.sourceDisplayMode.asState(screenModelScope)
     val source = sourceManager.getOrStub(anime.source)

@@ -26,13 +26,12 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentMap
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.WheelTextPicker
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object PlayerSettingsGesturesScreen : Screen(), SearchableSettings {
 
@@ -42,7 +41,8 @@ object PlayerSettingsGesturesScreen : Screen(), SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val gesturePreferences = remember { Injekt.get<GesturePreferences>() }
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val gesturePreferences = remember { context.appGraph.gesturePreferences }
 
         return listOf(
             getSlidersGroup(gesturePreferences = gesturePreferences),
@@ -133,7 +133,8 @@ object PlayerSettingsGesturesScreen : Screen(), SearchableSettings {
 
     @Composable
     private fun getDoubleTapGroup(gesturePreferences: GesturePreferences): Preference.PreferenceGroup {
-        val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val playerPreferences = remember { context.appGraph.playerPreferences }
         val leftDoubleTap = gesturePreferences.leftDoubleTapGesture()
         val centerDoubleTap = gesturePreferences.centerDoubleTapGesture()
         val rightDoubleTap = gesturePreferences.rightDoubleTapGesture()

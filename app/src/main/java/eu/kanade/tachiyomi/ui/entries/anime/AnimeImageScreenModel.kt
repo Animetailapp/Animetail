@@ -40,19 +40,17 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
 import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
 class AnimeImageScreenModel(
     private val animeId: Long,
-    private val getAnime: GetAnime = Injekt.get(),
-    private val imageSaver: ImageSaver = Injekt.get(),
-    private val coverCache: AnimeCoverCache = Injekt.get(),
-    private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
-    private val updateAnime: UpdateAnime = Injekt.get(),
-    private val coverManager: LocalAnimeCoverManager = Injekt.get(),
-    private val backgroundManager: LocalAnimeBackgroundManager = Injekt.get(),
+    private val getAnime: GetAnime,
+    private val imageSaver: ImageSaver,
+    private val coverCache: AnimeCoverCache,
+    private val backgroundCache: AnimeBackgroundCache,
+    private val updateAnime: UpdateAnime,
+    private val coverManager: LocalAnimeCoverManager,
+    private val backgroundManager: LocalAnimeBackgroundManager,
     val snackbarHostState: SnackbarHostState = SnackbarHostState(),
     val pagerState: PagerState = PagerState(pageCount = { 2 }),
 ) : ScreenModel {

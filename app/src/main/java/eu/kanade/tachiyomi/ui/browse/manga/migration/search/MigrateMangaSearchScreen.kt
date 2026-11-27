@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.ui.browse.manga.migration.search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -10,11 +11,13 @@ import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.browse.manga.MigrateMangaSearchScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
+import mihon.app.di.appGraph
 
 class MigrateMangaSearchScreen(private val mangaId: Long) : Screen() {
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
         val screenModel = assistedMetroViewModel<MigrateMangaSearchViewModel, MigrateMangaSearchViewModel.Factory> {
@@ -25,6 +28,7 @@ class MigrateMangaSearchScreen(private val mangaId: Long) : Screen() {
         val dialogScreenModel = rememberScreenModel {
             MangaMigrateSearchScreenDialogScreenModel(
                 mangaId = mangaId,
+                getManga = context.appGraph.getManga,
             )
         }
         val dialogState by dialogScreenModel.state.collectAsState()
@@ -64,7 +68,7 @@ class MigrateMangaSearchScreen(private val mangaId: Long) : Screen() {
                 MigrateMangaDialog(
                     oldManga = dialogState.manga!!,
                     newManga = dialog.manga,
-                    screenModel = rememberScreenModel { MigrateMangaDialogScreenModel() },
+                    screenModel = rememberScreenModel { MigrateMangaDialogScreenModel(context.appGraph) },
                     onDismissRequest = { dialogScreenModel.setDialog(null) },
                     onClickTitle = {
                         navigator.push(MangaScreen(dialog.manga.id, true))

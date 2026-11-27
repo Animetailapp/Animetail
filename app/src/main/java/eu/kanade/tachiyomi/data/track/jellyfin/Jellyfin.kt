@@ -2,25 +2,40 @@ package eu.kanade.tachiyomi.data.track.jellyfin
 
 import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
+import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.serialization.json.Json
 import okhttp3.Dns
 import tachiyomi.domain.entries.anime.model.Anime
+import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
-class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedAnimeTracker, AnimeTracker {
+@Inject
+@SingleIn(AppScope::class)
+class Jellyfin(
+    dependencies: TrackerDependencies,
+    private val json: Json,
+    private val sourceManager: AnimeSourceManager,
+) : BaseTracker(TrackerManager.JELLYFIN, "Jellyfin", dependencies),
+    EnhancedAnimeTracker,
+    AnimeTracker {
 
     companion object {
         const val UNSEEN = 1L
@@ -30,12 +45,12 @@ class Jellyfin(id: Long) : BaseTracker(id, "Jellyfin"), EnhancedAnimeTracker, An
 
     override val client by lazy {
         networkService.client.newBuilder()
-            .addInterceptor(JellyfinInterceptor())
+            .addInterceptor(JellyfinInterceptor(sourceManager))
             .dns(Dns.SYSTEM) // don't use DNS over HTTPS as it breaks IP addressing
             .build()
     }
 
-    val api by lazy { JellyfinApi(id, client) }
+    val api by lazy { JellyfinApi(id, client, json) }
 
     override fun getLogo() = R.drawable.ic_tracker_jellyfin
 

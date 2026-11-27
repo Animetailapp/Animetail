@@ -28,6 +28,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -55,10 +56,10 @@ data object CategoriesTab : Tab {
     override fun Content() {
         val context = LocalContext.current
 
-        val animeCategoryScreenModel = rememberScreenModel { AnimeCategoryScreenModel() }
-        val mangaCategoryScreenModel = rememberScreenModel { MangaCategoryScreenModel() }
+        val animeCategoryScreenModel = rememberScreenModel { AnimeCategoryScreenModel(context.appGraph) }
+        val mangaCategoryScreenModel = rememberScreenModel { MangaCategoryScreenModel(context.appGraph) }
         // KMK -->
-        val feedScreenModel = rememberScreenModel { FeedScreenModel() }
+        val feedScreenModel = rememberScreenModel { FeedScreenModel(context.appGraph) }
         // KMK <--
 
         val tabs = persistentListOf(

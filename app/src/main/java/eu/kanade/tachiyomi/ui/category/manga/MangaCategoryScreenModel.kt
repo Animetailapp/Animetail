@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mihon.app.di.AppGraph
 import tachiyomi.domain.category.manga.interactor.CreateMangaCategoryWithName
 import tachiyomi.domain.category.manga.interactor.DeleteMangaCategory
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
@@ -27,20 +28,28 @@ import tachiyomi.domain.category.manga.interactor.ReorderMangaCategory
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
 class MangaCategoryScreenModel(
-    private val getAllCategories: GetMangaCategories = Injekt.get(),
-    private val getVisibleCategories: GetVisibleMangaCategories = Injekt.get(),
-    private val createCategoryWithName: CreateMangaCategoryWithName = Injekt.get(),
-    private val hideCategory: HideMangaCategory = Injekt.get(),
-    private val deleteCategory: DeleteMangaCategory = Injekt.get(),
-    private val reorderCategory: ReorderMangaCategory = Injekt.get(),
-    private val renameCategory: RenameMangaCategory = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
+    private val getAllCategories: GetMangaCategories,
+    private val getVisibleCategories: GetVisibleMangaCategories,
+    private val createCategoryWithName: CreateMangaCategoryWithName,
+    private val hideCategory: HideMangaCategory,
+    private val deleteCategory: DeleteMangaCategory,
+    private val reorderCategory: ReorderMangaCategory,
+    private val renameCategory: RenameMangaCategory,
+    private val libraryPreferences: LibraryPreferences,
 ) : ScreenModel {
+    constructor(appGraph: AppGraph) : this(
+        getAllCategories = appGraph.getMangaCategories,
+        getVisibleCategories = appGraph.getVisibleMangaCategories,
+        createCategoryWithName = appGraph.createMangaCategoryWithName,
+        hideCategory = appGraph.hideMangaCategory,
+        deleteCategory = appGraph.deleteMangaCategory,
+        reorderCategory = appGraph.reorderMangaCategory,
+        renameCategory = appGraph.renameMangaCategory,
+        libraryPreferences = appGraph.libraryPreferences,
+    )
 
     private val _events: Channel<MangaCategoryEvent> = Channel()
     val events = _events.receiveAsFlow()

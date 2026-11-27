@@ -33,16 +33,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import dev.vivvvek.seeker.Segment
 import eu.kanade.tachiyomi.ui.player.Sheets
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
 import eu.kanade.tachiyomi.ui.player.controls.components.CurrentChapter
 import eu.kanade.tachiyomi.ui.player.controls.components.PlaybackSpeedDropdown
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import mihon.app.di.appGraph
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
 fun BottomLeftPlayerControls(
@@ -54,7 +53,8 @@ fun BottomLeftPlayerControls(
     onOpenSheet: (Sheets) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
+    val context = LocalContext.current
+    val playerPreferences = remember { context.appGraph.playerPreferences }
 
     Row(
         modifier = modifier.fillMaxWidth(),

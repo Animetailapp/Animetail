@@ -29,6 +29,7 @@ import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.FilterList
 import mihon.presentation.core.util.collectAsLazyPagingItems
@@ -128,10 +129,11 @@ data class MangaSourceSearchScreen(
             }
 
             is BrowseMangaSourceViewModel.Dialog.Migrate -> {
+                val context = androidx.compose.ui.platform.LocalContext.current
                 MigrateMangaDialog(
                     oldManga = oldManga,
                     newManga = dialog.newManga,
-                    screenModel = MigrateMangaDialogScreenModel(),
+                    screenModel = MigrateMangaDialogScreenModel(context.appGraph),
                     onDismissRequest = onDismissRequest,
                     onClickTitle = { navigator.push(MangaScreen(dialog.newManga.id)) },
                     onPopScreen = {

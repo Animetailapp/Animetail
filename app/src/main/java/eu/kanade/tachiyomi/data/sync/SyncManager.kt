@@ -35,8 +35,6 @@ import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.manga.model.Manga
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 import java.io.IOException
 import java.util.Date
@@ -64,6 +62,7 @@ class SyncManager(
     private val mangaRestorer: MangaRestorer,
     private val animeRestorer: AnimeRestorer,
     private val json: Json,
+    private val protoBuf: ProtoBuf,
 ) {
     private val backupCreator: BackupCreator = backupCreatorFactory.create(isAutoBackup = false)
 
@@ -136,11 +135,12 @@ class SyncManager(
                     json,
                     syncPreferences,
                     notifier,
+                    protoBuf,
                 )
             }
 
             SyncService.GOOGLE_DRIVE -> {
-                GoogleDriveSyncService(context, json, syncPreferences)
+                GoogleDriveSyncService(context, json, syncPreferences, protoBuf)
             }
 
             else -> {

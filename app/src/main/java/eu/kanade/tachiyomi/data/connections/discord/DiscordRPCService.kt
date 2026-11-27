@@ -13,30 +13,22 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.compose.ui.util.fastAny
-import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.system.notificationBuilder
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
-import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
-import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.model.Category.Companion.UNCATEGORIZED_ID
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import kotlin.math.ceil
 import kotlin.math.floor
 
 class DiscordRPCService : Service() {
 
-    private val connectionsManager: ConnectionsManager by injectLazy()
-    private val scope: CoroutineScope by injectLazy()
+    private val appGraph by lazy { applicationContext.appGraph }
+    private val scope get() = appGraph.coroutineScope
 
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate() {
@@ -85,7 +77,7 @@ class DiscordRPCService : Service() {
             }
             notification(this)
         } else {
-            connectionsPreferences.enableDiscordRPC().set(false)
+            appGraph.connectionsPreferences.enableDiscordRPC().set(false)
         }
     }
 
@@ -125,14 +117,11 @@ class DiscordRPCService : Service() {
 
     companion object {
 
-        private val connectionsPreferences: ConnectionsPreferences by injectLazy()
-
         private val handler = Handler(Looper.getMainLooper())
-        private val playerPreferences: PlayerPreferences by injectLazy()
 
         fun start(context: Context) {
             handler.removeCallbacksAndMessages(null)
-            if (connectionsPreferences.enableDiscordRPC().get()) {
+            if (context.appGraph.connectionsPreferences.enableDiscordRPC().get()) {
                 since = System.currentTimeMillis()
                 context.startService(Intent(context, DiscordRPCService::class.java))
             }
@@ -192,7 +181,7 @@ class DiscordRPCService : Service() {
          * Sets the appropriate screen (anime or manga) based on the last used screen context
          */
         internal suspend fun setScreen(context: Context, discordScreen: DiscordScreen) {
-            if (!connectionsPreferences.enableDiscordRPC().get()) return
+            if (!context.appGraph.connectionsPreferences.enableDiscordRPC().get()) return
             ensureTokenValid()
             currentScreen = discordScreen
             if (discordScreen != DiscordScreen.VIDEO && discordScreen != DiscordScreen.MANGA &&
@@ -223,7 +212,7 @@ class DiscordRPCService : Service() {
             discordScreen: DiscordScreen,
             playerData: PlayerData = PlayerData(),
         ) {
-            if (!connectionsPreferences.enableDiscordRPC().get()) return
+            if (!context.appGraph.connectionsPreferences.enableDiscordRPC().get()) return
             ensureTokenValid()
             currentScreen = discordScreen
             if (discordScreen == DiscordScreen.VIDEO) {
@@ -247,6 +236,7 @@ class DiscordRPCService : Service() {
         ) {
             val appName = context.getString(R.string.app_name)
 
+            val connectionsPreferences = context.appGraph.connectionsPreferences
             val customMessage = connectionsPreferences.discordCustomMessage().get()
             val showProgress = connectionsPreferences.discordShowProgress().get()
             val showTimestamp = connectionsPreferences.discordShowTimestamp().get()
@@ -318,7 +308,7 @@ class DiscordRPCService : Service() {
             discordScreen: DiscordScreen,
             readerData: ReaderData = ReaderData(),
         ) {
-            if (!connectionsPreferences.enableDiscordRPC().get()) return
+            if (!context.appGraph.connectionsPreferences.enableDiscordRPC().get()) return
             ensureTokenValid()
             currentScreen = discordScreen
             if (discordScreen == DiscordScreen.MANGA) {
@@ -340,6 +330,7 @@ class DiscordRPCService : Service() {
             sinceTime: Long = since,
         ) {
             val appName = context.getString(R.string.app_name)
+            val connectionsPreferences = context.appGraph.connectionsPreferences
             val name = appName
             val details = sanitizeField(readerData.mangaTitle ?: context.getString(discordScreen.details))
             val state = sanitizeField(readerData.chapterNumber ?: context.getString(discordScreen.text))
@@ -382,15 +373,15 @@ class DiscordRPCService : Service() {
             context: Context,
             playerData: PlayerData = PlayerData(),
         ) {
-            if (!connectionsPreferences.enableDiscordRPC().get()) return
+            if (!context.appGraph.connectionsPreferences.enableDiscordRPC().get()) return
             if (playerData.animeId == null) return
 
             try {
-                val categories = getAnimeCategories(playerData.animeId)
-                val discordIncognito = isIncognito(categories, playerData.incognitoMode)
+                val categories = getAnimeCategories(context, playerData.animeId)
+                val discordIncognito = isIncognito(context, categories, playerData.incognitoMode)
 
                 val animeTitle = playerData.animeTitle.takeUnless { discordIncognito }
-                val episodeNumber = getFormattedEpisodeNumber(playerData, discordIncognito)
+                val episodeNumber = getFormattedEpisodeNumber(context, playerData, discordIncognito)
                 val (startTime, end) = getTimestamps(playerData)
                 val animeThumbnail = if (discordIncognito) {
                     null
@@ -434,14 +425,14 @@ class DiscordRPCService : Service() {
             context: Context,
             readerData: ReaderData = ReaderData(),
         ) {
-            if (!connectionsPreferences.enableDiscordRPC().get()) return
+            if (!context.appGraph.connectionsPreferences.enableDiscordRPC().get()) return
             if (readerData.mangaId == null) return
             try {
-                val categories = getMangaCategories(readerData.mangaId)
-                val discordIncognito = isIncognito(categories, readerData.incognitoMode)
+                val categories = getMangaCategories(context, readerData.mangaId)
+                val discordIncognito = isIncognito(context, categories, readerData.incognitoMode)
 
                 val mangaTitle = readerData.mangaTitle.takeUnless { discordIncognito }
-                val chapterNumber = getFormattedChapterNumber(readerData, discordIncognito)
+                val chapterNumber = getFormattedChapterNumber(context, readerData, discordIncognito)
                 val mangaThumbnail = if (discordIncognito) {
                     null
                 } else {
@@ -489,30 +480,36 @@ class DiscordRPCService : Service() {
             return trimmed
         }
 
-        private suspend fun getAnimeCategories(id: Long?): List<String> {
-            return Injekt.get<GetAnimeCategories>()
+        private suspend fun getAnimeCategories(context: Context, id: Long?): List<String> {
+            return context.appGraph.getAnimeCategories
                 .await(id!!)
                 .map { it.id.toString() }
                 .run { ifEmpty { plus(UNCATEGORIZED_ID.toString()) } }
         }
 
-        private suspend fun getMangaCategories(id: Long?): List<String> {
-            return Injekt.get<GetMangaCategories>()
+        private suspend fun getMangaCategories(context: Context, id: Long?): List<String> {
+            return context.appGraph.getMangaCategories
                 .await(id!!)
                 .map { it.id.toString() }
                 .run { ifEmpty { plus(UNCATEGORIZED_ID.toString()) } }
         }
 
-        private fun isIncognito(categories: List<String>, incognitoMode: Boolean): Boolean {
+        private fun isIncognito(context: Context, categories: List<String>, incognitoMode: Boolean): Boolean {
+            val connectionsPreferences = context.appGraph.connectionsPreferences
             val discordIncognitoMode = connectionsPreferences.discordRPCIncognito().get()
             val incognitoCategories = connectionsPreferences.discordRPCIncognitoCategories().get()
             val incognitoCategory = categories.fastAny { it in incognitoCategories }
             return discordIncognitoMode || incognitoMode || incognitoCategory
         }
 
-        private fun getFormattedEpisodeNumber(playerData: PlayerData, discordIncognito: Boolean): String? {
+        private fun getFormattedEpisodeNumber(
+            context: Context,
+            playerData: PlayerData,
+            discordIncognito: Boolean,
+        ): String? {
             val episodeNumber = playerData.episodeNumber ?: return null
             if (discordIncognito) return null
+            val connectionsPreferences = context.appGraph.connectionsPreferences
 
             val isSpanish = java.util.Locale.getDefault().language == "es"
             val movieText = if (isSpanish) "Película" else "Movie"
@@ -568,10 +565,15 @@ class DiscordRPCService : Service() {
             }
         }
 
-        private fun getFormattedChapterNumber(readerData: ReaderData, discordIncognito: Boolean): String? {
+        private fun getFormattedChapterNumber(
+            context: Context,
+            readerData: ReaderData,
+            discordIncognito: Boolean,
+        ): String? {
             val chapterNumber = readerData.chapterNumber ?: return null
             val chapterProgress = readerData.chapterProgress
             if (discordIncognito) return null
+            val connectionsPreferences = context.appGraph.connectionsPreferences
 
             val isSpanish = java.util.Locale.getDefault().language == "es"
             val chapterText = if (isSpanish) "Capítulo" else "Chapter"

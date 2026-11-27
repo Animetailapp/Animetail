@@ -19,15 +19,13 @@ import tachiyomi.domain.storage.service.SCRIPTS_PATH
 import tachiyomi.domain.storage.service.SCRIPT_OPTS_PATH
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class PlayerSettingsEditorScreenModel(
     private val context: Context,
-    private val storageManager: StorageManager = Injekt.get(),
+    private val storageManager: StorageManager,
 ) : StateScreenModel<EditorScreenState>(EditorScreenState.Loading) {
     private val _selectedType = MutableStateFlow(EditorListType.SCRIPTS)
     val selectedType = _selectedType.asStateFlow()

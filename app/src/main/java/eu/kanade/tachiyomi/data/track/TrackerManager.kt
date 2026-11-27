@@ -23,7 +23,24 @@ import kotlinx.coroutines.flow.combine
 
 @Inject
 @SingleIn(AppScope::class)
-class TrackerManager {
+class TrackerManager(
+    val myAnimeList: MyAnimeList,
+    val aniList: Anilist,
+    val kitsu: Kitsu,
+    val shikimori: Shikimori,
+    val bangumi: Bangumi,
+    val komga: Komga,
+    val mangaUpdates: MangaUpdates,
+    val kavita: Kavita,
+    val suwayomi: Suwayomi,
+    val simkl: Simkl,
+    val jellyfin: Jellyfin,
+    val tmdb: Tmdb,
+    val trakt: Trakt,
+    val hikka: Hikka,
+    val mangaBaka: MangaBaka,
+    val comick: Comick,
+) {
 
     companion object {
         const val ANILIST = 2L
@@ -35,22 +52,6 @@ class TrackerManager {
         const val JELLYFIN = 102L
         const val TRAKT = 201L
     }
-    val myAnimeList = MyAnimeList(1L)
-    val aniList = Anilist(2L)
-    val kitsu = Kitsu(3L)
-    val shikimori = Shikimori(4L)
-    val bangumi = Bangumi(5L)
-    val komga = Komga(6L)
-    val mangaUpdates = MangaUpdates(7L)
-    val kavita = Kavita(8L)
-    val suwayomi = Suwayomi(9L)
-    val simkl = Simkl(SIMKL)
-    val jellyfin = Jellyfin(JELLYFIN)
-    val tmdb = Tmdb(200L)
-    val trakt = Trakt(TRAKT)
-    val hikka = Hikka(10L)
-    val mangaBaka = MangaBaka(11L)
-    val comick = Comick(COMICK)
 
     val trackers = listOf(
         myAnimeList, aniList, kitsu, shikimori, bangumi,

@@ -13,10 +13,14 @@ import tachiyomi.source.local.entries.anime.isLocal
  * Applies the view filters to the list of episodes obtained from the database.
  * @return an observable of the list of episodes filtered and sorted.
  */
-fun List<Episode>.applyFilters(anime: Anime, downloadManager: AnimeDownloadManager): List<Episode> {
+fun List<Episode>.applyFilters(
+    anime: Anime,
+    downloadedOnly: Boolean,
+    downloadManager: AnimeDownloadManager,
+): List<Episode> {
     val isLocalAnime = anime.isLocal()
     val unseenFilter = anime.unseenFilter
-    val downloadedFilter = anime.downloadedFilter
+    val downloadedFilter = anime.downloadedFilter(downloadedOnly)
     val bookmarkedFilter = anime.bookmarkedFilter
     val fillermarkedFilter = anime.fillermarkedFilter
 
@@ -42,10 +46,10 @@ fun List<Episode>.applyFilters(anime: Anime, downloadManager: AnimeDownloadManag
  * Applies the view filters to the list of episodes obtained from the database.
  * @return an observable of the list of episodes filtered and sorted.
  */
-fun List<EpisodeList.Item>.applyFilters(anime: Anime): Sequence<EpisodeList.Item> {
+fun List<EpisodeList.Item>.applyFilters(anime: Anime, downloadedOnly: Boolean): Sequence<EpisodeList.Item> {
     val isLocalAnime = anime.isLocal()
     val unseenFilter = anime.unseenFilter
-    val downloadedFilter = anime.downloadedFilter
+    val downloadedFilter = anime.downloadedFilter(downloadedOnly)
     val bookmarkedFilter = anime.bookmarkedFilter
     val fillermarkedFilter = anime.fillermarkedFilter
     return asSequence()

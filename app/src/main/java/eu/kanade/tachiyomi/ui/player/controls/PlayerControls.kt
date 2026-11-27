@@ -76,20 +76,15 @@ import eu.kanade.tachiyomi.ui.player.controls.components.ThumbnailPreview
 import eu.kanade.tachiyomi.ui.player.controls.components.VolumeSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.toFixed
 import eu.kanade.tachiyomi.ui.player.loader.HosterPriority
-import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
-import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
-import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import `is`.xyz.mpv.MPV
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
+import mihon.app.di.appGraph
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Suppress("CompositionLocalAllowlist")
 val LocalPlayerButtonsClickEvent = staticCompositionLocalOf { {} }
@@ -104,11 +99,13 @@ fun PlayerControls(
     var showCastSheet by remember { mutableStateOf(false) }
     val castState by castManager.castState.collectAsState()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val appGraph = remember(context) { context.appGraph }
     val spacing = MaterialTheme.padding
-    val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
-    val gesturePreferences = remember { Injekt.get<GesturePreferences>() }
-    val audioPreferences = remember { Injekt.get<AudioPreferences>() }
-    val subtitlePreferences = remember { Injekt.get<SubtitlePreferences>() }
+    val playerPreferences = remember { appGraph.playerPreferences }
+    val gesturePreferences = remember { appGraph.gesturePreferences }
+    val audioPreferences = remember { appGraph.audioPreferences }
+    val subtitlePreferences = remember { appGraph.subtitlePreferences }
     val interactionSource = remember { MutableInteractionSource() }
     val controlsShown by viewModel.controlsShown.collectAsState()
     val areControlsLocked by viewModel.areControlsLocked.collectAsState()

@@ -82,8 +82,6 @@ import tachiyomi.domain.source.anime.model.EXHSavedSearch
 import tachiyomi.domain.source.anime.model.SavedSearch
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.tail.TLMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 import java.time.Instant
 import eu.kanade.tachiyomi.animesource.model.AnimeFilter as AnimeSourceModelFilter

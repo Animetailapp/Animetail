@@ -32,6 +32,8 @@ import androidx.compose.ui.util.fastForEach
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.presentation.components.AdaptiveSheet
 import mihon.domain.migration.models.MigrationFlag
+import androidx.compose.ui.platform.LocalContext
+import mihon.app.di.appGraph
 import mihon.feature.common.utils.getLabel
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.Check
@@ -42,15 +44,13 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.theme.active
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Composable
 fun MangaMigrationConfigScreenSheet(
     onDismissRequest: () -> Unit,
     onStartMigration: (extraSearchQuery: String?) -> Unit,
 ) {
-    val preferences: SourcePreferences = Injekt.get()
+    val preferences = LocalContext.current.appGraph.sourcePreferences
     var extraSearchQuery by rememberSaveable { mutableStateOf("") }
     val migrationFlagsBit by preferences.migrationFlags.collectAsState()
     val migrationFlags = remember(migrationFlagsBit) { MigrationFlag.fromBit(migrationFlagsBit) }

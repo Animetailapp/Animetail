@@ -47,6 +47,8 @@ import eu.kanade.tachiyomi.ui.browse.manga.migration.search.MigrateMangaSearchSc
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.update
+import androidx.compose.ui.platform.LocalContext
+import mihon.app.di.appGraph
 import mihon.feature.migration.list.MangaMigrationListScreen
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import sh.calvin.reorderable.ReorderableItem
@@ -62,8 +64,6 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.shouldExpandFAB
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class MangaMigrationConfigScreen(private val mangaIds: Collection<Long>) : Screen() {
 
@@ -71,9 +71,16 @@ class MangaMigrationConfigScreen(private val mangaIds: Collection<Long>) : Scree
 
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { ScreenModel() }
+        val screenModel = rememberScreenModel {
+            val appGraph = context.appGraph
+            ScreenModel(
+                sourceManager = appGraph.mangaSourceManager,
+                sourcePreferences = appGraph.sourcePreferences,
+            )
+        }
         val state by screenModel.state.collectAsState()
 
         var migrationSheetOpen by rememberSaveable { mutableStateOf(false) }
@@ -183,8 +190,8 @@ class MangaMigrationConfigScreen(private val mangaIds: Collection<Long>) : Scree
     }
 
     private class ScreenModel(
-        private val sourceManager: MangaSourceManager = Injekt.get(),
-        private val sourcePreferences: SourcePreferences = Injekt.get(),
+        private val sourceManager: MangaSourceManager,
+        private val sourcePreferences: SourcePreferences,
     ) : StateScreenModel<ScreenModel.State>(State()) {
 
         init {

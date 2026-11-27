@@ -7,12 +7,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import tachiyomi.domain.entries.manga.interactor.GetManga
 import tachiyomi.domain.entries.manga.model.Manga
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class MangaMigrateSearchScreenDialogScreenModel(
     val mangaId: Long,
-    getManga: GetManga = Injekt.get(),
+    getManga: GetManga,
 ) : StateScreenModel<MangaMigrateSearchScreenDialogScreenModel.State>(State()) {
 
     init {

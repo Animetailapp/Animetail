@@ -20,11 +20,10 @@ import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionInstaller.Companio
 import eu.kanade.tachiyomi.util.system.getSerializableExtraCompat
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class MangaExtensionInstallService : Service() {
 
@@ -60,7 +59,7 @@ class MangaExtensionInstallService : Service() {
         if (uri == null || id == null || installerUsed == null) {
             id?.let {
                 runCatching {
-                    Injekt.get<MangaExtensionManager>().updateInstallStep(
+                    applicationContext.appGraph.mangaExtensionManager.updateInstallStep(
                         it,
                         InstallStep.Error("Invalid install intent parameters"),
                     )
@@ -80,7 +79,7 @@ class MangaExtensionInstallService : Service() {
 
                 else -> {
                     logcat(LogPriority.ERROR) { "Not implemented for installer $installerUsed" }
-                    Injekt.get<MangaExtensionManager>().updateInstallStep(
+                    applicationContext.appGraph.mangaExtensionManager.updateInstallStep(
                         id,
                         InstallStep.Error("Not implemented for installer $installerUsed"),
                     )

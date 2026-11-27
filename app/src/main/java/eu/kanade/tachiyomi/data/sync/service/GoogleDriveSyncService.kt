@@ -24,33 +24,28 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
 import logcat.logcat
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.IOException
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
-class GoogleDriveSyncService(context: Context, json: Json, syncPreferences: SyncPreferences) : SyncService(
+class GoogleDriveSyncService(
+    context: Context,
+    json: Json,
+    syncPreferences: SyncPreferences,
+    private val protoBuf: ProtoBuf,
+) : SyncService(
     context,
     json,
     syncPreferences,
 ) {
-    constructor(context: Context) : this(
-        context,
-        Json {
-            encodeDefaults = true
-            ignoreUnknownKeys = true
-        },
-        Injekt.get<SyncPreferences>(),
-    )
-
     enum class DeleteSyncDataStatus {
         NOT_INITIALIZED,
         NO_FILES,
@@ -63,8 +58,6 @@ class GoogleDriveSyncService(context: Context, json: Json, syncPreferences: Sync
     private val remoteFileName = "${appName}_sync.proto.gz"
 
     private val googleDriveService = GoogleDriveService(context)
-
-    private val protoBuf: ProtoBuf = Injekt.get()
 
     @Suppress("ReturnCount", "TooGenericExceptionCaught")
     override suspend fun doSync(syncData: SyncData): Backup? {
@@ -254,7 +247,7 @@ class GoogleDriveService(private val context: Context) {
     companion object {
         const val REDIRECT_URI = "eu.kanade.google.oauth:/oauth2redirect"
     }
-    private val syncPreferences = Injekt.get<SyncPreferences>()
+    private val syncPreferences = context.applicationContext.appGraph.syncPreferences
 
     init {
         initGoogleDriveService()

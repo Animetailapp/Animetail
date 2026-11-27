@@ -2,11 +2,16 @@ package eu.kanade.tachiyomi.data.track.kavita
 
 import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.EnhancedMangaTracker
 import eu.kanade.tachiyomi.data.track.MangaTracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
+import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
@@ -14,6 +19,7 @@ import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.sourcePreferences
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.i18n.MR
@@ -21,7 +27,15 @@ import java.security.MessageDigest
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
 
-class Kavita(id: Long) : BaseTracker(id, "Kavita"), EnhancedMangaTracker, MangaTracker {
+@Inject
+@SingleIn(AppScope::class)
+class Kavita(
+    dependencies: TrackerDependencies,
+    private val json: Json,
+    private val sourceManager: MangaSourceManager,
+) : BaseTracker(TrackerManager.KAVITA, "Kavita", dependencies),
+    EnhancedMangaTracker,
+    MangaTracker {
 
     companion object {
         const val UNREAD = 1L
@@ -32,9 +46,7 @@ class Kavita(id: Long) : BaseTracker(id, "Kavita"), EnhancedMangaTracker, MangaT
     var authentications: OAuth? = null
 
     private val interceptor by lazy { KavitaInterceptor(this) }
-    val api by lazy { KavitaApi(id, client, interceptor) }
-
-    private val sourceManager: MangaSourceManager by lazy { appGraph.mangaSourceManager }
+    val api by lazy { KavitaApi(id, client, interceptor, json) }
 
     override fun getLogo(): Int = R.drawable.ic_tracker_kavita
 

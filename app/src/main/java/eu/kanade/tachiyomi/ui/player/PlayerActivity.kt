@@ -105,6 +105,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import mihon.app.di.AppGraph
+import mihon.app.di.appGraph
 import mihon.core.metro.metroGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.PreferenceStore
@@ -116,8 +117,6 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -1264,7 +1263,7 @@ class PlayerActivity : BaseActivity() {
                 )
         ) {
             lifecycleScope.launchIO {
-                TorrentServerService.start()
+                TorrentServerService.start(this@PlayerActivity)
                 torrentLinkHandler(video.videoUrl, video.videoTitle, videoOptions)
             }
         } else {
@@ -1326,7 +1325,7 @@ class PlayerActivity : BaseActivity() {
         var index = 0
 
         // Wait for torrent server to be ready
-        if (!TorrentServerService.wait(20)) {
+        if (!TorrentServerService.wait(this@PlayerActivity, 20)) {
             withUIContext<Unit> { toast(MR.strings.unknown_error) }
             return
         }
@@ -1620,7 +1619,12 @@ class PlayerActivity : BaseActivity() {
                     DiscordRPCService.setPlayerActivity(
                         context = this@PlayerActivity,
                         PlayerData(
-                            incognitoMode = viewModel.currentSource.value?.isNsfw() == true || viewModel.incognitoMode,
+                            incognitoMode =
+                            viewModel.currentSource.value?.isNsfw(
+                                this@PlayerActivity.appGraph.animeExtensionManager,
+                            ) ==
+                                true ||
+                                viewModel.incognitoMode,
                             animeId = anime.id,
                             animeTitle = anime.ogTitle,
                             thumbnailUrl = anime.thumbnailUrl ?: "",

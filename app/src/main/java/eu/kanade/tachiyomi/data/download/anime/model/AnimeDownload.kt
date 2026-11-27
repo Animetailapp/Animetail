@@ -10,8 +10,6 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.interactor.GetEpisode
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 /**
  * One entry of the download queue. Entries are compared by identity: [video] and the other state
@@ -75,9 +73,9 @@ class AnimeDownload(
     companion object {
         suspend fun fromEpisodeId(
             episodeId: Long,
-            getEpisode: GetEpisode = Injekt.get(),
-            getAnimeById: GetAnime = Injekt.get(),
-            sourceManager: AnimeSourceManager = Injekt.get(),
+            getEpisode: GetEpisode,
+            getAnimeById: GetAnime,
+            sourceManager: AnimeSourceManager,
         ): AnimeDownload? {
             val episode = getEpisode.await(episodeId) ?: return null
             val anime = getAnimeById.await(episode.animeId) ?: return null

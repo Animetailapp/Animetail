@@ -36,7 +36,6 @@ dependencies {
     implementation(aniyomilibs.ffmpeg.kit)
     implementation(libs.bundles.serialization)
 
-    implementation(libs.injekt)
     implementation(libs.jsoup)
 
     implementation(libs.kotlinx.datetime)

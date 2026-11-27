@@ -14,8 +14,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import mihon.app.di.appGraph
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicReference
 
@@ -24,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 abstract class InstallerAnime(private val service: Service) {
 
-    protected val extensionManager: AnimeExtensionManager = Injekt.get<Context>().appGraph.animeExtensionManager
+    protected val extensionManager: AnimeExtensionManager = service.applicationContext.appGraph.animeExtensionManager
 
     private var waitingInstall = AtomicReference<Entry>(null)
     private val queue = Collections.synchronizedList(mutableListOf<Entry>())
@@ -177,7 +175,7 @@ abstract class InstallerAnime(private val service: Service) {
          * @param downloadId Download ID as known by [AnimeExtensionManager]
          */
         fun cancelInstallQueue(context: Context, downloadId: Long) {
-            Injekt.get<AnimeExtensionManager>().cancelInstallerQueue(downloadId)
+            context.applicationContext.appGraph.animeExtensionManager.cancelInstallerQueue(downloadId)
         }
     }
 }

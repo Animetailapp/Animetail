@@ -12,6 +12,7 @@ import eu.kanade.presentation.more.settings.screen.player.editor.components.Edit
 import eu.kanade.presentation.more.settings.screen.player.editor.components.FileCreateDialog
 import eu.kanade.presentation.more.settings.screen.player.editor.components.FileDeleteDialog
 import eu.kanade.presentation.util.Screen
+import mihon.app.di.appGraph
 
 object PlayerSettingsEditorScreen : Screen() {
 
@@ -19,7 +20,9 @@ object PlayerSettingsEditorScreen : Screen() {
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { PlayerSettingsEditorScreenModel(context) }
+        val screenModel = rememberScreenModel {
+            PlayerSettingsEditorScreenModel(context, context.appGraph.storageManager)
+        }
 
         val state by screenModel.state.collectAsState()
         val dialog by screenModel.dialogShown.collectAsState()

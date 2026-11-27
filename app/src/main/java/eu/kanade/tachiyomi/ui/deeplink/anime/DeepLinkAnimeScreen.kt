@@ -14,6 +14,7 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
@@ -29,7 +30,15 @@ class DeepLinkAnimeScreen(
         val navigator = LocalNavigator.currentOrThrow
 
         val screenModel = rememberScreenModel {
-            DeepLinkAnimeScreenModel(query = query)
+            val appGraph = context.appGraph
+            DeepLinkAnimeScreenModel(
+                query = query,
+                sourceManager = appGraph.animeSourceManager,
+                networkToLocalAnime = appGraph.networkToLocalAnime,
+                getEpisodeByUrlAndAnimeId = appGraph.getEpisodeByUrlAndAnimeId,
+                getAnimeByUrlAndSourceId = appGraph.getAnimeByUrlAndSourceId,
+                updateAnimeFromRemote = appGraph.updateAnimeFromRemote,
+            )
         }
         val state by screenModel.state.collectAsState()
         Scaffold(

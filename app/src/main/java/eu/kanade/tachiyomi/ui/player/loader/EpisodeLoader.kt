@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.player.loader
 
+import android.content.Context
 import eu.kanade.domain.items.episode.model.toSEpisode
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Hoster
@@ -7,24 +8,19 @@ import eu.kanade.tachiyomi.animesource.model.Hoster.Companion.toHosterList
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.animesource.online.ParsedAnimeHttpSource
-import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.coroutines.CancellationException
+import mihon.app.di.appGraph
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 import tachiyomi.source.local.io.anime.LocalAnimeSourceFileSystem
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 /**
  * Loader used to retrieve the hosters for a given episode.
  */
 class EpisodeLoader {
     companion object {
-
-        private val hosterCache = HosterCache.shared
 
         /**
          * Returns a list of hosters of an [episode] based on the type of [source] used.
@@ -35,16 +31,17 @@ class EpisodeLoader {
          * @param useCache whether a cached hoster list from a previous call can be reused.
          */
         suspend fun getHosters(
+            context: Context,
             episode: Episode,
             anime: Anime,
             source: AnimeSource,
             useCache: Boolean = true,
         ): List<Hoster> {
-            val isDownloaded = isDownload(episode, anime)
+            val isDownloaded = isDownload(context, episode, anime)
             return when {
-                isDownloaded -> getHostersOnDownloaded(episode, anime, source)
-                source is AnimeHttpSource -> getHostersOnHttp(episode, source, useCache)
-                source is LocalAnimeSource -> getHostersOnLocal(episode)
+                isDownloaded -> getHostersOnDownloaded(context, episode, anime, source)
+                source is AnimeHttpSource -> getHostersOnHttp(context, episode, source, useCache)
+                source is LocalAnimeSource -> getHostersOnLocal(context, episode)
                 else -> error("source not supported")
             }
         }
@@ -55,8 +52,8 @@ class EpisodeLoader {
          * @param episode the episode being parsed.
          * @param anime the anime of the episode.
          */
-        fun isDownload(episode: Episode, anime: Anime): Boolean {
-            val downloadManager: AnimeDownloadManager = Injekt.get()
+        fun isDownload(context: Context, episode: Episode, anime: Anime): Boolean {
+            val downloadManager = context.applicationContext.appGraph.animeDownloadManager
             return downloadManager.isEpisodeDownloaded(
                 episode.name,
                 episode.scanlator,
@@ -90,15 +87,15 @@ class EpisodeLoader {
         /**
          * Drops the cached hoster and video lists of [episode], so the next load hits the source.
          */
-        fun invalidateCache(episode: Episode, source: AnimeSource) {
-            hosterCache.invalidateEpisode(source.id, episode.url)
+        fun invalidateCache(context: Context, episode: Episode, source: AnimeSource) {
+            HosterCache.shared(context).invalidateEpisode(source.id, episode.url)
         }
 
         /**
          * Drops the cached video list of [hoster], e.g. after one of its links failed to play.
          */
-        fun invalidateCache(hoster: Hoster, source: AnimeSource) {
-            hosterCache.invalidateVideos(source.id, hoster)
+        fun invalidateCache(context: Context, hoster: Hoster, source: AnimeSource) {
+            HosterCache.shared(context).invalidateVideos(source.id, hoster)
         }
 
         /**
@@ -109,16 +106,18 @@ class EpisodeLoader {
          * @param useCache whether a cached hoster list can be reused.
          */
         private suspend fun getHostersOnHttp(
+            context: Context,
             episode: Episode,
             source: AnimeHttpSource,
             useCache: Boolean,
         ): List<Hoster> {
+            val hosterCache = HosterCache.shared(context)
             val cached = if (useCache) hosterCache.getHosters(source.id, episode.url) else null
             val hosters = cached ?: fetchHosters(episode, source)
                 .also { hosterCache.putHosters(source.id, episode.url, it) }
 
             // Applied after the cache so a changed preference takes effect right away.
-            val preferences = Injekt.get<PlayerPreferences>()
+            val preferences = context.applicationContext.appGraph.playerPreferences
             val priority = HosterPriority(preferences.hosterPriority().get(), preferences.disabledHosters().get())
             return if (hosters.singleOrNull()?.hosterName == Hoster.NO_HOSTER_LIST) {
                 hosters.map { hoster ->
@@ -132,8 +131,8 @@ class EpisodeLoader {
             }
         }
 
-        fun hasCachedVideos(hoster: Hoster, source: AnimeSource): Boolean {
-            return hosterCache.getVideos(source.id, hoster) != null
+        fun hasCachedVideos(context: Context, hoster: Hoster, source: AnimeSource): Boolean {
+            return HosterCache.shared(context).getVideos(source.id, hoster) != null
         }
 
         private suspend fun fetchHosters(episode: Episode, source: AnimeHttpSource): List<Hoster> {
@@ -156,11 +155,12 @@ class EpisodeLoader {
          * @param source the source of the anime.
          */
         private fun getHostersOnDownloaded(
+            context: Context,
             episode: Episode,
             anime: Anime,
             source: AnimeSource,
         ): List<Hoster> {
-            val downloadManager: AnimeDownloadManager = Injekt.get()
+            val downloadManager = context.applicationContext.appGraph.animeDownloadManager
             return try {
                 val video = downloadManager.buildVideo(source, anime, episode)
                 listOf(video).toHosterList()
@@ -175,13 +175,14 @@ class EpisodeLoader {
          * @param episode the episode being parsed.
          */
         private fun getHostersOnLocal(
+            context: Context,
             episode: Episode,
         ): List<Hoster> {
             return try {
                 val episodePath = episode.url.replace('\\', '/')
                 val animeDirName = episodePath.substringBeforeLast('/', "")
                 val episodeName = episodePath.substringAfterLast('/')
-                val storageManager: tachiyomi.domain.storage.service.StorageManager = Injekt.get()
+                val storageManager = context.applicationContext.appGraph.storageManager
                 val fileSystem = LocalAnimeSourceFileSystem(storageManager)
                 val videoFile = when {
                     animeDirName.isBlank() -> fileSystem.getBaseDirectory()?.findFile(episodeName)
@@ -207,11 +208,16 @@ class EpisodeLoader {
          * @param source the source of the anime.
          * @param hoster the hoster.
          */
-        private suspend fun getVideos(source: AnimeSource, hoster: Hoster, useCache: Boolean): List<Video> {
+        private suspend fun getVideos(
+            context: Context,
+            source: AnimeSource,
+            hoster: Hoster,
+            useCache: Boolean,
+        ): List<Video> {
             val videos = when {
                 hoster.videoList != null && source is AnimeHttpSource -> hoster.videoList!!.parseVideoUrls(source)
                 hoster.videoList != null -> hoster.videoList!!
-                source is AnimeHttpSource -> getVideosOnHttp(source, hoster, useCache)
+                source is AnimeHttpSource -> getVideosOnHttp(context, source, hoster, useCache)
                 else -> error("source not supported")
             }
 
@@ -229,7 +235,13 @@ class EpisodeLoader {
          * @param hoster the hoster.
          * @param useCache whether a cached video list can be reused.
          */
-        private suspend fun getVideosOnHttp(source: AnimeHttpSource, hoster: Hoster, useCache: Boolean): List<Video> {
+        private suspend fun getVideosOnHttp(
+            context: Context,
+            source: AnimeHttpSource,
+            hoster: Hoster,
+            useCache: Boolean,
+        ): List<Video> {
+            val hosterCache = HosterCache.shared(context)
             if (useCache) hosterCache.getVideos(source.id, hoster)?.let { return it }
             return source.getVideoList(hoster)
                 .parseVideoUrls(source)
@@ -251,6 +263,7 @@ class EpisodeLoader {
          * unless [force] is set; extraction failures become [HosterState.Error].
          */
         suspend fun loadHosterVideos(
+            context: Context,
             source: AnimeSource,
             hoster: Hoster,
             force: Boolean = false,
@@ -261,7 +274,7 @@ class EpisodeLoader {
             }
 
             return try {
-                val videos = getVideos(source, hoster, useCache)
+                val videos = getVideos(context, source, hoster, useCache)
                 HosterState.Ready(hoster.hosterName, videos, List(videos.size) { Video.State.QUEUE })
             } catch (e: Exception) {
                 if (e is CancellationException) {

@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.network.interceptor.FlareSolverrInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UncaughtExceptionInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UserAgentInterceptor
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.serialization.json.Json
 import okhttp3.Cache
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -28,6 +29,7 @@ import kotlin.time.Duration.Companion.seconds
 class NetworkHelper(
     private val context: Context,
     private val preferences: NetworkPreferences,
+    private val json: Json,
     scope: CoroutineScope,
 ) {
 
@@ -47,7 +49,7 @@ class NetworkHelper(
             )
             .addInterceptor(UncaughtExceptionInterceptor())
             .addInterceptor(UserAgentInterceptor(::defaultUserAgentProvider))
-            .addInterceptor(FlareSolverrInterceptor(preferences))
+            .addInterceptor(FlareSolverrInterceptor(preferences, json, { client }, cookieJar))
 
         try {
             val trustManager = getTrustManager()

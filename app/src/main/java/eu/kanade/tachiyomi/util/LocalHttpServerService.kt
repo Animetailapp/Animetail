@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.util
 
 import android.annotation.SuppressLint
-import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -14,13 +13,11 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import eu.kanade.tachiyomi.R
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import java.io.IOException
 
 class LocalHttpServerService : Service() {
@@ -30,9 +27,9 @@ class LocalHttpServerService : Service() {
         const val NOTIFICATION_ID = 1
         const val ACTION_START = "eu.kanade.tachiyomi.ACTION_START_SERVER"
         const val ACTION_STOP = "eu.kanade.tachiyomi.ACTION_STOP_SERVER"
-        fun stop() {
+        fun stop(context: Context) {
             try {
-                val applicationContext = Injekt.get<Application>()
+                val applicationContext = context.applicationContext
                 val intent =
                     Intent(applicationContext, LocalHttpServerService::class.java).apply {
                         action = ACTION_STOP
@@ -43,8 +40,8 @@ class LocalHttpServerService : Service() {
             }
         }
     }
-    private val prefserver: LocalHttpServerHolder by injectLazy()
-    private var port = prefserver.port().get()
+    private val prefserver by lazy { applicationContext.appGraph.localHttpServerHolder }
+    private val port by lazy { prefserver.port().get() }
     var server: LocalHttpServer? = null
 
     override fun onCreate() {

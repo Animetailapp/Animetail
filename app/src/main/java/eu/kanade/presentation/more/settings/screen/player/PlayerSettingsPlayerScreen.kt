@@ -1,5 +1,6 @@
 package eu.kanade.presentation.more.settings.screen.player
 
+import android.content.Context
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -41,14 +42,13 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toPersistentMap
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.text.NumberFormat
 
 object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
@@ -59,10 +59,12 @@ object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val playerPreferences = remember { Injekt.get<PlayerPreferences>() }
-        val basePreferences = remember { Injekt.get<BasePreferences>() }
+        val context = LocalContext.current
+        val appGraph = remember(context) { context.appGraph }
+        val playerPreferences = remember { appGraph.playerPreferences }
+        val basePreferences = remember { appGraph.basePreferences }
         val deviceSupportsPip = basePreferences.deviceHasPip
-        val localHttpServerHolder = remember { Injekt.get<LocalHttpServerHolder>() }
+        val localHttpServerHolder = remember { appGraph.localHttpServerHolder }
 
         return listOfNotNull(
             Preference.PreferenceItem.ListPreference(
@@ -99,7 +101,7 @@ object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
                 playerPreferences = playerPreferences,
                 basePreferences = basePreferences,
             ),
-            geCastServerGroup(localHttpServerHolder),
+            geCastServerGroup(context, localHttpServerHolder),
         )
     }
 
@@ -219,7 +221,7 @@ object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(AYMR.strings.pref_hoster_cache_clear),
                     onClick = {
-                        HosterCache.shared.clear()
+                        HosterCache.shared(context).clear()
                         context.toast(AYMR.strings.pref_hoster_cache_cleared)
                     },
                 ),
@@ -443,6 +445,7 @@ object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
 
     @Composable
     private fun geCastServerGroup(
+        context: Context,
         localHttpServerHolder: LocalHttpServerHolder,
     ): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(
@@ -454,7 +457,7 @@ object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
                     onValueChanged = {
                         try {
                             Integer.parseInt(it)
-                            LocalHttpServerService.stop()
+                            LocalHttpServerService.stop(context)
                             true
                         } catch (e: Exception) {
                             false

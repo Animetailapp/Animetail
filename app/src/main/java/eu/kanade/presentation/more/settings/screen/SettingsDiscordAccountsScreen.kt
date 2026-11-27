@@ -47,13 +47,12 @@ import eu.kanade.tachiyomi.ui.setting.connections.DiscordLoginActivity
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.logcat
+import mihon.app.di.appGraph
 import mihon.core.migration.Migrator.scope
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object DiscordAccountsScreen : Screen {
     private fun readResolve(): Any = DiscordAccountsScreen
@@ -75,7 +74,13 @@ data class DiscordAccountsScreenState(
 private fun DiscordAccountsScreenContent() {
     val context = LocalContext.current
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = remember { DiscordAccountsScreenModel() }
+    val screenModel = remember(context) {
+        val appGraph = context.appGraph
+        DiscordAccountsScreenModel(
+            discord = appGraph.connectionsManager.discord,
+            connectionsPreferences = appGraph.connectionsPreferences,
+        )
+    }
     val state by screenModel.state.collectAsState()
 
     val noAccountsFoundString = stringResource(TLMR.strings.no_accounts_found)
@@ -155,9 +160,10 @@ private fun DiscordAccountsScreenContent() {
     }
 }
 
-class DiscordAccountsScreenModel : StateScreenModel<DiscordAccountsScreenState>(DiscordAccountsScreenState()) {
-    private val discord = Injekt.get<ConnectionsManager>().discord
-    private val connectionsPreferences = Injekt.get<ConnectionsPreferences>()
+class DiscordAccountsScreenModel(
+    private val discord: eu.kanade.tachiyomi.data.connections.discord.Discord,
+    private val connectionsPreferences: ConnectionsPreferences,
+) : StateScreenModel<DiscordAccountsScreenState>(DiscordAccountsScreenState()) {
     private var noAccountsFoundString: String = ""
 
     init {

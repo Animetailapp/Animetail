@@ -9,9 +9,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.presentation.core.components.material.IconButtonTokens
-import uy.kohesive.injekt.injectLazy
 
 internal fun Modifier.commonClickable(
     enabled: Boolean,
@@ -46,5 +44,3 @@ internal val IndicatorModifier = Modifier
     .padding(IndicatorPadding)
 internal val ArrowModifier = Modifier
     .size(IndicatorSize - 7.dp)
-
-internal val preferences: DownloadPreferences by injectLazy()

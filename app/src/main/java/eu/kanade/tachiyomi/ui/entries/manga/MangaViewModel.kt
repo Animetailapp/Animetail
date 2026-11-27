@@ -26,6 +26,7 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.core.preference.asState
 import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
+import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.entries.manga.interactor.GetExcludedScanlators
 import eu.kanade.domain.entries.manga.interactor.SetExcludedScanlators
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
@@ -124,6 +125,7 @@ class MangaViewModel(
     @Assisted private val mangaId: Long,
     @Assisted private val isFromSource: Boolean,
     private val context: Context,
+    private val basePreferences: BasePreferences,
     private val libraryPreferences: LibraryPreferences,
     private val trackPreferences: TrackPreferences,
     readerPreferences: ReaderPreferences,
@@ -231,12 +233,15 @@ class MangaViewModel(
                 getMangaAndChapters.subscribe(mangaId, applyScanlatorFilter = true).distinctUntilChanged(),
                 downloadCache.changes,
                 downloadManager.queueState,
-            ) { mangaAndChapters, _, _ -> mangaAndChapters }
-                .collectLatest { (manga, chapters) ->
+                basePreferences.downloadedOnly.changes(),
+            ) { mangaAndChapters, _, _, downloadedOnly -> mangaAndChapters to downloadedOnly }
+                .collectLatest { (mangaAndChapters, downloadedOnly) ->
+                    val (manga, chapters) = mangaAndChapters
                     updateSuccessState {
                         it.copy(
                             manga = manga,
                             chapters = chapters.toChapterListItems(manga),
+                            downloadedOnly = downloadedOnly,
                         )
                     }
                 }
@@ -287,6 +292,7 @@ class MangaViewModel(
                     excludedScanlators = getExcludedScanlators.await(mangaId),
                     isRefreshingData = needRefreshInfo || needRefreshChapter,
                     dialog = null,
+                    downloadedOnly = basePreferences.downloadedOnly.get(),
                 )
             }
 
@@ -922,7 +928,7 @@ class MangaViewModel(
      */
     fun getNextUnreadChapter(): Chapter? {
         val successState = successState ?: return null
-        return successState.chapters.getNextUnread(successState.manga)
+        return successState.chapters.getNextUnread(successState.manga, successState.downloadedOnly)
     }
 
     private fun getUnreadChapters(): List<Chapter> {
@@ -1472,6 +1478,7 @@ class MangaViewModel(
             val isRelatedMangasFetched: Boolean? = null,
             val relatedMangaCollection: List<RelatedManga>? = null,
             // KMK <--
+            val downloadedOnly: Boolean = false,
         ) : State {
             val processedChapters by lazy {
                 chapters.applyFilters(manga).toList()
@@ -1521,7 +1528,7 @@ class MangaViewModel(
                 get() = excludedScanlators.intersect(availableScanlators).isNotEmpty()
 
             val filterActive: Boolean
-                get() = scanlatorFilterActive || manga.chaptersFiltered()
+                get() = scanlatorFilterActive || manga.chaptersFiltered(downloadedOnly)
 
             val trackingAvailable: Boolean
                 get() = trackingCount > 0
@@ -1533,7 +1540,7 @@ class MangaViewModel(
             private fun List<ChapterList.Item>.applyFilters(manga: Manga): Sequence<ChapterList.Item> {
                 val isLocalManga = manga.isLocal()
                 val unreadFilter = manga.unreadFilter
-                val downloadedFilter = manga.downloadedFilter
+                val downloadedFilter = manga.downloadedFilter(downloadedOnly)
                 val bookmarkedFilter = manga.bookmarkedFilter
                 return asSequence()
                     .filter { (chapter) -> applyFilter(unreadFilter) { !chapter.read } }

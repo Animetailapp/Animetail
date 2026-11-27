@@ -67,7 +67,7 @@ data object UpdatesTab : Tab {
         val context = LocalContext.current
         val fromMore = currentNavigationStyle() == NavStyle.MOVE_UPDATES_TO_MORE
         // KMK -->
-        val feedScreenModel = rememberScreenModel { FeedScreenModel() }
+        val feedScreenModel = rememberScreenModel { FeedScreenModel(context.appGraph) }
         // KMK <--
 
         TabbedScreen(

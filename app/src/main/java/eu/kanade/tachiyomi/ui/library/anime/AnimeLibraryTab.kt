@@ -73,7 +73,6 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.EmptyScreenAction
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.anime.isLocal
-import uy.kohesive.injekt.injectLazy
 
 data object AnimeLibraryTab : Tab {
 

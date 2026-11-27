@@ -146,10 +146,11 @@ fun Screen.animeHistoryTab(
                 }
 
                 is AnimeHistoryViewModel.Dialog.Migrate -> {
+                    val dialogContext = androidx.compose.ui.platform.LocalContext.current
                     MigrateAnimeDialog(
                         oldAnime = dialog.oldAnime,
                         newAnime = dialog.newAnime,
-                        screenModel = MigrateAnimeDialogScreenModel(),
+                        screenModel = MigrateAnimeDialogScreenModel(dialogContext.appGraph),
                         onDismissRequest = onDismissRequest,
                         onClickTitle = { navigator.push(AnimeScreen(dialog.oldAnime.id)) },
                         onClickSeasons = {

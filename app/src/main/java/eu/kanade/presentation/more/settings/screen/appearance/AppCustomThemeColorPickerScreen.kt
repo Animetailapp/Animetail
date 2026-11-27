@@ -16,24 +16,22 @@ import androidx.core.app.ActivityCompat
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
-import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.more.settings.widget.ThemeColorPickerWidget
 import eu.kanade.presentation.util.Screen
+import mihon.app.di.appGraph
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class AppCustomThemeColorPickerScreen : Screen() {
 
     @Composable
     override fun Content() {
-        val uiPreferences: UiPreferences = Injekt.get()
-
         val context = LocalContext.current
+        val uiPreferences = remember(context) { context.appGraph.uiPreferences }
+
         val navigator = LocalNavigator.currentOrThrow
         val controller = rememberColorPickerController()
 

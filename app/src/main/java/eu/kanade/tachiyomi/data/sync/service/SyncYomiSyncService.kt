@@ -19,8 +19,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.http.HttpStatus
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.concurrent.TimeUnit
 
 class SyncYomiSyncService(
@@ -28,8 +26,7 @@ class SyncYomiSyncService(
     json: Json,
     syncPreferences: SyncPreferences,
     private val notifier: SyncNotifier,
-
-    private val protoBuf: ProtoBuf = Injekt.get(),
+    private val protoBuf: ProtoBuf,
 ) : SyncService(context, json, syncPreferences) {
 
     private class SyncYomiException(message: String?) : Exception(message)

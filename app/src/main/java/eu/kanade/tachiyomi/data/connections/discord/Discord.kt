@@ -6,17 +6,21 @@ package eu.kanade.tachiyomi.data.connections.discord
 
 import android.graphics.Color
 import androidx.annotation.StringRes
+import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.ConnectionsService
+import eu.kanade.tachiyomi.network.NetworkHelper
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 
-class Discord(id: Long) : ConnectionsService(id) {
+class Discord(
+    id: Long,
+    connectionsPreferences: ConnectionsPreferences,
+    networkService: NetworkHelper,
+    private val json: Json,
+) : ConnectionsService(id, connectionsPreferences, networkService) {
 
     @StringRes
     override fun nameRes() = R.string.connections_discord
@@ -35,8 +39,6 @@ class Discord(id: Long) : ConnectionsService(id) {
     override suspend fun login(username: String, password: String) {
         // Not Needed
     }
-
-    private val json: Json by injectLazy()
 
     fun getAccounts(): List<DiscordAccount> {
         val accountsJson = connectionsPreferences.discordAccounts().get()

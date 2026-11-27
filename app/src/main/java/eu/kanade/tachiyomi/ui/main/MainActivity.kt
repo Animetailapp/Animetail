@@ -453,11 +453,11 @@ class MainActivity : BaseActivity() {
 
                 if (animeId != null && episodeId != null) {
                     runBlocking {
-                        ExternalIntents.externalIntents.initAnime(animeId, episodeId)
+                        ExternalIntents.externalIntents(this@MainActivity).initAnime(animeId, episodeId)
                     }
                 }
 
-                ExternalIntents.externalIntents.onActivityResult(this@MainActivity, result.data)
+                ExternalIntents.externalIntents(this@MainActivity).onActivityResult(this@MainActivity, result.data)
             }
         }
     }
@@ -835,10 +835,10 @@ class MainActivity : BaseActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
 
-        ExternalIntents.externalIntents.animeId?.let {
+        ExternalIntents.externalIntents(this).animeId?.let {
             outState.putLong(SAVED_STATE_ANIME_KEY, it)
         }
-        ExternalIntents.externalIntents.episodeId?.let {
+        ExternalIntents.externalIntents(this).episodeId?.let {
             outState.putLong(SAVED_STATE_EPISODE_KEY, it)
         }
     }

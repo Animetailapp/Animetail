@@ -10,7 +10,6 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.injectLazy
 
 data class AnimeMigrationFlag(
     val flag: Int,
@@ -37,10 +36,6 @@ object AnimeMigrationFlags {
     private const val DELETE_DOWNLOADED = 0b10000
     private const val NOTES = 0b100000
 
-    private val coverCache: AnimeCoverCache by injectLazy()
-    private val backgroundCache: AnimeBackgroundCache by injectLazy()
-    private val downloadCache: AnimeDownloadCache by injectLazy()
-
     fun hasEpisodes(value: Int): Boolean {
         return value and EPISODES != 0
     }
@@ -66,7 +61,13 @@ object AnimeMigrationFlags {
     }
 
     /** Returns information about applicable flags with default selections. */
-    fun getFlags(anime: Anime?, defaultSelectedBitMap: Int): List<AnimeMigrationFlag> {
+    fun getFlags(
+        anime: Anime?,
+        defaultSelectedBitMap: Int,
+        coverCache: AnimeCoverCache,
+        backgroundCache: AnimeBackgroundCache,
+        downloadCache: AnimeDownloadCache,
+    ): List<AnimeMigrationFlag> {
         val flags = mutableListOf<AnimeMigrationFlag>()
 
         if (anime?.fetchType == FetchType.Episodes) {

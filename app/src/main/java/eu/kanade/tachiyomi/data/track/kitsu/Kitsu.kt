@@ -2,6 +2,9 @@ package eu.kanade.tachiyomi.data.track.kitsu
 
 import android.graphics.Color
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
@@ -10,6 +13,8 @@ import eu.kanade.tachiyomi.data.track.BaseTracker
 import eu.kanade.tachiyomi.data.track.DeletableAnimeTracker
 import eu.kanade.tachiyomi.data.track.DeletableMangaTracker
 import eu.kanade.tachiyomi.data.track.MangaTracker
+import eu.kanade.tachiyomi.data.track.TrackerDependencies
+import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuOAuth
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
@@ -20,16 +25,20 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.injectLazy
 import java.text.DecimalFormat
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
-class Kitsu(id: Long) :
-    BaseTracker(
-        id,
-        "Kitsu",
-    ),
+@Inject
+@SingleIn(AppScope::class)
+class Kitsu(
+    dependencies: TrackerDependencies,
+    private val json: Json,
+) : BaseTracker(
+    TrackerManager.KITSU,
+    "Kitsu",
+    dependencies,
+),
     AnimeTracker,
     MangaTracker,
     DeletableMangaTracker,
@@ -84,11 +93,9 @@ class Kitsu(id: Long) :
 
     override val supportsPrivateTracking: Boolean = true
 
-    private val json: Json by injectLazy()
+    private val interceptor by lazy { KitsuInterceptor(this, json) }
 
-    private val interceptor by lazy { KitsuInterceptor(this) }
-
-    private val api by lazy { KitsuApi(id, client, interceptor) }
+    private val api by lazy { KitsuApi(id, client, interceptor, json) }
 
     private val scorePreference by lazy { trackPreferences.kitsuScoreType }
 

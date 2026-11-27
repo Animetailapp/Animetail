@@ -33,15 +33,12 @@ import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.widget.TriStateListDialog
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.runBlocking
-import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
+import mihon.app.di.appGraph
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object SettingsDiscordScreen : SearchableSettings {
 
@@ -64,8 +61,9 @@ object SettingsDiscordScreen : SearchableSettings {
     override fun getPreferences(): List<Preference> {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val connectionsPreferences = remember { Injekt.get<ConnectionsPreferences>() }
-        val connectionsManager = remember { Injekt.get<ConnectionsManager>() }
+        val appGraph = remember(context) { context.appGraph }
+        val connectionsPreferences = remember { appGraph.connectionsPreferences }
+        val connectionsManager = remember { appGraph.connectionsManager }
         val enableDRPCPref = connectionsPreferences.enableDiscordRPC()
         val useChapterTitlesPref = connectionsPreferences.useChapterTitles()
         val discordRPCStatus = connectionsPreferences.discordRPCStatus()
@@ -232,7 +230,8 @@ object SettingsDiscordScreen : SearchableSettings {
         connectionsPreferences: ConnectionsPreferences,
         enabled: Boolean,
     ): Preference.PreferenceGroup {
-        val getAnimeCategories = remember { Injekt.get<GetAnimeCategories>() }
+        val context = LocalContext.current
+        val getAnimeCategories = remember { context.appGraph.getAnimeCategories }
         val allAnimeCategories by getAnimeCategories.subscribe().collectAsState(
             initial = runBlocking { getAnimeCategories.await() },
         )

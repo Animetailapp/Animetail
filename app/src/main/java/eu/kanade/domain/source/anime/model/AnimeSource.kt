@@ -1,29 +1,25 @@
 package eu.kanade.domain.source.anime.model
 
-import android.content.Context
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
+import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
-import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.source.anime.model.AnimeSource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
-suspend fun AnimeSource.icon(): ImageBitmap? = withIOContext {
-    Injekt.get<Context>().appGraph.animeExtensionManager.getAppIconForSource(id)
+suspend fun AnimeSource.icon(extensionManager: AnimeExtensionManager): ImageBitmap? = withIOContext {
+    extensionManager.getAppIconForSource(id)
         ?.toBitmap()
         ?.asImageBitmap()
 }
 
 // AM (BROWSE) -->
 // Add an extra property to Source for it to get access to ExtensionManager
-val AnimeSource.installedExtension: AnimeExtension.Installed?
-    get() {
-        return Injekt.get<Context>().appGraph.animeExtensionManager
-            .installedExtensions
-            .filterIsInstance<AnimeExtension.Loaded>()
-            .find { ext -> ext.sources.any { it.id == id } }
-    }
+fun AnimeSource.installedExtension(extensionManager: AnimeExtensionManager): AnimeExtension.Installed? {
+    return extensionManager
+        .installedExtensions
+        .filterIsInstance<AnimeExtension.Loaded>()
+        .find { ext -> ext.sources.any { it.id == id } }
+}
 // <-- AM (BROWSE)

@@ -58,8 +58,6 @@ import tachiyomi.presentation.core.components.LinkIcon
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.util.Locale
 import kotlin.time.Instant
 
@@ -99,7 +97,7 @@ object AboutScreen : Screen() {
                     TextPreferenceWidget(
                         title = stringResource(MR.strings.version),
                         subtitle = remember(is24HourSystem) {
-                            getVersionName(withBuildDate = true, dateFormat = uiPreferences.dateFormat.get())
+                            getVersionName(context, withBuildDate = true, dateFormat = uiPreferences.dateFormat.get())
                         },
                         onPreferenceClick = {
                             val deviceInfo = crashLogUtil.getDebugInfo()
@@ -242,12 +240,12 @@ object AboutScreen : Screen() {
         }
     }
 
-    fun getVersionName(withBuildDate: Boolean, dateFormat: String? = null): String {
+    fun getVersionName(context: Context, withBuildDate: Boolean, dateFormat: String? = null): String {
         return when {
             BuildConfig.DEBUG -> {
                 "Debug ${BuildConfig.COMMIT_SHA}".let {
                     if (withBuildDate) {
-                        "$it (${getFormattedBuildTime(dateFormat)})"
+                        "$it (${getFormattedBuildTime(context, dateFormat)})"
                     } else {
                         it
                     }
@@ -257,7 +255,7 @@ object AboutScreen : Screen() {
             isNightlyBuildType -> {
                 "Nightly r${BuildConfig.COMMIT_COUNT}".let {
                     if (withBuildDate) {
-                        "$it (${BuildConfig.COMMIT_SHA}, ${getFormattedBuildTime(dateFormat)})"
+                        "$it (${BuildConfig.COMMIT_SHA}, ${getFormattedBuildTime(context, dateFormat)})"
                     } else {
                         "$it (${BuildConfig.COMMIT_SHA})"
                     }
@@ -268,7 +266,7 @@ object AboutScreen : Screen() {
                 val channel = if (isFossBuildType) "FOSS" else "Stable"
                 "$channel v${BuildConfig.VERSION_NAME}".let {
                     if (withBuildDate) {
-                        "$it (${getFormattedBuildTime(dateFormat)})"
+                        "$it (${getFormattedBuildTime(context, dateFormat)})"
                     } else {
                         it
                     }
@@ -277,9 +275,8 @@ object AboutScreen : Screen() {
         }
     }
 
-    internal fun getFormattedBuildTime(dateFormat: String? = null): String {
+    internal fun getFormattedBuildTime(context: Context, dateFormat: String? = null): String {
         return try {
-            val context = Injekt.get<Context>()
             val uiPreferences = context.appGraph.uiPreferences
             Instant.parse(BuildConfig.BUILD_TIME)
                 .toLocalDateTime(TimeZone.currentSystemDefault())

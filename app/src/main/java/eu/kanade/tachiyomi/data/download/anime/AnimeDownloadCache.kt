@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.data.download.anime
 
-import android.app.Application
 import android.content.Context
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
@@ -35,6 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromByteArray
@@ -44,6 +44,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
 import tachiyomi.core.common.storage.extension
@@ -55,8 +56,6 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.storage.service.StorageManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
@@ -104,6 +103,14 @@ class AnimeDownloadCache(
     private val diskCacheFile: File
         get() = File(context.cacheDir, "dl_anime_index_cache_v4")
 
+    private val protoBuf = ProtoBuf {
+        serializersModule = SerializersModule {
+            // Registered as non-null, but decodes an unresolvable uri to null so only that dir is dropped
+            @Suppress("UNCHECKED_CAST")
+            contextual(UniFile::class, UniFileAsStringSerializer(context) as KSerializer<UniFile>)
+        }
+    }
+
     private val rootDownloadsDirMutex = Mutex()
     private var rootDownloadsDir = RootDirectory(storageManager.getDownloadsDirectory())
 
@@ -114,7 +121,7 @@ class AnimeDownloadCache(
                 try {
                     if (diskCacheFile.exists()) {
                         val diskCache = diskCacheFile.inputStream().use {
-                            ProtoBuf.decodeFromByteArray<RootDirectory>(it.readBytes())
+                            protoBuf.decodeFromByteArray<RootDirectory>(it.readBytes())
                         }
                         diskCache.sourceDirs = restoreSharedDirectories(diskCache.sourceDirs) { sourceDir ->
                             sourceDir.dir?.uri?.toString()
@@ -457,7 +464,7 @@ class AnimeDownloadCache(
         updateDiskCacheJob = scope.launchIO {
             delay(1000)
             ensureActive()
-            val bytes = ProtoBuf.encodeToByteArray(rootDownloadsDir)
+            val bytes = protoBuf.encodeToByteArray(rootDownloadsDir)
             ensureActive()
             try {
                 diskCacheFile.writeBytes(bytes)
@@ -477,7 +484,7 @@ class AnimeDownloadCache(
  */
 @Serializable
 private class RootDirectory(
-    @Serializable(with = UniFileAsStringSerializer::class)
+    @Contextual
     val dir: UniFile?,
     var sourceDirs: Map<Long, SourceDirectory> = mapOf(),
 )
@@ -487,7 +494,7 @@ private class RootDirectory(
  */
 @Serializable
 private class SourceDirectory(
-    @Serializable(with = UniFileAsStringSerializer::class)
+    @Contextual
     val dir: UniFile?,
     var animeDirs: Map<String, AnimeDirectory> = mapOf(),
 )
@@ -497,27 +504,20 @@ private class SourceDirectory(
  */
 @Serializable
 private class AnimeDirectory(
-    @Serializable(with = UniFileAsStringSerializer::class)
+    @Contextual
     val dir: UniFile?,
     var episodeDirs: MutableSet<String> = mutableSetOf(),
 )
 
-private object UniFileAsStringSerializer : KSerializer<UniFile?> {
+private class UniFileAsStringSerializer(private val context: Context) : KSerializer<UniFile?> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("UniFile", PrimitiveKind.STRING)
 
+    // Null fields are skipped by ProtoBuf before reaching this serializer
     override fun serialize(encoder: Encoder, value: UniFile?) {
-        return if (value == null) {
-            encoder.encodeNull()
-        } else {
-            encoder.encodeString(value.uri.toString())
-        }
+        encoder.encodeString(value!!.uri.toString())
     }
 
     override fun deserialize(decoder: Decoder): UniFile? {
-        return if (decoder.decodeNotNullMark()) {
-            UniFile.fromUri(Injekt.get<Application>(), decoder.decodeString().toUri())
-        } else {
-            decoder.decodeNull()
-        }
+        return UniFile.fromUri(context, decoder.decodeString().toUri())
     }
 }

@@ -29,10 +29,9 @@ import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryViewModel
 import eu.kanade.tachiyomi.ui.history.manga.mangaHistoryTab
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import kotlinx.collections.immutable.persistentListOf
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 data object HistoriesTab : Tab {
 
@@ -60,9 +59,10 @@ data object HistoriesTab : Tab {
     // SY -->
     @Composable
     override fun isEnabled(): Boolean {
+        val context = LocalContext.current
         val scope = rememberCoroutineScope()
         return remember {
-            Injekt.get<UiPreferences>().showNavHistory.asState(scope)
+            context.appGraph.uiPreferences.showNavHistory.asState(scope)
         }.value
     }
     // SY <--
@@ -76,7 +76,7 @@ data object HistoriesTab : Tab {
         val mangaHistoryState by mangaHistoryViewModel.state.collectAsStateWithLifecycle()
         val mangaSearchQuery = mangaHistoryState.searchQuery
         // KMK -->
-        val feedScreenModel = rememberScreenModel { FeedScreenModel() }
+        val feedScreenModel = rememberScreenModel { FeedScreenModel(context.appGraph) }
         // KMK <--
         val animeHistoryViewModel = metroViewModel<AnimeHistoryViewModel>()
         val animeHistoryState by animeHistoryViewModel.state.collectAsStateWithLifecycle()

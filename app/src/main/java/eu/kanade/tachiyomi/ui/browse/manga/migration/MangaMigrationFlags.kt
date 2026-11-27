@@ -6,7 +6,6 @@ import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.injectLazy
 
 data class MangaMigrationFlag(
     val flag: Int,
@@ -32,9 +31,6 @@ object MangaMigrationFlags {
     private const val DELETE_DOWNLOADED = 0b10000
     private const val NOTES = 0b100000
 
-    private val coverCache: MangaCoverCache by injectLazy()
-    private val downloadCache: MangaDownloadCache by injectLazy()
-
     fun hasChapters(value: Int): Boolean {
         return value and CHAPTERS != 0
     }
@@ -56,7 +52,12 @@ object MangaMigrationFlags {
     }
 
     /** Returns information about applicable flags with default selections. */
-    fun getFlags(manga: Manga?, defaultSelectedBitMap: Int): List<MangaMigrationFlag> {
+    fun getFlags(
+        manga: Manga?,
+        defaultSelectedBitMap: Int,
+        coverCache: MangaCoverCache,
+        downloadCache: MangaDownloadCache,
+    ): List<MangaMigrationFlag> {
         val flags = mutableListOf<MangaMigrationFlag>()
         flags += MangaMigrationFlag.create(CHAPTERS, defaultSelectedBitMap, MR.strings.chapters)
         flags += MangaMigrationFlag.create(CATEGORIES, defaultSelectedBitMap, MR.strings.categories)

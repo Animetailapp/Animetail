@@ -44,6 +44,7 @@ import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.more.settings.screen.player.editor.components.UnsavedChangesDialog
 import eu.kanade.presentation.util.Screen
 import kotlinx.collections.immutable.persistentListOf
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -57,7 +58,9 @@ class CodeEditScreen(private val filePath: String) : Screen() {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
-        val screenModel = rememberScreenModel { CodeEditScreenModel(context, filePath) }
+        val screenModel = rememberScreenModel {
+            CodeEditScreenModel(context, filePath, context.appGraph.storageManager)
+        }
 
         val state by screenModel.state.collectAsState()
         val dialogShown by screenModel.dialogShown.collectAsState()

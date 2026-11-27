@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mihon.app.di.AppGraph
 import tachiyomi.domain.category.anime.interactor.CreateAnimeCategoryWithName
 import tachiyomi.domain.category.anime.interactor.DeleteAnimeCategory
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
@@ -27,20 +28,28 @@ import tachiyomi.domain.category.anime.interactor.ReorderAnimeCategory
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
 class AnimeCategoryScreenModel(
-    private val getAllCategories: GetAnimeCategories = Injekt.get(),
-    private val getVisibleCategories: GetVisibleAnimeCategories = Injekt.get(),
-    private val createCategoryWithName: CreateAnimeCategoryWithName = Injekt.get(),
-    private val hideCategory: HideAnimeCategory = Injekt.get(),
-    private val deleteCategory: DeleteAnimeCategory = Injekt.get(),
-    private val reorderCategory: ReorderAnimeCategory = Injekt.get(),
-    private val renameCategory: RenameAnimeCategory = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
+    private val getAllCategories: GetAnimeCategories,
+    private val getVisibleCategories: GetVisibleAnimeCategories,
+    private val createCategoryWithName: CreateAnimeCategoryWithName,
+    private val hideCategory: HideAnimeCategory,
+    private val deleteCategory: DeleteAnimeCategory,
+    private val reorderCategory: ReorderAnimeCategory,
+    private val renameCategory: RenameAnimeCategory,
+    private val libraryPreferences: LibraryPreferences,
 ) : ScreenModel {
+    constructor(appGraph: AppGraph) : this(
+        getAllCategories = appGraph.getAnimeCategories,
+        getVisibleCategories = appGraph.getVisibleAnimeCategories,
+        createCategoryWithName = appGraph.createAnimeCategoryWithName,
+        hideCategory = appGraph.hideAnimeCategory,
+        deleteCategory = appGraph.deleteAnimeCategory,
+        reorderCategory = appGraph.reorderAnimeCategory,
+        renameCategory = appGraph.renameAnimeCategory,
+        libraryPreferences = appGraph.libraryPreferences,
+    )
 
     private val _events: Channel<AnimeCategoryEvent> = Channel()
     val events = _events.receiveAsFlow()

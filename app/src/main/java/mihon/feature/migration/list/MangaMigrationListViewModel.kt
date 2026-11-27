@@ -93,7 +93,7 @@ class MangaMigrationListViewModel(
                             manga = manga,
                             chapterCount = chapterInfo.chapterCount,
                             latestChapter = chapterInfo.latestChapter,
-                            source = sourceManager.getOrStub(manga.source).getNameForMangaInfo(),
+                            source = sourceManager.getOrStub(manga.source).getNameForMangaInfo(preferences),
                             parentContext = viewModelScope.coroutineContext,
                         )
                     }
@@ -298,7 +298,7 @@ class MangaMigrationListViewModel(
             manga = this,
             chapterCount = chapterInfo.chapterCount,
             latestChapter = chapterInfo.latestChapter,
-            source = sourceManager.getOrStub(source).getNameForMangaInfo(),
+            source = sourceManager.getOrStub(source).getNameForMangaInfo(preferences),
         )
     }
 

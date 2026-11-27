@@ -57,14 +57,13 @@ import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 import java.util.Date
 
-class ExternalIntents {
+class ExternalIntents(context: Context) {
 
-    private val appGraph by lazy { Injekt.get<Application>().appGraph }
+    private val appContext = context.applicationContext
+    private val appGraph by lazy { appContext.appGraph }
     private val scope by lazy { appGraph.coroutineScope }
 
     /**
@@ -92,10 +91,10 @@ class ExternalIntents {
         chosenVideo: Video?,
     ): Intent? {
         if (!initAnime(animeId, episodeId)) return null
-        val hosters = EpisodeLoader.getHosters(episode, anime, source)
+        val hosters = EpisodeLoader.getHosters(context, episode, anime, source)
 
         val video = chosenVideo
-            ?: HosterLoader.getBestVideo(source, hosters)
+            ?: HosterLoader.getBestVideo(context, source, hosters)
             ?: throw Exception("Video list is empty")
 
         var videoUrl = getVideoUrl(source, context, video) ?: return null
@@ -119,7 +118,9 @@ class ExternalIntents {
             DiscordRPCService.setPlayerActivity(
                 context = context,
                 playerData = PlayerData(
-                    incognitoMode = source.isNsfw() || basePreferences.incognitoMode.get(),
+                    incognitoMode = source.isNsfw(
+                        appGraph.animeExtensionManager,
+                    ) || basePreferences.incognitoMode.get(),
                     animeId = anime.id,
                     // AM (CU)>
                     animeTitle = anime.ogTitle,
@@ -590,7 +591,7 @@ class ExternalIntents {
         if (!trackPreferences.autoUpdateTrack.get()) return
 
         val trackerManager = appGraph.trackerManager
-        val context = Injekt.get<Application>()
+        val context = appContext
 
         withIOContext {
             getTracks.await(anime.id)
@@ -644,7 +645,14 @@ class ExternalIntents {
     }
 
     companion object {
-        val externalIntents: ExternalIntents by lazy { ExternalIntents() }
+        @Volatile
+        private var instance: ExternalIntents? = null
+
+        fun externalIntents(context: Context): ExternalIntents {
+            return instance ?: synchronized(this) {
+                instance ?: ExternalIntents(context.applicationContext).also { instance = it }
+            }
+        }
 
         /**
          * Used to direct the [Intent] of a chosen episode to an external player.
@@ -654,7 +662,7 @@ class ExternalIntents {
          * @param episodeId the id of the episode.
          */
         suspend fun newIntent(context: Context, animeId: Long, episodeId: Long, video: Video?): Intent? {
-            return externalIntents.getExternalIntent(context, animeId, episodeId, video)
+            return externalIntents(context).getExternalIntent(context, animeId, episodeId, video)
         }
     }
 }

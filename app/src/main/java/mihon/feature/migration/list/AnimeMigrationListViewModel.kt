@@ -97,7 +97,7 @@ class AnimeMigrationListViewModel(
                             anime = anime,
                             episodeCount = episodeInfo.episodeCount,
                             latestEpisode = episodeInfo.latestEpisode,
-                            source = sourceManager.getOrStub(anime.source).getNameForAnimeInfo(),
+                            source = sourceManager.getOrStub(anime.source).getNameForAnimeInfo(preferences),
                             parentContext = viewModelScope.coroutineContext,
                         )
                     }
@@ -302,7 +302,7 @@ class AnimeMigrationListViewModel(
             anime = this,
             episodeCount = episodeInfo.episodeCount,
             latestEpisode = episodeInfo.latestEpisode,
-            source = sourceManager.getOrStub(source).getNameForAnimeInfo(),
+            source = sourceManager.getOrStub(source).getNameForAnimeInfo(preferences),
         )
     }
 
