@@ -34,6 +34,7 @@ import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
+import eu.kanade.tachiyomi.ui.player.utils.DownloadSegmentStamps.Companion.toSegmentType
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.renameToOrCopy
 import eu.kanade.tachiyomi.util.storage.toFFmpegString
@@ -72,6 +73,8 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
+import tachiyomi.domain.items.episode.segment.interactor.SetEpisodeSegments
+import tachiyomi.domain.items.episode.segment.model.EpisodeSegment
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.aniyomi.AYMR
 import java.io.File
@@ -79,6 +82,7 @@ import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.math.roundToLong
 import kotlin.time.Duration.Companion.minutes
 
 /**
@@ -103,6 +107,7 @@ class AnimeDownloader(
     private val store: AnimeDownloadStore,
     private val notifier: AnimeDownloadNotifier,
     private val preferences: DownloadPreferences,
+    private val setEpisodeSegments: SetEpisodeSegments,
 ) {
     /**
      * Queue where active downloads are kept.
@@ -416,6 +421,10 @@ class AnimeDownloader(
 
             DiskUtil.createNoMediaFile(episodeDir, context)
 
+            episodeDir.listFiles().orEmpty()
+                .firstOrNull { "video" in it.type.orEmpty() }
+                ?.let { saveSourceSegments(download, it.length()) }
+
             download.status = AnimeDownload.State.DOWNLOADED
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
@@ -429,6 +438,35 @@ class AnimeDownloader(
                 download.anime.title,
                 download.anime.id,
             )
+        }
+    }
+
+    /**
+     * Saves the source's opening/ending timestamps of the downloaded video, which the file doesn't
+     * carry, so the player can skip them offline. Replaces those of an earlier download.
+     */
+    private suspend fun saveSourceSegments(download: AnimeDownload, fileSize: Long) {
+        val video = download.video ?: return
+        val now = System.currentTimeMillis()
+        val segments = video.timestamps
+            .filter { it.end > it.start }
+            .mapNotNull { stamp ->
+                EpisodeSegment(
+                    episodeId = download.episode.id,
+                    type = stamp.type.toSegmentType() ?: return@mapNotNull null,
+                    source = EpisodeSegment.Source.Source,
+                    startMs = (stamp.start * 1000).roundToLong(),
+                    endMs = (stamp.end * 1000).roundToLong(),
+                    fileSize = fileSize,
+                    updatedAt = now,
+                )
+            }
+            .distinctBy { it.type }
+        try {
+            setEpisodeSegments.await(download.episode.id, EpisodeSegment.Source.Source, segments)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            logcat(LogPriority.ERROR, e) { "Failed to save the source's timestamps of ${download.episode.name}" }
         }
     }
 

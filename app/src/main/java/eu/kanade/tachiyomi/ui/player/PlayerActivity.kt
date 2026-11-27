@@ -88,6 +88,7 @@ import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
+import eu.kanade.tachiyomi.ui.player.utils.DownloadSegmentStamps
 import eu.kanade.tachiyomi.ui.player.utils.LanguageTags
 import eu.kanade.tachiyomi.util.system.powerManager
 import eu.kanade.tachiyomi.util.system.toShareIntent
@@ -142,6 +143,8 @@ class PlayerActivity : BaseActivity() {
     @Inject private lateinit var audioPreferences: AudioPreferences
 
     @Inject private lateinit var advancedPlayerPreferences: AdvancedPlayerPreferences
+
+    @Inject private lateinit var downloadSegmentStamps: DownloadSegmentStamps
 
     @Inject private lateinit var networkPreferences: NetworkPreferences
 
@@ -1468,6 +1471,8 @@ class PlayerActivity : BaseActivity() {
         setMpvMediaTitle()
         runOnUiThread { setupPlayerOrientation() }
         setupChapters()
+        // A downloaded file has none of the source's timestamps; use the ones saved at download
+        setupDownloadSegments()
         setupTracks()
 
         // aniSkip stuff
@@ -1488,6 +1493,26 @@ class PlayerActivity : BaseActivity() {
                 viewModel.setChapter(viewModel.pos.value)
             }
         }
+    }
+
+    /** Adds the openings/endings stored for a downloaded file that the video has none of yet. */
+    private suspend fun setupDownloadSegments() {
+        if (player.isExiting) return
+        val video = viewModel.currentVideo.value ?: return
+        val episodeId = viewModel.currentEpisode.value?.id ?: return
+        val existingTypes = video.timestamps.map { it.type }.toSet() + viewModel.chapters.value.map { it.chapterType }
+        val stamps = downloadSegmentStamps.forVideo(episodeId, video, existingTypes)
+            .map { it.copy(name = it.type.getStringRes()?.let(::stringResource) ?: "") }
+            .takeIf { it.isNotEmpty() }
+            ?: return
+        viewModel.updateChapters(
+            ChapterUtils.mergeChapters(
+                currentChapters = viewModel.chapters.value,
+                stamps = stamps,
+                duration = mpv.getPropertyInt("duration"),
+            ),
+        )
+        viewModel.setChapter(viewModel.pos.value)
     }
 
     private fun setMpvOptions() {

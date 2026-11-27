@@ -197,7 +197,7 @@ class AnimeDownloadManager(
 
         return Video(
             videoUrl = file.uri.toString(),
-            videoTitle = "download: " + file.uri.toString(),
+            videoTitle = DOWNLOADED_VIDEO_TITLE_PREFIX + file.uri.toString(),
             initialized = true,
         ).apply { status = Video.State.READY }
     }
@@ -511,4 +511,9 @@ class AnimeDownloadManager(
                     .asFlow(),
             )
         }
+
+    companion object {
+        /** Starts the title of the video [buildVideo] makes for a downloaded episode. */
+        const val DOWNLOADED_VIDEO_TITLE_PREFIX = "download: "
+    }
 }
