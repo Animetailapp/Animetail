@@ -374,6 +374,9 @@ class AnimeDownloader(
             download.episode.url,
         )
         val tmpDir = animeDir.createDirectory(episodeDirname + TMP_DIR_SUFFIX)!!
+        tmpDir.removeDuplicateVideos(DiskUtil.buildValidFilename(download.episode.name)).forEach {
+            logcat(LogPriority.WARN) { "Removed $it, a second copy of the video of ${download.episode.name}" }
+        }
 
         try {
             // A video chosen by the user is kept; otherwise every failed video is skipped on the
@@ -1059,6 +1062,23 @@ private const val MIN_DURATION_RATIO = 0.9f
  */
 internal fun UniFile.hasSingleFinishedVideo(): Boolean {
     return listFiles().orEmpty().count { it.extension != "tmp" } == 1
+}
+
+/**
+ * Keeps one video when this episode directory holds several copies of [filename]'s video, so that
+ * the episode can be finished. Two jobs downloading the same episode at once left "[filename].mkv"
+ * and "[filename] (1).mkv", and every later attempt failed because the directory didn't hold a
+ * single video. Each copy was renamed from `.tmp` only once complete, so any of them is the whole
+ * episode: [filename].mkv is kept, else the largest.
+ *
+ * @return the names of the removed copies.
+ */
+internal fun UniFile.removeDuplicateVideos(filename: String): List<String> {
+    val copyName = Regex("""${Regex.escape(filename)}( \(\d+\))?\.mkv""")
+    val copies = listFiles().orEmpty().filter { it.isFile && copyName.matches(it.name.orEmpty()) }
+    if (copies.size < 2) return emptyList()
+    val kept = copies.firstOrNull { it.name == "$filename.mkv" } ?: copies.maxBy { it.length() }
+    return copies.filter { it != kept }.mapNotNull { copy -> copy.name?.takeIf { copy.delete() } }
 }
 
 /**
