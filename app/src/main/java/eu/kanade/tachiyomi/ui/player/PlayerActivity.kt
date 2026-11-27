@@ -43,6 +43,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.ui.Modifier
@@ -722,8 +723,15 @@ class PlayerActivity : BaseActivity() {
         super.onConfigurationChanged(newConfig)
     }
 
+    // Player messages replace each other: Android queues toasts, so a quick run of failing videos
+    // would otherwise keep showing stale "failed" and "switching" messages long after the last one
+    private var lastToast: Toast? = null
+
     fun showToast(message: String) {
-        runOnUiThread { toast(message) }
+        runOnUiThread {
+            lastToast?.cancel()
+            lastToast = toast(message)
+        }
     }
 
     fun showSoftwareKeyboard() {
