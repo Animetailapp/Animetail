@@ -41,6 +41,12 @@ FROM animehistoryView
 WHERE animehistoryView.seenAt > 0
 AND maxSeenAtEpisodeId = animehistoryView.episodeId
 AND lower(animehistoryView.title) LIKE ('%' || :query || '%')
+-- Entries in a secret category stay out of history so they only show in the unlocked library
+AND animeId NOT IN (
+    SELECT AC.anime_id FROM animes_categories AC
+    JOIN categories C ON C._id = AC.category_id
+    WHERE C.secret = 1
+)
 ORDER BY seenAt DESC;
 
 getLatestAnimeHistory:
@@ -57,5 +63,11 @@ episodeNumber,
 seenAt
 FROM animehistoryView
 WHERE animehistoryView.seenAt > 0
+-- Entries in a secret category stay out of history so they only show in the unlocked library
+AND animeId NOT IN (
+    SELECT AC.anime_id FROM animes_categories AC
+    JOIN categories C ON C._id = AC.category_id
+    WHERE C.secret = 1
+)
 ORDER BY seenAt DESC
 LIMIT 1;

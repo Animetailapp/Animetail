@@ -38,6 +38,8 @@ interface MangaCategoryRepository {
 
     suspend fun updateMangaCategoryHidden(categoryId: Long, hidden: Boolean)
 
+    suspend fun updateMangaCategorySecret(categoryId: Long, secret: Boolean)
+
     suspend fun updateAllMangaCategoryFlags(flags: Long)
 
     suspend fun updateMangaCategoryAllOrders(orderedIds: List<Long>)

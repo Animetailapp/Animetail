@@ -4,6 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,6 +25,7 @@ import sh.calvin.reorderable.ReorderableCollectionItemScope
 import tachiyomi.domain.category.model.Category
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -30,6 +34,7 @@ fun ReorderableCollectionItemScope.CategoryListItem(
     category: Category,
     onRename: () -> Unit,
     onHide: () -> Unit,
+    onToggleSecret: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -75,6 +80,18 @@ fun ReorderableCollectionItemScope.CategoryListItem(
                     )
                 },
             )
+            IconButton(onClick = onToggleSecret) {
+                Icon(
+                    imageVector = if (category.secret) Icons.Outlined.Lock else Icons.Outlined.LockOpen,
+                    contentDescription = stringResource(
+                        if (category.secret) {
+                            TLMR.strings.action_make_category_not_secret
+                        } else {
+                            TLMR.strings.action_make_category_secret
+                        },
+                    ),
+                )
+            }
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = MaterialSymbols.Rounded.Delete,

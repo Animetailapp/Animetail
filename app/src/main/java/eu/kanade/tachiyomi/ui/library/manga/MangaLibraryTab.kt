@@ -12,6 +12,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -46,6 +47,7 @@ import eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearch
 import eu.kanade.tachiyomi.ui.category.CategoriesTab
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
+import eu.kanade.tachiyomi.ui.library.requestSecretCategoryUnlock
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.util.system.toast
@@ -199,6 +201,16 @@ data object MangaLibraryTab : Tab {
                     onSearchQueryChange = viewModel::search,
                     scrollBehavior = scrollBehavior.takeIf { !tabVisible }, // For scroll overlay when no tab
                     navigateUp = navigateUp,
+                    onSecretUnlock = {
+                        scope.launch {
+                            val unlocked = requestSecretCategoryUnlock(
+                                context = context,
+                                hasSecretCategories = viewModel::hasSecretCategories,
+                                unlock = viewModel::unlockSecretCategories,
+                            )
+                            if (unlocked) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
+                    },
                 )
             },
             bottomBar = {
@@ -240,7 +252,9 @@ data object MangaLibraryTab : Tab {
                     )
                 }
 
-                else -> {
+                // A new pager for the library with or without the secret categories, opened on the page the
+                // view model picked for it
+                else -> key(state.secretCategoriesShown) {
                     MangaLibraryContent(
                         categories = state.categories,
                         searchQuery = state.searchQuery,

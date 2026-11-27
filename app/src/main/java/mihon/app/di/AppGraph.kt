@@ -141,6 +141,7 @@ import tachiyomi.domain.category.anime.interactor.ResetAnimeCategoryFlags
 import tachiyomi.domain.category.anime.interactor.SetAnimeCategories
 import tachiyomi.domain.category.anime.interactor.SetAnimeDisplayMode
 import tachiyomi.domain.category.anime.interactor.SetSortModeForAnimeCategory
+import tachiyomi.domain.category.anime.interactor.ToggleSecretAnimeCategory
 import tachiyomi.domain.category.manga.interactor.CreateMangaCategoryWithName
 import tachiyomi.domain.category.manga.interactor.DeleteMangaCategory
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
@@ -152,6 +153,7 @@ import tachiyomi.domain.category.manga.interactor.ResetMangaCategoryFlags
 import tachiyomi.domain.category.manga.interactor.SetMangaCategories
 import tachiyomi.domain.category.manga.interactor.SetMangaDisplayMode
 import tachiyomi.domain.category.manga.interactor.SetSortModeForMangaCategory
+import tachiyomi.domain.category.manga.interactor.ToggleSecretMangaCategory
 import tachiyomi.domain.custombuttons.interactor.CreateCustomButton
 import tachiyomi.domain.custombuttons.interactor.DeleteCustomButton
 import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
@@ -410,6 +412,7 @@ interface AppGraph : ViewModelGraph {
     val createAnimeCategoryWithName: CreateAnimeCategoryWithName
     val deleteAnimeCategory: DeleteAnimeCategory
     val hideAnimeCategory: HideAnimeCategory
+    val toggleSecretAnimeCategory: ToggleSecretAnimeCategory
     val renameAnimeCategory: RenameAnimeCategory
     val reorderAnimeCategory: ReorderAnimeCategory
     val setAnimeDisplayMode: SetAnimeDisplayMode
@@ -418,6 +421,7 @@ interface AppGraph : ViewModelGraph {
     val createMangaCategoryWithName: CreateMangaCategoryWithName
     val deleteMangaCategory: DeleteMangaCategory
     val hideMangaCategory: HideMangaCategory
+    val toggleSecretMangaCategory: ToggleSecretMangaCategory
     val renameMangaCategory: RenameMangaCategory
     val reorderMangaCategory: ReorderMangaCategory
     val setMangaDisplayMode: SetMangaDisplayMode

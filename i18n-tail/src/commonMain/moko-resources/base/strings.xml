@@ -457,4 +457,11 @@
     <string name="audio_language_original">Original language</string>
     <string name="audio_language_original_detected">Original language (%s)</string>
     <string name="audio_language_dialog_message">Used for this show when picking the audio track. Picking an audio track in the player also changes it.</string>
+    <!-- Secret categories -->
+    <string name="action_make_category_secret">Make secret</string>
+    <string name="action_make_category_not_secret">Stop keeping secret</string>
+    <string name="pref_secret_categories_require_auth">Unlock secret categories with screen lock</string>
+    <string name="pref_secret_categories_require_auth_summary">Ask for your fingerprint, face or device PIN after the unlock gesture</string>
+    <string name="secret_categories_info">Mark a category as secret with the lock button in Edit categories. Its entries stay out of the library, updates and history. Tap the library title 5 times quickly to show them, until you leave the library or the app.</string>
+    <string name="secret_categories_unlock_title">Show secret categories</string>
 </resources>

@@ -8,6 +8,8 @@ data class Category(
     val order: Long,
     val flags: Long,
     val hidden: Boolean,
+    // Animetail: shown in the library only after the secret unlock gesture
+    val secret: Boolean = false,
 ) : Serializable {
 
     val isSystemCategory: Boolean = id == UNCATEGORIZED_ID

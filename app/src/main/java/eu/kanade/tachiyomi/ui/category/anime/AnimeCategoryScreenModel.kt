@@ -24,6 +24,7 @@ import tachiyomi.domain.category.anime.interactor.GetVisibleAnimeCategories
 import tachiyomi.domain.category.anime.interactor.HideAnimeCategory
 import tachiyomi.domain.category.anime.interactor.RenameAnimeCategory
 import tachiyomi.domain.category.anime.interactor.ReorderAnimeCategory
+import tachiyomi.domain.category.anime.interactor.ToggleSecretAnimeCategory
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.i18n.MR
@@ -36,6 +37,7 @@ class AnimeCategoryScreenModel(
     private val getVisibleCategories: GetVisibleAnimeCategories = Injekt.get(),
     private val createCategoryWithName: CreateAnimeCategoryWithName = Injekt.get(),
     private val hideCategory: HideAnimeCategory = Injekt.get(),
+    private val toggleSecretCategory: ToggleSecretAnimeCategory = Injekt.get(),
     private val deleteCategory: DeleteAnimeCategory = Injekt.get(),
     private val reorderCategory: ReorderAnimeCategory = Injekt.get(),
     private val renameCategory: RenameAnimeCategory = Injekt.get(),
@@ -80,6 +82,18 @@ class AnimeCategoryScreenModel(
         screenModelScope.launch {
             when (hideCategory.await(category)) {
                 is HideAnimeCategory.Result.InternalError -> _events.send(
+                    AnimeCategoryEvent.InternalError,
+                )
+
+                else -> {}
+            }
+        }
+    }
+
+    fun toggleSecretCategory(category: Category) {
+        screenModelScope.launch {
+            when (toggleSecretCategory.await(category)) {
+                is ToggleSecretAnimeCategory.Result.InternalError -> _events.send(
                     AnimeCategoryEvent.InternalError,
                 )
 

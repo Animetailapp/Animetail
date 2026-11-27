@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.util.fastMap
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -21,8 +22,11 @@ import eu.kanade.presentation.more.settings.widget.TriStateListDialog
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateJob
 import eu.kanade.tachiyomi.ui.category.CategoriesTab
+import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.authenticate
+import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.isAuthenticationSupported
 import kotlinx.coroutines.launch
 import mihon.app.di.appGraph
+import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.manga.interactor.ResetMangaCategoryFlags
@@ -150,6 +154,20 @@ object SettingsLibraryScreen : SearchableSettings {
                     preference = libraryPreferences.hideHiddenCategoriesSettings,
                     title = stringResource(AYMR.strings.pref_category_hide_hidden),
                 ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = libraryPreferences.secretCategoriesRequireAuth,
+                    title = stringResource(TLMR.strings.pref_secret_categories_require_auth),
+                    subtitle = stringResource(TLMR.strings.pref_secret_categories_require_auth_summary),
+                    enabled = remember { context.isAuthenticationSupported() },
+                    onValueChanged = { newValue ->
+                        // Turning the check off needs the same screen lock it protects
+                        newValue ||
+                            (context as FragmentActivity).authenticate(
+                                title = context.stringResource(TLMR.strings.pref_secret_categories_require_auth),
+                            )
+                    },
+                ),
+                Preference.PreferenceItem.InfoPreference(stringResource(TLMR.strings.secret_categories_info)),
             ),
         )
     }

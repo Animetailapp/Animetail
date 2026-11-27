@@ -8,6 +8,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -15,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.SearchToolbar
+import eu.kanade.tachiyomi.ui.library.secretUnlockTaps
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.FilterList
 import mihon.icons.materialsymbols.rounded.FlipToBack
@@ -42,6 +45,7 @@ fun LibraryToolbar(
     onSearchQueryChange: (String?) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior?,
     navigateUp: (() -> Unit)? = null,
+    onSecretUnlock: (() -> Unit)? = null,
 ) = when {
     selectedCount > 0 -> LibrarySelectionToolbar(
         selectedCount = selectedCount,
@@ -62,6 +66,7 @@ fun LibraryToolbar(
         onClickSyncNow = onClickSyncNow,
         scrollBehavior = scrollBehavior,
         navigateUp = navigateUp,
+        onSecretUnlock = onSecretUnlock,
     )
 }
 
@@ -78,11 +83,20 @@ private fun LibraryRegularToolbar(
     onClickSyncNow: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior?,
     navigateUp: (() -> Unit)?,
+    onSecretUnlock: (() -> Unit)?,
 ) {
     val pillAlpha = if (isSystemInDarkTheme()) 0.12f else 0.08f
+    val currentOnSecretUnlock by rememberUpdatedState(onSecretUnlock)
     SearchToolbar(
         titleContent = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = if (onSecretUnlock != null) {
+                    Modifier.secretUnlockTaps { currentOnSecretUnlock?.invoke() }
+                } else {
+                    Modifier
+                },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = title.text,
                     maxLines = 1,

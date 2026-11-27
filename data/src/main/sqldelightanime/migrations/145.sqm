@@ -1,0 +1,3 @@
+-- Secret categories: hidden from the library until unlocked with the title tap gesture.
+-- Additive only: existing categories keep every value and start out not secret.
+ALTER TABLE categories ADD COLUMN secret INTEGER NOT NULL DEFAULT 0;

@@ -117,6 +117,7 @@ import tachiyomi.domain.category.anime.interactor.ResetAnimeCategoryFlags
 import tachiyomi.domain.category.anime.interactor.SetAnimeCategories
 import tachiyomi.domain.category.anime.interactor.SetAnimeDisplayMode
 import tachiyomi.domain.category.anime.interactor.SetSortModeForAnimeCategory
+import tachiyomi.domain.category.anime.interactor.ToggleSecretAnimeCategory
 import tachiyomi.domain.category.manga.interactor.CreateMangaCategoryWithName
 import tachiyomi.domain.category.manga.interactor.DeleteMangaCategory
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
@@ -128,6 +129,7 @@ import tachiyomi.domain.category.manga.interactor.ResetMangaCategoryFlags
 import tachiyomi.domain.category.manga.interactor.SetMangaCategories
 import tachiyomi.domain.category.manga.interactor.SetMangaDisplayMode
 import tachiyomi.domain.category.manga.interactor.SetSortModeForMangaCategory
+import tachiyomi.domain.category.manga.interactor.ToggleSecretMangaCategory
 import tachiyomi.domain.custombuttons.interactor.CreateCustomButton
 import tachiyomi.domain.custombuttons.interactor.DeleteCustomButton
 import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
@@ -371,6 +373,7 @@ class MetroInjektRegistrar(
         CreateAnimeCategoryWithName::class.java to { graph.createAnimeCategoryWithName },
         DeleteAnimeCategory::class.java to { graph.deleteAnimeCategory },
         HideAnimeCategory::class.java to { graph.hideAnimeCategory },
+        ToggleSecretAnimeCategory::class.java to { graph.toggleSecretAnimeCategory },
         RenameAnimeCategory::class.java to { graph.renameAnimeCategory },
         ReorderAnimeCategory::class.java to { graph.reorderAnimeCategory },
         SetAnimeDisplayMode::class.java to { graph.setAnimeDisplayMode },
@@ -379,6 +382,7 @@ class MetroInjektRegistrar(
         CreateMangaCategoryWithName::class.java to { graph.createMangaCategoryWithName },
         DeleteMangaCategory::class.java to { graph.deleteMangaCategory },
         HideMangaCategory::class.java to { graph.hideMangaCategory },
+        ToggleSecretMangaCategory::class.java to { graph.toggleSecretMangaCategory },
         RenameMangaCategory::class.java to { graph.renameMangaCategory },
         ReorderMangaCategory::class.java to { graph.reorderMangaCategory },
         SetMangaDisplayMode::class.java to { graph.setMangaDisplayMode },

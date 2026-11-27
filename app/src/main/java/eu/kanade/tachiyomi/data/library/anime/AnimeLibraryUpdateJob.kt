@@ -29,6 +29,7 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.data.track.TrackStatus
+import eu.kanade.tachiyomi.ui.library.SecretCategoryFilter
 import eu.kanade.tachiyomi.util.storage.getUriCompat
 import eu.kanade.tachiyomi.util.system.createFileInCacheDir
 import eu.kanade.tachiyomi.util.system.isConnectedToWifi
@@ -52,6 +53,7 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.entries.anime.interactor.AnimeFetchInterval
 import tachiyomi.domain.entries.anime.interactor.GetAnime
@@ -96,6 +98,8 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
     @Inject private lateinit var downloadManager: AnimeDownloadManager
 
     @Inject private lateinit var getLibraryAnime: GetLibraryAnime
+
+    @Inject private lateinit var getAnimeCategories: GetAnimeCategories
 
     @Inject private lateinit var getAnime: GetAnime
 
@@ -168,6 +172,17 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
                 0
             },
         )
+    }
+
+    private suspend fun secretEntryIds(): Set<Long> {
+        val rows = getLibraryAnime.await()
+        val visibleIds = SecretCategoryFilter.withoutSecretEntries(
+            allCategories = getAnimeCategories.await(),
+            rows = rows,
+            entryId = { it.id },
+            categoryId = { it.category },
+        ).mapTo(HashSet()) { it.id }
+        return rows.mapTo(HashSet()) { it.id } - visibleIds
     }
 
     /**
@@ -427,7 +442,11 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         notifier.cancelProgressNotification()
 
         if (newUpdates.isNotEmpty()) {
-            notifier.showUpdateNotifications(newUpdates)
+            // Entries in a secret category update quietly, their titles and covers would give them away
+            val secretIds = secretEntryIds()
+            newUpdates.filterNot { it.first.id in secretIds }
+                .takeIf { it.isNotEmpty() }
+                ?.let { notifier.showUpdateNotifications(it) }
             if (hasDownloads.get()) {
                 downloadManager.startDownloads()
             }

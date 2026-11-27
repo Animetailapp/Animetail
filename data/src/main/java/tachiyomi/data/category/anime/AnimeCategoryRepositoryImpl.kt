@@ -46,8 +46,8 @@ class AnimeCategoryRepositoryImpl(
 
     override suspend fun getCategoriesByAnimeIds(animeIds: List<Long>): Map<Long, List<Category>> {
         return handler.awaitList {
-            categoriesQueries.getCategoriesByAnimeIds(animeIds) { animeId, id, name, order, flags, hidden ->
-                animeId to mapCategory(id, name, order, flags, hidden)
+            categoriesQueries.getCategoriesByAnimeIds(animeIds) { animeId, id, name, order, flags, hidden, secret ->
+                animeId to mapCategory(id, name, order, flags, hidden, secret)
             }
         }
             .groupBy({ it.first }, { it.second })
@@ -104,6 +104,12 @@ class AnimeCategoryRepositoryImpl(
         }
     }
 
+    override suspend fun updateAnimeCategorySecret(categoryId: Long, secret: Boolean) {
+        handler.await {
+            categoriesQueries.updateSecret(secret = if (secret) 1L else 0L, categoryId = categoryId)
+        }
+    }
+
     override suspend fun updateAllAnimeCategoryFlags(flags: Long?) {
         handler.await {
             categoriesQueries.updateAllFlags(flags = flags)
@@ -137,6 +143,7 @@ class AnimeCategoryRepositoryImpl(
         order: Long,
         flags: Long,
         hidden: Long,
+        secret: Long,
     ): Category {
         return Category(
             id = id,
@@ -144,6 +151,7 @@ class AnimeCategoryRepositoryImpl(
             order = order,
             flags = flags,
             hidden = hidden == 1L,
+            secret = secret == 1L,
         )
     }
 }

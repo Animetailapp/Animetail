@@ -31,6 +31,7 @@ fun AnimeCategoryScreen(
     onClickCreate: () -> Unit,
     onClickRename: (Category) -> Unit,
     onClickHide: (Category) -> Unit,
+    onClickSecret: (Category) -> Unit,
     onClickDelete: (Category) -> Unit,
     onChangeOrder: (Category, Int) -> Unit,
 ) {
@@ -57,6 +58,7 @@ fun AnimeCategoryScreen(
             paddingValues = paddingValues,
             onClickRename = onClickRename,
             onClickHide = onClickHide,
+            onClickSecret = onClickSecret,
             onClickDelete = onClickDelete,
             onChangeOrder = onChangeOrder,
         )
@@ -70,6 +72,7 @@ private fun CategoryContent(
     paddingValues: PaddingValues,
     onClickRename: (Category) -> Unit,
     onClickHide: (Category) -> Unit,
+    onClickSecret: (Category) -> Unit,
     onClickDelete: (Category) -> Unit,
     onChangeOrder: (Category, Int) -> Unit,
 ) {
@@ -103,6 +106,7 @@ private fun CategoryContent(
                     category = category,
                     onRename = { onClickRename(category) },
                     onHide = { onClickHide(category) },
+                    onToggleSecret = { onClickSecret(category) },
                     onDelete = { onClickDelete(category) },
                 )
             }
