@@ -863,7 +863,11 @@ class PlayerActivity : BaseActivity() {
 
             MPV.mpvEvent.MPV_EVENT_SEEK -> viewModel.isLoading.update { true }
 
-            MPV.mpvEvent.MPV_EVENT_PLAYBACK_RESTART -> player.isExiting = false
+            MPV.mpvEvent.MPV_EVENT_PLAYBACK_RESTART -> {
+                player.isExiting = false
+                // Read from mpv: the observed position can still be the previous file's
+                viewModel.onPlaybackRestart(mpv.getPropertyDouble("time-pos")?.toFloat() ?: 0f)
+            }
 
             MPV.mpvEvent.MPV_EVENT_END_FILE -> {
                 val errorNode = data.asMap()?.get("file_error") ?: return
@@ -1296,6 +1300,8 @@ class PlayerActivity : BaseActivity() {
                     "0",
                     videoOptions,
                 )
+                // Not for torrents above: they can buffer for longer than the stall timeout
+                viewModel.startStallWatchdog()
             }
         }
         updateDiscordRPC(exitingPlayer = false)

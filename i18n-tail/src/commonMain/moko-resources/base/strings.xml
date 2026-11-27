@@ -457,4 +457,7 @@
     <string name="audio_language_original">Original language</string>
     <string name="audio_language_original_detected">Original language (%s)</string>
     <string name="audio_language_dialog_message">Used for this show when picking the audio track. Picking an audio track in the player also changes it.</string>
+
+    <!-- Video fallback -->
+    <string name="player_video_stalled">No playback progress for %d seconds</string>
 </resources>

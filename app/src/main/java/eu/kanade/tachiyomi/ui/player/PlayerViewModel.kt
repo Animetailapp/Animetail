@@ -99,6 +99,7 @@ import eu.kanade.tachiyomi.ui.player.utils.AniSkipApi
 import eu.kanade.tachiyomi.ui.player.utils.AudioLanguageTarget
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
 import eu.kanade.tachiyomi.ui.player.utils.LanguageTags
+import eu.kanade.tachiyomi.ui.player.utils.PlaybackStallDetector
 import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
 import eu.kanade.tachiyomi.ui.player.utils.applyVideoAspect
 import eu.kanade.tachiyomi.ui.reader.SaveImageNotifier
@@ -160,6 +161,7 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.source.local.entries.anime.isLocal
 import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
 import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
@@ -175,6 +177,9 @@ private const val NETWORK_STREAM_EPISODE_ID = Long.MIN_VALUE + 102
 
 // Hosters extracted at once: the one about to play plus one backup for a quick fallback.
 private const val EXTRACTION_PERMITS = 2
+
+// A video with no playback progress for this long counts as failed.
+private const val STALL_TIMEOUT_SECONDS = 30
 
 @AssistedInject
 class PlayerViewModel(
@@ -695,6 +700,7 @@ class PlayerViewModel(
     }
 
     fun updatePlayBackPos(pos: Float) {
+        stallDetector.onPosition(pos)
         onSecondReached(pos.toInt(), duration.value.toInt())
         _pos.update { pos }
     }
@@ -1140,6 +1146,7 @@ class PlayerViewModel(
         _hosterList.update { _ -> emptyList() }
         _hosterExpandedList.update { _ -> emptyList() }
         _selectedHosterVideoIndex.update { _ -> Pair(-1, -1) }
+        stopStallWatchdog()
         thumbnailTileCache.clear()
         thumbnailFetchJob?.cancel()
         lastThumbnailFetch = 0L
@@ -1859,6 +1866,47 @@ class PlayerViewModel(
      */
     fun onVideoHandedToPlayer() {
         playbackId++
+        stallWatchdogJob?.cancel()
+        // Before mpv gets the file, so its first playback restart is never missed
+        stallDetector.start()
+    }
+
+    private var stallWatchdogJob: Job? = null
+    private val stallDetector = PlaybackStallDetector(STALL_TIMEOUT_SECONDS)
+
+    /**
+     * Watches the video just handed to mpv. A dead stream doesn't always end with an error: mpv
+     * can keep waiting for data while the player sits at the start. A video that shows no playback
+     * progress for [STALL_TIMEOUT_SECONDS] is handled like a playback error.
+     */
+    fun startStallWatchdog() {
+        if (!playerPreferences.switchOnFailure().get()) return
+        val watchedPlaybackId = playbackId
+        stallWatchdogJob?.cancel()
+        stallWatchdogJob = viewModelScope.launch {
+            while (true) {
+                delay(1.seconds)
+                // The player pauses itself while a video loads; only a pause after that is the user's
+                val pausedByUser = (paused.value && !isLoadingEpisode.value) || isCasting.value
+                if (stallDetector.tick(pausedByUser)) {
+                    onPlaybackError(
+                        watchedPlaybackId,
+                        context.stringResource(TLMR.strings.player_video_stalled, STALL_TIMEOUT_SECONDS),
+                    )
+                    break
+                }
+            }
+        }
+    }
+
+    private fun stopStallWatchdog() {
+        stallWatchdogJob?.cancel()
+        stallDetector.stop()
+    }
+
+    /** mpv is ready to play from [position], after loading a file or seeking. */
+    fun onPlaybackRestart(position: Float) {
+        stallDetector.onPlaybackRestart(position)
     }
 
     /**
@@ -1869,6 +1917,7 @@ class PlayerViewModel(
     fun onPlaybackError(playbackId: Int, message: String) {
         if (playbackId != this.playbackId || playbackId == failedPlaybackId) return
         failedPlaybackId = playbackId
+        stopStallWatchdog()
         eventChannel.trySend(Event.ShowToast(message))
 
         val (hosterIdx, videoIdx) = _selectedHosterVideoIndex.value
