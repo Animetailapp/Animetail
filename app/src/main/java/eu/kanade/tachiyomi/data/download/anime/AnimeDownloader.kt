@@ -808,26 +808,39 @@ class AnimeDownloader(
     }
 
     private suspend fun runFFprobe(ffprobeCommand: Array<String>): String {
-        return suspendCancellableCoroutine { continuation ->
-            val session = FFprobeKit.executeWithArgumentsAsync(ffprobeCommand) {
-                if (it.returnCode.isValueSuccess) {
-                    continuation.resume(it)
-                } else {
-                    continuation.resumeWithException(Exception(it.output))
+        // ffprobe prints through FFmpeg's log callback, which the player takes over once it has been
+        // opened (mpv uses the same FFmpeg libraries). FFmpegKit then gets no output from it at all,
+        // until the app restarts. The file that -o writes doesn't depend on that callback.
+        val outputFile = File.createTempFile("ffprobe", ".txt", context.cacheDir)
+        try {
+            suspendCancellableCoroutine { continuation ->
+                val session = FFprobeKit.executeWithArgumentsAsync(
+                    arrayOf("-o", outputFile.absolutePath) + ffprobeCommand,
+                ) {
+                    if (it.returnCode.isValueSuccess) {
+                        continuation.resume(it)
+                    } else {
+                        continuation.resumeWithException(Exception(it.output))
+                    }
                 }
+                continuation.invokeOnCancellation { session.cancel() }
             }
-            continuation.invokeOnCancellation { session.cancel() }
-        }.output
+            return outputFile.readText()
+        } finally {
+            outputFile.delete()
+        }
     }
 
     /**
      * The first error FFmpeg logged, which is usually the cause (e.g. "Server returned 403 Forbidden"),
-     * or the return code if it logged none.
+     * or the return code if it logged none. It logs none once the player has taken over FFmpeg's log
+     * callback (see [runFFprobe]), so the common return codes are explained too.
      */
     private fun FFmpegSession.failureReason(): String {
         return allLogs
             .filter { it.level <= Level.AV_LOG_ERROR }
             .firstNotNullOfOrNull { it.message?.trim()?.takeIf(String::isNotEmpty) }
+            ?: ffmpegExitCodeText(returnCode.value)?.let { "exit code $returnCode ($it)" }
             ?: "exit code $returnCode"
     }
 
