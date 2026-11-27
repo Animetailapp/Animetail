@@ -171,9 +171,6 @@ class PlayerActivity : BaseActivity() {
     private var pipReceiver: BroadcastReceiver? = null
     private var httpServer: HttpServer? = null
 
-    // Playback opened through the video cache proxy; if it fails, it's retried once without it.
-    private var videoCachePlaybackId = -1
-
     private val noisyReceiver = object : BroadcastReceiver() {
         var initialized = false
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -879,8 +876,8 @@ class PlayerActivity : BaseActivity() {
                 }
 
                 logcat(LogPriority.ERROR) { errorMessage }
-                if (playbackId == videoCachePlaybackId && playbackId == viewModel.playbackId) {
-                    videoCachePlaybackId = -1
+                if (playbackId == viewModel.videoCachePlaybackId && playbackId == viewModel.playbackId) {
+                    viewModel.videoCachePlaybackId = -1
                     retryWithoutVideoCache()
                     return
                 }
@@ -1308,7 +1305,7 @@ class PlayerActivity : BaseActivity() {
                 } else if (useVideoCache && videoUrl.startsWith("http")) {
                     VideoCacheProxy.shared?.proxyUrl(videoUrl, viewModel.videoCacheKey(video))?.let {
                         videoUrl = it
-                        videoCachePlaybackId = viewModel.playbackId
+                        viewModel.videoCachePlaybackId = viewModel.playbackId
                     }
                 }
 

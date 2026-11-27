@@ -254,6 +254,10 @@ class PlayerViewModel(
         it.setOptionString("keep-open", "yes")
     }
 
+    // Playback opened through the video cache proxy; if it fails, it's retried once without it. Kept
+    // here so a recreated activity still knows which playback to retry.
+    var videoCachePlaybackId = -1
+
     /** Whether a player view has set up [mpv]; a recreated activity only attaches to it. */
     var isMpvSetUp = false
 
