@@ -22,7 +22,8 @@ data class CachedPlaylist(val url: String, val contentType: String?, val body: S
  * of [blockSize] bytes, so any range that was played once can be served again from disk, even
  * when only parts of the video were watched.
  *
- * Once [maxBytes] is exceeded, the resources used least recently are deleted. Nothing here
+ * Once [maxBytes] is exceeded, other resources are deleted by [evictionGroup] and then least
+ * recently used first. Nothing here
  * throws on I/O problems: an unreadable block is a cache miss and is downloaded again.
  */
 class VideoCacheStore(
@@ -35,6 +36,13 @@ class VideoCacheStore(
 
     // Computed on first write instead of at startup, the folder can hold thousands of blocks.
     private var usedBytes = -1L
+
+    /**
+     * Group of a resource given its owner (null when it has none) when space is needed: lower
+     * groups are deleted first, and within a group the resources used least recently.
+     */
+    @Volatile
+    var evictionGroup: (owner: String?) -> Int = { 0 }
 
     fun resource(url: String): Resource = Resource(File(dir, Hash.sha256(url)))
 
@@ -69,19 +77,31 @@ class VideoCacheStore(
 
     private fun File.readOwner(): String? = if (exists()) runCatching { readText() }.getOrNull() else null
 
-    private fun onBlockWritten(bytes: Long) {
+    private fun onBlockWritten(block: File) {
         synchronized(this) {
-            if (usedBytes < 0) usedBytes = dir.diskUsage() else usedBytes += bytes
+            if (usedBytes < 0) usedBytes = dir.diskUsage() else usedBytes += block.length()
             val limit = maxBytes()
             if (usedBytes <= limit) return
 
             // Trimmed below the limit so the next writes don't evict on every block.
             val target = limit / 10 * 9
-            val oldestFirst = dir.listFiles()?.sortedBy { it.lastModified() }.orEmpty()
-            for (resourceDir in oldestFirst) {
+            val writingDir = block.parentFile
+            val group = evictionGroup
+            val evictionOrder = dir.listFiles()
+                ?.filter { it != writingDir }
+                ?.sortedWith(compareBy({ group(File(it, OWNER_FILE).readOwner()) }, { it.lastModified() }))
+                .orEmpty()
+            for (resourceDir in evictionOrder) {
                 if (usedBytes <= target) break
                 usedBytes -= resourceDir.diskUsage()
                 resourceDir.deleteRecursively()
+            }
+
+            // The resource being written is never evicted: it holds what's around the playback
+            // position. When it fills the cache alone, the rest of it is just not stored.
+            if (usedBytes > limit) {
+                usedBytes -= block.length()
+                block.delete()
             }
         }
     }
@@ -177,9 +197,10 @@ class VideoCacheStore(
 
         fun writeBlock(index: Long, data: ByteArray, size: Int) {
             try {
-                writeAtomically(File(resourceDir, index.toString()), data, size)
+                val block = File(resourceDir, index.toString())
+                writeAtomically(block, data, size)
                 partialBlockFile(index).delete()
-                onBlockWritten(size.toLong())
+                onBlockWritten(block)
             } catch (e: IOException) {
                 logcat(LogPriority.WARN, e) { "Couldn't store video block" }
             }
@@ -201,7 +222,7 @@ class VideoCacheStore(
             if (size <= (readPartialBlock(index, Long.MAX_VALUE)?.size ?: 0)) return
             try {
                 writeAtomically(partialBlockFile(index), data, size)
-                onBlockWritten(size.toLong())
+                onBlockWritten(partialBlockFile(index))
             } catch (e: IOException) {
                 logcat(LogPriority.WARN, e) { "Couldn't store partial video block" }
             }

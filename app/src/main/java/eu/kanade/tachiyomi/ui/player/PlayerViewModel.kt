@@ -1913,6 +1913,20 @@ class PlayerViewModel(
         return VideoCacheProxy.cacheKey(source.id, episodeUrl, hoster.name, video.videoTitle)
     }
 
+    /**
+     * When the video cache gets full while [playingKey] plays, it frees the episode's other servers
+     * first and then the other episodes of the playlist, keeping the next one that may be preloaded.
+     */
+    fun preferEvictingOtherVideos(playingKey: String) {
+        val source = currentSource.value as? AnimeHttpSource ?: return
+        val episodeUrl = currentEpisode.value?.url ?: return
+        val nextEpisodeId = getAdjacentEpisodeId(previous = false)
+        val otherEpisodeUrls = currentPlaylist.value
+            .filter { it.url != episodeUrl && it.id != nextEpisodeId }
+            .map { it.url }
+        VideoCacheProxy.preferEvictingOtherVideos(source.id, episodeUrl, playingKey, otherEpisodeUrls)
+    }
+
     /** Called once mpv opened the current video, which is then remembered for the episode. */
     fun onFileLoaded() {
         if (!playerPreferences.rememberLastVideo().get()) return

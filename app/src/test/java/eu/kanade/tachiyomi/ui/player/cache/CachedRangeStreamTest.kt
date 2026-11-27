@@ -167,4 +167,44 @@ class CachedRangeStreamTest {
         assertNull(segment.readBlock(0, 25))
         assertArrayEquals(content.copyOfRange(0, 10), other.readBlock(0, 25))
     }
+
+    @Test
+    fun `a full cache frees the episode's other servers and episodes before older videos`() {
+        var now = 0L
+        var maxBytes = Long.MAX_VALUE
+        fun VideoCacheStore.cached(owner: String) = resource(owner).apply {
+            setOwner(owner)
+            touch()
+            read(this, 0, 9)
+            now += 1_000
+        }
+        val setup = VideoCacheStore(dir, { maxBytes }, blockSize = 10, clock = { now })
+        val otherAnime = setup.cached("2|other-anime-1|Voe|Voe")
+        val otherEpisode = setup.cached("1|episode-2|Voe|Voe")
+        val otherServer = setup.cached("1|episode-1|Byse|Byse")
+        val playing = setup.cached("1|episode-1|Voe|Voe")
+        // Room for three of the four videos, trimmed to 90 %, so writing more drops two of them.
+        maxBytes = setup.sizeBytes() / 4 * 3
+
+        // A new store counts the bytes already on disk on its first write.
+        val store = VideoCacheStore(dir, { maxBytes }, blockSize = 10, clock = { now })
+        store.evictionGroup = VideoCacheProxy.evictionGroups(1, "episode-1", "1|episode-1|Voe|Voe", listOf("episode-2"))
+        read(store.resource("1|episode-1|Voe|Voe"), 10, 19)
+
+        assertNull(otherServer.readBlock(0, 25))
+        assertNull(otherEpisode.readBlock(0, 25))
+        assertArrayEquals(content.copyOfRange(0, 10), otherAnime.readBlock(0, 25))
+        assertArrayEquals(content.copyOfRange(0, 10), playing.readBlock(0, 25))
+    }
+
+    @Test
+    fun `a video bigger than the cache keeps what it stored and streams the rest`() {
+        val store = VideoCacheStore(dir, { 15 }, blockSize = 10)
+        val resource = store.resource("https://cdn.example/video.mp4")
+
+        assertArrayEquals(content, read(resource, 0, 24))
+
+        assertArrayEquals(content.copyOfRange(0, 10), resource.readBlock(0, 25))
+        assertNull(resource.readBlock(1, 25))
+    }
 }

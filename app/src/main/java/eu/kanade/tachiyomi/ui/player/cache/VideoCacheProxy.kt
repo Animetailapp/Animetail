@@ -481,6 +481,37 @@ class VideoCacheProxy(
             return { owner -> prefixes.any(owner::startsWith) }
         }
 
+        /**
+         * Eviction order while [playingKey] plays: the other videos of its episode (other servers or
+         * qualities) go first, then the [otherEpisodeUrls] of the anime, then the rest by age.
+         */
+        fun preferEvictingOtherVideos(
+            sourceId: Long,
+            episodeUrl: String,
+            playingKey: String,
+            otherEpisodeUrls: Collection<String>,
+        ) {
+            sharedStore.evictionGroup = evictionGroups(sourceId, episodeUrl, playingKey, otherEpisodeUrls)
+        }
+
+        internal fun evictionGroups(
+            sourceId: Long,
+            episodeUrl: String,
+            playingKey: String,
+            otherEpisodeUrls: Collection<String>,
+        ): (String?) -> Int {
+            val episodeVideoPrefix = episodePrefix(sourceId, episodeUrl)
+            val isOtherEpisode = ownedByEpisodes(sourceId, otherEpisodeUrls)
+            return { owner ->
+                when {
+                    owner == null || owner == playingKey -> 2
+                    owner.startsWith(episodeVideoPrefix) -> 0
+                    isOtherEpisode(owner) -> 1
+                    else -> 2
+                }
+            }
+        }
+
         private fun ownedBySource(sourceId: Long): (String) -> Boolean = { owner -> owner.startsWith("$sourceId|") }
 
         /** Clears the episodes once they're seen or downloaded, unless the user turned it off. */
