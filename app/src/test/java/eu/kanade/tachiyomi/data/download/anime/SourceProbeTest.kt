@@ -11,17 +11,19 @@ class SourceProbeTest {
         val output: String,
         val durationSeconds: Double?,
         val variantProgramId: Int?,
+        val videoFrameRate: Double? = null,
     ) {
         override fun toString() = description
     }
 
     @ParameterizedTest
     @MethodSource("cases")
-    fun `reads the duration and picks one variant`(case: Case) {
+    fun `reads the duration and frame rate and picks one variant`(case: Case) {
         val probe = SourceProbe.parse(case.output)
 
         assertEquals(case.durationSeconds, probe.durationSeconds, case.description)
         assertEquals(case.variantProgramId, probe.variantProgramId, case.description)
+        assertEquals(case.videoFrameRate, probe.videoFrameRate, case.description)
     }
 
     companion object {
@@ -36,15 +38,21 @@ class SourceProbeTest {
               ],
               "streams": [
                 {
-                  "index": 0, "codec_type": "video", "width": 640, "height": 360,
+                  "index": 0, "codec_type": "video", "width": 640, "height": 360, "avg_frame_rate": "25/1",
                   "tags": { "variant_bitrate": "617674" }
                 },
-                { "index": 1, "codec_type": "audio", "tags": { "variant_bitrate": "617674" } },
                 {
-                  "index": 2, "codec_type": "video", "width": 1280, "height": 720,
+                  "index": 1, "codec_type": "audio", "avg_frame_rate": "0/0",
+                  "tags": { "variant_bitrate": "617674" }
+                },
+                {
+                  "index": 2, "codec_type": "video", "width": 1280, "height": 720, "avg_frame_rate": "24000/1001",
                   "tags": { "variant_bitrate": "2173556" }
                 },
-                { "index": 3, "codec_type": "audio", "tags": { "variant_bitrate": "2173556" } }
+                {
+                  "index": 3, "codec_type": "audio", "avg_frame_rate": "0/0",
+                  "tags": { "variant_bitrate": "2173556" }
+                }
               ],
               "format": { "duration": "1436.136000" }
             }
@@ -77,8 +85,8 @@ class SourceProbeTest {
             {
               "programs": [],
               "streams": [
-                { "index": 0, "codec_type": "video", "width": 1280, "height": 720 },
-                { "index": 1, "codec_type": "audio" }
+                { "index": 0, "codec_type": "video", "width": 1280, "height": 720, "avg_frame_rate": "24/1" },
+                { "index": 1, "codec_type": "audio", "avg_frame_rate": "0/0" }
               ],
               "format": { "duration": "300.000000" }
             }
@@ -89,8 +97,8 @@ class SourceProbeTest {
             {
               "programs": [ { "program_id": 1, "streams": [ { "index": 0 }, { "index": 1 } ] } ],
               "streams": [
-                { "index": 0, "codec_type": "video", "width": 1920, "height": 1080 },
-                { "index": 1, "codec_type": "audio" }
+                { "index": 0, "codec_type": "video", "width": 1920, "height": 1080, "avg_frame_rate": "0/0" },
+                { "index": 1, "codec_type": "audio", "avg_frame_rate": "0/0" }
               ],
               "format": { "duration": "N/A" }
             }
@@ -104,6 +112,8 @@ class SourceProbeTest {
                 output = MUXED_VARIANTS,
                 durationSeconds = 1436.136,
                 variantProgramId = 1,
+                // The frame rate of that variant's video, not of the first one
+                videoFrameRate = 24000.0 / 1001,
             ),
             Case(
                 // Same size: the bitrate decides. The shared audio stream must not affect the choice.
@@ -118,9 +128,11 @@ class SourceProbeTest {
                 output = SINGLE_FILE,
                 durationSeconds = 300.0,
                 variantProgramId = null,
+                videoFrameRate = 24.0,
             ),
             Case(
-                // A single program is not a choice between variants; ffprobe also reports no duration here.
+                // A single program is not a choice between variants; ffprobe also reports no duration here,
+                // and the frame rate is unknown, so the progress comes from FFmpeg's time.
                 "a file with one program: no variant, unknown duration",
                 output = SINGLE_PROGRAM,
                 durationSeconds = null,
