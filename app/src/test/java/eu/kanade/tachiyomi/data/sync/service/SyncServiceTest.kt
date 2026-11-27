@@ -44,6 +44,15 @@ class SyncServiceTest {
     }
 
     @Test
+    fun `unversioned chapters retain a bookmark in either direction when only the bookmark differs`() {
+        val unbookmarked = BackupChapter(url = "/chapter", name = "Chapter 1")
+        val bookmarked = unbookmarked.copy(bookmark = true)
+
+        service.merge(unbookmarked, bookmarked) shouldBe bookmarked
+        service.merge(bookmarked, unbookmarked) shouldBe bookmarked
+    }
+
+    @Test
     fun `versioned chapters retain version precedence`() {
         val local = BackupChapter(url = "/chapter", name = "Chapter 1", read = true, lastPageRead = 12, version = 1)
         val remote = local.copy(read = false, lastPageRead = 0, version = 2)

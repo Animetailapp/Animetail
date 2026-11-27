@@ -287,8 +287,8 @@ abstract class SyncService(
     }
 
     /**
-     * Merges matching chapters by version. When neither chapter has a version, advances reading progress
-     * the same way as backup restore.
+     * Merges matching chapters by version. When neither chapter has a version, merges reading progress
+     * and bookmarks the same way as backup restore.
      */
     private fun mergeChapters(
         localChapters: List<BackupChapter>,
@@ -331,11 +331,16 @@ abstract class SyncService(
                 localChapter != null && remoteChapter != null -> {
                     if (localChapter.version == 0L && remoteChapter.version == 0L) {
                         val read = localChapter.read || remoteChapter.read
+                        val bookmark = localChapter.bookmark || remoteChapter.bookmark
                         val lastPageRead = maxOf(localChapter.lastPageRead, remoteChapter.lastPageRead)
-                        return@mapNotNull if (read == localChapter.read && lastPageRead == localChapter.lastPageRead) {
+                        return@mapNotNull if (
+                            read == localChapter.read &&
+                            bookmark == localChapter.bookmark &&
+                            lastPageRead == localChapter.lastPageRead
+                        ) {
                             localChapter
                         } else {
-                            localChapter.copy(read = read, lastPageRead = lastPageRead)
+                            localChapter.copy(read = read, bookmark = bookmark, lastPageRead = lastPageRead)
                         }
                     }
 
