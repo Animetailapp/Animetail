@@ -1471,7 +1471,6 @@ class PlayerActivity : BaseActivity() {
         setupTracks()
 
         // aniSkip stuff
-        viewModel.waitingSkipIntro = playerPreferences.waitingTimeIntroSkip().get()
         if (
             viewModel.introSkipEnabled &&
             playerPreferences.aniSkipEnabled().get() &&

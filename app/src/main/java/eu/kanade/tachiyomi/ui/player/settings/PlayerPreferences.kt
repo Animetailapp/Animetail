@@ -5,6 +5,7 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.ui.player.PlayerOrientation
 import eu.kanade.tachiyomi.ui.player.VideoAspect
+import eu.kanade.tachiyomi.ui.player.utils.ChapterSkipMode
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
 
@@ -58,12 +59,19 @@ class PlayerPreferences(
 
     // Skip intro button
 
-    fun enableSkipIntro() = preferenceStore.getBoolean("pref_enable_skip_intro", true)
-    fun autoSkipIntro() = preferenceStore.getBoolean("pref_enable_auto_skip_ani_skip", false)
-    fun enableNetflixStyleIntroSkip() = preferenceStore.getBoolean(
-        "pref_enable_netflixStyle_aniskip",
-        false,
-    )
+    fun openingSkipMode() = preferenceStore.getEnum("pref_opening_skip_mode", legacyChapterSkipMode())
+    fun endingSkipMode() = preferenceStore.getEnum("pref_ending_skip_mode", legacyChapterSkipMode())
+
+    /**
+     * Before the opening and ending modes, one set of switches applied to every typed chapter;
+     * the modes default to what those switches did until they are set.
+     */
+    private fun legacyChapterSkipMode(): ChapterSkipMode = when {
+        !preferenceStore.getBoolean("pref_enable_skip_intro", true).get() -> ChapterSkipMode.Off
+        preferenceStore.getBoolean("pref_enable_netflixStyle_aniskip", false).get() -> ChapterSkipMode.Countdown
+        preferenceStore.getBoolean("pref_enable_auto_skip_ani_skip", false).get() -> ChapterSkipMode.AutoSkip
+        else -> ChapterSkipMode.Button
+    }
     fun waitingTimeIntroSkip() = preferenceStore.getInt("pref_waiting_time_aniskip", 5)
     fun aniSkipEnabled() = preferenceStore.getBoolean("pref_enable_ani_skip", false)
     fun disableAniSkipOnChapters() = preferenceStore.getBoolean("pref_disabled_ani_skip_chapters", true)

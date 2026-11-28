@@ -97,6 +97,8 @@ import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.utils.AniSkipApi
 import eu.kanade.tachiyomi.ui.player.utils.AudioLanguageTarget
+import eu.kanade.tachiyomi.ui.player.utils.ChapterSkipMode
+import eu.kanade.tachiyomi.ui.player.utils.ChapterSkipPlanner
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
 import eu.kanade.tachiyomi.ui.player.utils.LanguageTags
 import eu.kanade.tachiyomi.ui.player.utils.TrackSelect
@@ -161,6 +163,7 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.source.local.entries.anime.isLocal
 import tachiyomi.source.local.image.anime.LocalAnimeBackgroundManager
 import tachiyomi.source.local.image.anime.LocalAnimeCoverManager
@@ -170,6 +173,7 @@ import java.io.InputStream
 import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.ceil
 import kotlin.time.Duration.Companion.seconds
 private const val NETWORK_STREAM_ANIME_ID = Long.MIN_VALUE + 101
 private const val NETWORK_STREAM_EPISODE_ID = Long.MIN_VALUE + 102
@@ -2572,54 +2576,116 @@ class PlayerViewModel(
         return null
     }
 
-    val introSkipEnabled = playerPreferences.enableSkipIntro().get()
-    private val autoSkip = playerPreferences.autoSkipIntro().get()
-    private val netflixStyle = playerPreferences.enableNetflixStyleIntroSkip().get()
+    /** Whether openings or endings are handled at all; AniSkip is only queried when they are. */
+    val introSkipEnabled: Boolean
+        get() = playerPreferences.openingSkipMode().get() != ChapterSkipMode.Off ||
+            playerPreferences.endingSkipMode().get() != ChapterSkipMode.Off
 
-    private val defaultWaitingTime = playerPreferences.waitingTimeIntroSkip().get()
-    var waitingSkipIntro = defaultWaitingTime
+    private val chapterSkipPlanner = ChapterSkipPlanner()
+
+    private fun plannerChapters() = chapters.value.map {
+        ChapterSkipPlanner.Chapter(start = it.start, type = it.chapterType, name = it.name)
+    }
 
     fun setChapter(position: Float) {
-        getCurrentChapter(position)?.let { (chapterIndex, chapter) ->
+        getCurrentChapter(position)?.let { (_, chapter) ->
             if (currentChapter.value != chapter) {
                 _currentChapter.update { _ -> chapter }
             }
+        }
 
-            if (!introSkipEnabled) {
-                return
-            }
+        // Chapters and positions can still belong to the previous video while one is loading
+        if (isLoadingEpisode.value) return
 
-            if (chapter.chapterType == ChapterType.Other) {
-                _skipIntroText.update { _ -> null }
-                waitingSkipIntro = defaultWaitingTime
-            } else {
-                val nextChapterPos = chapters.value.getOrNull(chapterIndex + 1)?.start ?: pos.value
+        val action = chapterSkipPlanner.onPosition(
+            episodeKey = currentEpisode.value?.id,
+            position = position,
+            duration = duration.value,
+            chapters = plannerChapters(),
+            settings = ChapterSkipPlanner.Settings(
+                openingMode = playerPreferences.openingSkipMode().get(),
+                endingMode = playerPreferences.endingSkipMode().get(),
+                countdownSeconds = playerPreferences.waitingTimeIntroSkip().get(),
+                hasNextEpisode = hasNextEpisode.value,
+            ),
+        )
+        applyChapterSkipAction(action)
+    }
 
-                if (netflixStyle) {
-                    // show a toast with the seconds before the skip
-                    if (waitingSkipIntro == defaultWaitingTime) {
-                        eventChannel.trySend(
-                            Event.ShowToast(
-                                "Skip Intro: ${context.stringResource(
-                                    AYMR.strings.player_aniskip_dontskip_toast,
-                                    chapter.name,
-                                    waitingSkipIntro,
-                                )}",
-                            ),
+    fun onSkipIntro() {
+        if (isLoadingEpisode.value) return
+        applyChapterSkipAction(
+            chapterSkipPlanner.onButtonPressed(
+                position = pos.value,
+                duration = duration.value,
+                chapters = plannerChapters(),
+            ),
+        )
+    }
+
+    private fun applyChapterSkipAction(action: ChapterSkipPlanner.Action) {
+        when (action) {
+            ChapterSkipPlanner.Action.None -> _skipIntroText.update { _ -> null }
+
+            is ChapterSkipPlanner.Action.ShowSkipButton -> updateSkipIntroButton(action.chapter.type)
+
+            is ChapterSkipPlanner.Action.CountingDown -> {
+                if (action.started) {
+                    val text = if (action.playNext) {
+                        context.stringResource(
+                            TLMR.strings.player_ending_play_next_toast,
+                            action.chapter.name,
+                            action.secondsLeft,
+                        )
+                    } else {
+                        context.stringResource(
+                            AYMR.strings.player_aniskip_dontskip_toast,
+                            action.chapter.name,
+                            action.secondsLeft,
                         )
                     }
-                    showSkipIntroButton(chapter, nextChapterPos, waitingSkipIntro)
-                    waitingSkipIntro--
-                } else if (autoSkip) {
-                    seekToWithText(
-                        seekValue = nextChapterPos.toInt(),
-                        text = context.stringResource(AYMR.strings.player_intro_skipped, chapter.name),
-                    )
+                    eventChannel.trySend(Event.ShowToast(text))
+                }
+                _skipIntroText.update { _ -> context.stringResource(AYMR.strings.player_aniskip_dontskip) }
+            }
+
+            is ChapterSkipPlanner.Action.SkipTo -> {
+                updateSkipIntroButton(action.chapter.type)
+                seekToWithText(
+                    // Seek to whole seconds, so round up to land past the chapter's start
+                    seekValue = ceil(action.position).toInt(),
+                    text = context.stringResource(AYMR.strings.player_aniskip_skip, action.chapter.name),
+                )
+            }
+
+            is ChapterSkipPlanner.Action.EndOfEpisode -> {
+                updateSkipIntroButton(action.chapter.type)
+                if (playerPreferences.autoplayEnabled().get() && hasNextEpisode.value) {
+                    playNextEpisodeAfterEnding()
                 } else {
-                    updateSkipIntroButton(chapter.chapterType)
+                    // Let the video end; mpv keeps the last frame (keep-open)
+                    seekToWithText(
+                        seekValue = duration.value.toInt(),
+                        text = context.stringResource(AYMR.strings.player_aniskip_skip, action.chapter.name),
+                    )
                 }
             }
+
+            is ChapterSkipPlanner.Action.PlayNext -> {
+                updateSkipIntroButton(action.chapter.type)
+                playNextEpisodeAfterEnding()
+            }
         }
+    }
+
+    /**
+     * The rest of the episode is the ending: handle it as reaching the end of the video (marks the
+     * episode seen with the usual progress threshold) and start the next one, as autoplay does.
+     */
+    private fun playNextEpisodeAfterEnding() {
+        val totalSeconds = duration.value.toInt()
+        if (totalSeconds > 0) onSecondReached(totalSeconds, totalSeconds)
+        changeEpisode(previous = false, autoPlay = true)
     }
 
     private fun updateSkipIntroButton(chapterType: ChapterType) {
@@ -2632,39 +2698,6 @@ class PlayerViewModel(
                     context.stringResource(skipButtonString),
                 )
             }
-        }
-    }
-
-    private fun showSkipIntroButton(chapter: IndexedSegment, nextChapterPos: Float, waitingTime: Int) {
-        if (waitingTime > -1) {
-            if (waitingTime > 0) {
-                _skipIntroText.update { _ -> context.stringResource(AYMR.strings.player_aniskip_dontskip) }
-            } else {
-                seekToWithText(
-                    seekValue = nextChapterPos.toInt(),
-                    text = context.stringResource(AYMR.strings.player_aniskip_skip, chapter.name),
-                )
-            }
-        } else {
-            // when waitingTime is -1, it means that the user cancelled the skip
-            updateSkipIntroButton(chapter.chapterType)
-        }
-    }
-
-    fun onSkipIntro() {
-        getCurrentChapter()?.let { (chapterIndex, chapter) ->
-            // this stops the counter
-            if (waitingSkipIntro > 0 && netflixStyle) {
-                waitingSkipIntro = -1
-                return
-            }
-
-            val nextChapterPos = chapters.value.getOrNull(chapterIndex + 1)?.start ?: pos.value
-
-            seekToWithText(
-                seekValue = nextChapterPos.toInt(),
-                text = context.stringResource(AYMR.strings.player_aniskip_skip, chapter.name),
-            )
         }
     }
 

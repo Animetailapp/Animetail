@@ -457,4 +457,14 @@
     <string name="audio_language_original">Original language</string>
     <string name="audio_language_original_detected">Original language (%s)</string>
     <string name="audio_language_dialog_message">Used for this show when picking the audio track. Picking an audio track in the player also changes it.</string>
+    <!-- Opening and ending skip -->
+    <string name="pref_opening_skip_mode">Openings and recaps</string>
+    <string name="pref_ending_skip_mode">Endings</string>
+    <string name="pref_chapter_skip_off">Off</string>
+    <string name="pref_chapter_skip_button">Show skip button</string>
+    <string name="pref_chapter_skip_countdown">Skip after a countdown</string>
+    <string name="pref_chapter_skip_auto">Skip automatically</string>
+    <string name="pref_chapter_skip_play_next">Play next episode</string>
+    <string name="pref_chapter_skip_countdown_time">Countdown length</string>
+    <string name="player_ending_play_next_toast">%1$s - playing next episode in %2$d seconds</string>
 </resources>
