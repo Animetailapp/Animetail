@@ -45,6 +45,15 @@ class PlayerPreferences(
     fun disabledHosters() = preferenceStore.getString("pref_disabled_hosters", "")
     fun hosterCacheMinutes() = preferenceStore.getInt("pref_hoster_cache_minutes", 120)
     fun hosterListCacheMinutes() = preferenceStore.getInt("pref_hoster_list_cache_minutes", 1440)
+    fun videoCacheMaxMegabytes() = preferenceStore.getInt("pref_video_cache_max_megabytes", 512)
+    fun prefetchVideoSegments() = preferenceStore.getBoolean("pref_prefetch_video_segments", true)
+
+    // 0 picks a size from the Android version.
+    fun playerBufferMegabytes() = preferenceStore.getInt("pref_player_buffer_megabytes", 0)
+    fun rememberLastVideo() = preferenceStore.getBoolean("pref_remember_last_video", true)
+    fun preloadNextEpisode() = preferenceStore.getBoolean("pref_preload_next_episode", true)
+    fun clearVideoCacheWhenDone() = preferenceStore.getBoolean("pref_clear_video_cache_when_done", true)
+    fun fastVideoStart() = preferenceStore.getBoolean("pref_fast_video_start", true)
 
     // Display
 

@@ -215,6 +215,24 @@ fun BrowseAnimeSourceScreen(
                             },
                         )
                     }
+                    // KMK -->
+                    state.savedSearches.forEach { savedSearch ->
+                        FilterChip(
+                            selected = state.listing is Listing.Search &&
+                                (state.listing as Listing.Search).savedSearchId == savedSearch.id,
+                            onClick = {
+                                viewModel.onSavedSearch(savedSearch) {
+                                    context.toast(it)
+                                }
+                            },
+                            label = {
+                                Text(
+                                    text = savedSearch.name,
+                                )
+                            },
+                        )
+                    }
+                    // KMK <--
                     if (state.filterable) {
                         FilterChip(
                             selected = state.listing is Listing.Search &&
@@ -243,24 +261,6 @@ fun BrowseAnimeSourceScreen(
                             },
                         )
                     }
-                    // KMK -->
-                    state.savedSearches.forEach { savedSearch ->
-                        FilterChip(
-                            selected = state.listing is Listing.Search &&
-                                (state.listing as Listing.Search).savedSearchId == savedSearch.id,
-                            onClick = {
-                                viewModel.onSavedSearch(savedSearch) {
-                                    context.toast(it)
-                                }
-                            },
-                            label = {
-                                Text(
-                                    text = savedSearch.name,
-                                )
-                            },
-                        )
-                    }
-                    // KMK <--
                 }
 
                 HorizontalDivider()

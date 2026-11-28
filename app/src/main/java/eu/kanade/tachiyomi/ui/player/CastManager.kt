@@ -366,8 +366,11 @@ class CastManager(
         castProgressJob?.cancel()
         castProgressJob = activity.lifecycleScope.launch {
             while (castSession?.isConnected == true) {
-                val currentPosition = getCurrentCastPosition()
-                viewModel?.updateCastProgress(currentPosition.toFloat() / 1000)
+                // A connected device with nothing loaded reports 0, which would keep overwriting the
+                // position of the video playing on the phone.
+                if (castSession?.remoteMediaClient?.hasMediaSession() == true) {
+                    viewModel?.updateCastProgress(getCurrentCastPosition().toFloat() / 1000)
+                }
                 delay(1000)
             }
         }

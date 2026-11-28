@@ -23,6 +23,7 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
+import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
 import eu.kanade.tachiyomi.util.lang.toLocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -251,12 +252,14 @@ class AnimeUpdatesViewModel(
      */
     fun markUpdatesSeen(updates: List<AnimeUpdatesItem>, seen: Boolean) {
         viewModelScope.launchIO {
-            setSeenStatus.await(
-                seen = seen,
-                episodes = updates
-                    .mapNotNull { getEpisode.await(it.update.episodeId) }
-                    .toTypedArray(),
-            )
+            val episodes = updates.mapNotNull { item ->
+                getEpisode.await(item.update.episodeId)?.let { item.update.sourceId to it }
+            }
+            setSeenStatus.await(seen = seen, episodes = episodes.map { it.second }.toTypedArray())
+            if (seen) {
+                episodes.groupBy({ it.first }, { it.second.url })
+                    .forEach { (sourceId, urls) -> VideoCacheProxy.clearFinishedEpisodes(context, sourceId, urls) }
+            }
         }
         toggleAllSelection(false)
     }

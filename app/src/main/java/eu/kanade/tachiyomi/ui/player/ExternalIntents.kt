@@ -25,6 +25,9 @@ import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.anime.isNsfw
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
+import eu.kanade.tachiyomi.ui.player.cache.isLoopbackUrl
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.loader.EpisodeLoader
 import eu.kanade.tachiyomi.ui.player.loader.HosterLoader
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
@@ -37,6 +40,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import logcat.LogPriority
 import mihon.app.di.appGraph
+import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.Request
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withIOContext
@@ -58,6 +64,7 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 import java.io.File
+import java.io.IOException
 import java.util.Date
 
 class ExternalIntents(context: Context) {
@@ -93,9 +100,10 @@ class ExternalIntents(context: Context) {
         if (!initAnime(animeId, episodeId)) return null
         val hosters = EpisodeLoader.getHosters(context, episode, anime, source)
 
-        val video = chosenVideo
+        val selectedVideo = chosenVideo
             ?: HosterLoader.getBestVideo(context, source, hosters)
             ?: throw Exception("Video list is empty")
+        val video = withIOContext { refreshedIfExpired(selectedVideo) }
 
         var videoUrl = getVideoUrl(source, context, video) ?: return null
 
@@ -112,6 +120,9 @@ class ExternalIntents(context: Context) {
         }
 
         val pkgName = playerPreferences.externalPlayerPreference().get()
+        // Web Video Caster reads the headers from the intent and has to see the real link to
+        // play it in its own player or cast it.
+        if (pkgName != WEB_VIDEO_CASTER) videoUrl = proxiedWithHeaders(videoUrl, video) ?: videoUrl
 
         // AM (DISCORD) -->
         withIOContext {
@@ -241,9 +252,7 @@ class ExternalIntents(context: Context) {
             addExtrasAndFlags(true, this)
 
             val headers = Bundle()
-            video.headers?.forEach {
-                headers.putString(it.first, it.second)
-            }
+            videoHeaders(video)?.forEach { (name, value) -> headers.putString(name, value) }
 
             val localLangName = LocaleHelper.getSimpleLocaleDisplayName()
             video.subtitleTracks.firstOrNull {
@@ -255,7 +264,6 @@ class ExternalIntents(context: Context) {
             }
 
             putExtra("android.media.intent.extra.HTTP_HEADERS", headers)
-            putExtra("secure_uri", true)
         }
     }
 
@@ -336,7 +344,6 @@ class ExternalIntents(context: Context) {
             putExtra("position", getLastSecondSeen().toInt())
             putExtra("return_result", true)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            if (isSupportedPlayer) putExtra("secure_uri", true)
         }
     }
 
@@ -349,18 +356,67 @@ class ExternalIntents(context: Context) {
      */
     private fun addVideoHeaders(isSupportedPlayer: Boolean, video: Video, intent: Intent): Intent {
         return intent.apply {
-            val headers = video.headers ?: (source as? AnimeHttpSource)?.headers
-            if (headers != null) {
-                var headersArray = arrayOf<String>()
-                for (header in headers) {
-                    headersArray += arrayOf(header.first, header.second)
-                }
-                putExtra("headers", headersArray)
-                val headersString = headersArray.drop(2).joinToString(": ")
-                if (!isSupportedPlayer) putExtra("http-header-fields", headersString)
+            val headers = videoHeaders(video) ?: return@apply
+            putExtra("headers", headers.flatMap { (name, value) -> listOf(name, value) }.toTypedArray())
+            if (!isSupportedPlayer) {
+                putExtra("http-header-fields", headers.joinToString(",") { (name, value) -> "$name: $value" })
             }
         }
     }
+
+    // A cached link may have expired, the player would only get an error from the host
+    // (mp4upload answers 403), so it's checked first and the same video is loaded again.
+    private suspend fun refreshedIfExpired(video: Video): Video {
+        val url = video.videoUrl.toHttpUrlOrNull() ?: return video
+        if (url.toString().isLoopbackUrl() || video.usesHttpServer()) return video
+        val request = Request.Builder()
+            .url(url)
+            .headers(video.headers ?: Headers.headersOf())
+            .header("Range", "bytes=0-0")
+            .build()
+        val expired = try {
+            appGraph.networkHelper.client.newCall(request).execute().use { it.code in 400..499 }
+        } catch (e: IOException) {
+            logcat(LogPriority.WARN, e) { "Couldn't check the video link before opening it" }
+            false
+        }
+        if (!expired) return video
+        return reloadedVideo(video.videoTitle) ?: video
+    }
+
+    private suspend fun reloadedVideo(videoTitle: String): Video? {
+        EpisodeLoader.invalidateCache(appContext, episode, source)
+        return EpisodeLoader.getHosters(
+            appContext,
+            episode,
+            anime,
+            source,
+            useCache = false,
+        ).firstNotNullOfOrNull { hoster ->
+            val state = EpisodeLoader.loadHosterVideos(appContext, source, hoster, force = true, useCache = false)
+            (state as? HosterState.Ready)?.videoList?.find { it.videoTitle == videoTitle }
+        }
+    }
+
+    // Players that ignore the headers in the intent still get the video, the cache proxy adds them.
+    private fun proxiedWithHeaders(videoUrl: Uri, video: Video): Uri? {
+        val url = videoUrl.toString()
+        if (videoUrl.scheme !in setOf("http", "https") || url.isLoopbackUrl() || video.headers == null) return null
+        val requiredHeaders = Headers.Builder()
+            .apply { videoHeaders(video)?.forEach { (name, value) -> add(name, value) } }
+            .build()
+        return VideoCacheProxy.shared(appContext)?.proxyUrl(url, requiredHeaders = requiredHeaders)?.toUri()
+    }
+
+    // Extensions may name headers in lower case, as OkHttp accepts, but some players only look
+    // for the usual spelling (mp4upload answers 403 when its "referer" is dropped).
+    private fun videoHeaders(video: Video): List<Pair<String, String>>? {
+        val headers = video.headers ?: (source as? AnimeHttpSource)?.headers ?: return null
+        return headers.map { (name, value) -> canonicalHeaderName(name) to value }
+    }
+
+    private fun canonicalHeaderName(name: String): String =
+        name.split('-').joinToString("-") { part -> part.lowercase().replaceFirstChar { it.uppercase() } }
 
     /**
      * Returns the MIME type based on the video's extension.
