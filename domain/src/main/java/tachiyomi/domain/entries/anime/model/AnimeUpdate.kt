@@ -38,6 +38,7 @@ data class AnimeUpdate(
     val memo: JsonObject? = null,
     val audioLanguage: String? = null,
     val originalLanguage: String? = null,
+    val autoDownload: Long? = null,
 )
 
 fun Anime.toAnimeUpdate(): AnimeUpdate {
@@ -75,5 +76,6 @@ fun Anime.toAnimeUpdate(): AnimeUpdate {
         memo = memo,
         audioLanguage = audioLanguage,
         originalLanguage = originalLanguage,
+        autoDownload = autoDownload,
     )
 }

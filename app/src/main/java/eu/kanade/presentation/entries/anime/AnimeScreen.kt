@@ -168,6 +168,7 @@ fun AnimeScreen(
     // SY <--
     changeAnimeSkipIntro: (() -> Unit)?,
     changeAnimeAudioLanguage: (() -> Unit)?,
+    changeAnimeAutoDownload: (() -> Unit)?,
 
     // For bottom action menu
     onMultiBookmarkClicked: (List<Episode>, bookmarked: Boolean) -> Unit,
@@ -250,6 +251,7 @@ fun AnimeScreen(
             // SY <--
             changeAnimeSkipIntro = changeAnimeSkipIntro,
             changeAnimeAudioLanguage = changeAnimeAudioLanguage,
+            changeAnimeAutoDownload = changeAnimeAutoDownload,
             onMultiBookmarkClicked = onMultiBookmarkClicked,
             onMultiFillermarkClicked = onMultiFillermarkClicked,
             onMultiMarkAsSeenClicked = onMultiMarkAsSeenClicked,
@@ -306,6 +308,7 @@ fun AnimeScreen(
             onEditIntervalClicked = onEditFetchIntervalClicked,
             changeAnimeSkipIntro = changeAnimeSkipIntro,
             changeAnimeAudioLanguage = changeAnimeAudioLanguage,
+            changeAnimeAutoDownload = changeAnimeAutoDownload,
             onMigrateClicked = onMigrateClicked,
             onEditNotesClicked = onEditNotesClicked,
             // SY -->
@@ -383,6 +386,7 @@ private fun AnimeScreenSmallImpl(
     // SY <--
     changeAnimeSkipIntro: (() -> Unit)?,
     changeAnimeAudioLanguage: (() -> Unit)?,
+    changeAnimeAutoDownload: (() -> Unit)?,
     onSettingsClicked: (() -> Unit)?,
 
     // For bottom action menu
@@ -504,6 +508,7 @@ private fun AnimeScreenSmallImpl(
                     onClickSettings = onSettingsClicked,
                     changeAnimeSkipIntro = changeAnimeSkipIntro,
                     changeAnimeAudioLanguage = changeAnimeAudioLanguage,
+                    changeAnimeAutoDownload = changeAnimeAutoDownload,
                     actionModeCounter = selectedEpisodeCount,
                     onCancelActionMode = { onAllEpisodeSelected(false) },
                     onSelectAll = { onAllEpisodeSelected(true) },
@@ -869,6 +874,7 @@ fun AnimeScreenLargeImpl(
     // SY <--
     changeAnimeSkipIntro: (() -> Unit)?,
     changeAnimeAudioLanguage: (() -> Unit)?,
+    changeAnimeAutoDownload: (() -> Unit)?,
     onSettingsClicked: (() -> Unit)?,
 
     // For bottom action menu
@@ -979,6 +985,7 @@ fun AnimeScreenLargeImpl(
                     onClickSettings = onSettingsClicked,
                     changeAnimeSkipIntro = changeAnimeSkipIntro,
                     changeAnimeAudioLanguage = changeAnimeAudioLanguage,
+                    changeAnimeAutoDownload = changeAnimeAutoDownload,
                     actionModeCounter = selectedChapterCount,
                     onSelectAll = { onAllEpisodeSelected(true) },
                     onInvertSelection = { onInvertSelection() },

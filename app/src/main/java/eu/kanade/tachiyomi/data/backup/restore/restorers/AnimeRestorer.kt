@@ -162,6 +162,7 @@ class AnimeRestorer(
                 memo = anime.memo,
                 audioLanguage = anime.audioLanguage,
                 originalLanguage = null,
+                autoDownload = anime.autoDownload,
             )
         }
         return anime
@@ -338,6 +339,7 @@ class AnimeRestorer(
                 backgroundLastModified = anime.backgroundLastModified,
                 memo = anime.memo,
                 audioLanguage = anime.audioLanguage,
+                autoDownload = anime.autoDownload,
             )
         }
     }

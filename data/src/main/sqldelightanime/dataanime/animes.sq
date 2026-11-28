@@ -42,7 +42,8 @@ CREATE TABLE animes(
     memo BLOB AS JsonObject NOT NULL DEFAULT '{}',
     notes TEXT NOT NULL DEFAULT "",
     audio_language TEXT NOT NULL DEFAULT "",
-    original_language TEXT NOT NULL DEFAULT ""
+    original_language TEXT NOT NULL DEFAULT "",
+    auto_download INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX animelib_favorite_index ON animes(favorite) WHERE favorite = 1;
@@ -83,7 +84,8 @@ SELECT
     last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
     update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
     is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
-    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language
+    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language,
+    auto_download
 FROM animes
 WHERE _id = :id;
 
@@ -94,7 +96,8 @@ SELECT
     last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
     update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
     is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
-    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language
+    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language,
+    auto_download
 FROM animes
 WHERE url = :url AND source = :source
 LIMIT 1;
@@ -105,7 +108,8 @@ SELECT
     last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
     update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
     is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
-    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language
+    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language,
+    auto_download
 FROM animes
 WHERE favorite = 1;
 
@@ -115,7 +119,8 @@ SELECT
     last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
     update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
     is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
-    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language
+    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language,
+    auto_download
 FROM animes
 WHERE favorite = 0 AND _id IN (
     SELECT DISTINCT episodes.anime_id
@@ -129,7 +134,8 @@ SELECT
     last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
     update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
     is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
-    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language
+    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language,
+    auto_download
 FROM animes;
 
 getAllAnimeSourceAndUrl:
@@ -142,7 +148,8 @@ SELECT
     last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
     update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
     is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
-    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language
+    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language,
+    auto_download
 FROM animes
 WHERE favorite_modified_at IS NOT NULL;
 
@@ -160,7 +167,8 @@ SELECT
     last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
     update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
     is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
-    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language
+    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language,
+    auto_download
 FROM animes
 WHERE favorite = 1
 AND source = :sourceId;
@@ -171,7 +179,8 @@ SELECT
     last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
     update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
     is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
-    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language
+    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language,
+    auto_download
 FROM animes
 WHERE favorite = 1
 AND LOWER(title) = :title
@@ -183,7 +192,8 @@ SELECT
     last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
     update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
     is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
-    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language
+    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language,
+    auto_download
 FROM animes
 WHERE next_update >= :startOfDay
 AND favorite = 1
@@ -238,7 +248,8 @@ SELECT
     last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added,
     update_strategy, calculate_interval, last_modified_at, favorite_modified_at, version,
     is_syncing, fetch_type, parent_id, season_flags, season_number, season_source_order,
-    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language
+    background_url, background_last_modified, `cast`, memo, notes, audio_language, original_language,
+    auto_download
 FROM animes
 WHERE parent_id = :parentId;
 
@@ -261,12 +272,12 @@ AND (
 );
 
 insert:
-INSERT INTO animes(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, fetch_type, parent_id, season_flags, season_number, season_source_order, background_url, background_last_modified, "cast", memo, notes, audio_language)
-VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :episodeFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :fetchType, :parentId, :seasonFlags, :seasonNumber, :seasonSourceOrder, :backgroundUrl, :backgroundLastModified, :cast, :memo, :notes, :audioLanguage);
+INSERT INTO animes(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, fetch_type, parent_id, season_flags, season_number, season_source_order, background_url, background_last_modified, "cast", memo, notes, audio_language, auto_download)
+VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :episodeFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :fetchType, :parentId, :seasonFlags, :seasonNumber, :seasonSourceOrder, :backgroundUrl, :backgroundLastModified, :cast, :memo, :notes, :audioLanguage, :autoDownload);
 
 insertReturningId:
-INSERT INTO animes(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, fetch_type, parent_id, season_flags, season_number, season_source_order, background_url, background_last_modified, "cast", memo, notes, audio_language)
-VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :episodeFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :fetchType, :parentId, :seasonFlags, :seasonNumber, :seasonSourceOrder, :backgroundUrl, :backgroundLastModified, :cast, :memo, :notes, :audioLanguage)
+INSERT INTO animes(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, episode_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, fetch_type, parent_id, season_flags, season_number, season_source_order, background_url, background_last_modified, "cast", memo, notes, audio_language, auto_download)
+VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :episodeFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :fetchType, :parentId, :seasonFlags, :seasonNumber, :seasonSourceOrder, :backgroundUrl, :backgroundLastModified, :cast, :memo, :notes, :audioLanguage, :autoDownload)
 RETURNING _id;
 
 update:
@@ -303,6 +314,7 @@ UPDATE animes SET
     memo = coalesce(:memo, memo),
     notes = coalesce(:notes, notes),
     audio_language = coalesce(:audioLanguage, audio_language),
-    original_language = coalesce(:originalLanguage, original_language)
+    original_language = coalesce(:originalLanguage, original_language),
+    auto_download = coalesce(:autoDownload, auto_download)
 WHERE _id = :animeId;
 

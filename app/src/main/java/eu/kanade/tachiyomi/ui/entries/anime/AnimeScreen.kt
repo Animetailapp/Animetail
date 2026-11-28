@@ -35,6 +35,7 @@ import eu.kanade.presentation.browse.RemoveEntryDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.entries.EditCoverAction
 import eu.kanade.presentation.entries.anime.AnimeAudioLanguageDialog
+import eu.kanade.presentation.entries.anime.AnimeAutoDownloadDialog
 import eu.kanade.presentation.entries.anime.AnimeScreen
 import eu.kanade.presentation.entries.anime.DuplicateAnimeDialog
 import eu.kanade.presentation.entries.anime.EpisodeSettingsDialog
@@ -289,6 +290,8 @@ private fun AnimeDetailContent(
             .takeIf { successState.anime.favorite && successState.anime.fetchType == FetchType.Episodes },
         changeAnimeAudioLanguage = viewModel::showAnimeAudioLanguageDialog
             .takeIf { !successState.source.isLocalOrStub() },
+        changeAnimeAutoDownload = viewModel::showAnimeAutoDownloadDialog
+            .takeIf { successState.anime.favorite && !successState.source.isLocalOrStub() },
         onMultiBookmarkClicked = viewModel::bookmarkEpisodes,
         onMultiFillermarkClicked = viewModel::fillermarkEpisodes,
         onMultiMarkAsSeenClicked = viewModel::markEpisodesSeen,
@@ -561,6 +564,15 @@ private fun AnimeDetailContent(
                     LanguageTags.parseList(viewModel.audioPreferences.preferredAudioLanguages().get())
                 },
                 onValueChanged = viewModel::setAnimeAudioLanguage,
+                onDismissRequest = onDismissRequest,
+            )
+        }
+
+        AnimeViewModel.Dialog.ChangeAnimeAutoDownload -> {
+            AnimeAutoDownloadDialog(
+                current = successState.anime.autoDownload,
+                isSeason = successState.anime.parentId != null,
+                onValueChanged = viewModel::setAnimeAutoDownload,
                 onDismissRequest = onDismissRequest,
             )
         }

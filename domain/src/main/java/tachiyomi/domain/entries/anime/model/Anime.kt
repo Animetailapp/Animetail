@@ -61,6 +61,8 @@ data class Anime(
     val audioLanguage: String = AUDIO_LANGUAGE_DEFAULT,
     /** Cached original language of the show, `"<tag>:<origin>"`, or empty when not resolved yet. */
     val originalLanguage: String = "",
+    /** Per-anime "Auto-download new episodes", see [AUTO_DOWNLOAD_DEFAULT]. */
+    val autoDownload: Long = AUTO_DOWNLOAD_DEFAULT,
 ) : JavaSerializable {
 
     // SY -->
@@ -354,6 +356,15 @@ data class Anime(
 
         /** [audioLanguage] value that picks the show's original language. */
         const val AUDIO_LANGUAGE_ORIGINAL = "original"
+
+        /** [autoDownload] value that follows the "Download new episodes" settings. */
+        const val AUTO_DOWNLOAD_DEFAULT = 0L
+
+        /** [autoDownload] value that downloads new episodes whatever the download settings say. */
+        const val AUTO_DOWNLOAD_ALWAYS = 1L
+
+        /** [autoDownload] value that never downloads new episodes. */
+        const val AUTO_DOWNLOAD_NEVER = 2L
 
         fun create() = Anime(
             id = -1L,
