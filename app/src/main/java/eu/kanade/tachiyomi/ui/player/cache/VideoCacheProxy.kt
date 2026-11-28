@@ -1,10 +1,9 @@
 package eu.kanade.tachiyomi.ui.player.cache
 
-import android.app.Application
-import eu.kanade.tachiyomi.network.NetworkHelper
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import android.content.Context
 import fi.iki.elonen.NanoHTTPD
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -15,8 +14,6 @@ import okhttp3.Response
 import okio.ByteString.Companion.decodeBase64
 import okio.ByteString.Companion.encodeUtf8
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 import java.io.IOException
 import java.util.UUID
@@ -467,14 +464,15 @@ class VideoCacheProxy(
         private fun episodePrefix(sourceId: Long, episodeUrl: String) = "$sourceId|$episodeUrl|"
 
         /** Deletes what was cached for these episodes, whatever hoster played them. */
-        fun clearEpisodes(sourceId: Long, episodeUrls: Collection<String>) {
-            sharedStore.clearOwned(ownedByEpisodes(sourceId, episodeUrls))
+        fun clearEpisodes(context: Context, sourceId: Long, episodeUrls: Collection<String>) {
+            sharedStore(context).clearOwned(ownedByEpisodes(sourceId, episodeUrls))
         }
 
-        fun episodesSizeBytes(sourceId: Long, episodeUrls: Collection<String>): Long =
-            sharedStore.ownedSizeBytes(ownedByEpisodes(sourceId, episodeUrls))
+        fun episodesSizeBytes(context: Context, sourceId: Long, episodeUrls: Collection<String>): Long =
+            sharedStore(context).ownedSizeBytes(ownedByEpisodes(sourceId, episodeUrls))
 
-        fun sourceSizeBytes(sourceId: Long): Long = sharedStore.ownedSizeBytes(ownedBySource(sourceId))
+        fun sourceSizeBytes(context: Context, sourceId: Long): Long =
+            sharedStore(context).ownedSizeBytes(ownedBySource(sourceId))
 
         private fun ownedByEpisodes(sourceId: Long, episodeUrls: Collection<String>): (String) -> Boolean {
             val prefixes = episodeUrls.map { episodePrefix(sourceId, it) }
@@ -486,12 +484,13 @@ class VideoCacheProxy(
          * qualities) go first, then the [otherEpisodeUrls] of the anime, then the rest by age.
          */
         fun preferEvictingOtherVideos(
+            context: Context,
             sourceId: Long,
             episodeUrl: String,
             playingKey: String,
             otherEpisodeUrls: Collection<String>,
         ) {
-            sharedStore.evictionGroup = evictionGroups(sourceId, episodeUrl, playingKey, otherEpisodeUrls)
+            sharedStore(context).evictionGroup = evictionGroups(sourceId, episodeUrl, playingKey, otherEpisodeUrls)
         }
 
         internal fun evictionGroups(
@@ -515,38 +514,47 @@ class VideoCacheProxy(
         private fun ownedBySource(sourceId: Long): (String) -> Boolean = { owner -> owner.startsWith("$sourceId|") }
 
         /** Clears the episodes once they're seen or downloaded, unless the user turned it off. */
-        fun clearFinishedEpisodes(sourceId: Long, episodeUrls: Collection<String>) {
-            if (episodeUrls.isEmpty() || !Injekt.get<PlayerPreferences>().clearVideoCacheWhenDone().get()) return
-            clearEpisodes(sourceId, episodeUrls)
+        fun clearFinishedEpisodes(context: Context, sourceId: Long, episodeUrls: Collection<String>) {
+            if (episodeUrls.isEmpty()) return
+            if (!context.applicationContext.appGraph.playerPreferences.clearVideoCacheWhenDone().get()) return
+            clearEpisodes(context, sourceId, episodeUrls)
         }
 
-        fun clearSource(sourceId: Long) {
-            sharedStore.clearOwned(ownedBySource(sourceId))
+        fun clearSource(context: Context, sourceId: Long) {
+            sharedStore(context).clearOwned(ownedBySource(sourceId))
         }
 
         /** Proxy used by the player; null when the video cache is turned off. */
-        val shared: VideoCacheProxy? get() {
-            val maxBytes = Injekt.get<PlayerPreferences>().videoCacheMaxMegabytes().get() * BYTES_PER_MEGABYTE
-            return if (maxBytes > 0) instance else null
+        fun shared(context: Context): VideoCacheProxy? {
+            val preferences = context.applicationContext.appGraph.playerPreferences
+            return if (preferences.videoCacheMaxMegabytes().get() > 0) instance(context) else null
         }
 
-        private val instance by lazy {
-            val preferences = Injekt.get<PlayerPreferences>()
-            val network = Injekt.get<NetworkHelper>()
+        /** Store of the shared proxy, also available while the cache is off so it can be cleared. */
+        fun sharedStore(context: Context): VideoCacheStore = instance(context).store
+
+        @Volatile
+        private var sharedInstance: VideoCacheProxy? = null
+
+        private fun instance(context: Context): VideoCacheProxy {
+            return sharedInstance ?: synchronized(this) {
+                sharedInstance ?: create(context.applicationContext).also { sharedInstance = it }
+            }
+        }
+
+        private fun create(context: Context): VideoCacheProxy {
+            val preferences = context.appGraph.playerPreferences
             val client = OkHttpClient.Builder()
-                .dns(network.client.dns)
+                .dns(context.appGraph.networkHelper.client.dns)
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .build()
             val store = VideoCacheStore(
-                dir = File(Injekt.get<Application>().cacheDir, "video_cache"),
+                dir = File(context.cacheDir, "video_cache"),
                 maxBytes = { preferences.videoCacheMaxMegabytes().get() * BYTES_PER_MEGABYTE },
             )
-            VideoCacheProxy(client, store, prefetchEnabled = { preferences.prefetchVideoSegments().get() })
+            return VideoCacheProxy(client, store, prefetchEnabled = { preferences.prefetchVideoSegments().get() })
         }
-
-        /** Store of the shared proxy, also available while the cache is off so it can be cleared. */
-        val sharedStore: VideoCacheStore get() = instance.store
 
         private const val BYTES_PER_MEGABYTE = 1024L * 1024
     }

@@ -1258,7 +1258,7 @@ class PlayerViewModel(
         if (!episode.seen) return
         // Not viewModelScope, it's already cancelled when called from onCleared.
         ProcessLifecycleOwner.get().lifecycleScope.launchIO {
-            VideoCacheProxy.clearFinishedEpisodes(sourceId, listOf(episode.url))
+            VideoCacheProxy.clearFinishedEpisodes(context, sourceId, listOf(episode.url))
         }
     }
 
@@ -1798,7 +1798,7 @@ class PlayerViewModel(
     private fun lastPlayedVideo(source: AnimeSource, hosterList: List<Hoster>): Pair<Int, Int>? {
         if (!playerPreferences.rememberLastVideo().get()) return null
         val episodeUrl = currentEpisode.value?.url ?: return null
-        val lastPlayed = LastPlayedVideoStore.shared.get(source.id, episodeUrl) ?: return null
+        val lastPlayed = LastPlayedVideoStore.shared(context).get(source.id, episodeUrl) ?: return null
         val hosterIdx = hosterList.indexOfFirst { it.hosterName == lastPlayed.hosterName && !it.lazy }
         if (hosterIdx == -1) return null
         rememberedVideoTitle = lastPlayed.videoTitle
@@ -1924,7 +1924,7 @@ class PlayerViewModel(
         val otherEpisodeUrls = currentPlaylist.value
             .filter { it.url != episodeUrl && it.id != nextEpisodeId }
             .map { it.url }
-        VideoCacheProxy.preferEvictingOtherVideos(source.id, episodeUrl, playingKey, otherEpisodeUrls)
+        VideoCacheProxy.preferEvictingOtherVideos(context, source.id, episodeUrl, playingKey, otherEpisodeUrls)
     }
 
     /** Called once mpv opened the current video, which is then remembered for the episode. */
@@ -1933,7 +1933,7 @@ class PlayerViewModel(
         val source = currentSource.value as? AnimeHttpSource ?: return
         val episodeUrl = currentEpisode.value?.url ?: return
         val video = selectedVideo() ?: return
-        LastPlayedVideoStore.shared.put(source.id, episodeUrl, video)
+        LastPlayedVideoStore.shared(context).put(source.id, episodeUrl, video)
     }
 
     // Reads the latest state inside the update: hosters finish loading concurrently, so a snapshot
@@ -2304,7 +2304,7 @@ class PlayerViewModel(
         val source = currentSource.value ?: return
         viewModelScope.launchIO {
             try {
-                NextEpisodePreloader.preload(nextEpisode, anime, source)
+                NextEpisodePreloader.preload(context, nextEpisode, anime, source)
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 logcat(LogPriority.WARN, e) { "Couldn't preload the next episode" }

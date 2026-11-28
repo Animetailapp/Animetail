@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.library.anime
 
+import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -103,6 +104,7 @@ typealias AnimeLibraryMap = Map<Category, List<AnimeLibraryItem>>
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @Suppress("LargeClass")
 class AnimeLibraryViewModel(
+    private val context: Context,
     private val getLibraryAnime: GetLibraryAnime,
     private val getCategories: GetVisibleAnimeCategories,
     private val getTracksPerAnime: GetTracksPerAnime,
@@ -669,7 +671,7 @@ class AnimeLibraryViewModel(
                 )
                 if (seen) {
                     val episodeUrls = getEpisodesByAnimeId.await(anime.anime.id).map { it.url }
-                    VideoCacheProxy.clearFinishedEpisodes(anime.anime.source, episodeUrls)
+                    VideoCacheProxy.clearFinishedEpisodes(context, anime.anime.source, episodeUrls)
                 }
             }
         }

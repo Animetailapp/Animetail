@@ -1304,7 +1304,7 @@ class PlayerActivity : BaseActivity() {
                     viewModel.updateVideo(newVideo)
                 } else if (useVideoCache && videoUrl.startsWith("http")) {
                     val cacheKey = viewModel.videoCacheKey(video)
-                    VideoCacheProxy.shared?.proxyUrl(videoUrl, cacheKey)?.let {
+                    VideoCacheProxy.shared(applicationContext)?.proxyUrl(videoUrl, cacheKey)?.let {
                         videoUrl = it
                         viewModel.videoCachePlaybackId = viewModel.playbackId
                         cacheKey?.let(viewModel::preferEvictingOtherVideos)

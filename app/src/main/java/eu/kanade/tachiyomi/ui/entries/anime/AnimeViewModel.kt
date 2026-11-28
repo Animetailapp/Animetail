@@ -1173,7 +1173,11 @@ class AnimeViewModel(
                 seen = seen,
                 episodes = episodes.toTypedArray(),
             )
-            if (seen) anime?.let { VideoCacheProxy.clearFinishedEpisodes(it.source, episodes.map(Episode::url)) }
+            if (seen) {
+                anime?.let {
+                    VideoCacheProxy.clearFinishedEpisodes(context, it.source, episodes.map(Episode::url))
+                }
+            }
 
             if (!seen || successState?.hasLoggedInTrackers == false || autoTrackState == AutoTrackState.NEVER) {
                 return@launchIO

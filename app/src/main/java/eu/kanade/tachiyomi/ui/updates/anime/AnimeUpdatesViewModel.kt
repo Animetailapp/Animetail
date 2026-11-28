@@ -258,7 +258,7 @@ class AnimeUpdatesViewModel(
             setSeenStatus.await(seen = seen, episodes = episodes.map { it.second }.toTypedArray())
             if (seen) {
                 episodes.groupBy({ it.first }, { it.second.url })
-                    .forEach { (sourceId, urls) -> VideoCacheProxy.clearFinishedEpisodes(sourceId, urls) }
+                    .forEach { (sourceId, urls) -> VideoCacheProxy.clearFinishedEpisodes(context, sourceId, urls) }
             }
         }
         toggleAllSelection(false)

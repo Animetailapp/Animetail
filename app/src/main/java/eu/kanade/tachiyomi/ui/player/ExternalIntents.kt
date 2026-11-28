@@ -386,7 +386,13 @@ class ExternalIntents(context: Context) {
 
     private suspend fun reloadedVideo(videoTitle: String): Video? {
         EpisodeLoader.invalidateCache(appContext, episode, source)
-        return EpisodeLoader.getHosters(appContext, episode, anime, source, useCache = false).firstNotNullOfOrNull { hoster ->
+        return EpisodeLoader.getHosters(
+            appContext,
+            episode,
+            anime,
+            source,
+            useCache = false,
+        ).firstNotNullOfOrNull { hoster ->
             val state = EpisodeLoader.loadHosterVideos(appContext, source, hoster, force = true, useCache = false)
             (state as? HosterState.Ready)?.videoList?.find { it.videoTitle == videoTitle }
         }
@@ -399,7 +405,7 @@ class ExternalIntents(context: Context) {
         val requiredHeaders = Headers.Builder()
             .apply { videoHeaders(video)?.forEach { (name, value) -> add(name, value) } }
             .build()
-        return VideoCacheProxy.shared?.proxyUrl(url, requiredHeaders = requiredHeaders)?.toUri()
+        return VideoCacheProxy.shared(appContext)?.proxyUrl(url, requiredHeaders = requiredHeaders)?.toUri()
     }
 
     // Extensions may name headers in lower case, as OkHttp accepts, but some players only look

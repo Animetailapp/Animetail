@@ -419,7 +419,7 @@ class AnimeDownloader(
             DiskUtil.createNoMediaFile(episodeDir, context)
 
             download.status = AnimeDownload.State.DOWNLOADED
-            VideoCacheProxy.clearFinishedEpisodes(download.source.id, listOf(download.episode.url))
+            VideoCacheProxy.clearFinishedEpisodes(context, download.source.id, listOf(download.episode.url))
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
             // If the video threw, it will resume here

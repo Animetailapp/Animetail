@@ -1,12 +1,10 @@
 package eu.kanade.tachiyomi.ui.player.loader
 
-import android.app.Application
+import android.content.Context
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 
 /** Hoster and video that last played for an episode, matched by name since indices change. */
@@ -67,8 +65,15 @@ class LastPlayedVideoStore(
     companion object {
         private const val DEFAULT_MAX_EPISODES = 500
 
-        val shared by lazy {
-            LastPlayedVideoStore(File(Injekt.get<Application>().filesDir, "last_played_videos.json"))
+        @Volatile
+        private var sharedInstance: LastPlayedVideoStore? = null
+
+        fun shared(context: Context): LastPlayedVideoStore {
+            return sharedInstance ?: synchronized(this) {
+                sharedInstance ?: LastPlayedVideoStore(
+                    File(context.applicationContext.filesDir, "last_played_videos.json"),
+                ).also { sharedInstance = it }
+            }
         }
     }
 }

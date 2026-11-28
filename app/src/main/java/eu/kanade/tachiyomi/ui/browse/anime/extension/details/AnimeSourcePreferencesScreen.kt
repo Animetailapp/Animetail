@@ -15,13 +15,11 @@ import eu.kanade.tachiyomi.ui.browse.manga.extension.details.ExtensionPreference
 import eu.kanade.tachiyomi.ui.browse.manga.extension.details.ExtensionSourcePreferencesContent
 import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
 import eu.kanade.tachiyomi.ui.player.loader.HosterCache
-import eu.kanade.tachiyomi.ui.player.loader.HosterCache
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.i18n.aniyomi.AYMR
@@ -68,23 +66,20 @@ fun AnimeSourcePreferencesScreen(sourceId: Long, animeId: Long? = null) {
             }
         }
     }
-
-    private suspend fun animeEpisodeUrls(animeId: Long): List<String> =
-        Injekt.get<GetEpisodesByAnimeId>().await(animeId).map { it.url }
 }
 
 private suspend fun videoCacheSizeBytes(context: Context, sourceId: Long, animeId: Long?): Long =
     if (animeId != null) {
-        VideoCacheProxy.episodesSizeBytes(sourceId, animeEpisodeUrls(context, animeId))
+        VideoCacheProxy.episodesSizeBytes(context, sourceId, animeEpisodeUrls(context, animeId))
     } else {
-        VideoCacheProxy.sourceSizeBytes(sourceId)
+        VideoCacheProxy.sourceSizeBytes(context, sourceId)
     }
 
 private suspend fun clearVideoCache(context: Context, sourceId: Long, animeId: Long?, onCleared: () -> Unit) {
     if (animeId != null) {
-        VideoCacheProxy.clearEpisodes(sourceId, animeEpisodeUrls(context, animeId))
+        VideoCacheProxy.clearEpisodes(context, sourceId, animeEpisodeUrls(context, animeId))
     } else {
-        VideoCacheProxy.clearSource(sourceId)
+        VideoCacheProxy.clearSource(context, sourceId)
     }
     withUIContext {
         onCleared()

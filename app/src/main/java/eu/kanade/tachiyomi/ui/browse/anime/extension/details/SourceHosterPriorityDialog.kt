@@ -9,12 +9,10 @@ import androidx.compose.ui.platform.LocalContext
 import eu.kanade.presentation.more.settings.screen.player.HosterPriorityDialog
 import eu.kanade.tachiyomi.ui.player.loader.HosterCache
 import eu.kanade.tachiyomi.ui.player.loader.HosterPriority
-import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.util.system.toast
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 /**
  * Edits the app-wide hoster priority showing only the hosters cached for [sourceId], so the order
@@ -23,9 +21,9 @@ import uy.kohesive.injekt.api.get
 @Composable
 fun SourceHosterPriorityDialog(sourceId: Long, onDismissRequest: () -> Unit) {
     val context = LocalContext.current
-    val preferences = remember { Injekt.get<PlayerPreferences>() }
+    val preferences = remember { context.appGraph.playerPreferences }
     val sourceHosters by produceState<List<String>?>(null, sourceId) {
-        value = withIOContext { HosterCache.shared.hosterNames(sourceId) }
+        value = withIOContext { HosterCache.shared(context).hosterNames(sourceId) }
     }
     val hosterNames = sourceHosters ?: return
 

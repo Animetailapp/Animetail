@@ -169,7 +169,7 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
         var showPriorityDialog by remember { mutableStateOf(false) }
         var linkCacheBytes by remember { mutableLongStateOf(0L) }
         LaunchedEffect(Unit) {
-            linkCacheBytes = withIOContext { HosterCache.shared.sizeBytes() }
+            linkCacheBytes = withIOContext { HosterCache.shared(context).sizeBytes() }
         }
 
         if (showPriorityDialog) {
@@ -260,7 +260,7 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
         val videoCacheEnabled = maxMegabytes.collectAsState().value > 0
         var usedBytes by remember { mutableLongStateOf(0L) }
         LaunchedEffect(Unit) {
-            usedBytes = withIOContext { VideoCacheProxy.sharedStore.sizeBytes() }
+            usedBytes = withIOContext { VideoCacheProxy.sharedStore(context).sizeBytes() }
         }
 
         return Preference.PreferenceGroup(
@@ -323,7 +323,7 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                     ),
                     onClick = {
                         scope.launchIO {
-                            VideoCacheProxy.sharedStore.clear()
+                            VideoCacheProxy.sharedStore(context).clear()
                             usedBytes = 0L
                         }
                         context.toast(AYMR.strings.pref_video_cache_cleared)

@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.player.loader
 
+import android.content.Context
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
@@ -14,11 +15,11 @@ import tachiyomi.domain.items.episode.model.Episode
  */
 object NextEpisodePreloader {
 
-    suspend fun preload(episode: Episode, anime: Anime, source: AnimeSource) {
-        if (source !is AnimeHttpSource || EpisodeLoader.isDownload(episode, anime)) return
-        val hosters = EpisodeLoader.getHosters(episode, anime, source)
-        val (hoster, video) = HosterLoader.getBestHosterVideo(source, hosters) ?: return
+    suspend fun preload(context: Context, episode: Episode, anime: Anime, source: AnimeSource) {
+        if (source !is AnimeHttpSource || EpisodeLoader.isDownload(context, episode, anime)) return
+        val hosters = EpisodeLoader.getHosters(context, episode, anime, source)
+        val (hoster, video) = HosterLoader.getBestHosterVideo(context, source, hosters) ?: return
         val cacheKey = VideoCacheProxy.cacheKey(source.id, episode.url, hoster.hosterName, video.videoTitle)
-        VideoCacheProxy.shared?.warmUp(video.videoUrl, video.headers ?: source.headers, cacheKey)
+        VideoCacheProxy.shared(context)?.warmUp(video.videoUrl, video.headers ?: source.headers, cacheKey)
     }
 }
