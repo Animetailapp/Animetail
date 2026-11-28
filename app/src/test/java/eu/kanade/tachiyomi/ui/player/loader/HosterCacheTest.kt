@@ -49,6 +49,18 @@ class HosterCacheTest {
     }
 
     @Test
+    fun `hosters sent with their videos expire like video lists`() {
+        val placeholder = Hoster(hosterUrl = "", hosterName = Hoster.NO_HOSTER_LIST, videoList = videos)
+        cache.putHosters(SOURCE, "/ep/1", listOf(placeholder))
+
+        now += 4.minutes.inWholeMilliseconds
+        assertEquals(listOf(placeholder), cache.getHosters(SOURCE, "/ep/1"))
+
+        now += 2.minutes.inWholeMilliseconds
+        assertNull(cache.getHosters(SOURCE, "/ep/1"))
+    }
+
+    @Test
     fun `a zero ttl turns off caching for that kind of list only`() {
         videoTtl = Duration.ZERO
         cache.putHosters(SOURCE, "/ep/1", listOf(voe))

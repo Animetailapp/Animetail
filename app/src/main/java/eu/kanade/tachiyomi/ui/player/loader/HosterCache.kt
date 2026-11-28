@@ -55,7 +55,15 @@ class HosterCache(
 
     fun getHosters(sourceId: Long, episodeUrl: String): List<Hoster>? = synchronized(this) {
         restoreIfNeeded()
-        hosters.freshValue(episodeKey(sourceId, episodeUrl), hosterTtl())
+        val key = episodeKey(sourceId, episodeUrl)
+        // Hosters sent with their videos, like the placeholder of extensions without hosters, hold
+        // stream links that expire like any video list.
+        val ttl = if (hosters[key]?.value.orEmpty().any { it.videoList != null }) {
+            minOf(hosterTtl(), videoTtl())
+        } else {
+            hosterTtl()
+        }
+        hosters.freshValue(key, ttl)
     }
 
     /**

@@ -1669,7 +1669,10 @@ class PlayerViewModel(
             _hosterState.update { _ -> hosterList.map(::initialHosterState) }
             cachedHosterIndices.clear()
             cachedHosterIndices.addAll(
-                hosterList.indices.filter { EpisodeLoader.hasCachedVideos(context, hosterList[it], source) },
+                // Videos sent with the hoster list may be as old as the cached list.
+                hosterList.indices.filter {
+                    hosterList[it].videoList != null || EpisodeLoader.hasCachedVideos(context, hosterList[it], source)
+                },
             )
             val requestedHosterIdx = requestedVideo?.first
                 ?.takeIf { _hosterState.value.getOrNull(it) is HosterState.Idle }
@@ -2011,7 +2014,13 @@ class PlayerViewModel(
     }
 
     private suspend fun retryWithFreshLinks(source: AnimeSource, hosterIdx: Int, failedVideo: Video): Boolean {
-        val hoster = hosterList.value.getOrNull(hosterIdx) ?: return false
+        val cachedHoster = hosterList.value.getOrNull(hosterIdx) ?: return false
+        val hoster = if (cachedHoster.videoList != null) {
+            refetchedHoster(source, cachedHoster) ?: return false
+        } else {
+            cachedHoster
+        }
+        _hosterList.update { list -> list.toMutableList().also { it[hosterIdx] = hoster } }
         val refreshed = EpisodeLoader.loadHosterVideos(context, source, hoster, force = true, useCache = false)
         _hosterState.updateAt(hosterIdx, refreshed)
 
@@ -2019,6 +2028,14 @@ class PlayerViewModel(
             ?.videoList?.indexOfFirst { it.videoTitle == failedVideo.videoTitle }
             ?: -1
         return videoIdx != -1 && loadVideo(source, hosterIdx, videoIdx)
+    }
+
+    // Videos sent with the hosters only get new links by fetching the episode's hosters again.
+    private suspend fun refetchedHoster(source: AnimeSource, hoster: Hoster): Hoster? {
+        val episode = currentEpisode.value?.toDomainEpisode() ?: return null
+        val anime = currentAnime.value ?: return null
+        return EpisodeLoader.getHosters(context, episode, anime, source, useCache = false)
+            .firstOrNull { it.hosterName == hoster.hosterName }
     }
 
     /**
