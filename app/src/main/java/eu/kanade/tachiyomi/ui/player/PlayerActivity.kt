@@ -89,6 +89,7 @@ import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
+import eu.kanade.tachiyomi.ui.player.utils.DownloadSegmentStamps
 import eu.kanade.tachiyomi.ui.player.utils.LanguageTags
 import eu.kanade.tachiyomi.util.system.powerManager
 import eu.kanade.tachiyomi.util.system.toShareIntent
@@ -115,6 +116,7 @@ import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.items.episode.segment.model.EpisodeSegment
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -143,6 +145,8 @@ class PlayerActivity : BaseActivity() {
     @Inject private lateinit var audioPreferences: AudioPreferences
 
     @Inject private lateinit var advancedPlayerPreferences: AdvancedPlayerPreferences
+
+    @Inject private lateinit var downloadSegmentStamps: DownloadSegmentStamps
 
     @Inject private lateinit var networkPreferences: NetworkPreferences
 
@@ -1476,6 +1480,8 @@ class PlayerActivity : BaseActivity() {
         setMpvMediaTitle()
         runOnUiThread { setupPlayerOrientation() }
         setupChapters()
+        // A downloaded file has none of the source's timestamps; use the ones saved at download
+        setupDownloadSegments(EpisodeSegment.Source.Source)
         setupTracks()
 
         // aniSkip stuff
@@ -1496,6 +1502,30 @@ class PlayerActivity : BaseActivity() {
                 viewModel.setChapter(viewModel.pos.value)
             }
         }
+        setupDownloadSegments(EpisodeSegment.Source.Detected)
+    }
+
+    /**
+     * Adds the openings/endings stored for a downloaded file (saved from the source at download
+     * time, or found by opening/ending detection) that the video has none of yet.
+     */
+    private suspend fun setupDownloadSegments(source: EpisodeSegment.Source) {
+        if (player.isExiting) return
+        val video = viewModel.currentVideo.value ?: return
+        val episodeId = viewModel.currentEpisode.value?.id ?: return
+        val existingTypes = video.timestamps.map { it.type }.toSet() + viewModel.chapters.value.map { it.chapterType }
+        val stamps = downloadSegmentStamps.forVideo(episodeId, video, existingTypes, source)
+            .map { it.copy(name = it.type.getStringRes()?.let(::stringResource) ?: "") }
+            .takeIf { it.isNotEmpty() }
+            ?: return
+        viewModel.updateChapters(
+            ChapterUtils.mergeChapters(
+                currentChapters = viewModel.chapters.value,
+                stamps = stamps,
+                duration = mpv.getPropertyInt("duration"),
+            ),
+        )
+        viewModel.setChapter(viewModel.pos.value)
     }
 
     private fun setMpvOptions() {

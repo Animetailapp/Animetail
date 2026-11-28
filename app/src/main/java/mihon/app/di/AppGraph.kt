@@ -90,6 +90,7 @@ import eu.kanade.tachiyomi.data.library.anime.AnimeMetadataUpdateJob
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateJob
 import eu.kanade.tachiyomi.data.library.manga.MangaMetadataUpdateJob
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
+import eu.kanade.tachiyomi.data.opdetect.OpeningEndingDetectionJob
 import eu.kanade.tachiyomi.data.saver.ImageSaver
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.data.sync.SyncManager
@@ -264,6 +265,7 @@ interface AppGraph : ViewModelGraph {
     fun inject(mangaExtensionInstallActivity: MangaExtensionInstallActivity)
     fun inject(animeExtensionInstallActivity: AnimeExtensionInstallActivity)
     fun inject(syncDataJob: SyncDataJob)
+    fun inject(openingEndingDetectionJob: OpeningEndingDetectionJob)
 
     val context: Context
 

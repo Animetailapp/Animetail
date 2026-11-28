@@ -1,0 +1,32 @@
+-- Opening/ending segments of a downloaded episode that the app keeps itself: the source's timestamps
+-- for the downloaded video, saved at download time (the file doesn't carry them), or worked out from
+-- the audio shared between downloaded episodes of a show.
+CREATE TABLE episode_segments(
+    episode_id INTEGER NOT NULL,
+    -- "opening", "ending", "recap" or "mixed_opening"
+    type TEXT NOT NULL,
+    -- Where the segment comes from: "source" (the source's timestamps for the downloaded video) or
+    -- "detected" (audio shared with other episodes)
+    source TEXT NOT NULL,
+    start_ms INTEGER NOT NULL,
+    end_ms INTEGER NOT NULL,
+    -- Size of the downloaded file the segment belongs to, so a re-download can be told apart
+    file_size INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY(episode_id, type, source),
+    FOREIGN KEY(episode_id) REFERENCES episodes (_id)
+    ON DELETE CASCADE
+);
+
+getByEpisodeId:
+SELECT *
+FROM episode_segments
+WHERE episode_id = :episodeId;
+
+insert:
+INSERT OR REPLACE INTO episode_segments(episode_id, type, source, start_ms, end_ms, file_size, updated_at)
+VALUES (:episodeId, :type, :source, :startMs, :endMs, :fileSize, :updatedAt);
+
+deleteByEpisodeIdAndSource:
+DELETE FROM episode_segments
+WHERE episode_id = :episodeId AND source = :source;
