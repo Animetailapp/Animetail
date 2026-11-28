@@ -32,6 +32,7 @@
     <string name="reset_info">Reset Info</string>
 
     <string name="pref_show_downloaded_episode_file_size">Show downloaded episode file size</string>
+    <string name="download_slots_anime_info">How many episodes download at once, each from a different source. Episodes of the same source download one at a time.</string>
 
     <string name="pref_category_fork">Fork Settings</string>
 
