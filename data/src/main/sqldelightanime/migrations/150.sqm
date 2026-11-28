@@ -1,0 +1,13 @@
+-- Opening/ending segments of downloaded episodes (see episode_segments.sq).
+CREATE TABLE episode_segments(
+    episode_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    source TEXT NOT NULL,
+    start_ms INTEGER NOT NULL,
+    end_ms INTEGER NOT NULL,
+    file_size INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY(episode_id, type, source),
+    FOREIGN KEY(episode_id) REFERENCES episodes (_id)
+    ON DELETE CASCADE
+);
