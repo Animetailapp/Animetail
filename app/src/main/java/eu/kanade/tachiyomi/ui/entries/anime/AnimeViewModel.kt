@@ -76,6 +76,7 @@ import eu.kanade.tachiyomi.ui.entries.anime.RelatedAnime.Companion.isLoading
 import eu.kanade.tachiyomi.ui.entries.anime.RelatedAnime.Companion.removeDuplicates
 import eu.kanade.tachiyomi.ui.entries.anime.RelatedAnime.Companion.sorted
 import eu.kanade.tachiyomi.ui.entries.anime.track.AnimeTrackItem
+import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
@@ -1172,6 +1173,11 @@ class AnimeViewModel(
                 seen = seen,
                 episodes = episodes.toTypedArray(),
             )
+            if (seen) {
+                anime?.let {
+                    VideoCacheProxy.clearFinishedEpisodes(context, it.source, episodes.map(Episode::url))
+                }
+            }
 
             if (!seen || successState?.hasLoggedInTrackers == false || autoTrackState == AutoTrackState.NEVER) {
                 return@launchIO

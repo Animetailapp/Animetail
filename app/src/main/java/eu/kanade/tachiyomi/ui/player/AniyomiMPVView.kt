@@ -119,7 +119,8 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         resetTrackSelection()
 
         // Limit demuxer cache since the defaults are too high for mobile devices
-        val cacheMegs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) 64 else 32
+        val cacheMegs = playerPreferences.playerBufferMegabytes().get().takeIf { it > 0 }
+            ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) 64 else 32
         setSafeOptionString("demuxer-max-bytes", "${cacheMegs * 1024 * 1024}")
         setSafeOptionString("demuxer-max-back-bytes", "${cacheMegs * 1024 * 1024}")
 
@@ -132,6 +133,13 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
             "demuxer-lavf-o",
             "reconnect=1,reconnect_on_network_error=1,reconnect_delay_max=5",
         )
+
+        // By default ffmpeg analyzes up to 5 MB or 5 seconds before playing. On HLS that downloads
+        // the first segments of the video even when playback resumes much later in it.
+        if (playerPreferences.fastVideoStart().get()) {
+            setSafeOptionString("demuxer-lavf-probesize", "${FAST_START_PROBE_BYTES}")
+            setSafeOptionString("demuxer-lavf-analyzeduration", "$FAST_START_ANALYZE_SECONDS")
+        }
 
         val screenshotDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
         screenshotDir.mkdirs()
@@ -307,3 +315,7 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         mpv?.setOptionString("sub-scale", subtitlePreferences.subtitleFontScale().get().toString())
     }
 }
+
+// Enough to read the codec setup of a couple of seconds of 1080p video.
+private const val FAST_START_PROBE_BYTES = 2 * 1024 * 1024
+private const val FAST_START_ANALYZE_SECONDS = 2

@@ -1,5 +1,7 @@
 package eu.kanade.tachiyomi.ui.player.loader
 
+import eu.kanade.tachiyomi.animesource.model.Video
+
 /**
  * User defined hoster order and disabled hosters, both stored as comma separated names.
  *
@@ -25,6 +27,13 @@ class HosterPriority(rawKeywords: String, rawDisabled: String = "") {
         )
     }
 
+    /**
+     * Sorts videos of an extension without hosters: keywords match the whole title, so a quality
+     * can also be preferred, while disabled entries are server names (see [serverName]).
+     */
+    fun sortVideosWithoutHosters(videos: List<Video>): List<Video> =
+        sort(videos) { it.videoTitle }.sortedBy { isDisabled(serverName(it.videoTitle)) }
+
     fun isDisabled(name: String): Boolean = disabled.any { it.equals(name, ignoreCase = true) }
 
     private fun rank(name: String): Int {
@@ -34,6 +43,18 @@ class HosterPriority(rawKeywords: String, rawDisabled: String = "") {
 
     companion object {
         fun parseNames(raw: String): List<String> = raw.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+
+        private val SERVER_SEPARATOR = Regex(""":| - |\(|\[|\|""")
+        private val TRAILING_QUALITY = Regex("""\s+\d{3,4}p\b.*$""", RegexOption.IGNORE_CASE)
+
+        /**
+         * Server of a video from an extension without hosters, which puts it in the video title,
+         * like "Okru" in "Okru:1080p" or "StreamWish - 720p".
+         */
+        fun serverName(videoTitle: String): String {
+            val server = videoTitle.split(SERVER_SEPARATOR, limit = 2).first().replace(TRAILING_QUALITY, "").trim()
+            return server.ifEmpty { videoTitle.trim() }
+        }
 
         /**
          * Applies the order picked for one episode to the saved order without dropping the names

@@ -2,6 +2,7 @@ package eu.kanade.presentation.entries.anime
 
 import android.content.ClipData
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -57,7 +58,7 @@ import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaQueueItem
 import com.google.android.gms.cast.MediaStatus
-import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.common.images.WebImage
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Assisted
@@ -72,7 +73,12 @@ import eu.kanade.presentation.components.TabbedDialogPaddings
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.player.cast.CastProgressSync
+import eu.kanade.tachiyomi.ui.player.cast.CastVideoUrl
+import eu.kanade.tachiyomi.ui.player.cast.ExpandedControlsActivity
+import eu.kanade.tachiyomi.ui.player.cast.castWhenConnected
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetHosterContent
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetVideoContent
@@ -103,6 +109,7 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
+import tachiyomi.presentation.core.util.collectAsState
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -365,16 +372,8 @@ class EpisodeOptionsDialogScreenModel(
     fun onClickHoster(hosterIndex: Int) {
         val hosterState = hosterState.value?.getOrNull()?.getOrNull(hosterIndex) ?: return
 
-        when (hosterState) {
-            is HosterState.Ready -> {
-                _hosterExpandedList.update { values ->
-                    values.toMutableList().apply {
-                        this[hosterIndex] = !hosterExpandedList.value[hosterIndex]
-                    }
-                }
-            }
-
-            is HosterState.Error, is HosterState.Idle -> {
+        when {
+            hosterState.canReload -> {
                 val hosterName = hosterState.name
                 _hosterState.updateAt(hosterIndex, HosterState.Loading(hosterName))
 
@@ -383,12 +382,19 @@ class EpisodeOptionsDialogScreenModel(
                         context,
                         _source.value!!,
                         _hosterList.value[hosterIndex],
+                        force = true,
                     )
                     _hosterState.updateAt(hosterIndex, newHosterState)
                 }
             }
 
-            is HosterState.Loading -> {}
+            hosterState is HosterState.Ready -> {
+                _hosterExpandedList.update { values ->
+                    values.toMutableList().apply {
+                        this[hosterIndex] = !hosterExpandedList.value[hosterIndex]
+                    }
+                }
+            }
         }
     }
 
@@ -525,6 +531,10 @@ private fun VideoList(
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val copiedString = stringResource(AYMR.strings.copied_video_link_to_clipboard)
+    // Same as the player's qualities sheet, so both list the same hosters.
+    val playerPreferences = context.appGraph.playerPreferences
+    val showFailedHosters by playerPreferences.showFailedHosters().collectAsState()
+    val showEmptyHosters by playerPreferences.showEmptyHosters().collectAsState()
 
     AnimatedVisibility(
         visible = !showAllQualities,
@@ -601,14 +611,23 @@ private fun VideoList(
                     onCastClicked = {
                         scope.launch {
                             if (context.appGraph.playerPreferences.enableCast().get()) {
-                                sendChaptersToCast(
-                                    context,
-                                    anime.title,
-                                    episode.name,
-                                    episode.lastSecondSeen,
-                                    anime.thumbnailUrl.orEmpty(),
-                                    currentVideo.videoUrl,
-                                )
+                                val sourceHeaders =
+                                    (context.appGraph.animeSourceManager.get(anime.source) as? AnimeHttpSource)?.headers
+                                val videoUrl =
+                                    withIOContext { CastVideoUrl.proxied(context, currentVideo, sourceHeaders) }
+                                        ?: currentVideo.videoUrl
+                                castWhenConnected(context) { session ->
+                                    sendChaptersToCast(
+                                        context,
+                                        session,
+                                        episode.id,
+                                        anime.title,
+                                        episode.name,
+                                        episode.lastSecondSeen,
+                                        anime.thumbnailUrl.orEmpty(),
+                                        videoUrl,
+                                    )
+                                }
                             } else {
                                 context.toast("Cast is disabled")
                             }
@@ -651,7 +670,7 @@ private fun VideoList(
                         selectedVideoIndex = selectedHosterVideoIndex,
                         onClickHoster = onClickHoster,
                         onClickVideo = onClickVideo,
-                        displayHosters = Pair(false, false),
+                        displayHosters = Pair(showFailedHosters, showEmptyHosters),
                     )
                 }
             }
@@ -773,18 +792,15 @@ private fun ClickableRow(
 
 private fun sendChaptersToCast(
     context: Context,
+    castSession: CastSession,
+    episodeId: Long,
     title: String,
     episode: String,
     lastSecondSeen: Long,
     image: String,
     videoUrl: String,
 ) {
-    val castSession = CastContext.getSharedInstance(context).sessionManager.currentCastSession
-    val remoteMediaClient = castSession?.remoteMediaClient
-    if (castSession == null || !castSession.isConnected) {
-        Toast.makeText(context, "Cast is not connected", Toast.LENGTH_SHORT).show()
-        return
-    }
+    val remoteMediaClient = castSession.remoteMediaClient
     if (remoteMediaClient != null) {
         val mediaMetadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
             putString(MediaMetadata.KEY_TITLE, title)
@@ -800,22 +816,39 @@ private fun sendChaptersToCast(
             .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
             .setContentType(contentType)
             .setMetadata(mediaMetadata)
+            .setCustomData(CastProgressSync.episodeData(episodeId))
             .build()
         val mediaQueueItem = MediaQueueItem.Builder(mediaInfo)
             .setAutoplay(true)
             .setStartTime(lastSecondSeen.toDouble() / 1000)
             .build()
-        val mediaStatus = remoteMediaClient.mediaStatus
-        if (mediaStatus != null && mediaStatus.playerState == MediaStatus.PLAYER_STATE_PLAYING) {
-            // Si hay un video reproduciéndose, agregar el nuevo video a la cola
-            remoteMediaClient.queueAppendItem(mediaQueueItem, null)
+        // Anything loaded on the device, paused or buffering too, keeps playing and gets the episode
+        // queued after it.
+        val playerState = remoteMediaClient.mediaStatus?.playerState
+        if (playerState != null && playerState != MediaStatus.PLAYER_STATE_IDLE) {
+            remoteMediaClient.queueAppendItem(mediaQueueItem, null).setResultCallback { result ->
+                if (result.status.isSuccess) {
+                    context.toast(TLMR.strings.cast_video_added_to_queue)
+                } else {
+                    castSession.logcat(LogPriority.ERROR) { "Cast device couldn't queue the episode: ${result.status}" }
+                    context.toast(TLMR.strings.cast_error_loading)
+                }
+            }
         } else {
             // Si no hay un video reproduciéndose, cargar el video directamente
             val mediaLoadRequestData = MediaLoadRequestData.Builder()
                 .setMediaInfo(mediaInfo)
+                .setAutoplay(true)
                 .setCurrentTime(lastSecondSeen)
                 .build()
-            remoteMediaClient.load(mediaLoadRequestData)
+            remoteMediaClient.load(mediaLoadRequestData).setResultCallback { result ->
+                if (result.status.isSuccess) {
+                    context.startActivity(Intent(context, ExpandedControlsActivity::class.java))
+                } else {
+                    castSession.logcat(LogPriority.ERROR) { "Cast device couldn't load the episode: ${result.status}" }
+                    context.toast(TLMR.strings.cast_error_loading)
+                }
+            }
         }
     } else {
         Toast.makeText(context, "remoteMediaClient is null", Toast.LENGTH_SHORT).show()

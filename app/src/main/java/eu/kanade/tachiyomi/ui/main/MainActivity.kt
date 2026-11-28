@@ -110,12 +110,15 @@ import eu.kanade.tachiyomi.ui.deeplink.DeepLinkScreenType
 import eu.kanade.tachiyomi.ui.home.TabEvent
 import eu.kanade.tachiyomi.ui.player.ExternalIntents
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
+import eu.kanade.tachiyomi.ui.player.cast.CastProgressSync
+import eu.kanade.tachiyomi.ui.player.cast.components.CastBubble
 import eu.kanade.tachiyomi.util.system.dpToPx
 import eu.kanade.tachiyomi.util.system.isNavigationBarNeedsScrim
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.util.system.updaterEnabled
 import eu.kanade.tachiyomi.util.view.setComposeContent
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -128,6 +131,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import logcat.LogPriority
 import mihon.app.di.AppGraph
@@ -258,6 +262,8 @@ class MainActivity : BaseActivity() {
             finish()
             return
         }
+
+        if (appGraph.playerPreferences.enableCast().get()) CastProgressSync.start(this)
 
         // AM (DISCORD) -->
         // Initialize Discord RPC Manager early so native library is loaded
@@ -394,6 +400,11 @@ class MainActivity : BaseActivity() {
                                     .background(MaterialTheme.colorScheme.surfaceContainer),
                             )
                         }
+                        CastBubble(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 8.dp),
+                        )
                     }
                 }
 
@@ -950,24 +961,11 @@ class MainActivity : BaseActivity() {
             hosterList: List<Hoster>? = null,
         ) {
             if (extPlayer) {
-                var extVideo = video
-                if (extVideo != null && extVideo.usesHttpServer()) {
-                    val sourceId = sourceId ?: (context.appGraph.getAnime.await(animeId)?.source ?: -1L)
-                    val (success, port) = startHttpServerService(context, sourceId)
-                    if (!success) {
-                        withUIContext { context.toast(AYMR.strings.http_server_start_failure) }
-                        return
-                    }
-                    extVideo = extVideo.copyHttpServer(port)
+                // Resolving the link can take seconds; the dialogs that call this close right away
+                // and would cancel the launch with them.
+                withContext(NonCancellable) {
+                    startExternalPlayer(context, animeId, episodeId, sourceId, video)
                 }
-                val intent = try {
-                    ExternalIntents.newIntent(context, animeId, episodeId, extVideo)
-                } catch (e: Exception) {
-                    logcat(LogPriority.ERROR, e)
-                    withUIContext { context.toast(e.message) }
-                    null
-                } ?: return
-                externalPlayerResult?.launch(intent) ?: return
             } else {
                 context.startActivity(
                     PlayerActivity.newIntent(
@@ -980,6 +978,34 @@ class MainActivity : BaseActivity() {
                     ),
                 )
             }
+        }
+
+        private suspend fun startExternalPlayer(
+            context: Context,
+            animeId: Long,
+            episodeId: Long,
+            sourceId: Long?,
+            video: Video?,
+        ) {
+            withUIContext { context.toast(AYMR.strings.opening_external_player) }
+            var extVideo = video
+            if (extVideo != null && extVideo.usesHttpServer()) {
+                val sourceId = sourceId ?: (context.appGraph.getAnime.await(animeId)?.source ?: -1L)
+                val (success, port) = startHttpServerService(context, sourceId)
+                if (!success) {
+                    withUIContext { context.toast(AYMR.strings.http_server_start_failure) }
+                    return
+                }
+                extVideo = extVideo.copyHttpServer(port)
+            }
+            val intent = try {
+                ExternalIntents.newIntent(context, animeId, episodeId, extVideo)
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e)
+                withUIContext { context.toast(e.message) }
+                null
+            } ?: return
+            externalPlayerResult?.launch(intent) ?: return
         }
 
         suspend fun startHttpServerService(

@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.player
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -20,11 +21,13 @@ import com.google.android.gms.cast.TextTrackStyle
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
+import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.ui.player.cast.CastMediaBuilder
+import eu.kanade.tachiyomi.ui.player.cast.CastProgressSync
 import eu.kanade.tachiyomi.ui.player.cast.CastSessionListener
+import eu.kanade.tachiyomi.ui.player.cast.ExpandedControlsActivity
 import eu.kanade.tachiyomi.ui.player.cast.components.BorderStyle
 import eu.kanade.tachiyomi.ui.player.cast.components.SubtitleSettings
-import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.settings.CastSubtitlePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.coroutines.Job
@@ -84,7 +87,6 @@ class CastManager(
     private val playerPreferences: PlayerPreferences by lazy {
         viewModel?.playerPreferences ?: PlayerPreferences(preferenceStore)
     }
-    private val autoplayEnabled = playerPreferences.autoplayEnabled().get()
     private val subtitlePreferences = CastSubtitlePreferences(preferenceStore)
     private val mediaBuilder by lazy {
         viewModel?.let { CastMediaBuilder(it, activity as PlayerActivity) }
@@ -209,11 +211,13 @@ class CastManager(
 
     // Session Callbacks
     fun onSessionConnected(session: CastSession) {
+        CastProgressSync.start(activity)
         castSession = session
         updateCastState(CastState.CONNECTED)
         startTrackingCastProgress()
         updateCurrentMedia()
         updateQueueItems()
+        if (session.remoteMediaClient?.hasMediaSession() != true) loadRemoteMedia()
 
         session.remoteMediaClient?.registerCallback(object : RemoteMediaClient.Callback() {
             override fun onStatusUpdated() {
@@ -292,8 +296,12 @@ class CastManager(
     }
 
     // Media Loading & Progress Tracking
+
+    /**
+     * Sends [video] to the cast device, or the video playing on the phone when it's null.
+     */
     @SuppressLint("SuspiciousIndentation")
-    fun loadRemoteMedia() {
+    fun loadRemoteMedia(video: Video? = null) {
         if (!isCastApiAvailable || isLoadingMedia) return
         val remoteMediaClient = castSession?.remoteMediaClient ?: return
         if (mediaBuilder == null || viewModel == null) return
@@ -302,35 +310,27 @@ class CastManager(
             try {
                 isLoadingMedia = true
                 _isLoading.value = true
-                val selectedHosterIndex = viewModel!!.selectedHosterVideoIndex.value.first
-                val selectedVideoIndex = viewModel!!.selectedHosterVideoIndex.value.second
+                val castVideo = video ?: viewModel!!.currentVideo.value
+                if (castVideo == null) {
+                    showLoadErrorToast()
+                    return@launch
+                }
 
-                val hosterState = viewModel!!.hosterState.value.getOrNull(selectedHosterIndex) as? HosterState.Ready
-                val video = hosterState?.videoList?.getOrNull(selectedVideoIndex) ?: return@launch
-
-                val mediaInfo = mediaBuilder!!.buildMediaInfo(video) // Ahora pasa el objeto `Video` directamente
+                val mediaInfo = mediaBuilder!!.buildMediaInfo(castVideo)
                 val currentLocalPosition = (mpv?.getPropertyInt("time-pos") ?: 0).toLong()
 
                 updateQueueItems()
-                if (remoteMediaClient.mediaQueue.itemCount > 0) {
-                    val queueItem = MediaQueueItem.Builder(mediaInfo)
-                        .setAutoplay(autoplayEnabled)
-                        .build()
-
-                    mediaQueue.add(queueItem)
-                    remoteMediaClient.queueAppendItem(queueItem, null)
-                    updateQueueItems()
-                    showAddedToQueueToast()
-                } else {
-                    remoteMediaClient.load(
-                        MediaLoadRequestData.Builder()
-                            .setMediaInfo(mediaInfo)
-                            .setAutoplay(autoplayEnabled)
-                            .setCurrentTime(currentLocalPosition * 1000)
-                            .build(),
-                    )
-                    updateQueueItems()
-                }
+                // Picking a quality or sending again replaces what the device plays.
+                remoteMediaClient.load(
+                    MediaLoadRequestData.Builder()
+                        .setMediaInfo(mediaInfo)
+                        // A video the user sends plays right away; the autoplay setting is about
+                        // moving on to the next episode.
+                        .setAutoplay(true)
+                        .setCurrentTime(currentLocalPosition * 1000)
+                        .build(),
+                ).setResultCallback(::onLoadResult)
+                updateQueueItems()
                 _castState.value = CastState.CONNECTED
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR) { "Error loading media: ${e.message}" }
@@ -342,14 +342,16 @@ class CastManager(
         }
     }
 
-    private fun showAddedToQueueToast() {
-        activity.runOnUiThread {
-            Toast.makeText(
-                context,
-                context.stringResource(TLMR.strings.cast_video_added_to_queue),
-                Toast.LENGTH_SHORT,
-            ).show()
+    // The device answers asynchronously; without this a rejected video failed silently and the
+    // receiver kept showing that no media was selected.
+    private fun onLoadResult(result: RemoteMediaClient.MediaChannelResult) {
+        if (!result.status.isSuccess) {
+            logcat(LogPriority.ERROR) { "Cast device couldn't load the video: ${result.status}" }
+            showLoadErrorToast()
+            return
         }
+        // The phone's player is paused while casting, so the cast controls take its place.
+        activity.startActivity(Intent(activity, ExpandedControlsActivity::class.java))
     }
 
     private fun showLoadErrorToast() {
@@ -366,8 +368,15 @@ class CastManager(
         castProgressJob?.cancel()
         castProgressJob = activity.lifecycleScope.launch {
             while (castSession?.isConnected == true) {
-                val currentPosition = getCurrentCastPosition()
-                viewModel?.updateCastProgress(currentPosition.toFloat() / 1000)
+                // A connected device with nothing loaded reports 0, which would keep overwriting the
+                // position of the video playing on the phone.
+                val client = castSession?.remoteMediaClient
+                if (client?.hasMediaSession() == true) {
+                    viewModel?.updateCastProgress(
+                        getCurrentCastPosition().toFloat() / 1000,
+                        CastProgressSync.episodeId(client),
+                    )
+                }
                 delay(1000)
             }
         }
@@ -387,11 +396,21 @@ class CastManager(
     }
 
     fun updateQueueItems(items: List<MediaQueueItem>? = null) {
-        _queueItems.value = items ?: castSession?.remoteMediaClient?.mediaQueue?.let { queue ->
-            (0 until queue.itemCount).mapNotNull { index ->
-                queue.getItemAtIndex(index)
-            }
-        } ?: emptyList()
+        _queueItems.value = items ?: currentQueueItems()
+    }
+
+    // The cast controls screen has its own manager that never saw the session start, so the
+    // session is also taken from the cast context. The device's status lists the whole queue,
+    // while MediaQueue only has the items it already fetched.
+    private fun currentQueueItems(): List<MediaQueueItem> {
+        val session = castSession
+            ?: runCatching { CastContext.getSharedInstance(context.applicationContext).sessionManager }
+                .getOrNull()?.currentCastSession
+            ?: return emptyList()
+        val client = session.remoteMediaClient ?: return emptyList()
+        client.mediaStatus?.queueItems?.takeIf { it.isNotEmpty() }?.let { return it }
+        val queue = client.mediaQueue
+        return (0 until queue.itemCount).mapNotNull { queue.getItemAtIndex(it) }
     }
 
     fun reset() {

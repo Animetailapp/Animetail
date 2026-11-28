@@ -45,23 +45,18 @@ fun CastQualityDialog(
             onDismissRequest = onDismiss,
             title = { Text(stringResource(TLMR.strings.title_cast_quality)) },
             text = {
+                // Every loaded server is offered, the cast device may play one the phone didn't pick.
+                val hosters = viewModel.hosterState.value.filterIsInstance<HosterState.Ready>()
+                val castVideos = hosters.flatMap { hoster -> hoster.videoList.map { hoster.name to it } }
+                val currentUrl = viewModel.currentVideo.value?.videoUrl
                 LazyColumn {
-                    val hosterState = viewModel.hosterState.value
-                        .filterIsInstance<HosterState.Ready>()
-                        .firstOrNull()
-                    val videoList = hosterState?.videoList ?: emptyList()
-                    items(videoList.size) { index ->
-                        val video = videoList[index]
-                        val isSelected = index == viewModel.selectedHosterVideoIndex.value.second
+                    items(castVideos.size) { index ->
+                        val (hosterName, video) = castVideos[index]
                         QualityListItem(
-                            quality = video.videoTitle,
-                            isSelected = isSelected,
+                            quality = if (hosters.size > 1) "$hosterName - ${video.videoTitle}" else video.videoTitle,
+                            isSelected = video.videoUrl == currentUrl,
                             onClick = {
-                                viewModel.onVideoClicked(
-                                    hosterIndex = viewModel.selectedHosterVideoIndex.value.first,
-                                    videoIndex = index,
-                                )
-                                castManager.loadRemoteMedia()
+                                castManager.loadRemoteMedia(video)
                                 onDismiss()
                             },
                         )

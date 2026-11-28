@@ -9,6 +9,7 @@ import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaTrack
 import com.google.android.gms.common.images.WebImage
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
@@ -39,17 +40,18 @@ class CastMediaBuilder(
         logcat(LogPriority.DEBUG) { "Video URL: $videoUrl" }
 
         videoUrl = when {
-            videoUrl.startsWith("content://") -> getLocalServerUrl(videoUrl)
+            videoUrl.startsWith("content://") -> formatUrlForCast(getLocalServerUrl(videoUrl))
 
             videoUrl.startsWith(
                 "magnet",
             ) ||
-                videoUrl.endsWith(".torrent") -> torrentLinkHandler(videoUrl, video.videoTitle)
+                videoUrl.endsWith(".torrent") -> formatUrlForCast(torrentLinkHandler(videoUrl, video.videoTitle))
 
-            else -> videoUrl
+            else -> {
+                val sourceHeaders = (viewModel.currentSource.value as? AnimeHttpSource)?.headers
+                CastVideoUrl.proxied(activity, video, sourceHeaders) ?: formatUrlForCast(videoUrl)
+            }
         }
-
-        videoUrl = formatUrlForCast(videoUrl)
 
         val contentType = when {
             videoUrl.contains(".m3u8") -> "application/x-mpegURL"
@@ -63,6 +65,7 @@ class CastMediaBuilder(
             .addMetadata(video)
             .addTracks(video)
             .setStreamDuration((viewModel.mpv.getPropertyInt("duration") ?: 0).toLong() * 1000)
+            .setCustomData(CastProgressSync.episodeData(viewModel.currentEpisode.value?.id))
             .build()
     }
 

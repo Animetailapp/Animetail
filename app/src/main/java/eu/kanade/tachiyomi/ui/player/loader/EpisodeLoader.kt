@@ -121,7 +121,7 @@ class EpisodeLoader {
             val priority = HosterPriority(preferences.hosterPriority().get(), preferences.disabledHosters().get())
             return if (hosters.singleOrNull()?.hosterName == Hoster.NO_HOSTER_LIST) {
                 hosters.map { hoster ->
-                    hoster.copy(videoList = hoster.videoList?.let { videos -> priority.sort(videos) { it.videoTitle } })
+                    hoster.copy(videoList = hoster.videoList?.let { priority.sortVideosWithoutHosters(it) })
                 }
             } else {
                 // Disabled hosters become lazy: they are only extracted when tapped in the player.

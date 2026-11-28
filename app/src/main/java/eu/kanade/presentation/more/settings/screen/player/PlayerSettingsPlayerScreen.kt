@@ -3,8 +3,10 @@ package eu.kanade.presentation.more.settings.screen.player
 import android.content.Context
 import android.os.Build
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -28,6 +30,7 @@ import eu.kanade.tachiyomi.ui.player.PlayerOrientation
 import eu.kanade.tachiyomi.ui.player.VLC_PLAYER
 import eu.kanade.tachiyomi.ui.player.WEB_VIDEO_CASTER
 import eu.kanade.tachiyomi.ui.player.X_PLAYER
+import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
 import eu.kanade.tachiyomi.ui.player.loader.HosterCache
 import eu.kanade.tachiyomi.ui.player.loader.HosterPriority
 import eu.kanade.tachiyomi.ui.player.settings.HOSTER_CACHE_DURATIONS
@@ -36,6 +39,7 @@ import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.hosterCacheDurationLabel
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import eu.kanade.tachiyomi.util.LocalHttpServerService
+import eu.kanade.tachiyomi.util.formatBinarySize
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -44,12 +48,15 @@ import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
+import tachiyomi.core.common.util.lang.launchIO
+import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import java.text.NumberFormat
+import java.util.Locale
 
 @Serializable
 data object PlayerSettingsPlayerScreen : SearchableSettings {
@@ -95,6 +102,7 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
             ),
             getControlsGroup(playerPreferences = playerPreferences),
             getHosterGroup(playerPreferences = playerPreferences),
+            getVideoCacheGroup(playerPreferences = playerPreferences),
             getDisplayGroup(playerPreferences = playerPreferences),
             getIntroSkipGroup(playerPreferences = playerPreferences),
             if (deviceSupportsPip) getPipGroup(playerPreferences = playerPreferences) else null,
@@ -159,6 +167,10 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
         }
         val disabledHosters = remember(disabled) { HosterPriority.parseNames(disabled).toSet() }
         var showPriorityDialog by remember { mutableStateOf(false) }
+        var linkCacheBytes by remember { mutableLongStateOf(0L) }
+        LaunchedEffect(Unit) {
+            linkCacheBytes = withIOContext { HosterCache.shared(context).sizeBytes() }
+        }
 
         if (showPriorityDialog) {
             HosterPriorityDialog(
@@ -183,6 +195,11 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     preference = showEmpty,
                     title = stringResource(AYMR.strings.pref_hosters_show_empty),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.rememberLastVideo(),
+                    title = stringResource(AYMR.strings.pref_remember_last_video),
+                    subtitle = stringResource(AYMR.strings.pref_remember_last_video_summary),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = switchOnFailure,
@@ -221,9 +238,95 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(AYMR.strings.pref_hoster_cache_clear),
+                    subtitle = stringResource(
+                        AYMR.strings.pref_video_cache_clear_summary,
+                        formatBinarySize(linkCacheBytes),
+                    ),
                     onClick = {
                         HosterCache.shared(context).clear()
+                        linkCacheBytes = 0L
                         context.toast(AYMR.strings.pref_hoster_cache_cleared)
+                    },
+                ),
+            ),
+        )
+    }
+
+    @Composable
+    private fun getVideoCacheGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        val maxMegabytes = playerPreferences.videoCacheMaxMegabytes()
+        val videoCacheEnabled = maxMegabytes.collectAsState().value > 0
+        var usedBytes by remember { mutableLongStateOf(0L) }
+        LaunchedEffect(Unit) {
+            usedBytes = withIOContext { VideoCacheProxy.sharedStore(context).sizeBytes() }
+        }
+
+        return Preference.PreferenceGroup(
+            title = stringResource(AYMR.strings.pref_video_cache),
+            preferenceItems = persistentListOf(
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.preloadNextEpisode(),
+                    title = stringResource(AYMR.strings.pref_preload_next_episode),
+                    subtitle = stringResource(AYMR.strings.pref_preload_next_episode_summary),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.clearVideoCacheWhenDone(),
+                    title = stringResource(AYMR.strings.pref_clear_video_cache_when_done),
+                    subtitle = stringResource(AYMR.strings.pref_clear_video_cache_when_done_summary),
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = playerPreferences.playerBufferMegabytes(),
+                    entries = PLAYER_BUFFER_SIZES_MB
+                        .associateWith { megabytes ->
+                            if (megabytes == 0) {
+                                context.stringResource(AYMR.strings.pref_player_buffer_auto)
+                            } else {
+                                formatBinarySize(megabytes * 1024L * 1024L)
+                            }
+                        }
+                        .toImmutableMap(),
+                    title = stringResource(AYMR.strings.pref_player_buffer),
+                    subtitle = stringResource(AYMR.strings.pref_player_buffer_summary),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.fastVideoStart(),
+                    title = stringResource(AYMR.strings.pref_fast_video_start),
+                    subtitle = stringResource(AYMR.strings.pref_fast_video_start_summary),
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = maxMegabytes,
+                    entries = VIDEO_CACHE_SIZES_MB
+                        .associateWith { megabytes ->
+                            if (megabytes == 0) {
+                                context.stringResource(AYMR.strings.pref_video_cache_off)
+                            } else {
+                                formatBinarySize(megabytes * 1024L * 1024L)
+                            }
+                        }
+                        .toImmutableMap(),
+                    title = stringResource(AYMR.strings.pref_video_cache_size),
+                    subtitle = stringResource(AYMR.strings.pref_video_cache_size_summary),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.prefetchVideoSegments(),
+                    title = stringResource(AYMR.strings.pref_prefetch_video_segments),
+                    subtitle = stringResource(AYMR.strings.pref_prefetch_video_segments_summary),
+                    enabled = videoCacheEnabled,
+                ),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(AYMR.strings.pref_video_cache_clear),
+                    subtitle = stringResource(
+                        AYMR.strings.pref_video_cache_clear_summary,
+                        formatBinarySize(usedBytes),
+                    ),
+                    onClick = {
+                        scope.launchIO {
+                            VideoCacheProxy.sharedStore(context).clear()
+                            usedBytes = 0L
+                        }
+                        context.toast(AYMR.strings.pref_video_cache_cleared)
                     },
                 ),
             ),
@@ -397,12 +500,19 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
     @Composable
     private fun getCastGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
         val enableCast = playerPreferences.enableCast()
+        val castEnabled by enableCast.collectAsState()
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_category_cast),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = enableCast,
                     title = stringResource(TLMR.strings.pref_enable_cast),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.showCastBubble(),
+                    title = stringResource(TLMR.strings.pref_show_cast_bubble),
+                    subtitle = stringResource(TLMR.strings.pref_show_cast_bubble_summary),
+                    enabled = castEnabled,
                 ),
             ),
         )
@@ -485,3 +595,6 @@ val externalPlayers = listOf(
     WEB_VIDEO_CASTER,
     AMNIS,
 )
+
+private val VIDEO_CACHE_SIZES_MB = listOf(0, 256, 512, 1024, 2048, 4096)
+private val PLAYER_BUFFER_SIZES_MB = listOf(0, 32, 64, 128, 256)

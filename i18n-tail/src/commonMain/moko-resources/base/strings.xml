@@ -304,6 +304,9 @@
     <string name="cast_subtitles">Subtitles</string>
     <string name="cast_audio_tracks">Audio Tracks</string>
     <string name="cast_no_subtitles">No Subtitles</string>
+    <string name="cast_send_again">Send the video again</string>
+    <string name="pref_show_cast_bubble">Floating cast button</string>
+    <string name="pref_show_cast_bubble_summary">Shows a button to open the cast controls anywhere in the app while a device is connected</string>
     <string name="cast_close">Close</string>
     <string name="cast_subtitle_font_family">Font Family</string>
     <string name="cast_subtitle_border_style">Border Style</string>

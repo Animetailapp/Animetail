@@ -37,6 +37,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.ScreenshotSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.SubtitlesSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.VideoDownloadState
+import eu.kanade.tachiyomi.ui.player.controls.components.sheets.priorityNames
 import `is`.xyz.mpv.MPV
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -168,7 +169,7 @@ fun PlayerSheets(
 
         Sheets.HosterPriority -> {
             HosterPrioritySheet(
-                hosterNames = hosterState.map { it.name },
+                hosterNames = hosterState.priorityNames(),
                 disabledNames = disabledHosters,
                 onSave = onSaveHosterPriority,
                 onDismissRequest = onDismissRequest,

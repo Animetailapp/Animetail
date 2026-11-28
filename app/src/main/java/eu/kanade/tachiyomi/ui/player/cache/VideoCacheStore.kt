@@ -1,0 +1,259 @@
+package eu.kanade.tachiyomi.ui.player.cache
+
+import eu.kanade.tachiyomi.util.lang.Hash
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import logcat.LogPriority
+import tachiyomi.core.common.util.system.logcat
+import java.io.File
+import java.io.IOException
+import java.util.UUID
+
+/** Size and type of a cached resource, used to answer range requests without the network. */
+@Serializable
+data class CachedResourceInfo(val length: Long, val contentType: String?, val url: String? = null)
+
+/** HLS playlist as last received, with the URL it was finally served from after redirects. */
+@Serializable
+data class CachedPlaylist(val url: String, val contentType: String?, val body: String)
+
+/**
+ * Disk storage for the bytes played through [VideoCacheProxy]. Each resource is split into blocks
+ * of [blockSize] bytes, so any range that was played once can be served again from disk, even
+ * when only parts of the video were watched.
+ *
+ * Once [maxBytes] is exceeded, other resources are deleted by [evictionGroup] and then least
+ * recently used first. Nothing here
+ * throws on I/O problems: an unreadable block is a cache miss and is downloaded again.
+ */
+class VideoCacheStore(
+    private val dir: File,
+    private val maxBytes: () -> Long,
+    val blockSize: Int = DEFAULT_BLOCK_SIZE,
+    private val clock: () -> Long = System::currentTimeMillis,
+) {
+    private val json = Json { ignoreUnknownKeys = true }
+
+    // Computed on first write instead of at startup, the folder can hold thousands of blocks.
+    private var usedBytes = -1L
+
+    /**
+     * Group of a resource given its owner (null when it has none) when space is needed: lower
+     * groups are deleted first, and within a group the resources used least recently.
+     */
+    @Volatile
+    var evictionGroup: (owner: String?) -> Int = { 0 }
+
+    fun resource(url: String): Resource = Resource(File(dir, Hash.sha256(url)))
+
+    fun sizeBytes(): Long = synchronized(this) { dir.diskUsage() }
+
+    fun clear() {
+        synchronized(this) {
+            dir.listFiles()?.forEach { it.deleteRecursively() }
+            usedBytes = 0
+        }
+    }
+
+    /**
+     * Deletes the resources whose owner, set with [Resource.setOwner], matches [isOwnedBy].
+     * Resources cached without an owner are kept.
+     */
+    fun clearOwned(isOwnedBy: (String) -> Boolean) {
+        synchronized(this) {
+            dir.listFiles()
+                ?.filter { resourceDir -> File(resourceDir, OWNER_FILE).readOwner()?.let(isOwnedBy) == true }
+                ?.forEach { it.deleteRecursively() }
+            usedBytes = -1
+        }
+    }
+
+    fun ownedSizeBytes(isOwnedBy: (String) -> Boolean): Long = synchronized(this) {
+        dir.listFiles()
+            ?.filter { resourceDir -> File(resourceDir, OWNER_FILE).readOwner()?.let(isOwnedBy) == true }
+            ?.sumOf { it.diskUsage() }
+            ?: 0L
+    }
+
+    private fun File.readOwner(): String? = if (exists()) runCatching { readText() }.getOrNull() else null
+
+    private fun onBlockWritten(block: File) {
+        synchronized(this) {
+            if (usedBytes < 0) usedBytes = dir.diskUsage() else usedBytes += block.length()
+            val limit = maxBytes()
+            if (usedBytes <= limit) return
+
+            // Trimmed below the limit so the next writes don't evict on every block.
+            val target = limit / 10 * 9
+            val writingDir = block.parentFile
+            val group = evictionGroup
+            val evictionOrder = dir.listFiles()
+                ?.filter { it != writingDir }
+                ?.sortedWith(compareBy({ group(File(it, OWNER_FILE).readOwner()) }, { it.lastModified() }))
+                .orEmpty()
+            for (resourceDir in evictionOrder) {
+                if (usedBytes <= target) break
+                usedBytes -= resourceDir.diskUsage()
+                resourceDir.deleteRecursively()
+            }
+
+            // The resource being written is never evicted: it holds what's around the playback
+            // position. When it fills the cache alone, the rest of it is just not stored.
+            if (usedBytes > limit) {
+                usedBytes -= block.length()
+                block.delete()
+            }
+        }
+    }
+
+    inner class Resource internal constructor(private val resourceDir: File) {
+
+        private val infoFile = File(resourceDir, INFO_FILE)
+        private val playlistFile = File(resourceDir, PLAYLIST_FILE)
+        private val ownerFile = File(resourceDir, OWNER_FILE)
+
+        fun readInfo(): CachedResourceInfo? {
+            if (!infoFile.exists()) return null
+            return try {
+                json.decodeFromString<CachedResourceInfo>(infoFile.readText())
+            } catch (e: Exception) {
+                logcat(LogPriority.WARN, e) { "Discarding unreadable video cache info" }
+                delete()
+                null
+            }
+        }
+
+        /** Replaces the cached blocks when the resource changed size since it was cached. */
+        fun writeInfo(info: CachedResourceInfo) {
+            val current = readInfo()
+            if (current == info) return
+            if (current != null && current.length != info.length) delete()
+            writeAtomically(infoFile, json.encodeToString(CachedResourceInfo.serializer(), info).toByteArray())
+        }
+
+        fun readPlaylist(): CachedPlaylist? {
+            if (!playlistFile.exists()) return null
+            return try {
+                json.decodeFromString<CachedPlaylist>(playlistFile.readText())
+            } catch (e: Exception) {
+                logcat(LogPriority.WARN, e) { "Discarding unreadable cached playlist" }
+                playlistFile.delete()
+                null
+            }
+        }
+
+        fun writePlaylist(playlist: CachedPlaylist) {
+            try {
+                writeAtomically(playlistFile, json.encodeToString(CachedPlaylist.serializer(), playlist).toByteArray())
+            } catch (e: IOException) {
+                logcat(LogPriority.WARN, e) { "Couldn't store playlist" }
+            }
+        }
+
+        /** Records what the resource belongs to, such as an episode, so it can be cleared with it. */
+        fun setOwner(owner: String) {
+            if (ownerFile.readOwner() == owner) return
+            try {
+                writeAtomically(ownerFile, owner.toByteArray())
+            } catch (e: IOException) {
+                logcat(LogPriority.WARN, e) { "Couldn't store video cache owner" }
+            }
+        }
+
+        /** Marks the resource as recently used so it's evicted last. */
+        fun touch() {
+            resourceDir.setLastModified(clock())
+        }
+
+        val blockSize: Int get() = this@VideoCacheStore.blockSize
+
+        /** Size of block [index] of a resource of [length] bytes; only the last one is shorter. */
+        fun blockLength(index: Long, length: Long): Int =
+            minOf(blockSize.toLong(), length - index * blockSize).toInt()
+
+        fun hasBlock(index: Long, length: Long): Boolean =
+            File(resourceDir, index.toString()).length() == blockLength(index, length).toLong()
+
+        fun isComplete(): Boolean = hasStart(Long.MAX_VALUE)
+
+        /** Whether the first [bytes] of the resource, or all of it if shorter, are cached. */
+        fun hasStart(bytes: Long): Boolean {
+            val length = readInfo()?.length ?: return false
+            val end = minOf(length, bytes)
+            val blocks = (end + blockSize - 1) / blockSize
+            return (0 until blocks).all { hasBlock(it, length) }
+        }
+
+        /** Returns the block, or null when it's missing or was not written completely. */
+        fun readBlock(index: Long, length: Long): ByteArray? {
+            val file = File(resourceDir, index.toString())
+            val expectedSize = blockLength(index, length)
+            return try {
+                file.readBytes().takeIf { it.size == expectedSize }
+            } catch (_: IOException) {
+                null
+            }
+        }
+
+        fun writeBlock(index: Long, data: ByteArray, size: Int) {
+            try {
+                val block = File(resourceDir, index.toString())
+                writeAtomically(block, data, size)
+                partialBlockFile(index).delete()
+                onBlockWritten(block)
+            } catch (e: IOException) {
+                logcat(LogPriority.WARN, e) { "Couldn't store video block" }
+            }
+        }
+
+        fun hasPartialBlock(index: Long): Boolean = partialBlockFile(index).length() > 0
+
+        /** Start of a block that was being downloaded when playback stopped, or null. */
+        fun readPartialBlock(index: Long, length: Long): ByteArray? {
+            return try {
+                partialBlockFile(index).readBytes().takeIf { it.isNotEmpty() && it.size < blockLength(index, length) }
+            } catch (_: IOException) {
+                null
+            }
+        }
+
+        /** Keeps the first [size] bytes of a block so closing the player early doesn't lose them. */
+        fun writePartialBlock(index: Long, data: ByteArray, size: Int) {
+            if (size <= (readPartialBlock(index, Long.MAX_VALUE)?.size ?: 0)) return
+            try {
+                writeAtomically(partialBlockFile(index), data, size)
+                onBlockWritten(partialBlockFile(index))
+            } catch (e: IOException) {
+                logcat(LogPriority.WARN, e) { "Couldn't store partial video block" }
+            }
+        }
+
+        private fun partialBlockFile(index: Long) = File(resourceDir, "$index$PARTIAL_SUFFIX")
+
+        fun delete() {
+            resourceDir.deleteRecursively()
+        }
+
+        // Concurrent connections may store the same block, each one through its own temporary file.
+        private fun writeAtomically(file: File, data: ByteArray, size: Int = data.size) {
+            resourceDir.mkdirs()
+            val tmpFile = File(resourceDir, "${file.name}.${UUID.randomUUID()}.tmp")
+            try {
+                tmpFile.outputStream().use { it.write(data, 0, size) }
+                if (!tmpFile.renameTo(file)) throw IOException("Couldn't rename ${tmpFile.name}")
+            } finally {
+                tmpFile.delete()
+            }
+        }
+    }
+
+    private fun File.diskUsage(): Long = walkBottomUp().filter { it.isFile }.sumOf { it.length() }
+
+    companion object {
+        const val DEFAULT_BLOCK_SIZE = 1024 * 1024
+        private const val INFO_FILE = "info.json"
+        private const val OWNER_FILE = "owner"
+        private const val PARTIAL_SUFFIX = ".part"
+        private const val PLAYLIST_FILE = "playlist.json"
+    }
+}

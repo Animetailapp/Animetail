@@ -45,6 +45,15 @@ class PlayerPreferences(
     fun disabledHosters() = preferenceStore.getString("pref_disabled_hosters", "")
     fun hosterCacheMinutes() = preferenceStore.getInt("pref_hoster_cache_minutes", 120)
     fun hosterListCacheMinutes() = preferenceStore.getInt("pref_hoster_list_cache_minutes", 1440)
+    fun videoCacheMaxMegabytes() = preferenceStore.getInt("pref_video_cache_max_megabytes", 512)
+    fun prefetchVideoSegments() = preferenceStore.getBoolean("pref_prefetch_video_segments", true)
+
+    // 0 picks a size from the Android version.
+    fun playerBufferMegabytes() = preferenceStore.getInt("pref_player_buffer_megabytes", 0)
+    fun rememberLastVideo() = preferenceStore.getBoolean("pref_remember_last_video", true)
+    fun preloadNextEpisode() = preferenceStore.getBoolean("pref_preload_next_episode", true)
+    fun clearVideoCacheWhenDone() = preferenceStore.getBoolean("pref_clear_video_cache_when_done", true)
+    fun fastVideoStart() = preferenceStore.getBoolean("pref_fast_video_start", true)
 
     // Display
 
@@ -78,6 +87,13 @@ class PlayerPreferences(
     // External player
 
     fun enableCast() = preferenceStore.getBoolean("pref_enable_cast", false)
+
+    fun showCastBubble() = preferenceStore.getBoolean("pref_show_cast_bubble", true)
+
+    fun castBubbleAtStart() = preferenceStore.getBoolean("pref_cast_bubble_at_start", false)
+
+    /** Height of the cast button between the top (-1) and the bottom (1) of the space it can use. */
+    fun castBubbleVerticalBias() = preferenceStore.getFloat("pref_cast_bubble_vertical_bias", 0f)
 
     fun alwaysUseExternalPlayer() = preferenceStore.getBoolean(
         "pref_always_use_external_player",

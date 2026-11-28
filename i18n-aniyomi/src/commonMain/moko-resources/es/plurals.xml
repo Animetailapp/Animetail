@@ -50,4 +50,24 @@
         <item quantity="many">%1$d días</item>
         <item quantity="other">%1$d días</item>
     </plurals>
+    <plurals name="relative_time_hours">
+        <item quantity="one">Hace 1 hora</item>
+        <item quantity="many">Hace %1$d horas</item>
+        <item quantity="other">Hace %1$d horas</item>
+    </plurals>
+    <plurals name="relative_time_minutes">
+        <item quantity="one">Hace 1 minuto</item>
+        <item quantity="many">Hace %1$d minutos</item>
+        <item quantity="other">Hace %1$d minutos</item>
+    </plurals>
+    <plurals name="upcoming_relative_time_hours">
+        <item quantity="one">En 1 hora</item>
+        <item quantity="many">En %1$d horas</item>
+        <item quantity="other">En %1$d horas</item>
+    </plurals>
+    <plurals name="upcoming_relative_time_minutes">
+        <item quantity="one">En 1 minuto</item>
+        <item quantity="many">En %1$d minutos</item>
+        <item quantity="other">En %1$d minutos</item>
+    </plurals>
 </resources>
