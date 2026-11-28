@@ -1262,8 +1262,15 @@ class PlayerViewModel(
         }
     }
 
-    fun updateCastProgress(position: Float) {
+    /**
+     * Shows the cast device's position and, while it plays this same episode, saves its progress
+     * like local playback does. A queue may have moved the device on to another episode.
+     */
+    fun updateCastProgress(position: Float, castEpisodeId: Long? = null) {
         _pos.update { position }
+        if (castEpisodeId != null && castEpisodeId == currentEpisode.value?.id) {
+            onSecondReached(position.toInt(), duration.value.toInt())
+        }
     }
 
     fun resumeFromCast() {

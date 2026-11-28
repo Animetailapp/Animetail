@@ -110,6 +110,7 @@ import eu.kanade.tachiyomi.ui.deeplink.DeepLinkScreenType
 import eu.kanade.tachiyomi.ui.home.TabEvent
 import eu.kanade.tachiyomi.ui.player.ExternalIntents
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
+import eu.kanade.tachiyomi.ui.player.cast.CastProgressSync
 import eu.kanade.tachiyomi.ui.player.cast.components.CastBubble
 import eu.kanade.tachiyomi.util.system.dpToPx
 import eu.kanade.tachiyomi.util.system.isNavigationBarNeedsScrim
@@ -261,6 +262,8 @@ class MainActivity : BaseActivity() {
             finish()
             return
         }
+
+        if (appGraph.playerPreferences.enableCast().get()) CastProgressSync.start(this)
 
         // AM (DISCORD) -->
         // Initialize Discord RPC Manager early so native library is loaded

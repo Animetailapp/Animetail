@@ -75,6 +75,7 @@ import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.player.cast.CastProgressSync
 import eu.kanade.tachiyomi.ui.player.cast.CastVideoUrl
 import eu.kanade.tachiyomi.ui.player.cast.ExpandedControlsActivity
 import eu.kanade.tachiyomi.ui.player.cast.castWhenConnected
@@ -619,6 +620,7 @@ private fun VideoList(
                                     sendChaptersToCast(
                                         context,
                                         session,
+                                        episode.id,
                                         anime.title,
                                         episode.name,
                                         episode.lastSecondSeen,
@@ -791,6 +793,7 @@ private fun ClickableRow(
 private fun sendChaptersToCast(
     context: Context,
     castSession: CastSession,
+    episodeId: Long,
     title: String,
     episode: String,
     lastSecondSeen: Long,
@@ -813,6 +816,7 @@ private fun sendChaptersToCast(
             .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
             .setContentType(contentType)
             .setMetadata(mediaMetadata)
+            .setCustomData(CastProgressSync.episodeData(episodeId))
             .build()
         val mediaQueueItem = MediaQueueItem.Builder(mediaInfo)
             .setAutoplay(true)

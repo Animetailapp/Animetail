@@ -23,6 +23,7 @@ import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.ui.player.cast.CastMediaBuilder
+import eu.kanade.tachiyomi.ui.player.cast.CastProgressSync
 import eu.kanade.tachiyomi.ui.player.cast.CastSessionListener
 import eu.kanade.tachiyomi.ui.player.cast.ExpandedControlsActivity
 import eu.kanade.tachiyomi.ui.player.cast.components.BorderStyle
@@ -211,6 +212,7 @@ class CastManager(
 
     // Session Callbacks
     fun onSessionConnected(session: CastSession) {
+        CastProgressSync.start(activity)
         castSession = session
         updateCastState(CastState.CONNECTED)
         startTrackingCastProgress()
@@ -367,8 +369,12 @@ class CastManager(
             while (castSession?.isConnected == true) {
                 // A connected device with nothing loaded reports 0, which would keep overwriting the
                 // position of the video playing on the phone.
-                if (castSession?.remoteMediaClient?.hasMediaSession() == true) {
-                    viewModel?.updateCastProgress(getCurrentCastPosition().toFloat() / 1000)
+                val client = castSession?.remoteMediaClient
+                if (client?.hasMediaSession() == true) {
+                    viewModel?.updateCastProgress(
+                        getCurrentCastPosition().toFloat() / 1000,
+                        CastProgressSync.episodeId(client),
+                    )
                 }
                 delay(1000)
             }

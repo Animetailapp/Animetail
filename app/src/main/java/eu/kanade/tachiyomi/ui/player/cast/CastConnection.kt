@@ -14,6 +14,7 @@ import com.google.android.gms.cast.framework.SessionManagerListener
  * @param context an activity context, the device picker is a dialog.
  */
 fun castWhenConnected(context: Context, onConnected: (CastSession) -> Unit) {
+    CastProgressSync.start(context)
     val castContext = CastContext.getSharedInstance(context)
     val sessionManager = castContext.sessionManager
     sessionManager.currentCastSession?.takeIf { it.isConnected }?.let {

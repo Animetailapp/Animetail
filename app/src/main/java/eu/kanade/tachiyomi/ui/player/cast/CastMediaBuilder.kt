@@ -65,6 +65,7 @@ class CastMediaBuilder(
             .addMetadata(video)
             .addTracks(video)
             .setStreamDuration((viewModel.mpv.getPropertyInt("duration") ?: 0).toLong() * 1000)
+            .setCustomData(CastProgressSync.episodeData(viewModel.currentEpisode.value?.id))
             .build()
     }
 
