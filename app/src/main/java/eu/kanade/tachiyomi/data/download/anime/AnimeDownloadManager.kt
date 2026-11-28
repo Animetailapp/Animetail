@@ -89,6 +89,26 @@ class AnimeDownloadManager(
     }
 
     /**
+     * Retries failed [downloads] and starts the downloader if needed.
+     *
+     * @param video one of the episode's other videos, as its hoster listed it, to retry with.
+     */
+    fun retryDownloads(downloads: List<AnimeDownload>, video: Video? = null) {
+        val failed = downloads.filter { it.failure != null }
+        if (failed.isEmpty()) return
+        downloader.retry(failed, video)
+        startDownloads()
+    }
+
+    /**
+     * Retries every failed download in the queue and starts the downloader.
+     */
+    fun retryFailedAndStartDownloads() {
+        downloader.retry(queueState.value.filter { it.failure != null })
+        startDownloads()
+    }
+
+    /**
      * Tells the downloader to pause downloads.
      */
     fun pauseDownloads() {
@@ -117,6 +137,7 @@ class AnimeDownloadManager(
         val existingDownload = getQueuedDownloadOrNull(episodeId)
         // If not in queue try to start a new download
         val toAdd = existingDownload ?: downloadFromEpisodeId(episodeId) ?: return
+        if (existingDownload?.failure != null) downloader.retry(listOf(existingDownload))
         queueState.value.toMutableList().apply {
             existingDownload?.let { remove(it) }
             add(0, toAdd)
