@@ -83,6 +83,14 @@ object DiskUtil {
     }
 
     /**
+     * Gets the total space for the disk that a file or document points to, in bytes, or -1 when
+     * it can't be found out.
+     */
+    fun getTotalStorageSpace(f: UniFile): Long {
+        return getStorageVolume(f)?.let { getTotalStorageSpace(it) } ?: -1L
+    }
+
+    /**
      * Returns a folder on the same disk as [f]: its own path for a file, or the root of its storage
      * volume for a document of the external storage provider, which is what folders picked with
      * the system picker are. Null for documents of other providers.

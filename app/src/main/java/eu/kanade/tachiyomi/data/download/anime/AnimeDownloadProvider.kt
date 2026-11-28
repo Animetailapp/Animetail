@@ -43,6 +43,12 @@ class AnimeDownloadProvider(
     private val downloadsDir: UniFile?
         get() = storageManager.getDownloadsDirectory()
 
+    /** Bytes free on the storage of the downloads directory, or -1 when unknown. */
+    fun getAvailableSpace(): Long = downloadsDir?.let { DiskUtil.getAvailableStorageSpace(it) } ?: -1L
+
+    /** Size in bytes of the storage of the downloads directory, or -1 when unknown. */
+    fun getTotalSpace(): Long = downloadsDir?.let { DiskUtil.getTotalStorageSpace(it) } ?: -1L
+
     /**
      * Returns the download directory for an anime. For internal use only.
      *

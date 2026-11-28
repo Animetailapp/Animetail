@@ -5,4 +5,16 @@
         <item quantity="one">Retrying %1$d failed page…</item>
         <item quantity="other">Retrying %1$d failed pages…</item>
     </plurals>
+    <plurals name="storage_cleanup_deletes">
+        <item quantity="one">Deletes %1$d episode, freeing %2$s</item>
+        <item quantity="other">Deletes %1$d episodes, freeing %2$s</item>
+    </plurals>
+    <plurals name="storage_cleanup_downloads">
+        <item quantity="one">Downloads %1$d episode</item>
+        <item quantity="other">Downloads %1$d episodes</item>
+    </plurals>
+    <plurals name="policy_keep_unseen_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
 </resources>

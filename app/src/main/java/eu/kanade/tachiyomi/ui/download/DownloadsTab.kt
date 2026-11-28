@@ -61,6 +61,7 @@ import eu.kanade.tachiyomi.ui.download.manga.mangaDownloadTab
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import mihon.core.navigation.LocalNavigator
+import mihon.core.navigation.StorageRoute
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.Pill
@@ -280,7 +281,14 @@ private fun AnimeActions(
     animeViewModel: AnimeDownloadQueueViewModel,
     animeDownloadList: List<DownloadQueueSection>,
 ) {
-    if (animeDownloadList.isNotEmpty()) {
+    val navigator = LocalNavigator.current
+    val storageAction = AppBar.OverflowAction(
+        title = stringResource(AYMR.strings.label_storage),
+        onClick = { navigator.push(StorageRoute) },
+    )
+    if (animeDownloadList.isEmpty()) {
+        AppBarActions(persistentListOf(storageAction))
+    } else {
         var sortExpanded by remember { mutableStateOf(false) }
         val onDismissRequest = { sortExpanded = false }
         DropdownMenu(
@@ -364,6 +372,7 @@ private fun AnimeActions(
                     title = stringResource(MR.strings.action_cancel_all),
                     onClick = { animeViewModel.clearQueue() },
                 ),
+                storageAction,
             ),
         )
     }

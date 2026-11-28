@@ -56,6 +56,7 @@ class AnimeDownloadManager(
     private val downloadPreferences: DownloadPreferences,
     private val downloader: AnimeDownloader,
     private val pendingDeleter: AnimeDownloadPendingDeleter,
+    private val sizes: AnimeDownloadSizes,
 ) {
 
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -326,6 +327,34 @@ class AnimeDownloadManager(
                 cache.removeSource(source)
             }
         }
+    }
+
+    /**
+     * Deletes the downloaded episodes [entryNames] (see [episodeEntryName]) of the anime directory
+     * [show], or the whole directory when [entryNames] is null. Use [deleteAnime] to delete all the
+     * downloads of an anime in the database, which also removes its queued downloads.
+     *
+     * This is for deleting what the user picked in the storage screen: unlike [deleteEpisodes], it
+     * also deletes bookmarked episodes and episodes in categories excluded from deletion, and works
+     * for downloads that no longer match an entry in the database.
+     */
+    suspend fun deleteDownloadedEntries(show: AnimeDownloadSizes.Show, entryNames: Collection<String>?) {
+        val animeDir = show.dir ?: return
+        val deleteDir = if (entryNames == null) {
+            true
+        } else {
+            val names = entryNames.toSet()
+            animeDir.listFiles().orEmpty().filter { episodeEntryName(it) in names }.forEach { it.delete() }
+            animeDir.listFiles()?.isEmpty() == true
+        }
+
+        if (deleteDir) {
+            val sourceDir = animeDir.parentFile
+            animeDir.delete()
+            if (sourceDir?.listFiles()?.isEmpty() == true) sourceDir.delete()
+        }
+        show.sourceIds.forEach { cache.removeEntries(it, show.dirName, entryNames.takeUnless { deleteDir }) }
+        sizes.onEntriesDeleted(show.sourceIds, show.dirName, entryNames.takeUnless { deleteDir })
     }
 
     private fun removeFromDownloadQueue(episodes: List<Episode>) {

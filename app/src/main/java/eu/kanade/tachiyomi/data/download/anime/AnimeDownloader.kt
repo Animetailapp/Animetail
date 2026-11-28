@@ -155,6 +155,13 @@ class AnimeDownloader(
         val pending = queueState.value.filter { it.status != AnimeDownload.State.DOWNLOADED }
         pending.forEach { if (it.status != AnimeDownload.State.QUEUE) it.status = AnimeDownload.State.QUEUE }
 
+        val availableSpace = provider.getAvailableSpace()
+        if (availableSpace in 0..<MIN_DISK_SPACE) {
+            logcat(LogPriority.WARN) { "Not starting the downloader: only $availableSpace bytes free" }
+            notifier.onLowStorage(availableSpace)
+            return false
+        }
+
         launchDownloaderJob()
 
         return pending.isNotEmpty()
@@ -191,6 +198,18 @@ class AnimeDownloader(
         queueState.value
             .filter { it.status == AnimeDownload.State.DOWNLOADING }
             .forEach { it.status = AnimeDownload.State.QUEUE }
+    }
+
+    /**
+     * Pauses the whole queue because the download storage is almost full, instead of failing
+     * [download] and then every download after it. Resuming checks the free space again.
+     */
+    private fun pauseForLowStorage(download: AnimeDownload, availableSpace: Long) {
+        logcat(LogPriority.WARN) { "Only $availableSpace bytes free, pausing the downloader" }
+        download.status = AnimeDownload.State.QUEUE
+        pause()
+        notifier.onLowStorage(availableSpace)
+        AnimeDownloadJob.stop(context)
     }
 
     /**
@@ -270,6 +289,7 @@ class AnimeDownloader(
             // Remove successful download from queue
             if (download.status == AnimeDownload.State.DOWNLOADED) {
                 removeFromQueue(download)
+                AnimeStorageLimitJob.onEpisodeDownloaded(context)
             }
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
@@ -359,13 +379,7 @@ class AnimeDownloader(
 
         val availSpace = DiskUtil.getAvailableStorageSpace(animeDir)
         if (availSpace != -1L && availSpace < MIN_DISK_SPACE) {
-            download.status = AnimeDownload.State.ERROR
-            notifier.onError(
-                context.stringResource(AYMR.strings.download_insufficient_space),
-                download.episode.name,
-                download.anime.title,
-                download.anime.id,
-            )
+            pauseForLowStorage(download, availSpace)
             return
         }
 

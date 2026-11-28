@@ -32,6 +32,22 @@ object NotificationHandler {
     }
 
     /**
+     * Returns [PendingIntent] that starts the storage screen of the anime downloads.
+     */
+    internal fun openAnimeStoragePendingActivity(context: Context): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            action = Constants.SHORTCUT_ANIME_STORAGE
+        }
+        return PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    /**
      * Returns [PendingIntent] that starts a download activity.
      *
      * @param context context of application

@@ -351,6 +351,47 @@ class AnimeDownloadCache(
         notifyChanges()
     }
 
+    /**
+     * Returns the downloaded anime directories, after the cache has been renewed if it was due. A
+     * directory shared by several sources (see [associateSourceDirectories]) is listed once.
+     */
+    suspend fun getDownloadedAnimeDirs(): List<DownloadedAnimeDir> {
+        renewCache()
+        renewalJob?.join()
+
+        return rootDownloadsDirMutex.withLock {
+            rootDownloadsDir.sourceDirs.entries
+                .groupBy({ it.value }, { it.key })
+                .flatMap { (sourceDir, sourceIds) ->
+                    sourceDir.animeDirs.map { (name, animeDir) ->
+                        DownloadedAnimeDir(
+                            sourceIds = sourceIds.toSet(),
+                            dirName = name,
+                            dir = animeDir.dir,
+                            episodeEntries = animeDir.episodeDirs.toSet(),
+                        )
+                    }
+                }
+        }
+    }
+
+    /**
+     * Removes episode entries (see [episodeEntryName]) that have been deleted from an anime
+     * directory, or the whole directory when [entryNames] is null.
+     */
+    suspend fun removeEntries(sourceId: Long, animeDirName: String, entryNames: Collection<String>?) {
+        rootDownloadsDirMutex.withLock {
+            val sourceDir = rootDownloadsDir.sourceDirs[sourceId] ?: return
+            if (entryNames == null) {
+                sourceDir.animeDirs -= animeDirName
+            } else {
+                sourceDir.animeDirs[animeDirName]?.episodeDirs?.removeAll(entryNames.toSet())
+            }
+        }
+
+        notifyChanges()
+    }
+
     fun invalidateCache() {
         lastRenew = 0L
         renewalJob?.cancel()
@@ -401,24 +442,7 @@ class AnimeDownloadCache(
                                 .associate { it.name!! to AnimeDirectory(it) }
                             sourceDir.animeDirs.values.forEach { animeDir ->
                                 val episodeDirs = animeDir.dir?.listFiles().orEmpty()
-                                    .mapNotNull {
-                                        when {
-                                            // Ignore incomplete downloads
-                                            it.name?.endsWith(AnimeDownloader.TMP_DIR_SUFFIX) == true -> null
-
-                                            // Folder of videos
-                                            it.isDirectory -> it.name
-
-                                            // MP4 files
-                                            it.isFile && it.extension == "mp4" -> it.nameWithoutExtension
-
-                                            // MKV files
-                                            it.isFile && it.extension == "mkv" -> it.nameWithoutExtension
-
-                                            // Anything else is irrelevant
-                                            else -> null
-                                        }
-                                    }
+                                    .mapNotNull { episodeEntryName(it) }
                                     .toMutableSet()
 
                                 animeDir.episodeDirs = episodeDirs
@@ -476,6 +500,42 @@ class AnimeDownloadCache(
                 )
             }
         }
+    }
+}
+
+/**
+ * An anime directory in the downloads directory.
+ *
+ * @property sourceIds the sources whose downloads are in this directory's source directory.
+ * @property episodeEntries the names of its episodes, see [episodeEntryName].
+ */
+data class DownloadedAnimeDir(
+    val sourceIds: Set<Long>,
+    val dirName: String,
+    val dir: UniFile?,
+    val episodeEntries: Set<String>,
+)
+
+/**
+ * The name a downloaded episode is known by in an anime directory: the name of a folder of videos,
+ * or of an MP4/MKV file without its extension. Null for incomplete downloads and other files.
+ */
+fun episodeEntryName(file: UniFile): String? {
+    return when {
+        // Ignore incomplete downloads
+        file.name?.endsWith(AnimeDownloader.TMP_DIR_SUFFIX) == true -> null
+
+        // Folder of videos
+        file.isDirectory -> file.name
+
+        // MP4 files
+        file.isFile && file.extension == "mp4" -> file.nameWithoutExtension
+
+        // MKV files
+        file.isFile && file.extension == "mkv" -> file.nameWithoutExtension
+
+        // Anything else is irrelevant
+        else -> null
     }
 }
 
