@@ -15,9 +15,11 @@ import eu.kanade.tachiyomi.util.lang.chop
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.notify
+import eu.kanade.tachiyomi.util.toSize
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import java.util.regex.Pattern
 
 /**
@@ -198,6 +200,37 @@ class AnimeDownloadNotifier(
         }
 
         // Reset download information
+        isDownloading = false
+    }
+
+    /**
+     * Called when the downloader paused because the download storage is almost full.
+     *
+     * @param freeBytes the space left on the download storage.
+     */
+    fun onLowStorage(freeBytes: Long) {
+        dismissProgress()
+        with(errorNotificationBuilder) {
+            setContentTitle(context.stringResource(TLMR.strings.download_low_storage_title))
+            setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(context.stringResource(TLMR.strings.download_low_storage, freeBytes.toSize())),
+            )
+            setContentText(context.stringResource(TLMR.strings.download_low_storage, freeBytes.toSize()))
+            setSmallIcon(R.drawable.ic_warning_white_24dp)
+            setAutoCancel(true)
+            clearActions()
+            setProgress(0, 0, false)
+            setContentIntent(NotificationHandler.openAnimeStoragePendingActivity(context))
+            addAction(
+                R.drawable.ic_play_arrow_24dp,
+                context.stringResource(MR.strings.action_resume),
+                NotificationReceiver.resumeAnimeDownloadsPendingBroadcast(context),
+            )
+
+            show(Notifications.ID_DOWNLOAD_EPISODE_ERROR)
+        }
+
         isDownloading = false
     }
 

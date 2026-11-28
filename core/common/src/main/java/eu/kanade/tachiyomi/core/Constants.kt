@@ -25,5 +25,6 @@ object Constants {
     const val SHORTCUT_ANIMEEXTENSIONS = "eu.kanade.tachiyomi.ANIMEEXTENSIONS"
     const val SHORTCUT_EXTENSIONS = "eu.kanade.tachiyomi.EXTENSIONS"
     const val SHORTCUT_ANIME_DOWNLOADS = "eu.kanade.tachiyomi.SHOW_ANIME_DOWNLOADS"
+    const val SHORTCUT_ANIME_STORAGE = "eu.kanade.tachiyomi.SHOW_ANIME_STORAGE"
     const val SHORTCUT_DOWNLOADS = "eu.kanade.tachiyomi.SHOW_DOWNLOADS"
 }
