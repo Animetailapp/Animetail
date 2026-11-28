@@ -84,6 +84,8 @@ class ReaderPreferences(
         ReadingMode.RIGHT_TO_LEFT.flagValue,
     )
 
+    val detectWebtoons: Preference<Boolean> = preferenceStore.getBoolean("pref_detect_webtoons", true)
+
     val defaultOrientationType: Preference<Int> = preferenceStore.getInt(
         "pref_default_orientation_type_key",
         ReaderOrientation.FREE.flagValue,

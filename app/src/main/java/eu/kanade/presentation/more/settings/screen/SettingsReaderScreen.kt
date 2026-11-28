@@ -44,6 +44,11 @@ data object SettingsReaderScreen : SearchableSettings {
                     .toMap(),
                 title = stringResource(MR.strings.pref_viewer_type),
             ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = readerPref.detectWebtoons,
+                title = stringResource(TLMR.strings.pref_detect_webtoons),
+                subtitle = stringResource(TLMR.strings.pref_detect_webtoons_summary),
+            ),
             Preference.PreferenceItem.ListPreference(
                 preference = readerPref.doubleTapAnimSpeed,
                 entries = mapOf(

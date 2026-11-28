@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import ca.mpreg.imagedecoder.ImageDecoder
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
@@ -21,6 +22,7 @@ import eu.kanade.domain.entries.manga.interactor.SetMangaViewerFlags
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.entries.manga.model.readerOrientation
 import eu.kanade.domain.entries.manga.model.readingMode
+import eu.kanade.domain.entries.manga.model.webtoonVerdict
 import eu.kanade.domain.items.chapter.model.toDbChapter
 import eu.kanade.domain.source.manga.interactor.GetMangaIncognitoState
 import eu.kanade.domain.source.service.SourcePreferences
@@ -49,6 +51,8 @@ import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
+import eu.kanade.tachiyomi.ui.reader.setting.WebtoonDetection
+import eu.kanade.tachiyomi.ui.reader.setting.WebtoonVerdict
 import eu.kanade.tachiyomi.util.chapter.filterDownloaded
 import eu.kanade.tachiyomi.util.chapter.removeDuplicates
 import eu.kanade.tachiyomi.util.editCover
@@ -67,8 +71,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -362,8 +369,9 @@ class ReaderViewModel(
     private suspend fun init() {
         withIOContext {
             try {
-                val manga = getManga.await(mangaId) ?: error("Requested manga of id $mangaId not found")
-                val source = sourceManager.getOrStub(manga.source)
+                val storedManga = getManga.await(mangaId) ?: error("Requested manga of id $mangaId not found")
+                val source = sourceManager.getOrStub(storedManga.source)
+                val manga = detectWebtoonFromMetadata(storedManga, source)
                 incognitoMode = getMangaIncognitoState.await(manga.source)
                 mutableState.update { it.copy(manga = manga, source = source) }
                 if (chapterId == -1L) chapterId = initialChapterId
@@ -410,6 +418,7 @@ class ReaderViewModel(
             chapterList.getOrNull(chapterPos + 1),
         )
         preloadNextChapterAfter(newChapters)
+        detectWebtoonFromPages(newChapters.currChapter)
 
         withUIContext {
             mutableState.update {
@@ -826,15 +835,100 @@ class ReaderViewModel(
     }
 
     /**
-     * Returns the viewer position used by this manga or the default one.
+     * Returns the viewer position used by this manga or the default one, which is long strip for a series
+     * detected as a webtoon.
      */
     fun getMangaReadingMode(resolveDefault: Boolean = true): Int {
         val default = readerPreferences.defaultReadingMode.get()
-        val readingMode = ReadingMode.fromPreference(manga?.readingMode?.toInt())
-        return when {
-            resolveDefault && readingMode == ReadingMode.DEFAULT -> default
-            else -> manga?.readingMode?.toInt() ?: default
+        if (!resolveDefault) return manga?.readingMode?.toInt() ?: default
+        return resolveReadingMode(manga).flagValue
+    }
+
+    private fun resolveReadingMode(manga: Manga?): ReadingMode = WebtoonDetection.resolveReadingMode(
+        seriesMode = ReadingMode.fromPreference(manga?.readingMode?.toInt()),
+        appDefault = ReadingMode.fromPreference(readerPreferences.defaultReadingMode.get()),
+        detectEnabled = readerPreferences.detectWebtoons.get(),
+        verdict = manga?.webtoonVerdict ?: WebtoonVerdict.UNDECIDED,
+    )
+
+    private fun needsWebtoonDetection(manga: Manga): Boolean = WebtoonDetection.needsDetection(
+        seriesMode = ReadingMode.fromPreference(manga.readingMode.toInt()),
+        detectEnabled = readerPreferences.detectWebtoons.get(),
+        verdict = manga.webtoonVerdict,
+    )
+
+    /**
+     * Marks [manga] as a webtoon before the first viewer is made when its genres or source say so, so it
+     * opens in long strip straight away.
+     */
+    private suspend fun detectWebtoonFromMetadata(manga: Manga, source: MangaSource): Manga {
+        if (!needsWebtoonDetection(manga)) return manga
+        val verdict = WebtoonDetection.verdictFromMetadata(manga.genre, source.name)
+        if (verdict == WebtoonVerdict.UNDECIDED) return manga
+        setMangaViewerFlags.awaitSetWebtoonVerdict(manga.id, verdict)
+        return getManga.await(manga.id) ?: manga
+    }
+
+    private var webtoonDetectionJob: Job? = null
+
+    // A stored verdict that keeps the viewer is not put in the state, so this stops measuring again
+    private var webtoonVerdictSaved = false
+
+    /**
+     * Measures the first pages of [chapter] that finish loading and stores the verdict on the series, so it is
+     * decided once. A series found to be a webtoon switches to long strip right away, on the same page.
+     */
+    private fun detectWebtoonFromPages(chapter: ReaderChapter) {
+        val manga = manga ?: return
+        val pages = chapter.pages ?: return
+        if (webtoonVerdictSaved || pages.isEmpty() || !needsWebtoonDetection(manga)) return
+        webtoonDetectionJob?.cancel()
+        webtoonDetectionJob = viewModelScope.launchIO {
+            val sizes = mutableListOf<WebtoonDetection.PageSize>()
+            var verdict = WebtoonVerdict.UNDECIDED
+            pages
+                .map { page ->
+                    flow {
+                        page.statusFlow.first { it == Page.State.READY }
+                        emit(readPageSize(page))
+                    }
+                }
+                .merge()
+                .firstOrNull { size ->
+                    size?.let(sizes::add)
+                    verdict = WebtoonDetection.verdictFromPages(sizes, pages.size)
+                    verdict != WebtoonVerdict.UNDECIDED
+                }
+            // Too few pages could be measured: left undecided, so the next chapter opened tries again
+            if (verdict == WebtoonVerdict.UNDECIDED) return@launchIO
+            saveWebtoonVerdict(manga.id, verdict)
+            webtoonVerdictSaved = true
         }
+    }
+
+    private suspend fun saveWebtoonVerdict(mangaId: Long, verdict: WebtoonVerdict) {
+        val modeBefore = resolveReadingMode(manga)
+        setMangaViewerFlags.awaitSetWebtoonVerdict(mangaId, verdict)
+        val updated = getManga.await(mangaId) ?: return
+        // Only a verdict that changes the mode remakes the viewer
+        if (resolveReadingMode(updated) == modeBefore) return
+        withUIContext {
+            val currChapters = state.value.viewerChapters ?: return@withUIContext
+            val currChapter = currChapters.currChapter
+            currChapter.requestedPage = currChapter.chapter.last_page_read
+            mutableState.update { it.copy(manga = updated) }
+            eventChannel.send(Event.ReloadViewerChapters)
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun readPageSize(page: ReaderPage): WebtoonDetection.PageSize? = try {
+        page.stream?.invoke()?.use { stream ->
+            ImageDecoder.open(stream).use { WebtoonDetection.PageSize(it.width, it.height) }
+        }
+    } catch (e: Exception) {
+        logcat(LogPriority.WARN, e) { "Could not measure page ${page.index}" }
+        null
     }
 
     /**

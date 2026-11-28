@@ -3,6 +3,7 @@ package eu.kanade.domain.entries.manga.interactor
 import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
+import eu.kanade.tachiyomi.ui.reader.setting.WebtoonVerdict
 import tachiyomi.domain.entries.manga.model.MangaUpdate
 import tachiyomi.domain.entries.manga.repository.MangaRepository
 
@@ -25,6 +26,15 @@ class SetMangaViewerFlags(
         mangaRepository.updateManga(
             MangaUpdate(id) {
                 viewerFlags = manga.viewerFlags.setFlag(flag, ReaderOrientation.MASK.toLong())
+            },
+        )
+    }
+
+    suspend fun awaitSetWebtoonVerdict(id: Long, verdict: WebtoonVerdict) {
+        val manga = mangaRepository.getMangaById(id)
+        mangaRepository.updateManga(
+            MangaUpdate(id) {
+                viewerFlags = manga.viewerFlags.setFlag(verdict.flagValue.toLong(), WebtoonVerdict.MASK.toLong())
             },
         )
     }
