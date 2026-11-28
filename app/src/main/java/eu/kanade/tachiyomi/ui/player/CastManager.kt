@@ -20,11 +20,11 @@ import com.google.android.gms.cast.TextTrackStyle
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
+import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.ui.player.cast.CastMediaBuilder
 import eu.kanade.tachiyomi.ui.player.cast.CastSessionListener
 import eu.kanade.tachiyomi.ui.player.cast.components.BorderStyle
 import eu.kanade.tachiyomi.ui.player.cast.components.SubtitleSettings
-import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.settings.CastSubtitlePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.coroutines.Job
@@ -214,6 +214,7 @@ class CastManager(
         startTrackingCastProgress()
         updateCurrentMedia()
         updateQueueItems()
+        if (session.remoteMediaClient?.hasMediaSession() != true) loadRemoteMedia()
 
         session.remoteMediaClient?.registerCallback(object : RemoteMediaClient.Callback() {
             override fun onStatusUpdated() {
@@ -292,8 +293,12 @@ class CastManager(
     }
 
     // Media Loading & Progress Tracking
+
+    /**
+     * Sends [video] to the cast device, or the video playing on the phone when it's null.
+     */
     @SuppressLint("SuspiciousIndentation")
-    fun loadRemoteMedia() {
+    fun loadRemoteMedia(video: Video? = null) {
         if (!isCastApiAvailable || isLoadingMedia) return
         val remoteMediaClient = castSession?.remoteMediaClient ?: return
         if (mediaBuilder == null || viewModel == null) return
@@ -302,13 +307,13 @@ class CastManager(
             try {
                 isLoadingMedia = true
                 _isLoading.value = true
-                val selectedHosterIndex = viewModel!!.selectedHosterVideoIndex.value.first
-                val selectedVideoIndex = viewModel!!.selectedHosterVideoIndex.value.second
+                val castVideo = video ?: viewModel!!.currentVideo.value
+                if (castVideo == null) {
+                    showLoadErrorToast()
+                    return@launch
+                }
 
-                val hosterState = viewModel!!.hosterState.value.getOrNull(selectedHosterIndex) as? HosterState.Ready
-                val video = hosterState?.videoList?.getOrNull(selectedVideoIndex) ?: return@launch
-
-                val mediaInfo = mediaBuilder!!.buildMediaInfo(video) // Ahora pasa el objeto `Video` directamente
+                val mediaInfo = mediaBuilder!!.buildMediaInfo(castVideo)
                 val currentLocalPosition = (mpv?.getPropertyInt("time-pos") ?: 0).toLong()
 
                 updateQueueItems()
@@ -318,7 +323,7 @@ class CastManager(
                         .build()
 
                     mediaQueue.add(queueItem)
-                    remoteMediaClient.queueAppendItem(queueItem, null)
+                    remoteMediaClient.queueAppendItem(queueItem, null).setResultCallback(::onLoadResult)
                     updateQueueItems()
                     showAddedToQueueToast()
                 } else {
@@ -328,7 +333,7 @@ class CastManager(
                             .setAutoplay(autoplayEnabled)
                             .setCurrentTime(currentLocalPosition * 1000)
                             .build(),
-                    )
+                    ).setResultCallback(::onLoadResult)
                     updateQueueItems()
                 }
                 _castState.value = CastState.CONNECTED
@@ -340,6 +345,14 @@ class CastManager(
                 _isLoading.value = false
             }
         }
+    }
+
+    // The device answers asynchronously; without this a rejected video failed silently and the
+    // receiver kept showing that no media was selected.
+    private fun onLoadResult(result: RemoteMediaClient.MediaChannelResult) {
+        if (result.status.isSuccess) return
+        logcat(LogPriority.ERROR) { "Cast device couldn't load the video: ${result.status}" }
+        showLoadErrorToast()
     }
 
     private fun showAddedToQueueToast() {

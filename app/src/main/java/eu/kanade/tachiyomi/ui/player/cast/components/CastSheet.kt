@@ -139,6 +139,13 @@ fun CastSheet(
                             Text(stringResource(TLMR.strings.cast_media_info))
                         }
                     }
+                    FilledTonalButton(
+                        onClick = { castManager.loadRemoteMedia() },
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(vertical = 8.dp),
+                    ) {
+                        Text(stringResource(TLMR.strings.cast_send_again))
+                    }
 
                     val queueItems by castManager.queueItems.collectAsState()
                     if (queueItems.isNotEmpty()) {

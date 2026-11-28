@@ -304,6 +304,7 @@
     <string name="cast_subtitles">Subtitles</string>
     <string name="cast_audio_tracks">Audio Tracks</string>
     <string name="cast_no_subtitles">No Subtitles</string>
+    <string name="cast_send_again">Send the video again</string>
     <string name="cast_close">Close</string>
     <string name="cast_subtitle_font_family">Font Family</string>
     <string name="cast_subtitle_border_style">Border Style</string>

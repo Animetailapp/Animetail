@@ -32,6 +32,7 @@ class VideoCacheProxy(
     private val client: OkHttpClient,
     val store: VideoCacheStore,
     private val prefetchEnabled: () -> Boolean = { true },
+    private val host: String = LOCALHOST,
 ) {
     // Only URLs carrying this token are served, other apps can't use the proxy as a relay.
     private val token = UUID.randomUUID().toString().replace("-", "")
@@ -67,6 +68,12 @@ class VideoCacheProxy(
         return proxyUrl(port, httpUrl, cacheKey)
     }
 
+    @Synchronized
+    fun stop() {
+        server?.stop()
+        server = null
+    }
+
     private fun startedPort(): Int? {
         server?.let { return it.listeningPort }
         return try {
@@ -87,14 +94,28 @@ class VideoCacheProxy(
             ?.takeIf { it.isNotBlank() }
             ?: "video"
         val encodedKey = cacheKey?.encodeUtf8()?.base64Url() ?: NO_CACHE_KEY
-        return "http://$LOCALHOST:$port/$token/${url.toString().encodeUtf8().base64Url()}/$encodedKey/$fileName"
+        return "http://$host:$port/$token/${url.toString().encodeUtf8().base64Url()}/$encodedKey/$fileName"
     }
 
-    private inner class Server : NanoHTTPD(LOCALHOST, 0) {
+    private inner class Server : NanoHTTPD(host, 0) {
 
         override fun useGzipWhenAccepted(response: Response): Boolean = false
 
         override fun serve(session: IHTTPSession): Response {
+            if (host == LOCALHOST) return serveRequest(session)
+            // Cast receivers load HLS with XHR, which needs CORS from a server on another origin.
+            val response = if (session.method == Method.OPTIONS) {
+                newFixedLengthResponse(Response.Status.OK, MIME_PLAINTEXT, "").apply {
+                    addHeader("Access-Control-Allow-Methods", "GET, HEAD")
+                    addHeader("Access-Control-Allow-Headers", "*")
+                }
+            } else {
+                serveRequest(session)
+            }
+            return response.apply { addHeader("Access-Control-Allow-Origin", "*") }
+        }
+
+        private fun serveRequest(session: IHTTPSession): Response {
             val segments = session.uri.trim('/').split('/')
             if (segments.size < 3 || segments[0] != token) {
                 return newFixedLengthResponse(Response.Status.FORBIDDEN, MIME_PLAINTEXT, "")
@@ -535,6 +556,22 @@ class VideoCacheProxy(
 
         @Volatile
         private var sharedInstance: VideoCacheProxy? = null
+
+        private var castInstance: VideoCacheProxy? = null
+
+        /**
+         * Proxy a cast device reaches over the local network at [lanAddress]. Receivers can't send
+         * the headers most hosts require, so the proxy adds the ones given in [proxyUrl]; it also
+         * makes streams served on the phone's loopback, like Mega's, reachable.
+         */
+        @Synchronized
+        fun castProxy(context: Context, lanAddress: String): VideoCacheProxy {
+            castInstance?.takeIf { it.host == lanAddress }?.let { return it }
+            castInstance?.stop()
+            val shared = instance(context)
+            return VideoCacheProxy(shared.client, shared.store, shared.prefetchEnabled, host = lanAddress)
+                .also { castInstance = it }
+        }
 
         private fun instance(context: Context): VideoCacheProxy {
             return sharedInstance ?: synchronized(this) {
