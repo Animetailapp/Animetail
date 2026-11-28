@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,10 +45,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.components.DropdownMenu
-import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.ui.download.DownloadQueueEntry
 import eu.kanade.tachiyomi.ui.download.DownloadQueueSection
+import eu.kanade.tachiyomi.ui.download.anime.AnimeDownloadItemState
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -59,7 +60,6 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import sh.calvin.reorderable.rememberScroller
 import tachiyomi.i18n.MR
-import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.ListGroupHeader
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -75,7 +75,10 @@ fun DownloadQueueList(
     onCancel: (DownloadQueueEntry) -> Unit,
     onCancelSeries: (DownloadQueueEntry) -> Unit,
     modifier: Modifier = Modifier,
+    /** What an anime row shows, by episode id; read from Compose state so only changed rows recompose. */
+    animeItemState: (episodeId: Long) -> AnimeDownloadItemState? = { null },
 ) {
+    val currentAnimeItemState by rememberUpdatedState(animeItemState)
     val sectionsState = remember { sections.toMutableStateList() }
     // While a section is dragged its downloads are hidden, so it moves past whole sections
     var isSectionDragging by remember { mutableStateOf(false) }
@@ -171,6 +174,7 @@ fun DownloadQueueList(
                     ) { isDragging ->
                         DownloadQueueItem(
                             download = download,
+                            animeItemState = { currentAnimeItemState(it) },
                             isDragging = isDragging,
                             modifier = if (isDragging || download.key == lastDraggedKey) {
                                 Modifier.keepInSection(
@@ -305,6 +309,7 @@ private fun ReorderableCollectionItemScope.DownloadQueueHeader(
 @Composable
 private fun ReorderableCollectionItemScope.DownloadQueueItem(
     download: DownloadQueueEntry,
+    animeItemState: (episodeId: Long) -> AnimeDownloadItemState?,
     isDragging: Boolean,
     canMoveToTop: Boolean,
     canMoveToBottom: Boolean,
@@ -316,8 +321,9 @@ private fun ReorderableCollectionItemScope.DownloadQueueItem(
     onCancelSeries: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val progress by remember(download) { download.progressFlow() }.collectAsState(null)
-    val animatedProgress by animateFloatAsState(progress?.fraction ?: 0f, label = "progress")
+    val animeState by remember(download) {
+        derivedStateOf { (download as? DownloadQueueEntry.Anime)?.let { animeItemState(it.download.episode.id) } }
+    }
 
     Surface(
         modifier = modifier,
@@ -332,56 +338,18 @@ private fun ReorderableCollectionItemScope.DownloadQueueItem(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             DragHandle(onDragStarted = onDragStarted, onDragStopped = onDragStopped)
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = MaterialTheme.padding.small),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small)) {
-                    Text(
-                        text = when (download) {
-                            is DownloadQueueEntry.Manga -> download.download.manga.title
-                            is DownloadQueueEntry.Anime -> download.download.anime.title
-                        },
-                        modifier = Modifier.weight(1f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    progress?.let {
-                        Text(
-                            text = when (download) {
-                                is DownloadQueueEntry.Manga -> "${it.downloadedPages}/${it.pageCount}"
-
-                                is DownloadQueueEntry.Anime -> if (it.indeterminate) {
-                                    stringResource(AYMR.strings.downloading)
-                                } else {
-                                    stringResource(AYMR.strings.episode_download_progress, it.totalProgress)
-                                }
-                            },
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                }
-                Text(
-                    text = when (download) {
-                        is DownloadQueueEntry.Manga -> download.download.chapter.name
-                        is DownloadQueueEntry.Anime -> download.download.episode.name
-                    },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodySmall,
+            val bodyModifier = Modifier
+                .weight(1f)
+                .padding(vertical = MaterialTheme.padding.small)
+            when (download) {
+                is DownloadQueueEntry.Anime -> AnimeDownloadItemBody(
+                    title = download.download.anime.title,
+                    episodeName = download.download.episode.name,
+                    state = animeState,
+                    modifier = bodyModifier,
                 )
-                val progressModifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = MaterialTheme.padding.extraSmall)
-                if (progress?.indeterminate == true) {
-                    LinearProgressIndicator(modifier = progressModifier)
-                } else {
-                    LinearProgressIndicator(progress = { animatedProgress }, modifier = progressModifier)
-                }
+
+                is DownloadQueueEntry.Manga -> MangaDownloadItemBody(download, bodyModifier)
             }
             DownloadQueueItemMenu(
                 canMoveToTop = canMoveToTop,
@@ -392,6 +360,45 @@ private fun ReorderableCollectionItemScope.DownloadQueueItem(
                 onCancelSeries = onCancelSeries,
             )
         }
+    }
+}
+
+@Composable
+private fun MangaDownloadItemBody(download: DownloadQueueEntry.Manga, modifier: Modifier) {
+    val progress by remember(download) { download.progressFlow() }.collectAsState(null)
+    val animatedProgress by animateFloatAsState(progress?.fraction ?: 0f, label = "progress")
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small)) {
+            Text(
+                text = download.download.manga.title,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            progress?.let {
+                Text(
+                    text = "${it.downloadedPages}/${it.pageCount}",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+        Text(
+            text = download.download.chapter.name,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodySmall,
+        )
+        LinearProgressIndicator(
+            progress = { animatedProgress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = MaterialTheme.padding.extraSmall),
+        )
     }
 }
 
@@ -494,7 +501,6 @@ private class PagesProgress(
     val pageCount: Int,
     val downloadedPages: Int,
     val totalProgress: Int,
-    val indeterminate: Boolean = false,
 ) {
     val fraction = if (pageCount == 0) 0f else totalProgress / (pageCount * 100f)
 }
@@ -502,33 +508,17 @@ private class PagesProgress(
 /**
  * Progress of the pages of this download, or null until its pages are known.
  */
-private fun DownloadQueueEntry.progressFlow() = when (this) {
-    is DownloadQueueEntry.Manga -> download.pagesFlow.flatMapLatest { pages ->
-        when {
-            pages == null -> flowOf(null)
+private fun DownloadQueueEntry.Manga.progressFlow() = download.pagesFlow.flatMapLatest { pages ->
+    when {
+        pages == null -> flowOf(null)
 
-            pages.isEmpty() -> flowOf(PagesProgress(pageCount = 0, downloadedPages = 0, totalProgress = 0))
+        pages.isEmpty() -> flowOf(PagesProgress(pageCount = 0, downloadedPages = 0, totalProgress = 0))
 
-            else ->
-                combine(pages.map { page -> combine(page.statusFlow, page.progressFlow, ::Pair) }) { states ->
-                    PagesProgress(
-                        pageCount = pages.size,
-                        downloadedPages = states.count { (status, _) -> status == Page.State.READY },
-                        totalProgress = states.sumOf { (_, progress) -> progress },
-                    )
-                }
-        }
-    }
-
-    is DownloadQueueEntry.Anime -> combine(download.progressFlow, download.statusFlow) { progress, status ->
-        if (status == AnimeDownload.State.NOT_DOWNLOADED || status == AnimeDownload.State.QUEUE) {
-            null
-        } else {
+        else -> combine(pages.map { page -> combine(page.statusFlow, page.progressFlow, ::Pair) }) { states ->
             PagesProgress(
-                pageCount = 1,
-                downloadedPages = 0,
-                totalProgress = progress.coerceIn(0, 100),
-                indeterminate = status == AnimeDownload.State.DOWNLOADING && progress <= 0,
+                pageCount = pages.size,
+                downloadedPages = states.count { (status, _) -> status == Page.State.READY },
+                totalProgress = states.sumOf { (_, progress) -> progress },
             )
         }
     }

@@ -46,6 +46,50 @@ class AnimeDownload(
             progressStateFlow.value = value
         }
 
+    @Transient
+    private val transferStateFlow = MutableStateFlow<Transfer?>(null)
+
+    /**
+     * The latest raw progress report of the running download attempt, or null before its first
+     * report. Each attempt starts over from null. The download queue derives speed and time left
+     * from consecutive reports.
+     */
+    @Transient
+    val transferFlow = transferStateFlow.asStateFlow()
+    var transfer: Transfer?
+        get() = transferStateFlow.value
+        set(value) {
+            transferStateFlow.value = value
+        }
+
+    /**
+     * Cumulative progress of one download attempt at [atMs] (`SystemClock.elapsedRealtime`).
+     * [totalBytes] and [durationMs] are null when unknown, e.g. HLS has no total size and a stream
+     * without a known duration has neither.
+     */
+    data class Transfer(
+        val atMs: Long,
+        val bytes: Long,
+        val totalBytes: Long?,
+        val mediaMs: Long,
+        val durationMs: Long?,
+    )
+
+    @Transient
+    private val activeStateFlow = MutableStateFlow(false)
+
+    /**
+     * Whether the downloader is working on this download, including the time spent finding a
+     * working video before it starts transferring (status is still QUEUE then).
+     */
+    @Transient
+    val activeFlow = activeStateFlow.asStateFlow()
+    var active: Boolean
+        get() = activeStateFlow.value
+        set(value) {
+            activeStateFlow.value = value
+        }
+
     /**
      * Updates the status of the download
      *

@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.core.net.toUri
 import aniyomi.core.common.torrent.TorrentPreferences
 import aniyomi.core.common.torrent.TorrentServerApi
@@ -264,7 +265,13 @@ class AnimeDownloader(
             // its video when the episode starts again; the new job waits for it instead of sharing
             // the episode's files with it.
             episodeLocks.computeIfAbsent(download.episode.id) { Mutex() }.withLock {
-                downloadEpisode(download)
+                // Set under the lock, so a cancelled job that is still ending can't clear it
+                download.active = true
+                try {
+                    downloadEpisode(download)
+                } finally {
+                    download.active = false
+                }
             }
 
             // Remove successful download from queue
@@ -617,6 +624,8 @@ class AnimeDownloader(
         filename: String,
     ) {
         val video = download.video!!
+        // A new attempt (a retry, another video) reports from the start again
+        download.transfer = null
 
         val isSaf = videoFile.uri.scheme == "content"
         val localTmpFile = if (isSaf) {
@@ -685,6 +694,13 @@ class AnimeDownloader(
                 if (duration != 0L && outTime > 0) {
                     download.progress = (100 * outTime / duration).toInt().coerceAtMost(100)
                 }
+                download.transfer = AnimeDownload.Transfer(
+                    atMs = SystemClock.elapsedRealtime(),
+                    bytes = s.size,
+                    totalBytes = null,
+                    mediaMs = s.time.toLong(),
+                    durationMs = duration.takeIf { it > 0 }?.let { it * 1000 },
+                )
             }
 
             suspendCancellableCoroutine { continuation ->
