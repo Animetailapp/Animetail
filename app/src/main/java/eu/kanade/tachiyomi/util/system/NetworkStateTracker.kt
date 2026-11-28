@@ -11,6 +11,8 @@ data class NetworkState(
     val isConnected: Boolean,
     val isValidated: Boolean,
     val isWifi: Boolean,
+    /** Whether the network isn't metered (not a phone hotspot or mobile data). */
+    val isUnmetered: Boolean,
 ) {
     val isOnline = isConnected && isValidated
 }
@@ -22,6 +24,7 @@ fun Context.activeNetworkState(): NetworkState {
         isConnected = connectivityManager.activeNetworkInfo?.isConnected ?: false,
         isValidated = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) ?: false,
         isWifi = wifiManager.isWifiEnabled && capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ?: false,
+        isUnmetered = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) ?: false,
     )
 }
 

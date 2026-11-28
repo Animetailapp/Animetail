@@ -71,6 +71,8 @@ class AnimeDownloadManager(
 
     fun downloaderStart() = downloader.start()
     fun downloaderStop(reason: String? = null) = downloader.stop(reason)
+    fun downloaderSetHolds(holds: AnimeDownloadConditions.Holds) = downloader.setHolds(holds)
+    fun pendingDownloads() = downloader.pendingDownloads()
 
     val isDownloaderRunning
         get() = AnimeDownloadJob.isRunningFlow(context)
@@ -149,6 +151,7 @@ class AnimeDownloadManager(
      * @param episodes the list of episodes to enqueue.
      * @param autoStart whether to start the downloader after enqueuing the episodes.
      * @param alt whether to use the alternative downloader
+     * @param automatic whether the library update queues them, see [AnimeDownload.automatic].
      */
     fun downloadEpisodes(
         anime: Anime,
@@ -156,9 +159,10 @@ class AnimeDownloadManager(
         autoStart: Boolean = true,
         alt: Boolean = false,
         video: Video? = null,
+        automatic: Boolean = false,
     ) {
         val filteredEpisodes = getEpisodesToDownload(episodes)
-        downloader.queueEpisodes(anime, filteredEpisodes, autoStart, alt, video)
+        downloader.queueEpisodes(anime, filteredEpisodes, autoStart, alt, video, automatic)
     }
 
     /**

@@ -457,4 +457,10 @@
     <string name="audio_language_original">Original language</string>
     <string name="audio_language_original_detected">Original language (%s)</string>
     <string name="audio_language_dialog_message">Used for this show when picking the audio track. Picking an audio track in the player also changes it.</string>
+
+    <!-- New episode downloads -->
+    <string name="pref_auto_download_restrictions">New episode downloads device restrictions</string>
+    <string name="pref_auto_download_restrictions_info">New episodes the library update queues wait in the download queue until the device meets these restrictions, besides Only on Wi-Fi. Episodes you download yourself don\'t wait.</string>
+    <string name="download_held_metered">New episodes will download on an unmetered network</string>
+    <string name="download_held_not_charging">New episodes will download when the device is charging</string>
 </resources>

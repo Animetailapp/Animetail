@@ -5,4 +5,8 @@
         <item quantity="one">Retrying %1$d failed page…</item>
         <item quantity="other">Retrying %1$d failed pages…</item>
     </plurals>
+    <plurals name="notification_new_episodes_downloaded">
+        <item quantity="one">%1$d new episode downloaded</item>
+        <item quantity="other">%1$d new episodes downloaded</item>
+    </plurals>
 </resources>
