@@ -51,7 +51,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -116,6 +115,8 @@ fun ExpandedControllerScreen(
     var showSpeedDialog by remember { mutableStateOf(false) }
     var currentSpeed by remember { mutableFloatStateOf(1f) }
     var showQueueDialog by remember { mutableStateOf(false) }
+    // Position under the finger while dragging the seek bar; the device is only told on release.
+    var dragPosition by remember { mutableStateOf<Float?>(null) }
 
     val mediaCallback = remember {
         object : RemoteMediaClient.Callback() {
@@ -123,7 +124,7 @@ fun ExpandedControllerScreen(
                 client?.let { safeClient ->
                     isPlaying = safeClient.isPlaying
                     currentPosition = safeClient.approximateStreamPosition
-                    duration = safeClient.mediaInfo?.streamDuration ?: 0L
+                    duration = receiverDuration(safeClient)
                     thumbnail = safeClient.mediaInfo?.metadata?.images?.firstOrNull()?.url?.toString()
                     title = safeClient.mediaInfo?.metadata?.getString("title").orEmpty()
                     subtitle = safeClient.mediaInfo?.metadata?.getString("subtitle").orEmpty()
@@ -166,6 +167,7 @@ fun ExpandedControllerScreen(
     LaunchedEffect(client) {
         while (isActive) {
             currentPosition = client?.approximateStreamPosition ?: 0L
+            client?.let { duration = receiverDuration(it) }
             delay(1000)
         }
     }
@@ -284,7 +286,7 @@ fun ExpandedControllerScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Text(
-                                text = formatDuration(currentPosition),
+                                text = formatDuration(dragPosition?.toLong() ?: currentPosition),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -301,47 +303,24 @@ fun ExpandedControllerScreen(
                                 .height(36.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            val sliderState = rememberSliderState(
-                                value = currentPosition.toFloat(),
-                                trackRange = 0f..duration.toFloat().coerceAtLeast(0f),
-                            )
-                            sliderState.value = currentPosition.toFloat()
                             Slider(
-                                state = sliderState,
-                                onValueChange = {
-                                    client?.seek(
-                                        MediaSeekOptions.Builder()
-                                            .setPosition(it.toLong())
-                                            .build(),
-                                    )
+                                value = (dragPosition ?: currentPosition.toFloat()).coerceIn(0f, duration.toFloat()),
+                                onValueChange = { dragPosition = it },
+                                onValueChangeFinished = {
+                                    dragPosition?.let { position ->
+                                        client?.seek(MediaSeekOptions.Builder().setPosition(position.toLong()).build())
+                                        currentPosition = position.toLong()
+                                    }
+                                    dragPosition = null
                                 },
+                                valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
+                                enabled = duration > 0,
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = SliderDefaults.colors(
                                     thumbColor = MaterialTheme.colorScheme.primary,
                                     activeTrackColor = MaterialTheme.colorScheme.primary,
                                     inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.32f),
                                 ),
-                                thumb = {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(16.dp)
-                                            .background(
-                                                color = MaterialTheme.colorScheme.primary,
-                                                shape = MaterialTheme.shapes.small,
-                                            ),
-                                    )
-                                },
-                                track = { state ->
-                                    SliderDefaults.Track(
-                                        modifier = Modifier.height(4.dp),
-                                        sliderState = state,
-                                        colors = SliderDefaults.colors(
-                                            activeTrackColor = MaterialTheme.colorScheme.primary,
-                                            inactiveTrackColor = MaterialTheme.colorScheme
-                                                .onSurface.copy(alpha = 0.32f),
-                                        ),
-                                    )
-                                },
                             )
                         }
                     }
@@ -1092,3 +1071,9 @@ private fun formatDuration(milliseconds: Long): String {
         else -> String.format("%02d:%02d", minutes, seconds)
     }
 }
+
+// The receiver knows the real length once it opens the stream; the sender's value is only an
+// estimate taken from the local player and is 0 when it hadn't loaded the video yet. Both are -1
+// while unknown.
+private fun receiverDuration(client: RemoteMediaClient): Long =
+    client.streamDuration.takeIf { it > 0 } ?: client.mediaInfo?.streamDuration?.coerceAtLeast(0L) ?: 0L

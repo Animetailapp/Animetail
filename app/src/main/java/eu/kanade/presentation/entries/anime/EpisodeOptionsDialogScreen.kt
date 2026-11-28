@@ -57,7 +57,7 @@ import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaQueueItem
 import com.google.android.gms.cast.MediaStatus
-import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.common.images.WebImage
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Assisted
@@ -72,7 +72,10 @@ import eu.kanade.presentation.components.TabbedDialogPaddings
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.player.cast.CastVideoUrl
+import eu.kanade.tachiyomi.ui.player.cast.castWhenConnected
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetHosterContent
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetVideoContent
@@ -605,14 +608,22 @@ private fun VideoList(
                     onCastClicked = {
                         scope.launch {
                             if (context.appGraph.playerPreferences.enableCast().get()) {
-                                sendChaptersToCast(
-                                    context,
-                                    anime.title,
-                                    episode.name,
-                                    episode.lastSecondSeen,
-                                    anime.thumbnailUrl.orEmpty(),
-                                    currentVideo.videoUrl,
-                                )
+                                val sourceHeaders =
+                                    (context.appGraph.animeSourceManager.get(anime.source) as? AnimeHttpSource)?.headers
+                                val videoUrl =
+                                    withIOContext { CastVideoUrl.proxied(context, currentVideo, sourceHeaders) }
+                                        ?: currentVideo.videoUrl
+                                castWhenConnected(context) { session ->
+                                    sendChaptersToCast(
+                                        context,
+                                        session,
+                                        anime.title,
+                                        episode.name,
+                                        episode.lastSecondSeen,
+                                        anime.thumbnailUrl.orEmpty(),
+                                        videoUrl,
+                                    )
+                                }
                             } else {
                                 context.toast("Cast is disabled")
                             }
@@ -777,18 +788,14 @@ private fun ClickableRow(
 
 private fun sendChaptersToCast(
     context: Context,
+    castSession: CastSession,
     title: String,
     episode: String,
     lastSecondSeen: Long,
     image: String,
     videoUrl: String,
 ) {
-    val castSession = CastContext.getSharedInstance(context).sessionManager.currentCastSession
-    val remoteMediaClient = castSession?.remoteMediaClient
-    if (castSession == null || !castSession.isConnected) {
-        Toast.makeText(context, "Cast is not connected", Toast.LENGTH_SHORT).show()
-        return
-    }
+    val remoteMediaClient = castSession.remoteMediaClient
     if (remoteMediaClient != null) {
         val mediaMetadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
             putString(MediaMetadata.KEY_TITLE, title)

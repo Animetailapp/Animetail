@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.player
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -23,6 +24,7 @@ import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.ui.player.cast.CastMediaBuilder
 import eu.kanade.tachiyomi.ui.player.cast.CastSessionListener
+import eu.kanade.tachiyomi.ui.player.cast.ExpandedControlsActivity
 import eu.kanade.tachiyomi.ui.player.cast.components.BorderStyle
 import eu.kanade.tachiyomi.ui.player.cast.components.SubtitleSettings
 import eu.kanade.tachiyomi.ui.player.settings.CastSubtitlePreferences
@@ -323,7 +325,8 @@ class CastManager(
                         .build()
 
                     mediaQueue.add(queueItem)
-                    remoteMediaClient.queueAppendItem(queueItem, null).setResultCallback(::onLoadResult)
+                    remoteMediaClient.queueAppendItem(queueItem, null)
+                        .setResultCallback { onLoadResult(it, openController = false) }
                     updateQueueItems()
                     showAddedToQueueToast()
                 } else {
@@ -333,7 +336,7 @@ class CastManager(
                             .setAutoplay(autoplayEnabled)
                             .setCurrentTime(currentLocalPosition * 1000)
                             .build(),
-                    ).setResultCallback(::onLoadResult)
+                    ).setResultCallback { onLoadResult(it, openController = true) }
                     updateQueueItems()
                 }
                 _castState.value = CastState.CONNECTED
@@ -349,10 +352,14 @@ class CastManager(
 
     // The device answers asynchronously; without this a rejected video failed silently and the
     // receiver kept showing that no media was selected.
-    private fun onLoadResult(result: RemoteMediaClient.MediaChannelResult) {
-        if (result.status.isSuccess) return
-        logcat(LogPriority.ERROR) { "Cast device couldn't load the video: ${result.status}" }
-        showLoadErrorToast()
+    private fun onLoadResult(result: RemoteMediaClient.MediaChannelResult, openController: Boolean) {
+        if (!result.status.isSuccess) {
+            logcat(LogPriority.ERROR) { "Cast device couldn't load the video: ${result.status}" }
+            showLoadErrorToast()
+            return
+        }
+        // The phone's player is paused while casting, so the cast controls take its place.
+        if (openController) activity.startActivity(Intent(activity, ExpandedControlsActivity::class.java))
     }
 
     private fun showAddedToQueueToast() {

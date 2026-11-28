@@ -12,7 +12,6 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel
-import eu.kanade.tachiyomi.ui.player.cache.VideoCacheProxy
 import eu.kanade.tachiyomi.util.LocalHttpServerHolder
 import eu.kanade.tachiyomi.util.LocalHttpServerService
 import kotlinx.coroutines.Dispatchers
@@ -48,7 +47,10 @@ class CastMediaBuilder(
             ) ||
                 videoUrl.endsWith(".torrent") -> formatUrlForCast(torrentLinkHandler(videoUrl, video.videoTitle))
 
-            else -> proxiedForCast(video) ?: formatUrlForCast(videoUrl)
+            else -> {
+                val sourceHeaders = (viewModel.currentSource.value as? AnimeHttpSource)?.headers
+                CastVideoUrl.proxied(activity, video, sourceHeaders) ?: formatUrlForCast(videoUrl)
+            }
         }
 
         val contentType = when {
@@ -64,15 +66,6 @@ class CastMediaBuilder(
             .addTracks(video)
             .setStreamDuration((viewModel.mpv.getPropertyInt("duration") ?: 0).toLong() * 1000)
             .build()
-    }
-
-    // The receiver fetches the video itself, without the headers the host expects.
-    private fun proxiedForCast(video: Video): String? {
-        if (!video.videoUrl.startsWith("http")) return null
-        val lanAddress = getLocalIpAddress().takeIf { it != "127.0.0.1" } ?: return null
-        val headers = video.headers ?: (viewModel.currentSource.value as? AnimeHttpSource)?.headers
-        return VideoCacheProxy.castProxy(activity, lanAddress)
-            .proxyUrl(video.videoUrl, requiredHeaders = headers)
     }
 
     private fun formatUrlForCast(url: String): String {
