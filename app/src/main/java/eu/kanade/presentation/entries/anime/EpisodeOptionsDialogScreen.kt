@@ -838,6 +838,7 @@ private fun sendChaptersToCast(
             // Si no hay un video reproduciéndose, cargar el video directamente
             val mediaLoadRequestData = MediaLoadRequestData.Builder()
                 .setMediaInfo(mediaInfo)
+                .setAutoplay(true)
                 .setCurrentTime(lastSecondSeen)
                 .build()
             remoteMediaClient.load(mediaLoadRequestData).setResultCallback { result ->

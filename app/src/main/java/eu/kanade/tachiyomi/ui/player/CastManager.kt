@@ -87,7 +87,6 @@ class CastManager(
     private val playerPreferences: PlayerPreferences by lazy {
         viewModel?.playerPreferences ?: PlayerPreferences(preferenceStore)
     }
-    private val autoplayEnabled = playerPreferences.autoplayEnabled().get()
     private val subtitlePreferences = CastSubtitlePreferences(preferenceStore)
     private val mediaBuilder by lazy {
         viewModel?.let { CastMediaBuilder(it, activity as PlayerActivity) }
@@ -325,7 +324,9 @@ class CastManager(
                 remoteMediaClient.load(
                     MediaLoadRequestData.Builder()
                         .setMediaInfo(mediaInfo)
-                        .setAutoplay(autoplayEnabled)
+                        // A video the user sends plays right away; the autoplay setting is about
+                        // moving on to the next episode.
+                        .setAutoplay(true)
                         .setCurrentTime(currentLocalPosition * 1000)
                         .build(),
                 ).setResultCallback(::onLoadResult)
