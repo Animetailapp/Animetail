@@ -442,10 +442,10 @@ class AnimeLibraryUpdateJob(private val context: Context, workerParams: WorkerPa
         }
     }
 
-    private fun downloadEpisodes(anime: Anime, episodes: List<Episode>) {
+    private suspend fun downloadEpisodes(anime: Anime, episodes: List<Episode>) {
         // We don't want to start downloading while the library is updating, because websites
         // may don't like it and they could ban the user.
-        downloadManager.downloadEpisodes(anime, episodes, false)
+        downloadManager.downloadEpisodesByPriority(anime, episodes, autoStart = false, automatic = true)
     }
 
     /**

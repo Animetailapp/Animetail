@@ -1,9 +1,12 @@
 package eu.kanade.tachiyomi.util.system
 
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
+import android.os.BatteryManager
 import android.os.Build
 import androidx.core.content.getSystemService
 
@@ -41,4 +44,14 @@ fun Context.isConnectedToWifi(): Boolean {
         @Suppress("DEPRECATION")
         wifiManager.connectionInfo.bssid != null
     }
+}
+
+/**
+ * Returns true if the device is plugged in and charging, or full, the way WorkManager's
+ * "requires charging" constraint sees it.
+ */
+fun Context.isCharging(): Boolean {
+    val battery = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return false
+    val status = battery.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+    return status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
 }

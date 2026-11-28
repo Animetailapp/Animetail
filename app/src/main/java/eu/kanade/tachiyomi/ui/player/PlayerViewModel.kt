@@ -2242,7 +2242,7 @@ class PlayerViewModel(
             }
             val episodesToDownload = getNextEpisodes.await(anime.id, nextEpisode.id!!)
                 .take(downloadAheadAmount)
-            downloadManager.downloadEpisodes(anime, episodesToDownload)
+            downloadManager.downloadEpisodesByPriority(anime, episodesToDownload, autoStart = true, automatic = false)
         }
     }
 

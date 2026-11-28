@@ -75,6 +75,16 @@ class DownloadPreferences(
         emptySet(),
     )
 
+    /**
+     * When episodes queued by the library update may download, on top of [downloadOnlyOverWifi]:
+     * [tachiyomi.domain.library.service.LibraryPreferences.DEVICE_NETWORK_NOT_METERED] and/or
+     * [tachiyomi.domain.library.service.LibraryPreferences.DEVICE_CHARGING].
+     */
+    val autoDownloadDeviceRestrictions: Preference<Set<String>> = preferenceStore.getStringSet(
+        "auto_download_device_restrictions",
+        emptySet(),
+    )
+
     val numberOfDownloads: Preference<Int> = preferenceStore.getInt("download_slots", 1)
     val downloadSpeedLimit: Preference<Int> = preferenceStore.getInt("download_speed_limit", 0)
 

@@ -116,6 +116,12 @@ class AnimeDownloader(
     private val episodeLocks = ConcurrentHashMap<Long, Mutex>()
 
     /**
+     * Which downloads the device conditions hold back, kept up to date by [AnimeDownloadJob] while
+     * it runs. Held downloads stay queued and are skipped until the conditions are met.
+     */
+    private val holds = MutableStateFlow(AnimeDownloadConditions.Holds.NONE)
+
+    /**
      * Job object for download queue management
      */
     private var downloaderJob: Job? = null
@@ -158,6 +164,15 @@ class AnimeDownloader(
         launchDownloaderJob()
 
         return pending.isNotEmpty()
+    }
+
+    fun setHolds(holds: AnimeDownloadConditions.Holds) {
+        this.holds.value = holds
+    }
+
+    /** The queued downloads the downloader would start: not downloaded, and not failed. */
+    fun pendingDownloads(): List<AnimeDownload> {
+        return queueState.value.filter { it.status.value <= AnimeDownload.State.DOWNLOADING.value }
     }
 
     /**
@@ -210,12 +225,13 @@ class AnimeDownloader(
         if (isRunning) return
 
         downloaderJob = scope.launchIO {
-            val activeDownloadsFlow = queueState.transformLatest { queue ->
+            val activeDownloadsFlow = combine(queueState, holds, ::Pair).transformLatest { (queue, holds) ->
                 while (true) {
                     val activeDownloads = queue.asSequence()
                         .filter {
                             it.status.value <= AnimeDownload.State.DOWNLOADING.value
                         } // Ignore completed downloads, leave them in the queue
+                        .filter { holds.of(it.automatic) == null } // Leave held downloads queued
                         .groupBy { it.source }
                         .toList().take(3) // Concurrently download from 5 different sources
                         .map { (_, downloads) -> downloads.first() }
@@ -243,6 +259,10 @@ class AnimeDownloader(
                     downloadJobsToStop.forEach { (download, job) ->
                         job.cancel()
                         downloadJobs.remove(download)
+                        // Interrupted (held back, or moved down the queue), not failed
+                        if (download.status == AnimeDownload.State.DOWNLOADING) {
+                            download.status = AnimeDownload.State.QUEUE
+                        }
                     }
 
                     val downloadsToStart = activeDownloads.filter { it !in downloadJobs }
@@ -294,6 +314,8 @@ class AnimeDownloader(
      * @param anime the anime of the episodes to download.
      * @param episodes the list of episodes to download.
      * @param autoStart whether to start the downloader after enqueing the episodes.
+     * @param automatic whether the library update queued them, see [AnimeDownload.automatic].
+     * @param priority where to insert them in the queue, or null to add them at the end.
      */
     fun queueEpisodes(
         anime: Anime,
@@ -301,11 +323,15 @@ class AnimeDownloader(
         autoStart: Boolean,
         changeDownloader: Boolean = false,
         video: Video? = null,
+        automatic: Boolean = false,
+        priority: AnimeDownloadPriority? = null,
     ) {
         if (episodes.isEmpty()) return
 
         val source = sourceManager.get(anime.source) as? AnimeHttpSource ?: return
-        val wasEmpty = queueState.value.isEmpty()
+        // New episodes held back by the auto-download restrictions can wait for hours, so a queue
+        // of only those counts as empty: the downloader isn't running for them
+        val wasEmpty = queueState.value.all { it.automatic }
 
         val episodesToQueue = episodes.asSequence()
             // Filter out those already downloaded.
@@ -315,14 +341,14 @@ class AnimeDownloader(
             // Filter out those already enqueued.
             .filter { episode -> queueState.value.none { it.episode.id == episode.id } }
             // Create a download for each one.
-            .map { AnimeDownload(source, anime, it, changeDownloader, video) }
+            .map { AnimeDownload(source, anime, it, changeDownloader, video, automatic) }
             .toList()
 
         if (episodesToQueue.isNotEmpty()) {
-            addAllToQueue(episodesToQueue)
+            if (priority != null) insertIntoQueue(episodesToQueue, priority) else addAllToQueue(episodesToQueue)
 
             // Start downloader if needed
-            if (autoStart && wasEmpty) {
+            if (autoStart && wasEmpty && !isRunning) {
                 val queuedDownloads =
                     queueState.value.count { it: AnimeDownload -> it.source !is UnmeteredSource }
                 val maxDownloadsFromSource = queueState.value
@@ -991,6 +1017,24 @@ class AnimeDownloader(
             }
             store.addAll(downloads)
             it + downloads
+        }
+    }
+
+    private fun insertIntoQueue(downloads: List<AnimeDownload>, priority: AnimeDownloadPriority) {
+        _queueState.update { queue ->
+            downloads.forEach { download ->
+                download.status = AnimeDownload.State.QUEUE
+            }
+            val newQueue = priority.insert(
+                queue = queue,
+                added = downloads,
+                item = { AnimeDownloadPriority.Item(it.anime.id, it.episode.id) },
+                isDownloading = { it.status == AnimeDownload.State.DOWNLOADING },
+            )
+            // Rewritten so that a restored queue keeps the new order
+            store.clear()
+            store.addAll(newQueue)
+            newQueue
         }
     }
 
