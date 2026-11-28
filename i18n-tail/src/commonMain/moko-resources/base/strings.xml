@@ -457,4 +457,19 @@
     <string name="audio_language_original">Original language</string>
     <string name="audio_language_original_detected">Original language (%s)</string>
     <string name="audio_language_dialog_message">Used for this show when picking the audio track. Picking an audio track in the player also changes it.</string>
+    <!-- Download queue progress -->
+    <string name="download_state_queued">Queued</string>
+    <string name="download_state_starting">Finding a working server…</string>
+    <string name="download_state_preparing">Starting download…</string>
+    <string name="download_state_unfinished">Didn\'t finish, starts again with the queue</string>
+    <string name="download_state_stalled">Stalled, waiting for data</string>
+    <string name="download_state_finished">Finished</string>
+    <string name="download_progress_size">%1$s of %2$s</string>
+    <string name="download_progress_size_estimated">%1$s of ~%2$s</string>
+    <string name="download_time_left">%s left</string>
+    <string name="download_summary_active">Downloading %1$d of %2$d</string>
+    <string name="download_summary_queued">%d queued</string>
+    <string name="download_summary_paused">Paused, %d in queue</string>
+    <string name="download_summary_unfinished">%d didn\'t finish</string>
+    <string name="download_summary_time_left">%s left for the current downloads</string>
 </resources>
