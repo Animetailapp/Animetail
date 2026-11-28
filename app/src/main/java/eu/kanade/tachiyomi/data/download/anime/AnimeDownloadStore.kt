@@ -109,13 +109,13 @@ class AnimeDownloadStore(
         val downloads = mutableListOf<AnimeDownload>()
         if (objs.isNotEmpty()) {
             val cachedAnime = mutableMapOf<Long, Anime?>()
-            for ((animeId, episodeId) in objs) {
+            for ((animeId, episodeId, _, automatic) in objs) {
                 val anime = cachedAnime.getOrPut(animeId) {
                     getAnime.await(animeId)
                 } ?: continue
                 val source = sourceManager.get(anime.source) as? AnimeHttpSource ?: continue
                 val episode = getEpisode.await(episodeId) ?: continue
-                downloads.add(AnimeDownload(source, anime, episode))
+                downloads.add(AnimeDownload(source, anime, episode, automatic = automatic))
             }
         }
 
@@ -130,7 +130,7 @@ class AnimeDownloadStore(
      * @param download the download to serialize.
      */
     private fun serialize(download: AnimeDownload): String {
-        val obj = AnimeDownloadObject(download.anime.id, download.episode.id, counter++)
+        val obj = AnimeDownloadObject(download.anime.id, download.episode.id, counter++, download.automatic)
         return json.encodeToString(obj)
     }
 
@@ -154,6 +154,12 @@ class AnimeDownloadStore(
  * @param animeId the id of the anime.
  * @param episodeId the id of the episode.
  * @param order the order of the download in the queue.
+ * @param automatic whether the library update queued it, see [AnimeDownload.automatic].
  */
 @Serializable
-private data class AnimeDownloadObject(val animeId: Long, val episodeId: Long, val order: Int)
+private data class AnimeDownloadObject(
+    val animeId: Long,
+    val episodeId: Long,
+    val order: Int,
+    val automatic: Boolean = false,
+)
