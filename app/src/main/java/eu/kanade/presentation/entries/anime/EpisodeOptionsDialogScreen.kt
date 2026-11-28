@@ -2,6 +2,7 @@ package eu.kanade.presentation.entries.anime
 
 import android.content.ClipData
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -75,6 +76,7 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.cast.CastVideoUrl
+import eu.kanade.tachiyomi.ui.player.cast.ExpandedControlsActivity
 import eu.kanade.tachiyomi.ui.player.cast.castWhenConnected
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.QualitySheetHosterContent
@@ -826,7 +828,13 @@ private fun sendChaptersToCast(
                 .setMediaInfo(mediaInfo)
                 .setCurrentTime(lastSecondSeen)
                 .build()
-            remoteMediaClient.load(mediaLoadRequestData)
+            remoteMediaClient.load(mediaLoadRequestData).setResultCallback { result ->
+                if (result.status.isSuccess) {
+                    context.startActivity(Intent(context, ExpandedControlsActivity::class.java))
+                } else {
+                    context.toast(TLMR.strings.cast_error_loading)
+                }
+            }
         }
     } else {
         Toast.makeText(context, "remoteMediaClient is null", Toast.LENGTH_SHORT).show()

@@ -243,6 +243,8 @@
   <string name="cast_audio_tracks">Audio</string>
   <string name="cast_no_subtitles">Sin subtítulos</string>
   <string name="cast_send_again">Enviar el video de nuevo</string>
+  <string name="pref_show_cast_bubble">Botón flotante de transmisión</string>
+  <string name="pref_show_cast_bubble_summary">Muestra un botón para abrir los controles de transmisión en toda la app mientras haya un dispositivo conectado</string>
   <string name="cast_close">Cerrar</string>
   <string name="cast_subtitle_font_family">Familia de la fuente</string>
   <string name="cast_subtitle_border_style">Estilo del borde</string>

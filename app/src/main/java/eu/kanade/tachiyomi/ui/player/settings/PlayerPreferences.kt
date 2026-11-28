@@ -88,6 +88,13 @@ class PlayerPreferences(
 
     fun enableCast() = preferenceStore.getBoolean("pref_enable_cast", false)
 
+    fun showCastBubble() = preferenceStore.getBoolean("pref_show_cast_bubble", true)
+
+    fun castBubbleAtStart() = preferenceStore.getBoolean("pref_cast_bubble_at_start", false)
+
+    /** Height of the cast button between the top (-1) and the bottom (1) of the space it can use. */
+    fun castBubbleVerticalBias() = preferenceStore.getFloat("pref_cast_bubble_vertical_bias", 0f)
+
     fun alwaysUseExternalPlayer() = preferenceStore.getBoolean(
         "pref_always_use_external_player",
         false,

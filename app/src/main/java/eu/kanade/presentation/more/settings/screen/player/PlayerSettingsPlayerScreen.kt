@@ -500,12 +500,19 @@ data object PlayerSettingsPlayerScreen : SearchableSettings {
     @Composable
     private fun getCastGroup(playerPreferences: PlayerPreferences): Preference.PreferenceGroup {
         val enableCast = playerPreferences.enableCast()
+        val castEnabled by enableCast.collectAsState()
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_category_cast),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = enableCast,
                     title = stringResource(TLMR.strings.pref_enable_cast),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = playerPreferences.showCastBubble(),
+                    title = stringResource(TLMR.strings.pref_show_cast_bubble),
+                    subtitle = stringResource(TLMR.strings.pref_show_cast_bubble_summary),
+                    enabled = castEnabled,
                 ),
             ),
         )
