@@ -22,6 +22,11 @@ class AnimeDownload(
     val episode: Episode,
     val changeDownloader: Boolean = false,
     var video: Video? = null,
+    /**
+     * Whether the library update queued it as a new episode, so that the auto-download
+     * restrictions apply to it (see [eu.kanade.tachiyomi.data.download.anime.AnimeDownloadConditions]).
+     */
+    val automatic: Boolean = false,
 ) : ProgressListener {
 
     @Transient

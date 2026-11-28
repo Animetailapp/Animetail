@@ -38,6 +38,7 @@ import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.renameToOrCopy
 import eu.kanade.tachiyomi.util.storage.toFFmpegString
 import eu.kanade.tachiyomi.util.system.copyToClipboard
+import eu.kanade.tachiyomi.util.system.networkStateFlow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +55,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
@@ -80,6 +82,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * This class is the one in charge of downloading episodes.
@@ -116,6 +119,12 @@ class AnimeDownloader(
     private val episodeLocks = ConcurrentHashMap<Long, Mutex>()
 
     /**
+     * Which downloads the device conditions hold back, kept up to date by [AnimeDownloadJob] while
+     * it runs. Held downloads stay queued and are skipped until the conditions are met.
+     */
+    private val holds = MutableStateFlow(AnimeDownloadConditions.Holds.NONE)
+
+    /**
      * Job object for download queue management
      */
     private var downloaderJob: Job? = null
@@ -141,6 +150,30 @@ class AnimeDownloader(
         restoreJob.join()
     }
 
+    init {
+        resumeWhenNetworkReturns()
+    }
+
+    /**
+     * Resumes held downloads as soon as a network they may use is back. The download job is also
+     * scheduled to resume with WorkManager constraints, but WorkManager can run it minutes late,
+     * e.g. under battery optimizations, so a short Wi-Fi drop left the queue paused for a while.
+     * [AnimeDownloadJob.retryHeld] does nothing unless downloads are waiting and none is running.
+     */
+    private fun resumeWhenNetworkReturns() {
+        scope.launchIO {
+            context.networkStateFlow()
+                .map { it.isOnline && (it.isWifi || !preferences.downloadOnlyOverWifi.get()) }
+                .distinctUntilChanged()
+                .collectLatest { usable ->
+                    if (!usable) return@collectLatest
+                    // A network that comes and goes is waited out: collectLatest cancels this delay
+                    delay(NETWORK_RESUME_DELAY)
+                    if (!isRunning && pendingDownloads().isNotEmpty()) AnimeDownloadJob.retryHeld(context)
+                }
+        }
+    }
+
     /**
      * Starts the downloader. It doesn't do anything if it's already running or there isn't anything
      * to download.
@@ -158,6 +191,15 @@ class AnimeDownloader(
         launchDownloaderJob()
 
         return pending.isNotEmpty()
+    }
+
+    fun setHolds(holds: AnimeDownloadConditions.Holds) {
+        this.holds.value = holds
+    }
+
+    /** The queued downloads the downloader would start: not downloaded, and not failed. */
+    fun pendingDownloads(): List<AnimeDownload> {
+        return queueState.value.filter { it.status.value <= AnimeDownload.State.DOWNLOADING.value }
     }
 
     /**
@@ -210,12 +252,13 @@ class AnimeDownloader(
         if (isRunning) return
 
         downloaderJob = scope.launchIO {
-            val activeDownloadsFlow = queueState.transformLatest { queue ->
+            val activeDownloadsFlow = combine(queueState, holds, ::Pair).transformLatest { (queue, holds) ->
                 while (true) {
                     val activeDownloads = queue.asSequence()
                         .filter {
                             it.status.value <= AnimeDownload.State.DOWNLOADING.value
                         } // Ignore completed downloads, leave them in the queue
+                        .filter { holds.of(it.automatic) == null } // Leave held downloads queued
                         .groupBy { it.source }
                         .toList().take(3) // Concurrently download from 5 different sources
                         .map { (_, downloads) -> downloads.first() }
@@ -243,6 +286,10 @@ class AnimeDownloader(
                     downloadJobsToStop.forEach { (download, job) ->
                         job.cancel()
                         downloadJobs.remove(download)
+                        // Interrupted (held back, or moved down the queue), not failed
+                        if (download.status == AnimeDownload.State.DOWNLOADING) {
+                            download.status = AnimeDownload.State.QUEUE
+                        }
                     }
 
                     val downloadsToStart = activeDownloads.filter { it !in downloadJobs }
@@ -294,6 +341,7 @@ class AnimeDownloader(
      * @param anime the anime of the episodes to download.
      * @param episodes the list of episodes to download.
      * @param autoStart whether to start the downloader after enqueing the episodes.
+     * @param automatic whether the library update queued them, see [AnimeDownload.automatic].
      */
     fun queueEpisodes(
         anime: Anime,
@@ -301,11 +349,14 @@ class AnimeDownloader(
         autoStart: Boolean,
         changeDownloader: Boolean = false,
         video: Video? = null,
+        automatic: Boolean = false,
     ) {
         if (episodes.isEmpty()) return
 
         val source = sourceManager.get(anime.source) as? AnimeHttpSource ?: return
-        val wasEmpty = queueState.value.isEmpty()
+        // New episodes held back by the auto-download restrictions can wait for hours, so a queue
+        // of only those counts as empty: the downloader isn't running for them
+        val wasEmpty = queueState.value.all { it.automatic }
 
         val episodesToQueue = episodes.asSequence()
             // Filter out those already downloaded.
@@ -315,14 +366,14 @@ class AnimeDownloader(
             // Filter out those already enqueued.
             .filter { episode -> queueState.value.none { it.episode.id == episode.id } }
             // Create a download for each one.
-            .map { AnimeDownload(source, anime, it, changeDownloader, video) }
+            .map { AnimeDownload(source, anime, it, changeDownloader, video, automatic) }
             .toList()
 
         if (episodesToQueue.isNotEmpty()) {
             addAllToQueue(episodesToQueue)
 
             // Start downloader if needed
-            if (autoStart && wasEmpty) {
+            if (autoStart && wasEmpty && !isRunning) {
                 val queuedDownloads =
                     queueState.value.count { it: AnimeDownload -> it.source !is UnmeteredSource }
                 val maxDownloadsFromSource = queueState.value
@@ -1067,6 +1118,9 @@ class AnimeDownloader(
         const val WARNING_NOTIF_TIMEOUT_MS = 30_000L
         const val EPISODES_PER_SOURCE_QUEUE_WARNING_THRESHOLD = 10
         private const val DOWNLOADS_QUEUED_WARNING_THRESHOLD = 20
+
+        /** How long a usable network must stay before held downloads are resumed. */
+        private val NETWORK_RESUME_DELAY = 5.seconds
     }
 }
 

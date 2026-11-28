@@ -22,18 +22,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.util.fastMap
+import androidx.core.content.ContextCompat
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.widget.TriStateListDialog
+import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadJob
 import kotlinx.serialization.Serializable
 import mihon.app.di.appGraph
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.download.service.DownloadPreferences
+import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_CHARGING
+import tachiyomi.domain.library.service.LibraryPreferences.Companion.DEVICE_NETWORK_NOT_METERED
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.OutlinedNumericChooser
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
@@ -76,6 +81,11 @@ data object SettingsDownloadScreen : SearchableSettings {
             Preference.PreferenceItem.SwitchPreference(
                 preference = downloadPreferences.downloadOnlyOverWifi,
                 title = stringResource(MR.strings.connected_to_wifi),
+                onValueChanged = {
+                    // Post to event looper to allow the preference to be updated.
+                    ContextCompat.getMainExecutor(context).execute { AnimeDownloadJob.retryHeld(context) }
+                    true
+                },
             ),
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(AYMR.strings.download_speed_limit),
@@ -198,6 +208,7 @@ data object SettingsDownloadScreen : SearchableSettings {
         allAnimeCategories: List<Category>,
         allMangaCategories: List<Category>,
     ): Preference.PreferenceGroup {
+        val context = LocalContext.current
         val downloadNewEpisodesPref = downloadPreferences.downloadNewEpisodes
         val downloadNewUnseenEpisodesOnlyPref = downloadPreferences.downloadNewUnseenEpisodesOnly
         val downloadNewEpisodeCategoriesPref = downloadPreferences.downloadNewEpisodeCategories
@@ -281,6 +292,24 @@ data object SettingsDownloadScreen : SearchableSettings {
                     ),
                     enabled = downloadNewEpisodes,
                     onClick = { showAnimeDialog = true },
+                ),
+                // Also applies to shows set to always auto-download, so not tied to the switch
+                Preference.PreferenceItem.MultiSelectListPreference(
+                    preference = downloadPreferences.autoDownloadDeviceRestrictions,
+                    entries = mapOf(
+                        DEVICE_NETWORK_NOT_METERED to stringResource(MR.strings.network_not_metered),
+                        DEVICE_CHARGING to stringResource(MR.strings.charging),
+                    ),
+                    title = stringResource(TLMR.strings.pref_auto_download_restrictions),
+                    subtitle = stringResource(MR.strings.restrictions),
+                    onValueChanged = {
+                        // Post to event looper to allow the preference to be updated.
+                        ContextCompat.getMainExecutor(context).execute { AnimeDownloadJob.retryHeld(context) }
+                        true
+                    },
+                ),
+                Preference.PreferenceItem.InfoPreference(
+                    stringResource(TLMR.strings.pref_auto_download_restrictions_info),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = downloadNewChaptersPref,
