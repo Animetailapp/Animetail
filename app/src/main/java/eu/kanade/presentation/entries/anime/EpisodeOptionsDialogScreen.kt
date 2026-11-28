@@ -818,10 +818,18 @@ private fun sendChaptersToCast(
             .setAutoplay(true)
             .setStartTime(lastSecondSeen.toDouble() / 1000)
             .build()
-        val mediaStatus = remoteMediaClient.mediaStatus
-        if (mediaStatus != null && mediaStatus.playerState == MediaStatus.PLAYER_STATE_PLAYING) {
-            // Si hay un video reproduciéndose, agregar el nuevo video a la cola
-            remoteMediaClient.queueAppendItem(mediaQueueItem, null)
+        // Anything loaded on the device, paused or buffering too, keeps playing and gets the episode
+        // queued after it.
+        val playerState = remoteMediaClient.mediaStatus?.playerState
+        if (playerState != null && playerState != MediaStatus.PLAYER_STATE_IDLE) {
+            remoteMediaClient.queueAppendItem(mediaQueueItem, null).setResultCallback { result ->
+                if (result.status.isSuccess) {
+                    context.toast(TLMR.strings.cast_video_added_to_queue)
+                } else {
+                    castSession.logcat(LogPriority.ERROR) { "Cast device couldn't queue the episode: ${result.status}" }
+                    context.toast(TLMR.strings.cast_error_loading)
+                }
+            }
         } else {
             // Si no hay un video reproduciéndose, cargar el video directamente
             val mediaLoadRequestData = MediaLoadRequestData.Builder()
@@ -832,6 +840,7 @@ private fun sendChaptersToCast(
                 if (result.status.isSuccess) {
                     context.startActivity(Intent(context, ExpandedControlsActivity::class.java))
                 } else {
+                    castSession.logcat(LogPriority.ERROR) { "Cast device couldn't load the episode: ${result.status}" }
                     context.toast(TLMR.strings.cast_error_loading)
                 }
             }

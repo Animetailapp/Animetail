@@ -319,26 +319,15 @@ class CastManager(
                 val currentLocalPosition = (mpv?.getPropertyInt("time-pos") ?: 0).toLong()
 
                 updateQueueItems()
-                if (remoteMediaClient.mediaQueue.itemCount > 0) {
-                    val queueItem = MediaQueueItem.Builder(mediaInfo)
+                // Picking a quality or sending again replaces what the device plays.
+                remoteMediaClient.load(
+                    MediaLoadRequestData.Builder()
+                        .setMediaInfo(mediaInfo)
                         .setAutoplay(autoplayEnabled)
-                        .build()
-
-                    mediaQueue.add(queueItem)
-                    remoteMediaClient.queueAppendItem(queueItem, null)
-                        .setResultCallback { onLoadResult(it, openController = false) }
-                    updateQueueItems()
-                    showAddedToQueueToast()
-                } else {
-                    remoteMediaClient.load(
-                        MediaLoadRequestData.Builder()
-                            .setMediaInfo(mediaInfo)
-                            .setAutoplay(autoplayEnabled)
-                            .setCurrentTime(currentLocalPosition * 1000)
-                            .build(),
-                    ).setResultCallback { onLoadResult(it, openController = true) }
-                    updateQueueItems()
-                }
+                        .setCurrentTime(currentLocalPosition * 1000)
+                        .build(),
+                ).setResultCallback(::onLoadResult)
+                updateQueueItems()
                 _castState.value = CastState.CONNECTED
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR) { "Error loading media: ${e.message}" }
@@ -352,24 +341,14 @@ class CastManager(
 
     // The device answers asynchronously; without this a rejected video failed silently and the
     // receiver kept showing that no media was selected.
-    private fun onLoadResult(result: RemoteMediaClient.MediaChannelResult, openController: Boolean) {
+    private fun onLoadResult(result: RemoteMediaClient.MediaChannelResult) {
         if (!result.status.isSuccess) {
             logcat(LogPriority.ERROR) { "Cast device couldn't load the video: ${result.status}" }
             showLoadErrorToast()
             return
         }
         // The phone's player is paused while casting, so the cast controls take its place.
-        if (openController) activity.startActivity(Intent(activity, ExpandedControlsActivity::class.java))
-    }
-
-    private fun showAddedToQueueToast() {
-        activity.runOnUiThread {
-            Toast.makeText(
-                context,
-                context.stringResource(TLMR.strings.cast_video_added_to_queue),
-                Toast.LENGTH_SHORT,
-            ).show()
-        }
+        activity.startActivity(Intent(activity, ExpandedControlsActivity::class.java))
     }
 
     private fun showLoadErrorToast() {
@@ -410,11 +389,21 @@ class CastManager(
     }
 
     fun updateQueueItems(items: List<MediaQueueItem>? = null) {
-        _queueItems.value = items ?: castSession?.remoteMediaClient?.mediaQueue?.let { queue ->
-            (0 until queue.itemCount).mapNotNull { index ->
-                queue.getItemAtIndex(index)
-            }
-        } ?: emptyList()
+        _queueItems.value = items ?: currentQueueItems()
+    }
+
+    // The cast controls screen has its own manager that never saw the session start, so the
+    // session is also taken from the cast context. The device's status lists the whole queue,
+    // while MediaQueue only has the items it already fetched.
+    private fun currentQueueItems(): List<MediaQueueItem> {
+        val session = castSession
+            ?: runCatching { CastContext.getSharedInstance(context.applicationContext).sessionManager }
+                .getOrNull()?.currentCastSession
+            ?: return emptyList()
+        val client = session.remoteMediaClient ?: return emptyList()
+        client.mediaStatus?.queueItems?.takeIf { it.isNotEmpty() }?.let { return it }
+        val queue = client.mediaQueue
+        return (0 until queue.itemCount).mapNotNull { queue.getItemAtIndex(it) }
     }
 
     fun reset() {
